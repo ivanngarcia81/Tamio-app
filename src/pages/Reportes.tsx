@@ -131,7 +131,10 @@ export default function Reportes({ church, refreshKey }: Props) {
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
-                  <Donut segments={filasGasto.map((c) => ({ color: c.color, pct: gastos > 0 ? (c.total / gastos) * 100 : 0 }))} />
+                  <Donut
+                    segments={filasGasto.map((c) => ({ color: c.color, pct: gastos > 0 ? (c.total / gastos) * 100 : 0 }))}
+                    delayMs={0}
+                  />
                   <div className="donut-center">
                     <div className="val">{fmtMoney(gastos)}</div>
                     <div className="lbl">{church.moneda}</div>
@@ -160,7 +163,10 @@ export default function Reportes({ church, refreshKey }: Props) {
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
-                  <Donut segments={filasIngreso.map((c) => ({ color: COLOR_INGRESO[c.id] ?? "#64748b", pct: ingresos > 0 ? (c.total / ingresos) * 100 : 0 }))} />
+                  <Donut
+                    segments={filasIngreso.map((c) => ({ color: COLOR_INGRESO[c.id] ?? "#64748b", pct: ingresos > 0 ? (c.total / ingresos) * 100 : 0 }))}
+                    delayMs={150}
+                  />
                   <div className="donut-center">
                     <div className="val">{fmtMoney(ingresos)}</div>
                     <div className="lbl">{church.moneda}</div>

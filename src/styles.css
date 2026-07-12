@@ -559,6 +559,13 @@ a { color: inherit; text-decoration: none; }
   height: 180px;
   transform: rotate(-90deg);
 }
+.donut-seg {
+  transition: stroke-dasharray 820ms cubic-bezier(.22,1,.36,1);
+  will-change: stroke-dasharray;
+}
+@media (prefers-reduced-motion: reduce) {
+  .donut-seg { transition: none; }
+}
 .donut-center {
   position: absolute;
   top: 50%; left: 50%;
