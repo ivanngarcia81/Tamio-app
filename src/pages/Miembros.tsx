@@ -149,13 +149,13 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                   style={{ gridTemplateColumns: MEMBER_COLS }}
                 >
                   <div className="td">
-                    <div className="person">
+                    <div className="person" style={{ minWidth: 0 }}>
                       <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                         {initials(m.nombre)}
                       </div>
-                      <div>
-                        <div className="p-name">{m.nombre}</div>
-                        <div className="p-mail">{m.email ?? "Sin correo registrado"}</div>
+                      <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+                        <div className="p-name truncate" title={m.nombre}>{m.nombre}</div>
+                        <div className="p-mail truncate" title={m.email ?? undefined}>{m.email ?? "Sin correo registrado"}</div>
                       </div>
                     </div>
                   </div>
@@ -165,7 +165,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                         <span style={{ color: "var(--text-3)", fontSize: 12 }}>—</span>
                       )}
                       {etiquetas.map((et) => (
-                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`}>
+                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} title={TAG_NOMBRE[et] ?? et}>
                           {TAG_NOMBRE[et] ?? et}
                         </span>
                       ))}
@@ -178,8 +178,8 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                     {stat?.totalAnio ? `${fmtMoney(stat.totalAnio)} ${church.moneda}` : "—"}
                   </div>
                   <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                    <div>{m.telefono ?? "Sin teléfono"}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? "Sin RFC"}</div>
+                    <div className="truncate">{m.telefono ?? "Sin teléfono"}</div>
+                    <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? "Sin RFC"}</div>
                   </div>
                   <div className="td" style={{ textAlign: "center" }}>
                     <span className="row-actions">

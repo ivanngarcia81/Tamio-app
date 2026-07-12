@@ -72,7 +72,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               <div className="stat-card" key={c.id}>
                 <div className="stat-head">
                   <span className="stat-label">{c.nombre}</span>
-                  <span className={`tag ${c.tagClass}`}>{c.nombre}</span>
+                  <span className={`tag ${c.tagClass}`} title={c.nombre}>{c.nombre}</span>
                 </div>
                 <div className="stat-value md">
                   {fmtMoney(v)}<span className="stat-cur">{church.moneda}</span>

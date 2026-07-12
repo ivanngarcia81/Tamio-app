@@ -703,6 +703,8 @@ a { color: inherit; text-decoration: none; }
 .tx-amount.negative { color: var(--text); }
 
 .tag {
+  display: inline-block;
+  max-width: 100%;
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--surface-2);
@@ -714,6 +716,9 @@ a { color: inherit; text-decoration: none; }
   text-align: center;
   justify-self: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.045);
 }
 :root[data-theme="dark"] .tag { box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
@@ -842,11 +847,13 @@ a { color: inherit; text-decoration: none; }
   overflow-x: auto;
 }
 .data-table .th, .data-table .td {
-  padding: 14px 20px;
+  padding: 12px 18px;
   font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
 }
 .data-table.roomy .th, .data-table.roomy .td {
-  padding: 17px 20px;
+  padding: 13px 18px;
 }
 .data-table .thead {
   display: grid;
@@ -865,7 +872,7 @@ a { color: inherit; text-decoration: none; }
 .data-table .tr {
   display: grid;
   align-items: center;
-  min-height: 60px;
+  min-height: 50px;
   border-bottom: 1px solid var(--line);
   position: relative;
   transition: background-color .12s ease, box-shadow .12s ease;
@@ -1581,6 +1588,14 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Helpers */
+.truncate {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .grow { flex: 1; }
 .hstack { display: flex; align-items: center; gap: 8px; }
 .vstack { display: flex; flex-direction: column; gap: 4px; }

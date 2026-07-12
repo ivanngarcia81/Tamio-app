@@ -53,13 +53,17 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           );
           const celdaConcepto = (
             <div className="td">
-              <div style={{ fontWeight: 600 }}>{tx.concepto}</div>
-              {tx.detalle && <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{tx.detalle}</div>}
+              <div className="truncate" style={{ fontWeight: 600 }} title={tx.concepto}>{tx.concepto}</div>
+              {tx.detalle && (
+                <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={tx.detalle}>
+                  {tx.detalle}
+                </div>
+              )}
             </div>
           );
           const celdaCategoria = (
             <div className="td">
-              <span className={`tag ${cat.tagClass}`}>{cat.nombre}</span>
+              <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
             </div>
           );
 
@@ -70,20 +74,24 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
               {esIngreso ? celdaCategoria : celdaConcepto}
               <div className="td">
                 {tx.member_nombre ? (
-                  <div className="person">
+                  <div className="person" style={{ minWidth: 0 }}>
                     <div className="mini-avatar c1" style={{ width: 26, height: 26, fontSize: 10 }}>
                       {tx.member_nombre.slice(0, 2).toUpperCase()}
                     </div>
-                    <span style={{ fontSize: 12.5 }}>{tx.member_nombre}</span>
+                    <span className="truncate" style={{ fontSize: 12.5, minWidth: 0, flex: "1 1 auto" }} title={tx.member_nombre}>
+                      {tx.member_nombre}
+                    </span>
                   </div>
                 ) : (
-                  <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>{persona}</span>
+                  <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={persona}>
+                    {persona}
+                  </span>
                 )}
               </div>
               <div className="td">
-                <span className="method" style={{ justifySelf: "start" }}>
+                <span className="method" style={{ justifySelf: "start" }} title={metodo?.nombre ?? tx.metodo_pago}>
                   {metodo && <span className={`m-badge ${metodo.id}`}>{metodo.badge}</span>}
-                  {metodo?.nombre ?? tx.metodo_pago}
+                  <span className="truncate" style={{ display: "inline-block" }}>{metodo?.nombre ?? tx.metodo_pago}</span>
                 </span>
               </div>
               <div className="td" style={{ textAlign: "right" }}>

@@ -195,7 +195,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             {categoriaTopGasto ? (
               <>
-                <span className={`tag ${categoriaTopGasto.info.tagClass}`} style={{ justifySelf: "start" }}>
+                <span className={`tag ${categoriaTopGasto.info.tagClass}`} style={{ justifySelf: "start" }} title={categoriaTopGasto.info.nombre}>
                   {categoriaTopGasto.info.nombre}
                 </span>
                 <div className="stat-value md">
@@ -217,7 +217,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             {ingresoMasFrecuente ? (
               <>
-                <span className={`tag ${ingresoMasFrecuente.info.tagClass}`} style={{ justifySelf: "start" }}>
+                <span className={`tag ${ingresoMasFrecuente.info.tagClass}`} style={{ justifySelf: "start" }} title={ingresoMasFrecuente.info.nombre}>
                   {ingresoMasFrecuente.info.nombre}
                 </span>
                 <div className="stat-value md">

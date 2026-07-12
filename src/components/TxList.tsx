@@ -104,7 +104,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                           </span>
                         )}
                       </div>
-                      <span className={`tag ${cat.tagClass}`}>{cat.nombre}</span>
+                      <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
                       <span className="method">
                         {metodo && (
                           <span className={`m-badge ${metodo.id}`}>{metodo.badge}</span>
