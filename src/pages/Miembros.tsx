@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { archiveMember, countMemberTx, deleteMember, listMembers, type Church, type Member } from "../db";
+import {
+  archiveMember, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney, listMembers,
+  memberStats, type Church, type Member, type MemberStat,
+} from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -22,6 +25,7 @@ const TAG_NOMBRE: Record<string, string> = {
 };
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
+const MEMBER_COLS = "1.6fr 1fr 130px 150px 170px 40px";
 
 function initials(nombre: string): string {
   return nombre
@@ -49,11 +53,13 @@ interface PendingDelete {
 
 export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged }: Props) {
   const [members, setMembers] = useState<Member[]>([]);
+  const [stats, setStats] = useState<Record<number, MemberStat>>({});
   const [query, setQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
 
   useEffect(() => {
     listMembers(church.id).then(setMembers).catch(console.error);
+    memberStats(church.id, currentYear()).then(setStats).catch(console.error);
   }, [church.id, refreshKey]);
 
   async function requestDelete(m: Member) {
@@ -119,24 +125,27 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                 ? "Agrega al primer miembro o familia con el botón de arriba."
                 : "Prueba con otro término de búsqueda."
             }
+            icon={<IconPlus size={20} strokeWidth={1.8} />}
           />
         ) : (
-          <div className="data-table">
-            <div className="thead" style={{ gridTemplateColumns: "1.7fr 1.2fr 160px 160px 40px" }}>
+          <div className="data-table roomy">
+            <div className="thead" style={{ gridTemplateColumns: MEMBER_COLS }}>
               <div className="th">Miembro</div>
               <div className="th">Etiquetas</div>
+              <div className="th">Último aporte</div>
+              <div className="th" style={{ textAlign: "right" }}>Total del año</div>
               <div className="th">Contacto</div>
-              <div className="th">RFC</div>
               <div className="th"></div>
             </div>
             {visibles.map((m, i) => {
               let etiquetas: string[] = [];
               try { etiquetas = JSON.parse(m.etiquetas); } catch { /* noop */ }
+              const stat = stats[m.id];
               return (
                 <div
                   className="tr"
                   key={m.id}
-                  style={{ gridTemplateColumns: "1.7fr 1.2fr 160px 160px 40px" }}
+                  style={{ gridTemplateColumns: MEMBER_COLS }}
                 >
                   <div className="td">
                     <div className="person">
@@ -155,19 +164,23 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                         <span style={{ color: "var(--text-3)", fontSize: 12 }}>—</span>
                       )}
                       {etiquetas.map((et) => (
-                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} style={{ justifySelf: "start" }}>
+                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`}>
                           {TAG_NOMBRE[et] ?? et}
                         </span>
                       ))}
                     </div>
                   </div>
                   <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                    {m.telefono ?? "—"}
+                    {stat?.ultimoAporte ? fmtFechaCorta(stat.ultimoAporte) : "—"}
+                  </div>
+                  <div className="td" style={{ textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                    {stat?.totalAnio ? `${fmtMoney(stat.totalAnio)} ${church.moneda}` : "—"}
                   </div>
                   <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                    {m.rfc ?? "Sin RFC"}
+                    <div>{m.telefono ?? "Sin teléfono"}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? "Sin RFC"}</div>
                   </div>
-                  <div className="td">
+                  <div className="td" style={{ textAlign: "center" }}>
                     <RowMenu
                       onEdit={() => onEdit(m)}
                       onDelete={() => requestDelete(m)}

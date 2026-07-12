@@ -61,6 +61,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               <Dashboard
                 church={church}
                 refreshKey={refreshKey}
+                memberCount={memberCount}
                 onEditTx={openEditTx}
                 onChanged={onChanged}
                 onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}

@@ -268,28 +268,162 @@ export interface MonthTotals {
   gastos: number;
   porCategoriaIngreso: Record<string, number>;
   porCategoriaGasto: Record<string, number>;
+  conteoCategoriaIngreso: Record<string, number>;
+  conteoCategoriaGasto: Record<string, number>;
 }
 
 export async function monthTotals(churchId: number, yyyyMm: string): Promise<MonthTotals> {
   const d = await getDb();
-  const rows = await d.select<{ tipo: string; categoria: string; total: number }[]>(
-    `SELECT tipo, categoria, SUM(monto) AS total
+  const rows = await d.select<{ tipo: string; categoria: string; total: number; cnt: number }[]>(
+    `SELECT tipo, categoria, SUM(monto) AS total, COUNT(*) AS cnt
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 7) = $2
       GROUP BY tipo, categoria`,
     [churchId, yyyyMm]
   );
-  const out: MonthTotals = { ingresos: 0, gastos: 0, porCategoriaIngreso: {}, porCategoriaGasto: {} };
+  const out: MonthTotals = {
+    ingresos: 0, gastos: 0,
+    porCategoriaIngreso: {}, porCategoriaGasto: {},
+    conteoCategoriaIngreso: {}, conteoCategoriaGasto: {},
+  };
   for (const r of rows) {
     if (r.tipo === "ingreso") {
       out.ingresos += r.total;
       out.porCategoriaIngreso[r.categoria] = (out.porCategoriaIngreso[r.categoria] ?? 0) + r.total;
+      out.conteoCategoriaIngreso[r.categoria] = (out.conteoCategoriaIngreso[r.categoria] ?? 0) + r.cnt;
     } else {
       out.gastos += r.total;
       out.porCategoriaGasto[r.categoria] = (out.porCategoriaGasto[r.categoria] ?? 0) + r.total;
+      out.conteoCategoriaGasto[r.categoria] = (out.conteoCategoriaGasto[r.categoria] ?? 0) + r.cnt;
     }
   }
   return out;
+}
+
+export interface YearTotals {
+  ingresos: number;
+  gastos: number;
+}
+
+export async function yearTotals(churchId: number, yyyy: string): Promise<YearTotals> {
+  const d = await getDb();
+  const rows = await d.select<{ tipo: string; total: number }[]>(
+    `SELECT tipo, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2
+      GROUP BY tipo`,
+    [churchId, yyyy]
+  );
+  const out: YearTotals = { ingresos: 0, gastos: 0 };
+  for (const r of rows) {
+    if (r.tipo === "ingreso") out.ingresos = r.total;
+    else out.gastos = r.total;
+  }
+  return out;
+}
+
+export interface DailyPoint {
+  fecha: string;
+  ingresos: number;
+  gastos: number;
+}
+
+export async function dailyTotals(churchId: number, days: number): Promise<DailyPoint[]> {
+  const d = await getDb();
+  const p = (x: number) => String(x).padStart(2, "0");
+  const fmt = (dt: Date) => `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - (days - 1));
+  const startStr = fmt(start);
+
+  const rows = await d.select<{ fecha: string; tipo: string; total: number }[]>(
+    `SELECT substr(fecha, 1, 10) AS fecha, tipo, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 10) >= $2
+      GROUP BY fecha, tipo`,
+    [churchId, startStr]
+  );
+  const map = new Map<string, { ingresos: number; gastos: number }>();
+  for (const r of rows) {
+    const entry = map.get(r.fecha) ?? { ingresos: 0, gastos: 0 };
+    if (r.tipo === "ingreso") entry.ingresos += r.total;
+    else entry.gastos += r.total;
+    map.set(r.fecha, entry);
+  }
+  const out: DailyPoint[] = [];
+  for (let i = 0; i < days; i++) {
+    const dt = new Date(start);
+    dt.setDate(dt.getDate() + i);
+    const key = fmt(dt);
+    out.push({ fecha: key, ...(map.get(key) ?? { ingresos: 0, gastos: 0 }) });
+  }
+  return out;
+}
+
+export interface MonthSummary {
+  mes: string;
+  ingresos: number;
+  gastos: number;
+}
+
+export async function monthlySummary(churchId: number, months: number): Promise<MonthSummary[]> {
+  const d = await getDb();
+  const rows = await d.select<{ mes: string; tipo: string; total: number }[]>(
+    `SELECT substr(fecha, 1, 7) AS mes, tipo, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado'
+      GROUP BY mes, tipo`,
+    [churchId]
+  );
+  const map = new Map<string, { ingresos: number; gastos: number }>();
+  for (const r of rows) {
+    const entry = map.get(r.mes) ?? { ingresos: 0, gastos: 0 };
+    if (r.tipo === "ingreso") entry.ingresos += r.total;
+    else entry.gastos += r.total;
+    map.set(r.mes, entry);
+  }
+  const meses = [...map.keys()].sort().slice(-months);
+  return meses.map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
+}
+
+export interface MemberStat {
+  totalAnio: number;
+  ultimoAporte: string | null;
+}
+
+export async function memberStats(churchId: number, yyyy: string): Promise<Record<number, MemberStat>> {
+  const d = await getDb();
+  const totals = await d.select<{ member_id: number; total: number }[]>(
+    `SELECT member_id, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso'
+        AND member_id IS NOT NULL AND substr(fecha, 1, 4) = $2
+      GROUP BY member_id`,
+    [churchId, yyyy]
+  );
+  const ultimos = await d.select<{ member_id: number; ultimo: string }[]>(
+    `SELECT member_id, MAX(fecha) AS ultimo
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso' AND member_id IS NOT NULL
+      GROUP BY member_id`,
+    [churchId]
+  );
+  const out: Record<number, MemberStat> = {};
+  for (const r of totals) out[r.member_id] = { totalAnio: r.total, ultimoAporte: null };
+  for (const r of ultimos) {
+    out[r.member_id] = { totalAnio: out[r.member_id]?.totalAnio ?? 0, ultimoAporte: r.ultimo };
+  }
+  return out;
+}
+
+export async function lastActivityAt(churchId: number): Promise<string | null> {
+  const d = await getDb();
+  const rows = await d.select<{ m: string | null }[]>(
+    "SELECT MAX(created_at) AS m FROM transactions WHERE church_id = $1",
+    [churchId]
+  );
+  return rows[0]?.m ?? null;
 }
 
 // ---------- Miembros ----------
@@ -395,11 +529,48 @@ export function currentMonth(): string {
   return nowLocalIso().slice(0, 7);
 }
 
+export function currentYear(): string {
+  return String(new Date().getFullYear());
+}
+
+export function prevMonth(yyyyMm: string): string {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const d = new Date(y, m - 1, 1);
+  d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function pctChange(actual: number, anterior: number): number | null {
+  if (anterior === 0) return actual === 0 ? 0 : null;
+  return Math.round(((actual - anterior) / Math.abs(anterior)) * 1000) / 10;
+}
+
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
+const MESES_ABBR = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+export function fmtFechaCorta(fecha: string): string {
+  const [datePart] = fecha.split(" ");
+  const [y, m, d] = datePart.split("-").map(Number);
+  return `${d} ${MESES_ABBR[m - 1]} ${y}`;
+}
+
+export function fmtRelativo(fechaIso: string | null): string {
+  if (!fechaIso) return "Sin actividad";
+  const then = new Date(fechaIso.replace(" ", "T"));
+  const diffMin = Math.round((Date.now() - then.getTime()) / 60000);
+  if (diffMin < 1) return "Hace un momento";
+  if (diffMin < 60) return `Hace ${diffMin} min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `Hace ${diffH} h`;
+  const diffD = Math.round(diffH / 24);
+  if (diffD === 1) return "Ayer";
+  if (diffD < 7) return `Hace ${diffD} días`;
+  return fmtFechaCorta(fechaIso);
+}
 
 export function fmtFecha(fecha: string): { dia: string; mesAnio: string; nombreDia: string; hora: string } {
   const [datePart, timePart] = fecha.split(" ");

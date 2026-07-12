@@ -4,8 +4,9 @@ import {
   listTx, mesLegible, monthTotals,
   type Church, type MonthTotals, type Tx,
 } from "../db";
-import TxList, { EmptyState } from "../components/TxList";
-import { IconPlus } from "../icons";
+import { EmptyState } from "../components/TxList";
+import TxTable from "../components/TxTable";
+import { IconGasto, IconIngreso, IconPlus } from "../icons";
 
 interface Props {
   church: Church;
@@ -114,9 +115,10 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 ? `Registra tu primer ${esIngreso ? "ingreso" : "gasto"} con el botón de arriba.`
                 : "Prueba con otra categoría o quita el filtro."
             }
+            icon={esIngreso ? <IconIngreso size={22} strokeWidth={1.6} /> : <IconGasto size={22} strokeWidth={1.6} />}
           />
         ) : (
-          <TxList txs={visibles} onEdit={onEditTx} onChanged={onChanged} />
+          <TxTable tipo={tipo} txs={visibles} onEdit={onEditTx} onChanged={onChanged} />
         )}
       </div>
     </>

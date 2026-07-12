@@ -762,6 +762,73 @@ a { color: inherit; text-decoration: none; }
 .more:hover { background: var(--surface-2); color: var(--text); }
 .more:active { background: var(--line); transform: scale(.9); }
 
+/* Empty state */
+.empty-state {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 56px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  animation: fadeInUp .22s ease both;
+}
+.empty-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+}
+.empty-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.empty-sub { font-size: 13px; color: var(--text-2); max-width: 320px; margin-top: 2px; }
+
+/* Status pill (estado de un movimiento) */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.status-pill::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-pill.aprobado { background: #ecfdf5; color: #059669; }
+.status-pill.pendiente { background: #fef3c7; color: #b45309; }
+.status-pill.rechazado { background: #fef2f2; color: #dc2626; }
+
+/* Micro entrance animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.enter { animation: fadeInUp .2s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .empty-state, .enter { animation: none; }
+}
+
+.stat-card {
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+.stat-card:hover {
+  border-color: var(--text-3);
+  box-shadow: 0 10px 28px rgba(0,0,0,.05);
+  transform: translateY(-1px);
+}
+:root[data-theme="dark"] .stat-card:hover { box-shadow: 0 10px 28px rgba(0,0,0,.28); }
+
 /* Data table (structured) */
 .data-table {
   background: var(--surface);
@@ -770,8 +837,11 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 .data-table .th, .data-table .td {
-  padding: 12px 20px;
+  padding: 14px 20px;
   font-size: 13px;
+}
+.data-table.roomy .th, .data-table.roomy .td {
+  padding: 16px 20px;
 }
 .data-table .thead {
   display: grid;

@@ -1,18 +1,16 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, METODOS_PAGO, type Tx } from "../db";
-import { IconArrowDown, IconArrowUp } from "../icons";
+import { IconArrowDown, IconArrowUp, IconReportes } from "../icons";
 import RowMenu from "./RowMenu";
 import ConfirmDialog from "./ConfirmDialog";
 
-export function EmptyState({ titulo, sub }: { titulo: string; sub: string }) {
+export function EmptyState({ titulo, sub, icon }: { titulo: string; sub: string; icon?: ReactNode }) {
   return (
-    <div
-      className="card"
-      style={{ padding: "48px 24px", textAlign: "center", color: "var(--text-2)" }}
-    >
-      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>{titulo}</div>
-      <div style={{ fontSize: 13 }}>{sub}</div>
+    <div className="empty-state">
+      <div className="empty-icon">{icon ?? <IconReportes size={22} strokeWidth={1.6} />}</div>
+      <div className="empty-title">{titulo}</div>
+      <div className="empty-sub">{sub}</div>
     </div>
   );
 }

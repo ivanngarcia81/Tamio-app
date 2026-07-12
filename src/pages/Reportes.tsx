@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney,
-  mesLegible, monthTotals, type Church, type MonthTotals,
+  mesLegible, monthlySummary, monthTotals, pctChange,
+  type Church, type MonthSummary, type MonthTotals,
 } from "../db";
 import { exportReportExcel, exportReportPdf } from "../export";
+
+const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
 const COLOR_INGRESO: Record<string, string> = {
   ofrenda: "#22c55e",
@@ -19,6 +22,7 @@ interface Props {
 
 export default function Reportes({ church, refreshKey }: Props) {
   const [totales, setTotales] = useState<MonthTotals | null>(null);
+  const [historial, setHistorial] = useState<MonthSummary[]>([]);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const mes = currentMonth();
@@ -26,6 +30,7 @@ export default function Reportes({ church, refreshKey }: Props) {
 
   useEffect(() => {
     monthTotals(church.id, mes).then(setTotales).catch(console.error);
+    monthlySummary(church.id, 6).then(setHistorial).catch(console.error);
   }, [church.id, refreshKey, mes]);
 
   const ingresos = totales?.ingresos ?? 0;
@@ -152,6 +157,52 @@ export default function Reportes({ church, refreshKey }: Props) {
             </div>
           </div>
         </div>
+
+        {historial.length > 0 && (
+          <>
+            <div className="tx-head">
+              <div className="tx-title">Resumen mensual</div>
+            </div>
+            <div className="data-table roomy">
+              <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
+                <div className="th">Mes</div>
+                <div className="th" style={{ textAlign: "right" }}>Ingresos</div>
+                <div className="th" style={{ textAlign: "right" }}>Gastos</div>
+                <div className="th" style={{ textAlign: "right" }}>Balance</div>
+                <div className="th" style={{ textAlign: "right" }}>Variación</div>
+              </div>
+              {historial.map((h, i) => {
+                const bal = h.ingresos - h.gastos;
+                const anterior = historial[i - 1];
+                const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
+                const variacion = balAnt === null ? null : pctChange(bal, balAnt);
+                return (
+                  <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
+                    <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
+                    <div className="td" style={{ textAlign: "right", color: "#059669", fontVariantNumeric: "tabular-nums" }}>
+                      {fmtMoney(h.ingresos)}
+                    </div>
+                    <div className="td" style={{ textAlign: "right", color: "#dc2626", fontVariantNumeric: "tabular-nums" }}>
+                      {fmtMoney(h.gastos)}
+                    </div>
+                    <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                      {fmtMoney(bal)}
+                    </div>
+                    <div className="td" style={{ textAlign: "right" }}>
+                      {variacion === null ? (
+                        <span style={{ color: "var(--text-3)" }}>—</span>
+                      ) : (
+                        <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
+                          {variacion >= 0 ? "+" : ""}{variacion}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </>
   );
