@@ -414,6 +414,27 @@ export async function exportReportExcel(data: ReportData): Promise<boolean> {
   return true;
 }
 
+// ---------- Motor de reportes PDF (paginación profesional) ----------
+//
+// Reglas de diseño fijas — no se recalculan ni se comprimen según la
+// cantidad de datos. Un reporte de 3 filas y uno de 300 usan exactamente
+// la misma tipografía y el mismo espaciado; lo único que cambia es
+// cuántas páginas ocupa.
+const PDF_MARGIN = 32;
+const PDF_SPACE = { xs: 8, sm: 16, md: 24, lg: 32 } as const;
+const PDF_TYPE = {
+  title: 24,      // Estado financiero mensual
+  church: 18,     // Nombre de la iglesia
+  period: 14,     // Periodo
+  section: 16,    // Encabezados de sección (Ingresos del periodo, Gastos del periodo)
+  body: 13,       // Texto normal / encabezados de columna
+  tableRow: 13,   // Filas de tabla
+  total: 14,      // Totales
+  cardLabel: 13,  // Etiquetas de tarjetas
+  cardValue: 29,  // Valores principales de tarjetas
+  footer: 11,     // Pie de página
+} as const;
+
 /** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
 export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const { church, mesLegibleStr, filasIngreso, filasGasto, ingresos, gastos, balance } = data;
@@ -421,12 +442,17 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const marginX = 54;
-  const marginBottom = 56;
-  const rightX = pageWidth - marginX;
-  const amountColX = rightX - 92; // ancla derecha de la columna de monto
-  const pctColX = rightX;         // ancla derecha de la columna de %
-  let y = 60;
+
+  const marginX = PDF_MARGIN;
+  const rightX = pageWidth - PDF_MARGIN;
+  const contentWidth = rightX - marginX;
+  const footerReserve = PDF_TYPE.footer + PDF_SPACE.md;
+
+  // Anchos de columna fijos: se conservan idénticos en toda tabla, toda
+  // sección y toda página — nunca se recalculan por cantidad de filas.
+  const pctColX = rightX;
+  const amountColX = rightX - 96;
+  const labelColX = marginX;
 
   const INK: RGB = [26, 26, 26];
   const MUTED: RGB = [107, 107, 110];
@@ -437,77 +463,143 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const CARD_BG: RGB = [252, 252, 251];
   const CARD_BORDER: RGB = [224, 224, 221];
 
-  function ensureSpace(needed: number) {
-    if (y + needed > pageHeight - marginBottom) {
-      doc.addPage();
-      y = 60;
+  let y = PDF_MARGIN;
+  let pageNum = 1;
+  // Título de la sección/tabla en curso — si un salto de página ocurre
+  // mientras hay una tabla abierta, se repite en la página siguiente.
+  let currentSection: string | null = null;
+
+  function drawFooter() {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(PDF_TYPE.footer);
+    setText(doc, FAINT);
+    doc.text("Generado por Tesorería", marginX, pageHeight - PDF_MARGIN + 6);
+    doc.text(`Página ${pageNum}`, rightX, pageHeight - PDF_MARGIN + 6, { align: "right" });
+  }
+
+  function drawRunningHeader() {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.title);
+    setText(doc, INK);
+    doc.text("Estado financiero mensual", marginX, y, { maxWidth: contentWidth });
+    y += 30;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.church);
+    setText(doc, INK);
+    doc.text(`${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`, marginX, y, { maxWidth: contentWidth });
+    y += 22;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(PDF_TYPE.period);
+    setText(doc, MUTED);
+    doc.text(`Periodo: ${mesLegibleStr}`, marginX, y);
+    y += 16;
+
+    setDraw(doc, LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, rightX, y);
+    y += PDF_SPACE.md;
+  }
+
+  /** Dibuja el encabezado de columnas de la tabla — sin comprobar espacio:
+   *  solo se llama justo después de asegurar espacio para el bloque completo. */
+  function drawTableHeaderRaw() {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.body);
+    setText(doc, MUTED);
+    doc.text("CATEGORÍA", labelColX, y);
+    doc.text("MONTO", amountColX, y, { align: "right" });
+    doc.text("% DEL TOTAL", pctColX, y, { align: "right" });
+    y += PDF_SPACE.xs + 4;
+    setDraw(doc, LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, rightX, y);
+    y += PDF_SPACE.sm;
+  }
+
+  function newPage() {
+    drawFooter();
+    doc.addPage();
+    pageNum++;
+    y = PDF_MARGIN;
+    drawRunningHeader();
+    if (currentSection) {
+      // La página ya tiene espacio de sobra recién creada: se dibuja
+      // directamente, sin volver a pasar por ensureSpace.
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(PDF_TYPE.section);
+      setText(doc, INK);
+      doc.text(`${currentSection} (continuación)`, marginX, y);
+      y += 20;
+      drawTableHeaderRaw();
     }
   }
 
-  // ---------- Encabezado ----------
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  setText(doc, INK);
-  doc.text("Estado financiero mensual", marginX, y);
-  y += 21;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
-  setText(doc, MUTED);
-  doc.text(`${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`, marginX, y);
-  y += 15;
-  setText(doc, FAINT);
-  doc.text(`Periodo: ${mesLegibleStr}`, marginX, y);
-  y += 8;
-
-  setDraw(doc, LINE);
-  doc.setLineWidth(0.75);
-  doc.line(marginX, y, rightX, y);
-  y += 34; // respiro generoso antes de la primera sección
-
-  // ---------- Helpers de sección ----------
-  function sectionTitle(title: string) {
-    ensureSpace(34);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    setText(doc, MUTED);
-    doc.text(title.toUpperCase(), marginX, y, { charSpace: 0.6 });
-    y += 16;
+  function ensureSpace(height: number) {
+    if (y + height > pageHeight - PDF_MARGIN - footerReserve) {
+      newPage();
+    }
   }
 
-  function dataRow(label: string, amountStr: string, pctStr: string, bold = false) {
-    ensureSpace(22);
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.setFontSize(bold ? 10.5 : 10);
-    setText(doc, bold ? INK : [64, 64, 66]);
-    doc.text(label, marginX, y);
-    doc.text(amountStr, amountColX, y, { align: "right" });
+  /** Inicia una sección + tabla como bloque atómico: título y encabezado
+   *  de columnas siempre aparecen juntos, nunca separados por un salto. */
+  function beginSection(title: string) {
+    ensureSpace(20 + PDF_TYPE.body + PDF_SPACE.xs + 4 + PDF_SPACE.sm);
+    currentSection = title;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.section);
+    setText(doc, INK);
+    doc.text(title, marginX, y);
+    y += 20;
+    drawTableHeaderRaw();
+  }
+
+  function endSection() {
+    currentSection = null;
+  }
+
+  function dataRow(label: string, amountStr: string, pctStr: string) {
+    ensureSpace(PDF_SPACE.md);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(PDF_TYPE.tableRow);
+    setText(doc, INK);
+    doc.text(label, labelColX, y, { maxWidth: amountColX - labelColX - PDF_SPACE.sm });
+    doc.text(amountStr, amountColX, y, { align: "right" });
     setText(doc, FAINT);
     doc.text(pctStr, pctColX, y, { align: "right" });
-    y += 20; // ~15-20% más de aire que antes (18pt → 20pt)
+    y += PDF_SPACE.md;
   }
 
   function emptyRow(msg: string) {
-    ensureSpace(20);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
+    ensureSpace(PDF_SPACE.md);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(PDF_TYPE.body);
     setText(doc, FAINT);
-    doc.text(msg, marginX, y);
-    y += 20;
+    doc.text(msg, labelColX, y);
+    y += PDF_SPACE.md;
   }
 
-  function totalDivider() {
-    ensureSpace(16);
+  function totalRow(label: string, amountStr: string) {
+    ensureSpace(PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md);
     setDraw(doc, INK);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, rightX, y);
-    y += 15; // separación clara: la línea ya no atraviesa el texto
+    y += PDF_SPACE.xs + 4;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.total);
+    setText(doc, INK);
+    doc.text(label, labelColX, y);
+    doc.text(amountStr, amountColX, y, { align: "right" });
+    doc.text("100%", pctColX, y, { align: "right" });
+    y += PDF_SPACE.md;
   }
 
+  // ---------- Página 1 ----------
+  drawRunningHeader();
+
   // ---------- Ingresos ----------
-  sectionTitle("Ingresos del periodo");
+  beginSection("Ingresos del periodo");
   if (filasIngreso.length === 0) {
     emptyRow("Sin ingresos registrados este mes.");
   } else {
@@ -515,12 +607,12 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
       dataRow(c.nombre, fmtMoneyPdf(c.total, church.moneda), pct(c.total, ingresos));
     }
   }
-  totalDivider();
-  dataRow("Total ingresos", fmtMoneyPdf(ingresos, church.moneda), "100%", true);
-  y += 30; // separación entre secciones (~20% más que antes)
+  totalRow("Total ingresos", fmtMoneyPdf(ingresos, church.moneda));
+  endSection();
+  y += PDF_SPACE.md;
 
   // ---------- Gastos ----------
-  sectionTitle("Gastos del periodo");
+  beginSection("Gastos del periodo");
   if (filasGasto.length === 0) {
     emptyRow("Sin gastos registrados este mes.");
   } else {
@@ -528,62 +620,59 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
       dataRow(c.nombre, fmtMoneyPdf(c.total, church.moneda), pct(c.total, gastos));
     }
   }
-  totalDivider();
-  dataRow("Total gastos", fmtMoneyPdf(gastos, church.moneda), "100%", true);
-  y += 24; // separación antes del resumen (reducida ~10pt respecto a la versión anterior)
+  totalRow("Total gastos", fmtMoneyPdf(gastos, church.moneda));
+  endSection();
+  y += PDF_SPACE.lg;
 
   // ---------- Tarjetas de resumen ----------
-  const cardH = 52;
-  ensureSpace(cardH + 6);
+  // Bloque atómico: si no caben completas, ensureSpace mueve las TRES
+  // tarjetas juntas a la siguiente página — nunca se dividen entre sí.
+  const cardH = 92;
+  const cardGap = PDF_SPACE.sm;
+  ensureSpace(cardH);
 
-  const gap = 14;
-  const cardW = (rightX - marginX - 2 * gap) / 3;
-  const radius = 16;
-
-  const cards: { label: string; value: number; color: readonly [number, number, number] }[] = [
-    { label: "Total ingresos", value: ingresos, color: GREEN },
-    { label: "Total gastos", value: gastos, color: RED },
-    { label: "Balance neto", value: balance, color: balance < 0 ? RED : INK },
+  const cardW = (contentWidth - 2 * cardGap) / 3;
+  const cardRadius = 12;
+  const cards: { label: string; value: number; color: RGB }[] = [
+    { label: "TOTAL INGRESOS", value: ingresos, color: GREEN },
+    { label: "TOTAL GASTOS", value: gastos, color: RED },
+    { label: "BALANCE NETO", value: balance, color: balance < 0 ? RED : INK },
   ];
 
   cards.forEach((card, i) => {
-    const x = marginX + i * (cardW + gap);
+    const x = marginX + i * (cardW + cardGap);
 
     // sombra estilo Apple: varias capas de negro a muy baja opacidad en vez
     // de un relleno gris plano — simula un desenfoque suave sin bordes duros.
     doc.setGState(doc.GState({ opacity: 0.035 }));
     setFill(doc, [0, 0, 0]);
-    doc.roundedRect(x + 2.25, y + 3.5, cardW, cardH, radius, radius, "F");
+    doc.roundedRect(x + 2.25, y + 3.5, cardW, cardH, cardRadius, cardRadius, "F");
     doc.setGState(doc.GState({ opacity: 0.05 }));
-    doc.roundedRect(x + 1.25, y + 2, cardW, cardH, radius, radius, "F");
+    doc.roundedRect(x + 1.25, y + 2, cardW, cardH, cardRadius, cardRadius, "F");
     doc.setGState(doc.GState({ opacity: 1 }));
 
-    // tarjeta
     setFill(doc, CARD_BG);
     setDraw(doc, CARD_BORDER);
     doc.setLineWidth(0.75);
-    doc.roundedRect(x, y, cardW, cardH, radius, radius, "FD");
+    doc.roundedRect(x, y, cardW, cardH, cardRadius, cardRadius, "FD");
 
     const cx = x + cardW / 2;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
+    doc.setFontSize(PDF_TYPE.cardLabel);
     setText(doc, MUTED);
-    doc.text(card.label.toUpperCase(), cx, y + 17, { align: "center", charSpace: 0.5 });
+    doc.text(card.label, cx, y + PDF_SPACE.md, { align: "center", charSpace: 0.3 });
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(PDF_TYPE.cardValue);
     setText(doc, card.color);
-    doc.text(fmtMoneyPdf(card.value, church.moneda), cx, y + 35, { align: "center" });
+    doc.text(fmtMoneyPdf(card.value, church.moneda), cx, y + cardH - PDF_SPACE.md + 4, { align: "center" });
   });
 
-  y += cardH + 30;
+  y += cardH;
 
-  // ---------- Pie ----------
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  setText(doc, FAINT);
-  doc.text("Generado por Tesorería", marginX, pageHeight - 32);
+  // ---------- Pie de la última página ----------
+  drawFooter();
 
   const bytes = doc.output("arraybuffer") as ArrayBuffer;
 
