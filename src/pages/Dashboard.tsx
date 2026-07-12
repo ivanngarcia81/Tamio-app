@@ -9,6 +9,7 @@ import {
 import TxList, { EmptyState } from "../components/TxList";
 import Sparkline from "../components/Sparkline";
 import Delta from "../components/Delta";
+import DashboardCharts from "../components/DashboardCharts";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus } from "../icons";
 
 interface Props {
@@ -24,24 +25,29 @@ function accentStyle(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
 }
 
-function buildDualLine(dias: DailyPoint[]) {
-  if (dias.length < 2) return null;
-  const width = 600;
-  const height = 170;
-  const max = Math.max(...dias.flatMap((d) => [d.ingresos, d.gastos]), 1);
-  const stepX = width / (dias.length - 1);
-  const toY = (v: number) => height - (v / max) * height;
-  const pathFor = (key: "ingresos" | "gastos") =>
-    dias.map((d, i) => `${i === 0 ? "M" : "L"}${(i * stepX).toFixed(1)},${toY(d[key]).toFixed(1)}`).join(" ");
-  return {
-    ingresoPath: pathFor("ingresos"),
-    gastoPath: pathFor("gastos"),
-    width,
-    height,
-    labelInicio: fmtFechaCorta(dias[0].fecha),
-    labelMedio: fmtFechaCorta(dias[Math.floor(dias.length / 2)].fecha),
-    labelFin: fmtFechaCorta(dias[dias.length - 1].fecha),
-  };
+function fechaCortaSinAnio(fecha: string): string {
+  return fmtFechaCorta(fecha).split(" ").slice(0, 2).join(" ");
+}
+
+function toWeeklyBuckets(dias: DailyPoint[]) {
+  const buckets: { label: string; ingresos: number; gastos: number }[] = [];
+  for (let i = 0; i < dias.length; i += 7) {
+    const slice = dias.slice(i, i + 7);
+    buckets.push({
+      label: fechaCortaSinAnio(slice[0].fecha),
+      ingresos: slice.reduce((s, d) => s + d.ingresos, 0),
+      gastos: slice.reduce((s, d) => s + d.gastos, 0),
+    });
+  }
+  return buckets;
+}
+
+function toCumulativeBalance(dias: DailyPoint[]) {
+  let acc = 0;
+  return dias.map((d) => {
+    acc += d.ingresos - d.gastos;
+    return { label: fechaCortaSinAnio(d.fecha), balance: acc };
+  });
 }
 
 export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew }: Props) {
@@ -99,7 +105,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     return entries.map((e) => ({ ...e, barPct: max > 0 ? Math.round((e.monto / max) * 100) : 0 }));
   }, [totales]);
 
-  const lineChart = useMemo(() => buildDualLine(dias), [dias]);
+  const weekly = useMemo(() => toWeeklyBuckets(dias), [dias]);
+  const balanceSeries = useMemo(() => toCumulativeBalance(dias), [dias]);
 
   return (
     <>
@@ -119,6 +126,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
       </div>
 
       <div className="content">
+        <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
+
         <div className="summary-4 enter">
           <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
             <div className="stat-head">
@@ -243,52 +252,24 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           </div>
         </div>
 
-        <div className="charts enter">
-          <div className="card">
-            <div className="card-head">
-              <span className="card-title">Ingresos vs. gastos</span>
-              <span className="card-meta">Últimos 30 días</span>
-            </div>
-            <div className="line-wrap">
-              {lineChart && (
-                <svg className="line-chart" viewBox={`0 0 ${lineChart.width} ${lineChart.height}`} preserveAspectRatio="none">
-                  <path d={lineChart.gastoPath} fill="none" stroke="var(--accent-2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d={lineChart.ingresoPath} fill="none" stroke="var(--accent-1)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
-            {lineChart && (
-              <div className="line-axis">
-                <span>{lineChart.labelInicio}</span>
-                <span>{lineChart.labelMedio}</span>
-                <span>{lineChart.labelFin}</span>
-              </div>
-            )}
-            <div className="legend">
-              <span><span className="dot" style={{ background: "var(--accent-1)" }} /> Ingresos</span>
-              <span><span className="dot" style={{ background: "var(--accent-2)" }} /> Gastos</span>
-            </div>
+        <div className="card enter">
+          <div className="card-head">
+            <span className="card-title">Distribución de gastos por categoría</span>
+            <span className="card-meta">{mesLegible(mes)}</span>
           </div>
-
-          <div className="card">
-            <div className="card-head">
-              <span className="card-title">Distribución de gastos</span>
-              <span className="card-meta">{mesLegible(mes)}</span>
-            </div>
-            {topGastos.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>Sin gastos este mes.</div>
-            ) : (
-              topGastos.map((g) => (
-                <div className="hbar-row" key={g.id}>
-                  <span className="hbar-label">{g.nombre}</span>
-                  <div className="hbar-track">
-                    <div className="hbar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
-                  </div>
-                  <span className="hbar-val">{fmtMoney(g.monto)}</span>
+          {topGastos.length === 0 ? (
+            <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>Sin gastos este mes.</div>
+          ) : (
+            topGastos.map((g) => (
+              <div className="hbar-row" key={g.id}>
+                <span className="hbar-label">{g.nombre}</span>
+                <div className="hbar-track">
+                  <div className="hbar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
                 </div>
-              ))
-            )}
-          </div>
+                <span className="hbar-val">{fmtMoney(g.monto)}</span>
+              </div>
+            ))
+          )}
         </div>
 
         <div className="tx-head">
