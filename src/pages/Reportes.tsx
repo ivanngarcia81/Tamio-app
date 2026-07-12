@@ -58,6 +58,7 @@ export default function Reportes({ church, refreshKey }: Props) {
       const data = {
         church,
         mesLegibleStr: mesStr,
+        periodoISO: mes,
         filasIngreso: filasIngreso.map((c) => ({ nombre: c.nombre, total: c.total })),
         filasGasto: filasGasto.map((c) => ({ nombre: c.nombre, total: c.total })),
         ingresos,

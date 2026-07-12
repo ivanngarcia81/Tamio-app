@@ -23,11 +23,20 @@ export interface ReportRow {
 export interface ReportData {
   church: Church;
   mesLegibleStr: string;
+  /** Periodo en formato ISO "YYYY-MM" — se usa para el folio de auditoría del PDF. */
+  periodoISO: string;
   filasIngreso: ReportRow[];
   filasGasto: ReportRow[];
   ingresos: number;
   gastos: number;
   balance: number;
+  /**
+   * Preparado para cuando exista autenticación de usuarios: si se provee,
+   * el PDF muestra "Generado por". Hoy no hay sistema de cuentas (ver
+   * PROJECT_STATUS.md), así que ningún llamador lo pasa todavía y la
+   * línea simplemente no se dibuja — sin inventar un usuario.
+   */
+  generatedBy?: { nombre: string; rol?: string };
 }
 
 function slug(s: string): string {
@@ -57,6 +66,54 @@ function fmtMoneyPdf(n: number, moneda: string): string {
   const abs = Math.abs(n);
   const formatted = `$${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${moneda}`;
   return n < 0 ? `(${formatted})` : formatted;
+}
+
+// ---------- Metadata de auditoría del PDF (fecha, folio, paginación) ----------
+
+function fmtFechaLarga(d: Date): string {
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function fmtHora12(d: Date): string {
+  let h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+const REPORT_SEQ_STORAGE_KEY = "tesoreria-report-seq";
+
+/**
+ * Folio consecutivo por periodo, persistido en localStorage. Todavía no hay
+ * backend ni tabla de contadores — esto alcanza para dar a cada PDF
+ * exportado un identificador único y creciente, útil para auditorías y
+ * consultas futuras, sin requerir un cambio de esquema en la base de datos.
+ */
+function nextReportSequence(periodKey: string): number {
+  let map: Record<string, number> = {};
+  try {
+    const raw = localStorage.getItem(REPORT_SEQ_STORAGE_KEY);
+    if (raw) map = JSON.parse(raw);
+  } catch {
+    /* noop */
+  }
+  const next = (map[periodKey] ?? 0) + 1;
+  map[periodKey] = next;
+  try {
+    localStorage.setItem(REPORT_SEQ_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    /* noop */
+  }
+  return next;
+}
+
+/** Folio con formato EF-YYYYMM-###### a partir del periodo reportado. */
+function buildReportId(periodoISO: string): string {
+  const periodKey = periodoISO.replace("-", "");
+  const seq = nextReportSequence(periodKey);
+  return `EF-${periodKey}-${String(seq).padStart(6, "0")}`;
 }
 
 // Paleta minimalista y corporativa — coincide con los acentos verde/rojo
@@ -426,6 +483,7 @@ const PDF_TYPE = {
   title: 24,      // Estado financiero mensual
   church: 18,     // Nombre de la iglesia
   period: 14,     // Periodo
+  meta: 11,       // Moneda / Generado por (metadata del encabezado)
   section: 16,    // Encabezados de sección (Ingresos del periodo, Gastos del periodo)
   body: 13,       // Texto normal / encabezados de columna
   tableRow: 13,   // Filas de tabla
@@ -435,9 +493,19 @@ const PDF_TYPE = {
   footer: 11,     // Pie de página
 } as const;
 
+// Alto reservado para el bloque de pie de página (2 separadores + 2 líneas
+// de texto) — se resta del área utilizable de cada página para que el
+// contenido nunca choque con el pie.
+const PDF_FOOTER_BLOCK_H = PDF_SPACE.sm + 2 * 14 + PDF_SPACE.xs;
+
 /** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
 export async function exportReportPdf(data: ReportData): Promise<boolean> {
-  const { church, mesLegibleStr, filasIngreso, filasGasto, ingresos, gastos, balance } = data;
+  const { church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance, generatedBy } = data;
+
+  const now = new Date();
+  const reportId = buildReportId(periodoISO);
+  const fechaGeneracion = fmtFechaLarga(now);
+  const horaGeneracion = fmtHora12(now);
 
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -446,7 +514,7 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const marginX = PDF_MARGIN;
   const rightX = pageWidth - PDF_MARGIN;
   const contentWidth = rightX - marginX;
-  const footerReserve = PDF_TYPE.footer + PDF_SPACE.md;
+  const footerReserve = PDF_FOOTER_BLOCK_H;
 
   // Anchos de columna fijos: se conservan idénticos en toda tabla, toda
   // sección y toda página — nunca se recalculan por cantidad de filas.
@@ -464,19 +532,49 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const CARD_BORDER: RGB = [224, 224, 221];
 
   let y = PDF_MARGIN;
-  let pageNum = 1;
   // Título de la sección/tabla en curso — si un salto de página ocurre
   // mientras hay una tabla abierta, se repite en la página siguiente.
   let currentSection: string | null = null;
 
-  function drawFooter() {
+  /**
+   * Pie de página profesional (componente reutilizable): folio de
+   * auditoría, fecha/hora real de generación y numeración "Página X de Y".
+   * Se dibuja en una pasada final (ver el cierre de la función) porque el
+   * total de páginas solo se conoce una vez que todo el contenido ya
+   * existe — así el número "de Y" siempre es correcto.
+   *
+   * Punto de extensión futuro para auditorías: firma del tesorero, firma
+   * del pastor y sello de la iglesia. Deliberadamente NO se dibujan
+   * todavía (opcionales, ocultos por defecto); cuando se activen, van en
+   * un bloque de 3 columnas justo ENCIMA de este pie, usando el mismo
+   * ancho de contenido (marginX/rightX) como referencia.
+   */
+  function drawFooterBlock(pageIndex: number, totalPages: number) {
+    let fy = pageHeight - PDF_MARGIN - footerReserve + PDF_SPACE.sm;
+
+    setDraw(doc, LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, fy, rightX, fy);
+    fy += 14;
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.footer);
     setText(doc, FAINT);
-    doc.text("Generado por Tesorería", marginX, pageHeight - PDF_MARGIN + 6);
-    doc.text(`Página ${pageNum}`, rightX, pageHeight - PDF_MARGIN + 6, { align: "right" });
+    doc.text("Generado automáticamente por Tesorería", marginX, fy);
+    doc.text(`Página ${pageIndex} de ${totalPages}`, rightX, fy, { align: "right" });
+    fy += 14;
+
+    doc.text(`${fechaGeneracion} • ${horaGeneracion}`, marginX, fy);
+    doc.text(`Reporte ${reportId}`, rightX, fy, { align: "right" });
+    fy += PDF_SPACE.xs;
+
+    setDraw(doc, LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, fy, rightX, fy);
   }
 
+  /** Encabezado repetido (componente reutilizable): título, iglesia,
+   *  periodo, moneda y — cuando exista autenticación — quién lo generó. */
   function drawRunningHeader() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.title);
@@ -496,6 +594,18 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
     doc.text(`Periodo: ${mesLegibleStr}`, marginX, y);
     y += 16;
 
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(PDF_TYPE.meta);
+    setText(doc, FAINT);
+    doc.text(`Moneda: ${church.moneda}`, marginX, y);
+    y += 14;
+
+    if (generatedBy) {
+      doc.text(`Generado por: ${generatedBy.nombre}${generatedBy.rol ? " · " + generatedBy.rol : ""}`, marginX, y);
+      y += 14;
+    }
+
+    y += PDF_SPACE.xs;
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, rightX, y);
@@ -519,9 +629,7 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   }
 
   function newPage() {
-    drawFooter();
     doc.addPage();
-    pageNum++;
     y = PDF_MARGIN;
     drawRunningHeader();
     if (currentSection) {
@@ -671,8 +779,15 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
 
   y += cardH;
 
-  // ---------- Pie de la última página ----------
-  drawFooter();
+  // ---------- Pie de página en todas las páginas ----------
+  // El total de páginas solo se conoce ahora que ya se dibujó todo el
+  // contenido, así que "Página X de Y" se estampa en una pasada final
+  // sobre cada página ya generada.
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    drawFooterBlock(p, totalPages);
+  }
 
   const bytes = doc.output("arraybuffer") as ArrayBuffer;
 
