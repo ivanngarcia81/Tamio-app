@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, METODOS_PAGO, type Tx } from "../db";
+import { IconArrowDown, IconArrowUp, IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -86,9 +87,17 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 </span>
               </div>
               <div className="td" style={{ textAlign: "right" }}>
-                <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
-                  {tx.tipo === "ingreso" ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
-                  <span className="cur">{tx.moneda}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+                  <span
+                    className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}
+                    style={{ width: 20, height: 20 }}
+                  >
+                    {tx.tipo === "ingreso" ? <IconArrowUp size={10} strokeWidth={2.6} /> : <IconArrowDown size={10} strokeWidth={2.6} />}
+                  </span>
+                  <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
+                    {tx.tipo === "ingreso" ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
+                    <span className="cur">{tx.moneda}</span>
+                  </span>
                 </span>
               </div>
               <div className="td">
@@ -97,6 +106,11 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 </span>
               </div>
               <div className="td" style={{ textAlign: "center" }}>
+                <span className="row-actions">
+                  <span className="row-icon-btn" title="Editar" onClick={() => onEdit(tx)}>
+                    <IconEdit size={13} strokeWidth={2} />
+                  </span>
+                </span>
                 <RowMenu onEdit={() => onEdit(tx)} onDelete={() => setPendingDelete(tx)} />
               </div>
             </div>

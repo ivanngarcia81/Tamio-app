@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney,
-  mesLegible, monthlySummary, monthTotals, pctChange,
+  mesLegible, monthlySummary, monthTotals, pctChange, prevMonth,
   type Church, type MonthSummary, type MonthTotals,
 } from "../db";
 import { exportReportExcel, exportReportPdf } from "../export";
+import Delta from "../components/Delta";
+import Donut from "../components/Donut";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -22,20 +24,24 @@ interface Props {
 
 export default function Reportes({ church, refreshKey }: Props) {
   const [totales, setTotales] = useState<MonthTotals | null>(null);
+  const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const mes = currentMonth();
   const mesStr = mesLegible(mes);
+  const mesAnterior = prevMonth(mes);
 
   useEffect(() => {
     monthTotals(church.id, mes).then(setTotales).catch(console.error);
+    monthTotals(church.id, mesAnterior).then(setTotalesAnt).catch(console.error);
     monthlySummary(church.id, 6).then(setHistorial).catch(console.error);
-  }, [church.id, refreshKey, mes]);
+  }, [church.id, refreshKey, mes, mesAnterior]);
 
   const ingresos = totales?.ingresos ?? 0;
   const gastos = totales?.gastos ?? 0;
   const balance = ingresos - gastos;
+  const balanceAnt = (totalesAnt?.ingresos ?? 0) - (totalesAnt?.gastos ?? 0);
 
   const filasIngreso = CATEGORIAS_INGRESO
     .map((c) => ({ ...c, total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
@@ -91,6 +97,89 @@ export default function Reportes({ church, refreshKey }: Props) {
       )}
 
       <div className="content">
+        <div className="summary-4 enter">
+          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+            <div className="stat-head"><span className="stat-label">Ingresos del mes</span></div>
+            <div className="stat-value md">{fmtMoney(ingresos)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> vs. mes anterior</div>
+          </div>
+          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
+            <div className="stat-head"><span className="stat-label">Gastos del mes</span></div>
+            <div className="stat-value md">{fmtMoney(gastos)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> vs. mes anterior</div>
+          </div>
+          <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
+            <div className="stat-head"><span className="stat-label">Balance neto</span></div>
+            <div className="stat-value md">{fmtMoney(balance)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> vs. mes anterior</div>
+          </div>
+          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+            <div className="stat-head"><span className="stat-label">Mes anterior</span></div>
+            <div className="stat-value md">{fmtMoney(balanceAnt)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-foot">{mesLegible(mesAnterior)}</div>
+          </div>
+        </div>
+
+        <div className="charts enter">
+          <div className="card">
+            <div className="card-head">
+              <span className="card-title">Distribución de gastos</span>
+              <span className="card-meta">{mesStr}</span>
+            </div>
+            {filasGasto.length === 0 ? (
+              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>Sin gastos este mes.</div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                <div className="donut-wrap" style={{ flexShrink: 0 }}>
+                  <Donut segments={filasGasto.map((c) => ({ color: c.color, pct: gastos > 0 ? (c.total / gastos) * 100 : 0 }))} />
+                  <div className="donut-center">
+                    <div className="val">{fmtMoney(gastos)}</div>
+                    <div className="lbl">{church.moneda}</div>
+                  </div>
+                </div>
+                <div className="donut-legend" style={{ flex: 1 }}>
+                  {filasGasto.slice(0, 5).map((c) => (
+                    <div className="donut-legend-row" key={c.id}>
+                      <span className="sw" style={{ background: c.color }} />
+                      <span className="name">{c.nombre}</span>
+                      <span className="pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(0)}%` : "0%"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="card-head">
+              <span className="card-title">Distribución de ingresos</span>
+              <span className="card-meta">{mesStr}</span>
+            </div>
+            {filasIngreso.length === 0 ? (
+              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>Sin ingresos este mes.</div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                <div className="donut-wrap" style={{ flexShrink: 0 }}>
+                  <Donut segments={filasIngreso.map((c) => ({ color: COLOR_INGRESO[c.id] ?? "#64748b", pct: ingresos > 0 ? (c.total / ingresos) * 100 : 0 }))} />
+                  <div className="donut-center">
+                    <div className="val">{fmtMoney(ingresos)}</div>
+                    <div className="lbl">{church.moneda}</div>
+                  </div>
+                </div>
+                <div className="donut-legend" style={{ flex: 1 }}>
+                  {filasIngreso.map((c) => (
+                    <div className="donut-legend-row" key={c.id}>
+                      <span className="sw" style={{ background: COLOR_INGRESO[c.id] ?? "#64748b" }} />
+                      <span className="name">{c.nombre}</span>
+                      <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="report-preview">
           <div className="r-head">
             <div>

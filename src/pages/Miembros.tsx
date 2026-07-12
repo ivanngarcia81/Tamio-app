@@ -6,7 +6,7 @@ import {
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { IconPlus } from "../icons";
+import { IconEdit, IconPlus, IconSearch } from "../icons";
 
 const TAG_CLASS: Record<string, string> = {
   diezmador: "diezmo",
@@ -107,7 +107,8 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
 
       <div className="content">
         <div className="tx-head">
-          <div style={{ position: "relative", flex: 1, maxWidth: 420 }}>
+          <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
+            <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
               placeholder="Buscar por nombre, email o RFC…"
@@ -181,6 +182,11 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                     <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? "Sin RFC"}</div>
                   </div>
                   <div className="td" style={{ textAlign: "center" }}>
+                    <span className="row-actions">
+                      <span className="row-icon-btn" title="Editar" onClick={() => onEdit(m)}>
+                        <IconEdit size={13} strokeWidth={2} />
+                      </span>
+                    </span>
                     <RowMenu
                       onEdit={() => onEdit(m)}
                       onDelete={() => requestDelete(m)}

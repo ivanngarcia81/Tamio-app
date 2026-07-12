@@ -114,6 +114,20 @@ export const IconCheck = ({ size = 14, strokeWidth = 2.5 }: IconProps) => (
   <svg {...base(size, strokeWidth)}><polyline points="20 6 9 17 4 12" /></svg>
 );
 
+export const IconEdit = ({ size = 14, strokeWidth = 2 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </svg>
+);
+
+export const IconClock = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <circle cx="12" cy="12" r="9" />
+    <polyline points="12 7 12 12 15.5 14" />
+  </svg>
+);
+
 export const IconWarn = ({ size = 14, strokeWidth = 2 }: IconProps) => (
   <svg {...base(size, strokeWidth)}>
     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />

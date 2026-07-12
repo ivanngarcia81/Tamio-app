@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import {
   CATEGORIAS_GASTO, categoriaInfo, currentMonth, currentYear, dailyTotals, fmtFechaCorta,
@@ -8,7 +8,8 @@ import {
 } from "../db";
 import TxList, { EmptyState } from "../components/TxList";
 import Sparkline from "../components/Sparkline";
-import { IconArrowDown, IconArrowUp, IconMiembros, IconPlus } from "../icons";
+import Delta from "../components/Delta";
+import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus } from "../icons";
 
 interface Props {
   church: Church;
@@ -19,16 +20,8 @@ interface Props {
   onNew: () => void;
 }
 
-function Delta({ pct, invert = false }: { pct: number | null; invert?: boolean }) {
-  if (pct === null) return null;
-  const rising = pct >= 0;
-  const good = invert ? !rising : rising;
-  return (
-    <span className={`delta ${good ? "good" : "bad"}`}>
-      {rising ? <IconArrowUp size={10} strokeWidth={3} /> : <IconArrowDown size={10} strokeWidth={3} />}
-      {Math.abs(pct)}%
-    </span>
-  );
+function accentStyle(color: string): CSSProperties {
+  return { "--accent-color": color } as CSSProperties;
 }
 
 function buildDualLine(dias: DailyPoint[]) {
@@ -127,7 +120,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
 
       <div className="content">
         <div className="summary-4 enter">
-          <div className="stat-card">
+          <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
             <div className="stat-head">
               <span className="stat-label">Ingresos del mes</span>
               <div className="stat-icon up"><IconArrowUp size={16} strokeWidth={2.4} /></div>
@@ -143,7 +136,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
           </div>
 
-          <div className="stat-card">
+          <div className="stat-card accent" style={accentStyle("var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">Gastos del mes</span>
               <div className="stat-icon down"><IconArrowDown size={16} strokeWidth={2.4} /></div>
@@ -159,7 +152,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
           </div>
 
-          <div className="stat-card">
+          <div className="stat-card accent" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">Balance del mes</span>
               <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.4} /></div>
@@ -172,7 +165,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
           </div>
 
-          <div className="stat-card">
+          <div className="stat-card accent" style={accentStyle(balanceAnio >= 0 ? "var(--accent-3)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">Balance del año</span>
               <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.4} /></div>
@@ -241,6 +234,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card">
             <div className="stat-head">
               <span className="stat-label">Última actualización</span>
+              <div className="stat-icon neutral"><IconClock size={14} strokeWidth={1.8} /></div>
             </div>
             <div className="stat-value md">{fmtRelativo(ultimaActividad)}</div>
             <div className="stat-pct">
