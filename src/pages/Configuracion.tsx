@@ -34,6 +34,7 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
     telefono: church.tesorero_telefono ?? "",
   });
   const [firmaPath, setFirmaPath] = useState<string | null>(church.tesorero_firma_path ?? null);
+  const [logoPath, setLogoPath] = useState<string | null>(church.logo_path ?? null);
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const refrescarUsuarios = () => { listUsuarios(church.id).then(setUsuarios).catch(console.error); };
@@ -54,7 +55,8 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
     treasurerForm.cargo !== (church.tesorero_cargo ?? "Tesorero") ||
     treasurerForm.email !== (church.tesorero_email ?? "") ||
     treasurerForm.telefono !== (church.tesorero_telefono ?? "") ||
-    firmaPath !== (church.tesorero_firma_path ?? null);
+    firmaPath !== (church.tesorero_firma_path ?? null) ||
+    logoPath !== (church.logo_path ?? null);
 
   async function guardar() {
     setGeneralError(null);
@@ -81,6 +83,7 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
         ciudad: churchForm.ciudad.trim() || null,
         pais: churchForm.pais.trim() || null,
         moneda: churchForm.moneda,
+        logo_path: logoPath,
         tesorero_nombre: treasurerForm.nombre.trim() || null,
         tesorero_cargo: treasurerForm.cargo.trim() || null,
         tesorero_email: treasurerForm.email.trim() || null,
@@ -114,6 +117,8 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
                 value={churchForm}
                 onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
                 error={churchError}
+                logoPath={logoPath}
+                onLogoPathChange={setLogoPath}
               />
 
               <TreasurerSettings

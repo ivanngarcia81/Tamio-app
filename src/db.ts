@@ -17,8 +17,8 @@ export interface Church {
   ciudad: string | null;
   pais: string;
   moneda: string;
-  /** Columna presente desde la migración v1, sin UI de carga todavía —
-   *  si algún día se agrega, el PDF del Dashboard ya la usa si existe. */
+  /** Se sube desde Configuración → Información de la iglesia; se muestra
+   *  en el círculo del sidebar y el PDF del Dashboard ya la usa si existe. */
   logo_path: string | null;
   tesorero_nombre: string | null;
   tesorero_cargo: string | null;
@@ -117,6 +117,7 @@ export interface ChurchUpdate {
   ciudad?: string | null;
   pais?: string | null;
   moneda: string;
+  logo_path?: string | null;
   tesorero_nombre?: string | null;
   tesorero_cargo?: string | null;
   tesorero_email?: string | null;
@@ -128,12 +129,12 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
   const d = await getDb();
   await d.execute(
     `UPDATE churches SET
-       nombre = $1, ciudad = $2, pais = $3, moneda = $4,
-       tesorero_nombre = $5, tesorero_cargo = $6, tesorero_email = $7,
-       tesorero_telefono = $8, tesorero_firma_path = $9
-     WHERE id = $10`,
+       nombre = $1, ciudad = $2, pais = $3, moneda = $4, logo_path = $5,
+       tesorero_nombre = $6, tesorero_cargo = $7, tesorero_email = $8,
+       tesorero_telefono = $9, tesorero_firma_path = $10
+     WHERE id = $11`,
     [
-      c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda,
+      c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
       c.tesorero_telefono ?? null, c.tesorero_firma_path ?? null,
       id,
