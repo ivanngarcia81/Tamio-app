@@ -3,6 +3,7 @@ import { HashRouter, Route, Routes } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
+import Welcome from "./components/Welcome";
 import Dashboard from "./pages/Dashboard";
 import Movimientos from "./pages/Movimientos";
 import Miembros from "./pages/Miembros";
@@ -27,11 +28,22 @@ function systemPrefersDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+/** Primer arranque: la iglesia sigue con el nombre por defecto y nunca se
+ *  completó la bienvenida. Si el usuario ya renombró su iglesia (versiones
+ *  anteriores de la app), no se le vuelve a preguntar. */
+function esPrimerArranque(church: Church): boolean {
+  try {
+    if (localStorage.getItem("tesoreria-welcomed") === "1") return false;
+  } catch { /* noop */ }
+  return church.nombre === "Mi Iglesia";
+}
+
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
   const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [showWelcome, setShowWelcome] = useState(() => esPrimerArranque(church));
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
@@ -183,6 +195,19 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           mode={modalMode}
           onClose={() => setModalMode(null)}
           onSaved={onSaved}
+        />
+      )}
+
+      {showWelcome && (
+        <Welcome
+          church={church}
+          langPref={langPref}
+          onLangPrefChange={setLangPref}
+          onDone={(updated) => {
+            try { localStorage.setItem("tesoreria-welcomed", "1"); } catch { /* noop */ }
+            onChurchUpdated(updated);
+            setShowWelcome(false);
+          }}
         />
       )}
 

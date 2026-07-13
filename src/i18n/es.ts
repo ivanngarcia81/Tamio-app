@@ -399,6 +399,12 @@ export const es = {
     sinDatos: "No hay datos para exportar.",
   },
 
+  bienvenida: {
+    titulo: "Bienvenido a Tesorería",
+    sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
+    comenzar: "Comenzar",
+  },
+
   toast: {
     ingresoGuardado: "Ingreso guardado",
     gastoGuardado: "Gasto guardado",

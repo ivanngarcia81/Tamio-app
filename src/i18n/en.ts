@@ -405,6 +405,12 @@ export const en: Resources = {
     sinDatos: "There is no data to export.",
   },
 
+  bienvenida: {
+    titulo: "Welcome to Tesorería",
+    sub: "Set up your church in a minute — everything can be changed later in Settings.",
+    comenzar: "Get started",
+  },
+
   toast: {
     ingresoGuardado: "Income saved",
     gastoGuardado: "Expense saved",
