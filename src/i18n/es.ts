@@ -388,6 +388,17 @@ export const es = {
     archivo: "Reporte-anual",
   },
 
+  respaldo: {
+    titulo: "Respaldo",
+    sub: "Exporta tus datos o guarda una copia de seguridad",
+    exportarMovimientos: "Exportar movimientos (CSV)",
+    exportarMiembros: "Exportar miembros (CSV)",
+    copiaBd: "Guardar copia de la base de datos",
+    hint: "Los CSV exportados se pueden volver a importar en la app. La copia de la base de datos contiene todo (movimientos, miembros, depósitos y configuración) — guarda una fuera de esta computadora de vez en cuando.",
+    guardado: "Archivo guardado.",
+    sinDatos: "No hay datos para exportar.",
+  },
+
   pdf: {
     generadoAutomaticamente: "Generado automáticamente por Tesorería",
     pagina: "Página {{x}} de {{y}}",

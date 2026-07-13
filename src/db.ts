@@ -799,6 +799,19 @@ export async function restoreMember(id: number, churchId: number): Promise<void>
   );
 }
 
+/** TODOS los movimientos (incluidos pendientes y rechazados), para respaldo. */
+export async function listAllTxForExport(churchId: number): Promise<Tx[]> {
+  const d = await getDb();
+  return d.select<Tx[]>(
+    `SELECT t.*, m.nombre AS member_nombre
+       FROM transactions t
+       LEFT JOIN members m ON m.id = t.member_id
+      WHERE t.church_id = $1
+      ORDER BY t.fecha ASC, t.id ASC`,
+    [churchId]
+  );
+}
+
 export async function countMemberTx(memberId: number, churchId: number): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(

@@ -12,6 +12,7 @@ import UsersSettings from "../components/settings/UsersSettings";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 import LanguageSettings from "../components/settings/LanguageSettings";
+import BackupSettings from "../components/settings/BackupSettings";
 
 interface Props {
   church: Church;
@@ -142,6 +143,8 @@ export default function Configuracion({
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
+
+              <BackupSettings church={church} />
             </div>
 
             <PDFPreview
