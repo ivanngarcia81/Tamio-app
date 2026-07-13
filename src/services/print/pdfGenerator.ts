@@ -341,20 +341,23 @@ export class ReportDocBuilder {
     const sigImgMaxH = 40;
     const gap = PDF_SPACE.lg;
     const colW = Math.min(220, (this.contentWidth - (people.length - 1) * gap) / people.length);
+    const lineToNameGap = PDF_SPACE.sm; // 16pt: dentro del rango 12–20 pedido
+    const nameToRoleGap = 14;
 
-    const blockH = sigImgMaxH + PDF_SPACE.xs + 1 + 14 + 14 + PDF_SPACE.md;
+    const blockH = sigImgMaxH + PDF_SPACE.xs + 1 + lineToNameGap + nameToRoleGap + PDF_SPACE.md;
     this.ensureSpace(blockH);
     const startY = this.y;
 
     people.forEach((p, i) => {
       const x = this.marginX + i * (colW + gap);
+      const cx = x + colW / 2;
       let cy = startY;
 
       if (p.firmaDataUrl) {
         try {
           const props = this.doc.getImageProperties(p.firmaDataUrl);
           const w = Math.min(colW, (props.width / props.height) * sigImgMaxH);
-          this.doc.addImage(p.firmaDataUrl, "PNG", x, cy, w, sigImgMaxH);
+          this.doc.addImage(p.firmaDataUrl, "PNG", cx - w / 2, cy, w, sigImgMaxH);
         } catch {
           /* si la imagen no es válida, se omite y queda solo la línea */
         }
@@ -364,18 +367,18 @@ export class ReportDocBuilder {
       setDraw(this.doc, PDF_COLOR.line);
       this.doc.setLineWidth(0.75);
       this.doc.line(x, cy, x + colW, cy);
-      cy += 14;
+      cy += lineToNameGap;
 
       this.doc.setFont("helvetica", "bold");
       this.doc.setFontSize(PDF_TYPE.body);
       setText(this.doc, PDF_COLOR.ink);
-      this.doc.text(p.nombre?.trim() || " ", x, cy);
-      cy += 14;
+      this.doc.text(p.nombre?.trim() || " ", cx, cy, { align: "center" });
+      cy += nameToRoleGap;
 
       this.doc.setFont("helvetica", "normal");
       this.doc.setFontSize(PDF_TYPE.meta);
       setText(this.doc, PDF_COLOR.muted);
-      this.doc.text(p.rol, x, cy);
+      this.doc.text(p.rol, cx, cy, { align: "center" });
     });
 
     this.y = startY + blockH;

@@ -681,10 +681,14 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
 
   // ---------- Firma del tesorero (solo si está configurada) ----------
   // Bloque atómico, igual que las tarjetas: si no cabe completo se mueve
-  // entero a la siguiente página en vez de partirse.
+  // entero a la siguiente página en vez de partirse. Línea, nombre y
+  // cargo comparten el mismo centro horizontal, como una firma impresa
+  // tradicional, en vez de quedar pegados al margen izquierdo.
   if (generatedBy?.nombre) {
     const sigLineW = 200;
     const sigImgMaxH = 46;
+    const lineToNameGap = PDF_SPACE.sm; // 16pt: dentro del rango 12–20 pedido
+    const nameToRoleGap = 14;
     let sigImgH = 0;
     let sigImgW = 0;
     if (firmaDataUrl) {
@@ -697,28 +701,30 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
       }
     }
 
-    ensureSpace((sigImgH > 0 ? sigImgH + PDF_SPACE.xs : 0) + 1 + 14 + 14 + PDF_SPACE.md);
+    ensureSpace((sigImgH > 0 ? sigImgH + PDF_SPACE.xs : 0) + 1 + lineToNameGap + nameToRoleGap + PDF_SPACE.md);
+
+    const cx = marginX + contentWidth / 2;
 
     if (firmaDataUrl && sigImgH > 0) {
-      doc.addImage(firmaDataUrl, "PNG", marginX, y, sigImgW, sigImgH);
+      doc.addImage(firmaDataUrl, "PNG", cx - sigImgW / 2, y, sigImgW, sigImgH);
       y += sigImgH + PDF_SPACE.xs;
     }
 
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
-    doc.line(marginX, y, marginX + sigLineW, y);
-    y += 14;
+    doc.line(cx - sigLineW / 2, y, cx + sigLineW / 2, y);
+    y += lineToNameGap;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.body);
     setText(doc, INK);
-    doc.text(generatedBy.nombre, marginX, y);
-    y += 14;
+    doc.text(generatedBy.nombre, cx, y, { align: "center" });
+    y += nameToRoleGap;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.meta);
     setText(doc, MUTED);
-    doc.text(generatedBy.rol ?? "Tesorero", marginX, y);
+    doc.text(generatedBy.rol ?? "Tesorero", cx, y, { align: "center" });
     y += PDF_SPACE.md;
   }
 
