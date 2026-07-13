@@ -1135,6 +1135,13 @@ a { color: inherit; text-decoration: none; }
   border-radius: 8px;
   margin-top: 6px;
 }
+/* Error inline por campo — más discreto que .form-warning, para
+   validación en línea sin interrumpir el formulario con un banner. */
+.field-error {
+  font-size: 11.5px;
+  color: #dc2626;
+  margin-top: 5px;
+}
 
 /* Selectable pills */
 .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }

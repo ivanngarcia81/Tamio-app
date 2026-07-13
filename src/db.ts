@@ -17,6 +17,11 @@ export interface Church {
   ciudad: string | null;
   pais: string;
   moneda: string;
+  tesorero_nombre: string | null;
+  tesorero_cargo: string | null;
+  tesorero_email: string | null;
+  tesorero_telefono: string | null;
+  tesorero_firma_path: string | null;
 }
 
 export interface Member {
@@ -109,13 +114,27 @@ export interface ChurchUpdate {
   ciudad?: string | null;
   pais?: string | null;
   moneda: string;
+  tesorero_nombre?: string | null;
+  tesorero_cargo?: string | null;
+  tesorero_email?: string | null;
+  tesorero_telefono?: string | null;
+  tesorero_firma_path?: string | null;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
   const d = await getDb();
   await d.execute(
-    "UPDATE churches SET nombre = $1, ciudad = $2, pais = $3, moneda = $4 WHERE id = $5",
-    [c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, id]
+    `UPDATE churches SET
+       nombre = $1, ciudad = $2, pais = $3, moneda = $4,
+       tesorero_nombre = $5, tesorero_cargo = $6, tesorero_email = $7,
+       tesorero_telefono = $8, tesorero_firma_path = $9
+     WHERE id = $10`,
+    [
+      c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda,
+      c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
+      c.tesorero_telefono ?? null, c.tesorero_firma_path ?? null,
+      id,
+    ]
   );
   const rows = await d.select<Church[]>("SELECT * FROM churches WHERE id = $1", [id]);
   return rows[0];

@@ -64,6 +64,17 @@ fn migrations() -> Vec<Migration> {
             UPDATE churches SET moneda = 'USD' WHERE moneda = 'MXN';
             UPDATE transactions SET moneda = 'USD' WHERE moneda = 'MXN';
         "#,
+    }, Migration {
+        version: 4,
+        description: "datos del tesorero para identificar quien genera los reportes",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE churches ADD COLUMN tesorero_nombre TEXT;
+            ALTER TABLE churches ADD COLUMN tesorero_cargo TEXT;
+            ALTER TABLE churches ADD COLUMN tesorero_email TEXT;
+            ALTER TABLE churches ADD COLUMN tesorero_telefono TEXT;
+            ALTER TABLE churches ADD COLUMN tesorero_firma_path TEXT;
+        "#,
     }]
 }
 

@@ -1,46 +1,89 @@
 import { useState } from "react";
 import { updateChurch, type Church } from "../db";
 import { IconCheck } from "../icons";
+import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
+import TreasurerSettings, {
+  type TreasurerFormErrors, type TreasurerFormValues,
+} from "../components/settings/TreasurerSettings";
+import SignatureUploader from "../components/settings/SignatureUploader";
+import PDFPreview from "../components/settings/PDFPreview";
 
 interface Props {
   church: Church;
   onChurchUpdated: (c: Church) => void;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
+
 export default function Configuracion({ church, onChurchUpdated }: Props) {
-  const [nombre, setNombre] = useState(church.nombre);
-  const [ciudad, setCiudad] = useState(church.ciudad ?? "");
-  const [pais, setPais] = useState(church.pais ?? "");
-  const [moneda, setMoneda] = useState(church.moneda);
+  const [churchForm, setChurchForm] = useState<ChurchFormValues>({
+    nombre: church.nombre,
+    ciudad: church.ciudad ?? "",
+    pais: church.pais ?? "",
+    moneda: church.moneda,
+  });
+  const [treasurerForm, setTreasurerForm] = useState<TreasurerFormValues>({
+    nombre: church.tesorero_nombre ?? "",
+    cargo: church.tesorero_cargo ?? "Tesorero",
+    email: church.tesorero_email ?? "",
+    telefono: church.tesorero_telefono ?? "",
+  });
+  const [firmaPath, setFirmaPath] = useState<string | null>(church.tesorero_firma_path ?? null);
+
+  const [churchError, setChurchError] = useState<string | null>(null);
+  const [treasurerErrors, setTreasurerErrors] = useState<TreasurerFormErrors>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const dirty =
-    nombre !== church.nombre ||
-    ciudad !== (church.ciudad ?? "") ||
-    pais !== (church.pais ?? "") ||
-    moneda !== church.moneda;
+    churchForm.nombre !== church.nombre ||
+    churchForm.ciudad !== (church.ciudad ?? "") ||
+    churchForm.pais !== (church.pais ?? "") ||
+    churchForm.moneda !== church.moneda ||
+    treasurerForm.nombre !== (church.tesorero_nombre ?? "") ||
+    treasurerForm.cargo !== (church.tesorero_cargo ?? "Tesorero") ||
+    treasurerForm.email !== (church.tesorero_email ?? "") ||
+    treasurerForm.telefono !== (church.tesorero_telefono ?? "") ||
+    firmaPath !== (church.tesorero_firma_path ?? null);
 
   async function guardar() {
-    if (!nombre.trim()) {
-      setError("El nombre de la iglesia es obligatorio.");
-      return;
+    setGeneralError(null);
+
+    const nextChurchError = churchForm.nombre.trim() ? null : "El nombre de la iglesia es obligatorio.";
+    const nextTreasurerErrors: TreasurerFormErrors = {};
+    if (!treasurerForm.nombre.trim()) nextTreasurerErrors.nombre = "El nombre es obligatorio.";
+    if (!treasurerForm.cargo.trim()) nextTreasurerErrors.cargo = "El cargo es obligatorio.";
+    if (treasurerForm.email.trim() && !EMAIL_RE.test(treasurerForm.email.trim())) {
+      nextTreasurerErrors.email = "Escribe un correo con formato válido.";
     }
-    setError(null);
+    if (treasurerForm.telefono.trim() && !PHONE_RE.test(treasurerForm.telefono.trim())) {
+      nextTreasurerErrors.telefono = "Escribe un teléfono con formato válido.";
+    }
+
+    setChurchError(nextChurchError);
+    setTreasurerErrors(nextTreasurerErrors);
+    if (nextChurchError || Object.keys(nextTreasurerErrors).length > 0) return;
+
     setSaving(true);
     try {
       const updated = await updateChurch(church.id, {
-        nombre: nombre.trim(),
-        ciudad: ciudad.trim() || null,
-        pais: pais.trim() || null,
-        moneda,
+        nombre: churchForm.nombre.trim(),
+        ciudad: churchForm.ciudad.trim() || null,
+        pais: churchForm.pais.trim() || null,
+        moneda: churchForm.moneda,
+        tesorero_nombre: treasurerForm.nombre.trim() || null,
+        tesorero_cargo: treasurerForm.cargo.trim() || null,
+        tesorero_email: treasurerForm.email.trim() || null,
+        tesorero_telefono: treasurerForm.telefono.trim() || null,
+        tesorero_firma_path: firmaPath,
       });
       onChurchUpdated(updated);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setError(`No se pudo guardar: ${e}`);
+      setGeneralError(`No se pudo guardar: ${e}`);
     } finally {
       setSaving(false);
     }
@@ -51,53 +94,46 @@ export default function Configuracion({ church, onChurchUpdated }: Props) {
       <div className="header">
         <div>
           <div className="page-title">Configuración</div>
-          <div className="page-sub">Datos de la iglesia</div>
+          <div className="page-sub">Datos de la iglesia y del tesorero</div>
         </div>
       </div>
 
       <div className="content">
-        <div className="card pad-lg" style={{ maxWidth: 520 }}>
-          <div className="card-title" style={{ marginBottom: 18 }}>Información de la iglesia</div>
+        <div className="split-2-1">
+          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            <ChurchSettings
+              value={churchForm}
+              onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
+              error={churchError}
+            />
 
-          <div className="form-group full">
-            <label className="form-label">Nombre de la iglesia</label>
-            <input className="form-input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="p. ej. Iglesia Central" />
-          </div>
+            <TreasurerSettings
+              value={treasurerForm}
+              onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
+              errors={treasurerErrors}
+            />
 
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Ciudad <span className="opt">(opcional)</span></label>
-              <input className="form-input" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="p. ej. Ciudad de México" />
+            <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+
+            {generalError && <div className="form-warning">{generalError}</div>}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
+                {saving ? "Guardando…" : "Guardar cambios"}
+              </button>
+              {saved && (
+                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#059669", fontWeight: 600 }}>
+                  <IconCheck size={14} /> Guardado
+                </span>
+              )}
             </div>
-            <div className="form-group">
-              <label className="form-label">País <span className="opt">(opcional)</span></label>
-              <input className="form-input" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="p. ej. México" />
-            </div>
           </div>
 
-          <div className="form-group full">
-            <label className="form-label">Moneda</label>
-            <select className="form-select" value={moneda} onChange={(e) => setMoneda(e.target.value)}>
-              <option value="USD">USD — Dólar</option>
-              <option value="MXN">MXN — Peso mexicano</option>
-            </select>
-            <div className="form-hint">Se usará en todos los movimientos nuevos, reportes y balances.</div>
-          </div>
-
-          {error && (
-            <div className="form-warning" style={{ marginBottom: 8 }}>{error}</div>
-          )}
-
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
-            <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
-              {saving ? "Guardando…" : "Guardar cambios"}
-            </button>
-            {saved && (
-              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#059669", fontWeight: 600 }}>
-                <IconCheck size={14} /> Guardado
-              </span>
-            )}
-          </div>
+          <PDFPreview
+            churchNombre={churchForm.nombre}
+            tesoreroNombre={treasurerForm.nombre}
+            tesoreroCargo={treasurerForm.cargo}
+          />
         </div>
       </div>
     </>
