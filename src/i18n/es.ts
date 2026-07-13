@@ -433,6 +433,10 @@ export const es = {
 
   recurrente: {
     label: "Gasto fijo recurrente",
+    pregunta: "¿Este gasto se repite todos los meses?",
+    siRecurrente: "Sí, es recurrente",
+    marcado: "✓ Recurrente",
+    agregarMeses: "Agregar a los meses",
     hintForm: "Se registra automáticamente cada mes con el mismo importe, desde enero hasta el mes actual. Los meses futuros se agregan solos cuando llegan — nunca por adelantado.",
     titulo: "Gastos fijos recurrentes",
     sub: "Se registran automáticamente cada mes",

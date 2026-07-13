@@ -439,6 +439,10 @@ export const en: Resources = {
 
   recurrente: {
     label: "Recurring fixed expense",
+    pregunta: "Does this expense repeat every month?",
+    siRecurrente: "Yes, it's recurring",
+    marcado: "✓ Recurring",
+    agregarMeses: "Add to the months",
     hintForm: "It is recorded automatically every month with the same amount, from January through the current month. Future months are added on their own as they arrive — never in advance.",
     titulo: "Recurring fixed expenses",
     sub: "Recorded automatically every month",

@@ -7,7 +7,7 @@ import {
   insertGastoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
-import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconWarn } from "../icons";
+import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconRepeat, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
@@ -142,6 +142,57 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       if (typeof path === "string") setComprobantePath(path);
     } catch (e) {
       setError(t("common.noSePudoAbrirSelector", { error: String(e) }));
+    }
+  }
+
+  async function agregarALosMeses() {
+    if (mode.kind !== "editTx") return;
+    setError(null);
+    const m = parseMonto(monto);
+    if (!concepto.trim()) { setError(t("common.conceptoObligatorio")); return; }
+    if (m === null) { setError(t("common.montoInvalido")); return; }
+    if (fecha > hoy) { setError(t("recordModal.fechaFuturaGastos")); return; }
+    setSaving(true);
+    try {
+      await updateTx(mode.tx.id, church.id, church.moneda, {
+        tipo: "gasto",
+        categoria,
+        subcategoria: null,
+        concepto: concepto.trim(),
+        detalle: detalle.trim() || null,
+        fecha: `${fecha} ${hora}`,
+        monto: m,
+        metodo_pago: metodo,
+        member_id: null,
+        beneficiario: beneficiario.trim() || null,
+        beneficiario_rfc: beneficiarioRfc.trim() || null,
+        emitir_constancia: false,
+        estado: marcarPendiente ? "pendiente" : "aprobado",
+        comprobante_path: comprobantePath,
+      });
+      const mesesRegistrados = await insertGastoRecurrente(
+        church.id,
+        church.moneda,
+        {
+          categoria,
+          subcategoria: null,
+          concepto: concepto.trim(),
+          detalle: detalle.trim() || null,
+          monto: m,
+          metodo_pago: metodo,
+          beneficiario: beneficiario.trim() || null,
+          beneficiario_rfc: beneficiarioRfc.trim() || null,
+          dia: Number(fecha.slice(8, 10)),
+          mes_inicio: `${fecha.slice(0, 4)}-01`,
+        },
+        fecha.slice(0, 7) // el mes de este gasto ya existe — no se duplica
+      );
+      showToast(t("recurrente.toastCreado", { count: mesesRegistrados }));
+      onSaved();
+      onClose();
+    } catch (e) {
+      setError(t("common.noSePudoGuardar", { error: String(e) }));
+      setSaving(false);
     }
   }
 
@@ -453,17 +504,39 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 />
               </div>
 
-              {tab === "gasto" && !isEdit && (
-                <div className="check-row" style={{ marginTop: 6 }}>
-                  <input
-                    type="checkbox"
-                    id="chk-recurrente"
-                    checked={esRecurrente}
-                    onChange={(e) => setEsRecurrente(e.target.checked)}
-                  />
-                  <label htmlFor="chk-recurrente">
-                    <strong>{t("recurrente.label")}</strong> — {t("recurrente.hintForm")}
-                  </label>
+              {tab === "gasto" && (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, marginTop: 6,
+                    border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px",
+                    background: esRecurrente ? "var(--surface-2)" : "transparent",
+                  }}
+                >
+                  <span style={{ color: "var(--text-2)", flexShrink: 0 }}><IconRepeat size={16} strokeWidth={2} /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{t("recurrente.pregunta")}</div>
+                    <div className="form-hint" style={{ marginTop: 2 }}>{t("recurrente.hintForm")}</div>
+                  </div>
+                  {isEdit ? (
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      style={{ flexShrink: 0 }}
+                      onClick={agregarALosMeses}
+                      disabled={saving}
+                    >
+                      {saving ? t("common.guardando") : t("recurrente.agregarMeses")}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`btn ${esRecurrente ? "primary" : "secondary"}`}
+                      style={{ flexShrink: 0 }}
+                      onClick={() => setEsRecurrente(!esRecurrente)}
+                    >
+                      {esRecurrente ? t("recurrente.marcado") : t("recurrente.siRecurrente")}
+                    </button>
+                  )}
                 </div>
               )}
 

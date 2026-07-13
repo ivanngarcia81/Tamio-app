@@ -986,10 +986,15 @@ export function fechaEnMes(yyyyMm: string, dia: number): string {
   return `${yyyyMm}-${String(d).padStart(2, "0")} 12:00`;
 }
 
-async function materializarDef(d: Awaited<ReturnType<typeof getDb>>, def: GastoRecurrente, moneda: string): Promise<number> {
+async function materializarDef(
+  d: Awaited<ReturnType<typeof getDb>>,
+  def: GastoRecurrente,
+  moneda: string,
+  skipMes?: string
+): Promise<number> {
   const hastaMes = currentMonth();
   const desde = def.ultimo_mes_generado ? nextMonth(def.ultimo_mes_generado) : def.mes_inicio;
-  const meses = mesesEntre(desde, hastaMes);
+  const meses = mesesEntre(desde, hastaMes).filter((m) => m !== skipMes);
   for (const mes of meses) {
     await d.execute(
       `INSERT INTO transactions
@@ -1003,12 +1008,10 @@ async function materializarDef(d: Awaited<ReturnType<typeof getDb>>, def: GastoR
       ]
     );
   }
-  if (meses.length > 0) {
-    await d.execute(
-      "UPDATE gastos_recurrentes SET ultimo_mes_generado = $1 WHERE id = $2",
-      [hastaMes, def.id]
-    );
-  }
+  await d.execute(
+    "UPDATE gastos_recurrentes SET ultimo_mes_generado = $1 WHERE id = $2",
+    [hastaMes, def.id]
+  );
   return meses.length;
 }
 
@@ -1017,7 +1020,10 @@ async function materializarDef(d: Awaited<ReturnType<typeof getDb>>, def: GastoR
 export async function insertGastoRecurrente(
   churchId: number,
   moneda: string,
-  g: NewGastoRecurrente
+  g: NewGastoRecurrente,
+  /** Mes "YYYY-MM" que NO debe generarse (cuando el gasto de ese mes ya
+   *  existe — p. ej. al convertir en recurrente un gasto ya registrado). */
+  skipMes?: string
 ): Promise<number> {
   const d = await getDb();
   await d.execute(
@@ -1035,7 +1041,7 @@ export async function insertGastoRecurrente(
     "SELECT * FROM gastos_recurrentes WHERE church_id = $1 ORDER BY id DESC LIMIT 1",
     [churchId]
   );
-  return materializarDef(d, rows[0], moneda);
+  return materializarDef(d, rows[0], moneda, skipMes);
 }
 
 /** Registra los meses que hayan llegado desde la última apertura de la app,
