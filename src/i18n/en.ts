@@ -290,6 +290,7 @@ export const en: Resources = {
     subcategoriaPlaceholder: "Type a subcategory…",
     concepto: "Description",
     conceptoPlaceholderIngreso: "e.g. Sunday service offering",
+    conceptoPlaceholderDonacion: "e.g. Building Fund, Missions, Youth Camp…",
     conceptoPlaceholderGasto: "e.g. Electric company · Power bill",
     fecha: "Date",
     hora: "Time",

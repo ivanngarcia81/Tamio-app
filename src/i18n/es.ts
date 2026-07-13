@@ -284,6 +284,7 @@ export const es = {
     subcategoriaPlaceholder: "Escribe una subcategoría…",
     concepto: "Concepto / descripción",
     conceptoPlaceholderIngreso: "p. ej. Ofrenda servicio dominical",
+    conceptoPlaceholderDonacion: "p. ej. Fondo de construcción, Misiones, Campamento…",
     conceptoPlaceholderGasto: "p. ej. CFE · Energía eléctrica",
     fecha: "Fecha",
     hora: "Hora",

@@ -123,6 +123,20 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     return members.filter((m) => m.nombre.toLowerCase().includes(q)).slice(0, 4);
   }, [aportanteQuery, aportanteId, members]);
 
+  // Descripción contextual: para Diezmo y Ofrenda la categoría ya define el
+  // ingreso por completo, así que el campo se oculta y se guarda el nombre de
+  // la categoría; para Donación es visible pero opcional (propósito del
+  // donativo); para Otros y categorías personalizadas sigue siendo requerido.
+  const descripcionOculta = tab === "ingreso" && (categoria === "diezmo" || categoria === "ofrenda");
+  const descripcionOpcional = tab === "ingreso" && categoria === "donacion";
+  /** Concepto a persistir, o null si falta y es obligatorio. */
+  function conceptoFinal(): string | null {
+    const escrito = concepto.trim();
+    if (descripcionOculta) return catNombre(categoria);
+    if (!escrito) return descripcionOpcional ? catNombre(categoria) : null;
+    return escrito;
+  }
+
   const titulo = isEdit
     ? tab === "miembro" ? t("recordModal.editarMiembro") : tab === "ingreso" ? t("recordModal.editarIngreso") : t("recordModal.editarGasto")
     : tab === "miembro" ? t("recordModal.nuevoMiembro") : tab === "ingreso" ? t("recordModal.nuevoIngreso") : t("recordModal.nuevoGasto");
@@ -151,7 +165,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     if (tab !== "ingreso" && tab !== "gasto") return;
     setError(null);
     const m = parseMonto(monto);
-    if (!concepto.trim()) { setError(t("common.conceptoObligatorio")); return; }
+    const conceptoGuardar = conceptoFinal();
+    if (conceptoGuardar === null) { setError(t("common.conceptoObligatorio")); return; }
     if (m === null) { setError(t("common.montoInvalido")); return; }
     if (fecha > hoy) {
       setError(tab === "ingreso" ? t("recordModal.fechaFuturaIngresos") : t("recordModal.fechaFuturaGastos"));
@@ -163,7 +178,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         tipo: tab,
         categoria,
         subcategoria: tab === "ingreso" && categoria === "otros" ? subcategoria.trim() || null : null,
-        concepto: concepto.trim(),
+        concepto: conceptoGuardar,
         detalle: detalle.trim() || null,
         fecha: `${fecha} ${hora}`,
         monto: m,
@@ -182,7 +197,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           tipo: tab,
           categoria,
           subcategoria: null,
-          concepto: concepto.trim(),
+          concepto: conceptoGuardar,
           detalle: detalle.trim() || null,
           monto: m,
           metodo_pago: metodo,
@@ -227,7 +242,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         }
       } else {
         const m = parseMonto(monto);
-        if (!concepto.trim()) { setError(t("common.conceptoObligatorio")); return; }
+        const conceptoGuardar = conceptoFinal();
+        if (conceptoGuardar === null) { setError(t("common.conceptoObligatorio")); return; }
         if (m === null) { setError(t("common.montoInvalido")); return; }
         if (fecha > hoy) {
           setError(tab === "ingreso" ? t("recordModal.fechaFuturaIngresos") : t("recordModal.fechaFuturaGastos"));
@@ -240,7 +256,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
             tipo: tab,
             categoria,
             subcategoria: null,
-            concepto: concepto.trim(),
+            concepto: conceptoGuardar,
             detalle: detalle.trim() || null,
             monto: m,
             metodo_pago: metodo,
@@ -263,7 +279,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           tipo: tab,
           categoria,
           subcategoria: categoria === "otros" ? subcategoria.trim() || null : null,
-          concepto: concepto.trim(),
+          concepto: conceptoGuardar,
           detalle: detalle.trim() || null,
           fecha: `${fecha} ${hora}`,
           monto: m,
@@ -363,15 +379,26 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 </div>
               )}
 
-              <div className="form-group full">
-                <label className="form-label">{t("recordModal.concepto")}</label>
-                <input
-                  className="form-input"
-                  value={concepto}
-                  onChange={(e) => setConcepto(e.target.value)}
-                  placeholder={tab === "ingreso" ? t("recordModal.conceptoPlaceholderIngreso") : t("recordModal.conceptoPlaceholderGasto")}
-                />
-              </div>
+              {!descripcionOculta && (
+                <div className="form-group full enter">
+                  <label className="form-label">
+                    {t("recordModal.concepto")}
+                    {descripcionOpcional && <> <span className="opt">{t("common.opcional")}</span></>}
+                  </label>
+                  <input
+                    className="form-input"
+                    value={concepto}
+                    onChange={(e) => setConcepto(e.target.value)}
+                    placeholder={
+                      descripcionOpcional
+                        ? t("recordModal.conceptoPlaceholderDonacion")
+                        : tab === "ingreso"
+                          ? t("recordModal.conceptoPlaceholderIngreso")
+                          : t("recordModal.conceptoPlaceholderGasto")
+                    }
+                  />
+                </div>
+              )}
 
               <div className="form-grid">
                 <div className="form-group">
