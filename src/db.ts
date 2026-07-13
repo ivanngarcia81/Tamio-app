@@ -26,6 +26,11 @@ export interface Church {
   tesorero_email: string | null;
   tesorero_telefono: string | null;
   tesorero_firma_path: string | null;
+  pastor_nombre: string | null;
+  pastor_cargo: string | null;
+  pastor_email: string | null;
+  pastor_telefono: string | null;
+  pastor_firma_path: string | null;
 }
 
 export interface Member {
@@ -239,6 +244,11 @@ export interface ChurchUpdate {
   tesorero_email?: string | null;
   tesorero_telefono?: string | null;
   tesorero_firma_path?: string | null;
+  pastor_nombre?: string | null;
+  pastor_cargo?: string | null;
+  pastor_email?: string | null;
+  pastor_telefono?: string | null;
+  pastor_firma_path?: string | null;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -247,12 +257,16 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
     `UPDATE churches SET
        nombre = $1, ciudad = $2, pais = $3, moneda = $4, logo_path = $5,
        tesorero_nombre = $6, tesorero_cargo = $7, tesorero_email = $8,
-       tesorero_telefono = $9, tesorero_firma_path = $10
-     WHERE id = $11`,
+       tesorero_telefono = $9, tesorero_firma_path = $10,
+       pastor_nombre = $11, pastor_cargo = $12, pastor_email = $13,
+       pastor_telefono = $14, pastor_firma_path = $15
+     WHERE id = $16`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
       c.tesorero_telefono ?? null, c.tesorero_firma_path ?? null,
+      c.pastor_nombre ?? null, c.pastor_cargo ?? null, c.pastor_email ?? null,
+      c.pastor_telefono ?? null, c.pastor_firma_path ?? null,
       id,
     ]
   );

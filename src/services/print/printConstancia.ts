@@ -22,9 +22,10 @@ export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean
   const { church, member, year, aportes } = data;
   const moneda = church.moneda;
 
-  const [logoDataUrl, firmaDataUrl] = await Promise.all([
+  const [logoDataUrl, firmaDataUrl, pastorFirmaDataUrl] = await Promise.all([
     church.logo_path ? loadPngDataUrl(church.logo_path) : Promise.resolve(null),
     church.tesorero_firma_path ? loadPngDataUrl(church.tesorero_firma_path) : Promise.resolve(null),
+    church.pastor_firma_path ? loadPngDataUrl(church.pastor_firma_path) : Promise.resolve(null),
   ]);
 
   const doc = new ReportDocBuilder({
@@ -93,6 +94,11 @@ export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean
       nombre: church.tesorero_nombre,
       rol: church.tesorero_cargo ?? i18n.t("rol.tesorero"),
       firmaDataUrl,
+    },
+    {
+      nombre: church.pastor_nombre,
+      rol: church.pastor_cargo ?? i18n.t("rol.pastor"),
+      firmaDataUrl: pastorFirmaDataUrl,
     },
   ]);
 

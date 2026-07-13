@@ -634,6 +634,32 @@ export const es = {
     alt: "Firma del tesorero",
   },
 
+  pastor: {
+    titulo: "Información del pastor",
+    sub: "Opcional — aparece junto al tesorero en el bloque de firmas de los reportes en PDF",
+    nombreLabel: "Nombre completo",
+    nombrePlaceholder: "p. ej. Carlos Ramírez",
+    cargo: "Cargo",
+    cargoPlaceholder: "Pastor",
+    correo: "Correo electrónico",
+    correoPlaceholder: "correo@ejemplo.com",
+    telefono: "Teléfono",
+    telefonoPlaceholder: "55 0000 0000",
+  },
+
+  firmaPastor: {
+    titulo: "Firma del pastor",
+    sub: "Aparece junto a la del tesorero en el bloque de firmas de los reportes en PDF",
+    sinFirma: "Sin firma registrada",
+    subir: "Subir firma",
+    cambiar: "Cambiar firma",
+    eliminar: "Eliminar firma",
+    hint: "Solo se aceptan imágenes PNG, idealmente con fondo transparente.",
+    debeSerPng: "La firma debe ser una imagen PNG con fondo transparente.",
+    seleccionar: "Seleccionar firma",
+    alt: "Firma del pastor",
+  },
+
   usuarios: {
     titulo: "Usuarios",
     sub: "Directorio de personas que administran la iglesia",

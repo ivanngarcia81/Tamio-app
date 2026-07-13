@@ -26,9 +26,10 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
   const { church, year, meses, categorias } = data;
   const moneda = church.moneda;
 
-  const [logoDataUrl, firmaDataUrl] = await Promise.all([
+  const [logoDataUrl, firmaDataUrl, pastorFirmaDataUrl] = await Promise.all([
     church.logo_path ? loadPngDataUrl(church.logo_path) : Promise.resolve(null),
     church.tesorero_firma_path ? loadPngDataUrl(church.tesorero_firma_path) : Promise.resolve(null),
+    church.pastor_firma_path ? loadPngDataUrl(church.pastor_firma_path) : Promise.resolve(null),
   ]);
 
   const doc = new ReportDocBuilder({
@@ -133,7 +134,7 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
       rol: church.tesorero_cargo ?? i18n.t("rol.tesorero"),
       firmaDataUrl,
     },
-    { nombre: null, rol: i18n.t("rol.pastor"), firmaDataUrl: null },
+    { nombre: church.pastor_nombre, rol: church.pastor_cargo ?? i18n.t("rol.pastor"), firmaDataUrl: pastorFirmaDataUrl },
   ]);
 
   const now = new Date();

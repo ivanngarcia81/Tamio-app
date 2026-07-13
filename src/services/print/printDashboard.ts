@@ -61,9 +61,10 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   const { church } = data;
   const moneda = church.moneda;
 
-  const [logoDataUrl, firmaDataUrl] = await Promise.all([
+  const [logoDataUrl, firmaDataUrl, pastorFirmaDataUrl] = await Promise.all([
     data.logoPath ? loadPngDataUrl(data.logoPath) : Promise.resolve(null),
     data.firmaPath ? loadPngDataUrl(data.firmaPath) : Promise.resolve(null),
+    church.pastor_firma_path ? loadPngDataUrl(church.pastor_firma_path) : Promise.resolve(null),
   ]);
 
   const doc = new ReportDocBuilder({
@@ -161,7 +162,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   // ---------- Firmas ----------
   doc.signatureBlock([
     { nombre: data.generatedBy?.nombre, rol: data.generatedBy?.rol ?? i18n.t("rol.tesorero"), firmaDataUrl },
-    { nombre: null, rol: i18n.t("rol.pastor"), firmaDataUrl: null },
+    { nombre: church.pastor_nombre, rol: church.pastor_cargo ?? i18n.t("rol.pastor"), firmaDataUrl: pastorFirmaDataUrl },
   ]);
 
   const now = new Date();

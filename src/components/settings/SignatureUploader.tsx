@@ -16,12 +16,16 @@ function uint8ToBase64(bytes: Uint8Array): string {
 interface Props {
   path: string | null;
   onPathChange: (path: string | null) => void;
+  /** Elige el bloque de textos i18n: "firma" (tesorero) o "firmaPastor". */
+  variant?: "tesorero" | "pastor";
 }
 
-/** Firma del tesorero — se usa en el bloque de firmas de los reportes en PDF
- *  (Estado financiero, Dashboard) cuando hay un tesorero configurado. */
-export default function SignatureUploader({ path, onPathChange }: Props) {
+/** Firma del tesorero o del pastor — se usa en el bloque de firmas de los
+ *  reportes en PDF (Estado financiero, Dashboard, Constancia) cuando hay
+ *  una persona configurada. */
+export default function SignatureUploader({ path, onPathChange, variant = "tesorero" }: Props) {
   const { t } = useTranslation();
+  const ns = variant === "pastor" ? "firmaPastor" : "firma";
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,12 +53,12 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
     try {
       const selected = await openFileDialog({
         multiple: false,
-        title: t("firma.seleccionar"),
+        title: t(`${ns}.seleccionar`),
         filters: [{ name: t("iglesia.imagenPng"), extensions: ["png"] }],
       });
       if (typeof selected !== "string") return;
       if (!selected.toLowerCase().endsWith(".png")) {
-        setError(t("firma.debeSerPng"));
+        setError(t(`${ns}.debeSerPng`));
         return;
       }
       onPathChange(selected);
@@ -69,8 +73,8 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
         <div className="card-head-left">
           <div className="card-icon"><IconSignature size={16} /></div>
           <div className="card-head-titles">
-            <div className="card-title-lg">{t("firma.titulo")}</div>
-            <div className="card-title-sub">{t("firma.sub")}</div>
+            <div className="card-title-lg">{t(`${ns}.titulo`)}</div>
+            <div className="card-title-sub">{t(`${ns}.sub`)}</div>
           </div>
         </div>
       </div>
@@ -78,25 +82,25 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
       <div className="signature-body">
         {previewUrl ? (
           <div className="signature-preview">
-            <img src={previewUrl} alt={t("firma.alt")} style={{ maxWidth: "100%", maxHeight: "100%" }} />
+            <img src={previewUrl} alt={t(`${ns}.alt`)} style={{ maxWidth: "100%", maxHeight: "100%" }} />
           </div>
         ) : (
           <div className="signature-placeholder">
             <IconSignature size={22} />
-            <span className="lbl">{t("firma.sinFirma")}</span>
+            <span className="lbl">{t(`${ns}.sinFirma`)}</span>
           </div>
         )}
 
         <div className="signature-actions">
           <div className="signature-actions-row">
             <button type="button" className="btn secondary" onClick={pickFirma}>
-              {previewUrl ? t("firma.cambiar") : t("firma.subir")}
+              {previewUrl ? t(`${ns}.cambiar`) : t(`${ns}.subir`)}
             </button>
             {previewUrl && (
-              <button type="button" className="btn ghost" onClick={() => onPathChange(null)}>{t("firma.eliminar")}</button>
+              <button type="button" className="btn ghost" onClick={() => onPathChange(null)}>{t(`${ns}.eliminar`)}</button>
             )}
           </div>
-          <div className="form-hint">{t("firma.hint")}</div>
+          <div className="form-hint">{t(`${ns}.hint`)}</div>
         </div>
       </div>
 

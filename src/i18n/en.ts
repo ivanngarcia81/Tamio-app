@@ -640,6 +640,32 @@ export const en: Resources = {
     alt: "Treasurer's signature",
   },
 
+  pastor: {
+    titulo: "Pastor information",
+    sub: "Optional — appears alongside the treasurer in the signature block of PDF reports",
+    nombreLabel: "Full name",
+    nombrePlaceholder: "e.g. Michael Johnson",
+    cargo: "Title",
+    cargoPlaceholder: "Pastor",
+    correo: "Email",
+    correoPlaceholder: "email@example.com",
+    telefono: "Phone",
+    telefonoPlaceholder: "55 0000 0000",
+  },
+
+  firmaPastor: {
+    titulo: "Pastor's signature",
+    sub: "Shown alongside the treasurer's in the signature block of PDF reports",
+    sinFirma: "No signature on file",
+    subir: "Upload signature",
+    cambiar: "Change signature",
+    eliminar: "Remove signature",
+    hint: "Only PNG images are accepted, ideally with a transparent background.",
+    debeSerPng: "The signature must be a PNG image with a transparent background.",
+    seleccionar: "Select signature",
+    alt: "Pastor's signature",
+  },
+
   usuarios: {
     titulo: "Users",
     sub: "Directory of people who manage the church",

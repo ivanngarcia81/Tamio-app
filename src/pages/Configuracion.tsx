@@ -7,6 +7,9 @@ import ChurchSettings, { type ChurchFormValues } from "../components/settings/Ch
 import TreasurerSettings, {
   type TreasurerFormErrors, type TreasurerFormValues,
 } from "../components/settings/TreasurerSettings";
+import PastorSettings, {
+  type PastorFormErrors, type PastorFormValues,
+} from "../components/settings/PastorSettings";
 import SignatureUploader from "../components/settings/SignatureUploader";
 import UsersSettings from "../components/settings/UsersSettings";
 import PDFPreview from "../components/settings/PDFPreview";
@@ -45,6 +48,13 @@ export default function Configuracion({
     telefono: church.tesorero_telefono ?? "",
   });
   const [firmaPath, setFirmaPath] = useState<string | null>(church.tesorero_firma_path ?? null);
+  const [pastorForm, setPastorForm] = useState<PastorFormValues>({
+    nombre: church.pastor_nombre ?? "",
+    cargo: church.pastor_cargo ?? "Pastor",
+    email: church.pastor_email ?? "",
+    telefono: church.pastor_telefono ?? "",
+  });
+  const [pastorFirmaPath, setPastorFirmaPath] = useState<string | null>(church.pastor_firma_path ?? null);
   const [logoPath, setLogoPath] = useState<string | null>(church.logo_path ?? null);
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -53,6 +63,7 @@ export default function Configuracion({
 
   const [churchError, setChurchError] = useState<string | null>(null);
   const [treasurerErrors, setTreasurerErrors] = useState<TreasurerFormErrors>({});
+  const [pastorErrors, setPastorErrors] = useState<PastorFormErrors>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -67,6 +78,11 @@ export default function Configuracion({
     treasurerForm.email !== (church.tesorero_email ?? "") ||
     treasurerForm.telefono !== (church.tesorero_telefono ?? "") ||
     firmaPath !== (church.tesorero_firma_path ?? null) ||
+    pastorForm.nombre !== (church.pastor_nombre ?? "") ||
+    pastorForm.cargo !== (church.pastor_cargo ?? "Pastor") ||
+    pastorForm.email !== (church.pastor_email ?? "") ||
+    pastorForm.telefono !== (church.pastor_telefono ?? "") ||
+    pastorFirmaPath !== (church.pastor_firma_path ?? null) ||
     logoPath !== (church.logo_path ?? null);
 
   async function guardar() {
@@ -83,9 +99,19 @@ export default function Configuracion({
       nextTreasurerErrors.telefono = t("validacion.telefonoInvalido");
     }
 
+    // El pastor es opcional: solo se valida el formato si se llenó algo.
+    const nextPastorErrors: PastorFormErrors = {};
+    if (pastorForm.email.trim() && !EMAIL_RE.test(pastorForm.email.trim())) {
+      nextPastorErrors.email = t("validacion.correoInvalido");
+    }
+    if (pastorForm.telefono.trim() && !PHONE_RE.test(pastorForm.telefono.trim())) {
+      nextPastorErrors.telefono = t("validacion.telefonoInvalido");
+    }
+
     setChurchError(nextChurchError);
     setTreasurerErrors(nextTreasurerErrors);
-    if (nextChurchError || Object.keys(nextTreasurerErrors).length > 0) return;
+    setPastorErrors(nextPastorErrors);
+    if (nextChurchError || Object.keys(nextTreasurerErrors).length > 0 || Object.keys(nextPastorErrors).length > 0) return;
 
     setSaving(true);
     try {
@@ -100,6 +126,11 @@ export default function Configuracion({
         tesorero_email: treasurerForm.email.trim() || null,
         tesorero_telefono: treasurerForm.telefono.trim() || null,
         tesorero_firma_path: firmaPath,
+        pastor_nombre: pastorForm.nombre.trim() || null,
+        pastor_cargo: pastorForm.cargo.trim() || null,
+        pastor_email: pastorForm.email.trim() || null,
+        pastor_telefono: pastorForm.telefono.trim() || null,
+        pastor_firma_path: pastorFirmaPath,
       });
       onChurchUpdated(updated);
       setSaved(true);
@@ -139,6 +170,14 @@ export default function Configuracion({
               />
 
               <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+
+              <PastorSettings
+                value={pastorForm}
+                onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
+                errors={pastorErrors}
+              />
+
+              <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
 
               <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
 

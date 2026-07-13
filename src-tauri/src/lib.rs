@@ -159,6 +159,17 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE gastos_recurrentes ADD COLUMN tipo TEXT NOT NULL DEFAULT 'gasto';
             ALTER TABLE transactions ADD COLUMN recurrente_id INTEGER REFERENCES gastos_recurrentes(id) ON DELETE SET NULL;
         "#,
+    }, Migration {
+        version: 10,
+        description: "datos del pastor para el bloque de firmas en los reportes PDF",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE churches ADD COLUMN pastor_nombre TEXT;
+            ALTER TABLE churches ADD COLUMN pastor_cargo TEXT;
+            ALTER TABLE churches ADD COLUMN pastor_email TEXT;
+            ALTER TABLE churches ADD COLUMN pastor_telefono TEXT;
+            ALTER TABLE churches ADD COLUMN pastor_firma_path TEXT;
+        "#,
     }]
 }
 
