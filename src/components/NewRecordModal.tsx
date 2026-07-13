@@ -9,6 +9,7 @@ import {
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconRepeat, IconWarn } from "../icons";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
 function fileNameFromPath(path: string): string {
@@ -197,6 +198,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           ? t("recurrente.toastCreado", { count: mesesRegistrados })
           : t("recurrente.toastCreadoSinMeses")
       );
+      playSound("guardado");
       onSaved();
       onClose();
     } catch (e) {
@@ -252,6 +254,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               ? t("recurrente.toastCreado", { count: mesesRegistrados })
               : t("recurrente.toastCreadoSinMeses")
           );
+          playSound(tab === "ingreso" ? "ingreso" : "gasto");
           onSaved();
           onClose();
           return;
@@ -287,6 +290,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               ? t("toast.ingresoGuardado")
               : t("toast.gastoGuardado")
       );
+      playSound(isEdit || tab === "miembro" ? "guardado" : tab === "ingreso" ? "ingreso" : "gasto");
       onSaved();
       onClose();
     } catch (e) {

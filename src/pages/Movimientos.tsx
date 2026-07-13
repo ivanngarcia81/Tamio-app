@@ -12,6 +12,7 @@ import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import EditRecurrenteModal from "../components/EditRecurrenteModal";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import TxTable from "../components/TxTable";
 import {
   IconChevronLeft, IconChevronRight, IconClose, IconEdit, IconGasto, IconIngreso,
@@ -71,6 +72,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     await deleteMovimientoRecurrente(pendingDeleteRec.id, church.id);
     setPendingDeleteRec(null);
     showToast(t("recurrente.toastEliminado"));
+    playSound("eliminar");
     listMovimientosRecurrentes(church.id, tipo).then(setRecurrentes).catch(console.error);
   }
 
@@ -330,6 +332,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           onClose={() => setEditingRec(null)}
           onSaved={() => {
             showToast(t("recurrente.toastActualizado"));
+            playSound("guardado");
             listMovimientosRecurrentes(church.id, tipo).then(setRecurrentes).catch(console.error);
           }}
         />

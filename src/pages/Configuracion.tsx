@@ -12,6 +12,7 @@ import UsersSettings from "../components/settings/UsersSettings";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 import LanguageSettings from "../components/settings/LanguageSettings";
+import SoundSettings from "../components/settings/SoundSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
 
@@ -146,6 +147,8 @@ export default function Configuracion({
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
+
+              <SoundSettings />
 
               <BackupSettings church={church} />
             </div>

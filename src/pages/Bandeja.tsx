@@ -8,6 +8,7 @@ import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 
 interface Props {
   church: Church;
@@ -45,12 +46,14 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   async function handleReviewed(tx: Tx) {
     await markTxReviewed(tx.id, church.id);
     showToast(t("toast.marcadoRevisado"));
+    playSound("guardado");
     onChanged();
   }
 
   async function handleRestore(m: Member) {
     await restoreMember(m.id, church.id);
     showToast(t("toast.miembroRestaurado"));
+    playSound("guardado");
     onChanged();
   }
 

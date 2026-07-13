@@ -681,6 +681,14 @@ export const en: Resources = {
     hint: "\"Automatic\" uses the operating system language: Spanish if the system is in Spanish, English otherwise.",
   },
 
+  sonido: {
+    titulo: "Sound",
+    sub: "Plays a short tone when saving or deleting transactions",
+    activado: "On",
+    desactivado: "Off",
+    hint: "A different sound plays when you record an income, an expense, or delete a transaction.",
+  },
+
   pdfPreview: {
     titulo: "PDF preview",
     sub: "This is how your report header will look",

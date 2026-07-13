@@ -6,6 +6,7 @@ import RowMenu from "../RowMenu";
 import ConfirmDialog from "../ConfirmDialog";
 import UsuarioModal from "./UsuarioModal";
 import { showToast } from "../../toast";
+import { playSound } from "../../sound";
 
 function useRolNombre(): (rol: string) => string {
   const { t } = useTranslation();
@@ -47,6 +48,7 @@ export default function UsersSettings({ church, usuarios, onChanged }: Props) {
     await deleteUsuario(borrado.id, borrado.church_id);
     setPendingDelete(null);
     onChanged();
+    playSound("eliminar");
     showToast(t("deshacer.usuarioEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {

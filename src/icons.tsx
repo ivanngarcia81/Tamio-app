@@ -258,6 +258,22 @@ export const IconGlobe = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
   </svg>
 );
 
+export const IconVolume = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <polygon points="4 9 8 9 12 5 12 19 8 15 4 15 4 9" />
+    <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+    <path d="M19 6a8.5 8.5 0 0 1 0 12" />
+  </svg>
+);
+
+export const IconVolumeOff = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <polygon points="4 9 8 9 12 5 12 19 8 15 4 15 4 9" />
+    <line x1="17" y1="9" x2="23" y2="15" />
+    <line x1="23" y1="9" x2="17" y2="15" />
+  </svg>
+);
+
 export const IconIdBadge = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
   <svg {...base(size, strokeWidth)}>
     <rect x="3" y="4" width="18" height="16" rx="2" />

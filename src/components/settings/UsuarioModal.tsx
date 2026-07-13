@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ROLES_USUARIO, insertUsuario, updateUsuario, type Church, type Usuario } from "../../db";
 import { IconClose, IconWarn } from "../../icons";
 import { showToast } from "../../toast";
+import { playSound } from "../../sound";
 import { useEscapeClose } from "../../hooks/useEscapeClose";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -54,6 +55,7 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
         await insertUsuario(church.id, payload);
       }
       showToast(isEdit ? t("toast.cambiosGuardados") : t("toast.usuarioGuardado"));
+      playSound("guardado");
       onSaved();
       onClose();
     } catch (e) {

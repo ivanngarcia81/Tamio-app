@@ -8,6 +8,7 @@ import {
 } from "../db";
 import { IconCheck, IconClose, IconWarn } from "../icons";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
 function fileNameFromPath(path: string): string {
@@ -101,6 +102,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
         await insertDeposito(church.id, church.moneda, payload);
       }
       showToast(isEdit ? t("toast.cambiosGuardados") : t("toast.depositoGuardado"));
+      playSound("guardado");
       onSaved();
       onClose();
     } catch (e) {

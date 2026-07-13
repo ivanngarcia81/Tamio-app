@@ -12,6 +12,7 @@ import MemberDetailModal from "../components/MemberDetailModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
 import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
 
@@ -93,12 +94,14 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
       await archiveMember(member.id, church.id);
       setPendingDelete(null);
       showToast(t("toast.miembroArchivado"));
+      playSound("guardado");
       onChanged();
       return;
     }
     await deleteMember(member.id, church.id);
     setPendingDelete(null);
     onChanged();
+    playSound("eliminar");
     showToast(t("deshacer.miembroEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {

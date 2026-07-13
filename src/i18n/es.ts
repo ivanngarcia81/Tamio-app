@@ -675,6 +675,14 @@ export const es = {
     hint: "\"Automático\" usa el idioma del sistema operativo: español si el sistema está en español, inglés en cualquier otro caso.",
   },
 
+  sonido: {
+    titulo: "Sonido",
+    sub: "Reproduce un tono corto al guardar o eliminar movimientos",
+    activado: "Activado",
+    desactivado: "Desactivado",
+    hint: "Se reproduce un sonido distinto al registrar un ingreso, un gasto o al eliminar un movimiento.",
+  },
+
   pdfPreview: {
     titulo: "Vista previa del PDF",
     sub: "Así se verá el encabezado de tus reportes",

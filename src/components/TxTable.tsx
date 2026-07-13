@@ -4,6 +4,7 @@ import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, insertTx, m
 import { IconArrowDown, IconArrowUp, IconEdit, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
@@ -28,6 +29,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
     await deleteTx(borrado.id, borrado.church_id);
     setPendingDelete(null);
     onChanged();
+    playSound("eliminar");
     showToast(t("deshacer.movimientoEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {

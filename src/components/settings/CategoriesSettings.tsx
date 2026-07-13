@@ -6,6 +6,7 @@ import {
 } from "../../db";
 import ConfirmDialog from "../ConfirmDialog";
 import { showToast } from "../../toast";
+import { playSound } from "../../sound";
 import { IconClose, IconPlus, IconTag, IconWarn } from "../../icons";
 
 /** Paleta para categorías nuevas — colores con buen contraste en claro y oscuro. */
@@ -51,6 +52,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
       setNombre("");
       setBump((b) => b + 1);
       showToast(t("categorias.agregada"));
+      playSound("guardado");
       onChanged();
     } catch (e) {
       setError(t("common.noSePudoGuardar", { error: String(e) }));
@@ -75,6 +77,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
     setPendingDelete(null);
     setBump((b) => b + 1);
     showToast(t("categorias.eliminada"));
+    playSound("eliminar");
     onChanged();
   }
 

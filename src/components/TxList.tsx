@@ -5,6 +5,7 @@ import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, insertTx, metodoNombre, ME
 import { IconArrowDown, IconArrowUp, IconReportes, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
 export function EmptyState({ titulo, sub, icon }: { titulo: string; sub: string; icon?: ReactNode }) {
@@ -35,6 +36,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
     await deleteTx(borrado.id, borrado.church_id);
     setPendingDelete(null);
     onChanged();
+    playSound("eliminar");
     showToast(t("deshacer.movimientoEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {

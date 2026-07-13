@@ -4,6 +4,7 @@ import { deleteDeposito, fmtFechaCorta, fmtMoney, insertDeposito, type Deposito 
 import { IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
+import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
@@ -24,6 +25,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
     await deleteDeposito(borrado.id, borrado.church_id);
     setPendingDelete(null);
     onChanged();
+    playSound("eliminar");
     showToast(t("deshacer.depositoEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {
