@@ -559,6 +559,49 @@ export async function monthlySummary(churchId: number, months: number): Promise<
   return meses.map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
 }
 
+/** Resumen mensual de un año completo (solo meses con movimientos). */
+export async function yearMonthlySummary(churchId: number, yyyy: string): Promise<MonthSummary[]> {
+  const d = await getDb();
+  const rows = await d.select<{ mes: string; tipo: string; total: number }[]>(
+    `SELECT substr(fecha, 1, 7) AS mes, tipo, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2
+      GROUP BY mes, tipo`,
+    [churchId, yyyy]
+  );
+  const map = new Map<string, { ingresos: number; gastos: number }>();
+  for (const r of rows) {
+    const entry = map.get(r.mes) ?? { ingresos: 0, gastos: 0 };
+    if (r.tipo === "ingreso") entry.ingresos += r.total;
+    else entry.gastos += r.total;
+    map.set(r.mes, entry);
+  }
+  return [...map.keys()].sort().map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
+}
+
+export interface YearCategorias {
+  porCategoriaIngreso: Record<string, number>;
+  porCategoriaGasto: Record<string, number>;
+}
+
+/** Totales del año agrupados por categoría, para el reporte anual. */
+export async function yearCategoriaTotals(churchId: number, yyyy: string): Promise<YearCategorias> {
+  const d = await getDb();
+  const rows = await d.select<{ tipo: string; categoria: string; total: number }[]>(
+    `SELECT tipo, categoria, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2
+      GROUP BY tipo, categoria`,
+    [churchId, yyyy]
+  );
+  const out: YearCategorias = { porCategoriaIngreso: {}, porCategoriaGasto: {} };
+  for (const r of rows) {
+    if (r.tipo === "ingreso") out.porCategoriaIngreso[r.categoria] = r.total;
+    else out.porCategoriaGasto[r.categoria] = r.total;
+  }
+  return out;
+}
+
 export interface MemberStat {
   totalAnio: number;
   ultimoAporte: string | null;

@@ -3,14 +3,16 @@ import { useTranslation } from "react-i18next";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, currentMonth, fmtMoney, insertTx, nowLocalIso,
   mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
+  yearCategoriaTotals, yearDepositos, yearMonthlySummary,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
 } from "../db";
 import { exportReportPdf, printMonthlyReportPdf } from "../export";
+import { exportAnnualReportPdf } from "../services/print/printAnnual";
 import Delta from "../components/Delta";
 import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconPrinter, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconFileText, IconPrinter, IconUpload } from "../icons";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -33,7 +35,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
   const [depositosMes, setDepositosMes] = useState(0);
-  const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "print" | "anual" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [mes, setMes] = useState(currentMonth());
@@ -91,6 +93,24 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     }
   }
 
+  async function handleAnnual() {
+    setExportError(null);
+    setExporting("anual");
+    try {
+      const year = mes.slice(0, 4);
+      const [meses, categorias, depositosBancarios] = await Promise.all([
+        yearMonthlySummary(church.id, year),
+        yearCategoriaTotals(church.id, year),
+        yearDepositos(church.id, year),
+      ]);
+      await exportAnnualReportPdf({ church, year, meses, categorias, depositosBancarios });
+    } catch (e) {
+      setExportError(t("common.noSePudoExportar", { error: String(e) }));
+    } finally {
+      setExporting(null);
+    }
+  }
+
   async function handlePrint() {
     setExportError(null);
     setExporting("print");
@@ -126,6 +146,9 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           </div>
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
             <IconUpload size={13} /> {t("miembros.importarCsv")}
+          </button>
+          <button className="btn secondary" onClick={handleAnnual} disabled={exporting !== null}>
+            <IconFileText size={13} /> {exporting === "anual" ? t("common.generando") : t("anual.boton")}
           </button>
           <button className="btn secondary" onClick={handlePrint} disabled={exporting !== null}>
             <IconPrinter size={14} /> {exporting === "print" ? t("common.preparando") : t("common.imprimir")}

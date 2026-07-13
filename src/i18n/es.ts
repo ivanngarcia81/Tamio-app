@@ -377,6 +377,17 @@ export const es = {
     nota: "Documento informativo generado por Tesorería. Verifica los requisitos fiscales locales antes de usarlo como comprobante deducible.",
   },
 
+  anual: {
+    titulo: "Reporte anual",
+    boton: "Reporte anual",
+    resumenPorMes: "Resumen por mes",
+    totalAnio: "Total del año",
+    balanceAnioCard: "BALANCE DEL AÑO",
+    depositosAnio: "Depósitos bancarios del año",
+    sinMovimientos: "Sin movimientos registrados en {{anio}}.",
+    archivo: "Reporte-anual",
+  },
+
   pdf: {
     generadoAutomaticamente: "Generado automáticamente por Tesorería",
     pagina: "Página {{x}} de {{y}}",
