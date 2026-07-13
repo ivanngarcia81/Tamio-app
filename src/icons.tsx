@@ -143,3 +143,57 @@ export const IconPrinter = ({ size = 15, strokeWidth = 1.8 }: IconProps) => (
     <rect x="6" y="14" width="12" height="8" />
   </svg>
 );
+
+export const IconBuilding = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M4 21V6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v15" />
+    <path d="M14 21v-9a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v9" />
+    <path d="M8 8h0M8 12h0M8 16h0" />
+    <path d="M2 21h20" />
+  </svg>
+);
+
+export const IconUser = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+  </svg>
+);
+
+export const IconSignature = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M3 16c1.5-3 3-3 4.5 0s3 3 4.5 0 3-3 4.5 0 3 3 4.5 0" />
+    <path d="M4 20h16" />
+  </svg>
+);
+
+export const IconFileText = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+    <path d="M6 21a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8l5 5v12a1 1 0 0 1-1 1H6z" />
+    <path d="M8 13h8M8 17h8M8 9h3" />
+  </svg>
+);
+
+export const IconExternalLink = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M14 3h7v7" />
+    <path d="M10 14L21 3" />
+    <path d="M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6" />
+  </svg>
+);
+
+export const IconDownload = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M12 3v12" />
+    <path d="M7 10l5 5 5-5" />
+    <path d="M4 21h16" />
+  </svg>
+);
+
+export const IconRefreshCw = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M21 12a9 9 0 1 1-3-6.7" />
+    <path d="M21 3v6h-6" />
+  </svg>
+);

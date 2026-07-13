@@ -4,6 +4,7 @@
 // solo se necesitaría otra tarjeta igual a esta con su propio prefijo de
 // columnas en `churches` (o una tabla `roles` si llegan a ser varias personas
 // por rol).
+import { IconUser } from "../../icons";
 
 export interface TreasurerFormValues {
   nombre: string;
@@ -27,10 +28,15 @@ interface Props {
 
 export default function TreasurerSettings({ value, onChange, errors }: Props) {
   return (
-    <div className="card pad-lg">
-      <div className="card-title" style={{ marginBottom: 4 }}>Información del tesorero</div>
-      <div className="form-hint" style={{ marginBottom: 18 }}>
-        Se usa para identificar quién generó cada reporte en PDF.
+    <div className="card pad-lg settings-card">
+      <div className="card-head">
+        <div className="card-head-left">
+          <div className="card-icon"><IconUser size={16} /></div>
+          <div className="card-head-titles">
+            <div className="card-title-lg">Información del tesorero</div>
+            <div className="card-title-sub">Se usa para identificar quién generó cada reporte</div>
+          </div>
+        </div>
       </div>
 
       <div className="form-group full">

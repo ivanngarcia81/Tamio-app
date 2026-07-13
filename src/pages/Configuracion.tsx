@@ -99,41 +99,43 @@ export default function Configuracion({ church, onChurchUpdated }: Props) {
       </div>
 
       <div className="content">
-        <div className="split-2-1">
-          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            <ChurchSettings
-              value={churchForm}
-              onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
-              error={churchError}
-            />
+        <div className="settings-page">
+          <div className="settings-grid">
+            <div className="settings-stack">
+              <ChurchSettings
+                value={churchForm}
+                onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
+                error={churchError}
+              />
 
-            <TreasurerSettings
-              value={treasurerForm}
-              onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
-              errors={treasurerErrors}
-            />
+              <TreasurerSettings
+                value={treasurerForm}
+                onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
+                errors={treasurerErrors}
+              />
 
-            <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
-
-            {generalError && <div className="form-warning">{generalError}</div>}
-
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
-                {saving ? "Guardando…" : "Guardar cambios"}
-              </button>
-              {saved && (
-                <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#059669", fontWeight: 600 }}>
-                  <IconCheck size={14} /> Guardado
-                </span>
-              )}
+              <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
             </div>
+
+            <PDFPreview
+              churchNombre={churchForm.nombre}
+              tesoreroNombre={treasurerForm.nombre}
+              tesoreroCargo={treasurerForm.cargo}
+            />
           </div>
 
-          <PDFPreview
-            churchNombre={churchForm.nombre}
-            tesoreroNombre={treasurerForm.nombre}
-            tesoreroCargo={treasurerForm.cargo}
-          />
+          {generalError && <div className="form-warning">{generalError}</div>}
+
+          <div className="settings-actions">
+            <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+            {saved && (
+              <span className="settings-saved-pill">
+                <IconCheck size={14} /> Guardado
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </>

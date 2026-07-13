@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { IconWarn } from "../../icons";
+import { IconSignature, IconWarn } from "../../icons";
 
 function uint8ToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -17,11 +17,8 @@ interface Props {
   onPathChange: (path: string | null) => void;
 }
 
-/**
- * Firma del tesorero — solo guarda la ruta del PNG para usarse en futuras
- * versiones de los reportes en PDF. Deliberadamente NO se dibuja todavía en
- * ningún export (ver export.ts: punto de extensión documentado ahí).
- */
+/** Firma del tesorero — se usa en el bloque de firmas de los reportes en PDF
+ *  (Estado financiero, Dashboard) cuando hay un tesorero configurado. */
 export default function SignatureUploader({ path, onPathChange }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,48 +62,44 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
   }
 
   return (
-    <div className="card pad-lg">
-      <div className="card-title" style={{ marginBottom: 4 }}>Firma del tesorero</div>
-      <div className="form-hint" style={{ marginBottom: 16 }}>
-        Se guarda para usarse en futuras versiones de los reportes — todavía no aparece en el PDF actual.
+    <div className="card pad-lg settings-card">
+      <div className="card-head">
+        <div className="card-head-left">
+          <div className="card-icon"><IconSignature size={16} /></div>
+          <div className="card-head-titles">
+            <div className="card-title-lg">Firma del tesorero</div>
+            <div className="card-title-sub">Aparece en el bloque de firmas de los reportes en PDF</div>
+          </div>
+        </div>
       </div>
 
-      {previewUrl ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div
-            style={{
-              width: 160,
-              height: 80,
-              flexShrink: 0,
-              borderRadius: 10,
-              border: "1px solid var(--line)",
-              backgroundImage:
-                "linear-gradient(45deg, #0000000d 25%, transparent 25%), linear-gradient(-45deg, #0000000d 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #0000000d 75%), linear-gradient(-45deg, transparent 75%, #0000000d 75%)",
-              backgroundSize: "16px 16px",
-              backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0",
-              display: "grid",
-              placeItems: "center",
-              overflow: "hidden",
-            }}
-          >
+      <div className="signature-body">
+        {previewUrl ? (
+          <div className="signature-preview">
             <img src={previewUrl} alt="Firma del tesorero" style={{ maxWidth: "100%", maxHeight: "100%" }} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" className="btn secondary" onClick={pickFirma}>Reemplazar</button>
-            <button type="button" className="btn ghost" onClick={() => onPathChange(null)}>Eliminar firma</button>
+        ) : (
+          <div className="signature-placeholder">
+            <IconSignature size={22} />
+            <span className="lbl">Sin firma registrada</span>
           </div>
-        </div>
-      ) : (
-        <div>
-          <button type="button" className="btn secondary" onClick={pickFirma}>Subir firma</button>
-          <div className="form-hint" style={{ marginTop: 8 }}>
-            Solo se aceptan imágenes PNG, idealmente con fondo transparente.
+        )}
+
+        <div className="signature-actions">
+          <div className="signature-actions-row">
+            <button type="button" className="btn secondary" onClick={pickFirma}>
+              {previewUrl ? "Cambiar firma" : "Subir firma"}
+            </button>
+            {previewUrl && (
+              <button type="button" className="btn ghost" onClick={() => onPathChange(null)}>Eliminar firma</button>
+            )}
           </div>
+          <div className="form-hint">Solo se aceptan imágenes PNG, idealmente con fondo transparente.</div>
         </div>
-      )}
+      </div>
 
       {error && (
-        <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12 }}>
+        <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14 }}>
           <IconWarn size={13} /> {error}
         </div>
       )}

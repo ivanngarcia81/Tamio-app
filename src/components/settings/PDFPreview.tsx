@@ -1,7 +1,14 @@
+import { IconDownload, IconExternalLink, IconFileText, IconPrinter, IconRefreshCw } from "../../icons";
+
 const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
+
+function previewPeriodo(): string {
+  const d = new Date();
+  return `${MESES[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 function previewFecha(): string {
   const d = new Date();
@@ -21,39 +28,73 @@ interface Props {
 
 /** Simulación del encabezado del PDF — se actualiza en vivo mientras el
  *  usuario escribe. No invoca el motor real de PDF (export.ts); es solo
- *  una vista previa visual con la misma información. */
+ *  una vista previa visual con la misma información. Las acciones de la
+ *  barra superior (Abrir/Imprimir/Exportar) operan sobre el reporte real
+ *  del mes desde la pantalla Reportes — aquí quedan preparadas visualmente
+ *  para cuando esta vista previa esté conectada a un reporte real. */
 export default function PDFPreview({ churchNombre, tesoreroNombre, tesoreroCargo }: Props) {
   return (
-    <div className="card pad-lg" style={{ position: "sticky", top: 20 }}>
-      <div className="card-title" style={{ marginBottom: 4 }}>Vista previa del reporte</div>
-      <div className="form-hint" style={{ marginBottom: 16 }}>
-        Así se verá el encabezado de tus reportes en PDF.
+    <div className="card pad-lg settings-card pdf-preview-card" style={{ position: "sticky", top: 20 }}>
+      <div className="card-head">
+        <div className="card-head-left">
+          <div className="card-icon"><IconFileText size={16} /></div>
+          <div className="card-head-titles">
+            <div className="card-title-lg">Vista previa del PDF</div>
+            <div className="card-title-sub">Así se verá el encabezado de tus reportes</div>
+          </div>
+        </div>
       </div>
 
-      <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "28px 24px" }}>
-        <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em" }}>
-          Estado financiero mensual
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
-          {churchNombre.trim() || "Mi Iglesia"}
-        </div>
+      <div className="pdf-preview-toolbar">
+        <button type="button" className="btn secondary sm" disabled title="Disponible desde Reportes">
+          <IconExternalLink size={13} /> Abrir PDF
+        </button>
+        <button type="button" className="btn secondary sm" disabled title="Disponible desde Reportes">
+          <IconPrinter size={13} /> Imprimir
+        </button>
+        <button type="button" className="btn secondary sm" disabled title="Disponible desde Reportes">
+          <IconDownload size={13} /> Exportar PDF
+        </button>
+        <button type="button" className="btn ghost sm" disabled title="La vista previa ya se actualiza mientras escribes">
+          <IconRefreshCw size={13} /> Actualizar
+        </button>
+      </div>
+      <div className="pdf-preview-hint">
+        Las acciones de reporte real están disponibles en la pantalla Reportes.
+      </div>
 
-        <div style={{ height: 1, background: "var(--line)", margin: "18px 0" }} />
+      <div className="pdf-preview-stage">
+        <div className="pdf-sheet">
+          <div className="pdf-sheet-title">Estado financiero mensual</div>
+          <div className="pdf-sheet-church">{churchNombre.trim() || "Mi Iglesia"}</div>
+          <div className="pdf-sheet-period">Periodo: {previewPeriodo()}</div>
 
-        <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-3)", marginBottom: 4 }}>
-          Generado por
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 600 }}>
-          {tesoreroNombre.trim() || "—"}
-        </div>
-        <div style={{ fontSize: 12, color: "var(--text-2)" }}>
-          {tesoreroCargo.trim() || "Tesorero"}
-        </div>
+          <div className="pdf-sheet-rule" />
 
-        <div style={{ height: 1, background: "var(--line)", margin: "18px 0" }} />
+          <div className="pdf-sheet-eyebrow">Generado por</div>
+          <div className="pdf-sheet-name">{tesoreroNombre.trim() || "—"}</div>
+          <div className="pdf-sheet-role">{tesoreroCargo.trim() || "Tesorero"}</div>
 
-        <div style={{ fontSize: 11, color: "var(--text-3)" }}>Reporte {previewFolio()}</div>
-        <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>{previewFecha()}</div>
+          <div className="pdf-sheet-cards">
+            <div className="pdf-sheet-card">
+              <div className="k">Ingresos</div>
+              <div className="v" />
+            </div>
+            <div className="pdf-sheet-card">
+              <div className="k">Gastos</div>
+              <div className="v" />
+            </div>
+            <div className="pdf-sheet-card">
+              <div className="k">Balance</div>
+              <div className="v" />
+            </div>
+          </div>
+
+          <div className="pdf-sheet-rule" />
+
+          <div className="pdf-sheet-foot">Reporte {previewFolio()}</div>
+          <div className="pdf-sheet-foot">{previewFecha()}</div>
+        </div>
       </div>
     </div>
   );

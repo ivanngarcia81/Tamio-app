@@ -1,3 +1,5 @@
+import { IconBuilding } from "../../icons";
+
 export interface ChurchFormValues {
   nombre: string;
   ciudad: string;
@@ -13,8 +15,16 @@ interface Props {
 
 export default function ChurchSettings({ value, onChange, error }: Props) {
   return (
-    <div className="card pad-lg">
-      <div className="card-title" style={{ marginBottom: 18 }}>Información de la iglesia</div>
+    <div className="card pad-lg settings-card">
+      <div className="card-head">
+        <div className="card-head-left">
+          <div className="card-icon"><IconBuilding size={16} /></div>
+          <div className="card-head-titles">
+            <div className="card-title-lg">Información de la iglesia</div>
+            <div className="card-title-sub">Nombre, ubicación y moneda</div>
+          </div>
+        </div>
+      </div>
 
       <div className="form-group full">
         <label className="form-label">Nombre de la iglesia</label>
