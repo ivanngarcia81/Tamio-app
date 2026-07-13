@@ -28,11 +28,11 @@ export default function Sidebar({ church, memberCount, pendingCount, theme, onTo
 
       <div className="church-select">
         <div className="church-avatar">{initials}</div>
-        <div>
-          <div className="church-name">{church.nombre}</div>
+        <div className="church-info">
+          <div className="church-name" title={church.nombre}>{church.nombre}</div>
           <span className="church-sub">{church.ciudad || "—"}</span>
         </div>
-        <span style={{ color: "var(--text-3)" }}><IconChevronDown /></span>
+        <span className="church-chevron" style={{ color: "var(--text-3)" }}><IconChevronDown /></span>
       </div>
 
       <nav className="nav">
