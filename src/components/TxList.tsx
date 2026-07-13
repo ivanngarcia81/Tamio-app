@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, METODOS_PAGO, type Tx } from "../db";
+import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconReportes } from "../icons";
 import RowMenu from "./RowMenu";
 import ConfirmDialog from "./ConfirmDialog";
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function TxList({ txs, onEdit, onChanged }: Props) {
+  const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
 
   if (txs.length === 0) return null;
@@ -84,13 +86,13 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                               verticalAlign: "middle",
                             }}
                           >
-                            Pendiente
+                            {t("tx.pendiente")}
                           </span>
                         )}
                         {quien && <span className="who">{quien}</span>}
                         {tx.comprobante_path && (
                           <span
-                            title="Ver comprobante"
+                            title={t("tx.verComprobante")}
                             onClick={(e) => { e.stopPropagation(); openPath(tx.comprobante_path!); }}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 3,
@@ -100,7 +102,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                             </svg>
-                            Comprobante
+                            {t("tx.comprobante")}
                           </span>
                         )}
                       </div>
@@ -109,7 +111,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         {metodo && (
                           <span className={`m-badge ${metodo.id}`}>{metodo.badge}</span>
                         )}
-                        {metodo?.nombre ?? tx.metodo_pago}
+                        {metodo ? metodoNombre(metodo.id) : tx.metodo_pago}
                       </span>
                       <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
                         {tx.tipo === "ingreso" ? "+" : "−"}
@@ -128,9 +130,9 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
 
       {pendingDelete && (
         <ConfirmDialog
-          title="Eliminar movimiento"
-          message={`¿Eliminar "${pendingDelete.concepto}" por ${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda}? Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar"
+          title={t("tx.eliminarTitulo")}
+          message={t("tx.eliminarMensaje", { concepto: pendingDelete.concepto, monto: `${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda}` })}
+          confirmLabel={t("common.eliminar")}
           danger
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}

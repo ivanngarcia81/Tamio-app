@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { deleteDeposito, fmtFechaCorta, fmtMoney, type Deposito } from "../db";
 import { IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
@@ -13,6 +14,7 @@ interface Props {
 const COLS = "100px 1fr 140px 1fr 150px 40px";
 
 export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
+  const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Deposito | null>(null);
 
   async function confirmDelete() {
@@ -26,11 +28,11 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
     <>
       <div className="data-table roomy">
         <div className="thead" style={{ gridTemplateColumns: COLS }}>
-          <div className="th">Fecha</div>
-          <div className="th">Cuenta / banco</div>
-          <div className="th">Referencia</div>
-          <div className="th">Notas</div>
-          <div className="th" style={{ textAlign: "right" }}>Monto</div>
+          <div className="th">{t("tx.colFecha")}</div>
+          <div className="th">{t("depositos.colCuenta")}</div>
+          <div className="th">{t("depositos.colReferencia")}</div>
+          <div className="th">{t("depositos.colNotas")}</div>
+          <div className="th" style={{ textAlign: "right" }}>{t("tx.colMonto")}</div>
           <div className="th"></div>
         </div>
         {depositos.map((dep) => (
@@ -57,7 +59,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
             </div>
             <div className="td" style={{ textAlign: "center" }}>
               <span className="row-actions">
-                <span className="row-icon-btn" title="Editar" onClick={() => onEdit(dep)}>
+                <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(dep)}>
                   <IconEdit size={13} strokeWidth={2} />
                 </span>
               </span>
@@ -69,9 +71,9 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
 
       {pendingDelete && (
         <ConfirmDialog
-          title="Eliminar depósito"
-          message={`¿Eliminar el depósito de ${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda} en "${pendingDelete.cuenta_banco}"? Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar"
+          title={t("depositos.eliminarTitulo")}
+          message={t("depositos.eliminarMensaje", { monto: `${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda}`, cuenta: pendingDelete.cuenta_banco })}
+          confirmLabel={t("common.eliminar")}
           danger
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}

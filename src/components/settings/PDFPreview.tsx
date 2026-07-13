@@ -1,19 +1,13 @@
 import { useTranslation } from "react-i18next";
+import { currentMonth, fmtFechaCorta, mesLegible, nowLocalIso } from "../../db";
 import { IconDownload, IconExternalLink, IconFileText, IconPrinter, IconRefreshCw } from "../../icons";
 
-const MESES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
-
 function previewPeriodo(): string {
-  const d = new Date();
-  return `${MESES[d.getMonth()]} ${d.getFullYear()}`;
+  return mesLegible(currentMonth());
 }
 
 function previewFecha(): string {
-  const d = new Date();
-  return `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
+  return fmtFechaCorta(nowLocalIso());
 }
 
 function previewFolio(): string {

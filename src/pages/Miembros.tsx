@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   archiveMember, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney, insertMember, listMembers,
   memberStats, type Church, type Member, type MemberStat, type NewMember,
@@ -16,14 +17,6 @@ const TAG_CLASS: Record<string, string> = {
   ofrendante: "ofrenda",
   comite: "pastores",
   junta: "mantenimiento",
-};
-
-const TAG_NOMBRE: Record<string, string> = {
-  diezmador: "Diezmador",
-  donador: "Donador",
-  ofrendante: "Ofrendante",
-  comite: "Comité",
-  junta: "Junta",
 };
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
@@ -54,6 +47,7 @@ interface PendingDelete {
 }
 
 export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged }: Props) {
+  const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
   const [query, setQuery] = useState("");
@@ -96,17 +90,15 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
     <>
       <div className="header">
         <div>
-          <div className="page-title">Miembros</div>
-          <div className="page-sub">
-            {members.length} miembro{members.length === 1 ? "" : "s"} activo{members.length === 1 ? "" : "s"}
-          </div>
+          <div className="page-title">{t("miembros.titulo")}</div>
+          <div className="page-sub">{t("miembros.activos", { count: members.length })}</div>
         </div>
         <div className="header-actions">
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
-            <IconUpload size={13} /> Importar CSV
+            <IconUpload size={13} /> {t("miembros.importarCsv")}
           </button>
           <button className="btn primary" onClick={onNew}>
-            <IconPlus size={14} /> Nuevo miembro
+            <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
           </button>
         </div>
       </div>
@@ -117,7 +109,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
             <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
-              placeholder="Buscar por nombre, email o RFC…"
+              placeholder={t("miembros.buscarPlaceholder")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -126,22 +118,18 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
 
         {visibles.length === 0 ? (
           <EmptyState
-            titulo={members.length === 0 ? "Aún no hay miembros" : "Sin resultados"}
-            sub={
-              members.length === 0
-                ? "Agrega al primer miembro o familia con el botón de arriba."
-                : "Prueba con otro término de búsqueda."
-            }
+            titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
+            sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
             icon={<IconPlus size={20} strokeWidth={1.8} />}
           />
         ) : (
           <div className="data-table roomy">
             <div className="thead" style={{ gridTemplateColumns: MEMBER_COLS }}>
-              <div className="th">Miembro</div>
-              <div className="th">Etiquetas</div>
-              <div className="th">Último aporte</div>
-              <div className="th" style={{ textAlign: "right" }}>Total del año</div>
-              <div className="th">Contacto</div>
+              <div className="th">{t("miembros.colMiembro")}</div>
+              <div className="th">{t("miembros.colEtiquetas")}</div>
+              <div className="th">{t("miembros.colUltimoAporte")}</div>
+              <div className="th" style={{ textAlign: "right" }}>{t("miembros.colTotalAnio")}</div>
+              <div className="th">{t("miembros.colContacto")}</div>
               <div className="th"></div>
             </div>
             {visibles.map((m, i) => {
@@ -161,7 +149,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                       </div>
                       <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                         <div className="p-name truncate" title={m.nombre}>{m.nombre}</div>
-                        <div className="p-mail truncate" title={m.email ?? undefined}>{m.email ?? "Sin correo registrado"}</div>
+                        <div className="p-mail truncate" title={m.email ?? undefined}>{m.email ?? t("miembros.sinCorreoRegistrado")}</div>
                       </div>
                     </div>
                   </div>
@@ -171,8 +159,8 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                         <span style={{ color: "var(--text-3)", fontSize: 12 }}>—</span>
                       )}
                       {etiquetas.map((et) => (
-                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} title={TAG_NOMBRE[et] ?? et}>
-                          {TAG_NOMBRE[et] ?? et}
+                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} title={TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}>
+                          {TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}
                         </span>
                       ))}
                     </div>
@@ -184,12 +172,12 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                     {stat?.totalAnio ? `${fmtMoney(stat.totalAnio)} ${church.moneda}` : "—"}
                   </div>
                   <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                    <div className="truncate">{m.telefono ?? "Sin teléfono"}</div>
-                    <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? "Sin RFC"}</div>
+                    <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
+                    <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? t("miembros.sinRfc")}</div>
                   </div>
                   <div className="td" style={{ textAlign: "center" }}>
                     <span className="row-actions">
-                      <span className="row-icon-btn" title="Editar" onClick={() => onEdit(m)}>
+                      <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(m)}>
                         <IconEdit size={13} strokeWidth={2} />
                       </span>
                     </span>
@@ -207,13 +195,13 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
 
       {pendingDelete && (
         <ConfirmDialog
-          title={pendingDelete.hasHistory ? "Archivar miembro" : "Eliminar miembro"}
+          title={pendingDelete.hasHistory ? t("miembros.archivarTitulo") : t("miembros.eliminarTitulo")}
           message={
             pendingDelete.hasHistory
-              ? `"${pendingDelete.member.nombre}" tiene ${pendingDelete.count} movimiento${pendingDelete.count === 1 ? "" : "s"} registrado${pendingDelete.count === 1 ? "" : "s"}. No se puede eliminar sin perder ese historial en tus reportes, así que se archivará: dejará de aparecer en la lista, pero sus aportes se conservan.`
-              : `¿Eliminar a "${pendingDelete.member.nombre}"? No tiene movimientos registrados. Esta acción no se puede deshacer.`
+              ? t("miembros.archivarMensaje", { nombre: pendingDelete.member.nombre, count: pendingDelete.count })
+              : t("miembros.eliminarMensaje", { nombre: pendingDelete.member.nombre })
           }
-          confirmLabel={pendingDelete.hasHistory ? "Archivar" : "Eliminar"}
+          confirmLabel={pendingDelete.hasHistory ? t("miembros.archivar") : t("common.eliminar")}
           danger={!pendingDelete.hasHistory}
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
@@ -222,26 +210,21 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
 
       {importOpen && (
         <GenericCsvImportModal<NewMember>
-          titulo="Importar miembros desde CSV"
-          subtitulo="Carga tu directorio de miembros sin capturarlos uno por uno"
-          instrucciones={
-            <>
-              Descarga la plantilla como referencia o usa tu propio archivo — solo necesitas indicar
-              qué columna corresponde a cada dato en el siguiente paso. Solo el nombre es obligatorio.
-            </>
-          }
+          titulo={t("miembrosImport.titulo")}
+          subtitulo={t("miembrosImport.sub")}
+          instrucciones={t("miembrosImport.instrucciones")}
           fields={MIEMBROS_FIELDS}
           templateCsv={MIEMBROS_CSV_TEMPLATE}
           templateFileName="plantilla-miembros.csv"
           validarFila={validarFilaMiembro}
           previewColsTemplate="1.6fr 1fr 1fr 1fr"
           previewColumns={[
-            { label: "Nombre", render: (m) => m.nombre },
-            { label: "Correo", render: (m) => m.email ?? "—" },
-            { label: "Teléfono", render: (m) => m.telefono ?? "—" },
-            { label: "RFC", render: (m) => m.rfc ?? "—" },
+            { label: t("miembrosImport.colNombre"), render: (m) => m.nombre },
+            { label: t("miembrosImport.colCorreo"), render: (m) => m.email ?? "—" },
+            { label: t("miembrosImport.colTelefono"), render: (m) => m.telefono ?? "—" },
+            { label: t("miembrosImport.colRfc"), render: (m) => m.rfc ?? "—" },
           ]}
-          etiquetaItem={(n) => (n === 1 ? "miembro" : "miembros")}
+          etiquetaItem={(n) => t("miembrosImport.items", { count: n })}
           onConfirmar={async (items) => {
             for (const m of items) await insertMember(church.id, m);
           }}

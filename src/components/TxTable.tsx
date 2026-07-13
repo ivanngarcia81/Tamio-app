@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, METODOS_PAGO, type Tx } from "../db";
+import { useTranslation } from "react-i18next";
+import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
 import ConfirmDialog from "./ConfirmDialog";
@@ -15,6 +16,7 @@ const COLS_INGRESO = "110px 1fr 140px 170px 150px 130px 110px 40px";
 const COLS_GASTO = "110px 140px 1fr 170px 150px 130px 110px 40px";
 
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
+  const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
   const esIngreso = tipo === "ingreso";
   const cols = esIngreso ? COLS_INGRESO : COLS_GASTO;
@@ -30,13 +32,13 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
     <>
       <div className="data-table roomy">
         <div className="thead" style={{ gridTemplateColumns: cols }}>
-          <div className="th">Fecha</div>
-          <div className="th">{esIngreso ? "Concepto" : "Categoría"}</div>
-          <div className="th">{esIngreso ? "Categoría" : "Descripción"}</div>
-          <div className="th">{esIngreso ? "Miembro" : "Beneficiario"}</div>
-          <div className="th">Método</div>
-          <div className="th" style={{ textAlign: "right" }}>Monto</div>
-          <div className="th">Estado</div>
+          <div className="th">{t("tx.colFecha")}</div>
+          <div className="th">{esIngreso ? t("tx.colConcepto") : t("tx.colCategoria")}</div>
+          <div className="th">{esIngreso ? t("tx.colCategoria") : t("tx.colDescripcion")}</div>
+          <div className="th">{esIngreso ? t("tx.colMiembro") : t("tx.colBeneficiario")}</div>
+          <div className="th">{t("tx.colMetodo")}</div>
+          <div className="th" style={{ textAlign: "right" }}>{t("tx.colMonto")}</div>
+          <div className="th">{t("tx.colEstado")}</div>
           <div className="th"></div>
         </div>
         {txs.map((tx) => {
@@ -89,9 +91,9 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 )}
               </div>
               <div className="td">
-                <span className="method" style={{ justifySelf: "start" }} title={metodo?.nombre ?? tx.metodo_pago}>
+                <span className="method" style={{ justifySelf: "start" }} title={metodo ? metodoNombre(metodo.id) : tx.metodo_pago}>
                   {metodo && <span className={`m-badge ${metodo.id}`}>{metodo.badge}</span>}
-                  <span className="truncate" style={{ display: "inline-block" }}>{metodo?.nombre ?? tx.metodo_pago}</span>
+                  <span className="truncate" style={{ display: "inline-block" }}>{metodo ? metodoNombre(metodo.id) : tx.metodo_pago}</span>
                 </span>
               </div>
               <div className="td" style={{ textAlign: "right" }}>
@@ -110,12 +112,12 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
               </div>
               <div className="td">
                 <span className={`status-pill ${tx.estado}`}>
-                  {tx.estado === "aprobado" ? "Aprobado" : tx.estado === "pendiente" ? "Pendiente" : "Rechazado"}
+                  {tx.estado === "aprobado" ? t("tx.aprobado") : tx.estado === "pendiente" ? t("tx.pendiente") : t("tx.rechazado")}
                 </span>
               </div>
               <div className="td" style={{ textAlign: "center" }}>
                 <span className="row-actions">
-                  <span className="row-icon-btn" title="Editar" onClick={() => onEdit(tx)}>
+                  <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(tx)}>
                     <IconEdit size={13} strokeWidth={2} />
                   </span>
                 </span>
@@ -128,9 +130,9 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
 
       {pendingDelete && (
         <ConfirmDialog
-          title="Eliminar movimiento"
-          message={`¿Eliminar "${pendingDelete.concepto}" por ${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda}? Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar"
+          title={t("tx.eliminarTitulo")}
+          message={t("tx.eliminarMensaje", { concepto: pendingDelete.concepto, monto: `${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda}` })}
+          confirmLabel={t("common.eliminar")}
           danger
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}

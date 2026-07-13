@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO,
+  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, catNombre, metodoNombre,
   insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
@@ -34,6 +35,7 @@ function parseMonto(s: string): number | null {
 }
 
 export default function NewRecordModal({ church, mode, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const isEdit = mode.kind !== "create";
   const initialTab: ModalTab =
     mode.kind === "create" ? mode.tab : mode.kind === "editTx" ? mode.tx.tipo : "miembro";
@@ -117,25 +119,25 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   }, [aportanteQuery, aportanteId, members]);
 
   const titulo = isEdit
-    ? tab === "miembro" ? "Editar miembro" : tab === "ingreso" ? "Editar ingreso" : "Editar gasto"
-    : tab === "miembro" ? "Nuevo miembro" : tab === "ingreso" ? "Nuevo ingreso" : "Nuevo gasto";
+    ? tab === "miembro" ? t("recordModal.editarMiembro") : tab === "ingreso" ? t("recordModal.editarIngreso") : t("recordModal.editarGasto")
+    : tab === "miembro" ? t("recordModal.nuevoMiembro") : tab === "ingreso" ? t("recordModal.nuevoIngreso") : t("recordModal.nuevoGasto");
   const subtitulo = tab === "miembro"
-    ? "Agrega una persona o familia al directorio"
-    : tab === "ingreso" ? "Registra dinero que entró a la iglesia" : "Registra un pago o salida de dinero";
+    ? t("recordModal.subMiembro")
+    : tab === "ingreso" ? t("recordModal.subIngreso") : t("recordModal.subGasto");
   const botonGuardar = saving
-    ? "Guardando…"
-    : isEdit ? "Guardar cambios" : tab === "miembro" ? "Guardar miembro" : tab === "ingreso" ? "Guardar ingreso" : "Guardar gasto";
+    ? t("common.guardando")
+    : isEdit ? t("common.guardarCambios") : tab === "miembro" ? t("recordModal.guardarMiembro") : tab === "ingreso" ? t("recordModal.guardarIngreso") : t("recordModal.guardarGasto");
 
   async function pickComprobante() {
     try {
       const path = await openFileDialog({
         multiple: false,
-        title: "Seleccionar comprobante",
-        filters: [{ name: "Comprobante", extensions: ["pdf", "png", "jpg", "jpeg", "heic"] }],
+        title: t("recordModal.seleccionarComprobante"),
+        filters: [{ name: t("tx.comprobante"), extensions: ["pdf", "png", "jpg", "jpeg", "heic"] }],
       });
       if (typeof path === "string") setComprobantePath(path);
     } catch (e) {
-      setError(`No se pudo abrir el selector de archivos: ${e}`);
+      setError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }
   }
 
@@ -143,7 +145,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     setError(null);
     try {
       if (tab === "miembro") {
-        if (!mNombre.trim()) { setError("El nombre es obligatorio."); return; }
+        if (!mNombre.trim()) { setError(t("validacion.nombreObligatorio")); return; }
         setSaving(true);
         const payload = {
           nombre: mNombre.trim(),
@@ -159,10 +161,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         }
       } else {
         const m = parseMonto(monto);
-        if (!concepto.trim()) { setError("El concepto es obligatorio."); return; }
-        if (m === null) { setError("Escribe un monto válido mayor a cero."); return; }
+        if (!concepto.trim()) { setError(t("common.conceptoObligatorio")); return; }
+        if (m === null) { setError(t("common.montoInvalido")); return; }
         if (fecha > hoy) {
-          setError(`No se pueden registrar ${tab === "ingreso" ? "ingresos" : "gastos"} con una fecha futura.`);
+          setError(tab === "ingreso" ? t("recordModal.fechaFuturaIngresos") : t("recordModal.fechaFuturaGastos"));
           return;
         }
         setSaving(true);
@@ -191,7 +193,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       onSaved();
       onClose();
     } catch (e) {
-      setError(`No se pudo guardar: ${e}`);
+      setError(t("common.noSePudoGuardar", { error: String(e) }));
       setSaving(false);
     }
   }
@@ -211,13 +213,13 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           {!isEdit && (
             <div className="tabs-segmented">
               <div className={`seg${tab === "ingreso" ? " active" : ""}`} onClick={() => setTab("ingreso")}>
-                <IconArrowUp size={14} strokeWidth={2.4} /> Ingreso
+                <IconArrowUp size={14} strokeWidth={2.4} /> {t("recordModal.segIngreso")}
               </div>
               <div className={`seg${tab === "gasto" ? " active" : ""}`} onClick={() => setTab("gasto")}>
-                <IconArrowDown size={14} strokeWidth={2.4} /> Gasto
+                <IconArrowDown size={14} strokeWidth={2.4} /> {t("recordModal.segGasto")}
               </div>
               <div className={`seg${tab === "miembro" ? " active" : ""}`} onClick={() => setTab("miembro")}>
-                <IconMiembros size={14} strokeWidth={2.4} /> Miembro
+                <IconMiembros size={14} strokeWidth={2.4} /> {t("recordModal.segMiembro")}
               </div>
             </div>
           )}
@@ -225,7 +227,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           {tab !== "miembro" && (
             <>
               <div className="form-group full">
-                <label className="form-label">{tab === "ingreso" ? "Tipo de ingreso" : "Categoría"}</label>
+                <label className="form-label">{tab === "ingreso" ? t("recordModal.tipoIngreso") : t("recordModal.categoria")}</label>
                 {tab === "ingreso" ? (
                   <div className="type-grid">
                     {CATEGORIAS_INGRESO.map((c) => (
@@ -234,7 +236,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                         className={`tag ${c.tagClass} cat-pill${categoria === c.id ? " is-selected" : ""}`}
                         onClick={() => setCategoria(c.id)}
                       >
-                        {c.nombre}
+                        {catNombre(c.id)}
                       </span>
                     ))}
                   </div>
@@ -246,7 +248,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                         className={`tag ${c.tagClass} cat-pill${categoria === c.id ? " is-selected" : ""}`}
                         onClick={() => setCategoria(c.id)}
                       >
-                        {c.nombre}
+                        {catNombre(c.id)}
                       </span>
                     ))}
                   </div>
@@ -255,48 +257,48 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
 
               {tab === "ingreso" && categoria === "otros" && (
                 <div className="form-group full">
-                  <label className="form-label">Subcategoría <span className="opt">(p. ej. Rentas del salón)</span></label>
-                  <input className="form-input" value={subcategoria} onChange={(e) => setSubcategoria(e.target.value)} placeholder="Escribe una subcategoría…" />
+                  <label className="form-label">{t("recordModal.subcategoria")} <span className="opt">{t("recordModal.subcategoriaEj")}</span></label>
+                  <input className="form-input" value={subcategoria} onChange={(e) => setSubcategoria(e.target.value)} placeholder={t("recordModal.subcategoriaPlaceholder")} />
                 </div>
               )}
 
               <div className="form-group full">
-                <label className="form-label">Concepto / descripción</label>
+                <label className="form-label">{t("recordModal.concepto")}</label>
                 <input
                   className="form-input"
                   value={concepto}
                   onChange={(e) => setConcepto(e.target.value)}
-                  placeholder={tab === "ingreso" ? "p. ej. Ofrenda servicio dominical" : "p. ej. CFE · Energía eléctrica"}
+                  placeholder={tab === "ingreso" ? t("recordModal.conceptoPlaceholderIngreso") : t("recordModal.conceptoPlaceholderGasto")}
                 />
               </div>
 
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Fecha</label>
+                  <label className="form-label">{t("recordModal.fecha")}</label>
                   <input className="form-input" type="date" value={fecha} max={hoy} onChange={(e) => setFecha(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Hora</label>
+                  <label className="form-label">{t("recordModal.hora")}</label>
                   <input className="form-input" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
                 </div>
               </div>
 
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Monto</label>
+                  <label className="form-label">{t("recordModal.monto")}</label>
                   <input className="form-input" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="$0.00" inputMode="decimal" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Moneda</label>
+                  <label className="form-label">{t("recordModal.moneda")}</label>
                   <select className="form-select" defaultValue={church.moneda} disabled>
-                    <option value="USD">USD — Dólar</option>
-                    <option value="MXN">MXN — Peso mexicano</option>
+                    <option value="USD">{t("iglesia.monedaUsd")}</option>
+                    <option value="MXN">{t("iglesia.monedaMxn")}</option>
                   </select>
                 </div>
               </div>
 
               <div className="form-group full">
-                <label className="form-label">Método de pago</label>
+                <label className="form-label">{t("recordModal.metodoPago")}</label>
                 <div className="method-group">
                   {METODOS_PAGO.map((mp) => (
                     <div
@@ -305,7 +307,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                       onClick={() => setMetodo(mp.id)}
                     >
                       <span className="m-dot" style={{ background: mp.color }} />
-                      {mp.nombre}
+                      {metodoNombre(mp.id)}
                     </div>
                   ))}
                 </div>
@@ -315,14 +317,14 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 <>
                   <div className="form-group full">
                     <label className="form-label">
-                      Aportante <span className="opt">(opcional — deja vacío si es colectivo)</span>
+                      {t("recordModal.aportante")} <span className="opt">{t("recordModal.aportanteHint")}</span>
                     </label>
                     <div className="search-combo">
                       <input
                         className="form-input"
                         value={aportanteQuery}
                         onChange={(e) => { setAportanteQuery(e.target.value); setAportanteId(null); }}
-                        placeholder="Buscar miembro por nombre…"
+                        placeholder={t("recordModal.buscarMiembro")}
                       />
                       {sugerencias.length > 0 && (
                         <div className="search-suggest">
@@ -334,7 +336,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                             >
                               <div>
                                 <div className="s-name">{m.nombre}</div>
-                                <div className="s-sub">{m.rfc || m.email || "Sin RFC registrado"}</div>
+                                <div className="s-sub">{m.rfc || m.email || t("recordModal.sinRfcRegistrado")}</div>
                               </div>
                             </div>
                           ))}
@@ -351,26 +353,26 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                       onChange={(e) => setConstancia(e.target.checked)}
                     />
                     <label htmlFor="chk-constancia">
-                      Emitir constancia (recibo deducible) — requiere RFC del aportante
+                      {t("recordModal.constanciaLabel")}
                     </label>
                   </div>
                 </>
               ) : (
                 <div className="form-grid">
                   <div className="form-group">
-                    <label className="form-label">Beneficiario</label>
-                    <input className="form-input" value={beneficiario} onChange={(e) => setBeneficiario(e.target.value)} placeholder="Proveedor o persona" />
+                    <label className="form-label">{t("recordModal.beneficiario")}</label>
+                    <input className="form-input" value={beneficiario} onChange={(e) => setBeneficiario(e.target.value)} placeholder={t("recordModal.beneficiarioPlaceholder")} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">RFC <span className="opt">(opcional)</span></label>
-                    <input className="form-input" value={beneficiarioRfc} onChange={(e) => setBeneficiarioRfc(e.target.value)} placeholder="RFC del beneficiario" />
+                    <label className="form-label">{t("recordModal.rfc")} <span className="opt">{t("common.opcional")}</span></label>
+                    <input className="form-input" value={beneficiarioRfc} onChange={(e) => setBeneficiarioRfc(e.target.value)} placeholder={t("recordModal.rfcBeneficiarioPlaceholder")} />
                   </div>
                 </div>
               )}
 
               <div className="form-group full">
                 <label className="form-label">
-                  Comprobante <span className="opt">({tab === "gasto" ? "recomendado" : "opcional"})</span>
+                  {t("recordModal.comprobante")} <span className="opt">{tab === "gasto" ? t("recordModal.recomendado") : t("common.opcional")}</span>
                 </label>
                 {comprobantePath ? (
                   <div
@@ -390,32 +392,32 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                       className="btn ghost sm"
                       onClick={() => comprobantePath && openPath(comprobantePath)}
                     >
-                      Ver
+                      {t("common.ver")}
                     </button>
                     <button type="button" className="btn ghost sm" onClick={() => setComprobantePath(null)}>
-                      Quitar
+                      {t("common.quitar")}
                     </button>
                   </div>
                 ) : (
                   <div className="file-drop" onClick={pickComprobante}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                    <div>Haz clic para elegir una imagen o PDF</div>
+                    <div>{t("recordModal.clicElegir")}</div>
                   </div>
                 )}
                 {tab === "gasto" && !comprobantePath && (
                   <div className="form-warning">
-                    <IconWarn size={13} /> Se recomienda adjuntar un comprobante para respaldar este gasto en tus reportes.
+                    <IconWarn size={13} /> {t("recordModal.comprobanteWarn")}
                   </div>
                 )}
               </div>
 
               <div className="form-group full" style={{ marginTop: 6 }}>
-                <label className="form-label">Notas <span className="opt">(opcional)</span></label>
+                <label className="form-label">{t("recordModal.notas")} <span className="opt">{t("common.opcional")}</span></label>
                 <textarea
                   className="form-textarea"
                   value={detalle}
                   onChange={(e) => setDetalle(e.target.value)}
-                  placeholder="Detalle adicional, número de personas, folio…"
+                  placeholder={t("recordModal.notasPlaceholder")}
                 />
               </div>
 
@@ -427,7 +429,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   onChange={(e) => setMarcarPendiente(e.target.checked)}
                 />
                 <label htmlFor="chk-pendiente">
-                  Marcar para revisar después — no se contará en los totales del mes hasta que lo confirmes en Bandeja
+                  {t("recordModal.marcarPendienteLabel")}
                 </label>
               </div>
             </>
@@ -436,26 +438,26 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           {tab === "miembro" && (
             <>
               <div className="form-group full">
-                <label className="form-label">Nombre completo o de familia</label>
-                <input className="form-input" value={mNombre} onChange={(e) => setMNombre(e.target.value)} placeholder="p. ej. Carlos y Ana Ruiz" />
+                <label className="form-label">{t("recordModal.nombreFamilia")}</label>
+                <input className="form-input" value={mNombre} onChange={(e) => setMNombre(e.target.value)} placeholder={t("recordModal.nombreFamiliaPlaceholder")} />
               </div>
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Correo electrónico <span className="opt">(opcional)</span></label>
-                  <input className="form-input" type="email" value={mEmail} onChange={(e) => setMEmail(e.target.value)} placeholder="correo@ejemplo.com" />
+                  <label className="form-label">{t("tesorero.correo")} <span className="opt">{t("common.opcional")}</span></label>
+                  <input className="form-input" type="email" value={mEmail} onChange={(e) => setMEmail(e.target.value)} placeholder={t("tesorero.correoPlaceholder")} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Teléfono <span className="opt">(opcional)</span></label>
-                  <input className="form-input" value={mTelefono} onChange={(e) => setMTelefono(e.target.value)} placeholder="55 0000 0000" />
+                  <label className="form-label">{t("tesorero.telefono")} <span className="opt">{t("common.opcional")}</span></label>
+                  <input className="form-input" value={mTelefono} onChange={(e) => setMTelefono(e.target.value)} placeholder={t("tesorero.telefonoPlaceholder")} />
                 </div>
               </div>
               <div className="form-group full">
-                <label className="form-label">RFC <span className="opt">(opcional — necesario para constancias deducibles)</span></label>
-                <input className="form-input" value={mRfc} onChange={(e) => setMRfc(e.target.value)} placeholder="RFC a 13 caracteres" />
+                <label className="form-label">{t("recordModal.rfc")} <span className="opt">{t("recordModal.rfcMiembroHint")}</span></label>
+                <input className="form-input" value={mRfc} onChange={(e) => setMRfc(e.target.value)} placeholder={t("recordModal.rfcMiembroPlaceholder")} />
               </div>
               <div className="form-group full">
-                <label className="form-label">Notas <span className="opt">(opcional)</span></label>
-                <textarea className="form-textarea" value={mNotas} onChange={(e) => setMNotas(e.target.value)} placeholder="Información adicional relevante…" />
+                <label className="form-label">{t("recordModal.notas")} <span className="opt">{t("common.opcional")}</span></label>
+                <textarea className="form-textarea" value={mNotas} onChange={(e) => setMNotas(e.target.value)} placeholder={t("usuarios.notasPlaceholder")} />
               </div>
             </>
           )}
@@ -468,9 +470,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         </div>
 
         <div className="modal-footer">
-          <div className="form-hint">Los campos marcados como opcionales se pueden completar después.</div>
+          <div className="form-hint">{t("common.camposOpcionales")}</div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+            <button className="btn secondary" onClick={onClose} disabled={saving}>{t("common.cancelar")}</button>
             <button className="btn primary" onClick={guardar} disabled={saving}>
               {botonGuardar}
             </button>

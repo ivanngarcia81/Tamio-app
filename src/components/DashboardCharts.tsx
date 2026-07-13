@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis,
 } from "recharts";
@@ -48,14 +49,15 @@ function TooltipCard({ active, payload, label, moneda }: any) {
 }
 
 export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props) {
+  const { t } = useTranslation();
   const gradId = `bal-grad-${useId().replace(/:/g, "")}`;
 
   return (
     <div className="charts enter">
       <div className="card">
         <div className="card-head">
-          <span className="card-title">Ingresos vs. gastos</span>
-          <span className="card-meta">Por semana</span>
+          <span className="card-title">{t("charts.ingresosVsGastos")}</span>
+          <span className="card-meta">{t("charts.porSemana")}</span>
         </div>
         <div style={{ height: 210 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -63,21 +65,21 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
               <CartesianGrid vertical={false} stroke="var(--line)" />
               <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
               <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} />
-              <Bar dataKey="ingresos" name="Ingresos" fill="var(--accent-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-              <Bar dataKey="gastos" name="Gastos" fill="var(--accent-2)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+              <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+              <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" radius={[4, 4, 0, 0]} maxBarSize={22} />
             </BarChart>
           </ResponsiveContainer>
         </div>
         <div className="legend">
-          <span><span className="dot" style={{ background: "var(--accent-1)" }} /> Ingresos</span>
-          <span><span className="dot" style={{ background: "var(--accent-2)" }} /> Gastos</span>
+          <span><span className="dot" style={{ background: "var(--accent-1)" }} /> {t("charts.ingresos")}</span>
+          <span><span className="dot" style={{ background: "var(--accent-2)" }} /> {t("charts.gastos")}</span>
         </div>
       </div>
 
       <div className="card">
         <div className="card-head">
-          <span className="card-title">Evolución del balance</span>
-          <span className="card-meta">Últimos 30 días</span>
+          <span className="card-title">{t("charts.evolucionBalance")}</span>
+          <span className="card-meta">{t("charts.ultimos30")}</span>
         </div>
         <div style={{ height: 210 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -94,7 +96,7 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
               <Area
                 type="monotone"
                 dataKey="balance"
-                name="Balance acumulado"
+                name={t("charts.balanceAcumulado")}
                 stroke="var(--accent-3)"
                 strokeWidth={2}
                 fill={`url(#${gradId})`}

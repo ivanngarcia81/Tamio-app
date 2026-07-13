@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   categoriaInfo, fmtFecha, fmtMoney, listArchivedMembers, listPendingTx,
   markTxReviewed, restoreMember, type Church, type Member, type Tx,
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Props) {
+  const { t } = useTranslation();
   const [pendientes, setPendientes] = useState<Tx[]>([]);
   const [archivados, setArchivados] = useState<Member[]>([]);
 
@@ -37,11 +39,11 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
     <>
       <div className="header">
         <div>
-          <div className="page-title">Bandeja</div>
+          <div className="page-title">{t("bandeja.titulo")}</div>
           <div className="page-sub">
             {total === 0
-              ? "No tienes pendientes"
-              : `${pendientes.length} movimiento${pendientes.length === 1 ? "" : "s"} por revisar · ${archivados.length} miembro${archivados.length === 1 ? "" : "s"} archivado${archivados.length === 1 ? "" : "s"}`}
+              ? t("bandeja.sinPendientes")
+              : `${t("bandeja.porRevisar", { count: pendientes.length })} · ${t("bandeja.archivados", { count: archivados.length })}`}
           </div>
         </div>
       </div>
@@ -49,15 +51,15 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
       <div className="content">
         {total === 0 ? (
           <EmptyState
-            titulo="No tienes pendientes"
-            sub="Aquí aparecerán los movimientos que marques para revisar después y los miembros que archives."
+            titulo={t("bandeja.sinPendientes")}
+            sub={t("bandeja.emptySub")}
           />
         ) : (
           <>
-            <div className="inbox-section-label">Pendientes de revisión</div>
+            <div className="inbox-section-label">{t("bandeja.pendientesRevision")}</div>
             {pendientes.length === 0 ? (
               <div style={{ color: "var(--text-3)", fontSize: 13, marginBottom: 20 }}>
-                No tienes movimientos marcados para revisar.
+                {t("bandeja.noMovsRevisar")}
               </div>
             ) : (
               <div className="inbox-list" style={{ marginBottom: 28 }}>
@@ -76,7 +78,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                       <div className="inbox-body">
                         <div className="inbox-title-row">
                           <span className="inbox-type-tag warn">
-                            {tx.tipo === "ingreso" ? "Ingreso" : "Gasto"} · {cat.nombre}
+                            {tx.tipo === "ingreso" ? t("tx.ingreso") : t("tx.gasto")} · {cat.nombre}
                           </span>
                           <span className="inbox-time">{f.dia} {f.mesAnio} · {f.hora}</span>
                         </div>
@@ -94,8 +96,8 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                           <span className="cur">{tx.moneda}</span>
                         </div>
                         <div className="inbox-actions">
-                          <button className="btn secondary sm" onClick={() => onEditTx(tx)}>Editar</button>
-                          <button className="btn primary sm" onClick={() => handleReviewed(tx)}>Marcar revisado</button>
+                          <button className="btn secondary sm" onClick={() => onEditTx(tx)}>{t("common.editar")}</button>
+                          <button className="btn primary sm" onClick={() => handleReviewed(tx)}>{t("bandeja.marcarRevisado")}</button>
                         </div>
                       </div>
                     </div>
@@ -104,10 +106,10 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
               </div>
             )}
 
-            <div className="inbox-section-label">Miembros archivados</div>
+            <div className="inbox-section-label">{t("bandeja.miembrosArchivadosLabel")}</div>
             {archivados.length === 0 ? (
               <div style={{ color: "var(--text-3)", fontSize: 13 }}>
-                No tienes miembros archivados.
+                {t("bandeja.noMiembrosArchivados")}
               </div>
             ) : (
               <div className="inbox-list">
@@ -121,16 +123,16 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                     </div>
                     <div className="inbox-body">
                       <div className="inbox-title-row">
-                        <span className="inbox-type-tag done">Archivado</span>
+                        <span className="inbox-type-tag done">{t("bandeja.archivado")}</span>
                       </div>
                       <div className="inbox-desc"><strong>{m.nombre}</strong></div>
                       <div style={{ marginTop: 4, fontSize: 12.5, color: "var(--text-2)" }}>
-                        {m.email ?? m.rfc ?? "Sin correo registrado"}
+                        {m.email ?? m.rfc ?? t("bandeja.sinCorreoRegistrado")}
                       </div>
                     </div>
                     <div className="inbox-side">
                       <div className="inbox-actions">
-                        <button className="btn secondary sm" onClick={() => handleRestore(m)}>Restaurar</button>
+                        <button className="btn secondary sm" onClick={() => handleRestore(m)}>{t("bandeja.restaurar")}</button>
                       </div>
                     </div>
                   </div>

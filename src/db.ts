@@ -1,4 +1,5 @@
 import Database from "@tauri-apps/plugin-sql";
+import i18n, { currentLang } from "./i18n";
 
 let db: Database | null = null;
 
@@ -92,10 +93,23 @@ export const METODOS_PAGO = [
   { id: "cheque", nombre: "Cheque", badge: "CH", color: "#ea580c" },
 ] as const;
 
+/** Nombre de la categoría en el idioma activo de la app. El campo `nombre`
+ *  de los catálogos conserva el nombre canónico en español (se usa para
+ *  emparejar archivos CSV); todo lo que se muestra en pantalla o en PDFs
+ *  debe pasar por aquí. */
+export function catNombre(id: string): string {
+  return i18n.t(`cat.${id}`, { defaultValue: id });
+}
+
+export function metodoNombre(id: string): string {
+  return i18n.t(`metodo.${id}`, { defaultValue: id });
+}
+
 export function categoriaInfo(tipo: "ingreso" | "gasto", id: string) {
   const list: readonly { id: string; nombre: string; tagClass: string }[] =
     tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
-  return list.find((c) => c.id === id) ?? { id, nombre: id, tagClass: "otros" };
+  const found = list.find((c) => c.id === id);
+  return found ? { ...found, nombre: catNombre(found.id) } : { id, nombre: id, tagClass: "otros" };
 }
 
 // ---------- Iglesia ----------
@@ -770,30 +784,40 @@ export function pctChange(actual: number, anterior: number): number | null {
   return Math.round(((actual - anterior) / Math.abs(anterior)) * 1000) / 10;
 }
 
-const MESES = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
-const MESES_ABBR = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const MESES: Record<"es" | "en", string[]> = {
+  es: ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+       "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
+  en: ["January", "February", "March", "April", "May", "June",
+       "July", "August", "September", "October", "November", "December"],
+};
+const MESES_ABBR: Record<"es" | "en", string[]> = {
+  es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
+const DIAS: Record<"es" | "en", string[]> = {
+  es: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+  en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+};
 
+/** "13 jul 2026" en español, "Jul 13, 2026" en inglés. */
 export function fmtFechaCorta(fecha: string): string {
   const [datePart] = fecha.split(" ");
   const [y, m, d] = datePart.split("-").map(Number);
-  return `${d} ${MESES_ABBR[m - 1]} ${y}`;
+  const lang = currentLang();
+  return lang === "en" ? `${MESES_ABBR.en[m - 1]} ${d}, ${y}` : `${d} ${MESES_ABBR.es[m - 1]} ${y}`;
 }
 
 export function fmtRelativo(fechaIso: string | null): string {
-  if (!fechaIso) return "Sin actividad";
+  if (!fechaIso) return i18n.t("fechas.sinActividad");
   const then = new Date(fechaIso.replace(" ", "T"));
   const diffMin = Math.round((Date.now() - then.getTime()) / 60000);
-  if (diffMin < 1) return "Hace un momento";
-  if (diffMin < 60) return `Hace ${diffMin} min`;
+  if (diffMin < 1) return i18n.t("fechas.haceMomento");
+  if (diffMin < 60) return i18n.t("fechas.haceMin", { n: diffMin });
   const diffH = Math.round(diffMin / 60);
-  if (diffH < 24) return `Hace ${diffH} h`;
+  if (diffH < 24) return i18n.t("fechas.haceHoras", { n: diffH });
   const diffD = Math.round(diffH / 24);
-  if (diffD === 1) return "Ayer";
-  if (diffD < 7) return `Hace ${diffD} días`;
+  if (diffD === 1) return i18n.t("fechas.ayer");
+  if (diffD < 7) return i18n.t("fechas.haceDias", { n: diffD });
   return fmtFechaCorta(fechaIso);
 }
 
@@ -801,15 +825,20 @@ export function fmtFecha(fecha: string): { dia: string; mesAnio: string; nombreD
   const [datePart, timePart] = fecha.split(" ");
   const [y, m, d] = datePart.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
+  const lang = currentLang();
+  const mes = MESES[lang][m - 1];
   return {
     dia: String(d),
-    mesAnio: `${MESES[m - 1][0].toUpperCase()}${MESES[m - 1].slice(1)} ${y}`,
-    nombreDia: DIAS[dt.getDay()],
+    mesAnio: `${mes[0].toUpperCase()}${mes.slice(1)} ${y}`,
+    nombreDia: DIAS[lang][dt.getDay()],
     hora: timePart ?? "",
   };
 }
 
+/** "Julio 2026" en español, "July 2026" en inglés. */
 export function mesLegible(yyyyMm: string): string {
   const [y, m] = yyyyMm.split("-").map(Number);
-  return `${MESES[m - 1][0].toUpperCase()}${MESES[m - 1].slice(1)} ${y}`;
+  const lang = currentLang();
+  const mes = MESES[lang][m - 1];
+  return `${mes[0].toUpperCase()}${mes.slice(1)} ${y}`;
 }

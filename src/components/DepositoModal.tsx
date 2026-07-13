@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export default function DepositoModal({ church, editing, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const isEdit = editing !== null;
   const hoy = nowLocalIso().slice(0, 10);
 
@@ -50,25 +52,25 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
     try {
       const path = await openFileDialog({
         multiple: false,
-        title: "Seleccionar comprobante",
-        filters: [{ name: "Comprobante", extensions: ["pdf", "png", "jpg", "jpeg", "heic"] }],
+        title: t("depositos.seleccionarComprobante"),
+        filters: [{ name: t("tx.comprobante"), extensions: ["pdf", "png", "jpg", "jpeg", "heic"] }],
       });
       if (typeof path === "string") setComprobantePath(path);
     } catch (e) {
-      setError(`No se pudo abrir el selector de archivos: ${e}`);
+      setError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }
   }
 
   async function guardar() {
     setError(null);
 
-    if (!fecha) { setError("La fecha del depósito es obligatoria."); return; }
-    if (!periodo) { setError("El período correspondiente es obligatorio."); return; }
-    if (fecha > hoy) { setError("No se pueden registrar depósitos con una fecha futura."); return; }
-    if (periodo > hoy.slice(0, 7)) { setError("No se puede elegir un período futuro."); return; }
+    if (!fecha) { setError(t("depositos.fechaObligatoria")); return; }
+    if (!periodo) { setError(t("depositos.periodoObligatorio")); return; }
+    if (fecha > hoy) { setError(t("depositos.fechaFutura")); return; }
+    if (periodo > hoy.slice(0, 7)) { setError(t("depositos.periodoFuturo")); return; }
     const m = parseMonto(monto);
-    if (m === null) { setError("Escribe un monto válido mayor a cero."); return; }
-    if (!cuentaBanco.trim()) { setError("La cuenta bancaria o nombre del banco es obligatorio."); return; }
+    if (m === null) { setError(t("common.montoInvalido")); return; }
+    if (!cuentaBanco.trim()) { setError(t("depositos.cuentaObligatoria")); return; }
 
     setSaving(true);
     try {
@@ -76,7 +78,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
         church.id, fecha, m, cuentaBanco.trim(), editing?.id
       );
       if (duplicado) {
-        setError("Ya existe un depósito registrado con esta misma fecha, monto y cuenta bancaria. Revisa que no sea un duplicado.");
+        setError(t("depositos.duplicado"));
         setSaving(false);
         return;
       }
@@ -98,7 +100,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
       onSaved();
       onClose();
     } catch (e) {
-      setError(`No se pudo guardar: ${e}`);
+      setError(t("common.noSePudoGuardar", { error: String(e) }));
       setSaving(false);
     }
   }
@@ -108,8 +110,8 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
       <div className="modal-card">
         <div className="modal-header">
           <div>
-            <div className="modal-title">{isEdit ? "Editar depósito" : "Nuevo depósito"}</div>
-            <div className="modal-sub">Registrar dinero depositado en la cuenta bancaria de la iglesia</div>
+            <div className="modal-title">{isEdit ? t("depositos.modalEditar") : t("depositos.modalNuevo")}</div>
+            <div className="modal-sub">{t("depositos.sub")}</div>
           </div>
           <div className="modal-close" onClick={onClose}><IconClose /></div>
         </div>
@@ -117,37 +119,37 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
         <div className="modal-body">
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Fecha del depósito</label>
+              <label className="form-label">{t("depositos.fechaDeposito")}</label>
               <input className="form-input" type="date" value={fecha} max={hoy} onChange={(e) => onFechaChange(e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">Monto depositado</label>
+              <label className="form-label">{t("depositos.montoDepositado")}</label>
               <input className="form-input" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="$0.00" inputMode="decimal" />
             </div>
           </div>
 
           <div className="form-group full">
-            <label className="form-label">Cuenta bancaria o banco</label>
+            <label className="form-label">{t("depositos.cuentaBancaria")}</label>
             <input
               className="form-input"
               value={cuentaBanco}
               onChange={(e) => setCuentaBanco(e.target.value)}
-              placeholder="p. ej. BBVA · Cuenta 1234"
+              placeholder={t("depositos.cuentaPlaceholder")}
             />
           </div>
 
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Referencia o comprobante <span className="opt">(opcional)</span></label>
+              <label className="form-label">{t("depositos.referenciaLabel")} <span className="opt">{t("common.opcional")}</span></label>
               <input
                 className="form-input"
                 value={referencia}
                 onChange={(e) => setReferencia(e.target.value)}
-                placeholder="Folio o número de referencia"
+                placeholder={t("depositos.referenciaPlaceholder")}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Período correspondiente</label>
+              <label className="form-label">{t("depositos.periodoCorrespondiente")}</label>
               <input
                 className="form-input"
                 type="month"
@@ -159,7 +161,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
           </div>
 
           <div className="form-group full">
-            <label className="form-label">Comprobante <span className="opt">(opcional)</span></label>
+            <label className="form-label">{t("tx.comprobante")} <span className="opt">{t("common.opcional")}</span></label>
             {comprobantePath ? (
               <div
                 style={{
@@ -174,27 +176,27 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
                   {fileNameFromPath(comprobantePath)}
                 </span>
                 <button type="button" className="btn ghost sm" onClick={() => comprobantePath && openPath(comprobantePath)}>
-                  Ver
+                  {t("common.ver")}
                 </button>
                 <button type="button" className="btn ghost sm" onClick={() => setComprobantePath(null)}>
-                  Quitar
+                  {t("common.quitar")}
                 </button>
               </div>
             ) : (
               <div className="file-drop" onClick={pickComprobante}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                <div>Haz clic para adjuntar una imagen o PDF del comprobante</div>
+                <div>{t("depositos.adjuntarHint")}</div>
               </div>
             )}
           </div>
 
           <div className="form-group full" style={{ marginTop: 6 }}>
-            <label className="form-label">Notas <span className="opt">(opcional)</span></label>
+            <label className="form-label">{t("recordModal.notas")} <span className="opt">{t("common.opcional")}</span></label>
             <textarea
               className="form-textarea"
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
-              placeholder="Detalle adicional sobre este depósito…"
+              placeholder={t("depositos.notasPlaceholder")}
             />
           </div>
 
@@ -206,11 +208,11 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
         </div>
 
         <div className="modal-footer">
-          <div className="form-hint">Los campos marcados como opcionales se pueden completar después.</div>
+          <div className="form-hint">{t("common.camposOpcionales")}</div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+            <button className="btn secondary" onClick={onClose} disabled={saving}>{t("common.cancelar")}</button>
             <button className="btn primary" onClick={guardar} disabled={saving}>
-              {saving ? "Guardando…" : "Guardar depósito"}
+              {saving ? t("common.guardando") : t("depositos.guardarDeposito")}
             </button>
           </div>
         </div>

@@ -2,14 +2,14 @@ import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, type NewTx } from "
 import type { CsvField } from "./csvImport";
 
 export const MOVIMIENTOS_FIELDS: CsvField[] = [
-  { key: "fecha", label: "Fecha", required: true, aliases: ["fecha", "date", "fecha_movimiento"] },
-  { key: "tipo", label: "Tipo (ingreso o gasto)", required: true, aliases: ["tipo", "type"] },
-  { key: "categoria", label: "Categoría", required: true, aliases: ["categoria", "categoría", "category"] },
-  { key: "concepto", label: "Concepto", required: true, aliases: ["concepto", "descripcion", "descripción", "description", "concept"] },
-  { key: "monto", label: "Monto", required: true, aliases: ["monto", "amount", "importe", "cantidad", "valor"] },
-  { key: "metodo_pago", label: "Método de pago", required: false, aliases: ["metodo_pago", "método de pago", "metodo de pago", "payment_method", "metodo"] },
-  { key: "beneficiario", label: "Beneficiario", required: false, aliases: ["beneficiario", "proveedor", "payee", "vendor"] },
-  { key: "notas", label: "Notas", required: false, aliases: ["notas", "notes", "observaciones", "comentarios"] },
+  { key: "fecha", label: "campo.fecha", required: true, aliases: ["fecha", "date", "fecha_movimiento"] },
+  { key: "tipo", label: "campo.tipo", required: true, aliases: ["tipo", "type"] },
+  { key: "categoria", label: "campo.categoria", required: true, aliases: ["categoria", "categoría", "category"] },
+  { key: "concepto", label: "campo.concepto", required: true, aliases: ["concepto", "descripcion", "descripción", "description", "concept"] },
+  { key: "monto", label: "campo.monto", required: true, aliases: ["monto", "amount", "importe", "cantidad", "valor"] },
+  { key: "metodo_pago", label: "campo.metodo_pago", required: false, aliases: ["metodo_pago", "método de pago", "metodo de pago", "payment_method", "metodo"] },
+  { key: "beneficiario", label: "campo.beneficiario", required: false, aliases: ["beneficiario", "proveedor", "payee", "vendor"] },
+  { key: "notas", label: "campo.notas", required: false, aliases: ["notas", "notes", "observaciones", "comentarios"] },
 ];
 
 export const CSV_TEMPLATE =

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 
 interface Props {
@@ -7,7 +8,8 @@ interface Props {
   deleteLabel?: string;
 }
 
-export default function RowMenu({ onEdit, onDelete, deleteLabel = "Eliminar" }: Props) {
+export default function RowMenu({ onEdit, onDelete, deleteLabel }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLSpanElement>(null);
@@ -55,10 +57,10 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel = "Eliminar" }: 
             style={{ position: "fixed", top: pos.top, left: pos.left }}
           >
             <div className="row-menu-item" onClick={() => { setOpen(false); onEdit(); }}>
-              Editar
+              {t("common.editar")}
             </div>
             <div className="row-menu-item danger" onClick={() => { setOpen(false); onDelete(); }}>
-              {deleteLabel}
+              {deleteLabel ?? t("common.eliminar")}
             </div>
           </div>,
           document.body

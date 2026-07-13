@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney, insertTx, nowLocalIso,
+  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, currentMonth, fmtMoney, insertTx, nowLocalIso,
   mesLegible, monthDepositos, monthlySummary, monthTotals, pctChange, prevMonth,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
 } from "../db";
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export default function Reportes({ church, refreshKey, onChanged }: Props) {
+  const { t } = useTranslation();
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
@@ -63,8 +65,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       church,
       mesLegibleStr: mesStr,
       periodoISO: mes,
-      filasIngreso: filasIngreso.map((c) => ({ nombre: c.nombre, total: c.total })),
-      filasGasto: filasGasto.map((c) => ({ nombre: c.nombre, total: c.total })),
+      filasIngreso: filasIngreso.map((c) => ({ nombre: catNombre(c.id), total: c.total })),
+      filasGasto: filasGasto.map((c) => ({ nombre: catNombre(c.id), total: c.total })),
       ingresos,
       gastos,
       balance,
@@ -82,7 +84,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     try {
       await exportReportPdf(buildReportData());
     } catch (e) {
-      setExportError(`No se pudo exportar: ${e}`);
+      setExportError(t("common.noSePudoExportar", { error: String(e) }));
     } finally {
       setExporting(null);
     }
@@ -94,7 +96,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     try {
       await printMonthlyReportPdf(buildReportData());
     } catch (e) {
-      setExportError(`No se pudo imprimir: ${e}`);
+      setExportError(t("common.noSePudoImprimir", { error: String(e) }));
     } finally {
       setExporting(null);
     }
@@ -104,18 +106,18 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     <>
       <div className="header">
         <div>
-          <div className="page-title">Reportes</div>
-          <div className="page-sub">Estado financiero mensual · {mesStr}</div>
+          <div className="page-title">{t("reportes.titulo")}</div>
+          <div className="page-sub">{t("reportes.sub", { mes: mesStr })}</div>
         </div>
         <div className="header-actions">
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
-            <IconUpload size={13} /> Importar CSV
+            <IconUpload size={13} /> {t("miembros.importarCsv")}
           </button>
           <button className="btn secondary" onClick={handlePrint} disabled={exporting !== null}>
-            <IconPrinter size={14} /> {exporting === "print" ? "Preparando…" : "Imprimir"}
+            <IconPrinter size={14} /> {exporting === "print" ? t("common.preparando") : t("common.imprimir")}
           </button>
           <button className="btn primary" onClick={() => handleExport("pdf")} disabled={exporting !== null}>
-            {exporting === "pdf" ? "Generando…" : "PDF"}
+            {exporting === "pdf" ? t("common.generando") : "PDF"}
           </button>
         </div>
       </div>
@@ -128,22 +130,22 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       <div className="content">
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">Ingresos del mes</span></div>
+            <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
             <div className="stat-value md">{fmtMoney(ingresos)}<span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> vs. mes anterior</div>
+            <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">Gastos del mes</span></div>
+            <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
             <div className="stat-value md">{fmtMoney(gastos)}<span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> vs. mes anterior</div>
+            <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">Balance neto</span></div>
+            <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
             <div className="stat-value md">{fmtMoney(balance)}<span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> vs. mes anterior</div>
+            <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">Mes anterior</span></div>
+            <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
             <div className="stat-value md">{fmtMoney(balanceAnt)}<span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot">{mesLegible(mesAnterior)}</div>
           </div>
@@ -152,11 +154,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <div className="charts enter">
           <div className="card">
             <div className="card-head">
-              <span className="card-title">Distribución de gastos</span>
+              <span className="card-title">{t("reportes.distGastos")}</span>
               <span className="card-meta">{mesStr}</span>
             </div>
             {filasGasto.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>Sin gastos este mes.</div>
+              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinGastosEsteMes")}</div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
@@ -173,7 +175,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                   {filasGasto.slice(0, 5).map((c) => (
                     <div className="donut-legend-row" key={c.id}>
                       <span className="sw" style={{ background: c.color }} />
-                      <span className="name">{c.nombre}</span>
+                      <span className="name">{catNombre(c.id)}</span>
                       <span className="pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(0)}%` : "0%"}</span>
                     </div>
                   ))}
@@ -184,11 +186,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
           <div className="card">
             <div className="card-head">
-              <span className="card-title">Distribución de ingresos</span>
+              <span className="card-title">{t("reportes.distIngresos")}</span>
               <span className="card-meta">{mesStr}</span>
             </div>
             {filasIngreso.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>Sin ingresos este mes.</div>
+              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinIngresosEsteMes")}</div>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
@@ -205,7 +207,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                   {filasIngreso.map((c) => (
                     <div className="donut-legend-row" key={c.id}>
                       <span className="sw" style={{ background: COLOR_INGRESO[c.id] ?? "#64748b" }} />
-                      <span className="name">{c.nombre}</span>
+                      <span className="name">{catNombre(c.id)}</span>
                       <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
                     </div>
                   ))}
@@ -218,69 +220,69 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <div className="report-preview">
           <div className="r-head">
             <div>
-              <div className="r-title-lg">Estado financiero mensual</div>
+              <div className="r-title-lg">{t("reportes.estadoFinanciero")}</div>
               <div className="r-church">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
-              <div className="r-period">Periodo: {mesLegible(mes)}</div>
+              <div className="r-period">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
             </div>
           </div>
 
-          <div className="r-section-title">Ingresos del periodo</div>
+          <div className="r-section-title">{t("reportes.ingresosPeriodo")}</div>
           {filasIngreso.length === 0 && (
             <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
-              Sin ingresos registrados este mes.
+              {t("reportes.sinIngresosRegistrados")}
             </div>
           )}
           {filasIngreso.map((c) => (
             <div className="r-row" key={c.id}>
               <span className="r-color" style={{ background: COLOR_INGRESO[c.id] ?? "#64748b" }} />
-              <span>{c.nombre}</span>
+              <span>{catNombre(c.id)}</span>
               <span className="r-amt">{fmtMoney(c.total)}</span>
               <span className="r-pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(1)}%` : "—"}</span>
             </div>
           ))}
           <div className="r-row total">
             <span></span>
-            <span>Total ingresos</span>
+            <span>{t("reportes.totalIngresos")}</span>
             <span className="r-amt" style={{ color: "#059669" }}>{fmtMoney(ingresos)}</span>
             <span className="r-pct" style={{ color: "var(--text)" }}>100%</span>
           </div>
 
-          <div className="r-section-title">Gastos del periodo</div>
+          <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
           {filasGasto.length === 0 && (
             <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
-              Sin gastos registrados este mes.
+              {t("reportes.sinGastosRegistrados")}
             </div>
           )}
           {filasGasto.map((c) => (
             <div className="r-row" key={c.id}>
               <span className="r-color" style={{ background: c.color }} />
-              <span>{c.nombre}</span>
+              <span>{catNombre(c.id)}</span>
               <span className="r-amt">{fmtMoney(c.total)}</span>
               <span className="r-pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(1)}%` : "—"}</span>
             </div>
           ))}
           <div className="r-row total">
             <span></span>
-            <span>Total gastos</span>
+            <span>{t("reportes.totalGastos")}</span>
             <span className="r-amt" style={{ color: "#dc2626" }}>{fmtMoney(gastos)}</span>
             <span className="r-pct" style={{ color: "var(--text)" }}>100%</span>
           </div>
 
           <div className="r-summary">
             <div>
-              <div className="k">Total ingresos</div>
+              <div className="k">{t("reportes.totalIngresos")}</div>
               <div className="v" style={{ color: "#059669" }}>{fmtMoney(ingresos)}</div>
             </div>
             <div>
-              <div className="k">Total gastos</div>
+              <div className="k">{t("reportes.totalGastos")}</div>
               <div className="v" style={{ color: "#dc2626" }}>{fmtMoney(gastos)}</div>
             </div>
             <div>
-              <div className="k">Balance neto</div>
+              <div className="k">{t("reportes.balanceNeto")}</div>
               <div className="v">{fmtMoney(balance)}</div>
             </div>
             <div>
-              <div className="k">Depósitos bancarios</div>
+              <div className="k">{t("reportes.depositosBancarios")}</div>
               <div className="v">{fmtMoney(depositosMes)}</div>
             </div>
           </div>
@@ -289,15 +291,15 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         {historial.length > 0 && (
           <>
             <div className="tx-head">
-              <div className="tx-title">Resumen mensual</div>
+              <div className="tx-title">{t("reportes.resumenMensual")}</div>
             </div>
             <div className="data-table roomy">
               <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
-                <div className="th">Mes</div>
-                <div className="th" style={{ textAlign: "right" }}>Ingresos</div>
-                <div className="th" style={{ textAlign: "right" }}>Gastos</div>
-                <div className="th" style={{ textAlign: "right" }}>Balance</div>
-                <div className="th" style={{ textAlign: "right" }}>Variación</div>
+                <div className="th">{t("reportes.colMes")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("charts.gastos")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("pdfPreview.balance")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("reportes.colVariacion")}</div>
               </div>
               {historial.map((h, i) => {
                 const bal = h.ingresos - h.gastos;
@@ -335,26 +337,21 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
       {importOpen && (
         <GenericCsvImportModal<NewTx>
-          titulo="Importar movimientos desde CSV"
-          subtitulo="Carga ingresos y gastos de meses anteriores sin llenarlos uno por uno"
-          instrucciones={
-            <>
-              Elige tu archivo CSV (puede tener los nombres de columna que ya traiga — en el siguiente
-              paso indicas cuál es cuál) o descarga la plantilla de ejemplo si prefieres partir de ahí.
-            </>
-          }
+          titulo={t("movImport.titulo")}
+          subtitulo={t("movImport.sub")}
+          instrucciones={t("movImport.instrucciones")}
           fields={MOVIMIENTOS_FIELDS}
           templateCsv={CSV_TEMPLATE}
           templateFileName="plantilla-movimientos.csv"
           validarFila={(row) => validarFilaMovimiento(row, nowLocalIso().slice(0, 10))}
           previewColsTemplate="104px 68px 1fr 110px"
           previewColumns={[
-            { label: "Fecha", render: (tx) => tx.fecha.slice(0, 10) },
-            { label: "Tipo", render: (tx) => (tx.tipo === "ingreso" ? "Ingreso" : "Gasto") },
-            { label: "Concepto", render: (tx) => tx.concepto, title: (tx) => tx.concepto },
-            { label: "Monto", align: "right", render: (tx) => `$${tx.monto.toLocaleString("en-US")}` },
+            { label: t("movImport.colFecha"), render: (tx) => tx.fecha.slice(0, 10) },
+            { label: t("movImport.colTipo"), render: (tx) => (tx.tipo === "ingreso" ? t("tx.ingreso") : t("tx.gasto")) },
+            { label: t("movImport.colConcepto"), render: (tx) => tx.concepto, title: (tx) => tx.concepto },
+            { label: t("movImport.colMonto"), align: "right", render: (tx) => `$${tx.monto.toLocaleString("en-US")}` },
           ]}
-          etiquetaItem={(n) => (n === 1 ? "movimiento" : "movimientos")}
+          etiquetaItem={(n) => t("movImport.items", { count: n })}
           onConfirmar={async (items) => {
             for (const tx of items) await insertTx(church.id, church.moneda, tx);
           }}

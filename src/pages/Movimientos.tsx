@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney,
+  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, currentMonth, fmtMoney,
   listTx, mesLegible, monthTotals, nextMonth, prevMonth,
   type Church, type MonthTotals, type Tx,
 } from "../db";
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx, onChanged }: Props) {
+  const { t } = useTranslation();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   }, [church.id, tipo, refreshKey, mes]);
 
   const esIngreso = tipo === "ingreso";
-  const titulo = esIngreso ? "Ingresos" : "Gastos";
+  const titulo = esIngreso ? t("nav.ingresos") : t("nav.gastos");
   const categorias = esIngreso ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
   const porCategoria = esIngreso
     ? totales?.porCategoriaIngreso ?? {}
@@ -54,7 +56,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     setPrintEmpty(false);
     setPrinting(true);
     try {
-      const catLabel = filtroCat ? categorias.find((c) => c.id === filtroCat)?.nombre ?? filtroCat : "Todas las categorías";
+      const catLabel = filtroCat ? catNombre(filtroCat) : t("mov.todasCategorias");
       await printRegister({
         church,
         titulo,
@@ -63,7 +65,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         movimientos: visibles,
       });
     } catch (e) {
-      setPrintError(`No se pudo imprimir: ${e}`);
+      setPrintError(t("common.noSePudoImprimir", { error: String(e) }));
     } finally {
       setPrinting(false);
     }
@@ -74,29 +76,27 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
       <div className="header">
         <div>
           <div className="page-title">{titulo}</div>
-          <div className="page-sub">
-            {txs.length} movimiento{txs.length === 1 ? "" : "s"} registrado{txs.length === 1 ? "" : "s"}
-          </div>
+          <div className="page-sub">{t("mov.registrados", { count: txs.length })}</div>
         </div>
         <div className="header-actions">
           <div className="month-nav">
-            <span className="icon-btn" title="Mes anterior" onClick={() => setMes(prevMonth(mes))}>
+            <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
               <IconChevronLeft size={16} />
             </span>
             <span className="month-nav-label">{mesLegible(mes)}</span>
             <span
               className={`icon-btn${esMesActual ? " disabled" : ""}`}
-              title="Mes siguiente"
+              title={t("mov.mesSiguiente")}
               onClick={() => !esMesActual && setMes(nextMonth(mes))}
             >
               <IconChevronRight size={16} />
             </span>
           </div>
           <button className="btn secondary" onClick={handlePrint} disabled={printing}>
-            <IconPrinter size={14} /> {printing ? "Preparando…" : "Imprimir"}
+            <IconPrinter size={14} /> {printing ? t("common.preparando") : t("common.imprimir")}
           </button>
           <button className="btn primary" onClick={onNew}>
-            <IconPlus size={14} /> {esIngreso ? "Nuevo ingreso" : "Nuevo gasto"}
+            <IconPlus size={14} /> {esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto")}
           </button>
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
       {(printError || printEmpty) && (
         <div className="content" style={{ paddingBottom: 0 }}>
           <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <IconWarn size={13} /> {printError ?? "No hay registros para imprimir."}
+            <IconWarn size={13} /> {printError ?? t("mov.noHayRegistros")}
           </div>
         </div>
       )}
@@ -113,7 +113,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         <div className="summary-4">
           <div className="stat-card">
             <div className="stat-head">
-              <span className="stat-label">Total del mes</span>
+              <span className="stat-label">{t("mov.totalDelMes")}</span>
             </div>
             <div className="stat-value md">
               {fmtMoney(totalMes)}<span className="stat-cur">{church.moneda}</span>
@@ -125,8 +125,8 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
             return (
               <div className="stat-card" key={c.id}>
                 <div className="stat-head">
-                  <span className="stat-label">{c.nombre}</span>
-                  <span className={`tag ${c.tagClass}`} title={c.nombre}>{c.nombre}</span>
+                  <span className="stat-label">{catNombre(c.id)}</span>
+                  <span className={`tag ${c.tagClass}`} title={catNombre(c.id)}>{catNombre(c.id)}</span>
                 </div>
                 <div className="stat-value md">
                   {fmtMoney(v)}<span className="stat-cur">{church.moneda}</span>
@@ -134,20 +134,20 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 <div className="stat-bar">
                   <div className="stat-bar-fill" style={{ width: `${pct}%`, background: "var(--accent-1)" }} />
                 </div>
-                <div className="stat-pct">{pct}% del total</div>
+                <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
               </div>
             );
           })}
         </div>
 
         <div className="tx-head">
-          <div className="tx-title">Todos los {titulo.toLowerCase()}</div>
+          <div className="tx-title">{esIngreso ? t("mov.todosIngresos") : t("mov.todosGastos")}</div>
           <div className="tx-filters">
             <div
               className={`chip${filtroCat === null ? " active" : ""}`}
               onClick={() => setFiltroCat(null)}
             >
-              Todos <span className="count">{txs.length}</span>
+              {t("common.todos")} <span className="count">{txs.length}</span>
             </div>
             {categorias.map((c) => (
               <div
@@ -155,7 +155,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 className={`chip${filtroCat === c.id ? " active" : ""}`}
                 onClick={() => setFiltroCat(filtroCat === c.id ? null : c.id)}
               >
-                {c.nombre} <span className="count">{conteo(c.id)}</span>
+                {catNombre(c.id)} <span className="count">{conteo(c.id)}</span>
               </div>
             ))}
           </div>
@@ -165,17 +165,17 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           <EmptyState
             titulo={
               txs.length > 0
-                ? "Sin resultados con este filtro"
+                ? t("mov.sinResultadosFiltro")
                 : esMesActual
-                  ? `Aún no hay ${titulo.toLowerCase()}`
-                  : `Sin ${titulo.toLowerCase()} en ${mesLegible(mes)}`
+                  ? (esIngreso ? t("mov.aunNoHayIngresos") : t("mov.aunNoHayGastos"))
+                  : t(esIngreso ? "mov.sinIngresosEn" : "mov.sinGastosEn", { mes: mesLegible(mes) })
             }
             sub={
               txs.length > 0
-                ? "Prueba con otra categoría o quita el filtro."
+                ? t("mov.pruebaOtraCategoria")
                 : esMesActual
-                  ? `Registra tu primer ${esIngreso ? "ingreso" : "gasto"} con el botón de arriba.`
-                  : "Prueba con otro mes usando las flechas de arriba."
+                  ? (esIngreso ? t("mov.registraPrimerIngreso") : t("mov.registraPrimerGasto"))
+                  : t("mov.pruebaOtroMes")
             }
             icon={esIngreso ? <IconIngreso size={22} strokeWidth={1.6} /> : <IconGasto size={22} strokeWidth={1.6} />}
           />

@@ -2,11 +2,11 @@ import type { NewMember } from "../db";
 import type { CsvField } from "./csvImport";
 
 export const MIEMBROS_FIELDS: CsvField[] = [
-  { key: "nombre", label: "Nombre completo", required: true, aliases: ["nombre", "name", "nombre completo", "full_name"] },
-  { key: "email", label: "Correo electrónico", required: false, aliases: ["email", "correo", "correo electronico", "correo electrónico", "e-mail"] },
-  { key: "telefono", label: "Teléfono", required: false, aliases: ["telefono", "teléfono", "phone", "celular", "tel"] },
-  { key: "rfc", label: "RFC", required: false, aliases: ["rfc"] },
-  { key: "notas", label: "Notas", required: false, aliases: ["notas", "notes", "observaciones", "comentarios"] },
+  { key: "nombre", label: "campo.nombre", required: true, aliases: ["nombre", "name", "nombre completo", "full_name"] },
+  { key: "email", label: "campo.email", required: false, aliases: ["email", "correo", "correo electronico", "correo electrónico", "e-mail"] },
+  { key: "telefono", label: "campo.telefono", required: false, aliases: ["telefono", "teléfono", "phone", "celular", "tel"] },
+  { key: "rfc", label: "campo.rfc", required: false, aliases: ["rfc"] },
+  { key: "notas", label: "campo.notas", required: false, aliases: ["notas", "notes", "observaciones", "comentarios"] },
 ];
 
 export const MIEMBROS_CSV_TEMPLATE =

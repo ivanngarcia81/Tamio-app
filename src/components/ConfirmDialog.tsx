@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface Props {
   title: string;
   message: string;
@@ -10,20 +12,21 @@ interface Props {
 export default function ConfirmDialog({
   title,
   message,
-  confirmLabel = "Confirmar",
+  confirmLabel,
   danger = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div className="confirm-card">
         <div className="confirm-title">{title}</div>
         <div className="confirm-message">{message}</div>
         <div className="confirm-actions">
-          <button className="btn secondary" onClick={onCancel}>Cancelar</button>
+          <button className="btn secondary" onClick={onCancel}>{t("common.cancelar")}</button>
           <button className={`btn primary${danger ? " danger" : ""}`} onClick={onConfirm}>
-            {confirmLabel}
+            {confirmLabel ?? t("common.confirmar")}
           </button>
         </div>
       </div>

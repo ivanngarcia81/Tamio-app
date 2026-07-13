@@ -5,6 +5,7 @@ import Papa from "papaparse";
  *  por nombre parecido), en vez de exigir nombres de columna exactos. */
 export interface CsvField {
   key: string;
+  /** Clave de traducción (p. ej. "campo.fecha") — la UI la pasa por t(). */
   label: string;
   required: boolean;
   aliases: string[];
