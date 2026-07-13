@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import i18n from "../../i18n";
 import {
   PDF_COLOR, PDF_FOOTER_BLOCK_H, PDF_MARGIN, PDF_SPACE, PDF_TYPE,
   setDraw, setFill, setText,
@@ -91,14 +92,14 @@ export class ReportDocBuilder {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.period);
     setText(doc, PDF_COLOR.muted);
-    doc.text(`Periodo: ${this.opts.period}`, this.marginX, this.y);
+    doc.text(i18n.t("pdf.periodo", { periodo: this.opts.period }), this.marginX, this.y);
     this.y += 16;
 
     if (this.opts.moneda) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(PDF_TYPE.meta);
       setText(doc, PDF_COLOR.faint);
-      doc.text(`Moneda: ${this.opts.moneda}`, this.marginX, this.y);
+      doc.text(i18n.t("pdf.moneda", { moneda: this.opts.moneda }), this.marginX, this.y);
       this.y += 14;
     }
 
@@ -107,7 +108,7 @@ export class ReportDocBuilder {
       doc.setFontSize(PDF_TYPE.meta);
       setText(doc, PDF_COLOR.faint);
       doc.text(
-        `Generado por: ${this.opts.generatedBy.nombre}${this.opts.generatedBy.rol ? " · " + this.opts.generatedBy.rol : ""}`,
+        i18n.t("pdf.generadoPor", { quien: `${this.opts.generatedBy.nombre}${this.opts.generatedBy.rol ? " · " + this.opts.generatedBy.rol : ""}` }),
         this.marginX, this.y
       );
       this.y += 14;
@@ -146,7 +147,7 @@ export class ReportDocBuilder {
       this.doc.setFont("helvetica", "bold");
       this.doc.setFontSize(PDF_TYPE.section);
       setText(this.doc, PDF_COLOR.ink);
-      this.doc.text(`${this.currentSection} (continuación)`, this.marginX, this.y);
+      this.doc.text(i18n.t("pdf.continuacion", { seccion: this.currentSection }), this.marginX, this.y);
       this.y += 20;
       this.drawTableHeaderRaw(this.currentColumns);
     }
@@ -399,12 +400,12 @@ export class ReportDocBuilder {
     this.doc.setFont("helvetica", "normal");
     this.doc.setFontSize(PDF_TYPE.footer);
     setText(this.doc, PDF_COLOR.faint);
-    this.doc.text("Generado automáticamente por Tesorería", this.marginX, fy);
-    this.doc.text(`Página ${pageIndex} de ${totalPages}`, this.rightX, fy, { align: "right" });
+    this.doc.text(i18n.t("pdf.generadoAutomaticamente"), this.marginX, fy);
+    this.doc.text(i18n.t("pdf.pagina", { x: pageIndex, y: totalPages }), this.rightX, fy, { align: "right" });
     fy += 14;
 
     this.doc.text(`${meta.fechaGeneracion} • ${meta.horaGeneracion}`, this.marginX, fy);
-    this.doc.text(`Reporte ${meta.reportId}`, this.rightX, fy, { align: "right" });
+    this.doc.text(i18n.t("pdf.reporte", { id: meta.reportId }), this.rightX, fy, { align: "right" });
     fy += PDF_SPACE.xs;
 
     setDraw(this.doc, PDF_COLOR.line);

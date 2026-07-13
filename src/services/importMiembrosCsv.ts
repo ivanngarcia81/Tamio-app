@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import type { NewMember } from "../db";
 import type { CsvField } from "./csvImport";
 
@@ -20,17 +21,17 @@ const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 export function validarFilaMiembro(row: Record<string, string>): { data?: NewMember; error?: string } {
   const nombre = (row.nombre ?? "").trim();
   if (!nombre) {
-    return { error: "El nombre es obligatorio." };
+    return { error: i18n.t("csvVal.nombreObligatorio") };
   }
 
   const email = (row.email ?? "").trim();
   if (email && !EMAIL_RE.test(email)) {
-    return { error: `Correo con formato inválido: "${email}".` };
+    return { error: i18n.t("csvVal.correoInvalido", { valor: email }) };
   }
 
   const telefono = (row.telefono ?? "").trim();
   if (telefono && !PHONE_RE.test(telefono)) {
-    return { error: `Teléfono con formato inválido: "${telefono}".` };
+    return { error: i18n.t("csvVal.telefonoInvalido", { valor: telefono }) };
   }
 
   return {

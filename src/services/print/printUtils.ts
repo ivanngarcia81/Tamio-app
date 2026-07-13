@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { appDataDir, join } from "@tauri-apps/api/path";
+import { currentLang } from "../../i18n";
 
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
 // No se recalcula ni se comprime según la cantidad de datos: un reporte de
@@ -77,7 +78,8 @@ export function fmtMoneyPdf(n: number, moneda: string): string {
 }
 
 export function fmtFechaLarga(d: Date): string {
-  return d.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+  const locale = currentLang() === "en" ? "en-US" : "es-ES";
+  return d.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 }
 
 export function fmtHora12(d: Date): string {

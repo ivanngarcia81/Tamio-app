@@ -1,4 +1,5 @@
-import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, type NewTx } from "../db";
+import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, catNombre, metodoNombre, type NewTx } from "../db";
+import i18n from "../i18n";
 import type { CsvField } from "./csvImport";
 
 export const MOVIMIENTOS_FIELDS: CsvField[] = [
@@ -35,8 +36,13 @@ function matchCategoria(
   const q = texto.trim();
   const lista = tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
   if (q) {
+    // Acepta el id interno, el nombre canónico en español o el nombre en
+    // el idioma activo de la app (para archivos exportados en inglés).
     const found = lista.find(
-      (c) => c.id.toLowerCase() === q.toLowerCase() || c.nombre.toLowerCase() === q.toLowerCase()
+      (c) =>
+        c.id.toLowerCase() === q.toLowerCase() ||
+        c.nombre.toLowerCase() === q.toLowerCase() ||
+        catNombre(c.id).toLowerCase() === q.toLowerCase()
     );
     if (found) return { categoria: found.id, subcategoria: null };
   }
@@ -49,7 +55,9 @@ function matchCategoria(
 function matchMetodo(texto: string): string {
   const q = texto.trim().toLowerCase();
   if (!q) return "efectivo";
-  const found = METODOS_PAGO.find((m) => m.id.toLowerCase() === q || m.nombre.toLowerCase() === q);
+  const found = METODOS_PAGO.find(
+    (m) => m.id.toLowerCase() === q || m.nombre.toLowerCase() === q || metodoNombre(m.id).toLowerCase() === q
+  );
   return found?.id ?? "efectivo";
 }
 
@@ -63,32 +71,35 @@ function matchMetodo(texto: string): string {
  */
 export function validarFilaMovimiento(row: Record<string, string>, hoy: string): { data?: NewTx; error?: string } {
   const tipoRaw = (row.tipo ?? "").trim().toLowerCase();
-  if (tipoRaw !== "ingreso" && tipoRaw !== "gasto") {
-    return { error: `"tipo" debe ser "ingreso" o "gasto" (se encontró "${row.tipo ?? ""}").` };
+  const tipo: "ingreso" | "gasto" | null =
+    tipoRaw === "ingreso" || tipoRaw === "income" ? "ingreso"
+    : tipoRaw === "gasto" || tipoRaw === "expense" || tipoRaw === "egreso" ? "gasto"
+    : null;
+  if (tipo === null) {
+    return { error: i18n.t("csvVal.tipoInvalido", { valor: row.tipo ?? "" }) };
   }
-  const tipo = tipoRaw as "ingreso" | "gasto";
 
   const fecha = (row.fecha ?? "").trim();
   if (!esFechaValida(fecha)) {
-    return { error: `Fecha inválida, usa el formato AAAA-MM-DD (se encontró "${row.fecha ?? ""}").` };
+    return { error: i18n.t("csvVal.fechaInvalida", { valor: row.fecha ?? "" }) };
   }
   if (fecha > hoy) {
-    return { error: "No se pueden importar movimientos con fecha futura." };
+    return { error: i18n.t("csvVal.fechaFutura") };
   }
 
   const concepto = (row.concepto ?? "").trim();
   if (!concepto) {
-    return { error: "El concepto es obligatorio." };
+    return { error: i18n.t("csvVal.conceptoObligatorio") };
   }
 
   const monto = parseMontoCsv(row.monto ?? "");
   if (monto === null) {
-    return { error: `Monto inválido (se encontró "${row.monto ?? ""}"), debe ser mayor a cero.` };
+    return { error: i18n.t("csvVal.montoInvalido", { valor: row.monto ?? "" }) };
   }
 
   const cat = matchCategoria(tipo, row.categoria ?? "");
   if (!cat) {
-    return { error: `Categoría de ${tipo} no reconocida: "${row.categoria ?? ""}".` };
+    return { error: i18n.t("csvVal.categoriaNoReconocida", { tipo: tipo === "ingreso" ? i18n.t("tx.ingreso").toLowerCase() : i18n.t("tx.gasto").toLowerCase(), valor: row.categoria ?? "" }) };
   }
 
   return {

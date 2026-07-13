@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import type { Church } from "./db";
+import i18n from "./i18n";
 import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint,
   PDF_COLOR, PDF_FOOTER_BLOCK_H, PDF_MARGIN, PDF_SPACE, PDF_TYPE,
@@ -106,12 +107,12 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.footer);
     setText(doc, FAINT);
-    doc.text("Generado automáticamente por Tesorería", marginX, fy);
-    doc.text(`Página ${pageIndex} de ${totalPages}`, rightX, fy, { align: "right" });
+    doc.text(i18n.t("pdf.generadoAutomaticamente"), marginX, fy);
+    doc.text(i18n.t("pdf.pagina", { x: pageIndex, y: totalPages }), rightX, fy, { align: "right" });
     fy += 14;
 
     doc.text(`${fechaGeneracion} • ${horaGeneracion}`, marginX, fy);
-    doc.text(`Reporte ${reportId}`, rightX, fy, { align: "right" });
+    doc.text(i18n.t("pdf.reporte", { id: reportId }), rightX, fy, { align: "right" });
     fy += PDF_SPACE.xs;
 
     setDraw(doc, LINE);
@@ -125,7 +126,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.title);
     setText(doc, INK);
-    doc.text("Estado financiero mensual", marginX, y, { maxWidth: contentWidth });
+    doc.text(i18n.t("pdf.estadoFinancieroMensual"), marginX, y, { maxWidth: contentWidth });
     y += 30;
 
     doc.setFont("helvetica", "bold");
@@ -137,17 +138,17 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.period);
     setText(doc, MUTED);
-    doc.text(`Periodo: ${mesLegibleStr}`, marginX, y);
+    doc.text(i18n.t("pdf.periodo", { periodo: mesLegibleStr }), marginX, y);
     y += 16;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.meta);
     setText(doc, FAINT);
-    doc.text(`Moneda: ${church.moneda}`, marginX, y);
+    doc.text(i18n.t("pdf.moneda", { moneda: church.moneda }), marginX, y);
     y += 14;
 
     if (generatedBy) {
-      doc.text(`Generado por: ${generatedBy.nombre}${generatedBy.rol ? " · " + generatedBy.rol : ""}`, marginX, y);
+      doc.text(i18n.t("pdf.generadoPor", { quien: `${generatedBy.nombre}${generatedBy.rol ? " · " + generatedBy.rol : ""}` }), marginX, y);
       y += 14;
     }
 
@@ -164,9 +165,9 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.body);
     setText(doc, MUTED);
-    doc.text("CATEGORÍA", labelColX, y);
-    doc.text("MONTO", amountColX, y, { align: "right" });
-    doc.text("% DEL TOTAL", pctColX, y, { align: "right" });
+    doc.text(i18n.t("pdf.colCategoria"), labelColX, y);
+    doc.text(i18n.t("pdf.colMonto"), amountColX, y, { align: "right" });
+    doc.text(i18n.t("pdf.colPctTotal"), pctColX, y, { align: "right" });
     y += PDF_SPACE.xs + 4;
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
@@ -184,7 +185,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
       doc.setFont("helvetica", "bold");
       doc.setFontSize(PDF_TYPE.section);
       setText(doc, INK);
-      doc.text(`${currentSection} (continuación)`, marginX, y);
+      doc.text(i18n.t("pdf.continuacion", { seccion: currentSection }), marginX, y);
       y += 20;
       drawTableHeaderRaw();
     }
@@ -253,28 +254,28 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   drawRunningHeader();
 
   // ---------- Ingresos ----------
-  beginSection("Ingresos del periodo");
+  beginSection(i18n.t("reportes.ingresosPeriodo"));
   if (filasIngreso.length === 0) {
-    emptyRow("Sin ingresos registrados este mes.");
+    emptyRow(i18n.t("reportes.sinIngresosRegistrados"));
   } else {
     for (const c of filasIngreso) {
       dataRow(c.nombre, fmtMoneyPdf(c.total, church.moneda), pct(c.total, ingresos));
     }
   }
-  totalRow("Total ingresos", fmtMoneyPdf(ingresos, church.moneda));
+  totalRow(i18n.t("reportes.totalIngresos"), fmtMoneyPdf(ingresos, church.moneda));
   endSection();
   y += PDF_SPACE.md;
 
   // ---------- Gastos ----------
-  beginSection("Gastos del periodo");
+  beginSection(i18n.t("reportes.gastosPeriodo"));
   if (filasGasto.length === 0) {
-    emptyRow("Sin gastos registrados este mes.");
+    emptyRow(i18n.t("reportes.sinGastosRegistrados"));
   } else {
     for (const c of filasGasto) {
       dataRow(c.nombre, fmtMoneyPdf(c.total, church.moneda), pct(c.total, gastos));
     }
   }
-  totalRow("Total gastos", fmtMoneyPdf(gastos, church.moneda));
+  totalRow(i18n.t("reportes.totalGastos"), fmtMoneyPdf(gastos, church.moneda));
   endSection();
 
   // ---------- Depósitos bancarios (solo si se provee) ----------
@@ -284,7 +285,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.body);
     setText(doc, INK);
-    doc.text("Depósitos bancarios", labelColX, y);
+    doc.text(i18n.t("reportes.depositosBancarios"), labelColX, y);
     doc.text(fmtMoneyPdf(depositosBancarios, church.moneda), amountColX, y, { align: "right" });
     y += PDF_SPACE.md;
   }
@@ -303,9 +304,9 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   // valores usan el mismo negro para verse igual de nítidos en blanco
   // y negro; un balance negativo se distingue con paréntesis, no con rojo.
   const cards: { label: string; value: number }[] = [
-    { label: "TOTAL INGRESOS", value: ingresos },
-    { label: "TOTAL GASTOS", value: gastos },
-    { label: "BALANCE NETO", value: balance },
+    { label: i18n.t("pdf.cardTotalIngresos"), value: ingresos },
+    { label: i18n.t("pdf.cardTotalGastos"), value: gastos },
+    { label: i18n.t("pdf.cardBalanceNeto"), value: balance },
   ];
 
   cards.forEach((card, i) => {
@@ -386,7 +387,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.meta);
     setText(doc, MUTED);
-    doc.text(generatedBy.rol ?? "Tesorero", marginX, y);
+    doc.text(generatedBy.rol ?? i18n.t("rol.tesorero"), marginX, y);
     y += PDF_SPACE.md;
   }
 
@@ -401,7 +402,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   }
 
   const bytes = doc.output("arraybuffer") as ArrayBuffer;
-  const fileName = `Estado-financiero-${slug(church.nombre)}-${slug(mesLegibleStr)}.pdf`;
+  const fileName = `${i18n.t("pdf.fileEstadoFinanciero")}-${slug(church.nombre)}-${slug(mesLegibleStr)}.pdf`;
   return { bytes, fileName };
 }
 

@@ -1,4 +1,5 @@
 import type { Church } from "../../db";
+import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
 import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl,
@@ -66,7 +67,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   ]);
 
   const doc = new ReportDocBuilder({
-    title: "Estado financiero",
+    title: i18n.t("pdf.estadoFinanciero"),
     churchLine: `${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`,
     period: data.mesLegibleStr,
     moneda,
@@ -75,23 +76,23 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   });
 
   const cols: PdfColumn[] = [
-    { label: "Categoría", width: doc.contentWidth - 100 - 64, align: "left" },
-    { label: "Monto", width: 100, align: "right" },
+    { label: i18n.t("tx.colCategoria"), width: doc.contentWidth - 100 - 64, align: "left" },
+    { label: i18n.t("tx.colMonto"), width: 100, align: "right" },
     { label: "%", width: 64, align: "right" },
   ];
 
   // ---------- Resumen financiero ----------
   const r = data.resumen;
-  doc.heading("Resumen financiero");
+  doc.heading(i18n.t("pdf.resumenFinanciero"));
   doc.keyValueGrid(
     [
-      { label: "Balance inicial (mes anterior)", value: fmtMoneyPdf(r.balanceInicial, moneda) },
-      { label: "Total ingresos", value: fmtMoneyPdf(r.ingresos, moneda) },
-      { label: "Total gastos", value: fmtMoneyPdf(r.gastos, moneda) },
-      { label: "Balance final", value: fmtMoneyPdf(r.balanceFinal, moneda) },
-      { label: "Depósitos bancarios", value: fmtMoneyPdf(r.depositosBancarios, moneda) },
-      { label: "Total diezmos", value: fmtMoneyPdf(r.diezmos, moneda) },
-      { label: "Total ofrendas", value: fmtMoneyPdf(r.ofrendas, moneda) },
+      { label: i18n.t("pdf.balanceInicial"), value: fmtMoneyPdf(r.balanceInicial, moneda) },
+      { label: i18n.t("reportes.totalIngresos"), value: fmtMoneyPdf(r.ingresos, moneda) },
+      { label: i18n.t("reportes.totalGastos"), value: fmtMoneyPdf(r.gastos, moneda) },
+      { label: i18n.t("pdf.balanceFinal"), value: fmtMoneyPdf(r.balanceFinal, moneda) },
+      { label: i18n.t("reportes.depositosBancarios"), value: fmtMoneyPdf(r.depositosBancarios, moneda) },
+      { label: i18n.t("pdf.totalDiezmos"), value: fmtMoneyPdf(r.diezmos, moneda) },
+      { label: i18n.t("pdf.totalOfrendas"), value: fmtMoneyPdf(r.ofrendas, moneda) },
     ],
     2
   );
@@ -99,23 +100,23 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
 
   // ---------- Indicadores ----------
   const ind = data.indicadores;
-  doc.heading("Indicadores");
+  doc.heading(i18n.t("pdf.indicadores"));
   doc.keyValueGrid(
     [
-      { label: "Ingresos del mes", value: fmtMoneyPdf(ind.ingresosDelMes, moneda) },
-      { label: "Gastos del mes", value: fmtMoneyPdf(ind.gastosDelMes, moneda) },
-      { label: "Balance del mes", value: fmtMoneyPdf(ind.balanceDelMes, moneda) },
-      { label: "Balance del año", value: fmtMoneyPdf(ind.balanceDelAnio, moneda) },
+      { label: i18n.t("dashboard.ingresosDelMes"), value: fmtMoneyPdf(ind.ingresosDelMes, moneda) },
+      { label: i18n.t("dashboard.gastosDelMes"), value: fmtMoneyPdf(ind.gastosDelMes, moneda) },
+      { label: i18n.t("dashboard.balanceDelMesLabel"), value: fmtMoneyPdf(ind.balanceDelMes, moneda) },
+      { label: i18n.t("dashboard.balanceDelAnio"), value: fmtMoneyPdf(ind.balanceDelAnio, moneda) },
       {
-        label: "Mayor gasto",
+        label: i18n.t("dashboard.mayorGasto"),
         value: ind.mayorGasto ? `${ind.mayorGasto.nombre} — ${fmtMoneyPdf(ind.mayorGasto.monto, moneda)}` : "—",
       },
       {
-        label: "Ingreso más frecuente",
+        label: i18n.t("dashboard.ingresoMasFrecuente"),
         value: ind.ingresoMasFrecuente ? `${ind.ingresoMasFrecuente.nombre} (${ind.ingresoMasFrecuente.conteo})` : "—",
       },
-      { label: "Miembros activos", value: String(ind.miembrosActivos) },
-      { label: "Última actualización", value: ind.ultimaActualizacion },
+      { label: i18n.t("dashboard.miembrosActivos"), value: String(ind.miembrosActivos) },
+      { label: i18n.t("dashboard.ultimaActualizacion"), value: ind.ultimaActualizacion },
     ],
     2
   );
@@ -123,7 +124,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
 
   // ---------- Gráficas ----------
   if (data.charts.length > 0) {
-    doc.heading("Gráficas");
+    doc.heading(i18n.t("pdf.graficas"));
     for (const chart of data.charts) {
       doc.image(chart.dataUrl, { maxWidth: doc.contentWidth, maxHeight: 220, caption: chart.caption });
     }
@@ -131,35 +132,35 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
 
   // ---------- Resumen por categorías ----------
   const totalIngresos = data.categoriasIngreso.reduce((s, c) => s + c.monto, 0);
-  doc.beginTable("Ingresos por categoría", cols);
+  doc.beginTable(i18n.t("pdf.ingresosPorCategoria"), cols);
   if (data.categoriasIngreso.length === 0) {
-    doc.emptyRow("Sin ingresos registrados este mes.");
+    doc.emptyRow(i18n.t("reportes.sinIngresosRegistrados"));
   } else {
     for (const c of data.categoriasIngreso) {
       doc.tableRow([c.nombre, fmtMoneyPdf(c.monto, moneda), pct(c.monto, totalIngresos)], cols);
     }
   }
-  doc.totalRow(["Total ingresos", fmtMoneyPdf(totalIngresos, moneda), "100%"], cols);
+  doc.totalRow([i18n.t("reportes.totalIngresos"), fmtMoneyPdf(totalIngresos, moneda), "100%"], cols);
   doc.endTable();
   doc.addGap(PDF_SPACE.md);
 
   const totalGastos = data.categoriasGasto.reduce((s, c) => s + c.monto, 0);
-  doc.beginTable("Gastos por categoría", cols);
+  doc.beginTable(i18n.t("pdf.gastosPorCategoria"), cols);
   if (data.categoriasGasto.length === 0) {
-    doc.emptyRow("Sin gastos registrados este mes.");
+    doc.emptyRow(i18n.t("reportes.sinGastosRegistrados"));
   } else {
     for (const c of data.categoriasGasto) {
       doc.tableRow([c.nombre, fmtMoneyPdf(c.monto, moneda), pct(c.monto, totalGastos)], cols);
     }
   }
-  doc.totalRow(["Total gastos", fmtMoneyPdf(totalGastos, moneda), "100%"], cols);
+  doc.totalRow([i18n.t("reportes.totalGastos"), fmtMoneyPdf(totalGastos, moneda), "100%"], cols);
   doc.endTable();
   doc.addGap(PDF_SPACE.lg);
 
   // ---------- Firmas ----------
   doc.signatureBlock([
-    { nombre: data.generatedBy?.nombre, rol: data.generatedBy?.rol ?? "Tesorero", firmaDataUrl },
-    { nombre: null, rol: "Pastor", firmaDataUrl: null },
+    { nombre: data.generatedBy?.nombre, rol: data.generatedBy?.rol ?? i18n.t("rol.tesorero"), firmaDataUrl },
+    { nombre: null, rol: i18n.t("rol.pastor"), firmaDataUrl: null },
   ]);
 
   const now = new Date();
@@ -169,5 +170,5 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
     horaGeneracion: fmtHora12(now),
   });
 
-  await openForPrint(bytes, `estado-financiero-${slug(church.nombre)}.pdf`);
+  await openForPrint(bytes, `${i18n.t("pdf.fileEstadoFinanciero").toLowerCase()}-${slug(church.nombre)}.pdf`);
 }
