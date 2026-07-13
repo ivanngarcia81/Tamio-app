@@ -688,7 +688,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   if (generatedBy?.nombre) {
     const sigLineW = 200;
     const sigImgMaxH = 46;
-    const cardsToSigGap = PDF_SPACE.lg; // 32pt de aire respecto a las tarjetas
+    const cardsToSigGap = PDF_SPACE.lg + PDF_SPACE.sm; // 48pt de aire respecto a las tarjetas
     const lineToNameGap = PDF_SPACE.sm; // 16pt: dentro del rango 12–20 pedido
     const nameToRoleGap = 14;
     let sigImgH = 0;
