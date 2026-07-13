@@ -409,6 +409,16 @@ export const en: Resources = {
     titulo: "Welcome to Tesorería",
     sub: "Set up your church in a minute — everything can be changed later in Settings.",
     comenzar: "Get started",
+    siguiente: "Next",
+    omitir: "Skip",
+    slide1Titulo: "Your church finances, made clear",
+    slide1Texto: "Record income and expenses in seconds, with categories, payment methods and attached receipts. The home screen shows the month's balance at a glance, with charts.",
+    slide2Titulo: "Professional PDF reports",
+    slide2Texto: "Monthly financial statement, annual report and printable registers — with audit folio, treasurer's signature and your church logo. Assembly-ready.",
+    slide3Titulo: "Members and statements",
+    slide3Texto: "Keep the member directory, see each person's contribution history and generate their annual contribution statement in PDF with one click.",
+    slide4Titulo: "Your data, safe and portable",
+    slide4Texto: "Import previous months from CSV, export everything whenever you want and keep backup copies. Available in Spanish and English.",
   },
 
   categorias: {

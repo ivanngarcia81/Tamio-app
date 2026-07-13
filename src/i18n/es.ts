@@ -403,6 +403,16 @@ export const es = {
     titulo: "Bienvenido a Tesorería",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
     comenzar: "Comenzar",
+    siguiente: "Siguiente",
+    omitir: "Omitir",
+    slide1Titulo: "Las finanzas de tu iglesia, claras",
+    slide1Texto: "Registra ingresos y gastos en segundos, con categorías, métodos de pago y comprobantes adjuntos. El inicio te muestra el balance del mes de un vistazo, con gráficas.",
+    slide2Titulo: "Reportes profesionales en PDF",
+    slide2Texto: "Estado financiero mensual, reporte anual y registros imprimibles — con folio de auditoría, firma del tesorero y el logo de tu iglesia. Listos para la asamblea.",
+    slide3Titulo: "Miembros y constancias",
+    slide3Texto: "Lleva el directorio de miembros, mira el historial de aportes de cada persona y genera su constancia anual de aportaciones en PDF con un clic.",
+    slide4Titulo: "Tus datos, seguros y portables",
+    slide4Texto: "Importa meses anteriores desde CSV, exporta todo cuando quieras y guarda copias de seguridad. Disponible en español e inglés.",
   },
 
   categorias: {
