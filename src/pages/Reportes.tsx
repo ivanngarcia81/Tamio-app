@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, currentMonth, fmtMoney, insertTx, nowLocalIso,
-  mesLegible, monthDepositos, monthlySummary, monthTotals, pctChange, prevMonth,
+  mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
 } from "../db";
 import { exportReportPdf, printMonthlyReportPdf } from "../export";
@@ -10,7 +10,7 @@ import Delta from "../components/Delta";
 import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconPrinter, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconPrinter, IconUpload } from "../icons";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -36,7 +36,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const mes = currentMonth();
+  const [mes, setMes] = useState(currentMonth());
+  const esMesActual = mes >= currentMonth();
   const mesStr = mesLegible(mes);
   const mesAnterior = prevMonth(mes);
 
@@ -110,6 +111,19 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("reportes.sub", { mes: mesStr })}</div>
         </div>
         <div className="header-actions">
+          <div className="month-nav">
+            <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
+              <IconChevronLeft size={16} />
+            </span>
+            <span className="month-nav-label">{mesStr}</span>
+            <span
+              className={`icon-btn${esMesActual ? " disabled" : ""}`}
+              title={t("mov.mesSiguiente")}
+              onClick={() => !esMesActual && setMes(nextMonth(mes))}
+            >
+              <IconChevronRight size={16} />
+            </span>
+          </div>
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
             <IconUpload size={13} /> {t("miembros.importarCsv")}
           </button>
