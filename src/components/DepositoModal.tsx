@@ -64,6 +64,8 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
 
     if (!fecha) { setError("La fecha del depósito es obligatoria."); return; }
     if (!periodo) { setError("El período correspondiente es obligatorio."); return; }
+    if (fecha > hoy) { setError("No se pueden registrar depósitos con una fecha futura."); return; }
+    if (periodo > hoy.slice(0, 7)) { setError("No se puede elegir un período futuro."); return; }
     const m = parseMonto(monto);
     if (m === null) { setError("Escribe un monto válido mayor a cero."); return; }
     if (!cuentaBanco.trim()) { setError("La cuenta bancaria o nombre del banco es obligatorio."); return; }
@@ -116,7 +118,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Fecha del depósito</label>
-              <input className="form-input" type="date" value={fecha} onChange={(e) => onFechaChange(e.target.value)} />
+              <input className="form-input" type="date" value={fecha} max={hoy} onChange={(e) => onFechaChange(e.target.value)} />
             </div>
             <div className="form-group">
               <label className="form-label">Monto depositado</label>
@@ -150,6 +152,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
                 className="form-input"
                 type="month"
                 value={periodo}
+                max={hoy.slice(0, 7)}
                 onChange={(e) => { setPeriodo(e.target.value); setPeriodoTocado(true); }}
               />
             </div>
