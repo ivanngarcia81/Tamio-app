@@ -20,6 +20,16 @@ export const IconLogo = ({ size = 20, strokeWidth = 2.4 }: IconProps) => (
   <svg {...base(size, strokeWidth)}><path d="M12 3v18M3 12h18" /></svg>
 );
 
+/** Capilla en estilo de línea — placeholder del logo de la iglesia. */
+export const IconChurch = ({ size = 20, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M12 2v4M10 4h4" />
+    <path d="M6 21v-9l6-5 6 5v9" />
+    <path d="M10 21v-4a2 2 0 0 1 4 0v4" />
+    <path d="M4 21h16" />
+  </svg>
+);
+
 export const IconHome = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
   <svg {...base(size, strokeWidth)}>
     <path d="M3 12l9-9 9 9" />

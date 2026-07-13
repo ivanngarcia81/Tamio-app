@@ -4,7 +4,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import {
-  IconLogo, IconHome, IconIngreso, IconGasto, IconMiembros,
+  IconChurch, IconHome, IconIngreso, IconGasto, IconMiembros,
   IconReportes, IconBandeja, IconBank, IconConfig, IconChevronDown,
 } from "../icons";
 
@@ -57,9 +57,9 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
   return (
     <aside className="sidebar">
       {/* Muestra el logo de la iglesia (Configuración → Subir logo) en cuanto
-          existe; mientras tanto el emblema de Tesorería hace de placeholder. */}
-      <div className="logo" title={logoUrl ? church.nombre : "Tesorería"}>
-        {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconLogo />}
+          existe; mientras tanto una capilla atenuada hace de placeholder. */}
+      <div className={`logo${logoUrl ? "" : " placeholder"}`} title={logoUrl ? church.nombre : "Tesorería"}>
+        {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconChurch />}
       </div>
 
       <div className="church-select">

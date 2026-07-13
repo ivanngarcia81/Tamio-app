@@ -108,6 +108,12 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   object-fit: cover;
 }
+/* Placeholder mientras no hay logo subido: capilla atenuada sobre
+   superficie suave, al estilo de los avatares vacíos de macOS. */
+.logo.placeholder {
+  background: var(--surface-2);
+  color: var(--text-3);
+}
 .church-select {
   display: flex;
   align-items: center;
