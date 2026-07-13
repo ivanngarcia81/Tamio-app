@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { listUsuarios, updateChurch, type Church, type Usuario } from "../db";
+import type { LangPref } from "../i18n";
 import { IconCheck } from "../icons";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import TreasurerSettings, {
@@ -9,18 +11,24 @@ import SignatureUploader from "../components/settings/SignatureUploader";
 import UsersSettings from "../components/settings/UsersSettings";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
+import LanguageSettings from "../components/settings/LanguageSettings";
 
 interface Props {
   church: Church;
   onChurchUpdated: (c: Church) => void;
   themePref: ThemePref;
   onThemePrefChange: (pref: ThemePref) => void;
+  langPref: LangPref;
+  onLangPrefChange: (pref: LangPref) => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
-export default function Configuracion({ church, onChurchUpdated, themePref, onThemePrefChange }: Props) {
+export default function Configuracion({
+  church, onChurchUpdated, themePref, onThemePrefChange, langPref, onLangPrefChange,
+}: Props) {
+  const { t } = useTranslation();
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
@@ -61,15 +69,15 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
   async function guardar() {
     setGeneralError(null);
 
-    const nextChurchError = churchForm.nombre.trim() ? null : "El nombre de la iglesia es obligatorio.";
+    const nextChurchError = churchForm.nombre.trim() ? null : t("config.nombreIglesiaObligatorio");
     const nextTreasurerErrors: TreasurerFormErrors = {};
-    if (!treasurerForm.nombre.trim()) nextTreasurerErrors.nombre = "El nombre es obligatorio.";
-    if (!treasurerForm.cargo.trim()) nextTreasurerErrors.cargo = "El cargo es obligatorio.";
+    if (!treasurerForm.nombre.trim()) nextTreasurerErrors.nombre = t("validacion.nombreObligatorio");
+    if (!treasurerForm.cargo.trim()) nextTreasurerErrors.cargo = t("validacion.cargoObligatorio");
     if (treasurerForm.email.trim() && !EMAIL_RE.test(treasurerForm.email.trim())) {
-      nextTreasurerErrors.email = "Escribe un correo con formato válido.";
+      nextTreasurerErrors.email = t("validacion.correoInvalido");
     }
     if (treasurerForm.telefono.trim() && !PHONE_RE.test(treasurerForm.telefono.trim())) {
-      nextTreasurerErrors.telefono = "Escribe un teléfono con formato válido.";
+      nextTreasurerErrors.telefono = t("validacion.telefonoInvalido");
     }
 
     setChurchError(nextChurchError);
@@ -94,7 +102,7 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setGeneralError(`No se pudo guardar: ${e}`);
+      setGeneralError(t("common.noSePudoGuardar", { error: String(e) }));
     } finally {
       setSaving(false);
     }
@@ -104,8 +112,8 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
     <>
       <div className="header">
         <div>
-          <div className="page-title">Configuración</div>
-          <div className="page-sub">Datos de la iglesia y del tesorero</div>
+          <div className="page-title">{t("config.titulo")}</div>
+          <div className="page-sub">{t("config.sub")}</div>
         </div>
       </div>
 
@@ -132,6 +140,8 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
               <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
 
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
+
+              <LanguageSettings value={langPref} onChange={onLangPrefChange} />
             </div>
 
             <PDFPreview
@@ -145,11 +155,11 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
 
           <div className="settings-actions">
             <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
-              {saving ? "Guardando…" : "Guardar cambios"}
+              {saving ? t("common.guardando") : t("common.guardarCambios")}
             </button>
             {saved && (
               <span className="settings-saved-pill">
-                <IconCheck size={14} /> Guardado
+                <IconCheck size={14} /> {t("common.guardado")}
               </span>
             )}
           </div>

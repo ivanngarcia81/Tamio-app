@@ -4,6 +4,7 @@
 // solo se necesitaría otra tarjeta igual a esta con su propio prefijo de
 // columnas en `churches` (o una tabla `roles` si llegan a ser varias personas
 // por rol).
+import { useTranslation } from "react-i18next";
 import { IconUser } from "../../icons";
 
 export interface TreasurerFormValues {
@@ -27,59 +28,60 @@ interface Props {
 }
 
 export default function TreasurerSettings({ value, onChange, errors }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="card pad-lg settings-card">
       <div className="card-head">
         <div className="card-head-left">
           <div className="card-icon"><IconUser size={16} /></div>
           <div className="card-head-titles">
-            <div className="card-title-lg">Información del tesorero</div>
-            <div className="card-title-sub">Se usa para identificar quién generó cada reporte</div>
+            <div className="card-title-lg">{t("tesorero.titulo")}</div>
+            <div className="card-title-sub">{t("tesorero.sub")}</div>
           </div>
         </div>
       </div>
 
       <div className="form-group full">
-        <label className="form-label">Nombre completo</label>
+        <label className="form-label">{t("tesorero.nombreLabel")}</label>
         <input
           className="form-input"
           value={value.nombre}
           onChange={(e) => onChange({ nombre: e.target.value })}
-          placeholder="p. ej. Juan Pérez"
+          placeholder={t("tesorero.nombrePlaceholder")}
         />
         {errors.nombre && <div className="field-error">{errors.nombre}</div>}
       </div>
 
       <div className="form-group full">
-        <label className="form-label">Cargo</label>
+        <label className="form-label">{t("tesorero.cargo")}</label>
         <input
           className="form-input"
           value={value.cargo}
           onChange={(e) => onChange({ cargo: e.target.value })}
-          placeholder="Tesorero"
+          placeholder={t("tesorero.cargoPlaceholder")}
         />
         {errors.cargo && <div className="field-error">{errors.cargo}</div>}
       </div>
 
       <div className="form-grid">
         <div className="form-group">
-          <label className="form-label">Correo electrónico <span className="opt">(opcional)</span></label>
+          <label className="form-label">{t("tesorero.correo")} <span className="opt">{t("common.opcional")}</span></label>
           <input
             className="form-input"
             type="email"
             value={value.email}
             onChange={(e) => onChange({ email: e.target.value })}
-            placeholder="correo@ejemplo.com"
+            placeholder={t("tesorero.correoPlaceholder")}
           />
           {errors.email && <div className="field-error">{errors.email}</div>}
         </div>
         <div className="form-group">
-          <label className="form-label">Teléfono <span className="opt">(opcional)</span></label>
+          <label className="form-label">{t("tesorero.telefono")} <span className="opt">{t("common.opcional")}</span></label>
           <input
             className="form-input"
             value={value.telefono}
             onChange={(e) => onChange({ telefono: e.target.value })}
-            placeholder="55 0000 0000"
+            placeholder={t("tesorero.telefonoPlaceholder")}
           />
           {errors.telefono && <div className="field-error">{errors.telefono}</div>}
         </div>

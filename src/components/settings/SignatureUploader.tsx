@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { useTranslation } from "react-i18next";
 import { IconSignature, IconWarn } from "../../icons";
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -20,6 +21,7 @@ interface Props {
 /** Firma del tesorero — se usa en el bloque de firmas de los reportes en PDF
  *  (Estado financiero, Dashboard) cuando hay un tesorero configurado. */
 export default function SignatureUploader({ path, onPathChange }: Props) {
+  const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,17 +49,17 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
     try {
       const selected = await openFileDialog({
         multiple: false,
-        title: "Seleccionar firma",
-        filters: [{ name: "Imagen PNG", extensions: ["png"] }],
+        title: t("firma.seleccionar"),
+        filters: [{ name: t("iglesia.imagenPng"), extensions: ["png"] }],
       });
       if (typeof selected !== "string") return;
       if (!selected.toLowerCase().endsWith(".png")) {
-        setError("La firma debe ser una imagen PNG con fondo transparente.");
+        setError(t("firma.debeSerPng"));
         return;
       }
       onPathChange(selected);
     } catch (e) {
-      setError(`No se pudo abrir el selector de archivos: ${e}`);
+      setError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }
   }
 
@@ -67,8 +69,8 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
         <div className="card-head-left">
           <div className="card-icon"><IconSignature size={16} /></div>
           <div className="card-head-titles">
-            <div className="card-title-lg">Firma del tesorero</div>
-            <div className="card-title-sub">Aparece en el bloque de firmas de los reportes en PDF</div>
+            <div className="card-title-lg">{t("firma.titulo")}</div>
+            <div className="card-title-sub">{t("firma.sub")}</div>
           </div>
         </div>
       </div>
@@ -76,25 +78,25 @@ export default function SignatureUploader({ path, onPathChange }: Props) {
       <div className="signature-body">
         {previewUrl ? (
           <div className="signature-preview">
-            <img src={previewUrl} alt="Firma del tesorero" style={{ maxWidth: "100%", maxHeight: "100%" }} />
+            <img src={previewUrl} alt={t("firma.alt")} style={{ maxWidth: "100%", maxHeight: "100%" }} />
           </div>
         ) : (
           <div className="signature-placeholder">
             <IconSignature size={22} />
-            <span className="lbl">Sin firma registrada</span>
+            <span className="lbl">{t("firma.sinFirma")}</span>
           </div>
         )}
 
         <div className="signature-actions">
           <div className="signature-actions-row">
             <button type="button" className="btn secondary" onClick={pickFirma}>
-              {previewUrl ? "Cambiar firma" : "Subir firma"}
+              {previewUrl ? t("firma.cambiar") : t("firma.subir")}
             </button>
             {previewUrl && (
-              <button type="button" className="btn ghost" onClick={() => onPathChange(null)}>Eliminar firma</button>
+              <button type="button" className="btn ghost" onClick={() => onPathChange(null)}>{t("firma.eliminar")}</button>
             )}
           </div>
-          <div className="form-hint">Solo se aceptan imágenes PNG, idealmente con fondo transparente.</div>
+          <div className="form-hint">{t("firma.hint")}</div>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ROLES_USUARIO, insertUsuario, updateUsuario, type Church, type Usuario } from "../../db";
 import { IconClose, IconWarn } from "../../icons";
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function UsuarioModal({ church, editing, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const isEdit = editing !== null;
 
   const [nombre, setNombre] = useState(editing?.nombre ?? "");
@@ -30,9 +32,9 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
 
   async function guardar() {
     setError(null);
-    if (!nombre.trim()) { setError("El nombre es obligatorio."); return; }
-    if (email.trim() && !EMAIL_RE.test(email.trim())) { setError("Escribe un correo con formato válido."); return; }
-    if (telefono.trim() && !PHONE_RE.test(telefono.trim())) { setError("Escribe un teléfono con formato válido."); return; }
+    if (!nombre.trim()) { setError(t("validacion.nombreObligatorio")); return; }
+    if (email.trim() && !EMAIL_RE.test(email.trim())) { setError(t("validacion.correoInvalido")); return; }
+    if (telefono.trim() && !PHONE_RE.test(telefono.trim())) { setError(t("validacion.telefonoInvalido")); return; }
 
     setSaving(true);
     try {
@@ -51,7 +53,7 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
       onSaved();
       onClose();
     } catch (e) {
-      setError(`No se pudo guardar: ${e}`);
+      setError(t("common.noSePudoGuardar", { error: String(e) }));
       setSaving(false);
     }
   }
@@ -61,20 +63,20 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
       <div className="modal-card">
         <div className="modal-header">
           <div>
-            <div className="modal-title">{isEdit ? "Editar usuario" : "Nuevo usuario"}</div>
-            <div className="modal-sub">Directorio de personas que administran la iglesia</div>
+            <div className="modal-title">{isEdit ? t("usuarios.modalEditar") : t("usuarios.modalNuevo")}</div>
+            <div className="modal-sub">{t("usuarios.modalSub")}</div>
           </div>
           <div className="modal-close" onClick={onClose}><IconClose /></div>
         </div>
 
         <div className="modal-body">
           <div className="form-group full">
-            <label className="form-label">Nombre completo</label>
-            <input className="form-input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="p. ej. Brenda Rosado" />
+            <label className="form-label">{t("usuarios.nombreLabel")}</label>
+            <input className="form-input" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={t("usuarios.nombrePlaceholder")} />
           </div>
 
           <div className="form-group full">
-            <label className="form-label">Rol</label>
+            <label className="form-label">{t("usuarios.rolLabel")}</label>
             <div className="type-grid">
               {ROLES_USUARIO.map((r) => (
                 <span
@@ -82,7 +84,7 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
                   className={`tag ${tagClassForRol(r.id)} cat-pill${rol === r.id ? " is-selected" : ""}`}
                   onClick={() => setRol(r.id)}
                 >
-                  {r.nombre}
+                  {t(`rol.${r.id}`)}
                 </span>
               ))}
             </div>
@@ -90,18 +92,18 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
 
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Correo electrónico <span className="opt">(opcional)</span></label>
-              <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="correo@ejemplo.com" />
+              <label className="form-label">{t("tesorero.correo")} <span className="opt">{t("common.opcional")}</span></label>
+              <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("tesorero.correoPlaceholder")} />
             </div>
             <div className="form-group">
-              <label className="form-label">Teléfono <span className="opt">(opcional)</span></label>
-              <input className="form-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="55 0000 0000" />
+              <label className="form-label">{t("tesorero.telefono")} <span className="opt">{t("common.opcional")}</span></label>
+              <input className="form-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder={t("tesorero.telefonoPlaceholder")} />
             </div>
           </div>
 
           <div className="form-group full">
-            <label className="form-label">Notas <span className="opt">(opcional)</span></label>
-            <textarea className="form-textarea" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Información adicional relevante…" />
+            <label className="form-label">{t("usuarios.notas")} <span className="opt">{t("common.opcional")}</span></label>
+            <textarea className="form-textarea" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder={t("usuarios.notasPlaceholder")} />
           </div>
 
           {error && (
@@ -112,11 +114,11 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
         </div>
 
         <div className="modal-footer">
-          <div className="form-hint">Este directorio todavía no controla el acceso a la app.</div>
+          <div className="form-hint">{t("usuarios.modalHint")}</div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+            <button className="btn secondary" onClick={onClose} disabled={saving}>{t("common.cancelar")}</button>
             <button className="btn primary" onClick={guardar} disabled={saving}>
-              {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Guardar usuario"}
+              {saving ? t("common.guardando") : isEdit ? t("common.guardarCambios") : t("usuarios.guardarUsuario")}
             </button>
           </div>
         </div>

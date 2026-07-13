@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { useTranslation } from "react-i18next";
 import { IconBuilding, IconWarn } from "../../icons";
 
 export interface ChurchFormValues {
@@ -28,6 +29,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
 }
 
 export default function ChurchSettings({ value, onChange, error, logoPath, onLogoPathChange }: Props) {
+  const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
 
@@ -55,17 +57,17 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
     try {
       const selected = await openFileDialog({
         multiple: false,
-        title: "Seleccionar logo",
-        filters: [{ name: "Imagen PNG", extensions: ["png"] }],
+        title: t("iglesia.seleccionarLogo"),
+        filters: [{ name: t("iglesia.imagenPng"), extensions: ["png"] }],
       });
       if (typeof selected !== "string") return;
       if (!selected.toLowerCase().endsWith(".png")) {
-        setLogoError("El logo debe ser una imagen PNG.");
+        setLogoError(t("iglesia.logoDebeSerPng"));
         return;
       }
       onLogoPathChange(selected);
     } catch (e) {
-      setLogoError(`No se pudo abrir el selector de archivos: ${e}`);
+      setLogoError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }
   }
 
@@ -75,8 +77,8 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
         <div className="card-head-left">
           <div className="card-icon"><IconBuilding size={16} /></div>
           <div className="card-head-titles">
-            <div className="card-title-lg">Información de la iglesia</div>
-            <div className="card-title-sub">Nombre, ubicación y moneda</div>
+            <div className="card-title-lg">{t("iglesia.titulo")}</div>
+            <div className="card-title-sub">{t("iglesia.sub")}</div>
           </div>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
       <div className="church-logo-row">
         {previewUrl ? (
           <div className="church-logo-preview">
-            <img src={previewUrl} alt="Logo de la iglesia" />
+            <img src={previewUrl} alt={t("iglesia.logoAlt")} />
           </div>
         ) : (
           <div className="church-logo-placeholder">
@@ -94,13 +96,13 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
         <div className="signature-actions" style={{ minWidth: 0 }}>
           <div className="signature-actions-row">
             <button type="button" className="btn secondary" onClick={pickLogo}>
-              {previewUrl ? "Cambiar logo" : "Subir logo"}
+              {previewUrl ? t("iglesia.cambiarLogo") : t("iglesia.subirLogo")}
             </button>
             {previewUrl && (
-              <button type="button" className="btn ghost" onClick={() => onLogoPathChange(null)}>Eliminar logo</button>
+              <button type="button" className="btn ghost" onClick={() => onLogoPathChange(null)}>{t("iglesia.eliminarLogo")}</button>
             )}
           </div>
-          <div className="form-hint">Aparece en el círculo de la iglesia en el menú lateral y en los reportes en PDF. Solo PNG.</div>
+          <div className="form-hint">{t("iglesia.logoHint")}</div>
         </div>
       </div>
       {logoError && (
@@ -110,44 +112,44 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
       )}
 
       <div className="form-group full">
-        <label className="form-label">Nombre de la iglesia</label>
+        <label className="form-label">{t("iglesia.nombreLabel")}</label>
         <input
           className="form-input"
           value={value.nombre}
           onChange={(e) => onChange({ nombre: e.target.value })}
-          placeholder="p. ej. Iglesia Central"
+          placeholder={t("iglesia.nombrePlaceholder")}
         />
         {error && <div className="field-error">{error}</div>}
       </div>
 
       <div className="form-grid">
         <div className="form-group">
-          <label className="form-label">Ciudad <span className="opt">(opcional)</span></label>
+          <label className="form-label">{t("iglesia.ciudad")} <span className="opt">{t("common.opcional")}</span></label>
           <input
             className="form-input"
             value={value.ciudad}
             onChange={(e) => onChange({ ciudad: e.target.value })}
-            placeholder="p. ej. Ciudad de México"
+            placeholder={t("iglesia.ciudadPlaceholder")}
           />
         </div>
         <div className="form-group">
-          <label className="form-label">País <span className="opt">(opcional)</span></label>
+          <label className="form-label">{t("iglesia.pais")} <span className="opt">{t("common.opcional")}</span></label>
           <input
             className="form-input"
             value={value.pais}
             onChange={(e) => onChange({ pais: e.target.value })}
-            placeholder="p. ej. México"
+            placeholder={t("iglesia.paisPlaceholder")}
           />
         </div>
       </div>
 
       <div className="form-group full">
-        <label className="form-label">Moneda</label>
+        <label className="form-label">{t("iglesia.moneda")}</label>
         <select className="form-select" value={value.moneda} onChange={(e) => onChange({ moneda: e.target.value })}>
-          <option value="USD">USD — Dólar</option>
-          <option value="MXN">MXN — Peso mexicano</option>
+          <option value="USD">{t("iglesia.monedaUsd")}</option>
+          <option value="MXN">{t("iglesia.monedaMxn")}</option>
         </select>
-        <div className="form-hint">Se usará en todos los movimientos nuevos, reportes y balances.</div>
+        <div className="form-hint">{t("iglesia.monedaHint")}</div>
       </div>
     </div>
   );

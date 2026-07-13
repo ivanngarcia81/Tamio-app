@@ -11,6 +11,7 @@ import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countPendingTx, getOrCreateChurch, listMembers, type Church, type Member, type Tx } from "./db";
+import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import "./styles.css";
 
 function initialThemePref(): ThemePref {
@@ -27,6 +28,7 @@ function systemPrefersDark(): boolean {
 
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
   const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
+  const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -52,6 +54,17 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   useEffect(() => {
     try { localStorage.setItem("tesoreria-theme", themePref); } catch { /* noop */ }
   }, [themePref]);
+
+  // El idioma sigue el mismo patrón que el tema: preferencia explícita o
+  // "auto", que sigue el idioma del sistema operativo en vivo.
+  useEffect(() => {
+    saveLangPref(langPref);
+    i18n.changeLanguage(resolveLang(langPref));
+    if (langPref !== "auto") return;
+    const onLangChange = () => i18n.changeLanguage(resolveLang("auto"));
+    window.addEventListener("languagechange", onLangChange);
+    return () => window.removeEventListener("languagechange", onLangChange);
+  }, [langPref]);
 
   useEffect(() => {
     listMembers(church.id).then((m) => setMemberCount(m.length)).catch(() => {});
@@ -142,6 +155,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onChurchUpdated={onChurchUpdated}
                 themePref={themePref}
                 onThemePrefChange={setThemePref}
+                langPref={langPref}
+                onLangPrefChange={setLangPref}
               />
             }
           />
