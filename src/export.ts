@@ -298,12 +298,15 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   // ---------- Tarjetas de resumen ----------
   // Bloque atómico: si no caben completas, ensureSpace mueve las TRES
   // tarjetas juntas a la siguiente página — nunca se dividen entre sí.
-  const cardH = 92;
+  // Tamaño reducido a la mitad del original (92pt) a pedido del usuario.
+  const cardH = 46;
   const cardGap = PDF_SPACE.sm;
   ensureSpace(cardH);
 
   const cardW = (contentWidth - 2 * cardGap) / 3;
-  const cardRadius = 12;
+  const cardRadius = 8;
+  const cardLabelSize = 7;
+  const cardValueSize = 12;
   // Jerarquía por tamaño/peso de fuente, nunca por color — los tres
   // valores usan el mismo negro para verse igual de nítidos en blanco
   // y negro; un balance negativo se distingue con paréntesis, no con rojo.
@@ -320,9 +323,9 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     // de un relleno gris plano — simula un desenfoque suave sin bordes duros.
     doc.setGState(doc.GState({ opacity: 0.035 }));
     setFill(doc, [0, 0, 0]);
-    doc.roundedRect(x + 2.25, y + 3.5, cardW, cardH, cardRadius, cardRadius, "F");
+    doc.roundedRect(x + 1.1, y + 1.75, cardW, cardH, cardRadius, cardRadius, "F");
     doc.setGState(doc.GState({ opacity: 0.05 }));
-    doc.roundedRect(x + 1.25, y + 2, cardW, cardH, cardRadius, cardRadius, "F");
+    doc.roundedRect(x + 0.6, y + 1, cardW, cardH, cardRadius, cardRadius, "F");
     doc.setGState(doc.GState({ opacity: 1 }));
 
     setFill(doc, CARD_BG);
@@ -333,14 +336,14 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     const cx = x + cardW / 2;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.cardLabel);
+    doc.setFontSize(cardLabelSize);
     setText(doc, MUTED);
-    doc.text(card.label, cx, y + PDF_SPACE.md, { align: "center", charSpace: 0.3 });
+    doc.text(card.label, cx, y + PDF_SPACE.xs + 4, { align: "center", charSpace: 0.3 });
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.cardValue);
+    doc.setFontSize(cardValueSize);
     setText(doc, INK);
-    doc.text(fmtMoneyPdf(card.value, church.moneda), cx, y + cardH - PDF_SPACE.md + 4, { align: "center" });
+    doc.text(fmtMoneyPdf(card.value, church.moneda), cx, y + cardH - PDF_SPACE.xs, { align: "center" });
   });
 
   y += cardH;
