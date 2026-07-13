@@ -400,6 +400,21 @@ export const es = {
     sinDatos: "No hay datos para exportar.",
   },
 
+  paginacion: {
+    anterior: "Página anterior",
+    siguiente: "Página siguiente",
+    pagina: "Página {{page}} de {{total}}",
+  },
+
+  deshacer: {
+    accion: "Deshacer",
+    movimientoEliminado: "Movimiento eliminado",
+    depositoEliminado: "Depósito eliminado",
+    miembroEliminado: "Miembro eliminado",
+    usuarioEliminado: "Usuario eliminado",
+    restaurado: "Restaurado",
+  },
+
   bienvenida: {
     titulo: "Bienvenido a Tesorería",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
@@ -432,8 +447,8 @@ export const es = {
   },
 
   recurrente: {
-    label: "Gasto fijo recurrente",
-    pregunta: "¿Este gasto se repite todos los meses?",
+    label: "Movimiento fijo recurrente",
+    pregunta: "¿Este {{tipo}} se repite todos los meses?",
     siRecurrente: "Sí, es recurrente",
     marcado: "✓ Recurrente",
     agregarMeses: "Agregar a los meses",
@@ -442,11 +457,16 @@ export const es = {
     sub: "Se registran automáticamente al cierre de cada mes",
     porMes: "{{monto}} / mes",
     diaDeCadaMes: "Día {{dia}} de cada mes",
+    diaLabel: "Día del mes",
+    marcaEnTabla: "Generado automáticamente por un movimiento recurrente",
     eliminarTitulo: "Eliminar gasto fijo",
     eliminarMensaje: "\"{{concepto}}\" dejará de registrarse automáticamente en los meses siguientes. Los gastos ya registrados se conservan.",
     toastCreado_one: "Gasto fijo registrado ({{count}} mes)",
     toastCreado_other: "Gasto fijo registrado ({{count}} meses)",
-    toastEliminado: "Gasto fijo eliminado",
+    toastEliminado: "Movimiento fijo eliminado",
+    editarTitulo: "Editar movimiento recurrente",
+    editarSub: "Solo afecta a los meses que se generen de aquí en adelante",
+    toastActualizado: "Movimiento recurrente actualizado",
     toastCreadoSinMeses: "Gasto fijo guardado — se registrará al cierre de cada mes",
   },
 
@@ -457,12 +477,8 @@ export const es = {
     depositoGuardado: "Depósito guardado",
     usuarioGuardado: "Usuario guardado",
     cambiosGuardados: "Cambios guardados",
-    movimientoEliminado: "Movimiento eliminado",
-    depositoEliminado: "Depósito eliminado",
-    miembroEliminado: "Miembro eliminado",
     miembroArchivado: "Miembro archivado",
     miembroRestaurado: "Miembro restaurado",
-    usuarioEliminado: "Usuario eliminado",
     marcadoRevisado: "Marcado como revisado",
   },
 

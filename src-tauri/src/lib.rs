@@ -151,6 +151,14 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_gastos_recurrentes_church ON gastos_recurrentes(church_id);
         "#,
+    }, Migration {
+        version: 9,
+        description: "movimientos recurrentes (ingreso o gasto) + vinculo con la transaccion generada",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE gastos_recurrentes ADD COLUMN tipo TEXT NOT NULL DEFAULT 'gasto';
+            ALTER TABLE transactions ADD COLUMN recurrente_id INTEGER REFERENCES gastos_recurrentes(id) ON DELETE SET NULL;
+        "#,
     }]
 }
 

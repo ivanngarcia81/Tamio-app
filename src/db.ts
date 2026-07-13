@@ -60,6 +60,9 @@ export interface Tx {
   estado: "pendiente" | "aprobado" | "rechazado";
   notas: string | null;
   member_nombre?: string | null;
+  /** Si no es null, esta transacción la generó un movimiento recurrente
+   *  (ver sección "Movimientos recurrentes" más abajo). */
+  recurrente_id?: number | null;
 }
 
 // ---------- Catálogos ----------
@@ -275,6 +278,9 @@ export interface NewTx {
   notas?: string | null;
   estado?: "pendiente" | "aprobado";
   comprobante_path?: string | null;
+  /** Solo lo usa internamente la reinserción de "Deshacer" para conservar
+   *  el vínculo con su movimiento recurrente de origen, si tenía uno. */
+  recurrente_id?: number | null;
 }
 
 export async function insertTx(churchId: number, moneda: string, tx: NewTx): Promise<void> {
@@ -282,8 +288,8 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
   await d.execute(
     `INSERT INTO transactions
       (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
-       member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+       member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
     [
       churchId,
       tx.tipo,
@@ -302,6 +308,7 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
       tx.notas ?? null,
       tx.estado ?? "aprobado",
       tx.comprobante_path ?? null,
+      tx.recurrente_id ?? null,
     ]
   );
 }
@@ -925,19 +932,23 @@ export async function deleteMember(id: number, churchId: number): Promise<void> 
   await d.execute("DELETE FROM members WHERE id = $1 AND church_id = $2", [id, churchId]);
 }
 
-// ---------- Gastos fijos recurrentes ----------
+// ---------- Movimientos recurrentes (ingreso o gasto fijo) ----------
 //
-// El usuario define el gasto una sola vez ("Gasto fijo recurrente" en el
-// modal de Nuevo gasto); la definición se guarda aquí y se MATERIALIZA como
-// transacciones normales, una por mes, SOLO para meses ya concluidos:
-// desde enero (del año de la fecha elegida) hasta el mes pasado. El mes en
-// curso no se contabiliza hasta que termina — se registra automáticamente
-// la primera vez que la app se abre en el mes siguiente. Nunca se generan
-// meses futuros. ultimo_mes_generado hace la operación idempotente.
+// El usuario define el movimiento una sola vez ("¿Este gasto/ingreso se
+// repite todos los meses?" en el modal de Nuevo registro); la definición se
+// guarda aquí y se MATERIALIZA como transacciones normales, una por mes,
+// SOLO para meses ya concluidos: desde enero (del año de la fecha elegida)
+// hasta el mes pasado. El mes en curso no se contabiliza hasta que termina
+// — se registra automáticamente la primera vez que la app se abre en el
+// mes siguiente. Nunca se generan meses futuros. ultimo_mes_generado hace
+// la operación idempotente. La tabla se sigue llamando "gastos_recurrentes"
+// por compatibilidad con instalaciones existentes (migración v8); la
+// columna "tipo" (migración v9) la generaliza a también cubrir ingresos.
 
-export interface GastoRecurrente {
+export interface MovimientoRecurrente {
   id: number;
   church_id: number;
+  tipo: "ingreso" | "gasto";
   categoria: string;
   subcategoria: string | null;
   concepto: string;
@@ -954,7 +965,8 @@ export interface GastoRecurrente {
   ultimo_mes_generado: string | null;
 }
 
-export interface NewGastoRecurrente {
+export interface NewMovimientoRecurrente {
+  tipo: "ingreso" | "gasto";
   categoria: string;
   subcategoria?: string | null;
   concepto: string;
@@ -965,6 +977,21 @@ export interface NewGastoRecurrente {
   beneficiario_rfc?: string | null;
   dia: number;
   mes_inicio: string;
+}
+
+/** Campos editables de una definición ya creada — tipo y mes_inicio no
+ *  cambian (alterarían el historial ya generado); solo afectan a los
+ *  meses que se generen de aquí en adelante. */
+export interface MovimientoRecurrenteUpdate {
+  categoria: string;
+  subcategoria?: string | null;
+  concepto: string;
+  detalle?: string | null;
+  monto: number;
+  metodo_pago: string;
+  beneficiario?: string | null;
+  beneficiario_rfc?: string | null;
+  dia: number;
 }
 
 /** Meses "YYYY-MM" desde inicio hasta fin, ambos inclusive. */
@@ -1007,7 +1034,7 @@ export function mesesPendientesRecurrente(
 
 async function materializarDef(
   d: Awaited<ReturnType<typeof getDb>>,
-  def: GastoRecurrente,
+  def: MovimientoRecurrente,
   moneda: string,
   skipMes?: string
 ): Promise<number> {
@@ -1018,12 +1045,12 @@ async function materializarDef(
     await d.execute(
       `INSERT INTO transactions
         (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
-         member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path)
-       VALUES ($1,'gasto',$2,$3,$4,$5,$6,$7,$8,$9,NULL,$10,$11,0,NULL,'aprobado',NULL)`,
+         member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13)`,
       [
-        def.church_id, def.categoria, def.subcategoria, def.concepto, def.detalle,
+        def.church_id, def.tipo, def.categoria, def.subcategoria, def.concepto, def.detalle,
         fechaEnMes(mes, def.dia), def.monto, moneda, def.metodo_pago,
-        def.beneficiario, def.beneficiario_rfc,
+        def.beneficiario, def.beneficiario_rfc, def.id,
       ]
     );
   }
@@ -1034,41 +1061,64 @@ async function materializarDef(
   return meses.length;
 }
 
-/** Crea la definición y registra de inmediato los meses transcurridos
- *  (enero→mes actual). Devuelve cuántos meses se registraron. */
-export async function insertGastoRecurrente(
+/** Crea la definición y registra de inmediato los meses ya concluidos
+ *  (enero→mes pasado). Devuelve cuántos meses se registraron. */
+export async function insertMovimientoRecurrente(
   churchId: number,
   moneda: string,
-  g: NewGastoRecurrente,
-  /** Mes "YYYY-MM" que NO debe generarse (cuando el gasto de ese mes ya
-   *  existe — p. ej. al convertir en recurrente un gasto ya registrado). */
+  g: NewMovimientoRecurrente,
+  /** Mes "YYYY-MM" que NO debe generarse (cuando el movimiento de ese mes
+   *  ya existe — p. ej. al convertir en recurrente uno ya registrado). */
   skipMes?: string
 ): Promise<number> {
   const d = await getDb();
   await d.execute(
     `INSERT INTO gastos_recurrentes
-      (church_id, categoria, subcategoria, concepto, detalle, monto, metodo_pago,
+      (church_id, tipo, categoria, subcategoria, concepto, detalle, monto, metodo_pago,
        beneficiario, beneficiario_rfc, dia, mes_inicio)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
     [
-      churchId, g.categoria, g.subcategoria ?? null, g.concepto, g.detalle ?? null,
+      churchId, g.tipo, g.categoria, g.subcategoria ?? null, g.concepto, g.detalle ?? null,
       g.monto, g.metodo_pago, g.beneficiario ?? null, g.beneficiario_rfc ?? null,
       g.dia, g.mes_inicio,
     ]
   );
-  const rows = await d.select<GastoRecurrente[]>(
+  const rows = await d.select<MovimientoRecurrente[]>(
     "SELECT * FROM gastos_recurrentes WHERE church_id = $1 ORDER BY id DESC LIMIT 1",
     [churchId]
   );
   return materializarDef(d, rows[0], moneda, skipMes);
 }
 
+/** Actualiza los datos de una definición existente (monto, día, categoría,
+ *  concepto, método, beneficiario). Los meses ya generados NO se corrigen
+ *  retroactivamente — solo cambia lo que se genere de aquí en adelante,
+ *  igual que si hubieras cambiado el monto de la renta a partir de ahora. */
+export async function updateMovimientoRecurrente(
+  id: number,
+  churchId: number,
+  g: MovimientoRecurrenteUpdate
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE gastos_recurrentes SET
+       categoria = $1, subcategoria = $2, concepto = $3, detalle = $4, monto = $5,
+       metodo_pago = $6, beneficiario = $7, beneficiario_rfc = $8, dia = $9
+     WHERE id = $10 AND church_id = $11`,
+    [
+      g.categoria, g.subcategoria ?? null, g.concepto, g.detalle ?? null, g.monto,
+      g.metodo_pago, g.beneficiario ?? null, g.beneficiario_rfc ?? null, g.dia,
+      id, churchId,
+    ]
+  );
+}
+
 /** Registra los meses que hayan llegado desde la última apertura de la app,
- *  para todas las definiciones activas. Idempotente. */
-export async function materializeGastosRecurrentes(churchId: number, moneda: string): Promise<number> {
+ *  para todas las definiciones activas (ingreso y gasto). Idempotente. */
+export async function materializeMovimientosRecurrentes(churchId: number, moneda: string): Promise<number> {
   const d = await getDb();
   const hastaMes = currentMonth();
-  const defs = await d.select<GastoRecurrente[]>(
+  const defs = await d.select<MovimientoRecurrente[]>(
     "SELECT * FROM gastos_recurrentes WHERE church_id = $1 AND (ultimo_mes_generado IS NULL OR ultimo_mes_generado < $2)",
     [churchId, prevMonth(hastaMes)]
   );
@@ -1079,9 +1129,18 @@ export async function materializeGastosRecurrentes(churchId: number, moneda: str
   return total;
 }
 
-export async function listGastosRecurrentes(churchId: number): Promise<GastoRecurrente[]> {
+export async function listMovimientosRecurrentes(
+  churchId: number,
+  tipo?: "ingreso" | "gasto"
+): Promise<MovimientoRecurrente[]> {
   const d = await getDb();
-  return d.select<GastoRecurrente[]>(
+  if (tipo) {
+    return d.select<MovimientoRecurrente[]>(
+      "SELECT * FROM gastos_recurrentes WHERE church_id = $1 AND tipo = $2 ORDER BY concepto",
+      [churchId, tipo]
+    );
+  }
+  return d.select<MovimientoRecurrente[]>(
     "SELECT * FROM gastos_recurrentes WHERE church_id = $1 ORDER BY concepto",
     [churchId]
   );
@@ -1089,7 +1148,7 @@ export async function listGastosRecurrentes(churchId: number): Promise<GastoRecu
 
 /** Elimina la definición: deja de generar meses nuevos. Las transacciones
  *  ya registradas se conservan (son historial contable real). */
-export async function deleteGastoRecurrente(id: number, churchId: number): Promise<void> {
+export async function deleteMovimientoRecurrente(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute("DELETE FROM gastos_recurrentes WHERE id = $1 AND church_id = $2", [id, churchId]);
 }

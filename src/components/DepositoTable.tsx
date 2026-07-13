@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { deleteDeposito, fmtFechaCorta, fmtMoney, type Deposito } from "../db";
+import { deleteDeposito, fmtFechaCorta, fmtMoney, insertDeposito, type Deposito } from "../db";
 import { IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
@@ -20,10 +20,25 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    await deleteDeposito(pendingDelete.id, pendingDelete.church_id);
+    const borrado = pendingDelete;
+    await deleteDeposito(borrado.id, borrado.church_id);
     setPendingDelete(null);
-    showToast(t("toast.depositoEliminado"));
     onChanged();
+    showToast(t("deshacer.depositoEliminado"), {
+      actionLabel: t("deshacer.accion"),
+      onAction: async () => {
+        await insertDeposito(borrado.church_id, borrado.moneda, {
+          fecha: borrado.fecha,
+          periodo: borrado.periodo,
+          monto: borrado.monto,
+          cuenta_banco: borrado.cuenta_banco,
+          referencia: borrado.referencia,
+          comprobante_path: borrado.comprobante_path,
+          notas: borrado.notas,
+        });
+        onChanged();
+      },
+    });
   }
 
   return (

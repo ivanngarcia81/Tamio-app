@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ROLES_USUARIO, deleteUsuario, type Church, type Usuario } from "../../db";
+import { ROLES_USUARIO, deleteUsuario, insertUsuario, type Church, type Usuario } from "../../db";
 import { IconEdit, IconIdBadge, IconPlus } from "../../icons";
 import RowMenu from "../RowMenu";
 import ConfirmDialog from "../ConfirmDialog";
@@ -43,10 +43,23 @@ export default function UsersSettings({ church, usuarios, onChanged }: Props) {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    await deleteUsuario(pendingDelete.id, pendingDelete.church_id);
+    const borrado = pendingDelete;
+    await deleteUsuario(borrado.id, borrado.church_id);
     setPendingDelete(null);
-    showToast(t("toast.usuarioEliminado"));
     onChanged();
+    showToast(t("deshacer.usuarioEliminado"), {
+      actionLabel: t("deshacer.accion"),
+      onAction: async () => {
+        await insertUsuario(borrado.church_id, {
+          nombre: borrado.nombre,
+          rol: borrado.rol,
+          email: borrado.email,
+          telefono: borrado.telefono,
+          notas: borrado.notas,
+        });
+        onChanged();
+      },
+    });
   }
 
   return (

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { IconCheck } from "../icons";
+import type { ToastDetail } from "../toast";
 
-interface ToastItem {
+interface ToastItem extends ToastDetail {
   id: number;
-  msg: string;
 }
 
 let seq = 0;
@@ -11,11 +11,17 @@ let seq = 0;
 export default function ToastHost() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  function dismiss(id: number) {
+    setToasts((t) => t.filter((x) => x.id !== id));
+  }
+
   useEffect(() => {
     const onToast = (e: Event) => {
+      const detail = (e as CustomEvent<ToastDetail>).detail;
       const id = ++seq;
-      setToasts((t) => [...t, { id, msg: String((e as CustomEvent).detail) }]);
-      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2600);
+      setToasts((t) => [...t, { id, ...detail }]);
+      const duration = detail.duration ?? (detail.onAction ? 5000 : 2600);
+      setTimeout(() => dismiss(id), duration);
     };
     window.addEventListener("tesoreria-toast", onToast);
     return () => window.removeEventListener("tesoreria-toast", onToast);
@@ -27,7 +33,16 @@ export default function ToastHost() {
     <div className="toast-host">
       {toasts.map((t) => (
         <div className="toast" key={t.id}>
-          <IconCheck size={14} strokeWidth={2.4} /> {t.msg}
+          <IconCheck size={14} strokeWidth={2.4} /> {t.mensaje}
+          {t.onAction && (
+            <button
+              type="button"
+              className="toast-action"
+              onClick={() => { t.onAction?.(); dismiss(t.id); }}
+            >
+              {t.actionLabel}
+            </button>
+          )}
         </div>
       ))}
     </div>

@@ -7,7 +7,11 @@ import {
 import { EmptyState } from "../components/TxList";
 import DepositoTable from "../components/DepositoTable";
 import DepositoModal from "../components/DepositoModal";
+import LoadingState from "../components/LoadingState";
+import Pagination from "../components/Pagination";
 import { IconBank, IconPlus } from "../icons";
+
+const PAGE_SIZE = 40;
 
 interface Props {
   church: Church;
@@ -22,13 +26,30 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const [conteoMes, setConteoMes] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Deposito | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const mes = currentMonth();
 
   useEffect(() => {
-    listDepositos(church.id).then(setDepositos).catch(console.error);
-    monthDepositos(church.id, mes).then(setTotalMes).catch(console.error);
-    countDepositos(church.id, mes).then(setConteoMes).catch(console.error);
+    let cancelado = false;
+    setLoading(true);
+    Promise.all([
+      listDepositos(church.id),
+      monthDepositos(church.id, mes),
+      countDepositos(church.id, mes),
+    ])
+      .then(([nuevosDepositos, nuevoTotal, nuevoConteo]) => {
+        if (cancelado) return;
+        setDepositos(nuevosDepositos);
+        setTotalMes(nuevoTotal);
+        setConteoMes(nuevoConteo);
+      })
+      .catch(console.error)
+      .finally(() => { if (!cancelado) setLoading(false); });
+    return () => { cancelado = true; };
   }, [church.id, refreshKey, mes]);
+
+  useEffect(() => setPage(1), [refreshKey]);
 
   function abrirNuevo() {
     setEditing(null);
@@ -79,14 +100,27 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           <div className="tx-title">{t("depositos.historial")}</div>
         </div>
 
-        {depositos.length === 0 ? (
+        {loading ? (
+          <LoadingState />
+        ) : depositos.length === 0 ? (
           <EmptyState
             titulo={t("depositos.emptyTitulo")}
             sub={t("depositos.emptySub")}
             icon={<IconBank size={22} strokeWidth={1.6} />}
           />
         ) : (
-          <DepositoTable depositos={depositos} onEdit={abrirEditar} onChanged={onChanged} />
+          <>
+            <DepositoTable
+              depositos={depositos.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)}
+              onEdit={abrirEditar}
+              onChanged={onChanged}
+            />
+            <Pagination
+              page={page}
+              totalPages={Math.max(1, Math.ceil(depositos.length / PAGE_SIZE))}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </div>
 

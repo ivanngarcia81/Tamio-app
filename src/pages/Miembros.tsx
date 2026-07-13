@@ -9,6 +9,8 @@ import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import MemberDetailModal from "../components/MemberDetailModal";
+import LoadingState from "../components/LoadingState";
+import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
 import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
@@ -23,6 +25,7 @@ const TAG_CLASS: Record<string, string> = {
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 const MEMBER_COLS = "1.6fr 1fr 130px 150px 170px 40px";
+const PAGE_SIZE = 30;
 
 function initials(nombre: string): string {
   return nombre
@@ -56,11 +59,27 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [detalle, setDetalle] = useState<Member | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
-    listMembers(church.id).then(setMembers).catch(console.error);
-    memberStats(church.id, currentYear()).then(setStats).catch(console.error);
+    let cancelado = false;
+    setLoading(true);
+    Promise.all([
+      listMembers(church.id),
+      memberStats(church.id, currentYear()),
+    ])
+      .then(([nuevosMembers, nuevosStats]) => {
+        if (cancelado) return;
+        setMembers(nuevosMembers);
+        setStats(nuevosStats);
+      })
+      .catch(console.error)
+      .finally(() => { if (!cancelado) setLoading(false); });
+    return () => { cancelado = true; };
   }, [church.id, refreshKey]);
+
+  useEffect(() => setPage(1), [query, refreshKey]);
 
   async function requestDelete(m: Member) {
     const n = await countMemberTx(m.id, church.id);
@@ -72,12 +91,27 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
     const { member, hasHistory } = pendingDelete;
     if (hasHistory) {
       await archiveMember(member.id, church.id);
-    } else {
-      await deleteMember(member.id, church.id);
+      setPendingDelete(null);
+      showToast(t("toast.miembroArchivado"));
+      onChanged();
+      return;
     }
+    await deleteMember(member.id, church.id);
     setPendingDelete(null);
-    showToast(hasHistory ? t("toast.miembroArchivado") : t("toast.miembroEliminado"));
     onChanged();
+    showToast(t("deshacer.miembroEliminado"), {
+      actionLabel: t("deshacer.accion"),
+      onAction: async () => {
+        await insertMember(church.id, {
+          nombre: member.nombre,
+          email: member.email,
+          telefono: member.telefono,
+          rfc: member.rfc,
+          notas: member.notas,
+        });
+        onChanged();
+      },
+    });
   }
 
   const q = query.trim().toLowerCase();
@@ -89,6 +123,8 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
           (m.rfc ?? "").toLowerCase().includes(q)
       )
     : members;
+  const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
+  const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -120,7 +156,9 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
           </div>
         </div>
 
-        {visibles.length === 0 ? (
+        {loading ? (
+          <LoadingState />
+        ) : visibles.length === 0 ? (
           <EmptyState
             titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
             sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
@@ -136,7 +174,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
               <div className="th">{t("miembros.colContacto")}</div>
               <div className="th"></div>
             </div>
-            {visibles.map((m, i) => {
+            {pagina.map((m, i) => {
               let etiquetas: string[] = [];
               try { etiquetas = JSON.parse(m.etiquetas); } catch { /* noop */ }
               const stat = stats[m.id];
@@ -196,6 +234,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
             })}
           </div>
         )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {detalle && (

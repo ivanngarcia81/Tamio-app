@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, metodoNombre, METODOS_PAGO, type Tx } from "../db";
-import { IconArrowDown, IconArrowUp, IconReportes } from "../icons";
+import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, insertTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
+import { IconArrowDown, IconArrowUp, IconReportes, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
 import ConfirmDialog from "./ConfirmDialog";
@@ -31,10 +31,34 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    await deleteTx(pendingDelete.id, pendingDelete.church_id);
+    const borrado = pendingDelete;
+    await deleteTx(borrado.id, borrado.church_id);
     setPendingDelete(null);
-    showToast(t("toast.movimientoEliminado"));
     onChanged();
+    showToast(t("deshacer.movimientoEliminado"), {
+      actionLabel: t("deshacer.accion"),
+      onAction: async () => {
+        await insertTx(borrado.church_id, borrado.moneda, {
+          tipo: borrado.tipo,
+          categoria: borrado.categoria,
+          subcategoria: borrado.subcategoria,
+          concepto: borrado.concepto,
+          detalle: borrado.detalle,
+          fecha: borrado.fecha,
+          monto: borrado.monto,
+          metodo_pago: borrado.metodo_pago,
+          member_id: borrado.member_id,
+          beneficiario: borrado.beneficiario,
+          beneficiario_rfc: borrado.beneficiario_rfc,
+          emitir_constancia: !!borrado.emitir_constancia,
+          notas: borrado.notas,
+          estado: borrado.estado === "rechazado" ? "aprobado" : borrado.estado,
+          comprobante_path: borrado.comprobante_path,
+          recurrente_id: borrado.recurrente_id,
+        });
+        onChanged();
+      },
+    });
   }
 
   // Agrupar por día (YYYY-MM-DD)
@@ -71,6 +95,11 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         {tx.tipo === "ingreso" ? <IconArrowUp /> : <IconArrowDown />}
                       </div>
                       <div className="tx-desc">
+                        {tx.recurrente_id != null && (
+                          <span style={{ color: "var(--text-3)", marginRight: 5, display: "inline-flex", verticalAlign: "middle" }} title={t("recurrente.marcaEnTabla")}>
+                            <IconRepeat size={11} strokeWidth={2.2} />
+                          </span>
+                        )}
                         {tx.concepto}
                         {tx.estado === "pendiente" && (
                           <span

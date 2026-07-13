@@ -11,6 +11,7 @@ import { exportAnnualReportPdf } from "../services/print/printAnnual";
 import Delta from "../components/Delta";
 import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
+import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
 import { IconChevronLeft, IconChevronRight, IconFileText, IconPrinter, IconUpload } from "../icons";
 
@@ -39,15 +40,30 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [mes, setMes] = useState(currentMonth());
+  const [loading, setLoading] = useState(true);
   const esMesActual = mes >= currentMonth();
   const mesStr = mesLegible(mes);
   const mesAnterior = prevMonth(mes);
 
   useEffect(() => {
-    monthTotals(church.id, mes).then(setTotales).catch(console.error);
-    monthTotals(church.id, mesAnterior).then(setTotalesAnt).catch(console.error);
-    monthlySummary(church.id, 6).then(setHistorial).catch(console.error);
-    monthDepositos(church.id, mes).then(setDepositosMes).catch(console.error);
+    let cancelado = false;
+    setLoading(true);
+    Promise.all([
+      monthTotals(church.id, mes),
+      monthTotals(church.id, mesAnterior),
+      monthlySummary(church.id, 6),
+      monthDepositos(church.id, mes),
+    ])
+      .then(([nuevosTotales, nuevosTotalesAnt, nuevoHistorial, nuevoDepositos]) => {
+        if (cancelado) return;
+        setTotales(nuevosTotales);
+        setTotalesAnt(nuevosTotalesAnt);
+        setHistorial(nuevoHistorial);
+        setDepositosMes(nuevoDepositos);
+      })
+      .catch(console.error)
+      .finally(() => { if (!cancelado) setLoading(false); });
+    return () => { cancelado = true; };
   }, [church.id, refreshKey, mes, mesAnterior]);
 
   const ingresos = totales?.ingresos ?? 0;
@@ -165,6 +181,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       )}
 
       <div className="content">
+        {loading ? <LoadingState /> : <>
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
@@ -370,6 +387,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             </div>
           </>
         )}
+        </>}
       </div>
 
       {importOpen && (

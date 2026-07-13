@@ -4,7 +4,7 @@ import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
   METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
-  insertGastoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
+  insertMovimientoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconRepeat, IconWarn } from "../icons";
@@ -147,45 +147,50 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
 
   async function agregarALosMeses() {
     if (mode.kind !== "editTx") return;
+    if (tab !== "ingreso" && tab !== "gasto") return;
     setError(null);
     const m = parseMonto(monto);
     if (!concepto.trim()) { setError(t("common.conceptoObligatorio")); return; }
     if (m === null) { setError(t("common.montoInvalido")); return; }
-    if (fecha > hoy) { setError(t("recordModal.fechaFuturaGastos")); return; }
+    if (fecha > hoy) {
+      setError(tab === "ingreso" ? t("recordModal.fechaFuturaIngresos") : t("recordModal.fechaFuturaGastos"));
+      return;
+    }
     setSaving(true);
     try {
       await updateTx(mode.tx.id, church.id, church.moneda, {
-        tipo: "gasto",
+        tipo: tab,
         categoria,
-        subcategoria: null,
+        subcategoria: tab === "ingreso" && categoria === "otros" ? subcategoria.trim() || null : null,
         concepto: concepto.trim(),
         detalle: detalle.trim() || null,
         fecha: `${fecha} ${hora}`,
         monto: m,
         metodo_pago: metodo,
-        member_id: null,
-        beneficiario: beneficiario.trim() || null,
-        beneficiario_rfc: beneficiarioRfc.trim() || null,
-        emitir_constancia: false,
+        member_id: tab === "ingreso" ? aportanteId : null,
+        beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
+        beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
+        emitir_constancia: tab === "ingreso" ? constancia : false,
         estado: marcarPendiente ? "pendiente" : "aprobado",
         comprobante_path: comprobantePath,
       });
-      const mesesRegistrados = await insertGastoRecurrente(
+      const mesesRegistrados = await insertMovimientoRecurrente(
         church.id,
         church.moneda,
         {
+          tipo: tab,
           categoria,
           subcategoria: null,
           concepto: concepto.trim(),
           detalle: detalle.trim() || null,
           monto: m,
           metodo_pago: metodo,
-          beneficiario: beneficiario.trim() || null,
-          beneficiario_rfc: beneficiarioRfc.trim() || null,
+          beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
+          beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
           dia: Number(fecha.slice(8, 10)),
           mes_inicio: `${fecha.slice(0, 4)}-01`,
         },
-        fecha.slice(0, 7) // el mes de este gasto ya existe — no se duplica
+        fecha.slice(0, 7) // el mes de este movimiento ya existe — no se duplica
       );
       showToast(
         mesesRegistrados > 0
@@ -227,17 +232,18 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           return;
         }
         setSaving(true);
-        if (tab === "gasto" && !isEdit && esRecurrente) {
+        if ((tab === "gasto" || tab === "ingreso") && !isEdit && esRecurrente) {
           const dia = Number(fecha.slice(8, 10));
-          const mesesRegistrados = await insertGastoRecurrente(church.id, church.moneda, {
+          const mesesRegistrados = await insertMovimientoRecurrente(church.id, church.moneda, {
+            tipo: tab,
             categoria,
             subcategoria: null,
             concepto: concepto.trim(),
             detalle: detalle.trim() || null,
             monto: m,
             metodo_pago: metodo,
-            beneficiario: beneficiario.trim() || null,
-            beneficiario_rfc: beneficiarioRfc.trim() || null,
+            beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
+            beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
             dia,
             mes_inicio: `${fecha.slice(0, 4)}-01`,
           });
@@ -512,7 +518,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 />
               </div>
 
-              {tab === "gasto" && (
+              {(tab === "gasto" || tab === "ingreso") && (
                 <div
                   style={{
                     display: "flex", alignItems: "center", gap: 12, marginTop: 6,
@@ -522,7 +528,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 >
                   <span style={{ color: "var(--text-2)", flexShrink: 0 }}><IconRepeat size={16} strokeWidth={2} /></span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{t("recurrente.pregunta")}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>
+                      {t("recurrente.pregunta", { tipo: tab === "ingreso" ? t("tx.ingreso").toLowerCase() : t("tx.gasto").toLowerCase() })}
+                    </div>
                     <div className="form-hint" style={{ marginTop: 2 }}>{t("recurrente.hintForm")}</div>
                   </div>
                   {isEdit ? (

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, metodoNombre, METODOS_PAGO, type Tx } from "../db";
-import { IconArrowDown, IconArrowUp, IconEdit } from "../icons";
+import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, insertTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
+import { IconArrowDown, IconArrowUp, IconEdit, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
 import ConfirmDialog from "./ConfirmDialog";
@@ -24,10 +24,34 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    await deleteTx(pendingDelete.id, pendingDelete.church_id);
+    const borrado = pendingDelete;
+    await deleteTx(borrado.id, borrado.church_id);
     setPendingDelete(null);
-    showToast(t("toast.movimientoEliminado"));
     onChanged();
+    showToast(t("deshacer.movimientoEliminado"), {
+      actionLabel: t("deshacer.accion"),
+      onAction: async () => {
+        await insertTx(borrado.church_id, borrado.moneda, {
+          tipo: borrado.tipo,
+          categoria: borrado.categoria,
+          subcategoria: borrado.subcategoria,
+          concepto: borrado.concepto,
+          detalle: borrado.detalle,
+          fecha: borrado.fecha,
+          monto: borrado.monto,
+          metodo_pago: borrado.metodo_pago,
+          member_id: borrado.member_id,
+          beneficiario: borrado.beneficiario,
+          beneficiario_rfc: borrado.beneficiario_rfc,
+          emitir_constancia: !!borrado.emitir_constancia,
+          notas: borrado.notas,
+          estado: borrado.estado === "rechazado" ? "aprobado" : borrado.estado,
+          comprobante_path: borrado.comprobante_path,
+          recurrente_id: borrado.recurrente_id,
+        });
+        onChanged();
+      },
+    });
   }
 
   return (
@@ -49,20 +73,27 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           const persona = tx.member_nombre ?? tx.beneficiario ?? "—";
           const hora = fmtFecha(tx.fecha).hora;
 
-          const celdaFecha = (
-            <div className="td">
-              <div style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
-              <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
-            </div>
-          );
           const celdaConcepto = (
             <div className="td">
-              <div className="truncate" style={{ fontWeight: 600 }} title={tx.concepto}>{tx.concepto}</div>
+              <div className="truncate" style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }} title={tx.concepto}>
+                {tx.recurrente_id != null && (
+                  <span style={{ color: "var(--text-3)", flexShrink: 0, display: "inline-flex" }} title={t("recurrente.marcaEnTabla")}>
+                    <IconRepeat size={11} strokeWidth={2.2} />
+                  </span>
+                )}
+                <span className="truncate">{tx.concepto}</span>
+              </div>
               {tx.detalle && (
                 <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={tx.detalle}>
                   {tx.detalle}
                 </div>
               )}
+            </div>
+          );
+          const celdaFecha = (
+            <div className="td">
+              <div style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
             </div>
           );
           const celdaCategoria = (
