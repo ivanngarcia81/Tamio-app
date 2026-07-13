@@ -1,16 +1,16 @@
-import Papa from "papaparse";
 import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, type NewTx } from "../db";
+import type { CsvField } from "./csvImport";
 
-export interface ImportRowError {
-  fila: number;
-  mensaje: string;
-}
-
-export interface ImportResult {
-  validas: NewTx[];
-  errores: ImportRowError[];
-  totalFilas: number;
-}
+export const MOVIMIENTOS_FIELDS: CsvField[] = [
+  { key: "fecha", label: "Fecha", required: true, aliases: ["fecha", "date", "fecha_movimiento"] },
+  { key: "tipo", label: "Tipo (ingreso o gasto)", required: true, aliases: ["tipo", "type"] },
+  { key: "categoria", label: "Categoría", required: true, aliases: ["categoria", "categoría", "category"] },
+  { key: "concepto", label: "Concepto", required: true, aliases: ["concepto", "descripcion", "descripción", "description", "concept"] },
+  { key: "monto", label: "Monto", required: true, aliases: ["monto", "amount", "importe", "cantidad", "valor"] },
+  { key: "metodo_pago", label: "Método de pago", required: false, aliases: ["metodo_pago", "método de pago", "metodo de pago", "payment_method", "metodo"] },
+  { key: "beneficiario", label: "Beneficiario", required: false, aliases: ["beneficiario", "proveedor", "payee", "vendor"] },
+  { key: "notas", label: "Notas", required: false, aliases: ["notas", "notes", "observaciones", "comentarios"] },
+];
 
 export const CSV_TEMPLATE =
   "fecha,tipo,categoria,concepto,monto,metodo_pago,beneficiario,notas\n" +
@@ -54,62 +54,45 @@ function matchMetodo(texto: string): string {
 }
 
 /**
- * Convierte el texto de un CSV en movimientos listos para insertar.
- * Nunca lanza: cada fila inválida se reporta en `errores` y se omite de
- * `validas`, para poder importar el resto sin que un typo tire todo.
+ * Valida una fila ya mapeada a las claves internas (fecha, tipo, categoria,
+ * concepto, monto, metodo_pago, beneficiario, notas) — el mapeo de columnas
+ * del archivo original ya se aplicó antes de llegar aquí (ver csvImport.ts).
  *
- * `hoy` es la fecha de hoy en formato "YYYY-MM-DD" — se pasa desde afuera
- * en vez de calcularla aquí para poder probar esta función con fechas fijas.
+ * `hoy` es la fecha de hoy en "YYYY-MM-DD", pasada desde afuera para poder
+ * probar esta función con fechas fijas.
  */
-export function parseCsv(text: string, hoy: string): ImportResult {
-  const parsed = Papa.parse<Record<string, string>>(text, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase(),
-  });
+export function validarFilaMovimiento(row: Record<string, string>, hoy: string): { data?: NewTx; error?: string } {
+  const tipoRaw = (row.tipo ?? "").trim().toLowerCase();
+  if (tipoRaw !== "ingreso" && tipoRaw !== "gasto") {
+    return { error: `"tipo" debe ser "ingreso" o "gasto" (se encontró "${row.tipo ?? ""}").` };
+  }
+  const tipo = tipoRaw as "ingreso" | "gasto";
 
-  const validas: NewTx[] = [];
-  const errores: ImportRowError[] = [];
+  const fecha = (row.fecha ?? "").trim();
+  if (!esFechaValida(fecha)) {
+    return { error: `Fecha inválida, usa el formato AAAA-MM-DD (se encontró "${row.fecha ?? ""}").` };
+  }
+  if (fecha > hoy) {
+    return { error: "No se pueden importar movimientos con fecha futura." };
+  }
 
-  parsed.data.forEach((row, i) => {
-    const fila = i + 2; // +1 por el encabezado, +1 porque las filas de hoja de cálculo empiezan en 1
+  const concepto = (row.concepto ?? "").trim();
+  if (!concepto) {
+    return { error: "El concepto es obligatorio." };
+  }
 
-    const tipoRaw = (row.tipo ?? "").trim().toLowerCase();
-    if (tipoRaw !== "ingreso" && tipoRaw !== "gasto") {
-      errores.push({ fila, mensaje: `"tipo" debe ser "ingreso" o "gasto" (se encontró "${row.tipo ?? ""}").` });
-      return;
-    }
-    const tipo = tipoRaw as "ingreso" | "gasto";
+  const monto = parseMontoCsv(row.monto ?? "");
+  if (monto === null) {
+    return { error: `Monto inválido (se encontró "${row.monto ?? ""}"), debe ser mayor a cero.` };
+  }
 
-    const fecha = (row.fecha ?? "").trim();
-    if (!esFechaValida(fecha)) {
-      errores.push({ fila, mensaje: `Fecha inválida, usa el formato AAAA-MM-DD (se encontró "${row.fecha ?? ""}").` });
-      return;
-    }
-    if (fecha > hoy) {
-      errores.push({ fila, mensaje: "No se pueden importar movimientos con fecha futura." });
-      return;
-    }
+  const cat = matchCategoria(tipo, row.categoria ?? "");
+  if (!cat) {
+    return { error: `Categoría de ${tipo} no reconocida: "${row.categoria ?? ""}".` };
+  }
 
-    const concepto = (row.concepto ?? "").trim();
-    if (!concepto) {
-      errores.push({ fila, mensaje: "El concepto es obligatorio." });
-      return;
-    }
-
-    const monto = parseMontoCsv(row.monto ?? "");
-    if (monto === null) {
-      errores.push({ fila, mensaje: `Monto inválido (se encontró "${row.monto ?? ""}"), debe ser mayor a cero.` });
-      return;
-    }
-
-    const cat = matchCategoria(tipo, row.categoria ?? "");
-    if (!cat) {
-      errores.push({ fila, mensaje: `Categoría de ${tipo} no reconocida: "${row.categoria ?? ""}".` });
-      return;
-    }
-
-    validas.push({
+  return {
+    data: {
       tipo,
       categoria: cat.categoria,
       subcategoria: cat.subcategoria,
@@ -120,8 +103,6 @@ export function parseCsv(text: string, hoy: string): ImportResult {
       metodo_pago: matchMetodo(row.metodo_pago ?? ""),
       beneficiario: tipo === "gasto" ? (row.beneficiario ?? "").trim() || null : null,
       estado: "aprobado",
-    });
-  });
-
-  return { validas, errores, totalFilas: parsed.data.length };
+    },
+  };
 }

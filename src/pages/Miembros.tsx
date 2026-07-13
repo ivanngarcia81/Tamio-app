@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import {
-  archiveMember, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney, listMembers,
-  memberStats, type Church, type Member, type MemberStat,
+  archiveMember, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney, insertMember, listMembers,
+  memberStats, type Church, type Member, type MemberStat, type NewMember,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { IconEdit, IconPlus, IconSearch } from "../icons";
+import GenericCsvImportModal from "../components/GenericCsvImportModal";
+import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
+import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
 
 const TAG_CLASS: Record<string, string> = {
   diezmador: "diezmo",
@@ -56,6 +58,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
   const [query, setQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     listMembers(church.id).then(setMembers).catch(console.error);
@@ -99,6 +102,9 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
           </div>
         </div>
         <div className="header-actions">
+          <button className="btn secondary" onClick={() => setImportOpen(true)}>
+            <IconUpload size={13} /> Importar CSV
+          </button>
           <button className="btn primary" onClick={onNew}>
             <IconPlus size={14} /> Nuevo miembro
           </button>
@@ -211,6 +217,36 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
           danger={!pendingDelete.hasHistory}
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {importOpen && (
+        <GenericCsvImportModal<NewMember>
+          titulo="Importar miembros desde CSV"
+          subtitulo="Carga tu directorio de miembros sin capturarlos uno por uno"
+          instrucciones={
+            <>
+              Descarga la plantilla como referencia o usa tu propio archivo — solo necesitas indicar
+              qué columna corresponde a cada dato en el siguiente paso. Solo el nombre es obligatorio.
+            </>
+          }
+          fields={MIEMBROS_FIELDS}
+          templateCsv={MIEMBROS_CSV_TEMPLATE}
+          templateFileName="plantilla-miembros.csv"
+          validarFila={validarFilaMiembro}
+          previewColsTemplate="1.6fr 1fr 1fr 1fr"
+          previewColumns={[
+            { label: "Nombre", render: (m) => m.nombre },
+            { label: "Correo", render: (m) => m.email ?? "—" },
+            { label: "Teléfono", render: (m) => m.telefono ?? "—" },
+            { label: "RFC", render: (m) => m.rfc ?? "—" },
+          ]}
+          etiquetaItem={(n) => (n === 1 ? "miembro" : "miembros")}
+          onConfirmar={async (items) => {
+            for (const m of items) await insertMember(church.id, m);
+          }}
+          onClose={() => setImportOpen(false)}
+          onImportado={onChanged}
         />
       )}
     </>

@@ -1,13 +1,14 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney,
+  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney, insertTx, nowLocalIso,
   mesLegible, monthDepositos, monthlySummary, monthTotals, pctChange, prevMonth,
-  type Church, type MonthSummary, type MonthTotals,
+  type Church, type MonthSummary, type MonthTotals, type NewTx,
 } from "../db";
 import { exportReportPdf, printMonthlyReportPdf } from "../export";
 import Delta from "../components/Delta";
 import Donut from "../components/Donut";
-import ImportCsvModal from "../components/ImportCsvModal";
+import GenericCsvImportModal from "../components/GenericCsvImportModal";
+import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
 import { IconPrinter, IconUpload } from "../icons";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
@@ -333,10 +334,32 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       </div>
 
       {importOpen && (
-        <ImportCsvModal
-          church={church}
+        <GenericCsvImportModal<NewTx>
+          titulo="Importar movimientos desde CSV"
+          subtitulo="Carga ingresos y gastos de meses anteriores sin llenarlos uno por uno"
+          instrucciones={
+            <>
+              Elige tu archivo CSV (puede tener los nombres de columna que ya traiga — en el siguiente
+              paso indicas cuál es cuál) o descarga la plantilla de ejemplo si prefieres partir de ahí.
+            </>
+          }
+          fields={MOVIMIENTOS_FIELDS}
+          templateCsv={CSV_TEMPLATE}
+          templateFileName="plantilla-movimientos.csv"
+          validarFila={(row) => validarFilaMovimiento(row, nowLocalIso().slice(0, 10))}
+          previewColsTemplate="104px 68px 1fr 110px"
+          previewColumns={[
+            { label: "Fecha", render: (tx) => tx.fecha.slice(0, 10) },
+            { label: "Tipo", render: (tx) => (tx.tipo === "ingreso" ? "Ingreso" : "Gasto") },
+            { label: "Concepto", render: (tx) => tx.concepto, title: (tx) => tx.concepto },
+            { label: "Monto", align: "right", render: (tx) => `$${tx.monto.toLocaleString("en-US")}` },
+          ]}
+          etiquetaItem={(n) => (n === 1 ? "movimiento" : "movimientos")}
+          onConfirmar={async (items) => {
+            for (const tx of items) await insertTx(church.id, church.moneda, tx);
+          }}
           onClose={() => setImportOpen(false)}
-          onImported={onChanged}
+          onImportado={onChanged}
         />
       )}
     </>
