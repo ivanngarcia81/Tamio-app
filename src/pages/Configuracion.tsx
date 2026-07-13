@@ -13,6 +13,7 @@ import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 import LanguageSettings from "../components/settings/LanguageSettings";
 import BackupSettings from "../components/settings/BackupSettings";
+import CategoriesSettings from "../components/settings/CategoriesSettings";
 
 interface Props {
   church: Church;
@@ -139,6 +140,8 @@ export default function Configuracion({
               <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
 
               <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
+
+              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
 
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 

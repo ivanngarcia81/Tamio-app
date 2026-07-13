@@ -1,7 +1,7 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, mesLegible,
+  catNombre, getCategoriasGasto, getCategoriasIngreso, mesLegible,
   type Church, type MonthSummary, type YearCategorias,
 } from "../../db";
 import i18n from "../../i18n";
@@ -91,7 +91,7 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
     { label: "%", width: 70, align: "right" },
   ];
 
-  const filasIngreso = CATEGORIAS_INGRESO
+  const filasIngreso = getCategoriasIngreso()
     .map((c) => ({ id: c.id, total: categorias.porCategoriaIngreso[c.id] ?? 0 }))
     .filter((c) => c.total > 0);
   doc.beginTable(i18n.t("pdf.ingresosPorCategoria"), catCols);
@@ -106,7 +106,7 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
   doc.endTable();
   doc.addGap(PDF_SPACE.md);
 
-  const filasGasto = CATEGORIAS_GASTO
+  const filasGasto = getCategoriasGasto()
     .map((c) => ({ id: c.id, total: categorias.porCategoriaGasto[c.id] ?? 0 }))
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);

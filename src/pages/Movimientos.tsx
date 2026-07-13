@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, currentMonth, fmtMoney,
+  catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
   listTx, mesLegible, monthTotals, nextMonth, prevMonth,
   type Church, type MonthTotals, type Tx,
 } from "../db";
@@ -35,7 +35,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
   const esIngreso = tipo === "ingreso";
   const titulo = esIngreso ? t("nav.ingresos") : t("nav.gastos");
-  const categorias = esIngreso ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
+  const categorias = esIngreso ? getCategoriasIngreso() : getCategoriasGasto();
   const porCategoria = esIngreso
     ? totales?.porCategoriaIngreso ?? {}
     : totales?.porCategoriaGasto ?? {};

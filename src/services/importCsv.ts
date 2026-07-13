@@ -1,4 +1,4 @@
-import { CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, catNombre, metodoNombre, type NewTx } from "../db";
+import { METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre, type NewTx } from "../db";
 import i18n from "../i18n";
 import type { CsvField } from "./csvImport";
 
@@ -34,7 +34,7 @@ function matchCategoria(
   texto: string
 ): { categoria: string; subcategoria: string | null } | null {
   const q = texto.trim();
-  const lista = tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
+  const lista = tipo === "ingreso" ? getCategoriasIngreso() : getCategoriasGasto();
   if (q) {
     // Acepta el id interno, el nombre canónico en español o el nombre en
     // el idioma activo de la app (para archivos exportados en inglés).

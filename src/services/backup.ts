@@ -3,7 +3,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO,
+  METODOS_PAGO, getCategoriasGasto, getCategoriasIngreso,
   listAllTxForExport, listMembers, nowLocalIso, type Member, type Tx,
 } from "../db";
 
@@ -12,8 +12,7 @@ export type BackupResult = "guardado" | "cancelado" | "vacio";
 /** Nombre canónico en español de los catálogos: es el que los importadores
  *  CSV de la app siempre reconocen, sin importar el idioma activo. */
 function canonicalCat(tipo: "ingreso" | "gasto", id: string): string {
-  const lista: readonly { id: string; nombre: string }[] =
-    tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
+  const lista = tipo === "ingreso" ? getCategoriasIngreso() : getCategoriasGasto();
   return lista.find((c) => c.id === id)?.nombre ?? id;
 }
 

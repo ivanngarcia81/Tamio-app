@@ -411,6 +411,21 @@ export const en: Resources = {
     comenzar: "Get started",
   },
 
+  categorias: {
+    titulo: "Categories",
+    sub: "Add your own categories alongside the built-in ones",
+    nombrePlaceholder: "New category name…",
+    agregar: "Add",
+    duplicada: "A category with that name already exists.",
+    enUso_one: "Cannot delete: {{count}} transaction uses this category.",
+    enUso_other: "Cannot delete: {{count}} transactions use this category.",
+    eliminarTitulo: "Delete category",
+    eliminarMensaje: "Delete the category \"{{nombre}}\"? This action cannot be undone.",
+    agregada: "Category added",
+    eliminada: "Category deleted",
+    hint: "Built-in categories cannot be deleted. Custom ones appear in forms, filters, reports and PDFs just like the rest.",
+  },
+
   toast: {
     ingresoGuardado: "Income saved",
     gastoGuardado: "Expense saved",

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import html2canvas from "html2canvas";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, categoriaInfo, currentMonth, currentYear, dailyTotals,
+  catNombre, categoriaInfo, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
   fmtFechaCorta, fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthDepositos,
   monthTotals, pctChange, prevMonth, yearTotals,
   type Church, type DailyPoint, type MonthTotals, type Tx, type YearTotals,
@@ -100,7 +100,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const topGastos = useMemo(() => {
     const entries = Object.entries(totales?.porCategoriaGasto ?? {})
       .map(([id, monto]) => {
-        const cat = CATEGORIAS_GASTO.find((c) => c.id === id);
+        const cat = getCategoriasGasto().find((c) => c.id === id);
         return { id, nombre: cat ? catNombre(cat.id) : id, color: cat?.color ?? "#64748b", monto };
       })
       .sort((a, b) => b.monto - a.monto)
@@ -114,14 +114,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
 
   const categoriasIngreso = useMemo(
     () =>
-      CATEGORIAS_INGRESO
+      getCategoriasIngreso()
         .map((c) => ({ nombre: catNombre(c.id), monto: totales?.porCategoriaIngreso[c.id] ?? 0 }))
         .filter((c) => c.monto > 0),
     [totales]
   );
   const categoriasGasto = useMemo(
     () =>
-      CATEGORIAS_GASTO
+      getCategoriasGasto()
         .map((c) => ({ nombre: catNombre(c.id), monto: totales?.porCategoriaGasto[c.id] ?? 0 }))
         .filter((c) => c.monto > 0)
         .sort((a, b) => b.monto - a.monto),

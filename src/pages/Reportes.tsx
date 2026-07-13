@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, catNombre, currentMonth, fmtMoney, insertTx, nowLocalIso,
+  catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
   yearCategoriaTotals, yearDepositos, yearMonthlySummary,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
@@ -55,11 +55,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const balance = ingresos - gastos;
   const balanceAnt = (totalesAnt?.ingresos ?? 0) - (totalesAnt?.gastos ?? 0);
 
-  const filasIngreso = CATEGORIAS_INGRESO
-    .map((c) => ({ ...c, total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
+  const filasIngreso = getCategoriasIngreso()
+    .map((c) => ({ ...c, color: COLOR_INGRESO[c.id] ?? c.color ?? "#64748b", total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
     .filter((c) => c.total > 0);
-  const filasGasto = CATEGORIAS_GASTO
-    .map((c) => ({ ...c, total: totales?.porCategoriaGasto[c.id] ?? 0 }))
+  const filasGasto = getCategoriasGasto()
+    .map((c) => ({ ...c, color: c.color ?? "#64748b", total: totales?.porCategoriaGasto[c.id] ?? 0 }))
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
@@ -232,7 +232,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
                   <Donut
-                    segments={filasIngreso.map((c) => ({ color: COLOR_INGRESO[c.id] ?? "#64748b", pct: ingresos > 0 ? (c.total / ingresos) * 100 : 0 }))}
+                    segments={filasIngreso.map((c) => ({ color: c.color, pct: ingresos > 0 ? (c.total / ingresos) * 100 : 0 }))}
                     delayMs={150}
                   />
                   <div className="donut-center">
@@ -243,7 +243,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 <div className="donut-legend" style={{ flex: 1 }}>
                   {filasIngreso.map((c) => (
                     <div className="donut-legend-row" key={c.id}>
-                      <span className="sw" style={{ background: COLOR_INGRESO[c.id] ?? "#64748b" }} />
+                      <span className="sw" style={{ background: c.color }} />
                       <span className="name">{catNombre(c.id)}</span>
                       <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
                     </div>
@@ -271,7 +271,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           )}
           {filasIngreso.map((c) => (
             <div className="r-row" key={c.id}>
-              <span className="r-color" style={{ background: COLOR_INGRESO[c.id] ?? "#64748b" }} />
+              <span className="r-color" style={{ background: c.color }} />
               <span>{catNombre(c.id)}</span>
               <span className="r-amt">{fmtMoney(c.total)}</span>
               <span className="r-pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(1)}%` : "—"}</span>

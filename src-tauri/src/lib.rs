@@ -113,6 +113,21 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_usuarios_church ON usuarios(church_id);
         "#,
+    }, Migration {
+        version: 7,
+        description: "categorias personalizadas de ingreso/gasto por iglesia",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS categorias_custom (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id  INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                tipo       TEXT NOT NULL CHECK (tipo IN ('ingreso','gasto')),
+                nombre     TEXT NOT NULL,
+                color      TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_categorias_custom_church ON categorias_custom(church_id);
+        "#,
     }]
 }
 

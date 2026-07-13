@@ -93,11 +93,107 @@ export const METODOS_PAGO = [
   { id: "cheque", nombre: "Cheque", badge: "CH", color: "#ea580c" },
 ] as const;
 
+// ---------- Categorías personalizadas ----------
+
+export interface CategoriaCustom {
+  id: number;
+  church_id: number;
+  tipo: "ingreso" | "gasto";
+  nombre: string;
+  color: string;
+}
+
+/** Forma unificada de categoría para la UI: integradas + personalizadas. */
+export interface CategoriaUI {
+  id: string;
+  nombre: string;
+  tagClass: string;
+  color?: string;
+  custom?: boolean;
+}
+
+/** Caché en memoria de las categorías personalizadas. Se carga una vez al
+ *  arrancar (App) y se refresca al editarlas en Configuración, para que
+ *  getCategoriasIngreso/Gasto puedan seguir siendo síncronas como los
+ *  catálogos integrados. */
+let categoriasCustomCache: CategoriaCustom[] = [];
+
+export function setCategoriasCustomCache(rows: CategoriaCustom[]): void {
+  categoriasCustomCache = rows;
+}
+
+export async function loadCategoriasCustom(churchId: number): Promise<CategoriaCustom[]> {
+  const d = await getDb();
+  const rows = await d.select<CategoriaCustom[]>(
+    "SELECT * FROM categorias_custom WHERE church_id = $1 ORDER BY nombre",
+    [churchId]
+  );
+  setCategoriasCustomCache(rows);
+  return rows;
+}
+
+/** Id textual con el que una categoría personalizada se guarda en las
+ *  transacciones (p. ej. "custom-3"). */
+export function customCatId(rowId: number): string {
+  return `custom-${rowId}`;
+}
+
+function customToUI(c: CategoriaCustom): CategoriaUI {
+  return { id: customCatId(c.id), nombre: c.nombre, tagClass: "otros", color: c.color, custom: true };
+}
+
+/** Catálogo completo (integradas + personalizadas) para la UI y los PDFs. */
+export function getCategoriasIngreso(): CategoriaUI[] {
+  return [
+    ...CATEGORIAS_INGRESO.map((c) => ({ ...c } as CategoriaUI)),
+    ...categoriasCustomCache.filter((c) => c.tipo === "ingreso").map(customToUI),
+  ];
+}
+
+export function getCategoriasGasto(): CategoriaUI[] {
+  return [
+    ...CATEGORIAS_GASTO.map((c) => ({ ...c } as CategoriaUI)),
+    ...categoriasCustomCache.filter((c) => c.tipo === "gasto").map(customToUI),
+  ];
+}
+
+export async function insertCategoriaCustom(
+  churchId: number,
+  tipo: "ingreso" | "gasto",
+  nombre: string,
+  color: string
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "INSERT INTO categorias_custom (church_id, tipo, nombre, color) VALUES ($1,$2,$3,$4)",
+    [churchId, tipo, nombre.trim(), color]
+  );
+  await loadCategoriasCustom(churchId);
+}
+
+export async function deleteCategoriaCustom(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM categorias_custom WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await loadCategoriasCustom(churchId);
+}
+
+/** Cuántos movimientos usan una categoría (para impedir borrar las en uso). */
+export async function countTxByCategoria(churchId: number, categoriaId: string): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND categoria = $2",
+    [churchId, categoriaId]
+  );
+  return rows[0]?.n ?? 0;
+}
+
 /** Nombre de la categoría en el idioma activo de la app. El campo `nombre`
  *  de los catálogos conserva el nombre canónico en español (se usa para
  *  emparejar archivos CSV); todo lo que se muestra en pantalla o en PDFs
- *  debe pasar por aquí. */
+ *  debe pasar por aquí. Las personalizadas usan su propio nombre tal cual. */
 export function catNombre(id: string): string {
+  const custom = categoriasCustomCache.find((c) => customCatId(c.id) === id);
+  if (custom) return custom.nombre;
   return i18n.t(`cat.${id}`, { defaultValue: id });
 }
 
@@ -109,7 +205,10 @@ export function categoriaInfo(tipo: "ingreso" | "gasto", id: string) {
   const list: readonly { id: string; nombre: string; tagClass: string }[] =
     tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
   const found = list.find((c) => c.id === id);
-  return found ? { ...found, nombre: catNombre(found.id) } : { id, nombre: id, tagClass: "otros" };
+  if (found) return { ...found, nombre: catNombre(found.id) };
+  const custom = categoriasCustomCache.find((c) => customCatId(c.id) === id && c.tipo === tipo);
+  if (custom) return { id, nombre: custom.nombre, tagClass: "otros" };
+  return { id, nombre: id, tagClass: "otros" };
 }
 
 // ---------- Iglesia ----------

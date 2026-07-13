@@ -405,6 +405,21 @@ export const es = {
     comenzar: "Comenzar",
   },
 
+  categorias: {
+    titulo: "Categorías",
+    sub: "Agrega categorías propias además de las integradas",
+    nombrePlaceholder: "Nombre de la nueva categoría…",
+    agregar: "Agregar",
+    duplicada: "Ya existe una categoría con ese nombre.",
+    enUso_one: "No se puede eliminar: {{count}} movimiento usa esta categoría.",
+    enUso_other: "No se puede eliminar: {{count}} movimientos usan esta categoría.",
+    eliminarTitulo: "Eliminar categoría",
+    eliminarMensaje: "¿Eliminar la categoría \"{{nombre}}\"? Esta acción no se puede deshacer.",
+    agregada: "Categoría agregada",
+    eliminada: "Categoría eliminada",
+    hint: "Las categorías integradas no se pueden eliminar. Las personalizadas aparecen en los formularios, filtros, reportes y PDFs igual que las demás.",
+  },
+
   toast: {
     ingresoGuardado: "Ingreso guardado",
     gastoGuardado: "Gasto guardado",

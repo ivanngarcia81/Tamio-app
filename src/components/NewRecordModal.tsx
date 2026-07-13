@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
-  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, METODOS_PAGO, catNombre, metodoNombre,
+  METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
   insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
@@ -242,7 +242,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 <label className="form-label">{tab === "ingreso" ? t("recordModal.tipoIngreso") : t("recordModal.categoria")}</label>
                 {tab === "ingreso" ? (
                   <div className="type-grid">
-                    {CATEGORIAS_INGRESO.map((c) => (
+                    {getCategoriasIngreso().map((c) => (
                       <span
                         key={c.id}
                         className={`tag ${c.tagClass} cat-pill${categoria === c.id ? " is-selected" : ""}`}
@@ -254,7 +254,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   </div>
                 ) : (
                   <div className="category-grid">
-                    {CATEGORIAS_GASTO.map((c) => (
+                    {getCategoriasGasto().map((c) => (
                       <span
                         key={c.id}
                         className={`tag ${c.tagClass} cat-pill${categoria === c.id ? " is-selected" : ""}`}

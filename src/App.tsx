@@ -12,7 +12,7 @@ import Depositos from "./pages/Depositos";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
-import { countPendingTx, getOrCreateChurch, listMembers, type Church, type Member, type Tx } from "./db";
+import { countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import "./styles.css";
 
@@ -221,7 +221,12 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getOrCreateChurch().then(setChurch).catch((e) => setError(String(e)));
+    getOrCreateChurch()
+      .then(async (c) => {
+        await loadCategoriasCustom(c.id);
+        setChurch(c);
+      })
+      .catch((e) => setError(String(e)));
   }, []);
 
   if (error) {
