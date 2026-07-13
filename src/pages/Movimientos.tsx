@@ -7,7 +7,7 @@ import {
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import TxTable from "../components/TxTable";
-import { IconChevronLeft, IconChevronRight, IconGasto, IconIngreso, IconPlus, IconPrinter, IconWarn } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconGasto, IconIngreso, IconPlus, IconPrinter, IconSearch, IconWarn } from "../icons";
 import { printRegister } from "../services/print/printRegister";
 
 interface Props {
@@ -24,6 +24,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [txs, setTxs] = useState<Tx[]>([]);
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [mes, setMes] = useState(currentMonth());
   const esMesActual = mes >= currentMonth();
 
@@ -40,8 +41,16 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     : totales?.porCategoriaGasto ?? {};
   const totalMes = esIngreso ? totales?.ingresos ?? 0 : totales?.gastos ?? 0;
 
-  const visibles = filtroCat ? txs.filter((t) => t.categoria === filtroCat) : txs;
-  const conteo = (id: string) => txs.filter((t) => t.categoria === id).length;
+  const q = query.trim().toLowerCase();
+  const coincide = (tx: Tx) =>
+    !q ||
+    tx.concepto.toLowerCase().includes(q) ||
+    (tx.detalle ?? "").toLowerCase().includes(q) ||
+    (tx.beneficiario ?? "").toLowerCase().includes(q) ||
+    (tx.member_nombre ?? "").toLowerCase().includes(q);
+  const buscados = txs.filter(coincide);
+  const visibles = filtroCat ? buscados.filter((t) => t.categoria === filtroCat) : buscados;
+  const conteo = (id: string) => buscados.filter((t) => t.categoria === id).length;
 
   const [printing, setPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
@@ -140,6 +149,18 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           })}
         </div>
 
+        <div className="tx-head" style={{ marginBottom: 10 }}>
+          <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
+            <IconSearch size={15} strokeWidth={2} />
+            <input
+              className="form-input"
+              placeholder={t("mov.buscarPlaceholder")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="tx-head">
           <div className="tx-title">{esIngreso ? t("mov.todosIngresos") : t("mov.todosGastos")}</div>
           <div className="tx-filters">
@@ -147,7 +168,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               className={`chip${filtroCat === null ? " active" : ""}`}
               onClick={() => setFiltroCat(null)}
             >
-              {t("common.todos")} <span className="count">{txs.length}</span>
+              {t("common.todos")} <span className="count">{buscados.length}</span>
             </div>
             {categorias.map((c) => (
               <div
@@ -164,14 +185,18 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         {visibles.length === 0 ? (
           <EmptyState
             titulo={
-              txs.length > 0
+              q && buscados.length === 0
+                ? t("mov.sinResultadosBusqueda")
+                : txs.length > 0
                 ? t("mov.sinResultadosFiltro")
                 : esMesActual
                   ? (esIngreso ? t("mov.aunNoHayIngresos") : t("mov.aunNoHayGastos"))
                   : t(esIngreso ? "mov.sinIngresosEn" : "mov.sinGastosEn", { mes: mesLegible(mes) })
             }
             sub={
-              txs.length > 0
+              q && buscados.length === 0
+                ? t("mov.pruebaOtroTermino")
+                : txs.length > 0
                 ? t("mov.pruebaOtraCategoria")
                 : esMesActual
                   ? (esIngreso ? t("mov.registraPrimerIngreso") : t("mov.registraPrimerGasto"))

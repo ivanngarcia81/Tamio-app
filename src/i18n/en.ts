@@ -158,6 +158,9 @@ export const en: Resources = {
     registraPrimerGasto: "Record your first expense with the button above.",
     pruebaOtroMes: "Try another month using the arrows above.",
     todasCategorias: "All categories",
+    buscarPlaceholder: "Search by description, payee or member…",
+    sinResultadosBusqueda: "No results for your search",
+    pruebaOtroTermino: "Try another term or clear it to see everything.",
   },
 
   bandeja: {

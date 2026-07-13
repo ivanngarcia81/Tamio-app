@@ -152,6 +152,9 @@ export const es = {
     registraPrimerGasto: "Registra tu primer gasto con el botón de arriba.",
     pruebaOtroMes: "Prueba con otro mes usando las flechas de arriba.",
     todasCategorias: "Todas las categorías",
+    buscarPlaceholder: "Buscar por concepto, beneficiario o miembro…",
+    sinResultadosBusqueda: "Sin resultados para tu búsqueda",
+    pruebaOtroTermino: "Prueba con otro término o límpialo para ver todo.",
   },
 
   bandeja: {
