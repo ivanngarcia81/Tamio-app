@@ -120,7 +120,10 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               />
             }
           />
-          <Route path="/reportes" element={<Reportes church={church} refreshKey={refreshKey} />} />
+          <Route
+            path="/reportes"
+            element={<Reportes church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+          />
           <Route
             path="/depositos"
             element={<Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />}

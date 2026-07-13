@@ -242,3 +242,11 @@ export const IconIdBadge = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
     <path d="M14 9h4M14 13h4" />
   </svg>
 );
+
+export const IconUpload = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+);

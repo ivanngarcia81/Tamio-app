@@ -4,10 +4,11 @@ import {
   mesLegible, monthDepositos, monthlySummary, monthTotals, pctChange, prevMonth,
   type Church, type MonthSummary, type MonthTotals,
 } from "../db";
-import { exportReportExcel, exportReportPdf, printMonthlyReportPdf } from "../export";
+import { exportReportPdf, printMonthlyReportPdf } from "../export";
 import Delta from "../components/Delta";
 import Donut from "../components/Donut";
-import { IconPrinter } from "../icons";
+import ImportCsvModal from "../components/ImportCsvModal";
+import { IconPrinter, IconUpload } from "../icons";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -21,15 +22,17 @@ const COLOR_INGRESO: Record<string, string> = {
 interface Props {
   church: Church;
   refreshKey: number;
+  onChanged: () => void;
 }
 
-export default function Reportes({ church, refreshKey }: Props) {
+export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
   const [depositosMes, setDepositosMes] = useState(0);
-  const [exporting, setExporting] = useState<"excel" | "pdf" | "print" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const mes = currentMonth();
   const mesStr = mesLegible(mes);
   const mesAnterior = prevMonth(mes);
@@ -72,13 +75,11 @@ export default function Reportes({ church, refreshKey }: Props) {
     };
   }
 
-  async function handleExport(kind: "excel" | "pdf") {
+  async function handleExport(kind: "pdf") {
     setExportError(null);
     setExporting(kind);
     try {
-      const data = buildReportData();
-      if (kind === "excel") await exportReportExcel(data);
-      else await exportReportPdf(data);
+      await exportReportPdf(buildReportData());
     } catch (e) {
       setExportError(`No se pudo exportar: ${e}`);
     } finally {
@@ -106,11 +107,11 @@ export default function Reportes({ church, refreshKey }: Props) {
           <div className="page-sub">Estado financiero mensual · {mesStr}</div>
         </div>
         <div className="header-actions">
+          <button className="btn secondary" onClick={() => setImportOpen(true)}>
+            <IconUpload size={13} /> Importar CSV
+          </button>
           <button className="btn secondary" onClick={handlePrint} disabled={exporting !== null}>
             <IconPrinter size={14} /> {exporting === "print" ? "Preparando…" : "Imprimir"}
-          </button>
-          <button className="btn secondary" onClick={() => handleExport("excel")} disabled={exporting !== null}>
-            {exporting === "excel" ? "Generando…" : "Excel"}
           </button>
           <button className="btn primary" onClick={() => handleExport("pdf")} disabled={exporting !== null}>
             {exporting === "pdf" ? "Generando…" : "PDF"}
@@ -330,6 +331,14 @@ export default function Reportes({ church, refreshKey }: Props) {
           </>
         )}
       </div>
+
+      {importOpen && (
+        <ImportCsvModal
+          church={church}
+          onClose={() => setImportOpen(false)}
+          onImported={onChanged}
+        />
+      )}
     </>
   );
 }
