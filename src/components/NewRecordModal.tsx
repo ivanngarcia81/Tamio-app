@@ -44,6 +44,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
 
   // --- estado ingreso/gasto ---
   const now = nowLocalIso();
+  const hoy = now.slice(0, 10);
   const [categoria, setCategoria] = useState<string>(initialTab === "gasto" ? "servicios" : "ofrenda");
   const [subcategoria, setSubcategoria] = useState("");
   const [concepto, setConcepto] = useState("");
@@ -160,6 +161,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         const m = parseMonto(monto);
         if (!concepto.trim()) { setError("El concepto es obligatorio."); return; }
         if (m === null) { setError("Escribe un monto válido mayor a cero."); return; }
+        if (fecha > hoy) {
+          setError(`No se pueden registrar ${tab === "ingreso" ? "ingresos" : "gastos"} con una fecha futura.`);
+          return;
+        }
         setSaving(true);
         const payload = {
           tipo: tab,
@@ -268,7 +273,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Fecha</label>
-                  <input className="form-input" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+                  <input className="form-input" type="date" value={fecha} max={hoy} onChange={(e) => setFecha(e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Hora</label>
