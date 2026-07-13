@@ -314,13 +314,13 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           {!isEdit && (
             <div className="tabs-segmented">
               <div className={`seg${tab === "ingreso" ? " active" : ""}`} onClick={() => setTab("ingreso")}>
-                <IconArrowUp size={14} strokeWidth={2.4} /> {t("recordModal.segIngreso")}
+                <IconArrowUp size={14} strokeWidth={2.2} /> {t("recordModal.segIngreso")}
               </div>
               <div className={`seg${tab === "gasto" ? " active" : ""}`} onClick={() => setTab("gasto")}>
-                <IconArrowDown size={14} strokeWidth={2.4} /> {t("recordModal.segGasto")}
+                <IconArrowDown size={14} strokeWidth={2.2} /> {t("recordModal.segGasto")}
               </div>
               <div className={`seg${tab === "miembro" ? " active" : ""}`} onClick={() => setTab("miembro")}>
-                <IconMiembros size={14} strokeWidth={2.4} /> {t("recordModal.segMiembro")}
+                <IconMiembros size={14} strokeWidth={2.2} /> {t("recordModal.segMiembro")}
               </div>
             </div>
           )}

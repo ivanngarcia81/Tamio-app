@@ -62,11 +62,11 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
         <div style={{ height: 210 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weekly} barGap={4} barCategoryGap="28%" margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke="var(--line)" />
+              <CartesianGrid vertical={false} stroke="var(--line-soft)" strokeDasharray="3 4" />
               <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
               <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} />
-              <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
-              <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" radius={[4, 4, 0, 0]} maxBarSize={22} />
+              <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+              <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" radius={[4, 4, 0, 0]} maxBarSize={18} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -90,7 +90,7 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
                   <stop offset="100%" stopColor="var(--accent-3)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid vertical={false} stroke="var(--line)" />
+              <CartesianGrid vertical={false} stroke="var(--line-soft)" strokeDasharray="3 4" />
               <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} minTickGap={40} />
               <Tooltip content={<TooltipCard moneda={moneda} />} />
               <Area

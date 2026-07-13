@@ -114,7 +114,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
                       requestDelete({ id: raw, church_id: church.id, tipo: lista.tipo, nombre: c.nombre, color: c.color ?? COLORES[0] });
                     }}
                   >
-                    <IconClose size={10} strokeWidth={2.4} />
+                    <IconClose size={10} strokeWidth={2.2} />
                   </span>
                 </span>
               ) : (

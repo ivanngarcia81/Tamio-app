@@ -33,7 +33,7 @@ export default function ToastHost() {
     <div className="toast-host">
       {toasts.map((t) => (
         <div className="toast" key={t.id}>
-          <IconCheck size={14} strokeWidth={2.4} /> {t.mensaje}
+          <IconCheck size={14} strokeWidth={2.2} /> {t.mensaje}
           {t.onAction && (
             <button
               type="button"

@@ -233,7 +233,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.ingresosDelMes")}</span>
-              <div className="stat-icon up"><IconArrowUp size={16} strokeWidth={2.4} /></div>
+              <div className="stat-icon up"><IconArrowUp size={16} strokeWidth={2.2} /></div>
             </div>
             <div className="stat-row">
               <div className="stat-value md">
@@ -249,7 +249,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card accent" style={accentStyle("var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.gastosDelMes")}</span>
-              <div className="stat-icon down"><IconArrowDown size={16} strokeWidth={2.4} /></div>
+              <div className="stat-icon down"><IconArrowDown size={16} strokeWidth={2.2} /></div>
             </div>
             <div className="stat-row">
               <div className="stat-value md">
@@ -265,7 +265,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card accent" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.balanceDelMesLabel")}</span>
-              <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.4} /></div>
+              <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.2} /></div>
             </div>
             <div className="stat-value md">
               {fmtMoney(balance)}<span className="stat-cur">{church.moneda}</span>
@@ -278,7 +278,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card accent" style={accentStyle(balanceAnio >= 0 ? "var(--accent-3)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.balanceDelAnio")}</span>
-              <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.4} /></div>
+              <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.2} /></div>
             </div>
             <div className="stat-value md">
               {fmtMoney(balanceAnio)}<span className="stat-cur">{church.moneda}</span>
