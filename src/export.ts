@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
+import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import type { Church } from "./db";
 
 type RGB = readonly [number, number, number];
@@ -37,6 +37,23 @@ export interface ReportData {
    * línea simplemente no se dibuja — sin inventar un usuario.
    */
   generatedBy?: { nombre: string; rol?: string };
+  /** Ruta de la firma PNG del tesorero (Configuración → Firma del tesorero). */
+  firmaPath?: string | null;
+}
+
+/** Lee un PNG local y lo convierte a data URL para jsPDF.addImage(). */
+async function loadPngDataUrl(path: string): Promise<string | null> {
+  try {
+    const bytes = await readFile(path);
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+    return `data:image/png;base64,${btoa(binary)}`;
+  } catch {
+    return null;
+  }
 }
 
 function slug(s: string): string {
@@ -500,12 +517,13 @@ const PDF_FOOTER_BLOCK_H = PDF_SPACE.sm + 2 * 14 + PDF_SPACE.xs;
 
 /** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
 export async function exportReportPdf(data: ReportData): Promise<boolean> {
-  const { church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance, generatedBy } = data;
+  const { church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance, generatedBy, firmaPath } = data;
 
   const now = new Date();
   const reportId = buildReportId(periodoISO);
   const fechaGeneracion = fmtFechaLarga(now);
   const horaGeneracion = fmtHora12(now);
+  const firmaDataUrl = firmaPath ? await loadPngDataUrl(firmaPath) : null;
 
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -544,11 +562,11 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
    * total de páginas solo se conoce una vez que todo el contenido ya
    * existe — así el número "de Y" siempre es correcto.
    *
-   * Punto de extensión futuro para auditorías: firma del tesorero, firma
-   * del pastor y sello de la iglesia. Deliberadamente NO se dibujan
-   * todavía (opcionales, ocultos por defecto); cuando se activen, van en
-   * un bloque de 3 columnas justo ENCIMA de este pie, usando el mismo
-   * ancho de contenido (marginX/rightX) como referencia.
+   * La firma del tesorero ya se dibuja (ver el bloque justo antes de esta
+   * pasada final, después de las tarjetas). Punto de extensión futuro para
+   * auditorías: firma del pastor y sello de la iglesia, en columnas junto
+   * a la del tesorero, usando el mismo ancho de contenido (marginX/rightX)
+   * como referencia — todavía no hay datos de esos roles que dibujar.
    */
   function drawFooterBlock(pageIndex: number, totalPages: number) {
     let fy = pageHeight - PDF_MARGIN - footerReserve + PDF_SPACE.sm;
@@ -782,6 +800,49 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   });
 
   y += cardH;
+
+  // ---------- Firma del tesorero (solo si está configurada) ----------
+  // Bloque atómico, igual que las tarjetas: si no cabe completo se mueve
+  // entero a la siguiente página en vez de partirse.
+  if (generatedBy?.nombre) {
+    const sigLineW = 200;
+    const sigImgMaxH = 46;
+    let sigImgH = 0;
+    let sigImgW = 0;
+    if (firmaDataUrl) {
+      try {
+        const props = doc.getImageProperties(firmaDataUrl);
+        sigImgH = sigImgMaxH;
+        sigImgW = Math.min(sigLineW, (props.width / props.height) * sigImgH);
+      } catch {
+        sigImgH = 0;
+      }
+    }
+
+    ensureSpace((sigImgH > 0 ? sigImgH + PDF_SPACE.xs : 0) + 1 + 14 + 14 + PDF_SPACE.md);
+
+    if (firmaDataUrl && sigImgH > 0) {
+      doc.addImage(firmaDataUrl, "PNG", marginX, y, sigImgW, sigImgH);
+      y += sigImgH + PDF_SPACE.xs;
+    }
+
+    setDraw(doc, LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, marginX + sigLineW, y);
+    y += 14;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.body);
+    setText(doc, INK);
+    doc.text(generatedBy.nombre, marginX, y);
+    y += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(PDF_TYPE.meta);
+    setText(doc, MUTED);
+    doc.text(generatedBy.rol ?? "Tesorero", marginX, y);
+    y += PDF_SPACE.md;
+  }
 
   // ---------- Pie de página en todas las páginas ----------
   // El total de páginas solo se conoce ahora que ya se dibujó todo el

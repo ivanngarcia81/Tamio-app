@@ -64,6 +64,10 @@ export default function Reportes({ church, refreshKey }: Props) {
         ingresos,
         gastos,
         balance,
+        generatedBy: church.tesorero_nombre
+          ? { nombre: church.tesorero_nombre, rol: church.tesorero_cargo ?? undefined }
+          : undefined,
+        firmaPath: church.tesorero_firma_path,
       };
       if (kind === "excel") await exportReportExcel(data);
       else await exportReportPdf(data);
