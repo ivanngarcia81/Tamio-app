@@ -682,11 +682,13 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   // ---------- Firma del tesorero (solo si está configurada) ----------
   // Bloque atómico, igual que las tarjetas: si no cabe completo se mueve
   // entero a la siguiente página en vez de partirse. Línea, nombre y
-  // cargo comparten el mismo centro horizontal, como una firma impresa
-  // tradicional, en vez de quedar pegados al margen izquierdo.
+  // cargo comparten el mismo margen izquierdo (firma tradicional tipo
+  // carta), separados de las tarjetas de resumen por un espacio propio
+  // para que no queden pegados a ellas.
   if (generatedBy?.nombre) {
     const sigLineW = 200;
     const sigImgMaxH = 46;
+    const cardsToSigGap = PDF_SPACE.lg; // 32pt de aire respecto a las tarjetas
     const lineToNameGap = PDF_SPACE.sm; // 16pt: dentro del rango 12–20 pedido
     const nameToRoleGap = 14;
     let sigImgH = 0;
@@ -701,30 +703,29 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
       }
     }
 
-    ensureSpace((sigImgH > 0 ? sigImgH + PDF_SPACE.xs : 0) + 1 + lineToNameGap + nameToRoleGap + PDF_SPACE.md);
-
-    const cx = marginX + contentWidth / 2;
+    ensureSpace(cardsToSigGap + (sigImgH > 0 ? sigImgH + PDF_SPACE.xs : 0) + 1 + lineToNameGap + nameToRoleGap + PDF_SPACE.md);
+    y += cardsToSigGap;
 
     if (firmaDataUrl && sigImgH > 0) {
-      doc.addImage(firmaDataUrl, "PNG", cx - sigImgW / 2, y, sigImgW, sigImgH);
+      doc.addImage(firmaDataUrl, "PNG", marginX, y, sigImgW, sigImgH);
       y += sigImgH + PDF_SPACE.xs;
     }
 
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
-    doc.line(cx - sigLineW / 2, y, cx + sigLineW / 2, y);
+    doc.line(marginX, y, marginX + sigLineW, y);
     y += lineToNameGap;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.body);
     setText(doc, INK);
-    doc.text(generatedBy.nombre, cx, y, { align: "center" });
+    doc.text(generatedBy.nombre, marginX, y);
     y += nameToRoleGap;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.meta);
     setText(doc, MUTED);
-    doc.text(generatedBy.rol ?? "Tesorero", cx, y, { align: "center" });
+    doc.text(generatedBy.rol ?? "Tesorero", marginX, y);
     y += PDF_SPACE.md;
   }
 
