@@ -12,7 +12,7 @@ import Depositos from "./pages/Depositos";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
-import { countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, type Church, type Member, type Tx } from "./db";
+import { countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeGastosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import "./styles.css";
 
@@ -224,6 +224,9 @@ export default function App() {
     getOrCreateChurch()
       .then(async (c) => {
         await loadCategoriasCustom(c.id);
+        // Registra los gastos fijos de los meses que llegaron desde la
+        // última vez que se abrió la app (nunca meses futuros).
+        await materializeGastosRecurrentes(c.id, c.moneda);
         setChurch(c);
       })
       .catch((e) => setError(String(e)));

@@ -4,7 +4,7 @@ import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
   METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
-  insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
+  insertGastoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconWarn } from "../icons";
@@ -64,6 +64,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [beneficiarioRfc, setBeneficiarioRfc] = useState("");
   const [constancia, setConstancia] = useState(false);
   const [marcarPendiente, setMarcarPendiente] = useState(false);
+  const [esRecurrente, setEsRecurrente] = useState(false);
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
 
@@ -171,6 +172,25 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           return;
         }
         setSaving(true);
+        if (tab === "gasto" && !isEdit && esRecurrente) {
+          const dia = Number(fecha.slice(8, 10));
+          const mesesRegistrados = await insertGastoRecurrente(church.id, church.moneda, {
+            categoria,
+            subcategoria: null,
+            concepto: concepto.trim(),
+            detalle: detalle.trim() || null,
+            monto: m,
+            metodo_pago: metodo,
+            beneficiario: beneficiario.trim() || null,
+            beneficiario_rfc: beneficiarioRfc.trim() || null,
+            dia,
+            mes_inicio: `${fecha.slice(0, 4)}-01`,
+          });
+          showToast(t("recurrente.toastCreado", { count: mesesRegistrados }));
+          onSaved();
+          onClose();
+          return;
+        }
         const payload = {
           tipo: tab,
           categoria,
@@ -432,6 +452,20 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   placeholder={t("recordModal.notasPlaceholder")}
                 />
               </div>
+
+              {tab === "gasto" && !isEdit && (
+                <div className="check-row" style={{ marginTop: 6 }}>
+                  <input
+                    type="checkbox"
+                    id="chk-recurrente"
+                    checked={esRecurrente}
+                    onChange={(e) => setEsRecurrente(e.target.checked)}
+                  />
+                  <label htmlFor="chk-recurrente">
+                    <strong>{t("recurrente.label")}</strong> — {t("recurrente.hintForm")}
+                  </label>
+                </div>
+              )}
 
               <div className="check-row" style={{ marginTop: 6 }}>
                 <input

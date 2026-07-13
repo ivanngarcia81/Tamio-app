@@ -128,6 +128,29 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_categorias_custom_church ON categorias_custom(church_id);
         "#,
+    }, Migration {
+        version: 8,
+        description: "gastos fijos recurrentes (se materializan como transacciones cada mes)",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS gastos_recurrentes (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id           INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                categoria           TEXT NOT NULL,
+                subcategoria        TEXT,
+                concepto            TEXT NOT NULL,
+                detalle             TEXT,
+                monto               REAL NOT NULL,
+                metodo_pago         TEXT NOT NULL,
+                beneficiario        TEXT,
+                beneficiario_rfc    TEXT,
+                dia                 INTEGER NOT NULL,
+                mes_inicio          TEXT NOT NULL,
+                ultimo_mes_generado TEXT,
+                created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_gastos_recurrentes_church ON gastos_recurrentes(church_id);
+        "#,
     }]
 }
 

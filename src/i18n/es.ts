@@ -431,6 +431,20 @@ export const es = {
     hint: "Las categorías integradas no se pueden eliminar. Las personalizadas aparecen en los formularios, filtros, reportes y PDFs igual que las demás.",
   },
 
+  recurrente: {
+    label: "Gasto fijo recurrente",
+    hintForm: "Se registra automáticamente cada mes con el mismo importe, desde enero hasta el mes actual. Los meses futuros se agregan solos cuando llegan — nunca por adelantado.",
+    titulo: "Gastos fijos recurrentes",
+    sub: "Se registran automáticamente cada mes",
+    porMes: "{{monto}} / mes",
+    diaDeCadaMes: "Día {{dia}} de cada mes",
+    eliminarTitulo: "Eliminar gasto fijo",
+    eliminarMensaje: "\"{{concepto}}\" dejará de registrarse automáticamente en los meses siguientes. Los gastos ya registrados se conservan.",
+    toastCreado_one: "Gasto fijo registrado ({{count}} mes)",
+    toastCreado_other: "Gasto fijo registrado ({{count}} meses)",
+    toastEliminado: "Gasto fijo eliminado",
+  },
+
   toast: {
     ingresoGuardado: "Ingreso guardado",
     gastoGuardado: "Gasto guardado",

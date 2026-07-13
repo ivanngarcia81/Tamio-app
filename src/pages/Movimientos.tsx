@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
-  listTx, mesLegible, monthTotals, nextMonth, prevMonth,
-  type Church, type MonthTotals, type Tx,
+  catNombre, categoriaInfo, currentMonth, deleteGastoRecurrente, fmtMoney,
+  getCategoriasGasto, getCategoriasIngreso, listGastosRecurrentes,
+  listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth,
+  type Church, type GastoRecurrente, type MonthTotals, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { showToast } from "../toast";
 import TxTable from "../components/TxTable";
-import { IconChevronLeft, IconChevronRight, IconGasto, IconIngreso, IconPlus, IconPrinter, IconSearch, IconWarn } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconClose, IconGasto, IconIngreso, IconPlus, IconPrinter, IconRepeat, IconSearch, IconWarn } from "../icons";
 import { printRegister } from "../services/print/printRegister";
 
 interface Props {
@@ -25,13 +28,26 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [recurrentes, setRecurrentes] = useState<GastoRecurrente[]>([]);
+  const [pendingDeleteRec, setPendingDeleteRec] = useState<GastoRecurrente | null>(null);
   const [mes, setMes] = useState(currentMonth());
   const esMesActual = mes >= currentMonth();
 
   useEffect(() => {
     listTx(church.id, { tipo, mes, limit: 500 }).then(setTxs).catch(console.error);
     monthTotals(church.id, mes).then(setTotales).catch(console.error);
+    if (tipo === "gasto") {
+      listGastosRecurrentes(church.id).then(setRecurrentes).catch(console.error);
+    }
   }, [church.id, tipo, refreshKey, mes]);
+
+  async function confirmDeleteRecurrente() {
+    if (!pendingDeleteRec) return;
+    await deleteGastoRecurrente(pendingDeleteRec.id, church.id);
+    setPendingDeleteRec(null);
+    showToast(t("recurrente.toastEliminado"));
+    listGastosRecurrentes(church.id).then(setRecurrentes).catch(console.error);
+  }
 
   const esIngreso = tipo === "ingreso";
   const titulo = esIngreso ? t("nav.ingresos") : t("nav.gastos");
@@ -149,6 +165,49 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           })}
         </div>
 
+        {!esIngreso && recurrentes.length > 0 && (
+          <div className="card" style={{ marginBottom: 18 }}>
+            <div className="card-head">
+              <span className="card-title" style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                <IconRepeat size={14} strokeWidth={2} /> {t("recurrente.titulo")}
+              </span>
+              <span className="card-meta">{t("recurrente.sub")}</span>
+            </div>
+            {recurrentes.map((r) => {
+              const cat = categoriaInfo("gasto", r.categoria);
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "9px 0", borderTop: "1px solid var(--line)",
+                  }}
+                >
+                  <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
+                  <span className="truncate" style={{ flex: 1, fontWeight: 600, fontSize: 13 }} title={r.concepto}>
+                    {r.concepto}
+                    {r.beneficiario && (
+                      <span style={{ fontWeight: 400, color: "var(--text-3)", marginLeft: 8, fontSize: 12 }}>{r.beneficiario}</span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 12, color: "var(--text-3)" }}>{t("recurrente.diaDeCadaMes", { dia: r.dia })}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>{metodoNombre(r.metodo_pago)}</span>
+                  <span style={{ fontWeight: 700, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
+                    {t("recurrente.porMes", { monto: fmtMoney(r.monto) })}
+                  </span>
+                  <span
+                    className="row-icon-btn"
+                    title={t("recurrente.eliminarTitulo")}
+                    onClick={() => setPendingDeleteRec(r)}
+                  >
+                    <IconClose size={12} strokeWidth={2.2} />
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="tx-head" style={{ marginBottom: 10 }}>
           <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
             <IconSearch size={15} strokeWidth={2} />
@@ -208,6 +267,17 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           <TxTable tipo={tipo} txs={visibles} onEdit={onEditTx} onChanged={onChanged} />
         )}
       </div>
+
+      {pendingDeleteRec && (
+        <ConfirmDialog
+          title={t("recurrente.eliminarTitulo")}
+          message={t("recurrente.eliminarMensaje", { concepto: pendingDeleteRec.concepto })}
+          confirmLabel={t("common.eliminar")}
+          danger
+          onConfirm={confirmDeleteRecurrente}
+          onCancel={() => setPendingDeleteRec(null)}
+        />
+      )}
     </>
   );
 }

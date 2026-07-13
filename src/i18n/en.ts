@@ -437,6 +437,20 @@ export const en: Resources = {
     hint: "Built-in categories cannot be deleted. Custom ones appear in forms, filters, reports and PDFs just like the rest.",
   },
 
+  recurrente: {
+    label: "Recurring fixed expense",
+    hintForm: "It is recorded automatically every month with the same amount, from January through the current month. Future months are added on their own as they arrive — never in advance.",
+    titulo: "Recurring fixed expenses",
+    sub: "Recorded automatically every month",
+    porMes: "{{monto}} / month",
+    diaDeCadaMes: "Day {{dia}} of each month",
+    eliminarTitulo: "Delete fixed expense",
+    eliminarMensaje: "\"{{concepto}}\" will stop being recorded automatically in the following months. Already recorded expenses are kept.",
+    toastCreado_one: "Fixed expense recorded ({{count}} month)",
+    toastCreado_other: "Fixed expense recorded ({{count}} months)",
+    toastEliminado: "Fixed expense deleted",
+  },
+
   toast: {
     ingresoGuardado: "Income saved",
     gastoGuardado: "Expense saved",
