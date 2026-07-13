@@ -56,7 +56,11 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
 
   return (
     <aside className="sidebar">
-      <div className="logo" title="Tesorería"><IconLogo /></div>
+      {/* Muestra el logo de la iglesia (Configuración → Subir logo) en cuanto
+          existe; mientras tanto el emblema de Tesorería hace de placeholder. */}
+      <div className="logo" title={logoUrl ? church.nombre : "Tesorería"}>
+        {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconLogo />}
+      </div>
 
       <div className="church-select">
         <div className="church-avatar">
