@@ -110,6 +110,14 @@ export const IconChevronDown = ({ size = 14, strokeWidth = 2 }: IconProps) => (
   <svg {...base(size, strokeWidth)}><polyline points="6 9 12 15 18 9" /></svg>
 );
 
+export const IconChevronLeft = ({ size = 14, strokeWidth = 2 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}><polyline points="15 18 9 12 15 6" /></svg>
+);
+
+export const IconChevronRight = ({ size = 14, strokeWidth = 2 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}><polyline points="9 18 15 12 9 6" /></svg>
+);
+
 export const IconCheck = ({ size = 14, strokeWidth = 2.5 }: IconProps) => (
   <svg {...base(size, strokeWidth)}><polyline points="20 6 9 17 4 12" /></svg>
 );

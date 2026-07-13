@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney,
-  listTx, mesLegible, monthTotals,
+  listTx, mesLegible, monthTotals, nextMonth, prevMonth,
   type Church, type MonthTotals, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import TxTable from "../components/TxTable";
-import { IconGasto, IconIngreso, IconPlus, IconPrinter, IconWarn } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconGasto, IconIngreso, IconPlus, IconPrinter, IconWarn } from "../icons";
 import { printRegister } from "../services/print/printRegister";
 
 interface Props {
@@ -22,10 +22,11 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [txs, setTxs] = useState<Tx[]>([]);
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
-  const mes = currentMonth();
+  const [mes, setMes] = useState(currentMonth());
+  const esMesActual = mes >= currentMonth();
 
   useEffect(() => {
-    listTx(church.id, { tipo, limit: 300 }).then(setTxs).catch(console.error);
+    listTx(church.id, { tipo, mes, limit: 500 }).then(setTxs).catch(console.error);
     monthTotals(church.id, mes).then(setTotales).catch(console.error);
   }, [church.id, tipo, refreshKey, mes]);
 
@@ -74,10 +75,23 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         <div>
           <div className="page-title">{titulo}</div>
           <div className="page-sub">
-            {mesLegible(mes)} · {txs.length} movimiento{txs.length === 1 ? "" : "s"} registrado{txs.length === 1 ? "" : "s"}
+            {txs.length} movimiento{txs.length === 1 ? "" : "s"} registrado{txs.length === 1 ? "" : "s"}
           </div>
         </div>
         <div className="header-actions">
+          <div className="month-nav">
+            <span className="icon-btn" title="Mes anterior" onClick={() => setMes(prevMonth(mes))}>
+              <IconChevronLeft size={16} />
+            </span>
+            <span className="month-nav-label">{mesLegible(mes)}</span>
+            <span
+              className={`icon-btn${esMesActual ? " disabled" : ""}`}
+              title="Mes siguiente"
+              onClick={() => !esMesActual && setMes(nextMonth(mes))}
+            >
+              <IconChevronRight size={16} />
+            </span>
+          </div>
           <button className="btn secondary" onClick={handlePrint} disabled={printing}>
             <IconPrinter size={14} /> {printing ? "Preparando…" : "Imprimir"}
           </button>
@@ -149,11 +163,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
         {visibles.length === 0 ? (
           <EmptyState
-            titulo={txs.length === 0 ? `Aún no hay ${titulo.toLowerCase()}` : "Sin resultados con este filtro"}
+            titulo={
+              txs.length > 0
+                ? "Sin resultados con este filtro"
+                : esMesActual
+                  ? `Aún no hay ${titulo.toLowerCase()}`
+                  : `Sin ${titulo.toLowerCase()} en ${mesLegible(mes)}`
+            }
             sub={
-              txs.length === 0
-                ? `Registra tu primer ${esIngreso ? "ingreso" : "gasto"} con el botón de arriba.`
-                : "Prueba con otra categoría o quita el filtro."
+              txs.length > 0
+                ? "Prueba con otra categoría o quita el filtro."
+                : esMesActual
+                  ? `Registra tu primer ${esIngreso ? "ingreso" : "gasto"} con el botón de arriba.`
+                  : "Prueba con otro mes usando las flechas de arriba."
             }
             icon={esIngreso ? <IconIngreso size={22} strokeWidth={1.6} /> : <IconGasto size={22} strokeWidth={1.6} />}
           />

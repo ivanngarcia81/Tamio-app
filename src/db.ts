@@ -264,7 +264,7 @@ export async function countPendingTx(churchId: number): Promise<number> {
 
 export async function listTx(
   churchId: number,
-  opts: { tipo?: "ingreso" | "gasto"; limit?: number } = {}
+  opts: { tipo?: "ingreso" | "gasto"; limit?: number; mes?: string } = {}
 ): Promise<Tx[]> {
   const d = await getDb();
   const params: unknown[] = [churchId];
@@ -272,6 +272,10 @@ export async function listTx(
   if (opts.tipo) {
     params.push(opts.tipo);
     where += ` AND t.tipo = $${params.length}`;
+  }
+  if (opts.mes) {
+    params.push(opts.mes);
+    where += ` AND substr(t.fecha, 1, 7) = $${params.length}`;
   }
   const limit = opts.limit ?? 200;
   return d.select<Tx[]>(
@@ -690,6 +694,13 @@ export function prevMonth(yyyyMm: string): string {
   const [y, m] = yyyyMm.split("-").map(Number);
   const d = new Date(y, m - 1, 1);
   d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function nextMonth(yyyyMm: string): string {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const d = new Date(y, m - 1, 1);
+  d.setMonth(d.getMonth() + 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
