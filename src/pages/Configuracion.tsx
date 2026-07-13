@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { updateChurch, type Church } from "../db";
+import { useEffect, useState } from "react";
+import { listUsuarios, updateChurch, type Church, type Usuario } from "../db";
 import { IconCheck } from "../icons";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import TreasurerSettings, {
   type TreasurerFormErrors, type TreasurerFormValues,
 } from "../components/settings/TreasurerSettings";
 import SignatureUploader from "../components/settings/SignatureUploader";
+import UsersSettings from "../components/settings/UsersSettings";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 
@@ -33,6 +34,10 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
     telefono: church.tesorero_telefono ?? "",
   });
   const [firmaPath, setFirmaPath] = useState<string | null>(church.tesorero_firma_path ?? null);
+
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const refrescarUsuarios = () => { listUsuarios(church.id).then(setUsuarios).catch(console.error); };
+  useEffect(refrescarUsuarios, [church.id]);
 
   const [churchError, setChurchError] = useState<string | null>(null);
   const [treasurerErrors, setTreasurerErrors] = useState<TreasurerFormErrors>({});
@@ -118,6 +123,8 @@ export default function Configuracion({ church, onChurchUpdated, themePref, onTh
               />
 
               <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+
+              <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
 
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
             </div>

@@ -583,6 +583,66 @@ export async function lastActivityAt(churchId: number): Promise<string | null> {
   return rows[0]?.m ?? null;
 }
 
+// ---------- Usuarios (directorio administrativo) ----------
+//
+// Directorio de personas que administran la iglesia (Tesorero, Pastor,
+// Secretario, Auditor, Consejo...). Todavía NO hay autenticación ni
+// backend — esto es solo el directorio/datos, preparado para que el
+// futuro sistema de login se conecte aquí sin rediseñar el modelo.
+
+export const ROLES_USUARIO = [
+  { id: "tesorero", nombre: "Tesorero" },
+  { id: "pastor", nombre: "Pastor" },
+  { id: "secretario", nombre: "Secretario" },
+  { id: "auditor", nombre: "Auditor" },
+  { id: "consejo", nombre: "Consejo administrativo" },
+  { id: "otro", nombre: "Otro" },
+] as const;
+
+export interface Usuario {
+  id: number;
+  church_id: number;
+  nombre: string;
+  rol: string;
+  email: string | null;
+  telefono: string | null;
+  notas: string | null;
+}
+
+export interface NewUsuario {
+  nombre: string;
+  rol: string;
+  email?: string | null;
+  telefono?: string | null;
+  notas?: string | null;
+}
+
+export async function listUsuarios(churchId: number): Promise<Usuario[]> {
+  const d = await getDb();
+  return d.select<Usuario[]>("SELECT * FROM usuarios WHERE church_id = $1 ORDER BY nombre", [churchId]);
+}
+
+export async function insertUsuario(churchId: number, u: NewUsuario): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `INSERT INTO usuarios (church_id, nombre, rol, email, telefono, notas) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [churchId, u.nombre.trim(), u.rol, u.email?.trim() || null, u.telefono?.trim() || null, u.notas?.trim() || null]
+  );
+}
+
+export async function updateUsuario(id: number, churchId: number, u: NewUsuario): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE usuarios SET nombre = $1, rol = $2, email = $3, telefono = $4, notas = $5 WHERE id = $6 AND church_id = $7`,
+    [u.nombre.trim(), u.rol, u.email?.trim() || null, u.telefono?.trim() || null, u.notas?.trim() || null, id, churchId]
+  );
+}
+
+export async function deleteUsuario(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM usuarios WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
 // ---------- Miembros ----------
 
 export async function listMembers(churchId: number): Promise<Member[]> {

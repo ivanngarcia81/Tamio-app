@@ -233,3 +233,12 @@ export const IconMonitor = ({ size = 14, strokeWidth = 2 }: IconProps) => (
     <path d="M8 21h8M12 17v4" />
   </svg>
 );
+
+export const IconIdBadge = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <circle cx="9" cy="10" r="2" />
+    <path d="M6 16c.5-2 2-3 3-3s2.5 1 3 3" />
+    <path d="M14 9h4M14 13h4" />
+  </svg>
+);

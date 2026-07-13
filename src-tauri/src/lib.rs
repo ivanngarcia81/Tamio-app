@@ -96,6 +96,23 @@ fn migrations() -> Vec<Migration> {
             CREATE INDEX IF NOT EXISTS idx_depositos_church_fecha ON depositos_bancarios(church_id, fecha);
             CREATE INDEX IF NOT EXISTS idx_depositos_periodo ON depositos_bancarios(church_id, periodo);
         "#,
+    }, Migration {
+        version: 6,
+        description: "directorio de usuarios administrativos (sin login todavia — preparado para el backend futuro)",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id  INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                nombre     TEXT NOT NULL,
+                rol        TEXT NOT NULL,
+                email      TEXT,
+                telefono   TEXT,
+                notas      TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_usuarios_church ON usuarios(church_id);
+        "#,
     }]
 }
 

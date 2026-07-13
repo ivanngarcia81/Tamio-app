@@ -747,6 +747,14 @@ a { color: inherit; text-decoration: none; }
 .tag.transporte { background: #ecfccb; color: #4d7c0f; }
 .tag.otros { background: #f1f5f9; color: #475569; }
 
+/* Roles del directorio de usuarios (Configuración) */
+.tag.rol-tesorero { background: #dcfce7; color: #15803d; }
+.tag.rol-pastor { background: #dbeafe; color: #1d4ed8; }
+.tag.rol-secretario { background: #ede9fe; color: #6d28d9; }
+.tag.rol-auditor { background: #ffedd5; color: #9a3412; }
+.tag.rol-consejo { background: #e0e7ff; color: #3730a3; }
+.tag.rol-otro { background: #f1f5f9; color: #475569; }
+
 .method {
   display: inline-flex;
   align-items: center;
