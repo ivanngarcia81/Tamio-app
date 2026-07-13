@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { deleteDeposito, fmtFechaCorta, fmtMoney, type Deposito } from "../db";
 import { IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
+import { showToast } from "../toast";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
@@ -21,6 +22,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
     if (!pendingDelete) return;
     await deleteDeposito(pendingDelete.id, pendingDelete.church_id);
     setPendingDelete(null);
+    showToast(t("toast.depositoEliminado"));
     onChanged();
   }
 

@@ -4,6 +4,7 @@ import { open as openFileDialog, save } from "@tauri-apps/plugin-dialog";
 import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { autoDetectMapping, applyMapping, parseCsvFile, type CsvField, type ImportRowError } from "../services/csvImport";
 import { IconCheck, IconClose, IconDownload, IconWarn } from "../icons";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 
 export interface PreviewColumn<T> {
   label: string;
@@ -46,6 +47,7 @@ export default function GenericCsvImportModal<T>({
   validarFila, previewColumns, previewColsTemplate, etiquetaItem, onConfirmar, onClose, onImportado,
 }: Props<T>) {
   const { t } = useTranslation();
+  useEscapeClose(onClose);
   const [step, setStep] = useState<Step<T>>({ kind: "elegir" });
   const [error, setError] = useState<string | null>(null);
 

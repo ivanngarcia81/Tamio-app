@@ -9,6 +9,7 @@ import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import MemberDetailModal from "../components/MemberDetailModal";
+import { showToast } from "../toast";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
 import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
 
@@ -75,6 +76,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
       await deleteMember(member.id, church.id);
     }
     setPendingDelete(null);
+    showToast(hasHistory ? t("toast.miembroArchivado") : t("toast.miembroEliminado"));
     onChanged();
   }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { HashRouter, Route, Routes } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
 import Dashboard from "./pages/Dashboard";
 import Movimientos from "./pages/Movimientos";
@@ -73,6 +74,19 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   const onSaved = useCallback(() => setRefreshKey((k) => k + 1), []);
   const onChanged = onSaved; // editar/eliminar fuera del modal también dispara el mismo refresh global
+
+  // Cmd/Ctrl+N abre "Nuevo registro" desde cualquier pantalla (si no hay
+  // ya un modal abierto).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        setModalMode((m) => m ?? { kind: "create", tab: "ingreso" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);
@@ -171,6 +185,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           onSaved={onSaved}
         />
       )}
+
+      <ToastHost />
     </div>
   );
 }

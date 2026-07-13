@@ -5,6 +5,7 @@ import { IconEdit, IconIdBadge, IconPlus } from "../../icons";
 import RowMenu from "../RowMenu";
 import ConfirmDialog from "../ConfirmDialog";
 import UsuarioModal from "./UsuarioModal";
+import { showToast } from "../../toast";
 
 function useRolNombre(): (rol: string) => string {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ export default function UsersSettings({ church, usuarios, onChanged }: Props) {
     if (!pendingDelete) return;
     await deleteUsuario(pendingDelete.id, pendingDelete.church_id);
     setPendingDelete(null);
+    showToast(t("toast.usuarioEliminado"));
     onChanged();
   }
 

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 
 interface Props {
   title: string;
@@ -18,6 +19,7 @@ export default function ConfirmDialog({
   onCancel,
 }: Props) {
   const { t } = useTranslation();
+  useEscapeClose(onCancel);
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div className="confirm-card">

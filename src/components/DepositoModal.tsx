@@ -7,6 +7,8 @@ import {
   type Church, type Deposito,
 } from "../db";
 import { IconCheck, IconClose, IconWarn } from "../icons";
+import { showToast } from "../toast";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 
 function fileNameFromPath(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
@@ -28,6 +30,7 @@ interface Props {
 
 export default function DepositoModal({ church, editing, onClose, onSaved }: Props) {
   const { t } = useTranslation();
+  useEscapeClose(onClose);
   const isEdit = editing !== null;
   const hoy = nowLocalIso().slice(0, 10);
 
@@ -97,6 +100,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
       } else {
         await insertDeposito(church.id, church.moneda, payload);
       }
+      showToast(isEdit ? t("toast.cambiosGuardados") : t("toast.depositoGuardado"));
       onSaved();
       onClose();
     } catch (e) {

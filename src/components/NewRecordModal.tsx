@@ -8,6 +8,8 @@ import {
   type Church, type Member, type Tx,
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconWarn } from "../icons";
+import { showToast } from "../toast";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 
 function fileNameFromPath(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
@@ -36,6 +38,7 @@ function parseMonto(s: string): number | null {
 
 export default function NewRecordModal({ church, mode, onClose, onSaved }: Props) {
   const { t } = useTranslation();
+  useEscapeClose(onClose);
   const isEdit = mode.kind !== "create";
   const initialTab: ModalTab =
     mode.kind === "create" ? mode.tab : mode.kind === "editTx" ? mode.tx.tipo : "miembro";
@@ -190,6 +193,15 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           await insertTx(church.id, church.moneda, payload);
         }
       }
+      showToast(
+        isEdit
+          ? t("toast.cambiosGuardados")
+          : tab === "miembro"
+            ? t("toast.miembroGuardado")
+            : tab === "ingreso"
+              ? t("toast.ingresoGuardado")
+              : t("toast.gastoGuardado")
+      );
       onSaved();
       onClose();
     } catch (e) {

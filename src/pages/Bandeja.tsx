@@ -5,6 +5,7 @@ import {
   markTxReviewed, restoreMember, type Church, type Member, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
+import { showToast } from "../toast";
 
 interface Props {
   church: Church;
@@ -25,11 +26,13 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
 
   async function handleReviewed(tx: Tx) {
     await markTxReviewed(tx.id, church.id);
+    showToast(t("toast.marcadoRevisado"));
     onChanged();
   }
 
   async function handleRestore(m: Member) {
     await restoreMember(m.id, church.id);
+    showToast(t("toast.miembroRestaurado"));
     onChanged();
   }
 

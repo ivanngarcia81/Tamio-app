@@ -399,6 +399,22 @@ export const es = {
     sinDatos: "No hay datos para exportar.",
   },
 
+  toast: {
+    ingresoGuardado: "Ingreso guardado",
+    gastoGuardado: "Gasto guardado",
+    miembroGuardado: "Miembro guardado",
+    depositoGuardado: "Depósito guardado",
+    usuarioGuardado: "Usuario guardado",
+    cambiosGuardados: "Cambios guardados",
+    movimientoEliminado: "Movimiento eliminado",
+    depositoEliminado: "Depósito eliminado",
+    miembroEliminado: "Miembro eliminado",
+    miembroArchivado: "Miembro archivado",
+    miembroRestaurado: "Miembro restaurado",
+    usuarioEliminado: "Usuario eliminado",
+    marcadoRevisado: "Marcado como revisado",
+  },
+
   pdf: {
     generadoAutomaticamente: "Generado automáticamente por Tesorería",
     pagina: "Página {{x}} de {{y}}",

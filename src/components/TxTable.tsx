@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
+import { showToast } from "../toast";
 import ConfirmDialog from "./ConfirmDialog";
 
 interface Props {
@@ -25,6 +26,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
     if (!pendingDelete) return;
     await deleteTx(pendingDelete.id, pendingDelete.church_id);
     setPendingDelete(null);
+    showToast(t("toast.movimientoEliminado"));
     onChanged();
   }
 

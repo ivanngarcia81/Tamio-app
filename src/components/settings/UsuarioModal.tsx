@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ROLES_USUARIO, insertUsuario, updateUsuario, type Church, type Usuario } from "../../db";
 import { IconClose, IconWarn } from "../../icons";
+import { showToast } from "../../toast";
+import { useEscapeClose } from "../../hooks/useEscapeClose";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
@@ -19,6 +21,7 @@ interface Props {
 
 export default function UsuarioModal({ church, editing, onClose, onSaved }: Props) {
   const { t } = useTranslation();
+  useEscapeClose(onClose);
   const isEdit = editing !== null;
 
   const [nombre, setNombre] = useState(editing?.nombre ?? "");
@@ -50,6 +53,7 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
       } else {
         await insertUsuario(church.id, payload);
       }
+      showToast(isEdit ? t("toast.cambiosGuardados") : t("toast.usuarioGuardado"));
       onSaved();
       onClose();
     } catch (e) {

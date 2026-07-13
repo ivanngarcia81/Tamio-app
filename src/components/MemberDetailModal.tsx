@@ -6,6 +6,7 @@ import {
 } from "../db";
 import { exportConstanciaPdf } from "../services/print/printConstancia";
 import { IconClose, IconFileText, IconWarn } from "../icons";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 
 const COLS = "104px 130px 1fr 120px 120px";
 
@@ -18,6 +19,7 @@ interface Props {
 /** Detalle de un miembro: historial de aportes por año + constancia anual. */
 export default function MemberDetailModal({ church, member, onClose }: Props) {
   const { t } = useTranslation();
+  useEscapeClose(onClose);
   const [years, setYears] = useState<string[]>([]);
   const [year, setYear] = useState(currentYear());
   const [aportes, setAportes] = useState<Tx[]>([]);

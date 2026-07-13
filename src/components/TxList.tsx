@@ -4,6 +4,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconReportes } from "../icons";
 import RowMenu from "./RowMenu";
+import { showToast } from "../toast";
 import ConfirmDialog from "./ConfirmDialog";
 
 export function EmptyState({ titulo, sub, icon }: { titulo: string; sub: string; icon?: ReactNode }) {
@@ -32,6 +33,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
     if (!pendingDelete) return;
     await deleteTx(pendingDelete.id, pendingDelete.church_id);
     setPendingDelete(null);
+    showToast(t("toast.movimientoEliminado"));
     onChanged();
   }
 
