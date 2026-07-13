@@ -398,6 +398,44 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 </div>
               </div>
 
+              {(tab === "gasto" || tab === "ingreso") && (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, marginTop: 6,
+                    border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px",
+                    background: esRecurrente ? "var(--surface-2)" : "transparent",
+                  }}
+                >
+                  <span style={{ color: "var(--text-2)", flexShrink: 0 }}><IconRepeat size={16} strokeWidth={2} /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>
+                      {t("recurrente.pregunta", { tipo: tab === "ingreso" ? t("tx.ingreso").toLowerCase() : t("tx.gasto").toLowerCase() })}
+                    </div>
+                    <div className="form-hint" style={{ marginTop: 2 }}>{t("recurrente.hintForm")}</div>
+                  </div>
+                  {isEdit ? (
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      style={{ flexShrink: 0 }}
+                      onClick={agregarALosMeses}
+                      disabled={saving}
+                    >
+                      {saving ? t("common.guardando") : t("recurrente.agregarMeses")}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={esRecurrente}
+                      className={`switch${esRecurrente ? " on" : ""}`}
+                      title={esRecurrente ? t("recurrente.marcado") : t("recurrente.siRecurrente")}
+                      onClick={() => setEsRecurrente(!esRecurrente)}
+                    />
+                  )}
+                </div>
+              )}
+
               <div className="form-group full">
                 <label className="form-label">{t("recordModal.metodoPago")}</label>
                 <div className="method-group">
@@ -521,44 +559,6 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   placeholder={t("recordModal.notasPlaceholder")}
                 />
               </div>
-
-              {(tab === "gasto" || tab === "ingreso") && (
-                <div
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12, marginTop: 6,
-                    border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px",
-                    background: esRecurrente ? "var(--surface-2)" : "transparent",
-                  }}
-                >
-                  <span style={{ color: "var(--text-2)", flexShrink: 0 }}><IconRepeat size={16} strokeWidth={2} /></span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>
-                      {t("recurrente.pregunta", { tipo: tab === "ingreso" ? t("tx.ingreso").toLowerCase() : t("tx.gasto").toLowerCase() })}
-                    </div>
-                    <div className="form-hint" style={{ marginTop: 2 }}>{t("recurrente.hintForm")}</div>
-                  </div>
-                  {isEdit ? (
-                    <button
-                      type="button"
-                      className="btn secondary"
-                      style={{ flexShrink: 0 }}
-                      onClick={agregarALosMeses}
-                      disabled={saving}
-                    >
-                      {saving ? t("common.guardando") : t("recurrente.agregarMeses")}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={esRecurrente}
-                      className={`switch${esRecurrente ? " on" : ""}`}
-                      title={esRecurrente ? t("recurrente.marcado") : t("recurrente.siRecurrente")}
-                      onClick={() => setEsRecurrente(!esRecurrente)}
-                    />
-                  )}
-                </div>
-              )}
 
               <div className="check-row" style={{ marginTop: 6 }}>
                 <input
