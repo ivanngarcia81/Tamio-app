@@ -17,6 +17,9 @@ export interface Church {
   ciudad: string | null;
   pais: string;
   moneda: string;
+  /** Columna presente desde la migración v1, sin UI de carga todavía —
+   *  si algún día se agrega, el PDF del Dashboard ya la usa si existe. */
+  logo_path: string | null;
   tesorero_nombre: string | null;
   tesorero_cargo: string | null;
   tesorero_email: string | null;
@@ -317,6 +320,24 @@ export async function monthTotals(churchId: number, yyyyMm: string): Promise<Mon
     }
   }
   return out;
+}
+
+/**
+ * Ingresos del mes recibidos por transferencia — el dato más cercano
+ * disponible a "depósitos bancarios" para reportes impresos, ya que el
+ * modelo de datos no tiene todavía un concepto de depósito bancario
+ * separado del método de pago.
+ */
+export async function monthIngresosTransferencia(churchId: number, yyyyMm: string): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ total: number | null }[]>(
+    `SELECT SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso'
+        AND metodo_pago = 'transferencia' AND substr(fecha, 1, 7) = $2`,
+    [churchId, yyyyMm]
+  );
+  return rows[0]?.total ?? 0;
 }
 
 export interface YearTotals {

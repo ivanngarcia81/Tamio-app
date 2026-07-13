@@ -4,9 +4,10 @@ import {
   mesLegible, monthlySummary, monthTotals, pctChange, prevMonth,
   type Church, type MonthSummary, type MonthTotals,
 } from "../db";
-import { exportReportExcel, exportReportPdf } from "../export";
+import { exportReportExcel, exportReportPdf, printMonthlyReportPdf } from "../export";
 import Delta from "../components/Delta";
 import Donut from "../components/Donut";
+import { IconPrinter } from "../icons";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -26,7 +27,7 @@ export default function Reportes({ church, refreshKey }: Props) {
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
-  const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
+  const [exporting, setExporting] = useState<"excel" | "pdf" | "print" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const mes = currentMonth();
   const mesStr = mesLegible(mes);
@@ -51,28 +52,44 @@ export default function Reportes({ church, refreshKey }: Props) {
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
+  function buildReportData() {
+    return {
+      church,
+      mesLegibleStr: mesStr,
+      periodoISO: mes,
+      filasIngreso: filasIngreso.map((c) => ({ nombre: c.nombre, total: c.total })),
+      filasGasto: filasGasto.map((c) => ({ nombre: c.nombre, total: c.total })),
+      ingresos,
+      gastos,
+      balance,
+      generatedBy: church.tesorero_nombre
+        ? { nombre: church.tesorero_nombre, rol: church.tesorero_cargo ?? undefined }
+        : undefined,
+      firmaPath: church.tesorero_firma_path,
+    };
+  }
+
   async function handleExport(kind: "excel" | "pdf") {
     setExportError(null);
     setExporting(kind);
     try {
-      const data = {
-        church,
-        mesLegibleStr: mesStr,
-        periodoISO: mes,
-        filasIngreso: filasIngreso.map((c) => ({ nombre: c.nombre, total: c.total })),
-        filasGasto: filasGasto.map((c) => ({ nombre: c.nombre, total: c.total })),
-        ingresos,
-        gastos,
-        balance,
-        generatedBy: church.tesorero_nombre
-          ? { nombre: church.tesorero_nombre, rol: church.tesorero_cargo ?? undefined }
-          : undefined,
-        firmaPath: church.tesorero_firma_path,
-      };
+      const data = buildReportData();
       if (kind === "excel") await exportReportExcel(data);
       else await exportReportPdf(data);
     } catch (e) {
       setExportError(`No se pudo exportar: ${e}`);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handlePrint() {
+    setExportError(null);
+    setExporting("print");
+    try {
+      await printMonthlyReportPdf(buildReportData());
+    } catch (e) {
+      setExportError(`No se pudo imprimir: ${e}`);
     } finally {
       setExporting(null);
     }
@@ -86,7 +103,9 @@ export default function Reportes({ church, refreshKey }: Props) {
           <div className="page-sub">Estado financiero mensual · {mesStr}</div>
         </div>
         <div className="header-actions">
-          <button className="btn secondary" onClick={() => window.print()}>Imprimir</button>
+          <button className="btn secondary" onClick={handlePrint} disabled={exporting !== null}>
+            <IconPrinter size={14} /> {exporting === "print" ? "Preparando…" : "Imprimir"}
+          </button>
           <button className="btn secondary" onClick={() => handleExport("excel")} disabled={exporting !== null}>
             {exporting === "excel" ? "Generando…" : "Excel"}
           </button>

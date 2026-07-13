@@ -6,7 +6,8 @@ import {
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import TxTable from "../components/TxTable";
-import { IconGasto, IconIngreso, IconPlus } from "../icons";
+import { IconGasto, IconIngreso, IconPlus, IconPrinter, IconWarn } from "../icons";
+import { printRegister } from "../services/print/printRegister";
 
 interface Props {
   church: Church;
@@ -39,6 +40,34 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const visibles = filtroCat ? txs.filter((t) => t.categoria === filtroCat) : txs;
   const conteo = (id: string) => txs.filter((t) => t.categoria === id).length;
 
+  const [printing, setPrinting] = useState(false);
+  const [printError, setPrintError] = useState<string | null>(null);
+  const [printEmpty, setPrintEmpty] = useState(false);
+
+  async function handlePrint() {
+    setPrintError(null);
+    if (visibles.length === 0) {
+      setPrintEmpty(true);
+      return;
+    }
+    setPrintEmpty(false);
+    setPrinting(true);
+    try {
+      const catLabel = filtroCat ? categorias.find((c) => c.id === filtroCat)?.nombre ?? filtroCat : "Todas las categorías";
+      await printRegister({
+        church,
+        titulo,
+        filtroDescripcion: `${mesLegible(mes)} · ${catLabel}`,
+        periodoISO: mes,
+        movimientos: visibles,
+      });
+    } catch (e) {
+      setPrintError(`No se pudo imprimir: ${e}`);
+    } finally {
+      setPrinting(false);
+    }
+  }
+
   return (
     <>
       <div className="header">
@@ -49,11 +78,22 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           </div>
         </div>
         <div className="header-actions">
+          <button className="btn secondary" onClick={handlePrint} disabled={printing}>
+            <IconPrinter size={14} /> {printing ? "Preparando…" : "Imprimir"}
+          </button>
           <button className="btn primary" onClick={onNew}>
             <IconPlus size={14} /> {esIngreso ? "Nuevo ingreso" : "Nuevo gasto"}
           </button>
         </div>
       </div>
+
+      {(printError || printEmpty) && (
+        <div className="content" style={{ paddingBottom: 0 }}>
+          <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <IconWarn size={13} /> {printError ?? "No hay registros para imprimir."}
+          </div>
+        </div>
+      )}
 
       <div className="content">
         <div className="summary-4">

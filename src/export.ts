@@ -1,19 +1,13 @@
 import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import { save } from "@tauri-apps/plugin-dialog";
-import { readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { writeFile } from "@tauri-apps/plugin-fs";
 import type { Church } from "./db";
-
-type RGB = readonly [number, number, number];
-function setText(doc: jsPDF, color: RGB): void {
-  doc.setTextColor(color[0], color[1], color[2]);
-}
-function setDraw(doc: jsPDF, color: RGB): void {
-  doc.setDrawColor(color[0], color[1], color[2]);
-}
-function setFill(doc: jsPDF, color: RGB): void {
-  doc.setFillColor(color[0], color[1], color[2]);
-}
+import {
+  buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint,
+  PDF_COLOR, PDF_FOOTER_BLOCK_H, PDF_MARGIN, PDF_SPACE, PDF_TYPE,
+  pct, setDraw, setFill, setText, slug,
+} from "./services/print/printUtils";
 
 export interface ReportRow {
   nombre: string;
@@ -39,98 +33,6 @@ export interface ReportData {
   generatedBy?: { nombre: string; rol?: string };
   /** Ruta de la firma PNG del tesorero (Configuración → Firma del tesorero). */
   firmaPath?: string | null;
-}
-
-/** Lee un PNG local y lo convierte a data URL para jsPDF.addImage(). */
-async function loadPngDataUrl(path: string): Promise<string | null> {
-  try {
-    const bytes = await readFile(path);
-    let binary = "";
-    const chunkSize = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-    }
-    return `data:image/png;base64,${btoa(binary)}`;
-  } catch {
-    return null;
-  }
-}
-
-function slug(s: string): string {
-  return (
-    s
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "reporte"
-  );
-}
-
-function pct(part: number, total: number): string {
-  return total > 0 ? `${((part / total) * 100).toFixed(1)}%` : "—";
-}
-
-/**
- * Formato de dinero seguro para jsPDF: la fuente Helvetica integrada no
- * reconoce el signo menos Unicode (−, U+2212) que usa fmtMoney() para
- * pantalla — al no poder mapearlo, jsPDF rompe el cálculo de ancho de
- * TODO el string (de ahí el espaciado gigante) y sustituye el glifo por
- * un caracter incorrecto. Los negativos se muestran entre paréntesis,
- * una convención estándar de estados financieros que evita el problema
- * de raíz sin depender de ningún caracter especial.
- */
-function fmtMoneyPdf(n: number, moneda: string): string {
-  const abs = Math.abs(n);
-  const formatted = `$${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${moneda}`;
-  return n < 0 ? `(${formatted})` : formatted;
-}
-
-// ---------- Metadata de auditoría del PDF (fecha, folio, paginación) ----------
-
-function fmtFechaLarga(d: Date): string {
-  return d.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
-}
-
-function fmtHora12(d: Date): string {
-  let h = d.getHours();
-  const m = d.getMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12;
-  if (h === 0) h = 12;
-  return `${h}:${String(m).padStart(2, "0")} ${ampm}`;
-}
-
-const REPORT_SEQ_STORAGE_KEY = "tesoreria-report-seq";
-
-/**
- * Folio consecutivo por periodo, persistido en localStorage. Todavía no hay
- * backend ni tabla de contadores — esto alcanza para dar a cada PDF
- * exportado un identificador único y creciente, útil para auditorías y
- * consultas futuras, sin requerir un cambio de esquema en la base de datos.
- */
-function nextReportSequence(periodKey: string): number {
-  let map: Record<string, number> = {};
-  try {
-    const raw = localStorage.getItem(REPORT_SEQ_STORAGE_KEY);
-    if (raw) map = JSON.parse(raw);
-  } catch {
-    /* noop */
-  }
-  const next = (map[periodKey] ?? 0) + 1;
-  map[periodKey] = next;
-  try {
-    localStorage.setItem(REPORT_SEQ_STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    /* noop */
-  }
-  return next;
-}
-
-/** Folio con formato EF-YYYYMM-###### a partir del periodo reportado. */
-function buildReportId(periodoISO: string): string {
-  const periodKey = periodoISO.replace("-", "");
-  const seq = nextReportSequence(periodKey);
-  return `EF-${periodKey}-${String(seq).padStart(6, "0")}`;
 }
 
 // Paleta minimalista y corporativa para el export de Excel (pensado para
@@ -493,30 +395,11 @@ export async function exportReportExcel(data: ReportData): Promise<boolean> {
 // Reglas de diseño fijas — no se recalculan ni se comprimen según la
 // cantidad de datos. Un reporte de 3 filas y uno de 300 usan exactamente
 // la misma tipografía y el mismo espaciado; lo único que cambia es
-// cuántas páginas ocupa.
-const PDF_MARGIN = 32;
-const PDF_SPACE = { xs: 8, sm: 16, md: 24, lg: 32 } as const;
-const PDF_TYPE = {
-  title: 24,      // Estado financiero mensual
-  church: 18,     // Nombre de la iglesia
-  period: 14,     // Periodo
-  meta: 11,       // Moneda / Generado por (metadata del encabezado)
-  section: 16,    // Encabezados de sección (Ingresos del periodo, Gastos del periodo)
-  body: 13,       // Texto normal / encabezados de columna
-  tableRow: 13,   // Filas de tabla
-  total: 14,      // Totales
-  cardLabel: 13,  // Etiquetas de tarjetas
-  cardValue: 24,  // Valores principales de tarjetas (jerarquía por tamaño/peso, no por color)
-  footer: 11,     // Pie de página
-} as const;
+// cuántas páginas ocupa. La escala tipográfica, el espaciado y la paleta
+// viven en services/print/printUtils.ts, compartidos con el resto de los
+// PDFs de la app (Dashboard, Registro) para no duplicar estas constantes.
 
-// Alto reservado para el bloque de pie de página (2 separadores + 2 líneas
-// de texto) — se resta del área utilizable de cada página para que el
-// contenido nunca choque con el pie.
-const PDF_FOOTER_BLOCK_H = PDF_SPACE.sm + 2 * 14 + PDF_SPACE.xs;
-
-/** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
-export async function exportReportPdf(data: ReportData): Promise<boolean> {
+async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBuffer; fileName: string }> {
   const { church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance, generatedBy, firmaPath } = data;
 
   const now = new Date();
@@ -540,15 +423,10 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const amountColX = rightX - 96;
   const labelColX = marginX;
 
-  // Paleta pensada para impresión láser en blanco y negro: la jerarquía
-  // visual viene de tamaño/peso de fuente, no del color. Los grises se
-  // mantienen lo bastante oscuros para no perder contraste al imprimir.
-  const INK: RGB = [26, 26, 26];
-  const MUTED: RGB = [90, 90, 93];
-  const FAINT: RGB = [125, 125, 128];
-  const LINE: RGB = [204, 204, 201];
-  const CARD_BG: RGB = [252, 252, 251];
-  const CARD_BORDER: RGB = [190, 190, 187];
+  // Paleta compartida (printUtils.ts), pensada para impresión láser en
+  // blanco y negro: la jerarquía visual viene de tamaño/peso de fuente,
+  // no del color.
+  const { ink: INK, muted: MUTED, faint: FAINT, line: LINE, cardBg: CARD_BG, cardBorder: CARD_BORDER } = PDF_COLOR;
 
   let y = PDF_MARGIN;
   // Título de la sección/tabla en curso — si un salto de página ocurre
@@ -855,12 +733,24 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   }
 
   const bytes = doc.output("arraybuffer") as ArrayBuffer;
+  const fileName = `Estado-financiero-${slug(church.nombre)}-${slug(mesLegibleStr)}.pdf`;
+  return { bytes, fileName };
+}
 
-  const path = await save({
-    defaultPath: `Estado-financiero-${slug(church.nombre)}-${slug(mesLegibleStr)}.pdf`,
-    filters: [{ name: "PDF", extensions: ["pdf"] }],
-  });
+/** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
+export async function exportReportPdf(data: ReportData): Promise<boolean> {
+  const { bytes, fileName } = await buildMonthlyReportPdf(data);
+  const path = await save({ defaultPath: fileName, filters: [{ name: "PDF", extensions: ["pdf"] }] });
   if (!path) return false;
   await writeFile(path, new Uint8Array(bytes));
   return true;
+}
+
+/** "Imprimir": genera el mismo PDF y lo abre con el visor del sistema en
+ *  vez de mostrar un diálogo de guardar — desde ahí el usuario imprime
+ *  con Cmd/Ctrl+P. Reemplaza el uso de window.print() sobre el HTML de
+ *  la app, que no producía un resultado utilizable. */
+export async function printMonthlyReportPdf(data: ReportData): Promise<void> {
+  const { bytes, fileName } = await buildMonthlyReportPdf(data);
+  await openForPrint(bytes, fileName);
 }

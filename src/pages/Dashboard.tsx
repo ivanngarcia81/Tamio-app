@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
+import html2canvas from "html2canvas";
 import {
-  CATEGORIAS_GASTO, categoriaInfo, currentMonth, currentYear, dailyTotals, fmtFechaCorta,
-  fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthTotals, pctChange, prevMonth,
-  yearTotals,
+  CATEGORIAS_GASTO, CATEGORIAS_INGRESO, categoriaInfo, currentMonth, currentYear, dailyTotals,
+  fmtFechaCorta, fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthIngresosTransferencia,
+  monthTotals, pctChange, prevMonth, yearTotals,
   type Church, type DailyPoint, type MonthTotals, type Tx, type YearTotals,
 } from "../db";
 import TxList, { EmptyState } from "../components/TxList";
 import Sparkline from "../components/Sparkline";
 import Delta from "../components/Delta";
 import DashboardCharts from "../components/DashboardCharts";
-import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus } from "../icons";
+import { printDashboard } from "../services/print/printDashboard";
+import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 
 interface Props {
   church: Church;
@@ -108,6 +110,92 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const weekly = useMemo(() => toWeeklyBuckets(dias), [dias]);
   const balanceSeries = useMemo(() => toCumulativeBalance(dias), [dias]);
 
+  const categoriasIngreso = useMemo(
+    () =>
+      CATEGORIAS_INGRESO
+        .map((c) => ({ nombre: c.nombre, monto: totales?.porCategoriaIngreso[c.id] ?? 0 }))
+        .filter((c) => c.monto > 0),
+    [totales]
+  );
+  const categoriasGasto = useMemo(
+    () =>
+      CATEGORIAS_GASTO
+        .map((c) => ({ nombre: c.nombre, monto: totales?.porCategoriaGasto[c.id] ?? 0 }))
+        .filter((c) => c.monto > 0)
+        .sort((a, b) => b.monto - a.monto),
+    [totales]
+  );
+
+  const chartsRef = useRef<HTMLDivElement>(null);
+  const categoryChartRef = useRef<HTMLDivElement>(null);
+  const [printing, setPrinting] = useState(false);
+  const [printError, setPrintError] = useState<string | null>(null);
+
+  async function captureChart(el: HTMLElement | null, caption: string) {
+    if (!el) return null;
+    try {
+      const canvas = await html2canvas(el, { backgroundColor: null, scale: 2 });
+      return { dataUrl: canvas.toDataURL("image/png"), caption };
+    } catch {
+      return null;
+    }
+  }
+
+  async function handlePrint() {
+    setPrintError(null);
+    setPrinting(true);
+    try {
+      const depositosBancarios = await monthIngresosTransferencia(church.id, mes);
+      const charts = (
+        await Promise.all([
+          captureChart(chartsRef.current, "Ingresos vs. gastos y evolución del balance"),
+          captureChart(categoryChartRef.current, "Distribución de gastos por categoría"),
+        ])
+      ).filter((c): c is { dataUrl: string; caption: string } => c !== null);
+
+      await printDashboard({
+        church,
+        mesLegibleStr: mesLegible(mes),
+        periodoISO: mes,
+        generatedBy: church.tesorero_nombre
+          ? { nombre: church.tesorero_nombre, rol: church.tesorero_cargo ?? undefined }
+          : undefined,
+        firmaPath: church.tesorero_firma_path,
+        logoPath: church.logo_path,
+        resumen: {
+          balanceInicial: balanceAnt,
+          ingresos,
+          gastos,
+          balanceFinal: balance,
+          depositosBancarios,
+          diezmos: totales?.porCategoriaIngreso["diezmo"] ?? 0,
+          ofrendas: totales?.porCategoriaIngreso["ofrenda"] ?? 0,
+        },
+        indicadores: {
+          ingresosDelMes: ingresos,
+          gastosDelMes: gastos,
+          balanceDelMes: balance,
+          balanceDelAnio: balanceAnio,
+          mayorGasto: categoriaTopGasto
+            ? { nombre: categoriaTopGasto.info.nombre, monto: categoriaTopGasto.monto }
+            : null,
+          ingresoMasFrecuente: ingresoMasFrecuente
+            ? { nombre: ingresoMasFrecuente.info.nombre, conteo: ingresoMasFrecuente.cnt }
+            : null,
+          miembrosActivos: memberCount,
+          ultimaActualizacion: `${fmtRelativo(ultimaActividad)}${ultimaActividad ? " · " + fmtFechaCorta(ultimaActividad) : ""}`,
+        },
+        categoriasIngreso,
+        categoriasGasto,
+        charts,
+      });
+    } catch (e) {
+      setPrintError(`No se pudo imprimir: ${e}`);
+    } finally {
+      setPrinting(false);
+    }
+  }
+
   return (
     <>
       <div className="header">
@@ -119,14 +207,25 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="balance-sub">Balance del mes · {mesLegible(mes)}</div>
         </div>
         <div className="header-actions">
+          <button className="btn secondary" onClick={handlePrint} disabled={printing}>
+            <IconPrinter size={14} /> {printing ? "Preparando…" : "Imprimir"}
+          </button>
           <button className="btn primary" onClick={onNew}>
             <IconPlus size={14} /> Nuevo registro
           </button>
         </div>
       </div>
 
+      {printError && (
+        <div className="content" style={{ paddingBottom: 0 }}>
+          <div className="form-warning">{printError}</div>
+        </div>
+      )}
+
       <div className="content">
-        <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
+        <div ref={chartsRef}>
+          <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
+        </div>
 
         <div className="summary-4 enter">
           <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
@@ -252,7 +351,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           </div>
         </div>
 
-        <div className="card enter">
+        <div className="card enter" ref={categoryChartRef}>
           <div className="card-head">
             <span className="card-title">Distribución de gastos por categoría</span>
             <span className="card-meta">{mesLegible(mes)}</span>
