@@ -198,8 +198,14 @@ export class ReportDocBuilder {
     this.currentColumns = null;
   }
 
+  /** Alto de una fila de total (línea + texto + aire). Las filas de datos
+   *  lo reservan además de su propio alto: así la última fila de la página
+   *  siempre deja lugar para el total, y este nunca abre una página solo
+   *  como "(continuación)" huérfana. */
+  private static readonly TOTAL_ROW_H = PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md;
+
   tableRow(cells: string[], columns: PdfColumn[]) {
-    this.ensureSpace(PDF_SPACE.md);
+    this.ensureSpace(PDF_SPACE.md + ReportDocBuilder.TOTAL_ROW_H);
     this.doc.setFont("helvetica", "normal");
     this.doc.setFontSize(PDF_TYPE.tableRow);
     setText(this.doc, PDF_COLOR.ink);
@@ -216,7 +222,7 @@ export class ReportDocBuilder {
   }
 
   emptyRow(msg: string) {
-    this.ensureSpace(PDF_SPACE.md);
+    this.ensureSpace(PDF_SPACE.md + ReportDocBuilder.TOTAL_ROW_H);
     this.doc.setFont("helvetica", "italic");
     this.doc.setFontSize(PDF_TYPE.body);
     setText(this.doc, PDF_COLOR.faint);
@@ -225,7 +231,7 @@ export class ReportDocBuilder {
   }
 
   totalRow(cells: string[], columns: PdfColumn[]) {
-    this.ensureSpace(PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md);
+    this.ensureSpace(ReportDocBuilder.TOTAL_ROW_H);
     setDraw(this.doc, PDF_COLOR.ink);
     this.doc.setLineWidth(0.75);
     this.doc.line(this.marginX, this.y, this.rightX, this.y);

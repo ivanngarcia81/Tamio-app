@@ -214,8 +214,12 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     currentSection = null;
   }
 
+  // Alto de la fila de total — las filas de datos lo reservan además del
+  // suyo para que el total nunca quede huérfano en la página siguiente.
+  const TOTAL_ROW_H = PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md;
+
   function dataRow(label: string, amountStr: string, pctStr: string) {
-    ensureSpace(PDF_SPACE.md);
+    ensureSpace(PDF_SPACE.md + TOTAL_ROW_H);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.tableRow);
     setText(doc, INK);
@@ -227,7 +231,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   }
 
   function emptyRow(msg: string) {
-    ensureSpace(PDF_SPACE.md);
+    ensureSpace(PDF_SPACE.md + TOTAL_ROW_H);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(PDF_TYPE.body);
     setText(doc, FAINT);
@@ -236,7 +240,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   }
 
   function totalRow(label: string, amountStr: string) {
-    ensureSpace(PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md);
+    ensureSpace(TOTAL_ROW_H);
     setDraw(doc, INK);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, rightX, y);
