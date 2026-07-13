@@ -437,9 +437,9 @@ export const es = {
     siRecurrente: "Sí, es recurrente",
     marcado: "✓ Recurrente",
     agregarMeses: "Agregar a los meses",
-    hintForm: "Se registra automáticamente cada mes con el mismo importe, desde enero hasta el mes actual. Los meses futuros se agregan solos cuando llegan — nunca por adelantado.",
+    hintForm: "Se llena de inmediato en los meses ya concluidos del año (enero al mes pasado) con el mismo importe. El mes en curso se registra automáticamente cuando termina — nunca por adelantado.",
     titulo: "Gastos fijos recurrentes",
-    sub: "Se registran automáticamente cada mes",
+    sub: "Se registran automáticamente al cierre de cada mes",
     porMes: "{{monto}} / mes",
     diaDeCadaMes: "Día {{dia}} de cada mes",
     eliminarTitulo: "Eliminar gasto fijo",
@@ -447,6 +447,7 @@ export const es = {
     toastCreado_one: "Gasto fijo registrado ({{count}} mes)",
     toastCreado_other: "Gasto fijo registrado ({{count}} meses)",
     toastEliminado: "Gasto fijo eliminado",
+    toastCreadoSinMeses: "Gasto fijo guardado — se registrará al cierre de cada mes",
   },
 
   toast: {

@@ -443,9 +443,9 @@ export const en: Resources = {
     siRecurrente: "Yes, it's recurring",
     marcado: "✓ Recurring",
     agregarMeses: "Add to the months",
-    hintForm: "It is recorded automatically every month with the same amount, from January through the current month. Future months are added on their own as they arrive — never in advance.",
+    hintForm: "It immediately fills the already-completed months of the year (January through last month) with the same amount. The current month is recorded automatically once it ends — never in advance.",
     titulo: "Recurring fixed expenses",
-    sub: "Recorded automatically every month",
+    sub: "Recorded automatically at each month's close",
     porMes: "{{monto}} / month",
     diaDeCadaMes: "Day {{dia}} of each month",
     eliminarTitulo: "Delete fixed expense",
@@ -453,6 +453,7 @@ export const en: Resources = {
     toastCreado_one: "Fixed expense recorded ({{count}} month)",
     toastCreado_other: "Fixed expense recorded ({{count}} months)",
     toastEliminado: "Fixed expense deleted",
+    toastCreadoSinMeses: "Fixed expense saved — it will be recorded at each month's close",
   },
 
   toast: {

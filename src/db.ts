@@ -929,10 +929,11 @@ export async function deleteMember(id: number, churchId: number): Promise<void> 
 //
 // El usuario define el gasto una sola vez ("Gasto fijo recurrente" en el
 // modal de Nuevo gasto); la definición se guarda aquí y se MATERIALIZA como
-// transacciones normales, una por mes, desde enero (del año de la fecha
-// elegida) hasta el mes actual — nunca meses futuros. Al abrir la app en un
-// mes nuevo, materializeGastosRecurrentes() agrega solo los meses que
-// llegaron desde la última vez (ultimo_mes_generado lo hace idempotente).
+// transacciones normales, una por mes, SOLO para meses ya concluidos:
+// desde enero (del año de la fecha elegida) hasta el mes pasado. El mes en
+// curso no se contabiliza hasta que termina — se registra automáticamente
+// la primera vez que la app se abre en el mes siguiente. Nunca se generan
+// meses futuros. ultimo_mes_generado hace la operación idempotente.
 
 export interface GastoRecurrente {
   id: number;
@@ -986,15 +987,33 @@ export function fechaEnMes(yyyyMm: string, dia: number): string {
   return `${yyyyMm}-${String(d).padStart(2, "0")} 12:00`;
 }
 
+/** Meses pendientes de generar para una definición, con la regla de
+ *  "solo meses concluidos": la ventana termina en el mes pasado, nunca en
+ *  el mes en curso. `skipMes` cubre el caso de convertir en recurrente un
+ *  gasto ya registrado: ese mes se considera cubierto (marcaHasta) para
+ *  que no se duplique cuando concluya. Pura, para poder probarla. */
+export function mesesPendientesRecurrente(
+  mesInicio: string,
+  ultimoMesGenerado: string | null,
+  hoyMes: string,
+  skipMes?: string
+): { meses: string[]; marcaHasta: string } {
+  const hastaMes = prevMonth(hoyMes);
+  const desde = ultimoMesGenerado ? nextMonth(ultimoMesGenerado) : mesInicio;
+  const meses = mesesEntre(desde, hastaMes).filter((m) => m !== skipMes);
+  const marcaHasta = skipMes && skipMes > hastaMes ? skipMes : hastaMes;
+  return { meses, marcaHasta };
+}
+
 async function materializarDef(
   d: Awaited<ReturnType<typeof getDb>>,
   def: GastoRecurrente,
   moneda: string,
   skipMes?: string
 ): Promise<number> {
-  const hastaMes = currentMonth();
-  const desde = def.ultimo_mes_generado ? nextMonth(def.ultimo_mes_generado) : def.mes_inicio;
-  const meses = mesesEntre(desde, hastaMes).filter((m) => m !== skipMes);
+  const { meses, marcaHasta } = mesesPendientesRecurrente(
+    def.mes_inicio, def.ultimo_mes_generado, currentMonth(), skipMes
+  );
   for (const mes of meses) {
     await d.execute(
       `INSERT INTO transactions
@@ -1010,7 +1029,7 @@ async function materializarDef(
   }
   await d.execute(
     "UPDATE gastos_recurrentes SET ultimo_mes_generado = $1 WHERE id = $2",
-    [hastaMes, def.id]
+    [marcaHasta, def.id]
   );
   return meses.length;
 }
@@ -1051,7 +1070,7 @@ export async function materializeGastosRecurrentes(churchId: number, moneda: str
   const hastaMes = currentMonth();
   const defs = await d.select<GastoRecurrente[]>(
     "SELECT * FROM gastos_recurrentes WHERE church_id = $1 AND (ultimo_mes_generado IS NULL OR ultimo_mes_generado < $2)",
-    [churchId, hastaMes]
+    [churchId, prevMonth(hastaMes)]
   );
   let total = 0;
   for (const def of defs) {

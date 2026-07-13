@@ -187,7 +187,11 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         },
         fecha.slice(0, 7) // el mes de este gasto ya existe — no se duplica
       );
-      showToast(t("recurrente.toastCreado", { count: mesesRegistrados }));
+      showToast(
+        mesesRegistrados > 0
+          ? t("recurrente.toastCreado", { count: mesesRegistrados })
+          : t("recurrente.toastCreadoSinMeses")
+      );
       onSaved();
       onClose();
     } catch (e) {
@@ -237,7 +241,11 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
             dia,
             mes_inicio: `${fecha.slice(0, 4)}-01`,
           });
-          showToast(t("recurrente.toastCreado", { count: mesesRegistrados }));
+          showToast(
+            mesesRegistrados > 0
+              ? t("recurrente.toastCreado", { count: mesesRegistrados })
+              : t("recurrente.toastCreadoSinMeses")
+          );
           onSaved();
           onClose();
           return;
