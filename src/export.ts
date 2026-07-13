@@ -116,8 +116,8 @@ function buildReportId(periodoISO: string): string {
   return `EF-${periodKey}-${String(seq).padStart(6, "0")}`;
 }
 
-// Paleta minimalista y corporativa — coincide con los acentos verde/rojo
-// ya usados en el PDF (GREEN/RED) para que ambos exports luzcan consistentes.
+// Paleta minimalista y corporativa para el export de Excel (pensado para
+// pantalla, no para impresión monocromática, a diferencia del PDF).
 const PALETTE = {
   navy: "FF1E3A5F",
   navyLight: "FFCBD6E2",
@@ -489,7 +489,7 @@ const PDF_TYPE = {
   tableRow: 13,   // Filas de tabla
   total: 14,      // Totales
   cardLabel: 13,  // Etiquetas de tarjetas
-  cardValue: 29,  // Valores principales de tarjetas
+  cardValue: 24,  // Valores principales de tarjetas (jerarquía por tamaño/peso, no por color)
   footer: 11,     // Pie de página
 } as const;
 
@@ -522,14 +522,15 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const amountColX = rightX - 96;
   const labelColX = marginX;
 
+  // Paleta pensada para impresión láser en blanco y negro: la jerarquía
+  // visual viene de tamaño/peso de fuente, no del color. Los grises se
+  // mantienen lo bastante oscuros para no perder contraste al imprimir.
   const INK: RGB = [26, 26, 26];
-  const MUTED: RGB = [107, 107, 110];
-  const FAINT: RGB = [150, 150, 152];
-  const LINE: RGB = [229, 229, 227];
-  const GREEN: RGB = [5, 130, 90];
-  const RED: RGB = [200, 40, 40];
+  const MUTED: RGB = [90, 90, 93];
+  const FAINT: RGB = [125, 125, 128];
+  const LINE: RGB = [204, 204, 201];
   const CARD_BG: RGB = [252, 252, 251];
-  const CARD_BORDER: RGB = [224, 224, 221];
+  const CARD_BORDER: RGB = [190, 190, 187];
 
   let y = PDF_MARGIN;
   // Título de la sección/tabla en curso — si un salto de página ocurre
@@ -741,10 +742,13 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
 
   const cardW = (contentWidth - 2 * cardGap) / 3;
   const cardRadius = 12;
-  const cards: { label: string; value: number; color: RGB }[] = [
-    { label: "TOTAL INGRESOS", value: ingresos, color: GREEN },
-    { label: "TOTAL GASTOS", value: gastos, color: RED },
-    { label: "BALANCE NETO", value: balance, color: balance < 0 ? RED : INK },
+  // Jerarquía por tamaño/peso de fuente, nunca por color — los tres
+  // valores usan el mismo negro para verse igual de nítidos en blanco
+  // y negro; un balance negativo se distingue con paréntesis, no con rojo.
+  const cards: { label: string; value: number }[] = [
+    { label: "TOTAL INGRESOS", value: ingresos },
+    { label: "TOTAL GASTOS", value: gastos },
+    { label: "BALANCE NETO", value: balance },
   ];
 
   cards.forEach((card, i) => {
@@ -773,7 +777,7 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.cardValue);
-    setText(doc, card.color);
+    setText(doc, INK);
     doc.text(fmtMoneyPdf(card.value, church.moneda), cx, y + cardH - PDF_SPACE.md + 4, { align: "center" });
   });
 
