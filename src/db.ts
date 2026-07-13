@@ -72,14 +72,13 @@ export const CATEGORIAS_INGRESO = [
 ] as const;
 
 export const CATEGORIAS_GASTO = [
-  { id: "pastores", nombre: "Compensación pastoral", tagClass: "pastores", color: "#9f1239" },
+  { id: "pastores", nombre: "Compensación", tagClass: "pastores", color: "#9f1239" },
   { id: "musicos", nombre: "Suministros", tagClass: "musicos", color: "#1d4ed8" },
-  { id: "administracion", nombre: "Misceláneos", tagClass: "administracion", color: "#374151" },
+  { id: "administracion", nombre: "Varios", tagClass: "administracion", color: "#374151" },
   { id: "limpieza", nombre: "Limpieza", tagClass: "limpieza", color: "#0f766e" },
-  { id: "servicios", nombre: "Servicios", tagClass: "servicios", color: "#92400e" },
+  { id: "servicios", nombre: "Utilidades", tagClass: "servicios", color: "#92400e" },
   { id: "mantenimiento", nombre: "Mantenimiento", tagClass: "mantenimiento", color: "#57534e" },
-  { id: "eventos", nombre: "Comida", tagClass: "eventos", color: "#9a3412" },
-  { id: "materiales", nombre: "Materiales", tagClass: "materiales", color: "#3730a3" },
+  { id: "eventos", nombre: "Alimentos", tagClass: "eventos", color: "#9a3412" },
   { id: "misiones", nombre: "Misiones", tagClass: "misiones", color: "#0369a1" },
   { id: "ayudas", nombre: "Ayudas", tagClass: "ayudas", color: "#9d174d" },
   { id: "tecnologia", nombre: "Tecnología", tagClass: "tecnologia", color: "#86198f" },
@@ -208,7 +207,8 @@ export function categoriaInfo(tipo: "ingreso" | "gasto", id: string) {
   if (found) return { ...found, nombre: catNombre(found.id) };
   const custom = categoriasCustomCache.find((c) => customCatId(c.id) === id && c.tipo === tipo);
   if (custom) return { id, nombre: custom.nombre, tagClass: "otros" };
-  return { id, nombre: id, tagClass: "otros" };
+  // Ids retirados del catálogo (datos históricos) conservan nombre legible.
+  return { id, nombre: catNombre(id), tagClass: "otros" };
 }
 
 // ---------- Iglesia ----------
