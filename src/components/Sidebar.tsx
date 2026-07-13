@@ -9,11 +9,9 @@ interface Props {
   church: Church;
   memberCount: number;
   pendingCount: number;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
 }
 
-export default function Sidebar({ church, memberCount, pendingCount, theme, onToggleTheme }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount }: Props) {
   const initials = church.nombre
     .split(" ")
     .filter((w) => w.length > 2)
@@ -73,10 +71,6 @@ export default function Sidebar({ church, memberCount, pendingCount, theme, onTo
           <span className="icon"><IconConfig /></span>
           Configuración
         </NavLink>
-        <div className="theme-toggle" onClick={onToggleTheme}>
-          <span>Modo oscuro</span>
-          <div className={`switch${theme === "dark" ? " is-on" : ""}`} />
-        </div>
       </div>
     </aside>
   );

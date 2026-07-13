@@ -7,16 +7,19 @@ import TreasurerSettings, {
 } from "../components/settings/TreasurerSettings";
 import SignatureUploader from "../components/settings/SignatureUploader";
 import PDFPreview from "../components/settings/PDFPreview";
+import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 
 interface Props {
   church: Church;
   onChurchUpdated: (c: Church) => void;
+  themePref: ThemePref;
+  onThemePrefChange: (pref: ThemePref) => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
-export default function Configuracion({ church, onChurchUpdated }: Props) {
+export default function Configuracion({ church, onChurchUpdated, themePref, onThemePrefChange }: Props) {
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
@@ -115,6 +118,8 @@ export default function Configuracion({ church, onChurchUpdated }: Props) {
               />
 
               <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+
+              <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
             </div>
 
             <PDFPreview

@@ -9,30 +9,49 @@ import Reportes from "./pages/Reportes";
 import Depositos from "./pages/Depositos";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
+import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countPendingTx, getOrCreateChurch, listMembers, type Church, type Member, type Tx } from "./db";
 import "./styles.css";
 
-type Theme = "light" | "dark";
-
-function initialTheme(): Theme {
+function initialThemePref(): ThemePref {
   try {
     const saved = localStorage.getItem("tesoreria-theme");
-    if (saved === "dark" || saved === "light") return saved;
+    if (saved === "dark" || saved === "light" || saved === "auto") return saved;
   } catch { /* noop */ }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "auto";
+}
+
+function systemPrefersDark(): boolean {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
+  const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
 
+  // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
+  // sin necesidad de recargar la app cuando el usuario lo cambia en macOS/
+  // Windows mientras Tesorería está abierta.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const theme: "light" | "dark" = themePref === "auto" ? (systemDark ? "dark" : "light") : themePref;
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("tesoreria-theme", theme); } catch { /* noop */ }
   }, [theme]);
+
+  useEffect(() => {
+    try { localStorage.setItem("tesoreria-theme", themePref); } catch { /* noop */ }
+  }, [themePref]);
 
   useEffect(() => {
     listMembers(church.id).then((m) => setMemberCount(m.length)).catch(() => {});
@@ -47,13 +66,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   return (
     <div className="app">
-      <Sidebar
-        church={church}
-        memberCount={memberCount}
-        pendingCount={pendingCount}
-        theme={theme}
-        onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
-      />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} />
       <main className="main">
         <Routes>
           <Route
@@ -120,7 +133,14 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           />
           <Route
             path="/configuracion"
-            element={<Configuracion church={church} onChurchUpdated={onChurchUpdated} />}
+            element={
+              <Configuracion
+                church={church}
+                onChurchUpdated={onChurchUpdated}
+                themePref={themePref}
+                onThemePrefChange={setThemePref}
+              />
+            }
           />
         </Routes>
       </main>
