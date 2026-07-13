@@ -530,12 +530,12 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   ) : (
                     <button
                       type="button"
-                      className={`btn ${esRecurrente ? "primary" : "secondary"}`}
-                      style={{ flexShrink: 0 }}
+                      role="switch"
+                      aria-checked={esRecurrente}
+                      className={`switch${esRecurrente ? " on" : ""}`}
+                      title={esRecurrente ? t("recurrente.marcado") : t("recurrente.siRecurrente")}
                       onClick={() => setEsRecurrente(!esRecurrente)}
-                    >
-                      {esRecurrente ? t("recurrente.marcado") : t("recurrente.siRecurrente")}
-                    </button>
+                    />
                   )}
                 </div>
               )}
