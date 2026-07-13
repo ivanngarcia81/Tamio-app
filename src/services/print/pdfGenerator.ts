@@ -205,7 +205,17 @@ export class ReportDocBuilder {
   private static readonly TOTAL_ROW_H = PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md;
 
   tableRow(cells: string[], columns: PdfColumn[]) {
-    this.ensureSpace(PDF_SPACE.md + ReportDocBuilder.TOTAL_ROW_H);
+    this.doc.setFont("helvetica", "normal");
+    this.doc.setFontSize(PDF_TYPE.tableRow);
+    // Una celda larga se envuelve en varias líneas; la fila crece según la
+    // celda más alta para que el texto no se encime con la fila siguiente.
+    const anchos = columns.map((col) => col.width - (col.align === "right" ? 4 : PDF_SPACE.xs));
+    const maxLineas = Math.max(
+      1,
+      ...columns.map((_, i) => (this.doc.splitTextToSize(cells[i] ?? "", anchos[i]) as string[]).length)
+    );
+    const rowH = PDF_SPACE.md + (maxLineas - 1) * (PDF_TYPE.tableRow * 1.15);
+    this.ensureSpace(rowH + ReportDocBuilder.TOTAL_ROW_H);
     this.doc.setFont("helvetica", "normal");
     this.doc.setFontSize(PDF_TYPE.tableRow);
     setText(this.doc, PDF_COLOR.ink);
@@ -214,11 +224,25 @@ export class ReportDocBuilder {
       const tx = col.align === "right" ? x + col.width : x;
       this.doc.text(cells[i] ?? "", tx, this.y, {
         align: col.align === "right" ? "right" : "left",
-        maxWidth: col.width - (col.align === "right" ? 4 : PDF_SPACE.xs),
+        maxWidth: anchos[i],
       });
       x += col.width;
     });
-    this.y += PDF_SPACE.md;
+    this.y += rowH;
+  }
+
+  /** Párrafo de texto corrido en gris tenue (notas, avisos legales). */
+  paragraph(text: string) {
+    this.doc.setFont("helvetica", "italic");
+    this.doc.setFontSize(PDF_TYPE.meta);
+    const lines = this.doc.splitTextToSize(text, this.contentWidth) as string[];
+    const lineH = PDF_TYPE.meta + 3;
+    this.ensureSpace(lines.length * lineH);
+    setText(this.doc, PDF_COLOR.faint);
+    for (const line of lines) {
+      this.doc.text(line, this.marginX, this.y);
+      this.y += lineH;
+    }
   }
 
   emptyRow(msg: string) {

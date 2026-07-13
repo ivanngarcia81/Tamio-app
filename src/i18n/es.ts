@@ -354,6 +354,29 @@ export const es = {
     rfc: "RFC",
   },
 
+  detalleMiembro: {
+    sub: "Historial de aportes del miembro",
+    totalAnio: "Total {{anio}}",
+    aportes_one: "{{count}} aporte",
+    aportes_other: "{{count}} aportes",
+    ultimoAporte: "Último aporte",
+    anio: "Año",
+    sinAportes: "Sin aportes registrados en {{anio}}.",
+    constanciaPdf: "Constancia anual (PDF)",
+    hint: "Solo se listan ingresos aprobados registrados a nombre de este miembro.",
+  },
+
+  constancia: {
+    titulo: "Constancia anual de aportaciones",
+    archivo: "Constancia",
+    aportante: "Aportante",
+    aportesRegistrados: "Aportes registrados",
+    totalAportado: "TOTAL APORTADO",
+    numeroAportes: "APORTES REGISTRADOS",
+    total: "Total",
+    nota: "Documento informativo generado por Tesorería. Verifica los requisitos fiscales locales antes de usarlo como comprobante deducible.",
+  },
+
   pdf: {
     generadoAutomaticamente: "Generado automáticamente por Tesorería",
     pagina: "Página {{x}} de {{y}}",

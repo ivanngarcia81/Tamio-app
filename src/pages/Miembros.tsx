@@ -8,6 +8,7 @@ import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
+import MemberDetailModal from "../components/MemberDetailModal";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
 import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
 
@@ -53,6 +54,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
   const [query, setQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [detalle, setDetalle] = useState<Member | null>(null);
 
   useEffect(() => {
     listMembers(church.id).then(setMembers).catch(console.error);
@@ -140,7 +142,8 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                 <div
                   className="tr"
                   key={m.id}
-                  style={{ gridTemplateColumns: MEMBER_COLS }}
+                  style={{ gridTemplateColumns: MEMBER_COLS, cursor: "pointer" }}
+                  onClick={() => setDetalle(m)}
                 >
                   <div className="td">
                     <div className="person" style={{ minWidth: 0 }}>
@@ -175,7 +178,7 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
                     <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
                     <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? t("miembros.sinRfc")}</div>
                   </div>
-                  <div className="td" style={{ textAlign: "center" }}>
+                  <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
                     <span className="row-actions">
                       <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(m)}>
                         <IconEdit size={13} strokeWidth={2} />
@@ -192,6 +195,10 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
           </div>
         )}
       </div>
+
+      {detalle && (
+        <MemberDetailModal church={church} member={detalle} onClose={() => setDetalle(null)} />
+      )}
 
       {pendingDelete && (
         <ConfirmDialog

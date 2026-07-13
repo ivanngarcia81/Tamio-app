@@ -589,6 +589,33 @@ export async function memberStats(churchId: number, yyyy: string): Promise<Recor
   return out;
 }
 
+/** Aportes (ingresos aprobados) de un miembro en un año, más recientes primero. */
+export async function listMemberAportes(memberId: number, churchId: number, yyyy: string): Promise<Tx[]> {
+  const d = await getDb();
+  return d.select<Tx[]>(
+    `SELECT t.*, m.nombre AS member_nombre
+       FROM transactions t
+       LEFT JOIN members m ON m.id = t.member_id
+      WHERE t.church_id = $1 AND t.member_id = $2 AND t.tipo = 'ingreso'
+        AND t.estado = 'aprobado' AND substr(t.fecha, 1, 4) = $3
+      ORDER BY t.fecha DESC, t.id DESC`,
+    [churchId, memberId, yyyy]
+  );
+}
+
+/** Años (desc) en los que un miembro tiene aportes registrados. */
+export async function memberAporteYears(memberId: number, churchId: number): Promise<string[]> {
+  const d = await getDb();
+  const rows = await d.select<{ anio: string }[]>(
+    `SELECT DISTINCT substr(fecha, 1, 4) AS anio
+       FROM transactions
+      WHERE church_id = $1 AND member_id = $2 AND tipo = 'ingreso' AND estado = 'aprobado'
+      ORDER BY anio DESC`,
+    [churchId, memberId]
+  );
+  return rows.map((r) => r.anio);
+}
+
 export async function lastActivityAt(churchId: number): Promise<string | null> {
   const d = await getDb();
   const rows = await d.select<{ m: string | null }[]>(
