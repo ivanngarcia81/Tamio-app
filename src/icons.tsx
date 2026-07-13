@@ -197,3 +197,11 @@ export const IconRefreshCw = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
     <path d="M21 3v6h-6" />
   </svg>
 );
+
+export const IconBank = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M12 3l10 6H2l10-6z" />
+    <path d="M4 10v9M9 10v9M15 10v9M20 10v9" />
+    <path d="M2 21h20" />
+  </svg>
+);

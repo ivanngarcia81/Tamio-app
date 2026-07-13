@@ -75,6 +75,27 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE churches ADD COLUMN tesorero_telefono TEXT;
             ALTER TABLE churches ADD COLUMN tesorero_firma_path TEXT;
         "#,
+    }, Migration {
+        version: 5,
+        description: "depositos bancarios",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS depositos_bancarios (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id        INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                fecha            TEXT NOT NULL,   -- YYYY-MM-DD
+                periodo          TEXT NOT NULL,   -- YYYY-MM
+                monto            REAL NOT NULL,
+                moneda           TEXT NOT NULL DEFAULT 'USD',
+                cuenta_banco     TEXT NOT NULL,
+                referencia       TEXT,
+                comprobante_path TEXT,
+                notas            TEXT,
+                created_at       TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_depositos_church_fecha ON depositos_bancarios(church_id, fecha);
+            CREATE INDEX IF NOT EXISTS idx_depositos_periodo ON depositos_bancarios(church_id, periodo);
+        "#,
     }]
 }
 

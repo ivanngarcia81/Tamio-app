@@ -13,9 +13,7 @@ export interface DashboardResumenFinanciero {
   ingresos: number;
   gastos: number;
   balanceFinal: number;
-  /** Ingresos cuyo método de pago es "transferencia" — el dato más
-   *  cercano disponible a "depósitos bancarios" (no existe un campo de
-   *  banco/depósito dedicado en el modelo de datos todavía). */
+  /** Suma de los depósitos bancarios registrados en el periodo. */
   depositosBancarios: number;
   diezmos: number;
   ofrendas: number;
@@ -91,7 +89,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
       { label: "Total ingresos", value: fmtMoneyPdf(r.ingresos, moneda) },
       { label: "Total gastos", value: fmtMoneyPdf(r.gastos, moneda) },
       { label: "Balance final", value: fmtMoneyPdf(r.balanceFinal, moneda) },
-      { label: "Depósitos bancarios (transferencias)", value: fmtMoneyPdf(r.depositosBancarios, moneda) },
+      { label: "Depósitos bancarios", value: fmtMoneyPdf(r.depositosBancarios, moneda) },
       { label: "Total diezmos", value: fmtMoneyPdf(r.diezmos, moneda) },
       { label: "Total ofrendas", value: fmtMoneyPdf(r.ofrendas, moneda) },
     ],

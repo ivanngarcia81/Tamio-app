@@ -1,0 +1,82 @@
+import { useState } from "react";
+import { deleteDeposito, fmtFechaCorta, fmtMoney, type Deposito } from "../db";
+import { IconEdit } from "../icons";
+import RowMenu from "./RowMenu";
+import ConfirmDialog from "./ConfirmDialog";
+
+interface Props {
+  depositos: Deposito[];
+  onEdit: (dep: Deposito) => void;
+  onChanged: () => void;
+}
+
+const COLS = "100px 1fr 140px 1fr 150px 40px";
+
+export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
+  const [pendingDelete, setPendingDelete] = useState<Deposito | null>(null);
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    await deleteDeposito(pendingDelete.id, pendingDelete.church_id);
+    setPendingDelete(null);
+    onChanged();
+  }
+
+  return (
+    <>
+      <div className="data-table roomy">
+        <div className="thead" style={{ gridTemplateColumns: COLS }}>
+          <div className="th">Fecha</div>
+          <div className="th">Cuenta / banco</div>
+          <div className="th">Referencia</div>
+          <div className="th">Notas</div>
+          <div className="th" style={{ textAlign: "right" }}>Monto</div>
+          <div className="th"></div>
+        </div>
+        {depositos.map((dep) => (
+          <div className="tr" key={dep.id} style={{ gridTemplateColumns: COLS }}>
+            <div className="td">
+              <div style={{ fontWeight: 600 }}>{fmtFechaCorta(dep.fecha)}</div>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dep.periodo}</div>
+            </div>
+            <div className="td">
+              <div className="truncate" style={{ fontWeight: 600 }} title={dep.cuenta_banco}>{dep.cuenta_banco}</div>
+            </div>
+            <div className="td">
+              <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={dep.referencia ?? undefined}>
+                {dep.referencia ?? "—"}
+              </span>
+            </div>
+            <div className="td">
+              <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={dep.notas ?? undefined}>
+                {dep.notas ?? "—"}
+              </span>
+            </div>
+            <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+              {fmtMoney(dep.monto)}<span className="cur" style={{ color: "var(--text-3)", fontWeight: 600, fontSize: 11, marginLeft: 3 }}>{dep.moneda}</span>
+            </div>
+            <div className="td" style={{ textAlign: "center" }}>
+              <span className="row-actions">
+                <span className="row-icon-btn" title="Editar" onClick={() => onEdit(dep)}>
+                  <IconEdit size={13} strokeWidth={2} />
+                </span>
+              </span>
+              <RowMenu onEdit={() => onEdit(dep)} onDelete={() => setPendingDelete(dep)} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Eliminar depósito"
+          message={`¿Eliminar el depósito de ${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda} en "${pendingDelete.cuenta_banco}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          danger
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+    </>
+  );
+}

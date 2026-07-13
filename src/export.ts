@@ -24,6 +24,8 @@ export interface ReportData {
   ingresos: number;
   gastos: number;
   balance: number;
+  /** Suma de los depósitos bancarios registrados en el periodo. */
+  depositosBancarios?: number;
   /**
    * Preparado para cuando exista autenticación de usuarios: si se provee,
    * el PDF muestra "Generado por". Hoy no hay sistema de cuentas (ver
@@ -63,7 +65,7 @@ function thinBorder(argb: string): Partial<ExcelJS.Border> {
 
 /** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
 export async function exportReportExcel(data: ReportData): Promise<boolean> {
-  const { church, mesLegibleStr, filasIngreso, filasGasto, ingresos, gastos, balance } = data;
+  const { church, mesLegibleStr, filasIngreso, filasGasto, ingresos, gastos, balance, depositosBancarios } = data;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = church.nombre;
@@ -331,6 +333,9 @@ export async function exportReportExcel(data: ReportData): Promise<boolean> {
   resumenLine("Total de ingresos", ingresos, PALETTE.green, false);
   resumenLine("Total de gastos", gastos, PALETTE.red, false);
   resumenLine("Balance final", balance, balanceColor, true);
+  if (depositosBancarios != null) {
+    resumenLine("Depósitos bancarios", depositosBancarios, PALETTE.navy, false);
+  }
 
   // marco sutil alrededor del resumen
   const resumenFirstRow = resumenTitleRow + 1;
@@ -400,7 +405,10 @@ export async function exportReportExcel(data: ReportData): Promise<boolean> {
 // PDFs de la app (Dashboard, Registro) para no duplicar estas constantes.
 
 async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBuffer; fileName: string }> {
-  const { church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance, generatedBy, firmaPath } = data;
+  const {
+    church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance,
+    depositosBancarios, generatedBy, firmaPath,
+  } = data;
 
   const now = new Date();
   const reportId = buildReportId(periodoISO);
@@ -627,6 +635,18 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   }
   totalRow("Total gastos", fmtMoneyPdf(gastos, church.moneda));
   endSection();
+
+  // ---------- Depósitos bancarios (solo si se provee) ----------
+  if (depositosBancarios != null) {
+    y += PDF_SPACE.md;
+    ensureSpace(PDF_SPACE.md);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(PDF_TYPE.body);
+    setText(doc, INK);
+    doc.text("Depósitos bancarios", labelColX, y);
+    doc.text(fmtMoneyPdf(depositosBancarios, church.moneda), amountColX, y, { align: "right" });
+    y += PDF_SPACE.md;
+  }
   y += PDF_SPACE.lg;
 
   // ---------- Tarjetas de resumen ----------

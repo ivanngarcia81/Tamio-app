@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import html2canvas from "html2canvas";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, categoriaInfo, currentMonth, currentYear, dailyTotals,
-  fmtFechaCorta, fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthIngresosTransferencia,
+  fmtFechaCorta, fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthDepositos,
   monthTotals, pctChange, prevMonth, yearTotals,
   type Church, type DailyPoint, type MonthTotals, type Tx, type YearTotals,
 } from "../db";
@@ -145,7 +145,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     setPrintError(null);
     setPrinting(true);
     try {
-      const depositosBancarios = await monthIngresosTransferencia(church.id, mes);
+      const depositosBancarios = await monthDepositos(church.id, mes);
       const charts = (
         await Promise.all([
           captureChart(chartsRef.current, "Ingresos vs. gastos y evolución del balance"),

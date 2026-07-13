@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import type { Church } from "../db";
 import {
   IconLogo, IconHome, IconIngreso, IconGasto, IconMiembros,
-  IconReportes, IconBandeja, IconConfig, IconChevronDown,
+  IconReportes, IconBandeja, IconBank, IconConfig, IconChevronDown,
 } from "../icons";
 
 interface Props {
@@ -57,14 +57,18 @@ export default function Sidebar({ church, memberCount, pendingCount, theme, onTo
           <span className="icon"><IconReportes /></span>
           Reportes
         </NavLink>
+        <NavLink to="/depositos" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+          <span className="icon"><IconBank /></span>
+          Depósito bancario
+        </NavLink>
+      </nav>
+
+      <div className="sidebar-footer">
         <NavLink to="/bandeja" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
           <span className="icon"><IconBandeja /></span>
           Bandeja
           {pendingCount > 0 && <span className="badge">{pendingCount}</span>}
         </NavLink>
-      </nav>
-
-      <div className="sidebar-footer">
         <NavLink to="/configuracion" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
           <span className="icon"><IconConfig /></span>
           Configuración

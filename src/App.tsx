@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Movimientos from "./pages/Movimientos";
 import Miembros from "./pages/Miembros";
 import Reportes from "./pages/Reportes";
+import Depositos from "./pages/Depositos";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
 import { countPendingTx, getOrCreateChurch, listMembers, type Church, type Member, type Tx } from "./db";
@@ -107,6 +108,10 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             }
           />
           <Route path="/reportes" element={<Reportes church={church} refreshKey={refreshKey} />} />
+          <Route
+            path="/depositos"
+            element={<Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+          />
           <Route
             path="/bandeja"
             element={

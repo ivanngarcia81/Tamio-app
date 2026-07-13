@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import {
   CATEGORIAS_GASTO, CATEGORIAS_INGRESO, currentMonth, fmtMoney,
-  mesLegible, monthlySummary, monthTotals, pctChange, prevMonth,
+  mesLegible, monthDepositos, monthlySummary, monthTotals, pctChange, prevMonth,
   type Church, type MonthSummary, type MonthTotals,
 } from "../db";
 import { exportReportExcel, exportReportPdf, printMonthlyReportPdf } from "../export";
@@ -27,6 +27,7 @@ export default function Reportes({ church, refreshKey }: Props) {
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
+  const [depositosMes, setDepositosMes] = useState(0);
   const [exporting, setExporting] = useState<"excel" | "pdf" | "print" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const mes = currentMonth();
@@ -37,6 +38,7 @@ export default function Reportes({ church, refreshKey }: Props) {
     monthTotals(church.id, mes).then(setTotales).catch(console.error);
     monthTotals(church.id, mesAnterior).then(setTotalesAnt).catch(console.error);
     monthlySummary(church.id, 6).then(setHistorial).catch(console.error);
+    monthDepositos(church.id, mes).then(setDepositosMes).catch(console.error);
   }, [church.id, refreshKey, mes, mesAnterior]);
 
   const ingresos = totales?.ingresos ?? 0;
@@ -62,6 +64,7 @@ export default function Reportes({ church, refreshKey }: Props) {
       ingresos,
       gastos,
       balance,
+      depositosBancarios: depositosMes,
       generatedBy: church.tesorero_nombre
         ? { nombre: church.tesorero_nombre, rol: church.tesorero_cargo ?? undefined }
         : undefined,
@@ -273,6 +276,10 @@ export default function Reportes({ church, refreshKey }: Props) {
             <div>
               <div className="k">Balance neto</div>
               <div className="v">{fmtMoney(balance)}</div>
+            </div>
+            <div>
+              <div className="k">Depósitos bancarios</div>
+              <div className="v">{fmtMoney(depositosMes)}</div>
             </div>
           </div>
         </div>
