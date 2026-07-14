@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  deleteCarta, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida, estadoAnteriorDeHistorial,
-  fmtFechaCorta, insertCarta, listCartas, listMembersRegistro, listSolicitudes, listTrasladosEntrada,
-  listTrasladosSalida, updateCarta, updateSolicitud, updateTrasladoEntrada, updateTrasladoSalida,
-  vincularCartaSolicitud,
-  type Carta, type Church, type Member, type NewCarta, type NewSolicitud, type NewTrasladoEntrada,
-  type NewTrasladoSalida, type Solicitud, type TrasladoEntrada, type TrasladoSalida,
+  deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
+  estadoAnteriorDeHistorial, fmtFechaCorta, hayPlantillasIniciales, insertCarta, insertPlantilla,
+  listCartas, listMembersRegistro, listPlantillas, listSolicitudes, listTrasladosEntrada,
+  listTrasladosSalida, updateCarta, updatePlantilla, updateSolicitud, updateTrasladoEntrada,
+  updateTrasladoSalida, vincularCartaSolicitud,
+  type Carta, type Church, type Member, type NewCarta, type NewPlantilla, type NewSolicitud,
+  type NewTrasladoEntrada, type NewTrasladoSalida, type Plantilla, type Solicitud,
+  type TrasladoEntrada, type TrasladoSalida,
 } from "../db";
+import { plantillasIniciales } from "../services/cartas/plantillas";
 import { EmptyState } from "../components/TxList";
 import RowMenu, { type RowMenuItem } from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -15,6 +18,7 @@ import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA, type CartaPrefill } from "../c
 import SolicitudModal from "../components/SolicitudModal";
 import TrasladoSalidaModal from "../components/TrasladoSalidaModal";
 import TrasladoEntradaModal from "../components/TrasladoEntradaModal";
+import PlantillaModal from "../components/PlantillaModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
@@ -26,7 +30,7 @@ const COLS = "130px 1.8fr 110px 150px 130px 70px";
 const COLS_SOL = "120px 1.6fr 120px 110px 140px 70px";
 const PAGE_SIZE = 25;
 
-type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "archivo";
+type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
 
 const BADGE_TS: Record<string, string> = {
   borrador: "administracion",
@@ -106,6 +110,9 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const [teModal, setTeModal] = useState<{ open: boolean; traslado: TrasladoEntrada | null }>({ open: false, traslado: null });
   const [pendingDeleteTS, setPendingDeleteTS] = useState<TrasladoSalida | null>(null);
   const [pendingDeleteTE, setPendingDeleteTE] = useState<TrasladoEntrada | null>(null);
+  const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
+  const [plantillaModal, setPlantillaModal] = useState<{ open: boolean; plantilla: Plantilla | null; base: Plantilla | null }>({ open: false, plantilla: null, base: null });
+  const [pendingDeletePl, setPendingDeletePl] = useState<Plantilla | null>(null);
   const [pendingDeleteSol, setPendingDeleteSol] = useState<Solicitud | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ tipo: "entregar" | "cancelar"; carta: Carta } | null>(null);
   const [desdeSolicitud, setDesdeSolicitud] = useState<Solicitud | null>(null);
@@ -127,21 +134,29 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    Promise.all([
-      listCartas(church.id),
-      listSolicitudes(church.id),
-      listTrasladosSalida(church.id),
-      listTrasladosEntrada(church.id),
-      listMembersRegistro(church.id),
-    ])
-      .then(([nuevasCartas, nuevasSolicitudes, nuevosTS, nuevosTE, nuevosMembers]) => {
-        if (cancelado) return;
-        setCartas(nuevasCartas);
-        setSolicitudes(nuevasSolicitudes);
-        setTrasladosSalida(nuevosTS);
-        setTrasladosEntrada(nuevosTE);
-        setMembers(nuevosMembers);
-      })
+    (async () => {
+      // Las 11 plantillas iniciales se siembran una sola vez (idempotente).
+      if (!(await hayPlantillasIniciales(church.id))) {
+        for (const p of plantillasIniciales()) {
+          await insertPlantilla(church.id, p, true);
+        }
+      }
+      const [nuevasCartas, nuevasSolicitudes, nuevosTS, nuevosTE, nuevasPlantillas, nuevosMembers] = await Promise.all([
+        listCartas(church.id),
+        listSolicitudes(church.id),
+        listTrasladosSalida(church.id),
+        listTrasladosEntrada(church.id),
+        listPlantillas(church.id),
+        listMembersRegistro(church.id),
+      ]);
+      if (cancelado) return;
+      setCartas(nuevasCartas);
+      setSolicitudes(nuevasSolicitudes);
+      setTrasladosSalida(nuevosTS);
+      setTrasladosEntrada(nuevosTE);
+      setPlantillas(nuevasPlantillas);
+      setMembers(nuevosMembers);
+    })()
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
     return () => { cancelado = true; };
@@ -337,6 +352,37 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     onChanged();
   }
 
+  function plComoPayload(p: Plantilla, patch: Partial<NewPlantilla>): NewPlantilla {
+    return {
+      nombre: p.nombre, tipo: p.tipo, asunto: p.asunto, saludo: p.saludo,
+      cuerpo_html: p.cuerpo_html, despedida: p.despedida,
+      activa: p.activa === 1, predeterminada: p.predeterminada === 1,
+      ...patch,
+    };
+  }
+
+  async function togglePlantillaActiva(p: Plantilla) {
+    await updatePlantilla(p.id, church.id, plComoPayload(p, { activa: p.activa !== 1 }));
+    playSound("guardado");
+    setRefrescoLocal((k) => k + 1);
+  }
+
+  async function marcarPredeterminada(p: Plantilla) {
+    await updatePlantilla(p.id, church.id, plComoPayload(p, { predeterminada: true }));
+    playSound("guardado");
+    showToast(t("plantillas.toastPredeterminada", { nombre: p.nombre }));
+    setRefrescoLocal((k) => k + 1);
+  }
+
+  async function eliminarPlantilla() {
+    if (!pendingDeletePl) return;
+    await deletePlantilla(pendingDeletePl.id, church.id);
+    setPendingDeletePl(null);
+    playSound("eliminar");
+    showToast(t("plantillas.toastEliminada"));
+    setRefrescoLocal((k) => k + 1);
+  }
+
   /** Desde el modal de traslado: cierra y abre la carta vinculada en el editor. */
   function abrirCartaPorId(cartaId: number) {
     const c = cartas.find((x) => x.id === cartaId);
@@ -407,7 +453,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
 
       <div className="content">
         <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-          {(["resumen", "nueva", "solicitudes", "salida", "entrada", "archivo"] as Tab[]).map((tb) => (
+          {(["resumen", "nueva", "solicitudes", "salida", "entrada", "plantillas", "archivo"] as Tab[]).map((tb) => (
             <button key={tb} className={`chip${tab === tb ? " active" : ""}`} onClick={() => cambiarTab(tb)}>
               {t(`cartas.tab.${tb}`)}
             </button>
@@ -484,6 +530,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
             carta={editando}
             members={members}
             dirtyRef={editorDirtyRef}
+            plantillas={plantillas.filter((p) => p.activa === 1)}
             prefill={prefillDesdeSolicitud}
             vinculo={desdeSolicitud?.folio ?? solicitudes.find((s) => s.id === editando?.solicitud_id)?.folio ?? null}
             onSaved={async (creada) => {
@@ -687,6 +734,57 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 ))}
               </div>
             )}
+          </>
+        ) : tab === "plantillas" ? (
+          <>
+            <div className="tx-head">
+              <span className="roster-counters">
+                <span>{t("plantillas.activas")}: <b>{plantillas.filter((p) => p.activa === 1).length}</b></span>
+              </span>
+              <button className="btn primary" onClick={() => setPlantillaModal({ open: true, plantilla: null, base: null })}>
+                <IconPlus size={14} /> {t("plantillas.nuevaPlantilla")}
+              </button>
+            </div>
+            <div className="data-table roomy">
+              <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 70px" }}>
+                <div className="th">{t("plantillas.colPlantilla")}</div>
+                <div className="th">{t("cartas.tipoCarta")}</div>
+                <div className="th">{t("membresia.colEstado")}</div>
+                <div className="th"></div>
+              </div>
+              {plantillas.map((p) => (
+                <div
+                  className="tr"
+                  key={p.id}
+                  style={{ gridTemplateColumns: "1.6fr 1fr 220px 70px", cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
+                  onClick={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
+                >
+                  <div className="td" style={{ minWidth: 0 }}>
+                    <div className="p-name truncate">{p.nombre}</div>
+                  </div>
+                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    <div className="truncate">{t(`cartas.tipoDoc.${p.tipo}`)}</div>
+                  </div>
+                  <div className="td" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <span className={`tag ${p.activa === 1 ? "activo" : "baja"}`}>
+                      {p.activa === 1 ? t("plantillas.activaBadge") : t("plantillas.inactivaBadge")}
+                    </span>
+                    {p.predeterminada === 1 && <span className="tag diezmo">{t("plantillas.predeterminadaBadge")}</span>}
+                  </div>
+                  <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <RowMenu
+                      onEdit={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
+                      extraItems={[
+                        { label: t("cartas.duplicar"), onClick: () => setPlantillaModal({ open: true, plantilla: null, base: p }) },
+                        { label: p.activa === 1 ? t("plantillas.desactivar") : t("plantillas.activar"), onClick: () => togglePlantillaActiva(p) },
+                        ...(p.predeterminada !== 1 ? [{ label: t("plantillas.marcarPredeterminada"), onClick: () => marcarPredeterminada(p) }] : []),
+                      ]}
+                      onDelete={() => setPendingDeletePl(p)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         ) : (
           <>
@@ -900,6 +998,27 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           danger={pendingDeleteTE.estado === "recibida" && pendingDeleteTE.member_id === null}
           onConfirm={eliminarOArchivarTE}
           onCancel={() => setPendingDeleteTE(null)}
+        />
+      )}
+
+      {plantillaModal.open && (
+        <PlantillaModal
+          church={church}
+          plantilla={plantillaModal.plantilla}
+          base={plantillaModal.base}
+          onClose={() => setPlantillaModal({ open: false, plantilla: null, base: null })}
+          onSaved={() => setRefrescoLocal((k) => k + 1)}
+        />
+      )}
+
+      {pendingDeletePl && (
+        <ConfirmDialog
+          title={t("plantillas.eliminarTitulo", { nombre: pendingDeletePl.nombre })}
+          message={t("plantillas.eliminarMensaje")}
+          confirmLabel={t("common.eliminar")}
+          danger
+          onConfirm={eliminarPlantilla}
+          onCancel={() => setPendingDeletePl(null)}
         />
       )}
 

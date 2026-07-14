@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   insertCarta, updateCarta,
-  type Carta, type CartaFirma, type Church, type Member, type NewCarta,
+  type Carta, type CartaFirma, type Church, type Member, type NewCarta, type Plantilla,
 } from "../db";
+import { aplicarVariables, contextoDe } from "../services/cartas/plantillas";
 import { parseFirmas, buildCartaHtml, abrirCartaParaImprimir } from "../services/cartas/cartaDoc";
 import { Seccion } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
@@ -53,14 +54,17 @@ interface Props {
   prefill?: CartaPrefill | null;
   /** Folio de la solicitud vinculada, solo informativo. */
   vinculo?: string | null;
+  /** Plantillas activas disponibles para "Usar plantilla…". */
+  plantillas?: Plantilla[];
 }
 
-export default function CartaEditor({ church, carta, members, dirtyRef, onSaved, prefill, vinculo }: Props) {
+export default function CartaEditor({ church, carta, members, dirtyRef, onSaved, prefill, vinculo, plantillas }: Props) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirmEntrega, setConfirmEntrega] = useState(false);
+  const [pendingPlantilla, setPendingPlantilla] = useState<Plantilla | null>(null);
 
   const [tipo, setTipo] = useState(carta?.tipo ?? prefill?.tipo ?? "recomendacion");
   const [fechaEmision, setFechaEmision] = useState(carta?.fecha_emision ?? hoyLocal());
@@ -117,6 +121,29 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
     cuerpoRef.current?.focus();
     document.execCommand("insertText", false, texto);
     setDirty(true);
+  }
+
+  /** Aplica la plantilla con las variables resueltas al momento. */
+  function aplicarPlantilla(p: Plantilla) {
+    const ctx = contextoDe(church, {
+      miembro: miembroSel,
+      folio: carta?.folio ?? t("cartas.folioPendiente"),
+      fechaEmision,
+    });
+    setTipo(p.tipo);
+    setAsunto(aplicarVariables(p.asunto ?? "", ctx));
+    setSaludo(aplicarVariables(p.saludo ?? "", ctx));
+    setDespedida(aplicarVariables(p.despedida ?? "", ctx));
+    if (cuerpoRef.current) cuerpoRef.current.innerHTML = aplicarVariables(p.cuerpo_html, ctx);
+    setDirty(true);
+    setPendingPlantilla(null);
+  }
+
+  function pedirAplicarPlantilla(p: Plantilla) {
+    // Si ya hay contenido escrito, aplicar la plantilla lo reemplazaría.
+    const hayContenido = (cuerpoRef.current?.textContent ?? "").trim().length > 0;
+    if (hayContenido) setPendingPlantilla(p);
+    else aplicarPlantilla(p);
   }
 
   function nombreFirma(rol: RolFirma): { nombre: string; cargo: string } {
@@ -324,6 +351,32 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
           </div>
         </div>
 
+        {(plantillas ?? []).length > 0 && (
+          <div className="form-group full">
+            <label className="form-label">{t("plantillas.usarPlantilla")}</label>
+            <select
+              className="form-input"
+              value=""
+              onChange={(e) => {
+                const p = (plantillas ?? []).find((x) => x.id === Number(e.target.value));
+                if (p) pedirAplicarPlantilla(p);
+                e.target.value = "";
+              }}
+            >
+              <option value="">{t("plantillas.elegirPlantilla")}</option>
+              {(plantillas ?? [])
+                .slice()
+                .sort((a, b) => (a.tipo === tipo ? -1 : 0) - (b.tipo === tipo ? -1 : 0) || (b.predeterminada - a.predeterminada))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                    {p.tipo === tipo && p.predeterminada === 1 ? ` — ${t("plantillas.predeterminadaBadge")}` : ""}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+
         <div className="form-group full">
           <label className="form-label">{t("cartas.cuerpo")}</label>
           <div style={{ display: "flex", gap: 4, marginBottom: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -467,6 +520,17 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
             <iframe title={t("cartas.vistaPrevia")} srcDoc={preview} style={{ flex: 1, border: "none", background: "#f0f0f0" }} />
           </div>
         </div>
+      )}
+
+      {pendingPlantilla && (
+        <ConfirmDialog
+          title={t("plantillas.reemplazarTitulo")}
+          message={t("plantillas.reemplazarMensaje", { nombre: pendingPlantilla.nombre })}
+          confirmLabel={t("plantillas.aplicar")}
+          danger
+          onConfirm={() => aplicarPlantilla(pendingPlantilla)}
+          onCancel={() => setPendingPlantilla(null)}
+        />
       )}
 
       {confirmEntrega && (

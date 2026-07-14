@@ -412,6 +412,27 @@ fn migrations() -> Vec<Migration> {
             CREATE INDEX IF NOT EXISTS idx_ts_church ON traslados_salida(church_id, fecha_solicitud DESC);
             CREATE INDEX IF NOT EXISTS idx_te_church ON traslados_entrada(church_id, fecha_recepcion DESC);
         "#,
+    }, Migration {
+        version: 19,
+        description: "cartas y traslados fase 4: plantillas de cartas con variables",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS plantillas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                nombre TEXT NOT NULL,
+                tipo TEXT NOT NULL DEFAULT 'personalizada',
+                asunto TEXT,
+                saludo TEXT,
+                cuerpo_html TEXT NOT NULL DEFAULT '',
+                despedida TEXT,
+                activa INTEGER NOT NULL DEFAULT 1,
+                predeterminada INTEGER NOT NULL DEFAULT 0,
+                es_inicial INTEGER NOT NULL DEFAULT 0,
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+        "#,
     }]
 }
 

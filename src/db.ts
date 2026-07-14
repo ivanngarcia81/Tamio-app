@@ -1519,6 +1519,91 @@ export async function vincularCartaSolicitud(solicitudId: number, cartaId: numbe
   );
 }
 
+// ---------- Plantillas de cartas ----------
+
+export interface Plantilla {
+  id: number;
+  church_id: number;
+  nombre: string;
+  /** Tipo de carta al que aplica (mismo catálogo de tipos de carta). */
+  tipo: string;
+  asunto: string | null;
+  saludo: string | null;
+  /** Cuerpo HTML con variables {{...}}. */
+  cuerpo_html: string;
+  despedida: string | null;
+  activa: number;
+  predeterminada: number;
+  es_inicial: number;
+  creado_en: string;
+  modificado_en: string;
+}
+
+export interface NewPlantilla {
+  nombre: string;
+  tipo: string;
+  asunto: string | null;
+  saludo: string | null;
+  cuerpo_html: string;
+  despedida: string | null;
+  activa: boolean;
+  predeterminada: boolean;
+}
+
+export async function listPlantillas(churchId: number): Promise<Plantilla[]> {
+  const d = await getDb();
+  return d.select<Plantilla[]>(
+    "SELECT * FROM plantillas WHERE church_id = $1 ORDER BY predeterminada DESC, nombre",
+    [churchId]
+  );
+}
+
+/** Solo puede haber una predeterminada por tipo de carta. */
+async function despejarPredeterminada(churchId: number, tipo: string, exceptoId?: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE plantillas SET predeterminada = 0 WHERE church_id = $1 AND tipo = $2 AND ($3 IS NULL OR id != $3)",
+    [churchId, tipo, exceptoId ?? null]
+  );
+}
+
+export async function insertPlantilla(churchId: number, p: NewPlantilla, esInicial = false): Promise<void> {
+  const d = await getDb();
+  if (p.predeterminada) await despejarPredeterminada(churchId, p.tipo);
+  await d.execute(
+    `INSERT INTO plantillas (church_id, nombre, tipo, asunto, saludo, cuerpo_html, despedida, activa, predeterminada, es_inicial)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [churchId, p.nombre, p.tipo, p.asunto, p.saludo, p.cuerpo_html, p.despedida, p.activa ? 1 : 0, p.predeterminada ? 1 : 0, esInicial ? 1 : 0]
+  );
+}
+
+export async function updatePlantilla(id: number, churchId: number, p: NewPlantilla): Promise<void> {
+  const d = await getDb();
+  if (p.predeterminada) await despejarPredeterminada(churchId, p.tipo, id);
+  await d.execute(
+    `UPDATE plantillas SET
+       nombre = $1, tipo = $2, asunto = $3, saludo = $4, cuerpo_html = $5, despedida = $6,
+       activa = $7, predeterminada = $8, modificado_en = datetime('now', 'localtime')
+     WHERE id = $9 AND church_id = $10`,
+    [p.nombre, p.tipo, p.asunto, p.saludo, p.cuerpo_html, p.despedida, p.activa ? 1 : 0, p.predeterminada ? 1 : 0, id, churchId]
+  );
+}
+
+export async function deletePlantilla(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM plantillas WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
+/** ¿Ya se sembraron las plantillas iniciales? (idempotente) */
+export async function hayPlantillasIniciales(churchId: number): Promise<boolean> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    "SELECT count(*) AS n FROM plantillas WHERE church_id = $1 AND es_inicial = 1",
+    [churchId]
+  );
+  return (rows[0]?.n ?? 0) > 0;
+}
+
 // ---------- Traslados de salida ----------
 
 export interface TrasladoSalida {
