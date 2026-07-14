@@ -39,6 +39,18 @@
      tope del contenido y padding lateral del área principal. */
   --content-max: 1560px;
   --content-pad-x: 32px;
+  /* Escala de métricas y display (valores ya en uso, ahora centralizados) */
+  --fs-display: 40px;
+  --fs-stat-lg: 30px;
+  --fs-stat-md: 24px;
+  --fs-stat-sm: 22px;
+  --lh-tight: 1.1;
+  /* Sombras del sistema */
+  --shadow-hover: 0 10px 28px rgba(0,0,0,.05);
+  --shadow-hover-dark: 0 10px 28px rgba(0,0,0,.28);
+  --shadow-modal: 0 30px 80px rgba(0,0,0,.28);
+  --radius-lg: 20px;
+  --dur-slow: .2s;
   /* Tracking unico para micro-etiquetas en mayusculas (labels, theads). */
   --track-caps: 0.1em;
   color-scheme: light;
@@ -279,7 +291,7 @@ a { color: inherit; text-decoration: none; }
 }
 .balance { display: flex; align-items: baseline; gap: 14px; }
 .balance .amount {
-  font-size: 40px;
+  font-size: var(--fs-display);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -444,8 +456,8 @@ a { color: inherit; text-decoration: none; }
   gap: 14px;
 }
 .summary-5 .stat-card { padding: 18px 18px 16px; }
-.summary-5 .stat-value { font-size: 26px; }
-.summary-5 .stat-value.md { font-size: 22px; }
+.summary-5 .stat-value { font-size: var(--fs-stat-md); }
+.summary-5 .stat-value.md { font-size: var(--fs-stat-sm); }
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -483,12 +495,12 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
 }
 .stat-value {
-  font-size: 30px;
+  font-size: var(--fs-stat-lg);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
 }
-.stat-value.md { font-size: 24px; }
+.stat-value.md { font-size: var(--fs-stat-md); }
 .stat-value .stat-cur {
   font-size: 12px;
   color: var(--text-3);
@@ -954,10 +966,10 @@ a { color: inherit; text-decoration: none; }
 }
 .stat-card:hover {
   border-color: var(--text-3);
-  box-shadow: 0 10px 28px rgba(0,0,0,.05);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
 }
-:root[data-theme="dark"] .stat-card:hover { box-shadow: 0 10px 28px rgba(0,0,0,.28); }
+:root[data-theme="dark"] .stat-card:hover { box-shadow: var(--shadow-hover-dark); }
 
 /* Data table (structured) */
 .data-table {
@@ -1151,8 +1163,8 @@ a { color: inherit; text-decoration: none; }
   max-width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  border-radius: 20px;
-  box-shadow: 0 30px 80px rgba(0,0,0,.28);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
   animation: modalIn .2s cubic-bezier(.2,.8,.3,1) both;
 }
 @keyframes overlayIn {
@@ -1675,7 +1687,7 @@ a { color: inherit; text-decoration: none; }
   padding: 24px;
   width: 380px;
   max-width: 100%;
-  box-shadow: 0 30px 80px rgba(0,0,0,.28);
+  box-shadow: var(--shadow-modal);
 }
 .confirm-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
 .confirm-message { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 22px; }
@@ -1739,10 +1751,10 @@ a { color: inherit; text-decoration: none; }
 }
 .settings-card:hover {
   border-color: var(--text-3);
-  box-shadow: 0 10px 28px rgba(0,0,0,.05);
+  box-shadow: var(--shadow-hover);
   transform: translateY(-1px);
 }
-:root[data-theme="dark"] .settings-card:hover { box-shadow: 0 10px 28px rgba(0,0,0,.28); }
+:root[data-theme="dark"] .settings-card:hover { box-shadow: var(--shadow-hover-dark); }
 
 .settings-card .card-head { margin-bottom: 24px; }
 .card-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
