@@ -6,15 +6,16 @@ import {
   type AsistenciaLigera, type Church, type Member, type ServicioLigero, type TrasladoEntrada, type TrasladoSalida,
 } from "../db";
 import {
-  asistenciaPorMiembro, camposFaltantes, esNuevoEnPeriodo, estadoEfectivo, enPeriodo,
+  alertasSeguimiento, asistenciaPorMiembro, camposFaltantes, esNuevoEnPeriodo, estadoEfectivo, enPeriodo,
   periodoDeAnio, periodoDeMes, periodoDeTrimestre, PERIODO_TODO, resumenAsistencia,
   resumenMembresia, sinAsistirReciente, topAsistencia,
-  type Periodo,
+  type Alerta, type Periodo,
 } from "../services/informes/membresia";
 import { cargarUmbrales, UMBRALES_DEFAULT, type Umbrales } from "../services/informes/umbrales";
 import { exportarInformeCsv } from "../services/informes/exportInforme";
 import { CARGOS, INSTRUMENTOS, MINISTERIOS } from "../components/FichaMiembroModal";
 import FichaMiembroModal from "../components/FichaMiembroModal";
+import SeguimientoModal from "../components/SeguimientoModal";
 import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
@@ -25,7 +26,14 @@ const COLS = "1.5fr 150px 1.4fr 140px 44px";
 const PAGE_SIZE = 25;
 
 type PeriodoTipo = "mes" | "trimestre" | "anio" | "rango" | "todo";
-type Vista = "miembros" | "asistencia";
+type Vista = "miembros" | "asistencia" | "seguimiento";
+
+const ALERTA_TAG: Record<string, string> = {
+  rachaServicios: "pastores",
+  diasSinAsistir: "eventos",
+  nuevoSeguimiento: "donacion",
+  expedienteIncompleto: "servicios",
+};
 type TarjetaFiltro =
   | "todos" | "activos" | "inactivos" | "nuevos" | "recibidos" | "trasladados"
   | "frecuentes" | "incompletos";
@@ -91,6 +99,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   const [page, setPage] = useState(1);
   const [ficha, setFicha] = useState<Member | null>(null);
   const [vista, setVista] = useState<Vista>("miembros");
+  const [seguimiento, setSeguimiento] = useState<Member | null>(null);
 
   const periodo: Periodo = useMemo(() => {
     if (periodoTipo === "mes") return periodoDeMes(mesSel);
@@ -225,6 +234,29 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     [miembros, asistencia]
   );
 
+  // ----- Seguimiento: alertas agrupadas por miembro -----
+  const gruposSeguimiento = useMemo(() => {
+    const alertas = alertasSeguimiento(miembros, periodo, asistencia, hoyISO, umbrales);
+    const porMiembro = new Map<number, { miembro: Member; alertas: Alerta[] }>();
+    for (const al of alertas) {
+      let g = porMiembro.get(al.miembro.id);
+      if (!g) { g = { miembro: al.miembro, alertas: [] }; porMiembro.set(al.miembro.id, g); }
+      g.alertas.push(al);
+    }
+    // Más alertas primero; luego los no revisados antes que los revisados.
+    return Array.from(porMiembro.values()).sort((a, b) =>
+      b.alertas.length - a.alertas.length ||
+      Number(!!a.miembro.seguimiento_revisado_en) - Number(!!b.miembro.seguimiento_revisado_en)
+    );
+  }, [miembros, periodo, asistencia, hoyISO, umbrales]);
+
+  function etiquetaAlerta(al: Alerta): string {
+    if (al.tipo === "rachaServicios") return t("seguimiento.alerta.racha", { n: al.detalle });
+    if (al.tipo === "diasSinAsistir") return t("seguimiento.alerta.dias");
+    if (al.tipo === "nuevoSeguimiento") return t("seguimiento.alerta.nuevo");
+    return t("seguimiento.alerta.incompleto");
+  }
+
   const tarjetas: { id: TarjetaFiltro; label: string; valor: number; color: string }[] = [
     { id: "todos", label: t("informes.cardTotal"), valor: resumen.total, color: "var(--accent-4)" },
     { id: "activos", label: t("informes.cardActivos"), valor: resumen.activos, color: "var(--accent-2)" },
@@ -281,17 +313,52 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           </div>
         </div>
 
-        {/* Pestañas: registro de miembros vs. asistencia */}
+        {/* Pestañas: registro de miembros, asistencia y seguimiento */}
         <div style={{ display: "flex", gap: 6, margin: "14px 0 4px" }}>
-          {(["miembros", "asistencia"] as Vista[]).map((v) => (
+          {(["miembros", "asistencia", "seguimiento"] as Vista[]).map((v) => (
             <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
               {t(`informes.vista.${v}`)}
+              {v === "seguimiento" && gruposSeguimiento.length > 0 && <span className="badge" style={{ marginLeft: 6 }}>{gruposSeguimiento.length}</span>}
             </button>
           ))}
         </div>
 
         {loading ? (
           <LoadingState />
+        ) : vista === "seguimiento" ? (
+          gruposSeguimiento.length === 0 ? (
+            <EmptyState titulo={t("seguimiento.vacioTitulo")} sub={t("seguimiento.vacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
+          ) : (
+            <div className="data-table roomy enter">
+              <div className="thead" style={{ gridTemplateColumns: "1.5fr 2fr 150px 90px" }}>
+                <div className="th">{t("informes.colMiembro")}</div>
+                <div className="th">{t("seguimiento.colAlertas")}</div>
+                <div className="th">{t("seguimiento.colRevisado")}</div>
+                <div className="th"></div>
+              </div>
+              {gruposSeguimiento.map(({ miembro: m, alertas }) => (
+                <div key={m.id} className="tr" style={{ gridTemplateColumns: "1.5fr 2fr 150px 90px", cursor: "pointer" }} onClick={() => setSeguimiento(m)}>
+                  <div className="td" style={{ minWidth: 0 }}>
+                    <div className="p-name truncate">{m.nombre}</div>
+                    <span className={`tag ${BADGE_ESTADO[estadoEfectivo(m)] ?? "otros"}`}>{t(`membresia.estado.${estadoEfectivo(m)}`)}</span>
+                  </div>
+                  <div className="td" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {alertas.map((al, i) => (
+                      <span key={i} className={`tag ${ALERTA_TAG[al.tipo] ?? "otros"}`}>{etiquetaAlerta(al)}</span>
+                    ))}
+                  </div>
+                  <div className="td" style={{ fontSize: 12, color: m.seguimiento_revisado_en ? "var(--text-2)" : "var(--text-3)" }}>
+                    {m.seguimiento_revisado_en ? m.seguimiento_revisado_en.slice(0, 10) : t("seguimiento.sinRevisar")}
+                  </div>
+                  <div className="td" style={{ textAlign: "center" }} onClick={(ev) => ev.stopPropagation()}>
+                    <button className="btn secondary" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => setSeguimiento(m)}>
+                      {t("seguimiento.abrir")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : vista === "miembros" ? (
           <>
             {/* Tarjetas de resumen clicables */}
@@ -496,6 +563,17 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           member={ficha}
           onClose={() => setFicha(null)}
           onSaved={() => { onChanged(); setFicha(null); }}
+        />
+      )}
+
+      {seguimiento && (
+        <SeguimientoModal
+          church={church}
+          member={seguimiento}
+          alertas={(gruposSeguimiento.find((g) => g.miembro.id === seguimiento.id)?.alertas ?? []).map(etiquetaAlerta)}
+          onClose={() => setSeguimiento(null)}
+          onSaved={onChanged}
+          onVerPerfil={() => { const m = seguimiento; setSeguimiento(null); setFicha(m); }}
         />
       )}
     </>
