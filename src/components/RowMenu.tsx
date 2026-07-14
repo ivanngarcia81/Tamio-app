@@ -2,13 +2,21 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 
+export interface RowMenuItem {
+  label: string;
+  danger?: boolean;
+  onClick: () => void;
+}
+
 interface Props {
   onEdit: () => void;
   onDelete: () => void;
   deleteLabel?: string;
+  /** Acciones adicionales entre Editar y la acción destructiva. */
+  extraItems?: RowMenuItem[];
 }
 
-export default function RowMenu({ onEdit, onDelete, deleteLabel }: Props) {
+export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -59,6 +67,15 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel }: Props) {
             <div className="row-menu-item" onClick={() => { setOpen(false); onEdit(); }}>
               {t("common.editar")}
             </div>
+            {(extraItems ?? []).map((item) => (
+              <div
+                key={item.label}
+                className={`row-menu-item${item.danger ? " danger" : ""}`}
+                onClick={() => { setOpen(false); item.onClick(); }}
+              >
+                {item.label}
+              </div>
+            ))}
             <div className="row-menu-item danger" onClick={() => { setOpen(false); onDelete(); }}>
               {deleteLabel ?? t("common.eliminar")}
             </div>

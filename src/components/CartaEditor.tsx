@@ -33,6 +33,15 @@ function hoyLocal(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+/** Valores iniciales al crear una carta desde una solicitud. */
+export interface CartaPrefill {
+  tipo?: string;
+  destinatario_tipo?: string;
+  member_id?: number | null;
+  destinatario_nombre?: string;
+  asunto?: string;
+}
+
 interface Props {
   church: Church;
   /** null = carta nueva. */
@@ -41,23 +50,26 @@ interface Props {
   /** Ref que el padre consulta para advertir antes de cambiar de pestaña. */
   dirtyRef: React.MutableRefObject<boolean>;
   onSaved: (carta: Carta | null) => void;
+  prefill?: CartaPrefill | null;
+  /** Folio de la solicitud vinculada, solo informativo. */
+  vinculo?: string | null;
 }
 
-export default function CartaEditor({ church, carta, members, dirtyRef, onSaved }: Props) {
+export default function CartaEditor({ church, carta, members, dirtyRef, onSaved, prefill, vinculo }: Props) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirmEntrega, setConfirmEntrega] = useState(false);
 
-  const [tipo, setTipo] = useState(carta?.tipo ?? "recomendacion");
+  const [tipo, setTipo] = useState(carta?.tipo ?? prefill?.tipo ?? "recomendacion");
   const [fechaEmision, setFechaEmision] = useState(carta?.fecha_emision ?? hoyLocal());
   const [lugarEmision, setLugarEmision] = useState(carta?.lugar_emision ?? church.ciudad ?? "");
-  const [destTipo, setDestTipo] = useState(carta?.destinatario_tipo ?? "miembro");
-  const [memberId, setMemberId] = useState<number | null>(carta?.member_id ?? null);
-  const [destNombre, setDestNombre] = useState(carta?.destinatario_nombre ?? "");
+  const [destTipo, setDestTipo] = useState(carta?.destinatario_tipo ?? prefill?.destinatario_tipo ?? "miembro");
+  const [memberId, setMemberId] = useState<number | null>(carta?.member_id ?? prefill?.member_id ?? null);
+  const [destNombre, setDestNombre] = useState(carta?.destinatario_nombre ?? prefill?.destinatario_nombre ?? "");
   const [destDireccion, setDestDireccion] = useState(carta?.destinatario_direccion ?? "");
-  const [asunto, setAsunto] = useState(carta?.asunto ?? "");
+  const [asunto, setAsunto] = useState(carta?.asunto ?? prefill?.asunto ?? "");
   const [saludo, setSaludo] = useState(carta?.saludo ?? "");
   const [despedida, setDespedida] = useState(carta?.despedida ?? "");
   const [observaciones, setObservaciones] = useState(carta?.observaciones ?? "");
@@ -223,6 +235,11 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved 
 
   return (
     <div className="card pad-lg enter">
+      {vinculo && (
+        <div style={{ marginBottom: 14 }}>
+          <span className="tag donacion">{t("cartas.vinculadaA", { folio: vinculo })}</span>
+        </div>
+      )}
       {faltanDatos && (
         <div className="form-warning" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
           <IconWarn size={15} />

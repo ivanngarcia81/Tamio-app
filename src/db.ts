@@ -1337,12 +1337,186 @@ export async function updateCarta(id: number, churchId: number, c: NewCarta, est
      WHERE id = $17 AND church_id = $18`,
     [...cartaParams(c), id, churchId]
   );
+  // Al entregar una carta creada desde una solicitud, la solicitud se
+  // completa automáticamente (vínculo bidireccional).
+  if (c.estado === "entregada" && estadoAnterior !== "entregada") {
+    const rows = await d.select<{ solicitud_id: number | null }[]>(
+      "SELECT solicitud_id FROM cartas WHERE id = $1 AND church_id = $2",
+      [id, churchId]
+    );
+    const solicitudId = rows[0]?.solicitud_id;
+    if (solicitudId) {
+      const sol = await d.select<{ estado: string }[]>(
+        "SELECT estado FROM solicitudes WHERE id = $1 AND church_id = $2",
+        [solicitudId, churchId]
+      );
+      const previo = sol[0]?.estado;
+      if (previo && previo !== "entregada" && previo !== "cancelada") {
+        await registrarCambioEstadoSolicitud(solicitudId, churchId, previo, "entregada");
+        await d.execute(
+          "UPDATE solicitudes SET estado = 'entregada' WHERE id = $1 AND church_id = $2",
+          [solicitudId, churchId]
+        );
+      }
+    }
+  }
 }
 
 /** Eliminar solo se permite para borradores (la política prefiere archivar/cancelar). */
 export async function deleteCarta(id: number, churchId: number): Promise<void> {
   const d = await getDb();
+  // Si el borrador venía de una solicitud, la solicitud queda desvinculada.
+  await d.execute("UPDATE solicitudes SET carta_id = NULL WHERE carta_id = $1 AND church_id = $2", [id, churchId]);
   await d.execute("DELETE FROM cartas WHERE id = $1 AND church_id = $2 AND estado = 'borrador'", [id, churchId]);
+}
+
+/** Estado previo al actual según el historial (para "Restaurar"). */
+export function estadoAnteriorDeHistorial(historialJson: string, estadoActual: string): string {
+  try {
+    const hist: CartaCambioEstado[] = JSON.parse(historialJson);
+    for (let i = hist.length - 1; i >= 0; i--) {
+      if (hist[i].a === estadoActual && hist[i].de) return hist[i].de;
+    }
+  } catch { /* noop */ }
+  return "borrador";
+}
+
+// ---------- Solicitudes de cartas ----------
+
+export interface Solicitud {
+  id: number;
+  church_id: number;
+  numero_seq: number;
+  /** SOL-AAAA-0001 — autogenerado, solo lectura. */
+  folio: string;
+  member_id: number | null;
+  solicitante_externo: string | null;
+  tipo_carta: string;
+  motivo: string | null;
+  fecha_solicitud: string;
+  fecha_requerida: string | null;
+  /** impresa | email | mensajeria | recoge | otro */
+  medio_entrega: string | null;
+  responsable: string | null;
+  /** normal | importante | urgente */
+  prioridad: string;
+  /** nueva | revision | preparacion | firma | lista | entregada | cancelada */
+  estado: string;
+  observaciones: string | null;
+  carta_id: number | null;
+  historial_estados: string;
+  creado_en: string;
+  modificado_en: string;
+}
+
+export interface NewSolicitud {
+  member_id: number | null;
+  solicitante_externo: string | null;
+  tipo_carta: string;
+  motivo: string | null;
+  fecha_solicitud: string;
+  fecha_requerida: string | null;
+  medio_entrega: string | null;
+  responsable: string | null;
+  prioridad: string;
+  estado: string;
+  observaciones: string | null;
+}
+
+export async function listSolicitudes(churchId: number): Promise<Solicitud[]> {
+  const d = await getDb();
+  return d.select<Solicitud[]>(
+    "SELECT * FROM solicitudes WHERE church_id = $1 ORDER BY fecha_solicitud DESC, id DESC",
+    [churchId]
+  );
+}
+
+function solicitudParams(s: NewSolicitud): unknown[] {
+  return [
+    s.member_id, s.solicitante_externo, s.tipo_carta, s.motivo, s.fecha_solicitud,
+    s.fecha_requerida, s.medio_entrega, s.responsable, s.prioridad, s.estado, s.observaciones,
+  ];
+}
+
+export async function insertSolicitud(churchId: number, s: NewSolicitud): Promise<Solicitud | null> {
+  const d = await getDb();
+  const anio = s.fecha_solicitud.slice(0, 4);
+  const rows0 = await d.select<{ m: number | null }[]>(
+    "SELECT MAX(numero_seq) AS m FROM solicitudes WHERE church_id = $1 AND substr(fecha_solicitud, 1, 4) = $2",
+    [churchId, anio]
+  );
+  const seq = (rows0[0]?.m ?? 0) + 1;
+  const folio = `SOL-${anio}-${String(seq).padStart(4, "0")}`;
+  const historial = JSON.stringify([{ de: "", a: s.estado, fecha: nowLocalIso() }]);
+  await d.execute(
+    `INSERT INTO solicitudes (
+       member_id, solicitante_externo, tipo_carta, motivo, fecha_solicitud, fecha_requerida,
+       medio_entrega, responsable, prioridad, estado, observaciones,
+       church_id, numero_seq, folio, historial_estados
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+    [...solicitudParams(s), churchId, seq, folio, historial]
+  );
+  const rows = await d.select<Solicitud[]>(
+    "SELECT * FROM solicitudes WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
+    [churchId, folio]
+  );
+  return rows[0] ?? null;
+}
+
+async function registrarCambioEstadoSolicitud(id: number, churchId: number, de: string, a: string): Promise<void> {
+  if (de === a) return;
+  const d = await getDb();
+  const rows = await d.select<{ historial_estados: string }[]>(
+    "SELECT historial_estados FROM solicitudes WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+  let hist: CartaCambioEstado[] = [];
+  try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
+  hist.push({ de, a, fecha: nowLocalIso() });
+  await d.execute(
+    "UPDATE solicitudes SET historial_estados = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3",
+    [JSON.stringify(hist), id, churchId]
+  );
+}
+
+export async function updateSolicitud(id: number, churchId: number, s: NewSolicitud, estadoAnterior: string): Promise<void> {
+  const d = await getDb();
+  await registrarCambioEstadoSolicitud(id, churchId, estadoAnterior, s.estado);
+  await d.execute(
+    `UPDATE solicitudes SET
+       member_id = $1, solicitante_externo = $2, tipo_carta = $3, motivo = $4,
+       fecha_solicitud = $5, fecha_requerida = $6, medio_entrega = $7, responsable = $8,
+       prioridad = $9, estado = $10, observaciones = $11,
+       modificado_en = datetime('now', 'localtime')
+     WHERE id = $12 AND church_id = $13`,
+    [...solicitudParams(s), id, churchId]
+  );
+}
+
+/** Eliminar solo solicitudes nuevas sin carta vinculada; el resto se cancela. */
+export async function deleteSolicitud(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "DELETE FROM solicitudes WHERE id = $1 AND church_id = $2 AND estado = 'nueva' AND carta_id IS NULL",
+    [id, churchId]
+  );
+}
+
+/** Vincula en ambos sentidos la carta creada desde una solicitud y pasa la
+ *  solicitud a "en preparación". */
+export async function vincularCartaSolicitud(solicitudId: number, cartaId: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  const rows = await d.select<{ estado: string }[]>(
+    "SELECT estado FROM solicitudes WHERE id = $1 AND church_id = $2",
+    [solicitudId, churchId]
+  );
+  const estadoPrevio = rows[0]?.estado ?? "nueva";
+  await d.execute("UPDATE cartas SET solicitud_id = $1 WHERE id = $2 AND church_id = $3", [solicitudId, cartaId, churchId]);
+  await registrarCambioEstadoSolicitud(solicitudId, churchId, estadoPrevio, "preparacion");
+  await d.execute(
+    "UPDATE solicitudes SET carta_id = $1, estado = 'preparacion' WHERE id = $2 AND church_id = $3",
+    [cartaId, solicitudId, churchId]
+  );
 }
 
 // ---------- Registro de servicios ----------

@@ -316,6 +316,34 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_cartas_church ON cartas(church_id, fecha_emision DESC);
         "#,
+    }, Migration {
+        version: 17,
+        description: "cartas y traslados fase 2: solicitudes de cartas con vínculo bidireccional",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS solicitudes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                numero_seq INTEGER NOT NULL,
+                folio TEXT NOT NULL,
+                member_id INTEGER REFERENCES members(id),
+                solicitante_externo TEXT,
+                tipo_carta TEXT NOT NULL DEFAULT 'recomendacion',
+                motivo TEXT,
+                fecha_solicitud TEXT NOT NULL,
+                fecha_requerida TEXT,
+                medio_entrega TEXT,
+                responsable TEXT,
+                prioridad TEXT NOT NULL DEFAULT 'normal',
+                estado TEXT NOT NULL DEFAULT 'nueva',
+                observaciones TEXT,
+                carta_id INTEGER REFERENCES cartas(id),
+                historial_estados TEXT NOT NULL DEFAULT '[]',
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_solicitudes_church ON solicitudes(church_id, fecha_solicitud DESC);
+        "#,
     }]
 }
 

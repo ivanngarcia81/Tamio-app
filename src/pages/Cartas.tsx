@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  deleteCarta, fmtFechaCorta, listCartas, listMembersRegistro, updateCarta,
-  type Carta, type Church, type Member, type NewCarta,
+  deleteCarta, deleteSolicitud, estadoAnteriorDeHistorial, fmtFechaCorta, insertCarta, listCartas,
+  listMembersRegistro, listSolicitudes, updateCarta, updateSolicitud, vincularCartaSolicitud,
+  type Carta, type Church, type Member, type NewCarta, type NewSolicitud, type Solicitud,
 } from "../db";
 import { EmptyState } from "../components/TxList";
-import RowMenu from "../components/RowMenu";
+import RowMenu, { type RowMenuItem } from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
-import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA } from "../components/CartaEditor";
+import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA, type CartaPrefill } from "../components/CartaEditor";
+import SolicitudModal from "../components/SolicitudModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
@@ -16,9 +18,26 @@ import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services
 import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 
 const COLS = "130px 1.8fr 110px 150px 130px 70px";
+const COLS_SOL = "120px 1.6fr 120px 110px 140px 70px";
 const PAGE_SIZE = 25;
 
-type Tab = "resumen" | "nueva" | "archivo";
+type Tab = "resumen" | "nueva" | "solicitudes" | "archivo";
+
+const BADGE_PRIORIDAD: Record<string, string> = {
+  normal: "administracion",
+  importante: "servicios",
+  urgente: "pastores",
+};
+
+const BADGE_SOLICITUD: Record<string, string> = {
+  nueva: "donacion",
+  revision: "musicos",
+  preparacion: "servicios",
+  firma: "eventos",
+  lista: "diezmo",
+  entregada: "activo",
+  cancelada: "pastores",
+};
 
 const BADGE_ESTADO: Record<string, string> = {
   borrador: "administracion",
@@ -47,7 +66,13 @@ interface Props {
 export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
   const [cartas, setCartas] = useState<Carta[]>([]);
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [solicitudModal, setSolicitudModal] = useState<{ open: boolean; solicitud: Solicitud | null }>({ open: false, solicitud: null });
+  const [pendingDeleteSol, setPendingDeleteSol] = useState<Solicitud | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ tipo: "entregar" | "cancelar"; carta: Carta } | null>(null);
+  const [desdeSolicitud, setDesdeSolicitud] = useState<Solicitud | null>(null);
+  const [filtroMiembro, setFiltroMiembro] = useState<string>("todos");
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("resumen");
   const [editando, setEditando] = useState<Carta | null>(null);
@@ -65,10 +90,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    Promise.all([listCartas(church.id), listMembersRegistro(church.id)])
-      .then(([nuevasCartas, nuevosMembers]) => {
+    Promise.all([listCartas(church.id), listSolicitudes(church.id), listMembersRegistro(church.id)])
+      .then(([nuevasCartas, nuevasSolicitudes, nuevosMembers]) => {
         if (cancelado) return;
         setCartas(nuevasCartas);
+        setSolicitudes(nuevasSolicitudes);
         setMembers(nuevosMembers);
       })
       .catch(console.error)
@@ -85,8 +111,33 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
       return;
     }
     if (destino === "nueva" && tab !== "nueva") setEditando(null);
+    if (destino !== "nueva") setDesdeSolicitud(null);
     setTab(destino);
   }, [tab]);
+
+  const nombreMiembro = useCallback(
+    (id: number | null) => (id === null ? null : members.find((m) => m.id === id)?.nombre ?? null),
+    [members]
+  );
+
+  /** "Crear carta desde esta solicitud": copia los datos y vincula ambos
+   *  registros al guardar. Se invoca desde la pestaña Solicitudes (el editor
+   *  no está montado ahí, así que no hay cambios que perder). */
+  function crearDesdeSolicitud(s: Solicitud) {
+    setEditando(null);
+    setDesdeSolicitud(s);
+    setTab("nueva");
+  }
+
+  const prefillDesdeSolicitud: CartaPrefill | null = desdeSolicitud
+    ? {
+        tipo: desdeSolicitud.tipo_carta,
+        destinatario_tipo: desdeSolicitud.member_id !== null ? "miembro" : "externo",
+        member_id: desdeSolicitud.member_id,
+        destinatario_nombre: desdeSolicitud.solicitante_externo ?? "",
+        asunto: desdeSolicitud.motivo ?? "",
+      }
+    : null;
 
   function abrirCarta(c: Carta) {
     if (tab === "nueva" && editorDirtyRef.current) {
@@ -135,6 +186,70 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     onChanged();
   }
 
+  function cartaComoPayload(c: Carta, estado: string): NewCarta {
+    return {
+      tipo: c.tipo, fecha_emision: c.fecha_emision, lugar_emision: c.lugar_emision,
+      destinatario_tipo: c.destinatario_tipo, member_id: c.member_id,
+      destinatario_nombre: c.destinatario_nombre, destinatario_direccion: c.destinatario_direccion,
+      asunto: c.asunto, saludo: c.saludo, cuerpo_html: c.cuerpo_html, despedida: c.despedida,
+      firmas: parseFirmas(c.firmas), observaciones: c.observaciones,
+      estado, entregada_a: c.entregada_a, fecha_entrega: c.fecha_entrega,
+    };
+  }
+
+  async function duplicarCarta(c: Carta) {
+    const hoy = new Date();
+    const p = (x: number) => String(x).padStart(2, "0");
+    const payload = cartaComoPayload(c, "borrador");
+    payload.fecha_emision = `${hoy.getFullYear()}-${p(hoy.getMonth() + 1)}-${p(hoy.getDate())}`;
+    payload.firmas = payload.firmas.map((f) => ({ ...f, firmado: false }));
+    payload.entregada_a = null;
+    payload.fecha_entrega = null;
+    const creada = await insertCarta(church.id, payload);
+    playSound("guardado");
+    showToast(t("cartas.toastDuplicada", { folio: creada?.folio ?? "" }));
+    setRefrescoLocal((k) => k + 1);
+    onChanged();
+  }
+
+  async function cambiarEstadoCarta(c: Carta, estado: string) {
+    await updateCarta(c.id, church.id, cartaComoPayload(c, estado), c.estado);
+    playSound("guardado");
+    showToast(t("cartas.toastGuardada"));
+    setRefrescoLocal((k) => k + 1);
+    onChanged();
+  }
+
+  async function restaurarCarta(c: Carta) {
+    await cambiarEstadoCarta(c, estadoAnteriorDeHistorial(c.historial_estados, c.estado));
+  }
+
+  function solicitudComoPayload(s: Solicitud, estado: string): NewSolicitud {
+    return {
+      member_id: s.member_id, solicitante_externo: s.solicitante_externo, tipo_carta: s.tipo_carta,
+      motivo: s.motivo, fecha_solicitud: s.fecha_solicitud, fecha_requerida: s.fecha_requerida,
+      medio_entrega: s.medio_entrega, responsable: s.responsable, prioridad: s.prioridad,
+      estado, observaciones: s.observaciones,
+    };
+  }
+
+  async function eliminarOCancelarSolicitud() {
+    if (!pendingDeleteSol) return;
+    const s = pendingDeleteSol;
+    if (s.estado === "nueva" && s.carta_id === null) {
+      await deleteSolicitud(s.id, church.id);
+      playSound("eliminar");
+      showToast(t("solicitudes.toastEliminada"));
+    } else {
+      await updateSolicitud(s.id, church.id, solicitudComoPayload(s, "cancelada"), s.estado);
+      playSound("guardado");
+      showToast(t("solicitudes.toastCancelada"));
+    }
+    setPendingDeleteSol(null);
+    setRefrescoLocal((k) => k + 1);
+    onChanged();
+  }
+
   // ----- Datos derivados para Resumen y Archivo -----
   const mesActual = new Date().toISOString().slice(0, 7);
   const resumen = useMemo(() => ({
@@ -148,6 +263,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const visibles = cartas
     .filter((c) => (filtroEstado === "todas" ? true : c.estado === filtroEstado))
     .filter((c) => (filtroTipo === "todos" ? true : c.tipo === filtroTipo))
+    .filter((c) => (filtroMiembro === "todos" ? true : c.member_id === Number(filtroMiembro)))
     .filter((c) => (!desde || c.fecha_emision >= desde) && (!hasta || c.fecha_emision <= hasta))
     .filter(
       (c) =>
@@ -180,7 +296,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
 
       <div className="content">
         <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-          {(["resumen", "nueva", "archivo"] as Tab[]).map((tb) => (
+          {(["resumen", "nueva", "solicitudes", "archivo"] as Tab[]).map((tb) => (
             <button key={tb} className={`chip${tab === tb ? " active" : ""}`} onClick={() => cambiarTab(tb)}>
               {t(`cartas.tab.${tb}`)}
             </button>
@@ -231,17 +347,101 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           </>
         ) : tab === "nueva" ? (
           <CartaEditor
-            key={editando?.id ?? "nueva"}
+            key={editando?.id ?? `nueva-${desdeSolicitud?.id ?? 0}`}
             church={church}
             carta={editando}
             members={members}
             dirtyRef={editorDirtyRef}
-            onSaved={(creada) => {
+            prefill={prefillDesdeSolicitud}
+            vinculo={desdeSolicitud?.folio ?? solicitudes.find((s) => s.id === editando?.solicitud_id)?.folio ?? null}
+            onSaved={async (creada) => {
+              if (creada && desdeSolicitud) {
+                await vincularCartaSolicitud(desdeSolicitud.id, creada.id, church.id);
+                showToast(t("solicitudes.toastVinculada", { sol: desdeSolicitud.folio, carta: creada.folio }));
+              }
               setRefrescoLocal((k) => k + 1);
               onChanged();
               if (creada) setEditando(creada);
             }}
           />
+        ) : tab === "solicitudes" ? (
+          <>
+            <div className="tx-head">
+              <span className="roster-counters">
+                <span>{t("solicitudes.pendientes")}: <b>{solicitudes.filter((s) => !["entregada", "cancelada"].includes(s.estado)).length}</b></span>
+              </span>
+              <button className="btn primary" onClick={() => setSolicitudModal({ open: true, solicitud: null })}>
+                <IconPlus size={14} /> {t("solicitudes.nuevaSolicitud")}
+              </button>
+            </div>
+            {solicitudes.length === 0 ? (
+              <EmptyState
+                titulo={t("solicitudes.aunNoHay")}
+                sub={t("solicitudes.agregaPrimera")}
+                icon={<IconMail size={20} strokeWidth={1.8} />}
+              />
+            ) : (
+              <div className="data-table roomy">
+                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
+                  <div className="th">{t("actas.colFolio")}</div>
+                  <div className="th">{t("solicitudes.colSolicitud")}</div>
+                  <div className="th">{t("solicitudes.colFechas")}</div>
+                  <div className="th">{t("solicitudes.prioridad")}</div>
+                  <div className="th">{t("membresia.colEstado")}</div>
+                  <div className="th"></div>
+                </div>
+                {solicitudes.map((s) => {
+                  const cartaVinculada = cartas.find((c) => c.id === s.carta_id) ?? null;
+                  const extra: RowMenuItem[] = [];
+                  if (!s.carta_id && !["entregada", "cancelada"].includes(s.estado)) {
+                    extra.push({ label: t("solicitudes.crearCarta"), onClick: () => crearDesdeSolicitud(s) });
+                  }
+                  if (cartaVinculada) {
+                    extra.push({ label: t("solicitudes.abrirCarta", { folio: cartaVinculada.folio }), onClick: () => abrirCarta(cartaVinculada) });
+                  }
+                  return (
+                    <div
+                      className="tr"
+                      key={s.id}
+                      style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
+                      onClick={() => setSolicitudModal({ open: true, solicitud: s })}
+                    >
+                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{s.folio}</div>
+                      <div className="td" style={{ minWidth: 0 }}>
+                        <div className="p-name truncate">{nombreMiembro(s.member_id) ?? s.solicitante_externo ?? "—"}</div>
+                        <div className="p-mail truncate">
+                          {t(`cartas.tipoDoc.${s.tipo_carta}`)}
+                          {cartaVinculada ? ` · ${cartaVinculada.folio}` : ""}
+                        </div>
+                      </div>
+                      <div className="td" style={{ fontSize: 12, color: "var(--text-2)" }}>
+                        <div>{fmtFechaCorta(s.fecha_solicitud)}</div>
+                        {s.fecha_requerida && (
+                          <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
+                            {t("solicitudes.para")} {fmtFechaCorta(s.fecha_requerida)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="td">
+                        <span className={`tag ${BADGE_PRIORIDAD[s.prioridad] ?? "otros"}`}>{t(`solicitudes.prioridadOpcion.${s.prioridad}`)}</span>
+                      </div>
+                      <div className="td">
+                        <span className={`tag ${BADGE_SOLICITUD[s.estado] ?? "otros"}`}>{t(`solicitudes.estado.${s.estado}`)}</span>
+                      </div>
+                      <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                        <RowMenu
+                          onEdit={() => setSolicitudModal({ open: true, solicitud: s })}
+                          extraItems={extra}
+                          onDelete={() => setPendingDeleteSol(s)}
+                          deleteLabel={s.estado === "nueva" && s.carta_id === null ? t("common.eliminar") : t("solicitudes.cancelar")}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         ) : (
           <>
             <div className="tx-head" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -264,6 +464,12 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <option value="todos">{t("cartas.filtroTodosTipos")}</option>
                 {TIPOS_CARTA.map((ti) => (
                   <option key={ti} value={ti}>{t(`cartas.tipoDoc.${ti}`)}</option>
+                ))}
+              </select>
+              <select className="form-input" style={{ width: "auto", maxWidth: 180 }} value={filtroMiembro} onChange={(e) => setFiltroMiembro(e.target.value)} aria-label={t("cartas.filtroMiembro")}>
+                <option value="todos">{t("cartas.filtroMiembro")}</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>{m.nombre}</option>
                 ))}
               </select>
               <input type="date" className="form-input" style={{ width: "auto" }} value={desde} onChange={(e) => setDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
@@ -309,6 +515,19 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                       </span>
                       <RowMenu
                         onEdit={() => abrirCarta(c)}
+                        extraItems={(() => {
+                          const extra: RowMenuItem[] = [
+                            { label: t("cartas.duplicar"), onClick: () => duplicarCarta(c) },
+                          ];
+                          if (!["entregada", "archivada", "cancelada"].includes(c.estado)) {
+                            extra.push({ label: t("cartas.marcarEntregadaAccion"), onClick: () => setConfirmAction({ tipo: "entregar", carta: c }) });
+                            extra.push({ label: t("cartas.cancelarAccion"), danger: true, onClick: () => setConfirmAction({ tipo: "cancelar", carta: c }) });
+                          }
+                          if (["archivada", "cancelada"].includes(c.estado)) {
+                            extra.push({ label: t("cartas.restaurar"), onClick: () => restaurarCarta(c) });
+                          }
+                          return extra;
+                        })()}
                         onDelete={() => (c.estado === "borrador" ? setPendingDelete(c) : archivarCarta(c))}
                         deleteLabel={c.estado === "borrador" ? t("common.eliminar") : t("cartas.archivar")}
                       />
@@ -330,6 +549,66 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           danger
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={
+            confirmAction.tipo === "entregar"
+              ? t("cartas.entregarTitulo", { folio: confirmAction.carta.folio })
+              : t("cartas.cancelarTitulo", { folio: confirmAction.carta.folio })
+          }
+          message={
+            confirmAction.tipo === "entregar"
+              ? parseFirmas(confirmAction.carta.firmas).some((f) => !f.firmado)
+                ? t("cartas.firmasPendientesMensaje")
+                : t("cartas.entregarMensaje")
+              : t("cartas.cancelarMensaje")
+          }
+          confirmLabel={confirmAction.tipo === "entregar" ? t("cartas.marcarEntregada") : t("cartas.cancelarAccion")}
+          danger={confirmAction.tipo === "cancelar"}
+          onConfirm={() => {
+            cambiarEstadoCarta(confirmAction.carta, confirmAction.tipo === "entregar" ? "entregada" : "cancelada");
+            setConfirmAction(null);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {pendingDeleteSol && (
+        <ConfirmDialog
+          title={
+            pendingDeleteSol.estado === "nueva" && pendingDeleteSol.carta_id === null
+              ? t("solicitudes.eliminarTitulo", { folio: pendingDeleteSol.folio })
+              : t("solicitudes.cancelarTitulo", { folio: pendingDeleteSol.folio })
+          }
+          message={
+            pendingDeleteSol.estado === "nueva" && pendingDeleteSol.carta_id === null
+              ? t("solicitudes.eliminarMensaje")
+              : t("solicitudes.cancelarMensaje")
+          }
+          confirmLabel={
+            pendingDeleteSol.estado === "nueva" && pendingDeleteSol.carta_id === null
+              ? t("common.eliminar")
+              : t("solicitudes.cancelar")
+          }
+          danger
+          onConfirm={eliminarOCancelarSolicitud}
+          onCancel={() => setPendingDeleteSol(null)}
+        />
+      )}
+
+      {solicitudModal.open && (
+        <SolicitudModal
+          church={church}
+          solicitud={solicitudModal.solicitud}
+          members={members}
+          onClose={() => setSolicitudModal({ open: false, solicitud: null })}
+          onSaved={() => {
+            setRefrescoLocal((k) => k + 1);
+            onChanged();
+          }}
         />
       )}
 
