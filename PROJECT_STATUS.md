@@ -39,7 +39,10 @@ temas claro/oscuro, sonidos opcionales, atajos de teclado.
 
 ## Pendiente (siguiente etapa)
 
-1. **Fase 0 — Distribución**: `tauri build` + firma → instalador .dmg.
+1. **Fase 0 — Distribución**: LISTA en el repo (v1.0.0, bundle .dmg para
+   Apple Silicon, sin firma; guía en `docs/DISTRIBUCION.md`, comando
+   `npm run dist`). Solo falta ejecutar el build en la Mac de desarrollo.
+   Firma de Apple ($99/año) pospuesta hasta que exista el backend.
 2. **Backend + cuentas** (3 usuarias en Macs distintas): sync en la
    nube, roles (tesoreras: todo; secretaria: miembros + solo lectura
    financiera; pastor futuro: solo lectura). La matriz acordada está en
