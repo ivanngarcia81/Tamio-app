@@ -1174,6 +1174,102 @@ export async function deleteActa(id: number, churchId: number): Promise<void> {
   await d.execute("DELETE FROM actas WHERE id = $1 AND church_id = $2", [id, churchId]);
 }
 
+// ---------- Registro de servicios ----------
+
+export interface Servicio {
+  id: number;
+  church_id: number;
+  fecha: string;
+  /** Clave de catálogo: dominical, oracion, estudio, jovenes, damas,
+   *  caballeros, vigilia, evangelistico, especial, otro. */
+  tipo: string;
+  dirige: string | null;
+  predica: string | null;
+  titulo_mensaje: string | null;
+  texto_biblico: string | null;
+  resumen_mensaje: string | null;
+  /** Arreglo JSON de nombres (cantos y participaciones especiales). */
+  participaciones: string;
+  tema_escuela: string | null;
+  maestro_escuela: string | null;
+  /** Arreglos JSON de nombres. */
+  asistentes: string;
+  ausentes: string;
+  visitantes: string;
+  ninos: number;
+  jovenes: number;
+  adultos: number;
+  eventos: string | null;
+  creado_en: string;
+}
+
+export interface NewServicio {
+  fecha: string;
+  tipo: string;
+  dirige: string | null;
+  predica: string | null;
+  titulo_mensaje: string | null;
+  texto_biblico: string | null;
+  resumen_mensaje: string | null;
+  participaciones: string[];
+  tema_escuela: string | null;
+  maestro_escuela: string | null;
+  asistentes: string[];
+  ausentes: string[];
+  visitantes: string[];
+  ninos: number;
+  jovenes: number;
+  adultos: number;
+  eventos: string | null;
+}
+
+export async function listServicios(churchId: number): Promise<Servicio[]> {
+  const d = await getDb();
+  return d.select<Servicio[]>(
+    "SELECT * FROM servicios WHERE church_id = $1 ORDER BY fecha DESC, id DESC",
+    [churchId]
+  );
+}
+
+function servicioParams(s: NewServicio): unknown[] {
+  return [
+    s.fecha, s.tipo, s.dirige, s.predica, s.titulo_mensaje, s.texto_biblico, s.resumen_mensaje,
+    JSON.stringify(s.participaciones), s.tema_escuela, s.maestro_escuela,
+    JSON.stringify(s.asistentes), JSON.stringify(s.ausentes), JSON.stringify(s.visitantes),
+    s.ninos, s.jovenes, s.adultos, s.eventos,
+  ];
+}
+
+export async function insertServicio(churchId: number, s: NewServicio): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `INSERT INTO servicios (
+       fecha, tipo, dirige, predica, titulo_mensaje, texto_biblico, resumen_mensaje,
+       participaciones, tema_escuela, maestro_escuela, asistentes, ausentes, visitantes,
+       ninos, jovenes, adultos, eventos, church_id
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+    [...servicioParams(s), churchId]
+  );
+}
+
+export async function updateServicio(id: number, churchId: number, s: NewServicio): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE servicios SET
+       fecha = $1, tipo = $2, dirige = $3, predica = $4, titulo_mensaje = $5,
+       texto_biblico = $6, resumen_mensaje = $7, participaciones = $8, tema_escuela = $9,
+       maestro_escuela = $10, asistentes = $11, ausentes = $12, visitantes = $13,
+       ninos = $14, jovenes = $15, adultos = $16, eventos = $17
+     WHERE id = $18 AND church_id = $19`,
+    [...servicioParams(s), id, churchId]
+  );
+}
+
+export async function deleteServicio(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM servicios WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
 /** TODOS los movimientos (incluidos pendientes y rechazados), para respaldo. */
 export async function listAllTxForExport(churchId: number): Promise<Tx[]> {
   const d = await getDb();

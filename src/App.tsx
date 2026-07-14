@@ -11,6 +11,7 @@ import Reportes from "./pages/Reportes";
 import Depositos from "./pages/Depositos";
 import Membresia from "./pages/Membresia";
 import Actas from "./pages/Actas";
+import Servicios from "./pages/Servicios";
 import SeccionSecretaria from "./pages/SeccionSecretaria";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
@@ -186,7 +187,10 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             path="/actas"
             element={<Actas church={church} refreshKey={refreshKey} onChanged={onChanged} />}
           />
-          <Route path="/servicios" element={<SeccionSecretaria seccion="servicios" />} />
+          <Route
+            path="/servicios"
+            element={<Servicios church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+          />
           <Route path="/cartas" element={<SeccionSecretaria seccion="cartas" />} />
           <Route path="/reporte-miembros" element={<SeccionSecretaria seccion="reporteMiembros" />} />
           <Route path="/agenda" element={<SeccionSecretaria seccion="agenda" />} />

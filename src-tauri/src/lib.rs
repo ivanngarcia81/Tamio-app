@@ -230,6 +230,35 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_actas_church_fecha ON actas(church_id, fecha DESC);
         "#,
+    }, Migration {
+        version: 14,
+        description: "registro de servicios: culto, mensaje, escuela bíblica y asistencia",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS servicios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                fecha TEXT NOT NULL,
+                tipo TEXT NOT NULL DEFAULT 'dominical',
+                dirige TEXT,
+                predica TEXT,
+                titulo_mensaje TEXT,
+                texto_biblico TEXT,
+                resumen_mensaje TEXT,
+                participaciones TEXT NOT NULL DEFAULT '[]',
+                tema_escuela TEXT,
+                maestro_escuela TEXT,
+                asistentes TEXT NOT NULL DEFAULT '[]',
+                ausentes TEXT NOT NULL DEFAULT '[]',
+                visitantes TEXT NOT NULL DEFAULT '[]',
+                ninos INTEGER NOT NULL DEFAULT 0,
+                jovenes INTEGER NOT NULL DEFAULT 0,
+                adultos INTEGER NOT NULL DEFAULT 0,
+                eventos TEXT,
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_servicios_church_fecha ON servicios(church_id, fecha DESC);
+        "#,
     }]
 }
 
