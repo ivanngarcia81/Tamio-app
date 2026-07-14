@@ -1043,6 +1043,137 @@ export async function restoreMember(id: number, churchId: number): Promise<void>
   );
 }
 
+// ---------- Actas de reuniones ----------
+
+export interface ActaMocion {
+  texto: string;
+  presenta: string;
+  secunda: string;
+  /** Resultado de la votación en texto libre (p. ej. "Aprobada, 8 a favor y 2 en contra"). */
+  resultado: string;
+}
+
+export interface ActaAcuerdo {
+  texto: string;
+  responsable: string;
+  fecha_limite: string | null;
+}
+
+export interface Acta {
+  id: number;
+  church_id: number;
+  folio: string;
+  /** Clave de catálogo: administrativa, lideres, asamblea, pastoral, eleccion,
+   *  nombramiento, recepcion, compraventa, presupuesto, disciplina, otra. */
+  tipo: string;
+  titulo: string;
+  fecha: string;
+  hora_inicio: string | null;
+  hora_cierre: string | null;
+  lugar: string | null;
+  preside: string | null;
+  secretario: string | null;
+  /** Arreglos JSON de nombres. */
+  presentes: string;
+  ausentes: string;
+  invitados: string;
+  quorum: number;
+  agenda: string | null;
+  resumen: string | null;
+  /** Arreglo JSON de ActaMocion. */
+  mociones: string;
+  /** Arreglo JSON de ActaAcuerdo. */
+  acuerdos: string;
+  /** borrador | pendiente | aprobada | corregida | archivada */
+  estado: string;
+  confidencial: number;
+  fecha_aprobacion: string | null;
+  creado_en: string;
+}
+
+export interface NewActa {
+  tipo: string;
+  titulo: string;
+  fecha: string;
+  hora_inicio: string | null;
+  hora_cierre: string | null;
+  lugar: string | null;
+  preside: string | null;
+  secretario: string | null;
+  presentes: string[];
+  ausentes: string[];
+  invitados: string[];
+  quorum: boolean;
+  agenda: string | null;
+  resumen: string | null;
+  mociones: ActaMocion[];
+  acuerdos: ActaAcuerdo[];
+  estado: string;
+  confidencial: boolean;
+  fecha_aprobacion: string | null;
+}
+
+export async function listActas(churchId: number): Promise<Acta[]> {
+  const d = await getDb();
+  return d.select<Acta[]>(
+    "SELECT * FROM actas WHERE church_id = $1 ORDER BY fecha DESC, id DESC",
+    [churchId]
+  );
+}
+
+/** Folio consecutivo por año: ACTA-2026-001, ACTA-2026-002… */
+async function nextActaFolio(churchId: number, fecha: string): Promise<string> {
+  const d = await getDb();
+  const anio = fecha.slice(0, 4);
+  const rows = await d.select<{ n: number }[]>(
+    "SELECT count(*) AS n FROM actas WHERE church_id = $1 AND substr(fecha, 1, 4) = $2",
+    [churchId, anio]
+  );
+  const n = (rows[0]?.n ?? 0) + 1;
+  return `ACTA-${anio}-${String(n).padStart(3, "0")}`;
+}
+
+function actaParams(a: NewActa): unknown[] {
+  return [
+    a.tipo, a.titulo, a.fecha, a.hora_inicio, a.hora_cierre, a.lugar, a.preside, a.secretario,
+    JSON.stringify(a.presentes), JSON.stringify(a.ausentes), JSON.stringify(a.invitados),
+    a.quorum ? 1 : 0, a.agenda, a.resumen,
+    JSON.stringify(a.mociones), JSON.stringify(a.acuerdos),
+    a.estado, a.confidencial ? 1 : 0, a.fecha_aprobacion,
+  ];
+}
+
+export async function insertActa(churchId: number, a: NewActa): Promise<void> {
+  const d = await getDb();
+  const folio = await nextActaFolio(churchId, a.fecha);
+  await d.execute(
+    `INSERT INTO actas (
+       tipo, titulo, fecha, hora_inicio, hora_cierre, lugar, preside, secretario,
+       presentes, ausentes, invitados, quorum, agenda, resumen, mociones, acuerdos,
+       estado, confidencial, fecha_aprobacion, church_id, folio
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+    [...actaParams(a), churchId, folio]
+  );
+}
+
+export async function updateActa(id: number, churchId: number, a: NewActa): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE actas SET
+       tipo = $1, titulo = $2, fecha = $3, hora_inicio = $4, hora_cierre = $5, lugar = $6,
+       preside = $7, secretario = $8, presentes = $9, ausentes = $10, invitados = $11,
+       quorum = $12, agenda = $13, resumen = $14, mociones = $15, acuerdos = $16,
+       estado = $17, confidencial = $18, fecha_aprobacion = $19
+     WHERE id = $20 AND church_id = $21`,
+    [...actaParams(a), id, churchId]
+  );
+}
+
+export async function deleteActa(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM actas WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
 /** TODOS los movimientos (incluidos pendientes y rechazados), para respaldo. */
 export async function listAllTxForExport(churchId: number): Promise<Tx[]> {
   const d = await getDb();

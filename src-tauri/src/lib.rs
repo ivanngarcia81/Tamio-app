@@ -198,6 +198,38 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE members ADD COLUMN disponibilidad TEXT;
             ALTER TABLE members ADD COLUMN interes_servir INTEGER NOT NULL DEFAULT 0;
         "#,
+    }, Migration {
+        version: 13,
+        description: "actas de reuniones: información básica, asistencia, mociones, acuerdos y aprobación",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS actas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                folio TEXT NOT NULL,
+                tipo TEXT NOT NULL DEFAULT 'administrativa',
+                titulo TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                hora_inicio TEXT,
+                hora_cierre TEXT,
+                lugar TEXT,
+                preside TEXT,
+                secretario TEXT,
+                presentes TEXT NOT NULL DEFAULT '[]',
+                ausentes TEXT NOT NULL DEFAULT '[]',
+                invitados TEXT NOT NULL DEFAULT '[]',
+                quorum INTEGER NOT NULL DEFAULT 0,
+                agenda TEXT,
+                resumen TEXT,
+                mociones TEXT NOT NULL DEFAULT '[]',
+                acuerdos TEXT NOT NULL DEFAULT '[]',
+                estado TEXT NOT NULL DEFAULT 'borrador',
+                confidencial INTEGER NOT NULL DEFAULT 0,
+                fecha_aprobacion TEXT,
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_actas_church_fecha ON actas(church_id, fecha DESC);
+        "#,
     }]
 }
 

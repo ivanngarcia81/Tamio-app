@@ -34,7 +34,7 @@ export function etiquetaCatalogo(t: (k: string) => string, prefijo: string, valo
   return catalogo.includes(valor) ? t(`${prefijo}.${valor}`) : valor;
 }
 
-function ChipGroup({ catalogo, prefijo, valores, onChange, placeholder }: {
+export function ChipGroup({ catalogo, prefijo, valores, onChange, placeholder }: {
   catalogo: readonly string[];
   prefijo: string;
   valores: string[];
@@ -92,7 +92,7 @@ function ChipGroup({ catalogo, prefijo, valores, onChange, placeholder }: {
   );
 }
 
-function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+export function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 22 }}>
       <div
@@ -114,7 +114,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
   );
 }
 
-function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+export function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
       <span className="form-label" style={{ marginBottom: 0 }}>{label}</span>
