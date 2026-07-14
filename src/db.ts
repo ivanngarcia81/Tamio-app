@@ -1203,6 +1203,28 @@ export interface Servicio {
   creado_en: string;
 }
 
+/** Una entrada del roster de asistencia. La llave relacional es member_id;
+ *  nombre_snapshot es solo para mostrar el histórico aunque el miembro
+ *  cambie de nombre o de estado después. */
+export interface AsistenciaEntry {
+  member_id: number;
+  presente: boolean;
+  /** Clave: justificada, enfermedad, trabajo, viaje, emergencia, desconocida, otra. */
+  razon: string | null;
+  razon_otra: string | null;
+  seguimiento: boolean;
+  nombre_snapshot: string;
+}
+
+export interface ServicioVisitante {
+  nombre: string;
+  telefono: string | null;
+  correo: string | null;
+  invitado_por: string | null;
+  primera_visita: boolean;
+  notas: string | null;
+}
+
 export interface NewServicio {
   fecha: string;
   tipo: string;
@@ -1214,9 +1236,9 @@ export interface NewServicio {
   participaciones: string[];
   tema_escuela: string | null;
   maestro_escuela: string | null;
-  asistentes: string[];
-  ausentes: string[];
-  visitantes: string[];
+  /** Roster completo (presentes y ausentes) que se congela como snapshot. */
+  asistencia: AsistenciaEntry[];
+  visitantes: ServicioVisitante[];
   ninos: number;
   jovenes: number;
   adultos: number;
@@ -1231,13 +1253,59 @@ export async function listServicios(churchId: number): Promise<Servicio[]> {
   );
 }
 
+/** Visitantes tolerando el formato viejo (arreglo de strings). */
+export function parseVisitantes(json: string): ServicioVisitante[] {
+  try {
+    const v = JSON.parse(json);
+    if (!Array.isArray(v)) return [];
+    return v.map((x) =>
+      typeof x === "string"
+        ? { nombre: x, telefono: null, correo: null, invitado_por: null, primera_visita: false, notas: null }
+        : {
+            nombre: String(x?.nombre ?? ""),
+            telefono: x?.telefono ?? null,
+            correo: x?.correo ?? null,
+            invitado_por: x?.invitado_por ?? null,
+            primera_visita: Boolean(x?.primera_visita),
+            notas: x?.notas ?? null,
+          }
+    ).filter((x) => x.nombre.trim());
+  } catch {
+    return [];
+  }
+}
+
+// Las columnas JSON asistentes/ausentes quedan como legado (versiones previas
+// guardaban nombres); el roster nuevo vive en servicio_asistencia por ID.
 function servicioParams(s: NewServicio): unknown[] {
   return [
     s.fecha, s.tipo, s.dirige, s.predica, s.titulo_mensaje, s.texto_biblico, s.resumen_mensaje,
     JSON.stringify(s.participaciones), s.tema_escuela, s.maestro_escuela,
-    JSON.stringify(s.asistentes), JSON.stringify(s.ausentes), JSON.stringify(s.visitantes),
+    "[]", "[]", JSON.stringify(s.visitantes),
     s.ninos, s.jovenes, s.adultos, s.eventos,
   ];
+}
+
+async function replaceAsistencia(servicioId: number, asistencia: AsistenciaEntry[]): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM servicio_asistencia WHERE servicio_id = $1", [servicioId]);
+  for (const a of asistencia) {
+    await d.execute(
+      `INSERT INTO servicio_asistencia
+         (servicio_id, member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [
+        servicioId,
+        a.member_id,
+        a.presente ? 1 : 0,
+        // Al estar presente no hay razón de ausencia ni seguimiento.
+        a.presente ? null : a.razon,
+        a.presente ? null : a.razon_otra,
+        a.presente ? 0 : a.seguimiento ? 1 : 0,
+        a.nombre_snapshot,
+      ]
+    );
+  }
 }
 
 export async function insertServicio(churchId: number, s: NewServicio): Promise<void> {
@@ -1250,6 +1318,9 @@ export async function insertServicio(churchId: number, s: NewServicio): Promise<
      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
     [...servicioParams(s), churchId]
   );
+  const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
+  const servicioId = rows[0]?.id;
+  if (servicioId) await replaceAsistencia(servicioId, s.asistencia);
 }
 
 export async function updateServicio(id: number, churchId: number, s: NewServicio): Promise<void> {
@@ -1263,11 +1334,120 @@ export async function updateServicio(id: number, churchId: number, s: NewServici
      WHERE id = $18 AND church_id = $19`,
     [...servicioParams(s), id, churchId]
   );
+  await replaceAsistencia(id, s.asistencia);
 }
 
 export async function deleteServicio(id: number, churchId: number): Promise<void> {
   const d = await getDb();
+  await d.execute("DELETE FROM servicio_asistencia WHERE servicio_id = $1", [id]);
   await d.execute("DELETE FROM servicios WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
+/** Snapshot guardado del roster de un servicio, ordenado por nombre. */
+export async function getServicioAsistencia(servicioId: number): Promise<AsistenciaEntry[]> {
+  const d = await getDb();
+  const rows = await d.select<{
+    member_id: number; presente: number; razon: string | null;
+    razon_otra: string | null; seguimiento: number; nombre_snapshot: string;
+  }[]>(
+    "SELECT member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot FROM servicio_asistencia WHERE servicio_id = $1 ORDER BY nombre_snapshot",
+    [servicioId]
+  );
+  return rows.map((r) => ({
+    member_id: r.member_id,
+    presente: r.presente === 1,
+    razon: r.razon,
+    razon_otra: r.razon_otra,
+    seguimiento: r.seguimiento === 1,
+    nombre_snapshot: r.nombre_snapshot,
+  }));
+}
+
+/** Miembros que entran al roster de un servicio NUEVO: solo estado Activo
+ *  (excluye inactivos, visitantes y cualquier baja: trasladado, fallecido…). */
+export async function listMembersRoster(churchId: number): Promise<{ id: number; nombre: string }[]> {
+  const d = await getDb();
+  return d.select<{ id: number; nombre: string }[]>(
+    "SELECT id, nombre FROM members WHERE church_id = $1 AND activo = 1 AND estado_membresia = 'activo' ORDER BY nombre",
+    [churchId]
+  );
+}
+
+/** Cuántos servicios referencian a un miembro (para archivar en vez de borrar). */
+export async function countMemberAsistencias(memberId: number, churchId: number): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    `SELECT count(*) AS n
+       FROM servicio_asistencia a
+       JOIN servicios s ON s.id = a.servicio_id
+      WHERE a.member_id = $1 AND s.church_id = $2`,
+    [memberId, churchId]
+  );
+  return rows[0]?.n ?? 0;
+}
+
+export interface MemberAsistenciaHist {
+  fecha: string;
+  tipo: string;
+  presente: boolean;
+  razon: string | null;
+  razon_otra: string | null;
+}
+
+export interface MemberAsistenciaStats {
+  /** Servicios en los que el miembro formaba parte del roster (denominador). */
+  enRoster: number;
+  asistencias: number;
+  ausencias: number;
+  ultimaAsistencia: string | null;
+  /** asistencias / enRoster, en 0–100; null si enRoster = 0. */
+  pct: number | null;
+  /** Ausencias consecutivas hasta el servicio más reciente en su roster (global,
+   *  todos los tipos). Las justificadas cuentan para la racha… */
+  rachaAusencias: number;
+  /** …pero se reportan aparte para no disparar "requiere seguimiento" en falso. */
+  rachaJustificadas: number;
+  historial: MemberAsistenciaHist[];
+}
+
+export async function memberAsistenciaStats(memberId: number, churchId: number): Promise<MemberAsistenciaStats> {
+  const d = await getDb();
+  const rows = await d.select<{
+    fecha: string; tipo: string; presente: number; razon: string | null; razon_otra: string | null;
+  }[]>(
+    `SELECT s.fecha, s.tipo, a.presente, a.razon, a.razon_otra
+       FROM servicio_asistencia a
+       JOIN servicios s ON s.id = a.servicio_id
+      WHERE a.member_id = $1 AND s.church_id = $2
+      ORDER BY s.fecha DESC, s.id DESC`,
+    [memberId, churchId]
+  );
+  const historial: MemberAsistenciaHist[] = rows.map((r) => ({
+    fecha: r.fecha,
+    tipo: r.tipo,
+    presente: r.presente === 1,
+    razon: r.razon,
+    razon_otra: r.razon_otra,
+  }));
+  const enRoster = historial.length;
+  const asistencias = historial.filter((h) => h.presente).length;
+  let rachaAusencias = 0;
+  let rachaJustificadas = 0;
+  for (const h of historial) {
+    if (h.presente) break;
+    rachaAusencias++;
+    if (h.razon === "justificada") rachaJustificadas++;
+  }
+  return {
+    enRoster,
+    asistencias,
+    ausencias: enRoster - asistencias,
+    ultimaAsistencia: historial.find((h) => h.presente)?.fecha ?? null,
+    pct: enRoster > 0 ? Math.round((asistencias / enRoster) * 100) : null,
+    rachaAusencias,
+    rachaJustificadas,
+    historial,
+  };
 }
 
 /** TODOS los movimientos (incluidos pendientes y rechazados), para respaldo. */

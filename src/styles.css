@@ -1313,6 +1313,74 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 0 0 3px var(--surface-2);
 }
 .form-textarea { resize: vertical; min-height: 64px; }
+/* Roster de asistencia (Registro de servicios) */
+.roster-box {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  max-height: 300px;
+  overflow-y: auto;
+}
+.roster-section-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-2);
+  padding: 6px 12px;
+  font-size: var(--fs-table-head);
+  font-weight: 700;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--line);
+}
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background-color var(--dur) ease;
+}
+.roster-row:hover { background: var(--surface-2); }
+.roster-row:last-child { border-bottom: none; }
+.roster-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--ink);
+  cursor: pointer;
+  flex: none;
+}
+.roster-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.roster-controls { display: flex; align-items: center; gap: 6px; flex: none; }
+.roster-controls .form-input { padding: 4px 8px; font-size: 12px; width: 150px; }
+.roster-followup {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.roster-followup input[type="checkbox"] { width: 13px; height: 13px; }
+.roster-counters {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.roster-counters b { color: var(--text); }
 .form-hint { font-size: var(--fs-caption); color: var(--text-3); }
 .form-warning {
   font-size: 11.5px;

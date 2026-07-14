@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  archiveMember, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney, insertMember, listMembers,
-  memberStats, type Church, type Member, type MemberStat, type NewMember,
+  archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
+  insertMember, listMembers, memberStats, type Church, type Member, type MemberStat, type NewMember,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -83,8 +83,14 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
   useEffect(() => setPage(1), [query, refreshKey]);
 
   async function requestDelete(m: Member) {
-    const n = await countMemberTx(m.id, church.id);
-    setPendingDelete({ member: m, hasHistory: n > 0, count: n });
+    // Un miembro con historial (movimientos O asistencia a servicios) nunca
+    // se borra en duro: se archiva, para que los registros viejos siempre
+    // puedan resolver a su miembro.
+    const [n, asistencias] = await Promise.all([
+      countMemberTx(m.id, church.id),
+      countMemberAsistencias(m.id, church.id),
+    ]);
+    setPendingDelete({ member: m, hasHistory: n > 0 || asistencias > 0, count: n });
   }
 
   async function confirmDelete() {

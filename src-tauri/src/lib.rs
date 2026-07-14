@@ -259,6 +259,23 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_servicios_church_fecha ON servicios(church_id, fecha DESC);
         "#,
+    }, Migration {
+        version: 15,
+        description: "asistencia por miembro en servicios: roster relacional con snapshot de nombre",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS servicio_asistencia (
+                servicio_id INTEGER NOT NULL REFERENCES servicios(id),
+                member_id INTEGER NOT NULL REFERENCES members(id),
+                presente INTEGER NOT NULL DEFAULT 0,
+                razon TEXT,
+                razon_otra TEXT,
+                seguimiento INTEGER NOT NULL DEFAULT 0,
+                nombre_snapshot TEXT NOT NULL,
+                PRIMARY KEY (servicio_id, member_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_asistencia_member ON servicio_asistencia(member_id);
+        "#,
     }]
 }
 

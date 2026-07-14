@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { updateMemberFicha, type Church, type Member, type MemberFicha } from "../db";
+import {
+  fmtFechaCorta, memberAsistenciaStats, updateMemberFicha,
+  type Church, type Member, type MemberAsistenciaStats, type MemberFicha,
+} from "../db";
 import { IconClose } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -164,6 +167,17 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
   const [interesServir, setInteresServir] = useState(member.interes_servir === 1);
 
   const esBaja = member.activo === 0;
+
+  // Estadísticas de asistencia: derivadas de los servicios guardados
+  // (snapshots), nunca almacenadas por separado.
+  const [asistencia, setAsistencia] = useState<MemberAsistenciaStats | null>(null);
+  useEffect(() => {
+    let cancelado = false;
+    memberAsistenciaStats(member.id, church.id)
+      .then((s) => { if (!cancelado) setAsistencia(s); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [member.id, church.id]);
 
   async function guardar() {
     setSaving(true);
@@ -330,6 +344,65 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
                 <SwitchRow label={t("ficha.interesServir")} value={interesServir} onChange={setInteresServir} />
               </div>
             </div>
+          </Seccion>
+
+          <Seccion titulo={t("ficha.secAsistencia")}>
+            {!asistencia ? (
+              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("common.preparando")}</div>
+            ) : asistencia.enRoster === 0 ? (
+              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("ficha.sinAsistencias")}</div>
+            ) : (
+              <>
+                <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", marginBottom: 10 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <span className="form-label">{t("ficha.ultimaAsistencia")}</span>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      {asistencia.ultimaAsistencia ? fmtFechaCorta(asistencia.ultimaAsistencia) : "—"}
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <span className="form-label">{t("ficha.pctAsistencia")}</span>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      {asistencia.pct !== null ? `${asistencia.pct}%` : "—"}
+                      <span style={{ fontWeight: 500, color: "var(--text-3)", marginLeft: 6, fontSize: 12 }}>
+                        {t("ficha.deServicios", { asistencias: asistencia.asistencias, total: asistencia.enRoster })}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <span className="form-label">{t("ficha.ausenciasConsecutivas")}</span>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      {asistencia.rachaAusencias}
+                      {asistencia.rachaJustificadas > 0 && (
+                        <span style={{ fontWeight: 500, color: "var(--text-3)", marginLeft: 6, fontSize: 12 }}>
+                          {t("ficha.justificadasEnRacha", { count: asistencia.rachaJustificadas })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", maxHeight: 170, overflowY: "auto" }}>
+                  {asistencia.historial.slice(0, 12).map((h, i) => (
+                    <div key={i} className="roster-row" style={{ cursor: "default" }}>
+                      <span style={{ fontSize: 12.5, color: "var(--text-2)", width: 90, flex: "none", fontVariantNumeric: "tabular-nums" }}>
+                        {fmtFechaCorta(h.fecha)}
+                      </span>
+                      <span className="roster-name" style={{ cursor: "default", fontWeight: 500 }}>
+                        {t(`servicios.tipo.${h.tipo}`)}
+                      </span>
+                      {h.presente ? (
+                        <span className="tag activo">{t("ficha.presente")}</span>
+                      ) : (
+                        <span className="tag baja" title={h.razon === "otra" ? h.razon_otra ?? undefined : undefined}>
+                          {t("ficha.ausente")}
+                          {h.razon ? ` · ${t(`servicios.razon.${h.razon}`)}` : ""}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </Seccion>
         </div>
 
