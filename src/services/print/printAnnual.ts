@@ -127,7 +127,7 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
   doc.keyValueGrid([{ label: i18n.t("anual.depositosAnio"), value: fmtMoneyPdf(data.depositosBancarios, moneda) }], 2);
 
   // Mismo aire que los demás reportes antes del bloque de firmas.
-  doc.addGap(32);
+  doc.addGap(75);
   doc.signatureBlock([
     {
       nombre: church.tesorero_nombre,

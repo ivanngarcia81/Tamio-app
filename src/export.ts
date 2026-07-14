@@ -357,7 +357,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   if (generatedBy?.nombre) {
     const sigLineW = 160;
     const sigImgMaxH = 26;
-    const cardsToSigGap = 32; // aire respecto a las tarjetas de resumen
+    const cardsToSigGap = 75; // aire antes de la firma, a pedido del usuario
     const lineToNameGap = PDF_SPACE.sm + 3;
     const nameToRoleGap = 10;
     let sigImgH = 0;
