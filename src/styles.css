@@ -252,14 +252,14 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   padding: 28px 36px 22px;
   gap: 24px;
-  /* Sistema de ancho máximo: en pantallas muy anchas (iMac, Studio
-     Display, monitores 27"/32") el contenido deja de crecer a los
-     1500px y el espacio sobrante se vuelve márgenes laterales,
-     como en las apps profesionales de macOS. En ventanas chicas no
-     cambia nada: width 100% mantiene el comportamiento actual. */
-  max-width: 1500px;
+  /* Sistema de ancho máximo anclado a la izquierda: el contenido vive
+     junto al sidebar (como Linear, Notion o Apple Mail) y deja de
+     crecer a los 1440px; en monitores anchos el espacio sobrante queda
+     a la DERECHA (margin-right: auto), nunca como hueco tras el
+     sidebar. En ventanas chicas width 100% mantiene todo igual. */
+  max-width: 1440px;
   width: 100%;
-  margin-left: auto;
+  margin-left: 0;
   margin-right: auto;
 }
 .balance { display: flex; align-items: baseline; gap: 14px; }
@@ -400,11 +400,11 @@ a { color: inherit; text-decoration: none; }
   flex-direction: column;
   gap: 22px;
   /* Mismo sistema de ancho máximo que .header (ver arriba): el
-     encabezado y el contenido comparten el límite para que queden
-     alineados en pantallas anchas. */
-  max-width: 1500px;
+     encabezado y el contenido comparten el límite y el anclaje a la
+     izquierda para quedar siempre alineados entre sí. */
+  max-width: 1440px;
   width: 100%;
-  margin-left: auto;
+  margin-left: 0;
   margin-right: auto;
 }
 
