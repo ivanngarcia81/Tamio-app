@@ -35,6 +35,10 @@
   --fs-table-head: 10.5px;
   /* Duración estándar de microinteracciones (hover); presses usan .08s. */
   --dur: .16s;
+  /* Layout de escritorio por breakpoint (ver @media al final de :root):
+     tope del contenido y padding lateral del área principal. */
+  --content-max: 1280px;
+  --content-pad-x: 32px;
   /* Tracking unico para micro-etiquetas en mayusculas (labels, theads). */
   --track-caps: 0.1em;
   color-scheme: light;
@@ -53,6 +57,13 @@
   --stripe: rgba(255,255,255,0.018);
   --line-soft: #2a2b2e;
   color-scheme: dark;
+}
+
+@media (min-width: 1728px) {
+  :root { --content-max: 1560px; --content-pad-x: 40px; }
+}
+@media (min-width: 2560px) {
+  :root { --content-max: 1800px; --content-pad-x: 48px; }
 }
 
 * { box-sizing: border-box; }
@@ -252,18 +263,16 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   /* 40px superiores: el titulo de pagina nunca queda pegado al borde de
      la ventana; todas las vistas arrancan a la misma altura. */
-  padding: 40px 36px 22px;
+  padding: 40px var(--content-pad-x) 22px;
   gap: 24px;
   /* Sistema de ancho máximo anclado a la izquierda: el contenido vive
      junto al sidebar (como Linear, Notion o Apple Mail) y deja de
      crecer a los 1440px; en monitores anchos el espacio sobrante queda
      a la DERECHA (margin-right: auto), nunca como hueco tras el
      sidebar. En ventanas chicas width 100% mantiene todo igual. */
-  /* Contenedor fluido de escritorio: crece con la ventana (92vw) hasta
-     un tope profesional de 2000px; nunca baja de 1200px de tope en
-     ventanas medianas. Siempre anclado a la izquierda junto al sidebar,
-     como los dashboards nativos de macOS. */
-  max-width: clamp(1200px, 92vw, 2000px);
+  /* Tope y padding por breakpoint (tokens --content-*): fluido hasta el
+     tope de cada rango, siempre anclado a la izquierda junto al sidebar. */
+  max-width: var(--content-max);
   width: 100%;
   margin-left: 0;
   margin-right: auto;
@@ -401,18 +410,16 @@ a { color: inherit; text-decoration: none; }
 
 /* Content */
 .content {
-  padding: 6px 36px 24px;
+  padding: 6px var(--content-pad-x) 24px;
   display: flex;
   flex-direction: column;
   gap: 22px;
   /* Mismo sistema de ancho máximo que .header (ver arriba): el
      encabezado y el contenido comparten el límite y el anclaje a la
      izquierda para quedar siempre alineados entre sí. */
-  /* Contenedor fluido de escritorio: crece con la ventana (92vw) hasta
-     un tope profesional de 2000px; nunca baja de 1200px de tope en
-     ventanas medianas. Siempre anclado a la izquierda junto al sidebar,
-     como los dashboards nativos de macOS. */
-  max-width: clamp(1200px, 92vw, 2000px);
+  /* Tope y padding por breakpoint (tokens --content-*): fluido hasta el
+     tope de cada rango, siempre anclado a la izquierda junto al sidebar. */
+  max-width: var(--content-max);
   width: 100%;
   margin-left: 0;
   margin-right: auto;
