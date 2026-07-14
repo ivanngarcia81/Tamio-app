@@ -178,6 +178,26 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE members ADD COLUMN fecha_baja TEXT;
             ALTER TABLE members ADD COLUMN motivo_baja TEXT;
         "#,
+    }, Migration {
+        version: 12,
+        description: "ficha completa del miembro: membresía, vida espiritual y servicio",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE members ADD COLUMN estado_membresia TEXT NOT NULL DEFAULT 'activo';
+            ALTER TABLE members ADD COLUMN fecha_congregacion TEXT;
+            ALTER TABLE members ADD COLUMN iglesia_anterior TEXT;
+            ALTER TABLE members ADD COLUMN bautizado_agua INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE members ADD COLUMN fecha_bautismo_agua TEXT;
+            ALTER TABLE members ADD COLUMN bautizado_espiritu INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE members ADD COLUMN fecha_bautismo_espiritu TEXT;
+            ALTER TABLE members ADD COLUMN curso_membresia INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE members ADD COLUMN ministerios TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE members ADD COLUMN ministerios_interes TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE members ADD COLUMN instrumentos TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE members ADD COLUMN habilidades TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE members ADD COLUMN disponibilidad TEXT;
+            ALTER TABLE members ADD COLUMN interes_servir INTEGER NOT NULL DEFAULT 0;
+        "#,
     }]
 }
 

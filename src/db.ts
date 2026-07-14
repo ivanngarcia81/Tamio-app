@@ -46,7 +46,76 @@ export interface Member {
   /** 1 = activo, 0 = dado de baja (o archivado desde Tesorería). */
   activo: number;
   fecha_baja: string | null;
+  /** Clave predefinida (traslado, fallecimiento, retiro, disciplina) o texto libre. */
   motivo_baja: string | null;
+  /** Estado dentro del registro (miembros con activo = 1): activo | inactivo | visitante.
+   *  Trasladado y fallecido se representan como baja con ese motivo. */
+  estado_membresia: string;
+  /** Fecha en que comenzó a congregarse (fecha_ingreso = recibido como miembro). */
+  fecha_congregacion: string | null;
+  iglesia_anterior: string | null;
+  bautizado_agua: number;
+  fecha_bautismo_agua: string | null;
+  bautizado_espiritu: number;
+  fecha_bautismo_espiritu: string | null;
+  curso_membresia: number;
+  /** Arreglos JSON de claves de catálogo o texto libre. */
+  ministerios: string;
+  ministerios_interes: string;
+  instrumentos: string;
+  habilidades: string;
+  disponibilidad: string | null;
+  interes_servir: number;
+}
+
+/** Campos de la ficha del miembro (secciones Membresía / Espiritual / Servicio). */
+export interface MemberFicha {
+  estado_membresia: string;
+  fecha_congregacion: string | null;
+  fecha_ingreso: string | null;
+  iglesia_anterior: string | null;
+  bautizado_agua: boolean;
+  fecha_bautismo_agua: string | null;
+  bautizado_espiritu: boolean;
+  fecha_bautismo_espiritu: string | null;
+  curso_membresia: boolean;
+  ministerios: string[];
+  ministerios_interes: string[];
+  instrumentos: string[];
+  habilidades: string[];
+  disponibilidad: string | null;
+  interes_servir: boolean;
+}
+
+export async function updateMemberFicha(id: number, churchId: number, f: MemberFicha): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE members SET
+       estado_membresia = $1, fecha_congregacion = $2, fecha_ingreso = $3, iglesia_anterior = $4,
+       bautizado_agua = $5, fecha_bautismo_agua = $6, bautizado_espiritu = $7, fecha_bautismo_espiritu = $8,
+       curso_membresia = $9, ministerios = $10, ministerios_interes = $11, instrumentos = $12,
+       habilidades = $13, disponibilidad = $14, interes_servir = $15
+     WHERE id = $16 AND church_id = $17`,
+    [
+      f.estado_membresia,
+      f.fecha_congregacion,
+      f.fecha_ingreso,
+      f.iglesia_anterior,
+      f.bautizado_agua ? 1 : 0,
+      f.fecha_bautismo_agua,
+      f.bautizado_espiritu ? 1 : 0,
+      f.fecha_bautismo_espiritu,
+      f.curso_membresia ? 1 : 0,
+      JSON.stringify(f.ministerios),
+      JSON.stringify(f.ministerios_interes),
+      JSON.stringify(f.instrumentos),
+      JSON.stringify(f.habilidades),
+      f.disponibilidad,
+      f.interes_servir ? 1 : 0,
+      id,
+      churchId,
+    ]
+  );
 }
 
 export interface Tx {
@@ -942,7 +1011,7 @@ export async function membresiaStats(churchId: number, yyyy: string): Promise<Me
   const d = await getDb();
   const rows = await d.select<{ activos: number; altas: number; bajas: number; total: number }[]>(
     `SELECT
-       SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) AS activos,
+       SUM(CASE WHEN activo = 1 AND estado_membresia = 'activo' THEN 1 ELSE 0 END) AS activos,
        SUM(CASE WHEN substr(coalesce(fecha_ingreso, ''), 1, 4) = $2 THEN 1 ELSE 0 END) AS altas,
        SUM(CASE WHEN activo = 0 AND substr(coalesce(fecha_baja, ''), 1, 4) = $2 THEN 1 ELSE 0 END) AS bajas,
        COUNT(*) AS total

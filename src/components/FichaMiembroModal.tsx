@@ -1,0 +1,348 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { updateMemberFicha, type Church, type Member, type MemberFicha } from "../db";
+import { IconClose } from "../icons";
+import { showToast } from "../toast";
+import { playSound } from "../sound";
+import { useEscapeClose } from "../hooks/useEscapeClose";
+
+export const MINISTERIOS = [
+  "musica", "ujieres", "ensenanza", "evangelismo", "ninos", "jovenes",
+  "medios", "cocina", "mantenimiento", "intercesion",
+] as const;
+export const INSTRUMENTOS = [
+  "piano", "guitarra", "bajo", "bateria", "percusion", "metales", "voz",
+] as const;
+export const HABILIDADES = [
+  "electricidad", "plomeria", "carpinteria", "construccion", "contabilidad",
+  "informatica", "diseno", "fotografia", "conduccion", "cocina", "enfermeria",
+] as const;
+
+const ESTADOS_REGISTRO = ["activo", "inactivo", "visitante"] as const;
+
+function parseLista(json: string): string[] {
+  try {
+    const v = JSON.parse(json);
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Etiqueta de un valor de catálogo: clave conocida → traducción; texto libre → tal cual. */
+export function etiquetaCatalogo(t: (k: string) => string, prefijo: string, valor: string, catalogo: readonly string[]): string {
+  return catalogo.includes(valor) ? t(`${prefijo}.${valor}`) : valor;
+}
+
+function ChipGroup({ catalogo, prefijo, valores, onChange, placeholder }: {
+  catalogo: readonly string[];
+  prefijo: string;
+  valores: string[];
+  onChange: (v: string[]) => void;
+  placeholder: string;
+}) {
+  const { t } = useTranslation();
+  const [nuevo, setNuevo] = useState("");
+  const extras = valores.filter((v) => !catalogo.includes(v));
+
+  function toggle(v: string) {
+    onChange(valores.includes(v) ? valores.filter((x) => x !== v) : [...valores, v]);
+  }
+
+  function agregar() {
+    const v = nuevo.trim();
+    if (!v || valores.includes(v)) { setNuevo(""); return; }
+    onChange([...valores, v]);
+    setNuevo("");
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {catalogo.map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={`chip${valores.includes(c) ? " active" : ""}`}
+            onClick={() => toggle(c)}
+          >
+            {t(`${prefijo}.${c}`)}
+          </button>
+        ))}
+        {extras.map((v) => (
+          <button key={v} type="button" className="chip active" title={t("ficha.quitarChip")} onClick={() => toggle(v)}>
+            {v} ×
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+        <input
+          className="form-input"
+          style={{ flex: 1 }}
+          placeholder={placeholder}
+          value={nuevo}
+          onChange={(e) => setNuevo(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); agregar(); } }}
+        />
+        <button type="button" className="btn secondary" onClick={agregar} disabled={!nuevo.trim()}>
+          {t("ficha.agregar")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div
+        style={{
+          fontSize: "var(--fs-table-head)",
+          fontWeight: 700,
+          letterSpacing: "var(--track-caps)",
+          textTransform: "uppercase",
+          color: "var(--text-3)",
+          paddingBottom: 8,
+          borderBottom: "1px solid var(--line)",
+          marginBottom: 14,
+        }}
+      >
+        {titulo}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <span className="form-label" style={{ marginBottom: 0 }}>{label}</span>
+      <button
+        type="button"
+        className={`switch${value ? " on" : ""}`}
+        role="switch"
+        aria-checked={value}
+        onClick={() => onChange(!value)}
+      />
+    </div>
+  );
+}
+
+interface Props {
+  church: Church;
+  member: Member;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+/** Ficha completa del miembro: información de membresía, vida espiritual y
+ *  servicio/habilidades. Los datos personales se editan con el botón Editar. */
+export default function FichaMiembroModal({ church, member, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
+  useEscapeClose(onClose);
+  const [saving, setSaving] = useState(false);
+
+  const [estado, setEstado] = useState(
+    ESTADOS_REGISTRO.includes(member.estado_membresia as (typeof ESTADOS_REGISTRO)[number])
+      ? member.estado_membresia
+      : "activo"
+  );
+  const [fechaCongregacion, setFechaCongregacion] = useState(member.fecha_congregacion ?? "");
+  const [fechaIngreso, setFechaIngreso] = useState(member.fecha_ingreso ?? "");
+  const [iglesiaAnterior, setIglesiaAnterior] = useState(member.iglesia_anterior ?? "");
+  const [bautizadoAgua, setBautizadoAgua] = useState(member.bautizado_agua === 1);
+  const [fechaBautismoAgua, setFechaBautismoAgua] = useState(member.fecha_bautismo_agua ?? "");
+  const [bautizadoEspiritu, setBautizadoEspiritu] = useState(member.bautizado_espiritu === 1);
+  const [fechaBautismoEspiritu, setFechaBautismoEspiritu] = useState(member.fecha_bautismo_espiritu ?? "");
+  const [cursoMembresia, setCursoMembresia] = useState(member.curso_membresia === 1);
+  const [ministerios, setMinisterios] = useState<string[]>(() => parseLista(member.ministerios));
+  const [ministeriosInteres, setMinisteriosInteres] = useState<string[]>(() => parseLista(member.ministerios_interes));
+  const [instrumentos, setInstrumentos] = useState<string[]>(() => parseLista(member.instrumentos));
+  const [habilidades, setHabilidades] = useState<string[]>(() => parseLista(member.habilidades));
+  const [disponibilidad, setDisponibilidad] = useState(member.disponibilidad ?? "");
+  const [interesServir, setInteresServir] = useState(member.interes_servir === 1);
+
+  const esBaja = member.activo === 0;
+
+  async function guardar() {
+    setSaving(true);
+    try {
+      const ficha: MemberFicha = {
+        estado_membresia: estado,
+        fecha_congregacion: fechaCongregacion || null,
+        fecha_ingreso: fechaIngreso || null,
+        iglesia_anterior: iglesiaAnterior.trim() || null,
+        bautizado_agua: bautizadoAgua,
+        fecha_bautismo_agua: bautizadoAgua ? fechaBautismoAgua || null : null,
+        bautizado_espiritu: bautizadoEspiritu,
+        fecha_bautismo_espiritu: bautizadoEspiritu ? fechaBautismoEspiritu || null : null,
+        curso_membresia: cursoMembresia,
+        ministerios,
+        ministerios_interes: ministeriosInteres,
+        instrumentos,
+        habilidades,
+        disponibilidad: disponibilidad.trim() || null,
+        interes_servir: interesServir,
+      };
+      await updateMemberFicha(member.id, church.id, ficha);
+      playSound("guardado");
+      showToast(t("ficha.toastGuardada"));
+      onSaved();
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="modal-card">
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">{member.nombre}</div>
+            <div className="modal-sub">{t("ficha.sub")}</div>
+          </div>
+          <div className="modal-close" onClick={onClose}><IconClose /></div>
+        </div>
+
+        <div className="modal-body">
+          <Seccion titulo={t("ficha.secMembresia")}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">{t("ficha.fechaCongregacion")}</label>
+                <input type="date" className="form-input" value={fechaCongregacion} onChange={(e) => setFechaCongregacion(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t("ficha.fechaIngreso")}</label>
+                <input type="date" className="form-input" value={fechaIngreso} onChange={(e) => setFechaIngreso(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t("membresia.colEstado")}</label>
+                {esBaja ? (
+                  <input className="form-input" value={t("ficha.estadoBajaNota")} disabled />
+                ) : (
+                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+                    {ESTADOS_REGISTRO.map((es) => (
+                      <option key={es} value={es}>{t(`membresia.estado.${es}`)}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">
+                  {t("ficha.iglesiaAnterior")} <span className="opt">{t("ficha.siAplica")}</span>
+                </label>
+                <input className="form-input" value={iglesiaAnterior} onChange={(e) => setIglesiaAnterior(e.target.value)} />
+              </div>
+            </div>
+          </Seccion>
+
+          <Seccion titulo={t("ficha.secEspiritual")}>
+            <div className="form-grid">
+              <div className="form-group">
+                <SwitchRow label={t("ficha.bautizadoAgua")} value={bautizadoAgua} onChange={setBautizadoAgua} />
+                {bautizadoAgua && (
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ marginTop: 8 }}
+                    value={fechaBautismoAgua}
+                    onChange={(e) => setFechaBautismoAgua(e.target.value)}
+                  />
+                )}
+              </div>
+              <div className="form-group">
+                <SwitchRow label={t("ficha.bautizadoEspiritu")} value={bautizadoEspiritu} onChange={setBautizadoEspiritu} />
+                {bautizadoEspiritu && (
+                  <>
+                    <input
+                      type="date"
+                      className="form-input"
+                      style={{ marginTop: 8 }}
+                      value={fechaBautismoEspiritu}
+                      onChange={(e) => setFechaBautismoEspiritu(e.target.value)}
+                    />
+                    <span className="form-label opt" style={{ fontWeight: 500, color: "var(--text-3)" }}>
+                      {t("ficha.fechaAproximada")}
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="form-group full">
+                <SwitchRow label={t("ficha.cursoMembresia")} value={cursoMembresia} onChange={setCursoMembresia} />
+              </div>
+            </div>
+          </Seccion>
+
+          <Seccion titulo={t("ficha.secServicio")}>
+            <div className="form-group full">
+              <label className="form-label">{t("ficha.ministerios")}</label>
+              <ChipGroup
+                catalogo={MINISTERIOS}
+                prefijo="ficha.ministerio"
+                valores={ministerios}
+                onChange={setMinisterios}
+                placeholder={t("ficha.otroMinisterio")}
+              />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">{t("ficha.ministeriosInteres")}</label>
+              <ChipGroup
+                catalogo={MINISTERIOS}
+                prefijo="ficha.ministerio"
+                valores={ministeriosInteres}
+                onChange={setMinisteriosInteres}
+                placeholder={t("ficha.otroMinisterio")}
+              />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">{t("ficha.instrumentos")}</label>
+              <ChipGroup
+                catalogo={INSTRUMENTOS}
+                prefijo="ficha.instrumento"
+                valores={instrumentos}
+                onChange={setInstrumentos}
+                placeholder={t("ficha.otroInstrumento")}
+              />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">{t("ficha.habilidades")}</label>
+              <ChipGroup
+                catalogo={HABILIDADES}
+                prefijo="ficha.habilidad"
+                valores={habilidades}
+                onChange={setHabilidades}
+                placeholder={t("ficha.otraHabilidad")}
+              />
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">{t("ficha.disponibilidad")}</label>
+                <input
+                  className="form-input"
+                  placeholder={t("ficha.disponibilidadPlaceholder")}
+                  value={disponibilidad}
+                  onChange={(e) => setDisponibilidad(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <SwitchRow label={t("ficha.interesServir")} value={interesServir} onChange={setInteresServir} />
+              </div>
+            </div>
+          </Seccion>
+        </div>
+
+        <div className="modal-footer">
+          <span />
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
+            <button className="btn primary" onClick={guardar} disabled={saving}>
+              {saving ? t("common.guardando") : t("common.guardarCambios")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

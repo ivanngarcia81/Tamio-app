@@ -28,8 +28,10 @@ export default function BajaMemberModal({ member, onConfirm, onCancel }: Props) 
   useEscapeClose(onCancel);
 
   function confirmar() {
-    const texto = motivo === "otro" ? motivoOtro.trim() : t(`membresia.motivo.${motivo}`);
-    onConfirm(fecha, texto || null);
+    // Los motivos predefinidos se guardan como clave (traslado, fallecimiento…)
+    // para poder mostrarlos traducidos y mapear el estado (Trasladado/Fallecido).
+    const valor = motivo === "otro" ? motivoOtro.trim() : motivo;
+    onConfirm(fecha, valor || null);
   }
 
   return (

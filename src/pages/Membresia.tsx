@@ -8,6 +8,7 @@ import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import BajaMemberModal from "../components/BajaMemberModal";
+import FichaMiembroModal from "../components/FichaMiembroModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
@@ -19,6 +20,22 @@ const COLS = "1.7fr 1fr 130px 190px 40px";
 const PAGE_SIZE = 30;
 
 type Filtro = "activos" | "bajas" | "todos";
+
+const MOTIVOS_CONOCIDOS = ["traslado", "fallecimiento", "retiro", "disciplina"];
+
+/** Etiqueta y clase del badge de estado. Los miembros del registro usan su
+ *  estado (activo/inactivo/visitante); las bajas por traslado o fallecimiento
+ *  se muestran con ese nombre, el resto como "Baja". */
+function estadoBadge(m: Member): { key: string; clase: string } {
+  if (m.activo === 1) {
+    const e = ["activo", "inactivo", "visitante"].includes(m.estado_membresia) ? m.estado_membresia : "activo";
+    const clase = e === "activo" ? "activo" : e === "visitante" ? "donacion" : "servicios";
+    return { key: `membresia.estado.${e}`, clase };
+  }
+  if (m.motivo_baja === "traslado") return { key: "membresia.estado.trasladado", clase: "baja" };
+  if (m.motivo_baja === "fallecimiento") return { key: "membresia.estado.fallecido", clase: "baja" };
+  return { key: "membresia.estadoBaja", clase: "baja" };
+}
 
 function initials(nombre: string): string {
   return nombre
@@ -50,6 +67,7 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
   const [filtro, setFiltro] = useState<Filtro>("activos");
   const [pendingBaja, setPendingBaja] = useState<Member | null>(null);
   const [pendingReactivar, setPendingReactivar] = useState<Member | null>(null);
+  const [ficha, setFicha] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const anio = currentYear();
@@ -192,7 +210,7 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
                 className="tr"
                 key={m.id}
                 style={{ gridTemplateColumns: COLS, cursor: "pointer", opacity: m.activo === 1 ? 1 : 0.72 }}
-                onClick={() => onEdit(m)}
+                onClick={() => setFicha(m)}
               >
                 <div className="td">
                   <div className="person" style={{ minWidth: 0 }}>
@@ -214,18 +232,23 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
                   {m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : "—"}
                 </div>
                 <div className="td">
-                  {m.activo === 1 ? (
-                    <span className="tag activo">{t("membresia.estadoActivo")}</span>
-                  ) : (
-                    <div style={{ minWidth: 0 }}>
-                      <span className="tag baja">{t("membresia.estadoBaja")}</span>
-                      <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>
-                        {[m.fecha_baja ? fmtFechaCorta(m.fecha_baja) : null, m.motivo_baja]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
+                  {(() => {
+                    const badge = estadoBadge(m);
+                    if (m.activo === 1) return <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>;
+                    const motivoTexto = m.motivo_baja
+                      ? MOTIVOS_CONOCIDOS.includes(m.motivo_baja)
+                        ? t(`membresia.motivo.${m.motivo_baja}`)
+                        : m.motivo_baja
+                      : null;
+                    return (
+                      <div style={{ minWidth: 0 }}>
+                        <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>
+                        <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>
+                          {[m.fecha_baja ? fmtFechaCorta(m.fecha_baja) : null, motivoTexto].filter(Boolean).join(" · ") || "—"}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
                 <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
                   <span className="row-actions">
@@ -245,6 +268,15 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      {ficha && (
+        <FichaMiembroModal
+          church={church}
+          member={ficha}
+          onClose={() => setFicha(null)}
+          onSaved={onChanged}
+        />
+      )}
 
       {pendingBaja && (
         <BajaMemberModal
