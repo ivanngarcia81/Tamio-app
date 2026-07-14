@@ -426,6 +426,49 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
             )}
           </Seccion>
 
+          <Seccion titulo={t("ficha.secHistorial")}>
+            {(() => {
+              let cambios: { de: string; a: string; fecha: string }[] = [];
+              let notasAdmin: { fecha: string; texto: string }[] = [];
+              try { cambios = JSON.parse(member.historial_estados); } catch { /* noop */ }
+              try { notasAdmin = JSON.parse(member.seguimiento_notas); } catch { /* noop */ }
+              const nombreEstado = (k: string) =>
+                ["activo", "inactivo", "visitante", "enProceso", "trasladado", "retirado", "fallecido", "baja"].includes(k)
+                  ? t(`membresia.estado.${k}`) : k;
+              return (
+                <div style={{ fontSize: 13 }}>
+                  <div style={{ color: "var(--text-3)", marginBottom: cambios.length || notasAdmin.length ? 12 : 0 }}>
+                    {t("ficha.registradoEl", { fecha: member.created_at ? member.created_at.slice(0, 10) : "—" })}
+                  </div>
+                  {cambios.length > 0 && (
+                    <div style={{ marginBottom: notasAdmin.length ? 12 : 0 }}>
+                      <div className="form-label" style={{ marginBottom: 6 }}>{t("ficha.cambiosEstado")}</div>
+                      {cambios.slice().reverse().map((c, i) => (
+                        <div key={i} className="roster-row" style={{ cursor: "default" }}>
+                          <span style={{ fontSize: 12, color: "var(--text-3)", width: 90, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.fecha.slice(0, 10)}</span>
+                          <span className="roster-name" style={{ cursor: "default" }}>
+                            {c.de ? `${nombreEstado(c.de)} → ${nombreEstado(c.a)}` : nombreEstado(c.a)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {notasAdmin.length > 0 && (
+                    <div>
+                      <div className="form-label" style={{ marginBottom: 6 }}>{t("ficha.notasAdmin")}</div>
+                      {notasAdmin.slice().reverse().map((n, i) => (
+                        <div key={i} style={{ padding: "6px 0", borderBottom: i < notasAdmin.length - 1 ? "1px solid var(--line-soft)" : "none" }}>
+                          <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{n.fecha.slice(0, 16).replace("T", " ")}</div>
+                          <div>{n.texto}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </Seccion>
+
           <Seccion titulo={t("ficha.secDocumentos")}>
             {!docs ? (
               <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("common.preparando")}</div>

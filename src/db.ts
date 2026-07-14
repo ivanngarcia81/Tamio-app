@@ -51,6 +51,8 @@ export interface Member {
   etiquetas: string; // JSON string
   fecha_ingreso: string | null;
   notas: string | null;
+  /** Fecha en que se registró el miembro en la app (SELECT * la trae). */
+  created_at: string;
   /** 1 = activo, 0 = dado de baja (o archivado desde Tesorería). */
   activo: number;
   fecha_baja: string | null;

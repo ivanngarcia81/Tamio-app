@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   currentMonth, currentYear, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
@@ -26,7 +27,7 @@ const COLS = "1.5fr 150px 1.4fr 140px 44px";
 const PAGE_SIZE = 25;
 
 type PeriodoTipo = "mes" | "trimestre" | "anio" | "rango" | "todo";
-type Vista = "miembros" | "asistencia" | "seguimiento";
+type Vista = "miembros" | "asistencia" | "seguimiento" | "general";
 
 const ALERTA_TAG: Record<string, string> = {
   rachaServicios: "pastores",
@@ -257,6 +258,75 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     return t("seguimiento.alerta.incompleto");
   }
 
+  // ----- Vista general: distribuciones discretas + movimientos -----
+  function distribucion(claves: (m: Member) => string[]): { clave: string; n: number }[] {
+    const conteo = new Map<string, number>();
+    for (const m of miembros) for (const k of claves(m)) conteo.set(k, (conteo.get(k) ?? 0) + 1);
+    return Array.from(conteo.entries()).map(([clave, n]) => ({ clave, n })).sort((a, b) => b.n - a.n);
+  }
+  const distEstado = useMemo(() => distribucion((m) => [estadoEfectivo(m)]), [miembros]);
+  const distMinisterio = useMemo(() => distribucion((m) => parseLista(m.ministerios)), [miembros]);
+  const distExpediente = useMemo(
+    () => [
+      { clave: "completo", n: miembros.filter((m) => camposFaltantes(m).length === 0).length },
+      { clave: "incompleto", n: miembros.filter((m) => camposFaltantes(m).length > 0).length },
+    ],
+    [miembros]
+  );
+  const nuevosPorMes = useMemo(() => {
+    const conteo = new Map<string, number>();
+    for (const m of miembros) {
+      const f = umbrales.nuevoPorCongregacion ? m.fecha_congregacion : m.fecha_ingreso;
+      if (f && enPeriodo(f, periodo)) {
+        const mm = f.slice(0, 7);
+        conteo.set(mm, (conteo.get(mm) ?? 0) + 1);
+      }
+    }
+    return Array.from(conteo.entries()).map(([mes, n]) => ({ mes, n })).sort((a, b) => a.mes.localeCompare(b.mes));
+  }, [miembros, periodo, umbrales.nuevoPorCongregacion]);
+
+  const nombreMiembro = (id: number | null) => (id === null ? null : miembros.find((m) => m.id === id)?.nombre ?? null);
+  const movimientos = useMemo(() => {
+    const recibidos = trasladosEntrada
+      .filter((te) => enPeriodo(te.fecha_recepcion ?? te.creado_en.slice(0, 10), periodo))
+      .map((te) => ({
+        folio: te.folio, tipo: "recibido" as const, persona: te.nombre,
+        fecha: te.fecha_recepcion ?? te.creado_en.slice(0, 10),
+        iglesia: te.iglesia_procedencia ?? "—", estado: t(`traslados.estadoTE.${te.estado}`),
+      }));
+    const enviados = trasladosSalida
+      .filter((ts) => enPeriodo(ts.fecha_entrega ?? ts.fecha_solicitud, periodo))
+      .map((ts) => ({
+        folio: ts.folio, tipo: "enviado" as const, persona: nombreMiembro(ts.member_id) ?? "—",
+        fecha: ts.fecha_entrega ?? ts.fecha_solicitud,
+        iglesia: ts.iglesia_destino ?? "—", estado: t(`traslados.estadoTS.${ts.estado}`),
+      }));
+    return [...recibidos, ...enviados].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trasladosEntrada, trasladosSalida, periodo, t, miembros]);
+
+  const maxNuevos = Math.max(1, ...nuevosPorMes.map((x) => x.n));
+
+  function Distrib({ titulo, items, etiqueta }: { titulo: string; items: { clave: string; n: number }[]; etiqueta: (k: string) => string }) {
+    const max = Math.max(1, ...items.map((i) => i.n));
+    return (
+      <div className="card">
+        <div className="card-head"><span className="card-title">{titulo}</span></div>
+        {items.length === 0 ? (
+          <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
+        ) : items.map((it) => (
+          <div key={it.clave} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0" }}>
+            <span style={{ fontSize: 12.5, width: 130, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etiqueta(it.clave)}</span>
+            <div style={{ flex: 1, height: 8, background: "var(--surface-2)", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ width: `${Math.round((it.n / max) * 100)}%`, height: "100%", background: "var(--ink)", borderRadius: 4 }} />
+            </div>
+            <span style={{ fontSize: 12.5, fontWeight: 700, width: 32, textAlign: "right", flex: "none", fontVariantNumeric: "tabular-nums" }}>{it.n}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const tarjetas: { id: TarjetaFiltro; label: string; valor: number; color: string }[] = [
     { id: "todos", label: t("informes.cardTotal"), valor: resumen.total, color: "var(--accent-4)" },
     { id: "activos", label: t("informes.cardActivos"), valor: resumen.activos, color: "var(--accent-2)" },
@@ -315,7 +385,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
         {/* Pestañas: registro de miembros, asistencia y seguimiento */}
         <div style={{ display: "flex", gap: 6, margin: "14px 0 4px" }}>
-          {(["miembros", "asistencia", "seguimiento"] as Vista[]).map((v) => (
+          {(["miembros", "asistencia", "seguimiento", "general"] as Vista[]).map((v) => (
             <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
               {t(`informes.vista.${v}`)}
               {v === "seguimiento" && gruposSeguimiento.length > 0 && <span className="badge" style={{ marginLeft: 6 }}>{gruposSeguimiento.length}</span>}
@@ -325,6 +395,71 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
         {loading ? (
           <LoadingState />
+        ) : vista === "general" ? (
+          miembros.length === 0 ? (
+            <EmptyState titulo={t("informes.vacioTitulo")} sub={t("informes.vacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
+          ) : (
+            <div className="enter">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+                <Distrib titulo={t("informes.distEstado")} items={distEstado} etiqueta={(k) => t(`membresia.estado.${k}`)} />
+                <Distrib titulo={t("informes.distMinisterio")} items={distMinisterio} etiqueta={(k) => (MINISTERIOS.includes(k as typeof MINISTERIOS[number]) ? t(`ficha.ministerio.${k}`) : k)} />
+                <Distrib titulo={t("informes.distExpediente")} items={distExpediente} etiqueta={(k) => t(`informes.exp.${k}`)} />
+              </div>
+
+              {/* Nuevos por mes en el periodo */}
+              <div className="card" style={{ marginTop: 16 }}>
+                <div className="card-head"><span className="card-title">{t("informes.nuevosPorMes")}</span></div>
+                {nuevosPorMes.length === 0 ? (
+                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120, paddingTop: 8 }}>
+                    {nuevosPorMes.map((x) => (
+                      <div key={x.mes} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 24 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700 }}>{x.n}</span>
+                        <div style={{ width: "70%", maxWidth: 40, height: `${Math.round((x.n / maxNuevos) * 90)}%`, minHeight: 3, background: "var(--ink)", borderRadius: "4px 4px 0 0" }} />
+                        <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>{x.mes.slice(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Movimientos de membresía */}
+              <div className="tx-head" style={{ marginTop: 18 }}>
+                <span className="card-title">{t("informes.movimientos")}</span>
+                <Link to="/cartas" className="btn secondary" style={{ textDecoration: "none" }}>{t("informes.irCartas")}</Link>
+              </div>
+              {movimientos.length === 0 ? (
+                <EmptyState titulo={t("informes.sinMovimientos")} sub={t("informes.sinMovimientosSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
+              ) : (
+                <div className="data-table roomy">
+                  <div className="thead" style={{ gridTemplateColumns: "120px 130px 1.4fr 110px 130px" }}>
+                    <div className="th">{t("actas.colFolio")}</div>
+                    <div className="th">{t("informes.movTipo")}</div>
+                    <div className="th">{t("informes.movPersona")}</div>
+                    <div className="th">{t("tx.colFecha")}</div>
+                    <div className="th">{t("membresia.colEstado")}</div>
+                  </div>
+                  {movimientos.map((mv) => (
+                    <div key={mv.folio} className="tr" style={{ gridTemplateColumns: "120px 130px 1.4fr 110px 130px" }}>
+                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{mv.folio}</div>
+                      <div className="td">
+                        <span className={`tag ${mv.tipo === "recibido" ? "activo" : "donacion"}`}>
+                          {mv.tipo === "recibido" ? t("informes.movRecibido") : t("informes.movEnviado")}
+                        </span>
+                      </div>
+                      <div className="td" style={{ minWidth: 0 }}>
+                        <div className="p-name truncate">{mv.persona}</div>
+                        <div className="p-mail truncate">{mv.iglesia}</div>
+                      </div>
+                      <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(mv.fecha)}</div>
+                      <div className="td" style={{ fontSize: 12, color: "var(--text-2)" }}><div className="truncate">{mv.estado}</div></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
         ) : vista === "seguimiento" ? (
           gruposSeguimiento.length === 0 ? (
             <EmptyState titulo={t("seguimiento.vacioTitulo")} sub={t("seguimiento.vacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
