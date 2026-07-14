@@ -275,21 +275,25 @@ export class ReportDocBuilder {
   /** Tarjetas de resumen (2 a 4), mismo estilo visual en todos los reportes.
    *  Bloque atómico: si no caben todas, se mueven juntas a la siguiente página. */
   cardsRow(cards: { label: string; value: string }[]) {
-    const cardH = 92;
+    // Tamaño compacto (60% menos que el original de 92pt) a pedido del
+    // usuario — aplica a la constancia anual y al reporte anual.
+    const cardH = 37;
     const cardGap = PDF_SPACE.sm;
     this.ensureSpace(cardH);
 
     const cardW = (this.contentWidth - (cards.length - 1) * cardGap) / cards.length;
-    const cardRadius = 12;
+    const cardRadius = 7;
+    const labelSize = 6.5;
+    const valueSize = 10;
 
     cards.forEach((card, i) => {
       const x = this.marginX + i * (cardW + cardGap);
 
       this.doc.setGState(this.doc.GState({ opacity: 0.035 }));
       setFill(this.doc, [0, 0, 0]);
-      this.doc.roundedRect(x + 2.25, this.y + 3.5, cardW, cardH, cardRadius, cardRadius, "F");
+      this.doc.roundedRect(x + 0.9, this.y + 1.4, cardW, cardH, cardRadius, cardRadius, "F");
       this.doc.setGState(this.doc.GState({ opacity: 0.05 }));
-      this.doc.roundedRect(x + 1.25, this.y + 2, cardW, cardH, cardRadius, cardRadius, "F");
+      this.doc.roundedRect(x + 0.5, this.y + 0.8, cardW, cardH, cardRadius, cardRadius, "F");
       this.doc.setGState(this.doc.GState({ opacity: 1 }));
 
       setFill(this.doc, PDF_COLOR.cardBg);
@@ -299,14 +303,14 @@ export class ReportDocBuilder {
 
       const cx = x + cardW / 2;
       this.doc.setFont("helvetica", "bold");
-      this.doc.setFontSize(PDF_TYPE.cardLabel);
+      this.doc.setFontSize(labelSize);
       setText(this.doc, PDF_COLOR.muted);
-      this.doc.text(card.label, cx, this.y + PDF_SPACE.md, { align: "center", charSpace: 0.3 });
+      this.doc.text(card.label, cx, this.y + 11, { align: "center", charSpace: 0.3 });
 
       this.doc.setFont("helvetica", "bold");
-      this.doc.setFontSize(PDF_TYPE.cardValue);
+      this.doc.setFontSize(valueSize);
       setText(this.doc, PDF_COLOR.ink);
-      this.doc.text(card.value, cx, this.y + cardH - PDF_SPACE.md + 4, { align: "center", maxWidth: cardW - PDF_SPACE.md });
+      this.doc.text(card.value, cx, this.y + cardH - 8, { align: "center", maxWidth: cardW - PDF_SPACE.sm });
     });
 
     this.y += cardH;
