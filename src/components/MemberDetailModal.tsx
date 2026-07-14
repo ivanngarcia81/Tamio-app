@@ -4,8 +4,8 @@ import {
   catNombre, categoriaInfo, currentYear, fmtFechaCorta, fmtMoney, listMemberAportes,
   memberAporteYears, metodoNombre, METODOS_PAGO, type Church, type Member, type Tx,
 } from "../db";
-import { exportConstanciaPdf } from "../services/print/printConstancia";
-import { IconClose, IconFileText, IconWarn } from "../icons";
+import { exportConstanciaPdf, printConstanciaPdf } from "../services/print/printConstancia";
+import { IconClose, IconFileText, IconPrinter, IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
 const COLS = "104px 130px 1fr 120px 120px";
@@ -23,7 +23,7 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
   const [years, setYears] = useState<string[]>([]);
   const [year, setYear] = useState(currentYear());
   const [aportes, setAportes] = useState<Tx[]>([]);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,13 +42,25 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
 
   async function handleConstancia() {
     setError(null);
-    setExporting(true);
+    setExporting("pdf");
     try {
       await exportConstanciaPdf({ church, member, year, aportes });
     } catch (e) {
       setError(t("common.noSePudoExportar", { error: String(e) }));
     } finally {
-      setExporting(false);
+      setExporting(null);
+    }
+  }
+
+  async function handlePrint() {
+    setError(null);
+    setExporting("print");
+    try {
+      await printConstanciaPdf({ church, member, year, aportes });
+    } catch (e) {
+      setError(t("common.noSePudoImprimir", { error: String(e) }));
+    } finally {
+      setExporting(null);
     }
   }
 
@@ -132,8 +144,11 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
           <div className="form-hint">{t("detalleMiembro.hint")}</div>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cerrar")}</button>
-            <button className="btn primary" onClick={handleConstancia} disabled={exporting || aportes.length === 0}>
-              <IconFileText size={13} /> {exporting ? t("common.generando") : t("detalleMiembro.constanciaPdf")}
+            <button className="btn secondary" onClick={handlePrint} disabled={exporting !== null || aportes.length === 0}>
+              <IconPrinter size={14} /> {exporting === "print" ? t("common.preparando") : t("common.imprimir")}
+            </button>
+            <button className="btn primary" onClick={handleConstancia} disabled={exporting !== null || aportes.length === 0}>
+              <IconFileText size={13} /> {exporting === "pdf" ? t("common.generando") : t("detalleMiembro.constanciaPdf")}
             </button>
           </div>
         </div>

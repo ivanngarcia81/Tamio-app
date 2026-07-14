@@ -4,7 +4,7 @@ import { catNombre, fmtFechaCorta, metodoNombre, METODOS_PAGO, type Church, type
 import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
 import {
-  buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, PDF_SPACE, slug,
+  buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint, PDF_SPACE, slug,
 } from "./printUtils";
 
 export interface ConstanciaData {
@@ -16,9 +16,7 @@ export interface ConstanciaData {
   aportes: Tx[];
 }
 
-/** Genera la constancia anual de aportaciones de un miembro y abre el
- *  diálogo de guardar. Devuelve true si se guardó, false si se canceló. */
-export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean> {
+async function buildConstanciaPdf(data: ConstanciaData): Promise<{ bytes: ArrayBuffer; fileName: string }> {
   const { church, member, year, aportes } = data;
   const moneda = church.moneda;
 
@@ -113,8 +111,22 @@ export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean
   });
 
   const fileName = `${i18n.t("constancia.archivo")}-${slug(member.nombre)}-${year}.pdf`;
+  return { bytes, fileName };
+}
+
+/** Genera la constancia anual de aportaciones de un miembro y abre el
+ *  diálogo de guardar. Devuelve true si se guardó, false si se canceló. */
+export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean> {
+  const { bytes, fileName } = await buildConstanciaPdf(data);
   const path = await save({ defaultPath: fileName, filters: [{ name: "PDF", extensions: ["pdf"] }] });
   if (!path) return false;
   await writeFile(path, new Uint8Array(bytes));
   return true;
+}
+
+/** "Imprimir": la misma constancia, abierta con el visor del sistema para
+ *  imprimir con Cmd/Ctrl+P en vez de mostrar el diálogo de guardar. */
+export async function printConstanciaPdf(data: ConstanciaData): Promise<void> {
+  const { bytes, fileName } = await buildConstanciaPdf(data);
+  await openForPrint(bytes, fileName);
 }
