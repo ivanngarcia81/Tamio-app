@@ -183,20 +183,24 @@ export default function Configuracion({
 
               <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
 
+              <BackupSettings church={church} />
+            </div>
+
+            {/* Columna derecha: vista previa del PDF + ajustes ligeros,
+                para aprovechar el espacio bajo la vista previa. */}
+            <div className="settings-stack">
+              <PDFPreview
+                churchNombre={churchForm.nombre}
+                tesoreroNombre={treasurerForm.nombre}
+                tesoreroCargo={treasurerForm.cargo}
+              />
+
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
 
               <SoundSettings />
-
-              <BackupSettings church={church} />
             </div>
-
-            <PDFPreview
-              churchNombre={churchForm.nombre}
-              tesoreroNombre={treasurerForm.nombre}
-              tesoreroCargo={treasurerForm.cargo}
-            />
           </div>
 
           {generalError && <div className="form-warning">{generalError}</div>}

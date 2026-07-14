@@ -30,7 +30,7 @@ interface Props {
 export default function PDFPreview({ churchNombre, tesoreroNombre, tesoreroCargo }: Props) {
   const { t } = useTranslation();
   return (
-    <div className="card pad-lg settings-card pdf-preview-card" style={{ position: "sticky", top: 20 }}>
+    <div className="card pad-lg settings-card pdf-preview-card">
       <div className="card-head">
         <div className="card-head-left">
           <div className="card-icon"><IconFileText size={16} /></div>
