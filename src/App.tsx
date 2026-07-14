@@ -182,6 +182,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             }
           />
           <Route path="/actas" element={<SeccionSecretaria seccion="actas" />} />
+          <Route path="/servicios" element={<SeccionSecretaria seccion="servicios" />} />
           <Route path="/cartas" element={<SeccionSecretaria seccion="cartas" />} />
           <Route path="/reporte-miembros" element={<SeccionSecretaria seccion="reporteMiembros" />} />
           <Route path="/agenda" element={<SeccionSecretaria seccion="agenda" />} />

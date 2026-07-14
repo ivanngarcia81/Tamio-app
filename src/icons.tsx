@@ -322,3 +322,10 @@ export const IconCalendar = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
     <path d="M16 2v4M8 2v4M3 10h18" />
   </svg>
 );
+
+export const IconBookOpen = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z" />
+    <path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z" />
+  </svg>
+);

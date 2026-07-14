@@ -4,9 +4,9 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import {
-  IconBandeja, IconBank, IconCalendar, IconChevronDown, IconChurch,
-  IconClipboardList, IconConfig, IconFileText, IconGasto, IconHome,
-  IconIdBadge, IconIngreso, IconMail, IconMiembros, IconReportes,
+  IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
+  IconChurch, IconClipboardList, IconConfig, IconFileText, IconGasto,
+  IconHome, IconIdBadge, IconIngreso, IconMail, IconMiembros, IconReportes,
 } from "../icons";
 
 interface Props {
@@ -28,7 +28,7 @@ type GroupId = "tesoreria" | "secretaria";
 
 const GROUPS_KEY = "tesoreria-nav-groups";
 const RUTAS_TESORERIA = ["/ingresos", "/gastos", "/miembros", "/reportes", "/depositos"];
-const RUTAS_SECRETARIA = ["/membresia", "/actas", "/cartas", "/reporte-miembros", "/agenda"];
+const RUTAS_SECRETARIA = ["/membresia", "/actas", "/servicios", "/cartas", "/reporte-miembros", "/agenda"];
 
 function initialOpen(): Record<GroupId, boolean> {
   try {
@@ -152,6 +152,7 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
         <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
           <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
           <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
+          <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />
           <Item to="/cartas" icon={<IconMail />} label={t("nav.cartas")} />
           <Item to="/reporte-miembros" icon={<IconClipboardList />} label={t("nav.reporteMiembros")} />
           <Item to="/agenda" icon={<IconCalendar />} label={t("nav.agenda")} />

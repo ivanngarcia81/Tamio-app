@@ -570,6 +570,7 @@ export const en: Resources = {
     depositos: "Bank deposit",
     membresia: "Membership",
     actas: "Board minutes",
+    servicios: "Service log",
     cartas: "Certificates & transfers",
     reporteMiembros: "Membership reports",
     agenda: "Agenda & calendar",
@@ -690,6 +691,11 @@ export const en: Resources = {
       titulo: "Board minutes",
       sub: "Agreements by the pastor and officers",
       desc: "The legal and administrative history of decisions made in meetings will be kept here.",
+    },
+    servicios: {
+      titulo: "Service log",
+      sub: "History of worship services held",
+      desc: "Each service will be recorded here: date, service type, preacher, and attendance.",
     },
     cartas: {
       titulo: "Certificates & transfers",

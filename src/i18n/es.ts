@@ -564,6 +564,7 @@ export const es = {
     depositos: "Depósito bancario",
     membresia: "Membresía",
     actas: "Actas",
+    servicios: "Registro de servicios",
     cartas: "Cartas y traslados",
     reporteMiembros: "Informes de membresía",
     agenda: "Agenda y calendario",
@@ -684,6 +685,11 @@ export const es = {
       titulo: "Actas",
       sub: "Acuerdos del pastor y los oficiales",
       desc: "Aquí se guardará el historial legal y administrativo de los acuerdos tomados en las reuniones.",
+    },
+    servicios: {
+      titulo: "Registro de servicios",
+      sub: "Historial de los cultos y servicios celebrados",
+      desc: "Aquí se registrará cada servicio: fecha, tipo de culto, predicador y asistencia.",
     },
     cartas: {
       titulo: "Cartas y traslados",
