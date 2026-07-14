@@ -326,7 +326,7 @@ export class ReportDocBuilder {
       rowItems.forEach((item, idx) => {
         const x = this.marginX + idx * colW;
         this.doc.setFont("helvetica", "bold");
-        this.doc.setFontSize(7.5);
+        this.doc.setFontSize(PDF_TYPE.kvLabel);
         setText(this.doc, PDF_COLOR.muted);
         this.doc.text(item.label.toUpperCase(), x, this.y, { charSpace: 0.2 });
         this.doc.setFont("helvetica", "bold");

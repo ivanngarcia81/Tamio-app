@@ -23,6 +23,7 @@ export const PDF_TYPE = {
   total: 9.5,     // Totales — énfasis por peso, no por tamaño
   cardLabel: 6.5, // Etiquetas de tarjetas de resumen
   cardValue: 10,  // Valores de tarjetas de resumen
+  kvLabel: 7.5,   // Etiquetas de la cuadrícula etiqueta/valor
   footer: 7,      // Pie de página / número de página / folio
 } as const;
 
