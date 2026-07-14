@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  fmtFechaCorta, memberAsistenciaStats, updateMemberFicha,
-  type Church, type Member, type MemberAsistenciaStats, type MemberFicha,
+  fmtFechaCorta, memberAsistenciaStats, memberDocs, updateMemberFicha,
+  type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha,
 } from "../db";
 import { IconClose } from "../icons";
 import { showToast } from "../toast";
@@ -171,10 +171,14 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
   // Estadísticas de asistencia: derivadas de los servicios guardados
   // (snapshots), nunca almacenadas por separado.
   const [asistencia, setAsistencia] = useState<MemberAsistenciaStats | null>(null);
+  const [docs, setDocs] = useState<MemberDoc[] | null>(null);
   useEffect(() => {
     let cancelado = false;
     memberAsistenciaStats(member.id, church.id)
       .then((s) => { if (!cancelado) setAsistencia(s); })
+      .catch(console.error);
+    memberDocs(member.id, church.id)
+      .then((d) => { if (!cancelado) setDocs(d); })
       .catch(console.error);
     return () => { cancelado = true; };
   }, [member.id, church.id]);
@@ -402,6 +406,39 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
                   ))}
                 </div>
               </>
+            )}
+          </Seccion>
+
+          <Seccion titulo={t("ficha.secDocumentos")}>
+            {!docs ? (
+              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("common.preparando")}</div>
+            ) : docs.length === 0 ? (
+              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("ficha.sinDocumentos")}</div>
+            ) : (
+              <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", maxHeight: 170, overflowY: "auto" }}>
+                {docs.slice(0, 12).map((d, i) => (
+                  <div key={i} className="roster-row" style={{ cursor: "default" }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, width: 130, flex: "none", fontVariantNumeric: "tabular-nums" }}>
+                      {d.folio}
+                    </span>
+                    <span className="roster-name" style={{ cursor: "default", fontWeight: 500 }}>
+                      {t(`ficha.docClase.${d.clase}`)}
+                    </span>
+                    <span style={{ fontSize: 12, color: "var(--text-3)", flex: "none" }}>{fmtFechaCorta(d.fecha)}</span>
+                    <span className="tag administracion">
+                      {t(
+                        d.clase === "carta"
+                          ? `cartas.estado.${d.estado}`
+                          : d.clase === "solicitud"
+                            ? `solicitudes.estado.${d.estado}`
+                            : d.clase === "salida"
+                              ? `traslados.estadoTS.${d.estado}`
+                              : `traslados.estadoTE.${d.estado}`
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </Seccion>
         </div>

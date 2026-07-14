@@ -344,6 +344,74 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_solicitudes_church ON solicitudes(church_id, fecha_solicitud DESC);
         "#,
+    }, Migration {
+        version: 18,
+        description: "cartas y traslados fase 3: traslados de salida y de entrada",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS traslados_salida (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                numero_seq INTEGER NOT NULL,
+                folio TEXT NOT NULL,
+                member_id INTEGER NOT NULL REFERENCES members(id),
+                fecha_solicitud TEXT NOT NULL,
+                motivo TEXT,
+                iglesia_destino TEXT,
+                pastor_receptor TEXT,
+                direccion TEXT,
+                ciudad TEXT,
+                region TEXT,
+                pais TEXT,
+                telefono TEXT,
+                email TEXT,
+                fecha_aprobacion TEXT,
+                aprobado_por TEXT,
+                carta_id INTEGER REFERENCES cartas(id),
+                fecha_entrega TEXT,
+                metodo_entrega TEXT,
+                confirmacion_recibida INTEGER NOT NULL DEFAULT 0,
+                fecha_confirmacion TEXT,
+                observaciones TEXT,
+                estado TEXT NOT NULL DEFAULT 'borrador',
+                historial_estados TEXT NOT NULL DEFAULT '[]',
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE TABLE IF NOT EXISTS traslados_entrada (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                numero_seq INTEGER NOT NULL,
+                folio TEXT NOT NULL,
+                nombre TEXT NOT NULL,
+                fecha_nacimiento TEXT,
+                telefono TEXT,
+                correo TEXT,
+                direccion TEXT,
+                iglesia_procedencia TEXT,
+                pastor_anterior TEXT,
+                direccion_anterior TEXT,
+                fecha_emision_carta TEXT,
+                fecha_recepcion TEXT,
+                referencia_carta TEXT,
+                adjunto_path TEXT,
+                adjunto_nombre TEXT,
+                adjunto_fecha TEXT,
+                fecha_congregacion TEXT,
+                fecha_entrevista TEXT,
+                entrevistador TEXT,
+                decision TEXT,
+                fecha_aprobacion TEXT,
+                observaciones TEXT,
+                estado TEXT NOT NULL DEFAULT 'recibida',
+                member_id INTEGER REFERENCES members(id),
+                historial_estados TEXT NOT NULL DEFAULT '[]',
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_ts_church ON traslados_salida(church_id, fecha_solicitud DESC);
+            CREATE INDEX IF NOT EXISTS idx_te_church ON traslados_entrada(church_id, fecha_recepcion DESC);
+        "#,
     }]
 }
 

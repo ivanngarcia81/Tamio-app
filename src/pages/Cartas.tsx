@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  deleteCarta, deleteSolicitud, estadoAnteriorDeHistorial, fmtFechaCorta, insertCarta, listCartas,
-  listMembersRegistro, listSolicitudes, updateCarta, updateSolicitud, vincularCartaSolicitud,
-  type Carta, type Church, type Member, type NewCarta, type NewSolicitud, type Solicitud,
+  deleteCarta, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida, estadoAnteriorDeHistorial,
+  fmtFechaCorta, insertCarta, listCartas, listMembersRegistro, listSolicitudes, listTrasladosEntrada,
+  listTrasladosSalida, updateCarta, updateSolicitud, updateTrasladoEntrada, updateTrasladoSalida,
+  vincularCartaSolicitud,
+  type Carta, type Church, type Member, type NewCarta, type NewSolicitud, type NewTrasladoEntrada,
+  type NewTrasladoSalida, type Solicitud, type TrasladoEntrada, type TrasladoSalida,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu, { type RowMenuItem } from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA, type CartaPrefill } from "../components/CartaEditor";
 import SolicitudModal from "../components/SolicitudModal";
+import TrasladoSalidaModal from "../components/TrasladoSalidaModal";
+import TrasladoEntradaModal from "../components/TrasladoEntradaModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
@@ -21,7 +26,33 @@ const COLS = "130px 1.8fr 110px 150px 130px 70px";
 const COLS_SOL = "120px 1.6fr 120px 110px 140px 70px";
 const PAGE_SIZE = 25;
 
-type Tab = "resumen" | "nueva" | "solicitudes" | "archivo";
+type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "archivo";
+
+const BADGE_TS: Record<string, string> = {
+  borrador: "administracion",
+  solicitud: "donacion",
+  revision: "musicos",
+  aprobacion: "eventos",
+  aprobado: "ofrenda",
+  cartaPreparacion: "servicios",
+  cartaEmitida: "diezmo",
+  cartaEntregada: "misiones",
+  confirmacion: "limpieza",
+  completado: "activo",
+  cancelado: "pastores",
+};
+
+const BADGE_TE: Record<string, string> = {
+  recibida: "donacion",
+  revision: "musicos",
+  incompleta: "servicios",
+  entrevista: "eventos",
+  aprobacion: "misiones",
+  aceptado: "ofrenda",
+  noAceptado: "pastores",
+  completado: "activo",
+  archivado: "baja",
+};
 
 const BADGE_PRIORIDAD: Record<string, string> = {
   normal: "administracion",
@@ -69,6 +100,12 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [solicitudModal, setSolicitudModal] = useState<{ open: boolean; solicitud: Solicitud | null }>({ open: false, solicitud: null });
+  const [trasladosSalida, setTrasladosSalida] = useState<TrasladoSalida[]>([]);
+  const [trasladosEntrada, setTrasladosEntrada] = useState<TrasladoEntrada[]>([]);
+  const [tsModal, setTsModal] = useState<{ open: boolean; traslado: TrasladoSalida | null }>({ open: false, traslado: null });
+  const [teModal, setTeModal] = useState<{ open: boolean; traslado: TrasladoEntrada | null }>({ open: false, traslado: null });
+  const [pendingDeleteTS, setPendingDeleteTS] = useState<TrasladoSalida | null>(null);
+  const [pendingDeleteTE, setPendingDeleteTE] = useState<TrasladoEntrada | null>(null);
   const [pendingDeleteSol, setPendingDeleteSol] = useState<Solicitud | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ tipo: "entregar" | "cancelar"; carta: Carta } | null>(null);
   const [desdeSolicitud, setDesdeSolicitud] = useState<Solicitud | null>(null);
@@ -90,11 +127,19 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    Promise.all([listCartas(church.id), listSolicitudes(church.id), listMembersRegistro(church.id)])
-      .then(([nuevasCartas, nuevasSolicitudes, nuevosMembers]) => {
+    Promise.all([
+      listCartas(church.id),
+      listSolicitudes(church.id),
+      listTrasladosSalida(church.id),
+      listTrasladosEntrada(church.id),
+      listMembersRegistro(church.id),
+    ])
+      .then(([nuevasCartas, nuevasSolicitudes, nuevosTS, nuevosTE, nuevosMembers]) => {
         if (cancelado) return;
         setCartas(nuevasCartas);
         setSolicitudes(nuevasSolicitudes);
+        setTrasladosSalida(nuevosTS);
+        setTrasladosEntrada(nuevosTE);
         setMembers(nuevosMembers);
       })
       .catch(console.error)
@@ -233,6 +278,72 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     };
   }
 
+  function tsComoPayload(s: TrasladoSalida, estado: string): NewTrasladoSalida {
+    return {
+      member_id: s.member_id, fecha_solicitud: s.fecha_solicitud, motivo: s.motivo,
+      iglesia_destino: s.iglesia_destino, pastor_receptor: s.pastor_receptor, direccion: s.direccion,
+      ciudad: s.ciudad, region: s.region, pais: s.pais, telefono: s.telefono, email: s.email,
+      fecha_aprobacion: s.fecha_aprobacion, aprobado_por: s.aprobado_por, carta_id: s.carta_id,
+      fecha_entrega: s.fecha_entrega, metodo_entrega: s.metodo_entrega,
+      confirmacion_recibida: s.confirmacion_recibida, fecha_confirmacion: s.fecha_confirmacion,
+      observaciones: s.observaciones, estado,
+    };
+  }
+
+  function teComoPayload(s: TrasladoEntrada, estado: string): NewTrasladoEntrada {
+    return {
+      nombre: s.nombre, fecha_nacimiento: s.fecha_nacimiento, telefono: s.telefono, correo: s.correo,
+      direccion: s.direccion, iglesia_procedencia: s.iglesia_procedencia, pastor_anterior: s.pastor_anterior,
+      direccion_anterior: s.direccion_anterior, fecha_emision_carta: s.fecha_emision_carta,
+      fecha_recepcion: s.fecha_recepcion, referencia_carta: s.referencia_carta,
+      adjunto_path: s.adjunto_path, adjunto_nombre: s.adjunto_nombre, adjunto_fecha: s.adjunto_fecha,
+      fecha_congregacion: s.fecha_congregacion, fecha_entrevista: s.fecha_entrevista,
+      entrevistador: s.entrevistador, decision: s.decision, fecha_aprobacion: s.fecha_aprobacion,
+      observaciones: s.observaciones, estado, member_id: s.member_id,
+    };
+  }
+
+  async function eliminarOCancelarTS() {
+    if (!pendingDeleteTS) return;
+    const s = pendingDeleteTS;
+    if (s.estado === "borrador") {
+      await deleteTrasladoSalida(s.id, church.id);
+      playSound("eliminar");
+      showToast(t("traslados.toastEliminado"));
+    } else {
+      await updateTrasladoSalida(s.id, church.id, tsComoPayload(s, "cancelado"), s.estado);
+      playSound("guardado");
+      showToast(t("traslados.toastCancelado"));
+    }
+    setPendingDeleteTS(null);
+    setRefrescoLocal((k) => k + 1);
+    onChanged();
+  }
+
+  async function eliminarOArchivarTE() {
+    if (!pendingDeleteTE) return;
+    const s = pendingDeleteTE;
+    if (s.estado === "recibida" && s.member_id === null) {
+      await deleteTrasladoEntrada(s.id, church.id);
+      playSound("eliminar");
+      showToast(t("traslados.toastEliminado"));
+    } else {
+      await updateTrasladoEntrada(s.id, church.id, teComoPayload(s, "archivado"), s.estado);
+      playSound("guardado");
+      showToast(t("traslados.toastArchivado"));
+    }
+    setPendingDeleteTE(null);
+    setRefrescoLocal((k) => k + 1);
+    onChanged();
+  }
+
+  /** Desde el modal de traslado: cierra y abre la carta vinculada en el editor. */
+  function abrirCartaPorId(cartaId: number) {
+    const c = cartas.find((x) => x.id === cartaId);
+    setTsModal({ open: false, traslado: null });
+    if (c) abrirCarta(c);
+  }
+
   async function eliminarOCancelarSolicitud() {
     if (!pendingDeleteSol) return;
     const s = pendingDeleteSol;
@@ -296,7 +407,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
 
       <div className="content">
         <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-          {(["resumen", "nueva", "solicitudes", "archivo"] as Tab[]).map((tb) => (
+          {(["resumen", "nueva", "solicitudes", "salida", "entrada", "archivo"] as Tab[]).map((tb) => (
             <button key={tb} className={`chip${tab === tb ? " active" : ""}`} onClick={() => cambiarTab(tb)}>
               {t(`cartas.tab.${tb}`)}
             </button>
@@ -323,6 +434,27 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <button className="stat-card accent" style={accent("var(--accent-2)")} onClick={() => irAArchivoFiltrado("entregada")}>
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardEmitidasMes")}</span></div>
                 <div className="stat-value md">{resumen.emitidasMes}</div>
+              </button>
+              <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
+                <div className="stat-head"><span className="stat-label">{t("traslados.cardSalidaProceso")}</span></div>
+                <div className="stat-value md">
+                  {trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}
+                </div>
+              </button>
+              <button className="stat-card accent" style={accent("var(--accent-6, var(--accent-3))")} onClick={() => cambiarTab("entrada")}>
+                <div className="stat-head"><span className="stat-label">{t("traslados.cardEntradaRevision")}</span></div>
+                <div className="stat-value md">
+                  {trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}
+                </div>
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+              <button className="btn secondary" onClick={() => { cambiarTab("salida"); setTsModal({ open: true, traslado: null }); }}>
+                <IconPlus size={13} /> {t("traslados.registrarSalida")}
+              </button>
+              <button className="btn secondary" onClick={() => { cambiarTab("entrada"); setTeModal({ open: true, traslado: null }); }}>
+                <IconPlus size={13} /> {t("traslados.registrarEntrada")}
               </button>
             </div>
 
@@ -439,6 +571,120 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </>
+        ) : tab === "salida" ? (
+          <>
+            <div className="tx-head">
+              <span className="roster-counters">
+                <span>{t("traslados.enProceso")}: <b>{trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}</b></span>
+              </span>
+              <button className="btn primary" onClick={() => setTsModal({ open: true, traslado: null })}>
+                <IconPlus size={14} /> {t("traslados.registrarSalida")}
+              </button>
+            </div>
+            {trasladosSalida.length === 0 ? (
+              <EmptyState
+                titulo={t("traslados.aunNoHaySalida")}
+                sub={t("traslados.agregaPrimeroSalida")}
+                icon={<IconMail size={20} strokeWidth={1.8} />}
+              />
+            ) : (
+              <div className="data-table roomy">
+                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
+                  <div className="th">{t("actas.colFolio")}</div>
+                  <div className="th">{t("traslados.colTraslado")}</div>
+                  <div className="th">{t("tx.colFecha")}</div>
+                  <div className="th">{t("traslados.colConfirmacion")}</div>
+                  <div className="th">{t("membresia.colEstado")}</div>
+                  <div className="th"></div>
+                </div>
+                {trasladosSalida.map((s) => (
+                  <div
+                    className="tr"
+                    key={s.id}
+                    style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
+                    onClick={() => setTsModal({ open: true, traslado: s })}
+                  >
+                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{s.folio}</div>
+                    <div className="td" style={{ minWidth: 0 }}>
+                      <div className="p-name truncate">{nombreMiembro(s.member_id) ?? "—"}</div>
+                      <div className="p-mail truncate">{s.iglesia_destino ?? t("traslados.sinDestino")}</div>
+                    </div>
+                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(s.fecha_solicitud)}</div>
+                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                      {s.confirmacion_recibida === 1
+                        ? `${t("common.si")}${s.fecha_confirmacion ? ` · ${fmtFechaCorta(s.fecha_confirmacion)}` : ""}`
+                        : t("common.no")}
+                    </div>
+                    <div className="td"><span className={`tag ${BADGE_TS[s.estado] ?? "otros"}`}>{t(`traslados.estadoTS.${s.estado}`)}</span></div>
+                    <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                      <RowMenu
+                        onEdit={() => setTsModal({ open: true, traslado: s })}
+                        onDelete={() => setPendingDeleteTS(s)}
+                        deleteLabel={s.estado === "borrador" ? t("common.eliminar") : t("solicitudes.cancelar")}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : tab === "entrada" ? (
+          <>
+            <div className="tx-head">
+              <span className="roster-counters">
+                <span>{t("traslados.enRevision")}: <b>{trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}</b></span>
+              </span>
+              <button className="btn primary" onClick={() => setTeModal({ open: true, traslado: null })}>
+                <IconPlus size={14} /> {t("traslados.registrarEntrada")}
+              </button>
+            </div>
+            {trasladosEntrada.length === 0 ? (
+              <EmptyState
+                titulo={t("traslados.aunNoHayEntrada")}
+                sub={t("traslados.agregaPrimeroEntrada")}
+                icon={<IconMail size={20} strokeWidth={1.8} />}
+              />
+            ) : (
+              <div className="data-table roomy">
+                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
+                  <div className="th">{t("actas.colFolio")}</div>
+                  <div className="th">{t("traslados.colProceso")}</div>
+                  <div className="th">{t("traslados.fechaRecepcion")}</div>
+                  <div className="th">{t("traslados.adjunto")}</div>
+                  <div className="th">{t("membresia.colEstado")}</div>
+                  <div className="th"></div>
+                </div>
+                {trasladosEntrada.map((s) => (
+                  <div
+                    className="tr"
+                    key={s.id}
+                    style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
+                    onClick={() => setTeModal({ open: true, traslado: s })}
+                  >
+                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{s.folio}</div>
+                    <div className="td" style={{ minWidth: 0 }}>
+                      <div className="p-name truncate">{s.nombre}</div>
+                      <div className="p-mail truncate">{s.iglesia_procedencia ?? "—"}</div>
+                    </div>
+                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                      {s.fecha_recepcion ? fmtFechaCorta(s.fecha_recepcion) : "—"}
+                    </div>
+                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                      {s.adjunto_nombre ? <span className="truncate" title={s.adjunto_nombre}>📎 {s.adjunto_nombre}</span> : "—"}
+                    </div>
+                    <div className="td"><span className={`tag ${BADGE_TE[s.estado] ?? "otros"}`}>{t(`traslados.estadoTE.${s.estado}`)}</span></div>
+                    <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                      <RowMenu
+                        onEdit={() => setTeModal({ open: true, traslado: s })}
+                        onDelete={() => setPendingDeleteTE(s)}
+                        deleteLabel={s.estado === "recibida" && s.member_id === null ? t("common.eliminar") : t("cartas.archivar")}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </>
@@ -596,6 +842,64 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           danger
           onConfirm={eliminarOCancelarSolicitud}
           onCancel={() => setPendingDeleteSol(null)}
+        />
+      )}
+
+      {tsModal.open && (
+        <TrasladoSalidaModal
+          church={church}
+          traslado={tsModal.traslado}
+          members={members.filter((m) => m.activo === 1)}
+          onClose={() => setTsModal({ open: false, traslado: null })}
+          onSaved={() => { setRefrescoLocal((k) => k + 1); onChanged(); }}
+          onAbrirCarta={abrirCartaPorId}
+        />
+      )}
+
+      {teModal.open && (
+        <TrasladoEntradaModal
+          church={church}
+          traslado={teModal.traslado}
+          onClose={() => setTeModal({ open: false, traslado: null })}
+          onSaved={() => { setRefrescoLocal((k) => k + 1); onChanged(); }}
+        />
+      )}
+
+      {pendingDeleteTS && (
+        <ConfirmDialog
+          title={
+            pendingDeleteTS.estado === "borrador"
+              ? t("solicitudes.eliminarTitulo", { folio: pendingDeleteTS.folio })
+              : t("solicitudes.cancelarTitulo", { folio: pendingDeleteTS.folio })
+          }
+          message={pendingDeleteTS.estado === "borrador" ? t("traslados.eliminarMensaje") : t("traslados.cancelarMensaje")}
+          confirmLabel={pendingDeleteTS.estado === "borrador" ? t("common.eliminar") : t("solicitudes.cancelar")}
+          danger
+          onConfirm={eliminarOCancelarTS}
+          onCancel={() => setPendingDeleteTS(null)}
+        />
+      )}
+
+      {pendingDeleteTE && (
+        <ConfirmDialog
+          title={
+            pendingDeleteTE.estado === "recibida" && pendingDeleteTE.member_id === null
+              ? t("solicitudes.eliminarTitulo", { folio: pendingDeleteTE.folio })
+              : t("traslados.archivarTitulo", { folio: pendingDeleteTE.folio })
+          }
+          message={
+            pendingDeleteTE.estado === "recibida" && pendingDeleteTE.member_id === null
+              ? t("traslados.eliminarMensaje")
+              : t("traslados.archivarMensaje")
+          }
+          confirmLabel={
+            pendingDeleteTE.estado === "recibida" && pendingDeleteTE.member_id === null
+              ? t("common.eliminar")
+              : t("cartas.archivar")
+          }
+          danger={pendingDeleteTE.estado === "recibida" && pendingDeleteTE.member_id === null}
+          onConfirm={eliminarOArchivarTE}
+          onCancel={() => setPendingDeleteTE(null)}
         />
       )}
 

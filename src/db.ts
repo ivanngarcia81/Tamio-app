@@ -1519,6 +1519,343 @@ export async function vincularCartaSolicitud(solicitudId: number, cartaId: numbe
   );
 }
 
+// ---------- Traslados de salida ----------
+
+export interface TrasladoSalida {
+  id: number;
+  church_id: number;
+  numero_seq: number;
+  /** TS-AAAA-0001 */
+  folio: string;
+  member_id: number;
+  fecha_solicitud: string;
+  motivo: string | null;
+  iglesia_destino: string | null;
+  pastor_receptor: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  region: string | null;
+  pais: string | null;
+  telefono: string | null;
+  email: string | null;
+  fecha_aprobacion: string | null;
+  aprobado_por: string | null;
+  carta_id: number | null;
+  fecha_entrega: string | null;
+  metodo_entrega: string | null;
+  confirmacion_recibida: number;
+  fecha_confirmacion: string | null;
+  observaciones: string | null;
+  /** borrador | solicitud | revision | aprobacion | aprobado | cartaPreparacion |
+   *  cartaEmitida | cartaEntregada | confirmacion | completado | cancelado */
+  estado: string;
+  historial_estados: string;
+  creado_en: string;
+  modificado_en: string;
+}
+
+export type NewTrasladoSalida = Omit<TrasladoSalida, "id" | "church_id" | "numero_seq" | "folio" | "historial_estados" | "creado_en" | "modificado_en">;
+
+async function nextFolio(tabla: string, campoFecha: string, prefijo: string, churchId: number, fecha: string): Promise<{ seq: number; folio: string }> {
+  const d = await getDb();
+  const anio = fecha.slice(0, 4);
+  const rows = await d.select<{ m: number | null }[]>(
+    `SELECT MAX(numero_seq) AS m FROM ${tabla} WHERE church_id = $1 AND substr(${campoFecha}, 1, 4) = $2`,
+    [churchId, anio]
+  );
+  const seq = (rows[0]?.m ?? 0) + 1;
+  return { seq, folio: `${prefijo}-${anio}-${String(seq).padStart(4, "0")}` };
+}
+
+async function registrarCambioEstadoEn(tabla: string, id: number, churchId: number, de: string, a: string): Promise<void> {
+  if (de === a) return;
+  const d = await getDb();
+  const rows = await d.select<{ historial_estados: string }[]>(
+    `SELECT historial_estados FROM ${tabla} WHERE id = $1 AND church_id = $2`,
+    [id, churchId]
+  );
+  let hist: CartaCambioEstado[] = [];
+  try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
+  hist.push({ de, a, fecha: nowLocalIso() });
+  await d.execute(
+    `UPDATE ${tabla} SET historial_estados = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3`,
+    [JSON.stringify(hist), id, churchId]
+  );
+}
+
+export async function listTrasladosSalida(churchId: number): Promise<TrasladoSalida[]> {
+  const d = await getDb();
+  return d.select<TrasladoSalida[]>(
+    "SELECT * FROM traslados_salida WHERE church_id = $1 ORDER BY fecha_solicitud DESC, id DESC",
+    [churchId]
+  );
+}
+
+const TS_CAMPOS = `member_id, fecha_solicitud, motivo, iglesia_destino, pastor_receptor, direccion,
+  ciudad, region, pais, telefono, email, fecha_aprobacion, aprobado_por, carta_id,
+  fecha_entrega, metodo_entrega, confirmacion_recibida, fecha_confirmacion, observaciones, estado`;
+
+function tsParams(s: NewTrasladoSalida): unknown[] {
+  return [
+    s.member_id, s.fecha_solicitud, s.motivo, s.iglesia_destino, s.pastor_receptor, s.direccion,
+    s.ciudad, s.region, s.pais, s.telefono, s.email, s.fecha_aprobacion, s.aprobado_por, s.carta_id,
+    s.fecha_entrega, s.metodo_entrega, s.confirmacion_recibida ? 1 : 0, s.fecha_confirmacion,
+    s.observaciones, s.estado,
+  ];
+}
+
+export async function insertTrasladoSalida(churchId: number, s: NewTrasladoSalida): Promise<TrasladoSalida | null> {
+  const d = await getDb();
+  const { seq, folio } = await nextFolio("traslados_salida", "fecha_solicitud", "TS", churchId, s.fecha_solicitud);
+  const historial = JSON.stringify([{ de: "", a: s.estado, fecha: nowLocalIso() }]);
+  await d.execute(
+    `INSERT INTO traslados_salida (${TS_CAMPOS}, church_id, numero_seq, folio, historial_estados)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+    [...tsParams(s), churchId, seq, folio, historial]
+  );
+  const rows = await d.select<TrasladoSalida[]>(
+    "SELECT * FROM traslados_salida WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
+    [churchId, folio]
+  );
+  return rows[0] ?? null;
+}
+
+export async function updateTrasladoSalida(id: number, churchId: number, s: NewTrasladoSalida, estadoAnterior: string): Promise<void> {
+  const d = await getDb();
+  await registrarCambioEstadoEn("traslados_salida", id, churchId, estadoAnterior, s.estado);
+  await d.execute(
+    `UPDATE traslados_salida SET
+       member_id = $1, fecha_solicitud = $2, motivo = $3, iglesia_destino = $4, pastor_receptor = $5,
+       direccion = $6, ciudad = $7, region = $8, pais = $9, telefono = $10, email = $11,
+       fecha_aprobacion = $12, aprobado_por = $13, carta_id = $14, fecha_entrega = $15,
+       metodo_entrega = $16, confirmacion_recibida = $17, fecha_confirmacion = $18,
+       observaciones = $19, estado = $20,
+       modificado_en = datetime('now', 'localtime')
+     WHERE id = $21 AND church_id = $22`,
+    [...tsParams(s), id, churchId]
+  );
+}
+
+/** Solo borradores se eliminan; el resto se cancela para conservar historial. */
+export async function deleteTrasladoSalida(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "DELETE FROM traslados_salida WHERE id = $1 AND church_id = $2 AND estado = 'borrador'",
+    [id, churchId]
+  );
+}
+
+/** ¿El miembro ya tiene otro traslado de salida en proceso? (advertencia) */
+export async function memberTieneTrasladoActivo(memberId: number, churchId: number, excluirId?: number): Promise<boolean> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    `SELECT count(*) AS n FROM traslados_salida
+      WHERE church_id = $1 AND member_id = $2 AND estado NOT IN ('completado', 'cancelado')
+        AND ($3 IS NULL OR id != $3)`,
+    [churchId, memberId, excluirId ?? null]
+  );
+  return (rows[0]?.n ?? 0) > 0;
+}
+
+// ---------- Traslados de entrada ----------
+
+export interface TrasladoEntrada {
+  id: number;
+  church_id: number;
+  numero_seq: number;
+  /** TE-AAAA-0001 */
+  folio: string;
+  nombre: string;
+  fecha_nacimiento: string | null;
+  telefono: string | null;
+  correo: string | null;
+  direccion: string | null;
+  iglesia_procedencia: string | null;
+  pastor_anterior: string | null;
+  direccion_anterior: string | null;
+  fecha_emision_carta: string | null;
+  fecha_recepcion: string | null;
+  referencia_carta: string | null;
+  /** Ruta del archivo copiado a la carpeta de datos de la app. */
+  adjunto_path: string | null;
+  adjunto_nombre: string | null;
+  adjunto_fecha: string | null;
+  fecha_congregacion: string | null;
+  fecha_entrevista: string | null;
+  entrevistador: string | null;
+  decision: string | null;
+  fecha_aprobacion: string | null;
+  observaciones: string | null;
+  /** recibida | revision | incompleta | entrevista | aprobacion | aceptado |
+   *  noAceptado | completado | archivado */
+  estado: string;
+  member_id: number | null;
+  historial_estados: string;
+  creado_en: string;
+  modificado_en: string;
+}
+
+export type NewTrasladoEntrada = Omit<TrasladoEntrada, "id" | "church_id" | "numero_seq" | "folio" | "historial_estados" | "creado_en" | "modificado_en">;
+
+export async function listTrasladosEntrada(churchId: number): Promise<TrasladoEntrada[]> {
+  const d = await getDb();
+  return d.select<TrasladoEntrada[]>(
+    "SELECT * FROM traslados_entrada WHERE church_id = $1 ORDER BY id DESC",
+    [churchId]
+  );
+}
+
+function teParams(s: NewTrasladoEntrada): unknown[] {
+  return [
+    s.nombre, s.fecha_nacimiento, s.telefono, s.correo, s.direccion,
+    s.iglesia_procedencia, s.pastor_anterior, s.direccion_anterior,
+    s.fecha_emision_carta, s.fecha_recepcion, s.referencia_carta,
+    s.adjunto_path, s.adjunto_nombre, s.adjunto_fecha,
+    s.fecha_congregacion, s.fecha_entrevista, s.entrevistador, s.decision,
+    s.fecha_aprobacion, s.observaciones, s.estado, s.member_id,
+  ];
+}
+
+export async function insertTrasladoEntrada(churchId: number, s: NewTrasladoEntrada): Promise<TrasladoEntrada | null> {
+  const d = await getDb();
+  const hoy = nowLocalIso().slice(0, 10);
+  const { seq, folio } = await nextFolio("traslados_entrada", "creado_en", "TE", churchId, s.fecha_recepcion ?? hoy);
+  const historial = JSON.stringify([{ de: "", a: s.estado, fecha: nowLocalIso() }]);
+  await d.execute(
+    `INSERT INTO traslados_entrada (
+       nombre, fecha_nacimiento, telefono, correo, direccion,
+       iglesia_procedencia, pastor_anterior, direccion_anterior,
+       fecha_emision_carta, fecha_recepcion, referencia_carta,
+       adjunto_path, adjunto_nombre, adjunto_fecha,
+       fecha_congregacion, fecha_entrevista, entrevistador, decision,
+       fecha_aprobacion, observaciones, estado, member_id,
+       church_id, numero_seq, folio, historial_estados
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
+    [...teParams(s), churchId, seq, folio, historial]
+  );
+  const rows = await d.select<TrasladoEntrada[]>(
+    "SELECT * FROM traslados_entrada WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
+    [churchId, folio]
+  );
+  return rows[0] ?? null;
+}
+
+export async function updateTrasladoEntrada(id: number, churchId: number, s: NewTrasladoEntrada, estadoAnterior: string): Promise<void> {
+  const d = await getDb();
+  await registrarCambioEstadoEn("traslados_entrada", id, churchId, estadoAnterior, s.estado);
+  await d.execute(
+    `UPDATE traslados_entrada SET
+       nombre = $1, fecha_nacimiento = $2, telefono = $3, correo = $4, direccion = $5,
+       iglesia_procedencia = $6, pastor_anterior = $7, direccion_anterior = $8,
+       fecha_emision_carta = $9, fecha_recepcion = $10, referencia_carta = $11,
+       adjunto_path = $12, adjunto_nombre = $13, adjunto_fecha = $14,
+       fecha_congregacion = $15, fecha_entrevista = $16, entrevistador = $17, decision = $18,
+       fecha_aprobacion = $19, observaciones = $20, estado = $21, member_id = $22,
+       modificado_en = datetime('now', 'localtime')
+     WHERE id = $23 AND church_id = $24`,
+    [...teParams(s), id, churchId]
+  );
+}
+
+export async function deleteTrasladoEntrada(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "DELETE FROM traslados_entrada WHERE id = $1 AND church_id = $2 AND estado = 'recibida' AND member_id IS NULL",
+    [id, churchId]
+  );
+}
+
+// ---------- Detección de duplicados (Decisión G) ----------
+
+/** Minúsculas, sin acentos; teléfonos: solo dígitos. */
+export function normalizarTexto(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+export function normalizarTelefono(s: string): string {
+  return s.replace(/\D/g, "");
+}
+
+/** Posibles duplicados en members comparando nombre + teléfono + correo
+ *  normalizados (members no guarda fecha de nacimiento). */
+export async function buscarPosiblesDuplicados(
+  churchId: number,
+  datos: { nombre: string; telefono?: string | null; correo?: string | null }
+): Promise<Member[]> {
+  const todos = await listMembersRegistro(churchId);
+  const nombre = normalizarTexto(datos.nombre);
+  const tel = datos.telefono ? normalizarTelefono(datos.telefono) : "";
+  const correo = datos.correo ? normalizarTexto(datos.correo) : "";
+  return todos.filter((m) => {
+    if (nombre && normalizarTexto(m.nombre) === nombre) return true;
+    if (tel && m.telefono && normalizarTelefono(m.telefono) === tel) return true;
+    if (correo && m.email && normalizarTexto(m.email) === correo) return true;
+    return false;
+  });
+}
+
+/** Alta de miembro desde un traslado de entrada aceptado: crea el registro
+ *  básico y completa iglesia anterior y fecha de congregación en la ficha. */
+export async function insertMemberDesdeTraslado(
+  churchId: number,
+  te: Pick<TrasladoEntrada, "nombre" | "telefono" | "correo" | "iglesia_procedencia" | "fecha_congregacion">
+): Promise<number | null> {
+  const d = await getDb();
+  const hoy = nowLocalIso().slice(0, 10);
+  await d.execute(
+    `INSERT INTO members (church_id, nombre, email, telefono, etiquetas, fecha_ingreso)
+     VALUES ($1,$2,$3,$4,'[]',$5)`,
+    [churchId, te.nombre, te.correo ?? null, te.telefono ?? null, hoy]
+  );
+  const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
+  const id = rows[0]?.id ?? null;
+  if (id) {
+    await d.execute(
+      "UPDATE members SET iglesia_anterior = $1, fecha_congregacion = $2 WHERE id = $3 AND church_id = $4",
+      [te.iglesia_procedencia ?? null, te.fecha_congregacion ?? null, id, churchId]
+    );
+  }
+  return id;
+}
+
+/** Documentos de Cartas y traslados relacionados con un miembro (ficha). */
+export interface MemberDoc {
+  folio: string;
+  clase: "carta" | "solicitud" | "salida" | "entrada";
+  fecha: string;
+  estado: string;
+}
+
+export async function memberDocs(memberId: number, churchId: number): Promise<MemberDoc[]> {
+  const d = await getDb();
+  const [cartas, sols, salidas, entradas] = await Promise.all([
+    d.select<{ folio: string; fecha: string; estado: string }[]>(
+      "SELECT folio, fecha_emision AS fecha, estado FROM cartas WHERE church_id = $1 AND member_id = $2",
+      [churchId, memberId]
+    ),
+    d.select<{ folio: string; fecha: string; estado: string }[]>(
+      "SELECT folio, fecha_solicitud AS fecha, estado FROM solicitudes WHERE church_id = $1 AND member_id = $2",
+      [churchId, memberId]
+    ),
+    d.select<{ folio: string; fecha: string; estado: string }[]>(
+      "SELECT folio, fecha_solicitud AS fecha, estado FROM traslados_salida WHERE church_id = $1 AND member_id = $2",
+      [churchId, memberId]
+    ),
+    d.select<{ folio: string; fecha: string; estado: string }[]>(
+      "SELECT folio, coalesce(fecha_recepcion, substr(creado_en, 1, 10)) AS fecha, estado FROM traslados_entrada WHERE church_id = $1 AND member_id = $2",
+      [churchId, memberId]
+    ),
+  ]);
+  const docs: MemberDoc[] = [
+    ...cartas.map((x) => ({ ...x, clase: "carta" as const })),
+    ...sols.map((x) => ({ ...x, clase: "solicitud" as const })),
+    ...salidas.map((x) => ({ ...x, clase: "salida" as const })),
+    ...entradas.map((x) => ({ ...x, clase: "entrada" as const })),
+  ];
+  docs.sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  return docs;
+}
+
 // ---------- Registro de servicios ----------
 
 export interface Servicio {
