@@ -259,7 +259,10 @@ a { color: inherit; text-decoration: none; }
      crecer a los 1440px; en monitores anchos el espacio sobrante queda
      a la DERECHA (margin-right: auto), nunca como hueco tras el
      sidebar. En ventanas chicas width 100% mantiene todo igual. */
-  max-width: 1440px;
+  /* Contenedor fluido: crece con la ventana (88vw) hasta un tope de
+     1700px en monitores 4K; nunca baja de 1200px de tope en ventanas
+     medianas. Siempre anclado a la izquierda, junto al sidebar. */
+  max-width: clamp(1200px, 88vw, 1700px);
   width: 100%;
   margin-left: 0;
   margin-right: auto;
@@ -404,7 +407,10 @@ a { color: inherit; text-decoration: none; }
   /* Mismo sistema de ancho máximo que .header (ver arriba): el
      encabezado y el contenido comparten el límite y el anclaje a la
      izquierda para quedar siempre alineados entre sí. */
-  max-width: 1440px;
+  /* Contenedor fluido: crece con la ventana (88vw) hasta un tope de
+     1700px en monitores 4K; nunca baja de 1200px de tope en ventanas
+     medianas. Siempre anclado a la izquierda, junto al sidebar. */
+  max-width: clamp(1200px, 88vw, 1700px);
   width: 100%;
   margin-left: 0;
   margin-right: auto;
