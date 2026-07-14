@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
   currentMonth, currentYear, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
-  listTrasladosEntrada, listTrasladosSalida,
-  type AsistenciaLigera, type Church, type Member, type TrasladoEntrada, type TrasladoSalida,
+  listServiciosLigero, listTrasladosEntrada, listTrasladosSalida,
+  type AsistenciaLigera, type Church, type Member, type ServicioLigero, type TrasladoEntrada, type TrasladoSalida,
 } from "../db";
 import {
   asistenciaPorMiembro, camposFaltantes, esNuevoEnPeriodo, estadoEfectivo, enPeriodo,
-  periodoDeAnio, periodoDeMes, periodoDeTrimestre, PERIODO_TODO, resumenMembresia,
+  periodoDeAnio, periodoDeMes, periodoDeTrimestre, PERIODO_TODO, resumenAsistencia,
+  resumenMembresia, sinAsistirReciente, topAsistencia,
   type Periodo,
 } from "../services/informes/membresia";
 import { cargarUmbrales, UMBRALES_DEFAULT, type Umbrales } from "../services/informes/umbrales";
@@ -24,6 +25,7 @@ const COLS = "1.5fr 150px 1.4fr 140px 44px";
 const PAGE_SIZE = 25;
 
 type PeriodoTipo = "mes" | "trimestre" | "anio" | "rango" | "todo";
+type Vista = "miembros" | "asistencia";
 type TarjetaFiltro =
   | "todos" | "activos" | "inactivos" | "nuevos" | "recibidos" | "trasladados"
   | "frecuentes" | "incompletos";
@@ -61,6 +63,7 @@ interface Props {
 export default function InformesMembresia({ church, refreshKey, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [miembros, setMiembros] = useState<Member[]>([]);
+  const [servicios, setServicios] = useState<ServicioLigero[]>([]);
   const [asistenciaRaw, setAsistenciaRaw] = useState<AsistenciaLigera[]>([]);
   const [trasladosSalida, setTrasladosSalida] = useState<TrasladoSalida[]>([]);
   const [trasladosEntrada, setTrasladosEntrada] = useState<TrasladoEntrada[]>([]);
@@ -87,6 +90,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   const [orden, setOrden] = useState<{ campo: OrdenCampo; dir: 1 | -1 }>({ campo: "nombre", dir: 1 });
   const [page, setPage] = useState(1);
   const [ficha, setFicha] = useState<Member | null>(null);
+  const [vista, setVista] = useState<Vista>("miembros");
 
   const periodo: Periodo = useMemo(() => {
     if (periodoTipo === "mes") return periodoDeMes(mesSel);
@@ -100,8 +104,9 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     let cancelado = false;
     setLoading(true);
     (async () => {
-      const [ms, asis, ts, te, u] = await Promise.all([
+      const [ms, serv, asis, ts, te, u] = await Promise.all([
         listMembersRegistro(church.id),
+        listServiciosLigero(church.id, periodo.desde, periodo.hasta),
         listAsistenciaLigera(church.id, periodo.desde, periodo.hasta),
         listTrasladosSalida(church.id),
         listTrasladosEntrada(church.id),
@@ -109,6 +114,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
       ]);
       if (cancelado) return;
       setMiembros(ms);
+      setServicios(serv);
       setAsistenciaRaw(asis);
       setTrasladosSalida(ts);
       setTrasladosEntrada(te);
@@ -199,6 +205,26 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
   const flecha = (campo: OrdenCampo) => (orden.campo === campo ? (orden.dir === 1 ? " ↑" : " ↓") : "");
 
+  // ----- Datos de la vista de asistencia -----
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  const asistGeneral = useMemo(() => resumenAsistencia(servicios, asistenciaRaw), [servicios, asistenciaRaw]);
+  const mejores = useMemo(() => topAsistencia(miembros, asistencia, umbrales), [miembros, asistencia, umbrales]);
+  const sinAsistir = useMemo(
+    () => miembros
+      .filter((m) => m.activo === 1)
+      .map((m) => ({ miembro: m, datos: asistencia.get(m.id) }))
+      .filter((x) => x.datos && sinAsistirReciente(x.datos, hoyISO, umbrales))
+      .sort((a, b) => (b.datos!.racha - a.datos!.racha)),
+    [miembros, asistencia, umbrales, hoyISO]
+  );
+  const asistenciaMiembros = useMemo(
+    () => miembros
+      .map((m) => ({ miembro: m, datos: asistencia.get(m.id) }))
+      .filter((x) => x.datos && x.datos.enRoster > 0)
+      .sort((a, b) => (b.datos!.pct ?? 0) - (a.datos!.pct ?? 0) || a.miembro.nombre.localeCompare(b.miembro.nombre)),
+    [miembros, asistencia]
+  );
+
   const tarjetas: { id: TarjetaFiltro; label: string; valor: number; color: string }[] = [
     { id: "todos", label: t("informes.cardTotal"), valor: resumen.total, color: "var(--accent-4)" },
     { id: "activos", label: t("informes.cardActivos"), valor: resumen.activos, color: "var(--accent-2)" },
@@ -255,9 +281,18 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           </div>
         </div>
 
+        {/* Pestañas: registro de miembros vs. asistencia */}
+        <div style={{ display: "flex", gap: 6, margin: "14px 0 4px" }}>
+          {(["miembros", "asistencia"] as Vista[]).map((v) => (
+            <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
+              {t(`informes.vista.${v}`)}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <LoadingState />
-        ) : (
+        ) : vista === "miembros" ? (
           <>
             {/* Tarjetas de resumen clicables */}
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
@@ -365,6 +400,92 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               </div>
             )}
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
+        ) : servicios.length === 0 ? (
+          <EmptyState titulo={t("informes.asistVacioTitulo")} sub={t("informes.asistVacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
+        ) : (
+          <>
+            {/* Indicadores generales de asistencia */}
+            <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("informes.totalServicios")}</span></div>
+                <div className="stat-value md">{asistGeneral.totalServicios}</div>
+              </div>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("informes.asistenciaTotal")}</span></div>
+                <div className="stat-value md">{asistGeneral.asistenciaTotal}</div>
+              </div>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("informes.promedioServicio")}</span></div>
+                <div className="stat-value md">{asistGeneral.promedioPorServicio}</div>
+              </div>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("informes.pctGeneral")}</span></div>
+                <div className="stat-value md">{asistGeneral.pctGeneral !== null ? `${asistGeneral.pctGeneral}%` : "—"}</div>
+              </div>
+            </div>
+
+            {/* Mejores asistencias + sin asistir recientemente */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, marginTop: 16 }}>
+              <div className="card">
+                <div className="card-head"><span className="card-title">{t("informes.mejoresTitulo")}</span></div>
+                {mejores.length === 0 ? (
+                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
+                ) : mejores.map(({ miembro: m, datos: a }) => (
+                  <div key={m.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => setFicha(m)}>
+                    <span className="roster-name">{m.nombre}</span>
+                    <span style={{ fontWeight: 700, fontSize: 13, flex: "none" }}>{a.pct}%</span>
+                    <span style={{ color: "var(--text-3)", fontSize: 11.5, flex: "none", width: 90, textAlign: "right" }}>
+                      {t("informes.deN", { asis: a.asistidos, total: a.enRoster })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="card">
+                <div className="card-head"><span className="card-title">{t("informes.sinAsistirTitulo")}</span></div>
+                {sinAsistir.length === 0 ? (
+                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinAsistirVacio")}</div>
+                ) : sinAsistir.slice(0, 12).map(({ miembro: m, datos: a }) => (
+                  <div key={m.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => setFicha(m)}>
+                    <span className="roster-name">{m.nombre}</span>
+                    <span className="tag baja" style={{ flex: "none" }}>{t("informes.ausenciasN", { n: a!.racha })}</span>
+                    <span style={{ color: "var(--text-3)", fontSize: 11.5, flex: "none", width: 90, textAlign: "right" }}>
+                      {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Asistencia por miembro */}
+            <div className="tx-head" style={{ marginTop: 18 }}>
+              <span className="card-title">{t("informes.porMiembroTitulo")}</span>
+            </div>
+            <div className="data-table roomy">
+              <div className="thead" style={{ gridTemplateColumns: "1.6fr 90px 90px 90px 130px" }}>
+                <div className="th">{t("informes.colMiembro")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("informes.colAsistidos")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("informes.colAusentes")}</div>
+                <div className="th" style={{ textAlign: "right" }}>%</div>
+                <div className="th">{t("informes.colUltima")}</div>
+              </div>
+              {asistenciaMiembros.map(({ miembro: m, datos: a }) => (
+                <div key={m.id} className="tr" style={{ gridTemplateColumns: "1.6fr 90px 90px 90px 130px", cursor: "pointer" }} onClick={() => setFicha(m)}>
+                  <div className="td" style={{ minWidth: 0 }}>
+                    <div className="p-name truncate">{m.nombre}</div>
+                    {a!.racha >= umbrales.rachaServicios && (
+                      <span className="tag baja">{t("informes.ausenciasN", { n: a!.racha })}</span>
+                    )}
+                  </div>
+                  <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a!.asistidos}</div>
+                  <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-2)" }}>{a!.ausentes}</div>
+                  <div className="td" style={{ textAlign: "right", fontWeight: 700 }}>{a!.pct}%</div>
+                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         )}
       </div>
