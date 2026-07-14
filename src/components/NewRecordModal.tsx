@@ -238,7 +238,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         if (mode.kind === "editMember") {
           await updateMember(mode.member.id, church.id, payload);
         } else {
-          await insertMember(church.id, payload);
+          // La fecha de alta del registro de membresía es el día en que se
+          // agrega el miembro (el CSV puede traer fechas históricas propias).
+          await insertMember(church.id, { ...payload, fecha_ingreso: hoy });
         }
       } else {
         const m = parseMonto(monto);

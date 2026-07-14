@@ -170,6 +170,14 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE churches ADD COLUMN pastor_telefono TEXT;
             ALTER TABLE churches ADD COLUMN pastor_firma_path TEXT;
         "#,
+    }, Migration {
+        version: 11,
+        description: "baja de miembros con fecha y motivo (registro de membresía)",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE members ADD COLUMN fecha_baja TEXT;
+            ALTER TABLE members ADD COLUMN motivo_baja TEXT;
+        "#,
     }]
 }
 

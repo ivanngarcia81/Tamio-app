@@ -43,6 +43,10 @@ export interface Member {
   etiquetas: string; // JSON string
   fecha_ingreso: string | null;
   notas: string | null;
+  /** 1 = activo, 0 = dado de baja (o archivado desde Tesorería). */
+  activo: number;
+  fecha_baja: string | null;
+  motivo_baja: string | null;
 }
 
 export interface Tx {
@@ -898,9 +902,60 @@ export async function updateMember(id: number, churchId: number, m: NewMember): 
 export async function archiveMember(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "UPDATE members SET activo = 0 WHERE id = $1 AND church_id = $2",
+    `UPDATE members SET activo = 0,
+            fecha_baja = coalesce(fecha_baja, date('now', 'localtime'))
+      WHERE id = $1 AND church_id = $2`,
     [id, churchId]
   );
+}
+
+/** Registro oficial completo (activos primero, luego bajas) para Membresía. */
+export async function listMembersRegistro(churchId: number): Promise<Member[]> {
+  const d = await getDb();
+  return d.select<Member[]>(
+    "SELECT * FROM members WHERE church_id = $1 ORDER BY activo DESC, nombre",
+    [churchId]
+  );
+}
+
+export async function darDeBajaMember(
+  id: number,
+  churchId: number,
+  fecha: string,
+  motivo: string | null
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE members SET activo = 0, fecha_baja = $1, motivo_baja = $2 WHERE id = $3 AND church_id = $4",
+    [fecha, motivo, id, churchId]
+  );
+}
+
+export interface MembresiaStats {
+  activos: number;
+  altasAnio: number;
+  bajasAnio: number;
+  total: number;
+}
+
+export async function membresiaStats(churchId: number, yyyy: string): Promise<MembresiaStats> {
+  const d = await getDb();
+  const rows = await d.select<{ activos: number; altas: number; bajas: number; total: number }[]>(
+    `SELECT
+       SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) AS activos,
+       SUM(CASE WHEN substr(coalesce(fecha_ingreso, ''), 1, 4) = $2 THEN 1 ELSE 0 END) AS altas,
+       SUM(CASE WHEN activo = 0 AND substr(coalesce(fecha_baja, ''), 1, 4) = $2 THEN 1 ELSE 0 END) AS bajas,
+       COUNT(*) AS total
+     FROM members WHERE church_id = $1`,
+    [churchId, yyyy]
+  );
+  const r = rows[0];
+  return {
+    activos: r?.activos ?? 0,
+    altasAnio: r?.altas ?? 0,
+    bajasAnio: r?.bajas ?? 0,
+    total: r?.total ?? 0,
+  };
 }
 
 export async function listArchivedMembers(churchId: number): Promise<Member[]> {
@@ -914,7 +969,7 @@ export async function listArchivedMembers(churchId: number): Promise<Member[]> {
 export async function restoreMember(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "UPDATE members SET activo = 1 WHERE id = $1 AND church_id = $2",
+    "UPDATE members SET activo = 1, fecha_baja = NULL, motivo_baja = NULL WHERE id = $1 AND church_id = $2",
     [id, churchId]
   );
 }

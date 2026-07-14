@@ -9,6 +9,7 @@ import Movimientos from "./pages/Movimientos";
 import Miembros from "./pages/Miembros";
 import Reportes from "./pages/Reportes";
 import Depositos from "./pages/Depositos";
+import Membresia from "./pages/Membresia";
 import SeccionSecretaria from "./pages/SeccionSecretaria";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
@@ -168,7 +169,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             path="/depositos"
             element={<Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />}
           />
-          <Route path="/membresia" element={<SeccionSecretaria seccion="membresia" />} />
+          <Route
+            path="/membresia"
+            element={
+              <Membresia
+                church={church}
+                refreshKey={refreshKey}
+                onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
+                onEdit={openEditMember}
+                onChanged={onChanged}
+              />
+            }
+          />
           <Route path="/actas" element={<SeccionSecretaria seccion="actas" />} />
           <Route path="/cartas" element={<SeccionSecretaria seccion="cartas" />} />
           <Route path="/reporte-miembros" element={<SeccionSecretaria seccion="reporteMiembros" />} />
