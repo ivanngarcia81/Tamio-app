@@ -65,8 +65,8 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
               <CartesianGrid vertical={false} stroke="var(--line-soft)" strokeDasharray="3 4" />
               <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
               <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} />
-              <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
-              <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
+              <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -98,7 +98,7 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
                 dataKey="balance"
                 name={t("charts.balanceAcumulado")}
                 stroke="var(--accent-3)"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 fill={`url(#${gradId})`}
                 dot={false}
                 activeDot={{ r: 4 }}
