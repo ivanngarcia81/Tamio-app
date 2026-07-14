@@ -300,3 +300,18 @@ export const IconUpload = ({ size = 14, strokeWidth = 1.8 }: IconProps) => (
     <line x1="12" y1="3" x2="12" y2="15" />
   </svg>
 );
+
+export const IconMail = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="m22 7-10 6L2 7" />
+  </svg>
+);
+
+export const IconClipboardList = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <rect x="8" y="2" width="8" height="4" rx="1" />
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <path d="M9 12h6M9 16h6" />
+  </svg>
+);

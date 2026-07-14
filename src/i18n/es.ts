@@ -555,13 +555,43 @@ export const es = {
 
   nav: {
     inicio: "Inicio",
+    grupoTesoreria: "Tesorería",
+    grupoSecretaria: "Secretaría",
     ingresos: "Ingresos",
     gastos: "Gastos",
     miembros: "Miembros",
     reportes: "Reportes",
     depositos: "Depósito bancario",
+    membresia: "Membresía",
+    actas: "Actas",
+    cartas: "Cartas y traslados",
+    reporteMiembros: "Reporte de miembros",
     bandeja: "Bandeja",
     configuracion: "Configuración",
+  },
+
+  secretaria: {
+    enDesarrolloTitulo: "Sección en desarrollo",
+    membresia: {
+      titulo: "Membresía",
+      sub: "Registro oficial de la congregación",
+      desc: "Aquí se podrá buscar feligreses, editar sus datos y registrar altas y bajas al instante.",
+    },
+    actas: {
+      titulo: "Actas",
+      sub: "Acuerdos del pastor y los oficiales",
+      desc: "Aquí se guardará el historial legal y administrativo de los acuerdos tomados en las reuniones.",
+    },
+    cartas: {
+      titulo: "Cartas y traslados",
+      sub: "Recomendaciones y traslados a otras iglesias",
+      desc: "Aquí se emitirán cartas de recomendación y de traslado hacia otras iglesias en unos clics.",
+    },
+    reporteMiembros: {
+      titulo: "Reporte de miembros",
+      sub: "Reporte mensual o anual para el concilio o distrito",
+      desc: "Aquí se generará el reporte de membresía que exige el concilio o distrito, listo para imprimir.",
+    },
   },
 
   rol: {

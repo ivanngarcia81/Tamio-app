@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import {
-  IconChurch, IconHome, IconIngreso, IconGasto, IconMiembros,
-  IconReportes, IconBandeja, IconBank, IconConfig, IconChevronDown,
+  IconBandeja, IconBank, IconChevronDown, IconChurch, IconClipboardList,
+  IconConfig, IconFileText, IconGasto, IconHome, IconIdBadge, IconIngreso,
+  IconMail, IconMiembros, IconReportes,
 } from "../icons";
 
 interface Props {
@@ -23,8 +24,52 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+type GroupId = "tesoreria" | "secretaria";
+
+const GROUPS_KEY = "tesoreria-nav-groups";
+const RUTAS_TESORERIA = ["/ingresos", "/gastos", "/miembros", "/reportes", "/depositos"];
+const RUTAS_SECRETARIA = ["/membresia", "/actas", "/cartas", "/reporte-miembros"];
+
+function initialOpen(): Record<GroupId, boolean> {
+  try {
+    const saved = localStorage.getItem(GROUPS_KEY);
+    if (saved) return { tesoreria: true, secretaria: true, ...JSON.parse(saved) };
+  } catch { /* noop */ }
+  return { tesoreria: true, secretaria: true };
+}
+
+function Item({ to, icon, label, badge }: { to: string; icon: ReactNode; label: string; badge?: number }) {
+  return (
+    <NavLink to={to} end={to === "/"} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+      <span className="icon">{icon}</span>
+      {label}
+      {badge !== undefined && badge > 0 && <span className="badge">{badge}</span>}
+    </NavLink>
+  );
+}
+
+function Grupo({ abierto, etiqueta, onToggle, children }: {
+  abierto: boolean;
+  etiqueta: string;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`nav-group${abierto ? "" : " closed"}`}>
+      <button type="button" className="nav-group-head" onClick={onToggle} aria-expanded={abierto}>
+        {etiqueta}
+        <span className="chev"><IconChevronDown size={12} strokeWidth={2.2} /></span>
+      </button>
+      <div className="nav-group-body">
+        <div className="nav-group-items">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Sidebar({ church, memberCount, pendingCount }: Props) {
   const { t } = useTranslation();
+  const location = useLocation();
   const initials = church.nombre
     .split(" ")
     .filter((w) => w.length > 2)
@@ -34,6 +79,7 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
     .toUpperCase() || church.nombre.slice(0, 2).toUpperCase();
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [open, setOpen] = useState<Record<GroupId, boolean>>(initialOpen);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,6 +99,25 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
       cancelled = true;
     };
   }, [church.logo_path]);
+
+  // El grupo que contiene la ruta activa se abre solo: el usuario nunca
+  // "pierde" la página en la que está detrás de un menú cerrado.
+  useEffect(() => {
+    const grupo: GroupId | null = RUTAS_TESORERIA.includes(location.pathname)
+      ? "tesoreria"
+      : RUTAS_SECRETARIA.includes(location.pathname)
+        ? "secretaria"
+        : null;
+    if (grupo) setOpen((o) => (o[grupo] ? o : { ...o, [grupo]: true }));
+  }, [location.pathname]);
+
+  function toggle(g: GroupId) {
+    setOpen((o) => {
+      const next = { ...o, [g]: !o[g] };
+      try { localStorage.setItem(GROUPS_KEY, JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  }
 
   return (
     <aside className="sidebar">
@@ -74,43 +139,27 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
       </div>
 
       <nav className="nav">
-        <NavLink to="/" end className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconHome /></span>
-          {t("nav.inicio")}
-        </NavLink>
-        <NavLink to="/ingresos" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconIngreso /></span>
-          {t("nav.ingresos")}
-        </NavLink>
-        <NavLink to="/gastos" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconGasto /></span>
-          {t("nav.gastos")}
-        </NavLink>
-        <NavLink to="/miembros" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconMiembros /></span>
-          {t("nav.miembros")}
-          {memberCount > 0 && <span className="badge">{memberCount}</span>}
-        </NavLink>
-        <NavLink to="/reportes" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconReportes /></span>
-          {t("nav.reportes")}
-        </NavLink>
-        <NavLink to="/depositos" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconBank /></span>
-          {t("nav.depositos")}
-        </NavLink>
+        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />
+
+        <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")}>
+          <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />
+          <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />
+          <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />
+          <Item to="/reportes" icon={<IconReportes />} label={t("nav.reportes")} />
+          <Item to="/depositos" icon={<IconBank />} label={t("nav.depositos")} />
+        </Grupo>
+
+        <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
+          <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
+          <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
+          <Item to="/cartas" icon={<IconMail />} label={t("nav.cartas")} />
+          <Item to="/reporte-miembros" icon={<IconClipboardList />} label={t("nav.reporteMiembros")} />
+        </Grupo>
       </nav>
 
       <div className="sidebar-footer">
-        <NavLink to="/bandeja" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconBandeja /></span>
-          {t("nav.bandeja")}
-          {pendingCount > 0 && <span className="badge">{pendingCount}</span>}
-        </NavLink>
-        <NavLink to="/configuracion" className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
-          <span className="icon"><IconConfig /></span>
-          {t("nav.configuracion")}
-        </NavLink>
+        <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.bandeja")} badge={pendingCount} />
+        <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />
       </div>
     </aside>
   );

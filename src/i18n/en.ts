@@ -561,13 +561,43 @@ export const en: Resources = {
 
   nav: {
     inicio: "Home",
+    grupoTesoreria: "Treasury",
+    grupoSecretaria: "Secretary",
     ingresos: "Income",
     gastos: "Expenses",
     miembros: "Members",
     reportes: "Reports",
     depositos: "Bank deposit",
+    membresia: "Membership",
+    actas: "Board minutes",
+    cartas: "Certificates & transfers",
+    reporteMiembros: "Member report",
     bandeja: "Inbox",
     configuracion: "Settings",
+  },
+
+  secretaria: {
+    enDesarrolloTitulo: "Section in development",
+    membresia: {
+      titulo: "Membership",
+      sub: "Official congregation registry",
+      desc: "Search members, edit their information, and record additions and removals instantly.",
+    },
+    actas: {
+      titulo: "Board minutes",
+      sub: "Agreements by the pastor and officers",
+      desc: "The legal and administrative history of decisions made in meetings will be kept here.",
+    },
+    cartas: {
+      titulo: "Certificates & transfers",
+      sub: "Recommendation letters and transfers to other churches",
+      desc: "Issue recommendation and transfer letters to other churches in a few clicks.",
+    },
+    reporteMiembros: {
+      titulo: "Member report",
+      sub: "Monthly or annual report for the council or district",
+      desc: "Generate the membership report required by your council or district, ready to print.",
+    },
   },
 
   rol: {
