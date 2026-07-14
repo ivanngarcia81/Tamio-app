@@ -157,7 +157,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   doc.totalRow([i18n.t("reportes.totalGastos"), fmtMoneyPdf(totalGastos, moneda), "100%"], cols);
   doc.endTable();
   // Mismo aire que el estado financiero mensual antes del bloque de firmas.
-  doc.addGap(68);
+  doc.addGap(32);
 
   // ---------- Firmas ----------
   doc.signatureBlock([

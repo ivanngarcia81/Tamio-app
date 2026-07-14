@@ -68,7 +68,7 @@ export class ReportDocBuilder {
     if (this.opts.logoDataUrl) {
       try {
         const props = doc.getImageProperties(this.opts.logoDataUrl);
-        const logoH = 40;
+        const logoH = 28;
         const logoW = (props.width / props.height) * logoH;
         doc.addImage(this.opts.logoDataUrl, "PNG", this.rightX - logoW, this.y - 6, logoW, logoH);
         titleRightBound = this.contentWidth - logoW - PDF_SPACE.sm;
@@ -81,26 +81,26 @@ export class ReportDocBuilder {
     doc.setFontSize(PDF_TYPE.title);
     setText(doc, PDF_COLOR.ink);
     doc.text(this.opts.title, this.marginX, this.y, { maxWidth: titleRightBound });
-    this.y += 30;
+    this.y += 20;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.church);
     setText(doc, PDF_COLOR.ink);
     doc.text(this.opts.churchLine, this.marginX, this.y, { maxWidth: this.contentWidth });
-    this.y += 22;
+    this.y += 14;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.period);
     setText(doc, PDF_COLOR.muted);
     doc.text(i18n.t("pdf.periodo", { periodo: this.opts.period }), this.marginX, this.y);
-    this.y += 16;
+    this.y += 12;
 
     if (this.opts.moneda) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(PDF_TYPE.meta);
       setText(doc, PDF_COLOR.faint);
       doc.text(i18n.t("pdf.moneda", { moneda: this.opts.moneda }), this.marginX, this.y);
-      this.y += 14;
+      this.y += 10;
     }
 
     if (this.opts.generatedBy) {
@@ -111,7 +111,7 @@ export class ReportDocBuilder {
         i18n.t("pdf.generadoPor", { quien: `${this.opts.generatedBy.nombre}${this.opts.generatedBy.rol ? " · " + this.opts.generatedBy.rol : ""}` }),
         this.marginX, this.y
       );
-      this.y += 14;
+      this.y += 10;
     }
 
     this.y += PDF_SPACE.xs;
@@ -132,7 +132,7 @@ export class ReportDocBuilder {
       doc.text(col.label.toUpperCase(), tx, this.y, { align: col.align === "right" ? "right" : "left" });
       x += col.width;
     }
-    this.y += PDF_SPACE.xs + 4;
+    this.y += PDF_SPACE.xs + 3;
     setDraw(doc, PDF_COLOR.line);
     doc.setLineWidth(0.75);
     doc.line(this.marginX, this.y, this.rightX, this.y);
@@ -148,7 +148,7 @@ export class ReportDocBuilder {
       this.doc.setFontSize(PDF_TYPE.section);
       setText(this.doc, PDF_COLOR.ink);
       this.doc.text(i18n.t("pdf.continuacion", { seccion: this.currentSection }), this.marginX, this.y);
-      this.y += 20;
+      this.y += 14;
       this.drawTableHeaderRaw(this.currentColumns);
     }
   }
@@ -169,27 +169,27 @@ export class ReportDocBuilder {
 
   /** Encabezado de sección simple (sin tabla asociada). */
   heading(title: string) {
-    this.ensureSpace(20 + PDF_SPACE.xs);
+    this.ensureSpace(15 + PDF_SPACE.xs);
     this.currentSection = null;
     this.currentColumns = null;
     this.doc.setFont("helvetica", "bold");
     this.doc.setFontSize(PDF_TYPE.section);
     setText(this.doc, PDF_COLOR.ink);
     this.doc.text(title, this.marginX, this.y);
-    this.y += 20 + PDF_SPACE.xs;
+    this.y += 15 + PDF_SPACE.xs;
   }
 
   /** Inicia una sección + tabla como bloque atómico: título y encabezado
    *  de columnas siempre aparecen juntos, nunca separados por un salto. */
   beginTable(title: string, columns: PdfColumn[]) {
-    this.ensureSpace(20 + PDF_TYPE.body + PDF_SPACE.xs + 4 + PDF_SPACE.sm);
+    this.ensureSpace(14 + PDF_TYPE.body + PDF_SPACE.xs + 3 + PDF_SPACE.sm);
     this.currentSection = title;
     this.currentColumns = columns;
     this.doc.setFont("helvetica", "bold");
     this.doc.setFontSize(PDF_TYPE.section);
     setText(this.doc, PDF_COLOR.ink);
     this.doc.text(title, this.marginX, this.y);
-    this.y += 20;
+    this.y += 14;
     this.drawTableHeaderRaw(columns);
   }
 
@@ -202,7 +202,7 @@ export class ReportDocBuilder {
    *  lo reservan además de su propio alto: así la última fila de la página
    *  siempre deja lugar para el total, y este nunca abre una página solo
    *  como "(continuación)" huérfana. */
-  private static readonly TOTAL_ROW_H = PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md;
+  private static readonly TOTAL_ROW_H = PDF_TYPE.total + PDF_SPACE.xs + 3 + PDF_SPACE.md;
 
   tableRow(cells: string[], columns: PdfColumn[]) {
     this.doc.setFont("helvetica", "normal");
@@ -259,7 +259,7 @@ export class ReportDocBuilder {
     setDraw(this.doc, PDF_COLOR.ink);
     this.doc.setLineWidth(0.75);
     this.doc.line(this.marginX, this.y, this.rightX, this.y);
-    this.y += PDF_SPACE.xs + 4;
+    this.y += PDF_SPACE.xs + 3;
     this.doc.setFont("helvetica", "bold");
     this.doc.setFontSize(PDF_TYPE.total);
     setText(this.doc, PDF_COLOR.ink);
@@ -283,8 +283,8 @@ export class ReportDocBuilder {
 
     const cardW = (this.contentWidth - (cards.length - 1) * cardGap) / cards.length;
     const cardRadius = 7;
-    const labelSize = 6.5;
-    const valueSize = 10;
+    const labelSize = PDF_TYPE.cardLabel;
+    const valueSize = PDF_TYPE.cardValue;
 
     cards.forEach((card, i) => {
       const x = this.marginX + i * (cardW + cardGap);
@@ -319,20 +319,20 @@ export class ReportDocBuilder {
   /** Cuadrícula de indicadores tipo "etiqueta / valor" (2 columnas por fila). */
   keyValueGrid(pairs: { label: string; value: string }[], columns = 2) {
     const colW = this.contentWidth / columns;
-    const rowH = 40;
+    const rowH = 26;
     for (let i = 0; i < pairs.length; i += columns) {
       this.ensureSpace(rowH);
       const rowItems = pairs.slice(i, i + columns);
       rowItems.forEach((item, idx) => {
         const x = this.marginX + idx * colW;
         this.doc.setFont("helvetica", "bold");
-        this.doc.setFontSize(10);
+        this.doc.setFontSize(7.5);
         setText(this.doc, PDF_COLOR.muted);
         this.doc.text(item.label.toUpperCase(), x, this.y, { charSpace: 0.2 });
         this.doc.setFont("helvetica", "bold");
         this.doc.setFontSize(PDF_TYPE.total);
         setText(this.doc, PDF_COLOR.ink);
-        this.doc.text(item.value, x, this.y + 18, { maxWidth: colW - PDF_SPACE.sm });
+        this.doc.text(item.value, x, this.y + 12, { maxWidth: colW - PDF_SPACE.sm });
       });
       this.y += rowH;
     }
@@ -365,7 +365,7 @@ export class ReportDocBuilder {
       this.doc.setFontSize(PDF_TYPE.meta);
       setText(this.doc, PDF_COLOR.muted);
       this.doc.text(opts.caption, this.marginX, this.y);
-      this.y += 14;
+      this.y += 10;
     }
     this.y += PDF_SPACE.sm;
   }
@@ -373,11 +373,11 @@ export class ReportDocBuilder {
   /** Bloque de firmas lado a lado (Tesorero, Pastor, …). Bloque atómico:
    *  si no caben todas las columnas completas, se mueven juntas. */
   signatureBlock(people: PdfPersonSignature[]) {
-    const sigImgMaxH = 40;
+    const sigImgMaxH = 26;
     const gap = PDF_SPACE.lg;
-    const colW = Math.min(220, (this.contentWidth - (people.length - 1) * gap) / people.length);
-    const lineToNameGap = PDF_SPACE.sm; // 16pt: dentro del rango 12–20 pedido
-    const nameToRoleGap = 14;
+    const colW = Math.min(180, (this.contentWidth - (people.length - 1) * gap) / people.length);
+    const lineToNameGap = PDF_SPACE.sm + 3;
+    const nameToRoleGap = 10;
 
     const blockH = sigImgMaxH + PDF_SPACE.xs + 1 + lineToNameGap + nameToRoleGap + PDF_SPACE.md;
     this.ensureSpace(blockH);
@@ -429,14 +429,14 @@ export class ReportDocBuilder {
     setDraw(this.doc, PDF_COLOR.line);
     this.doc.setLineWidth(0.75);
     this.doc.line(this.marginX, fy, this.rightX, fy);
-    fy += 14;
+    fy += 10;
 
     this.doc.setFont("helvetica", "normal");
     this.doc.setFontSize(PDF_TYPE.footer);
     setText(this.doc, PDF_COLOR.faint);
     this.doc.text(i18n.t("pdf.generadoAutomaticamente"), this.marginX, fy);
     this.doc.text(i18n.t("pdf.pagina", { x: pageIndex, y: totalPages }), this.rightX, fy, { align: "right" });
-    fy += 14;
+    fy += 10;
 
     this.doc.text(`${meta.fechaGeneracion} • ${meta.horaGeneracion}`, this.marginX, fy);
     this.doc.text(i18n.t("pdf.reporte", { id: meta.reportId }), this.rightX, fy, { align: "right" });

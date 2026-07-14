@@ -7,25 +7,28 @@ import { currentLang } from "../../i18n";
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
 // No se recalcula ni se comprime según la cantidad de datos: un reporte de
 // 3 filas y uno de 300 usan exactamente la misma tipografía y espaciado.
-export const PDF_MARGIN = 32;
-export const PDF_SPACE = { xs: 8, sm: 16, md: 24, lg: 32 } as const;
+// Escala de documento profesional (tipo estado de cuenta bancario /
+// software contable): compacta, densa en información y pensada para
+// imprimirse al 100% tanto en Letter como en A4.
+export const PDF_MARGIN = 48; // ~0.67in — dentro del rango 0.6–0.75in
+export const PDF_SPACE = { xs: 5, sm: 9, md: 14, lg: 20 } as const;
 export const PDF_TYPE = {
-  title: 24,      // Título principal del documento
-  church: 18,     // Nombre de la iglesia
-  period: 14,     // Periodo
-  meta: 11,       // Moneda / Generado por / metadata del encabezado
-  section: 16,    // Encabezados de sección
-  body: 13,       // Texto normal / encabezados de columna
-  tableRow: 13,   // Filas de tabla
-  total: 14,      // Totales
-  cardLabel: 13,  // Etiquetas de tarjetas
-  cardValue: 24,  // Valores principales de tarjetas (jerarquía por tamaño/peso, no color)
-  footer: 11,     // Pie de página
+  title: 19,      // Título principal del documento (18–20pt)
+  church: 12,     // Nombre de la iglesia
+  period: 10,     // Periodo
+  meta: 8,        // Moneda / Generado por / notas y avisos
+  section: 11.5,  // Encabezados de sección (11–12pt)
+  body: 9,        // Texto normal / encabezados de columna
+  tableRow: 8.5,  // Filas de tabla (8.5–9pt)
+  total: 9.5,     // Totales — énfasis por peso, no por tamaño
+  cardLabel: 6.5, // Etiquetas de tarjetas de resumen
+  cardValue: 10,  // Valores de tarjetas de resumen
+  footer: 7,      // Pie de página / número de página / folio
 } as const;
 
 // Alto reservado para el bloque de pie de página (2 separadores + 2 líneas
 // de texto) en cada página.
-export const PDF_FOOTER_BLOCK_H = PDF_SPACE.sm + 2 * 14 + PDF_SPACE.xs;
+export const PDF_FOOTER_BLOCK_H = PDF_SPACE.sm + 2 * 10 + PDF_SPACE.xs;
 
 // Paleta pensada para impresión láser en blanco y negro: la jerarquía
 // visual viene de tamaño/peso de fuente, no del color. Los grises se

@@ -88,7 +88,7 @@ export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean
   ]);
 
   // Mismo aire que los demás reportes antes del bloque de firmas.
-  doc.addGap(68);
+  doc.addGap(32);
   doc.signatureBlock([
     {
       nombre: church.tesorero_nombre,

@@ -102,14 +102,14 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
     doc.line(marginX, fy, rightX, fy);
-    fy += 14;
+    fy += 10;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.footer);
     setText(doc, FAINT);
     doc.text(i18n.t("pdf.generadoAutomaticamente"), marginX, fy);
     doc.text(i18n.t("pdf.pagina", { x: pageIndex, y: totalPages }), rightX, fy, { align: "right" });
-    fy += 14;
+    fy += 10;
 
     doc.text(`${fechaGeneracion} • ${horaGeneracion}`, marginX, fy);
     doc.text(i18n.t("pdf.reporte", { id: reportId }), rightX, fy, { align: "right" });
@@ -127,29 +127,29 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.setFontSize(PDF_TYPE.title);
     setText(doc, INK);
     doc.text(i18n.t("pdf.estadoFinancieroMensual"), marginX, y, { maxWidth: contentWidth });
-    y += 30;
+    y += 20;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.church);
     setText(doc, INK);
     doc.text(`${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`, marginX, y, { maxWidth: contentWidth });
-    y += 22;
+    y += 14;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.period);
     setText(doc, MUTED);
     doc.text(i18n.t("pdf.periodo", { periodo: mesLegibleStr }), marginX, y);
-    y += 16;
+    y += 12;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(PDF_TYPE.meta);
     setText(doc, FAINT);
     doc.text(i18n.t("pdf.moneda", { moneda: church.moneda }), marginX, y);
-    y += 14;
+    y += 10;
 
     if (generatedBy) {
       doc.text(i18n.t("pdf.generadoPor", { quien: `${generatedBy.nombre}${generatedBy.rol ? " · " + generatedBy.rol : ""}` }), marginX, y);
-      y += 14;
+      y += 10;
     }
 
     y += PDF_SPACE.xs;
@@ -168,7 +168,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.text(i18n.t("pdf.colCategoria"), labelColX, y);
     doc.text(i18n.t("pdf.colMonto"), amountColX, y, { align: "right" });
     doc.text(i18n.t("pdf.colPctTotal"), pctColX, y, { align: "right" });
-    y += PDF_SPACE.xs + 4;
+    y += PDF_SPACE.xs + 3;
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, rightX, y);
@@ -186,7 +186,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
       doc.setFontSize(PDF_TYPE.section);
       setText(doc, INK);
       doc.text(i18n.t("pdf.continuacion", { seccion: currentSection }), marginX, y);
-      y += 20;
+      y += 14;
       drawTableHeaderRaw();
     }
   }
@@ -200,13 +200,13 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   /** Inicia una sección + tabla como bloque atómico: título y encabezado
    *  de columnas siempre aparecen juntos, nunca separados por un salto. */
   function beginSection(title: string) {
-    ensureSpace(20 + PDF_TYPE.body + PDF_SPACE.xs + 4 + PDF_SPACE.sm);
+    ensureSpace(14 + PDF_TYPE.body + PDF_SPACE.xs + 3 + PDF_SPACE.sm);
     currentSection = title;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.section);
     setText(doc, INK);
     doc.text(title, marginX, y);
-    y += 20;
+    y += 14;
     drawTableHeaderRaw();
   }
 
@@ -244,7 +244,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     setDraw(doc, INK);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, rightX, y);
-    y += PDF_SPACE.xs + 4;
+    y += PDF_SPACE.xs + 3;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(PDF_TYPE.total);
     setText(doc, INK);
@@ -299,14 +299,14 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   // Bloque atómico: si no caben completas, ensureSpace mueve las TRES
   // tarjetas juntas a la siguiente página — nunca se dividen entre sí.
   // Tamaño reducido a la mitad del original (92pt) a pedido del usuario.
-  const cardH = 46;
+  const cardH = 37;
   const cardGap = PDF_SPACE.sm;
   ensureSpace(cardH);
 
   const cardW = (contentWidth - 2 * cardGap) / 3;
   const cardRadius = 8;
-  const cardLabelSize = 7;
-  const cardValueSize = 12;
+  const cardLabelSize = PDF_TYPE.cardLabel;
+  const cardValueSize = PDF_TYPE.cardValue;
   // Jerarquía por tamaño/peso de fuente, nunca por color — los tres
   // valores usan el mismo negro para verse igual de nítidos en blanco
   // y negro; un balance negativo se distingue con paréntesis, no con rojo.
@@ -355,11 +355,11 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   // carta), separados de las tarjetas de resumen por un espacio propio
   // para que no queden pegados a ellas.
   if (generatedBy?.nombre) {
-    const sigLineW = 200;
-    const sigImgMaxH = 46;
-    const cardsToSigGap = 68; // 68pt de aire respecto a las tarjetas de resumen
-    const lineToNameGap = PDF_SPACE.sm; // 16pt: dentro del rango 12–20 pedido
-    const nameToRoleGap = 14;
+    const sigLineW = 160;
+    const sigImgMaxH = 26;
+    const cardsToSigGap = 32; // aire respecto a las tarjetas de resumen
+    const lineToNameGap = PDF_SPACE.sm + 3;
+    const nameToRoleGap = 10;
     let sigImgH = 0;
     let sigImgW = 0;
     if (firmaDataUrl) {
