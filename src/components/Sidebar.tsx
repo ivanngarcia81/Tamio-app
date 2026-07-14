@@ -58,7 +58,7 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
     <aside className="sidebar">
       {/* Muestra el logo de la iglesia (Configuración → Subir logo) en cuanto
           existe; mientras tanto una capilla atenuada hace de placeholder. */}
-      <div className={`logo${logoUrl ? "" : " placeholder"}`} title={logoUrl ? church.nombre : "Tesorería"}>
+      <div className={`logo${logoUrl ? "" : " placeholder"}`} title={logoUrl ? church.nombre : "Tamio"}>
         {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconChurch />}
       </div>
 

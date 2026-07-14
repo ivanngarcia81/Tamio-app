@@ -376,7 +376,7 @@ export const es = {
     totalAportado: "TOTAL APORTADO",
     numeroAportes: "APORTES REGISTRADOS",
     total: "Total",
-    nota: "Documento informativo generado por Tesorería. Verifica los requisitos fiscales locales antes de usarlo como comprobante deducible.",
+    nota: "Documento informativo generado por Tamio. Verifica los requisitos fiscales locales antes de usarlo como comprobante deducible.",
   },
 
   anual: {
@@ -417,7 +417,7 @@ export const es = {
   },
 
   bienvenida: {
-    titulo: "Bienvenido a Tesorería",
+    titulo: "Bienvenido a Tamio",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
     comenzar: "Comenzar",
     siguiente: "Siguiente",
@@ -484,7 +484,7 @@ export const es = {
   },
 
   pdf: {
-    generadoAutomaticamente: "Generado automáticamente por Tesorería",
+    generadoAutomaticamente: "Generado automáticamente por Tamio",
     pagina: "Página {{x}} de {{y}}",
     reporte: "Reporte {{id}}",
     periodo: "Periodo: {{periodo}}",
