@@ -667,6 +667,7 @@ export const es = {
     presente: "Presente",
     ausente: "Ausente",
     secHistorial: "Historial de membresía",
+    generarInforme: "Generar informe",
     registradoEl: "Registrado el {{fecha}}",
     cambiosEstado: "Cambios de estado",
     notasAdmin: "Notas administrativas",
@@ -1310,6 +1311,7 @@ export const es = {
     titulo: "Información de Membresía",
     sub: "Resumen, seguimiento e informes de los miembros de la iglesia.",
     exportar: "Exportar (CSV)",
+    imprimirGeneral: "Imprimir / PDF",
     toastExportado: "Informe exportado",
     vista: { miembros: "Registro de miembros", asistencia: "Asistencia de miembros", seguimiento: "Seguimiento", general: "Información general" },
     distEstado: "Miembros por estado",
@@ -1380,6 +1382,17 @@ export const es = {
     vacioSub: "Agrega miembros desde la sección Membresía para comenzar a generar informes.",
     sinResultadosTitulo: "Sin resultados",
     sinResultadosSub: "No se encontraron miembros con los filtros seleccionados.",
+  },
+
+  informesPdf: {
+    tituloIndividual: "Informe individual de miembro",
+    tituloGeneral: "Informe general de membresía",
+    archivoIndividual: "informe-miembro",
+    archivoGeneral: "informe-general-membresia",
+    datosMiembro: "Datos del miembro",
+    vidaServicio: "Vida espiritual y servicio",
+    resumenAsistencia: "Resumen de asistencia",
+    resumenGeneral: "Resumen del periodo",
   },
 
   seguimiento: {

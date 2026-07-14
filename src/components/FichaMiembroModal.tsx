@@ -4,9 +4,10 @@ import {
   fmtFechaCorta, memberAsistenciaStats, memberDocs, updateMemberFicha,
   type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha,
 } from "../db";
-import { IconClose } from "../icons";
+import { IconClose, IconPrinter } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
+import { printInformeIndividual } from "../services/informes/printInforme";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
 export const MINISTERIOS = [
@@ -504,7 +505,12 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
         </div>
 
         <div className="modal-footer">
-          <span />
+          <button
+            className="btn secondary"
+            onClick={() => printInformeIndividual(church, member).catch((e) => showToast(t("common.noSePudoImprimir", { error: String(e) })))}
+          >
+            <IconPrinter size={13} /> {t("ficha.generarInforme")}
+          </button>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
             <button className="btn primary" onClick={guardar} disabled={saving}>

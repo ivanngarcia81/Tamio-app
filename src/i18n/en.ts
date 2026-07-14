@@ -673,6 +673,7 @@ export const en: Resources = {
     presente: "Present",
     ausente: "Absent",
     secHistorial: "Membership history",
+    generarInforme: "Generate report",
     registradoEl: "Registered on {{fecha}}",
     cambiosEstado: "Status changes",
     notasAdmin: "Administrative notes",
@@ -1316,6 +1317,7 @@ export const en: Resources = {
     titulo: "Membership Information",
     sub: "Overview, follow-up, and reports of the church members.",
     exportar: "Export (CSV)",
+    imprimirGeneral: "Print / PDF",
     toastExportado: "Report exported",
     vista: { miembros: "Member registry", asistencia: "Member attendance", seguimiento: "Follow-up", general: "Overview" },
     distEstado: "Members by status",
@@ -1386,6 +1388,17 @@ export const en: Resources = {
     vacioSub: "Add members from the Membership section to start generating reports.",
     sinResultadosTitulo: "No results",
     sinResultadosSub: "No members found with the selected filters.",
+  },
+
+  informesPdf: {
+    tituloIndividual: "Individual member report",
+    tituloGeneral: "Membership general report",
+    archivoIndividual: "member-report",
+    archivoGeneral: "membership-general-report",
+    datosMiembro: "Member details",
+    vidaServicio: "Spiritual life and service",
+    resumenAsistencia: "Attendance summary",
+    resumenGeneral: "Period summary",
   },
 
   seguimiento: {

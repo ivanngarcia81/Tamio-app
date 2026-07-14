@@ -14,6 +14,7 @@ import {
 } from "../services/informes/membresia";
 import { cargarUmbrales, UMBRALES_DEFAULT, type Umbrales } from "../services/informes/umbrales";
 import { exportarInformeCsv } from "../services/informes/exportInforme";
+import { printInformeGeneral } from "../services/informes/printInforme";
 import { CARGOS, INSTRUMENTOS, MINISTERIOS } from "../components/FichaMiembroModal";
 import FichaMiembroModal from "../components/FichaMiembroModal";
 import SeguimientoModal from "../components/SeguimientoModal";
@@ -21,7 +22,7 @@ import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
-import { IconEdit, IconMiembros, IconSearch } from "../icons";
+import { IconEdit, IconMiembros, IconPrinter, IconSearch } from "../icons";
 
 const COLS = "1.5fr 150px 1.4fr 140px 44px";
 const PAGE_SIZE = 25;
@@ -213,6 +214,35 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     if (ok) showToast(t("informes.toastExportado"));
   }
 
+  const distCargoGeneral = useMemo(() => {
+    const conteo = new Map<string, number>();
+    for (const m of miembros) for (const k of parseLista(m.cargos)) conteo.set(k, (conteo.get(k) ?? 0) + 1);
+    return Array.from(conteo.entries()).map(([clave, n]) => ({ clave, n })).sort((a, b) => b.n - a.n);
+  }, [miembros]);
+
+  const etiquetaPeriodo = useMemo(() => {
+    if (periodoTipo === "mes") return mesSel;
+    if (periodoTipo === "trimestre") return t("informes.trimestreN", { n: trimestreSel }) + " " + anioSel;
+    if (periodoTipo === "anio") return String(anioSel);
+    if (periodoTipo === "rango") return `${rangoDesde || "…"} – ${rangoHasta || "…"}`;
+    return t("informes.periodo.todo");
+  }, [periodoTipo, mesSel, trimestreSel, anioSel, rangoDesde, rangoHasta, t]);
+
+  async function imprimirGeneral() {
+    try {
+      await printInformeGeneral(church, {
+        periodoLabel: etiquetaPeriodo,
+        resumen,
+        pctAsistencia: asistGeneral.pctGeneral,
+        distMinisterio,
+        distCargo: distCargoGeneral,
+        movimientos,
+      });
+    } catch (e) {
+      showToast(t("common.noSePudoImprimir", { error: String(e) }));
+    }
+  }
+
   const flecha = (campo: OrdenCampo) => (orden.campo === campo ? (orden.dir === 1 ? " ↑" : " ↓") : "");
 
   // ----- Datos de la vista de asistencia -----
@@ -346,6 +376,9 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           <div className="page-sub">{t("informes.sub")}</div>
         </div>
         <div className="header-actions">
+          <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
+            <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
+          </button>
           <button className="btn secondary" onClick={exportar} disabled={filas.length === 0}>
             {t("informes.exportar")}
           </button>
