@@ -37,7 +37,7 @@
   --dur: .16s;
   /* Layout de escritorio por breakpoint (ver @media al final de :root):
      tope del contenido y padding lateral del área principal. */
-  --content-max: 1280px;
+  --content-max: 1560px;
   --content-pad-x: 32px;
   /* Tracking unico para micro-etiquetas en mayusculas (labels, theads). */
   --track-caps: 0.1em;
@@ -60,10 +60,10 @@
 }
 
 @media (min-width: 1728px) {
-  :root { --content-max: 1560px; --content-pad-x: 40px; }
+  :root { --content-pad-x: 40px; }
 }
 @media (min-width: 2560px) {
-  :root { --content-max: 1800px; --content-pad-x: 48px; }
+  :root { --content-pad-x: 48px; }
 }
 
 * { box-sizing: border-box; }
@@ -270,12 +270,12 @@ a { color: inherit; text-decoration: none; }
      crecer a los 1440px; en monitores anchos el espacio sobrante queda
      a la DERECHA (margin-right: auto), nunca como hueco tras el
      sidebar. En ventanas chicas width 100% mantiene todo igual. */
-  /* Tope y padding por breakpoint (tokens --content-*): fluido hasta el
-     tope de cada rango, siempre anclado a la izquierda junto al sidebar. */
+  /* Contenedor centrado dentro del área a la derecha del sidebar, con
+     tope de 1560px: en laptops llena el ancho (idéntico a hoy) y en
+     monitores anchos el sobrante se reparte simétricamente. */
   max-width: var(--content-max);
   width: 100%;
-  margin-left: 0;
-  margin-right: auto;
+  margin-inline: auto;
 }
 .balance { display: flex; align-items: baseline; gap: 14px; }
 .balance .amount {
@@ -417,12 +417,12 @@ a { color: inherit; text-decoration: none; }
   /* Mismo sistema de ancho máximo que .header (ver arriba): el
      encabezado y el contenido comparten el límite y el anclaje a la
      izquierda para quedar siempre alineados entre sí. */
-  /* Tope y padding por breakpoint (tokens --content-*): fluido hasta el
-     tope de cada rango, siempre anclado a la izquierda junto al sidebar. */
+  /* Contenedor centrado dentro del área a la derecha del sidebar, con
+     tope de 1560px: en laptops llena el ancho (idéntico a hoy) y en
+     monitores anchos el sobrante se reparte simétricamente. */
   max-width: var(--content-max);
   width: 100%;
-  margin-left: 0;
-  margin-right: auto;
+  margin-inline: auto;
 }
 
 /* Summary — 2 cards */
@@ -434,13 +434,13 @@ a { color: inherit; text-decoration: none; }
 /* Summary — 4 cards */
 .summary-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
 }
 /* Summary — 5 cards */
 .summary-5 {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px;
 }
 .summary-5 .stat-card { padding: 18px 18px 16px; }
@@ -1926,7 +1926,6 @@ a { color: inherit; text-decoration: none; }
 /* Responsive — la ventana de escritorio puede redimensionarse; estas reglas
    evitan que las grillas se rompan al angostarse (no es un layout móvil). */
 @media (max-width: 1180px) {
-  .summary-4 { grid-template-columns: repeat(2, 1fr); }
   .charts { grid-template-columns: 1fr; }
   .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
