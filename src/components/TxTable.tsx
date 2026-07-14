@@ -137,7 +137,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                     className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}
                     style={{ width: 20, height: 20 }}
                   >
-                    {tx.tipo === "ingreso" ? <IconArrowUp size={10} strokeWidth={2.6} /> : <IconArrowDown size={10} strokeWidth={2.6} />}
+                    {tx.tipo === "ingreso" ? <IconArrowUp size={10} strokeWidth={2.2} /> : <IconArrowDown size={10} strokeWidth={2.2} />}
                   </span>
                   <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
                     {tx.tipo === "ingreso" ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
