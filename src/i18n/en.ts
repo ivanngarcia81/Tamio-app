@@ -571,7 +571,7 @@ export const en: Resources = {
     membresia: "Membership",
     actas: "Board minutes",
     cartas: "Certificates & transfers",
-    reporteMiembros: "Member report",
+    reporteMiembros: "Membership reports",
     agenda: "Agenda & calendar",
     bandeja: "Inbox",
     configuracion: "Settings",
@@ -697,7 +697,7 @@ export const en: Resources = {
       desc: "Issue recommendation and transfer letters to other churches in a few clicks.",
     },
     reporteMiembros: {
-      titulo: "Member report",
+      titulo: "Membership reports",
       sub: "Monthly or annual report for the council or district",
       desc: "Generate the membership report required by your council or district, ready to print.",
     },
