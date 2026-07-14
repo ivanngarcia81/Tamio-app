@@ -74,11 +74,20 @@ export interface Member {
   habilidades: string;
   disponibilidad: string | null;
   interes_servir: number;
+  /** Arreglo JSON de cargos/funciones (claves de catálogo o texto libre). */
+  cargos: string;
+  /** Arreglo JSON de {de, a, fecha} — cambios de estado de membresía. */
+  historial_estados: string;
+  /** Seguimiento pastoral/secretarial (v20). Nunca toca lo financiero. */
+  seguimiento_revisado_en: string | null;
+  /** Arreglo JSON de {fecha, texto}. */
+  seguimiento_notas: string;
 }
 
 /** Campos de la ficha del miembro (secciones Membresía / Espiritual / Servicio). */
 export interface MemberFicha {
   estado_membresia: string;
+  cargos: string[];
   fecha_congregacion: string | null;
   fecha_ingreso: string | null;
   iglesia_anterior: string | null;
@@ -97,12 +106,21 @@ export interface MemberFicha {
 
 export async function updateMemberFicha(id: number, churchId: number, f: MemberFicha): Promise<void> {
   const d = await getDb();
+  // El cambio de estado dentro del registro (activo/inactivo/visitante/enProceso)
+  // también queda en el historial del miembro.
+  const prev = await d.select<{ estado_membresia: string; activo: number }[]>(
+    "SELECT estado_membresia, activo FROM members WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+  if (prev[0]?.activo === 1 && prev[0].estado_membresia !== f.estado_membresia) {
+    await registrarCambioEstadoMiembro(id, churchId, prev[0].estado_membresia, f.estado_membresia);
+  }
   await d.execute(
     `UPDATE members SET
        estado_membresia = $1, fecha_congregacion = $2, fecha_ingreso = $3, iglesia_anterior = $4,
        bautizado_agua = $5, fecha_bautismo_agua = $6, bautizado_espiritu = $7, fecha_bautismo_espiritu = $8,
        curso_membresia = $9, ministerios = $10, ministerios_interes = $11, instrumentos = $12,
-       habilidades = $13, disponibilidad = $14, interes_servir = $15
+       habilidades = $13, disponibilidad = $14, interes_servir = $15, cargos = $18
      WHERE id = $16 AND church_id = $17`,
     [
       f.estado_membresia,
@@ -122,8 +140,92 @@ export async function updateMemberFicha(id: number, churchId: number, f: MemberF
       f.interes_servir ? 1 : 0,
       id,
       churchId,
+      JSON.stringify(f.cargos),
     ]
   );
+}
+
+// ---------- Seguimiento pastoral y secretarial (v20) ----------
+
+export interface NotaSeguimiento {
+  fecha: string;
+  texto: string;
+}
+
+export async function marcarMiembroRevisado(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE members SET seguimiento_revisado_en = $1 WHERE id = $2 AND church_id = $3",
+    [nowLocalIso(), id, churchId]
+  );
+}
+
+export async function agregarNotaSeguimiento(id: number, churchId: number, texto: string): Promise<void> {
+  const d = await getDb();
+  const rows = await d.select<{ seguimiento_notas: string }[]>(
+    "SELECT seguimiento_notas FROM members WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+  let notas: NotaSeguimiento[] = [];
+  try { notas = JSON.parse(rows[0]?.seguimiento_notas ?? "[]"); } catch { /* noop */ }
+  notas.push({ fecha: nowLocalIso(), texto });
+  await d.execute(
+    "UPDATE members SET seguimiento_notas = $1 WHERE id = $2 AND church_id = $3",
+    [JSON.stringify(notas), id, churchId]
+  );
+}
+
+// ---------- Cargas para Informes de membresía (solo lectura, sin finanzas) ----------
+
+export interface ServicioLigero {
+  id: number;
+  fecha: string;
+  tipo: string;
+}
+
+export interface AsistenciaLigera {
+  servicio_id: number;
+  member_id: number;
+  presente: number;
+  fecha: string;
+}
+
+export async function listServiciosLigero(churchId: number, desde?: string | null, hasta?: string | null): Promise<ServicioLigero[]> {
+  const d = await getDb();
+  return d.select<ServicioLigero[]>(
+    `SELECT id, fecha, tipo FROM servicios
+      WHERE church_id = $1 AND ($2 IS NULL OR fecha >= $2) AND ($3 IS NULL OR fecha <= $3)
+      ORDER BY fecha DESC, id DESC`,
+    [churchId, desde ?? null, hasta ?? null]
+  );
+}
+
+export async function listAsistenciaLigera(churchId: number, desde?: string | null, hasta?: string | null): Promise<AsistenciaLigera[]> {
+  const d = await getDb();
+  return d.select<AsistenciaLigera[]>(
+    `SELECT a.servicio_id, a.member_id, a.presente, s.fecha
+       FROM servicio_asistencia a
+       JOIN servicios s ON s.id = a.servicio_id
+      WHERE s.church_id = $1 AND ($2 IS NULL OR s.fecha >= $2) AND ($3 IS NULL OR s.fecha <= $3)
+      ORDER BY s.fecha DESC, s.id DESC`,
+    [churchId, desde ?? null, hasta ?? null]
+  );
+}
+
+// ---------- Umbrales de informes (configurables, v20) ----------
+
+export async function getUmbralesJson(churchId: number): Promise<string | null> {
+  const d = await getDb();
+  const rows = await d.select<{ umbrales_informes: string | null }[]>(
+    "SELECT umbrales_informes FROM churches WHERE id = $1",
+    [churchId]
+  );
+  return rows[0]?.umbrales_informes ?? null;
+}
+
+export async function saveUmbralesJson(churchId: number, json: string): Promise<void> {
+  const d = await getDb();
+  await d.execute("UPDATE churches SET umbrales_informes = $1 WHERE id = $2", [json, churchId]);
 }
 
 export interface Tx {
@@ -1006,6 +1108,30 @@ export async function listMembersRegistro(churchId: number): Promise<Member[]> {
   );
 }
 
+/** Estado "visible" de una baja según su motivo. */
+export function estadoDeBaja(motivo: string | null): string {
+  if (motivo === "traslado") return "trasladado";
+  if (motivo === "fallecimiento") return "fallecido";
+  if (motivo === "retiro") return "retirado";
+  return "baja";
+}
+
+/** Registra un cambio de estado en el historial del miembro (v20). */
+async function registrarCambioEstadoMiembro(id: number, churchId: number, de: string, a: string): Promise<void> {
+  if (de === a) return;
+  const d = await getDb();
+  const rows = await d.select<{ historial_estados: string }[]>(
+    "SELECT historial_estados FROM members WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+  let hist: { de: string; a: string; fecha: string }[] = [];
+  try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
+  hist.push({ de, a, fecha: nowLocalIso() });
+  await d.execute("UPDATE members SET historial_estados = $1 WHERE id = $2 AND church_id = $3", [
+    JSON.stringify(hist), id, churchId,
+  ]);
+}
+
 export async function darDeBajaMember(
   id: number,
   churchId: number,
@@ -1013,6 +1139,12 @@ export async function darDeBajaMember(
   motivo: string | null
 ): Promise<void> {
   const d = await getDb();
+  const rows = await d.select<{ estado_membresia: string; activo: number }[]>(
+    "SELECT estado_membresia, activo FROM members WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+  const de = rows[0]?.activo === 1 ? rows[0].estado_membresia : "baja";
+  await registrarCambioEstadoMiembro(id, churchId, de, estadoDeBaja(motivo));
   await d.execute(
     "UPDATE members SET activo = 0, fecha_baja = $1, motivo_baja = $2 WHERE id = $3 AND church_id = $4",
     [fecha, motivo, id, churchId]
@@ -1056,6 +1188,13 @@ export async function listArchivedMembers(churchId: number): Promise<Member[]> {
 
 export async function restoreMember(id: number, churchId: number): Promise<void> {
   const d = await getDb();
+  const rows = await d.select<{ motivo_baja: string | null; activo: number }[]>(
+    "SELECT motivo_baja, activo FROM members WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+  if (rows[0]?.activo === 0) {
+    await registrarCambioEstadoMiembro(id, churchId, estadoDeBaja(rows[0].motivo_baja), "activo");
+  }
   await d.execute(
     "UPDATE members SET activo = 1, fecha_baja = NULL, motivo_baja = NULL WHERE id = $1 AND church_id = $2",
     [id, churchId]

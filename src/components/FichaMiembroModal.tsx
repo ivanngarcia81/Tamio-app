@@ -21,7 +21,12 @@ export const HABILIDADES = [
   "informatica", "diseno", "fotografia", "conduccion", "cocina", "enfermeria",
 ] as const;
 
-const ESTADOS_REGISTRO = ["activo", "inactivo", "visitante"] as const;
+export const CARGOS = [
+  "diacono", "anciano", "maestro", "liderJovenes", "liderDamas",
+  "liderCaballeros", "ujierJefe", "misionero",
+] as const;
+
+const ESTADOS_REGISTRO = ["activo", "inactivo", "visitante", "enProceso"] as const;
 
 function parseLista(json: string): string[] {
   try {
@@ -160,6 +165,7 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
   const [fechaBautismoEspiritu, setFechaBautismoEspiritu] = useState(member.fecha_bautismo_espiritu ?? "");
   const [cursoMembresia, setCursoMembresia] = useState(member.curso_membresia === 1);
   const [ministerios, setMinisterios] = useState<string[]>(() => parseLista(member.ministerios));
+  const [cargos, setCargos] = useState<string[]>(() => parseLista(member.cargos));
   const [ministeriosInteres, setMinisteriosInteres] = useState<string[]>(() => parseLista(member.ministerios_interes));
   const [instrumentos, setInstrumentos] = useState<string[]>(() => parseLista(member.instrumentos));
   const [habilidades, setHabilidades] = useState<string[]>(() => parseLista(member.habilidades));
@@ -188,6 +194,7 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
     try {
       const ficha: MemberFicha = {
         estado_membresia: estado,
+        cargos,
         fecha_congregacion: fechaCongregacion || null,
         fecha_ingreso: fechaIngreso || null,
         iglesia_anterior: iglesiaAnterior.trim() || null,
@@ -302,6 +309,16 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
                 valores={ministerios}
                 onChange={setMinisterios}
                 placeholder={t("ficha.otroMinisterio")}
+              />
+            </div>
+            <div className="form-group full">
+              <label className="form-label">{t("ficha.cargosLabel")}</label>
+              <ChipGroup
+                catalogo={CARGOS}
+                prefijo="ficha.cargo"
+                valores={cargos}
+                onChange={setCargos}
+                placeholder={t("ficha.otroCargo")}
               />
             </div>
             <div className="form-group full">

@@ -433,6 +433,17 @@ fn migrations() -> Vec<Migration> {
                 modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
             );
         "#,
+    }, Migration {
+        version: 20,
+        description: "informes de membresía: cargos, historial de estados, seguimiento y umbrales",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE members ADD COLUMN cargos TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE members ADD COLUMN historial_estados TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE members ADD COLUMN seguimiento_revisado_en TEXT;
+            ALTER TABLE members ADD COLUMN seguimiento_notas TEXT NOT NULL DEFAULT '[]';
+            ALTER TABLE churches ADD COLUMN umbrales_informes TEXT;
+        "#,
     }]
 }
 

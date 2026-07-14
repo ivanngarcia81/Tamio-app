@@ -28,8 +28,8 @@ const MOTIVOS_CONOCIDOS = ["traslado", "fallecimiento", "retiro", "disciplina"];
  *  se muestran con ese nombre, el resto como "Baja". */
 function estadoBadge(m: Member): { key: string; clase: string } {
   if (m.activo === 1) {
-    const e = ["activo", "inactivo", "visitante"].includes(m.estado_membresia) ? m.estado_membresia : "activo";
-    const clase = e === "activo" ? "activo" : e === "visitante" ? "donacion" : "servicios";
+    const e = ["activo", "inactivo", "visitante", "enProceso"].includes(m.estado_membresia) ? m.estado_membresia : "activo";
+    const clase = e === "activo" ? "activo" : e === "visitante" ? "donacion" : e === "enProceso" ? "musicos" : "servicios";
     return { key: `membresia.estado.${e}`, clase };
   }
   if (m.motivo_baja === "traslado") return { key: "membresia.estado.trasladado", clase: "baja" };
