@@ -250,7 +250,9 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28px 36px 22px;
+  /* 40px superiores: el titulo de pagina nunca queda pegado al borde de
+     la ventana; todas las vistas arrancan a la misma altura. */
+  padding: 40px 36px 22px;
   gap: 24px;
   /* Sistema de ancho máximo anclado a la izquierda: el contenido vive
      junto al sidebar (como Linear, Notion o Apple Mail) y deja de
