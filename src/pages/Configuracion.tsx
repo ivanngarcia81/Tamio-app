@@ -4,6 +4,7 @@ import { listUsuarios, updateChurch, type Church, type Usuario } from "../db";
 import type { LangPref } from "../i18n";
 import { IconCheck } from "../icons";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
+import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
 import TreasurerSettings, {
   type TreasurerFormErrors, type TreasurerFormValues,
 } from "../components/settings/TreasurerSettings";
@@ -56,6 +57,15 @@ export default function Configuracion({
   });
   const [pastorFirmaPath, setPastorFirmaPath] = useState<string | null>(church.pastor_firma_path ?? null);
   const [logoPath, setLogoPath] = useState<string | null>(church.logo_path ?? null);
+  const [institucionForm, setInstitucionForm] = useState<InstitucionFormValues>({
+    direccion: church.direccion ?? "",
+    region: church.region ?? "",
+    telefono: church.telefono ?? "",
+    email: church.email ?? "",
+    pie_institucional: church.pie_institucional ?? "",
+    secretaria_nombre: church.secretaria_nombre ?? "",
+    secretaria_cargo: church.secretaria_cargo ?? "",
+  });
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const refrescarUsuarios = () => { listUsuarios(church.id).then(setUsuarios).catch(console.error); };
@@ -83,7 +93,14 @@ export default function Configuracion({
     pastorForm.email !== (church.pastor_email ?? "") ||
     pastorForm.telefono !== (church.pastor_telefono ?? "") ||
     pastorFirmaPath !== (church.pastor_firma_path ?? null) ||
-    logoPath !== (church.logo_path ?? null);
+    logoPath !== (church.logo_path ?? null) ||
+    institucionForm.direccion !== (church.direccion ?? "") ||
+    institucionForm.region !== (church.region ?? "") ||
+    institucionForm.telefono !== (church.telefono ?? "") ||
+    institucionForm.email !== (church.email ?? "") ||
+    institucionForm.pie_institucional !== (church.pie_institucional ?? "") ||
+    institucionForm.secretaria_nombre !== (church.secretaria_nombre ?? "") ||
+    institucionForm.secretaria_cargo !== (church.secretaria_cargo ?? "");
 
   async function guardar() {
     setGeneralError(null);
@@ -131,6 +148,13 @@ export default function Configuracion({
         pastor_email: pastorForm.email.trim() || null,
         pastor_telefono: pastorForm.telefono.trim() || null,
         pastor_firma_path: pastorFirmaPath,
+        direccion: institucionForm.direccion.trim() || null,
+        region: institucionForm.region.trim() || null,
+        telefono: institucionForm.telefono.trim() || null,
+        email: institucionForm.email.trim() || null,
+        pie_institucional: institucionForm.pie_institucional.trim() || null,
+        secretaria_nombre: institucionForm.secretaria_nombre.trim() || null,
+        secretaria_cargo: institucionForm.secretaria_cargo.trim() || null,
       });
       onChurchUpdated(updated);
       setSaved(true);
@@ -178,6 +202,11 @@ export default function Configuracion({
               />
 
               <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
+
+              <InstitucionSettings
+                value={institucionForm}
+                onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
+              />
 
               <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
 

@@ -276,6 +276,46 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_asistencia_member ON servicio_asistencia(member_id);
         "#,
+    }, Migration {
+        version: 16,
+        description: "cartas y traslados fase 1: tabla de cartas, datos institucionales y secretaría",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE churches ADD COLUMN direccion TEXT;
+            ALTER TABLE churches ADD COLUMN region TEXT;
+            ALTER TABLE churches ADD COLUMN telefono TEXT;
+            ALTER TABLE churches ADD COLUMN email TEXT;
+            ALTER TABLE churches ADD COLUMN pie_institucional TEXT;
+            ALTER TABLE churches ADD COLUMN secretaria_nombre TEXT;
+            ALTER TABLE churches ADD COLUMN secretaria_cargo TEXT;
+            CREATE TABLE IF NOT EXISTS cartas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                numero_seq INTEGER NOT NULL,
+                folio TEXT NOT NULL,
+                tipo TEXT NOT NULL DEFAULT 'recomendacion',
+                fecha_emision TEXT NOT NULL,
+                lugar_emision TEXT,
+                destinatario_tipo TEXT NOT NULL DEFAULT 'personalizado',
+                member_id INTEGER REFERENCES members(id),
+                destinatario_nombre TEXT NOT NULL DEFAULT '',
+                destinatario_direccion TEXT,
+                asunto TEXT,
+                saludo TEXT,
+                cuerpo_html TEXT NOT NULL DEFAULT '',
+                despedida TEXT,
+                firmas TEXT NOT NULL DEFAULT '[]',
+                observaciones TEXT,
+                estado TEXT NOT NULL DEFAULT 'borrador',
+                historial_estados TEXT NOT NULL DEFAULT '[]',
+                entregada_a TEXT,
+                fecha_entrega TEXT,
+                solicitud_id INTEGER,
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_cartas_church ON cartas(church_id, fecha_emision DESC);
+        "#,
     }]
 }
 

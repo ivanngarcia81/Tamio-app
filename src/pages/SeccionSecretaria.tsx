@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/TxList";
-import { IconCalendar, IconClipboardList, IconMail } from "../icons";
+import { IconCalendar, IconClipboardList } from "../icons";
 
-export type SeccionId = "cartas" | "reporteMiembros" | "agenda";
+export type SeccionId = "reporteMiembros" | "agenda";
 
 const ICONOS: Record<SeccionId, ReactNode> = {
-  cartas: <IconMail size={22} strokeWidth={1.6} />,
   reporteMiembros: <IconClipboardList size={22} strokeWidth={1.6} />,
   agenda: <IconCalendar size={22} strokeWidth={1.6} />,
 };

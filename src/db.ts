@@ -31,6 +31,14 @@ export interface Church {
   pastor_email: string | null;
   pastor_telefono: string | null;
   pastor_firma_path: string | null;
+  /** Datos institucionales para el membrete de cartas y documentos. */
+  direccion: string | null;
+  region: string | null;
+  telefono: string | null;
+  email: string | null;
+  pie_institucional: string | null;
+  secretaria_nombre: string | null;
+  secretaria_cargo: string | null;
 }
 
 export interface Member {
@@ -322,6 +330,13 @@ export interface ChurchUpdate {
   pastor_email?: string | null;
   pastor_telefono?: string | null;
   pastor_firma_path?: string | null;
+  direccion?: string | null;
+  region?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  pie_institucional?: string | null;
+  secretaria_nombre?: string | null;
+  secretaria_cargo?: string | null;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -332,14 +347,18 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        tesorero_nombre = $6, tesorero_cargo = $7, tesorero_email = $8,
        tesorero_telefono = $9, tesorero_firma_path = $10,
        pastor_nombre = $11, pastor_cargo = $12, pastor_email = $13,
-       pastor_telefono = $14, pastor_firma_path = $15
-     WHERE id = $16`,
+       pastor_telefono = $14, pastor_firma_path = $15,
+       direccion = $16, region = $17, telefono = $18, email = $19,
+       pie_institucional = $20, secretaria_nombre = $21, secretaria_cargo = $22
+     WHERE id = $23`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
       c.tesorero_telefono ?? null, c.tesorero_firma_path ?? null,
       c.pastor_nombre ?? null, c.pastor_cargo ?? null, c.pastor_email ?? null,
       c.pastor_telefono ?? null, c.pastor_firma_path ?? null,
+      c.direccion ?? null, c.region ?? null, c.telefono ?? null, c.email ?? null,
+      c.pie_institucional ?? null, c.secretaria_nombre ?? null, c.secretaria_cargo ?? null,
       id,
     ]
   );
@@ -1172,6 +1191,158 @@ export async function updateActa(id: number, churchId: number, a: NewActa): Prom
 export async function deleteActa(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute("DELETE FROM actas WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
+// ---------- Cartas y traslados ----------
+
+export interface CartaFirma {
+  /** pastor | secretaria | presidente | tesorero | otro */
+  rol: string;
+  nombre: string;
+  cargo: string;
+  firmado: boolean;
+  /** Fecha opcional que se muestra bajo la línea de firma. */
+  fecha: string | null;
+}
+
+export interface CartaCambioEstado {
+  de: string;
+  a: string;
+  fecha: string;
+}
+
+export interface Carta {
+  id: number;
+  church_id: number;
+  numero_seq: number;
+  /** CAR-AAAA-0001 — autogenerado al crear el borrador, solo lectura. */
+  folio: string;
+  tipo: string;
+  fecha_emision: string;
+  lugar_emision: string | null;
+  /** miembro | iglesia | pastor | institucion | externo | personalizado */
+  destinatario_tipo: string;
+  member_id: number | null;
+  destinatario_nombre: string;
+  destinatario_direccion: string | null;
+  asunto: string | null;
+  saludo: string | null;
+  cuerpo_html: string;
+  despedida: string | null;
+  /** JSON de CartaFirma[]. */
+  firmas: string;
+  /** Observaciones internas — nunca se imprimen. */
+  observaciones: string | null;
+  estado: string;
+  /** JSON de CartaCambioEstado[]. */
+  historial_estados: string;
+  entregada_a: string | null;
+  fecha_entrega: string | null;
+  solicitud_id: number | null;
+  creado_en: string;
+  modificado_en: string;
+}
+
+export interface NewCarta {
+  tipo: string;
+  fecha_emision: string;
+  lugar_emision: string | null;
+  destinatario_tipo: string;
+  member_id: number | null;
+  destinatario_nombre: string;
+  destinatario_direccion: string | null;
+  asunto: string | null;
+  saludo: string | null;
+  cuerpo_html: string;
+  despedida: string | null;
+  firmas: CartaFirma[];
+  observaciones: string | null;
+  estado: string;
+  entregada_a: string | null;
+  fecha_entrega: string | null;
+}
+
+export async function listCartas(churchId: number): Promise<Carta[]> {
+  const d = await getDb();
+  return d.select<Carta[]>(
+    "SELECT * FROM cartas WHERE church_id = $1 ORDER BY fecha_emision DESC, id DESC",
+    [churchId]
+  );
+}
+
+/** Folio CAR-AAAA-0001: MAX(seq)+1 por año (no COUNT, para que eliminar un
+ *  borrador nunca repita número; los huecos son aceptados a propósito). */
+async function nextCartaSeq(churchId: number, anio: string): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ m: number | null }[]>(
+    "SELECT MAX(numero_seq) AS m FROM cartas WHERE church_id = $1 AND substr(fecha_emision, 1, 4) = $2",
+    [churchId, anio]
+  );
+  return (rows[0]?.m ?? 0) + 1;
+}
+
+function cartaParams(c: NewCarta): unknown[] {
+  return [
+    c.tipo, c.fecha_emision, c.lugar_emision, c.destinatario_tipo, c.member_id,
+    c.destinatario_nombre, c.destinatario_direccion, c.asunto, c.saludo, c.cuerpo_html,
+    c.despedida, JSON.stringify(c.firmas), c.observaciones, c.estado,
+    c.entregada_a, c.fecha_entrega,
+  ];
+}
+
+export async function insertCarta(churchId: number, c: NewCarta): Promise<Carta | null> {
+  const d = await getDb();
+  const anio = c.fecha_emision.slice(0, 4);
+  const seq = await nextCartaSeq(churchId, anio);
+  const folio = `CAR-${anio}-${String(seq).padStart(4, "0")}`;
+  const historial = JSON.stringify([{ de: "", a: c.estado, fecha: nowLocalIso() }]);
+  await d.execute(
+    `INSERT INTO cartas (
+       tipo, fecha_emision, lugar_emision, destinatario_tipo, member_id,
+       destinatario_nombre, destinatario_direccion, asunto, saludo, cuerpo_html,
+       despedida, firmas, observaciones, estado, entregada_a, fecha_entrega,
+       church_id, numero_seq, folio, historial_estados
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+    [...cartaParams(c), churchId, seq, folio, historial]
+  );
+  const rows = await d.select<Carta[]>(
+    "SELECT * FROM cartas WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
+    [churchId, folio]
+  );
+  return rows[0] ?? null;
+}
+
+export async function updateCarta(id: number, churchId: number, c: NewCarta, estadoAnterior: string): Promise<void> {
+  const d = await getDb();
+  // El historial de estados solo crece cuando el estado realmente cambió.
+  if (c.estado !== estadoAnterior) {
+    const rows = await d.select<{ historial_estados: string }[]>(
+      "SELECT historial_estados FROM cartas WHERE id = $1 AND church_id = $2",
+      [id, churchId]
+    );
+    let hist: CartaCambioEstado[] = [];
+    try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
+    hist.push({ de: estadoAnterior, a: c.estado, fecha: nowLocalIso() });
+    await d.execute("UPDATE cartas SET historial_estados = $1 WHERE id = $2 AND church_id = $3", [
+      JSON.stringify(hist), id, churchId,
+    ]);
+  }
+  await d.execute(
+    `UPDATE cartas SET
+       tipo = $1, fecha_emision = $2, lugar_emision = $3, destinatario_tipo = $4, member_id = $5,
+       destinatario_nombre = $6, destinatario_direccion = $7, asunto = $8, saludo = $9,
+       cuerpo_html = $10, despedida = $11, firmas = $12, observaciones = $13, estado = $14,
+       entregada_a = $15, fecha_entrega = $16,
+       modificado_en = datetime('now', 'localtime')
+     WHERE id = $17 AND church_id = $18`,
+    [...cartaParams(c), id, churchId]
+  );
+}
+
+/** Eliminar solo se permite para borradores (la política prefiere archivar/cancelar). */
+export async function deleteCarta(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM cartas WHERE id = $1 AND church_id = $2 AND estado = 'borrador'", [id, churchId]);
 }
 
 // ---------- Registro de servicios ----------
