@@ -1,15 +1,16 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "../components/TxList";
-import { IconClipboardList, IconFileText, IconIdBadge, IconMail } from "../icons";
+import { IconCalendar, IconClipboardList, IconFileText, IconIdBadge, IconMail } from "../icons";
 
-export type SeccionId = "membresia" | "actas" | "cartas" | "reporteMiembros";
+export type SeccionId = "membresia" | "actas" | "cartas" | "reporteMiembros" | "agenda";
 
 const ICONOS: Record<SeccionId, ReactNode> = {
   membresia: <IconIdBadge size={22} strokeWidth={1.6} />,
   actas: <IconFileText size={22} strokeWidth={1.6} />,
   cartas: <IconMail size={22} strokeWidth={1.6} />,
   reporteMiembros: <IconClipboardList size={22} strokeWidth={1.6} />,
+  agenda: <IconCalendar size={22} strokeWidth={1.6} />,
 };
 
 /** Página provisional de las secciones de Secretaría: presenta qué hará

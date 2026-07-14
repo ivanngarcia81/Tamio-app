@@ -315,3 +315,10 @@ export const IconClipboardList = ({ size = 18, strokeWidth = 1.8 }: IconProps) =
     <path d="M9 12h6M9 16h6" />
   </svg>
 );
+
+export const IconCalendar = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
+  </svg>
+);

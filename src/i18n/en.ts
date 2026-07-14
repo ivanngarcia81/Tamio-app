@@ -572,6 +572,7 @@ export const en: Resources = {
     actas: "Board minutes",
     cartas: "Certificates & transfers",
     reporteMiembros: "Member report",
+    agenda: "Agenda & calendar",
     bandeja: "Inbox",
     configuracion: "Settings",
   },
@@ -597,6 +598,11 @@ export const en: Resources = {
       titulo: "Member report",
       sub: "Monthly or annual report for the council or district",
       desc: "Generate the membership report required by your council or district, ready to print.",
+    },
+    agenda: {
+      titulo: "Agenda & calendar",
+      sub: "Coordinating events and meetings",
+      desc: "Schedule church events, board meetings, and activities on a shared calendar.",
     },
   },
 

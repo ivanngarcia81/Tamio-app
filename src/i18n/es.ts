@@ -566,6 +566,7 @@ export const es = {
     actas: "Actas",
     cartas: "Cartas y traslados",
     reporteMiembros: "Reporte de miembros",
+    agenda: "Agenda y calendario",
     bandeja: "Bandeja",
     configuracion: "Configuración",
   },
@@ -591,6 +592,11 @@ export const es = {
       titulo: "Reporte de miembros",
       sub: "Reporte mensual o anual para el concilio o distrito",
       desc: "Aquí se generará el reporte de membresía que exige el concilio o distrito, listo para imprimir.",
+    },
+    agenda: {
+      titulo: "Agenda y calendario",
+      sub: "Coordinación de eventos y juntas",
+      desc: "Aquí se programarán los eventos, juntas y actividades de la iglesia en un calendario compartido.",
     },
   },
 
