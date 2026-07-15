@@ -1,5 +1,6 @@
 import Database from "@tauri-apps/plugin-sql";
 import i18n, { currentLang } from "./i18n";
+import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
 let db: Database | null = null;
 
@@ -2296,6 +2297,41 @@ export const ESTADOS_ACTIVIDAD = [
   "borrador", "programada", "confirmada", "completada", "cancelada",
 ] as const;
 
+// ---- Recurrencia (la serie se guarda como una maestra + regla, no copias) ----
+
+export type RecurrenciaTipo = "ninguna" | "semanal" | "quincenal" | "mensual" | "anual" | "personalizada";
+export type RecFin =
+  | { tipo: "nunca" }
+  | { tipo: "hasta"; hasta: string }
+  | { tipo: "conteo"; conteo: number };
+
+export interface Recurrencia {
+  tipo: RecurrenciaTipo;
+  /** Cada cuántas unidades (semanas/meses/años). semanal=1, quincenal=2. */
+  intervalo: number;
+  /** Días de la semana (0=domingo … 6=sábado) para semanal/personalizada. */
+  diasSemana: number[];
+  fin: RecFin;
+}
+
+/** Override o borrado de una ocurrencia concreta de la serie. */
+export interface ExcepcionAgenda {
+  /** Fecha original de la ocurrencia (YYYY-MM-DD) que identifica la excepción. */
+  fechaOriginal: string;
+  /** true = esa ocurrencia se borra. */
+  eliminada?: boolean;
+  /** Campos que cambian solo en esa ocurrencia. */
+  cambios?: Partial<Pick<Actividad,
+    "nombre" | "tipo" | "tipo_personalizado" | "fecha" | "hora_inicio" | "hora_fin" | "dia_completo" |
+    "lugar" | "descripcion" | "responsable_member_id" | "responsable_persona" | "responsable_ministerio" |
+    "invitado" | "contacto" | "estado" | "es_fecha_importante">>;
+}
+
+// El parseo y la expansión de recurrencia viven en el servicio puro (sin
+// dependencias de Tauri) para poder probarlos de forma aislada; se reexportan
+// para que el resto de la app los consuma desde db.ts como antes.
+export { RECURRENCIA_NINGUNA, parseRecurrencia, parseExcepciones };
+
 /** Fila cruda de la tabla agenda (fechas como cadenas locales, sin objetos Date). */
 export interface Actividad {
   id: number;
@@ -2347,6 +2383,8 @@ export interface NewActividad {
   contacto: string | null;
   estado: string;
   es_fecha_importante: boolean;
+  /** Regla de recurrencia; por defecto "ninguna" (evento único). */
+  recurrencia?: Recurrencia;
 }
 
 export async function listActividades(churchId: number): Promise<Actividad[]> {
@@ -2377,32 +2415,79 @@ function actividadParams(a: NewActividad): unknown[] {
     a.contacto?.trim() || null,
     a.estado,
     a.es_fecha_importante ? 1 : 0,
+    JSON.stringify(a.recurrencia ?? RECURRENCIA_NINGUNA),
   ];
 }
 
-export async function insertActividad(churchId: number, a: NewActividad): Promise<void> {
+export async function insertActividad(churchId: number, a: NewActividad): Promise<number> {
   const d = await getDb();
   await d.execute(
     `INSERT INTO agenda (
        nombre, tipo, tipo_personalizado, fecha, hora_inicio, hora_fin, dia_completo,
        lugar, descripcion, responsable_member_id, responsable_persona, responsable_ministerio,
-       invitado, contacto, estado, es_fecha_importante, church_id
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+       invitado, contacto, estado, es_fecha_importante, recurrencia, church_id
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
     [...actividadParams(a), churchId]
   );
+  const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
+  return rows[0]?.id ?? 0;
 }
 
 export async function updateActividad(id: number, churchId: number, a: NewActividad): Promise<void> {
   const d = await getDb();
+  // Nota: `excepciones` se administra aparte y no se toca aquí.
   await d.execute(
     `UPDATE agenda SET
        nombre = $1, tipo = $2, tipo_personalizado = $3, fecha = $4, hora_inicio = $5,
        hora_fin = $6, dia_completo = $7, lugar = $8, descripcion = $9,
        responsable_member_id = $10, responsable_persona = $11, responsable_ministerio = $12,
-       invitado = $13, contacto = $14, estado = $15, es_fecha_importante = $16,
+       invitado = $13, contacto = $14, estado = $15, es_fecha_importante = $16, recurrencia = $17,
        modificado_en = datetime('now', 'localtime')
-     WHERE id = $17 AND church_id = $18`,
+     WHERE id = $18 AND church_id = $19`,
     [...actividadParams(a), id, churchId]
+  );
+}
+
+/** Agrega o reemplaza una excepción (override o borrado) en la serie maestra. */
+export async function agregarExcepcionAgenda(masterId: number, churchId: number, exc: ExcepcionAgenda): Promise<void> {
+  const d = await getDb();
+  const rows = await d.select<{ excepciones: string }[]>(
+    "SELECT excepciones FROM agenda WHERE id = $1 AND church_id = $2", [masterId, churchId]
+  );
+  const previas = parseExcepciones(rows[0]?.excepciones);
+  const anterior = previas.find((e) => e.fechaOriginal === exc.fechaOriginal);
+  const lista = previas.filter((e) => e.fechaOriginal !== exc.fechaOriginal);
+  // Si ambos son overrides, se fusionan los cambios para no perder ediciones previas.
+  const fusionada: ExcepcionAgenda = (!exc.eliminada && anterior && !anterior.eliminada)
+    ? { fechaOriginal: exc.fechaOriginal, cambios: { ...anterior.cambios, ...exc.cambios } }
+    : exc;
+  lista.push(fusionada);
+  await d.execute(
+    "UPDATE agenda SET excepciones = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3",
+    [JSON.stringify(lista), masterId, churchId]
+  );
+}
+
+function diaAntes(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - 1);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+/** Cierra la serie para que termine el día ANTES de `desdeISO` (el punto de
+ *  corte de "esta y las siguientes"). Poda las excepciones desde el corte. */
+export async function truncarSerieAgenda(masterId: number, churchId: number, desdeISO: string): Promise<void> {
+  const d = await getDb();
+  const rows = await d.select<{ recurrencia: string; excepciones: string }[]>(
+    "SELECT recurrencia, excepciones FROM agenda WHERE id = $1 AND church_id = $2", [masterId, churchId]
+  );
+  const rec = parseRecurrencia(rows[0]?.recurrencia);
+  rec.fin = { tipo: "hasta", hasta: diaAntes(desdeISO) };
+  const exc = parseExcepciones(rows[0]?.excepciones).filter((e) => e.fechaOriginal < desdeISO);
+  await d.execute(
+    "UPDATE agenda SET recurrencia = $1, excepciones = $2, modificado_en = datetime('now', 'localtime') WHERE id = $3 AND church_id = $4",
+    [JSON.stringify(rec), JSON.stringify(exc), masterId, churchId]
   );
 }
 

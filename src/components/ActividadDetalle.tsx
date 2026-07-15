@@ -7,6 +7,8 @@ interface Props {
   actividad: Actividad;
   /** Nombre del responsable ya resuelto (miembro o persona externa). */
   responsableNombre: string | null;
+  /** true si la actividad proviene de una serie recurrente. */
+  esRecurrente?: boolean;
   onClose: () => void;
   onEditar: () => void;
   onDuplicar: () => void;
@@ -25,7 +27,7 @@ function Kv({ label, value }: { label: string; value: string | null }) {
 }
 
 export default function ActividadDetalle({
-  actividad: a, responsableNombre, onClose, onEditar, onDuplicar, onEliminar, onEstado,
+  actividad: a, responsableNombre, esRecurrente, onClose, onEditar, onDuplicar, onEliminar, onEstado,
 }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
@@ -45,6 +47,7 @@ export default function ActividadDetalle({
             <div className="modal-title truncate">{a.nombre}</div>
             <div className="modal-sub">
               {tipoLabel}
+              {esRecurrente && <span className="tag servicios" style={{ marginLeft: 8 }}>{t("agenda.recurrenteBadge")}</span>}
               {a.es_fecha_importante && <span className="tag eventos" style={{ marginLeft: 8 }}>{t("agenda.fechaImportanteBadge")}</span>}
             </div>
           </div>

@@ -1,14 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, hoyISO, insertActividad, listMembersRoster,
-  updateActividad, type Actividad, type Church, type NewActividad,
+  ESTADOS_ACTIVIDAD, RECURRENCIA_NINGUNA, TIPOS_ACTIVIDAD, hoyISO, insertActividad, listMembersRoster,
+  parseRecurrencia, updateActividad,
+  type Actividad, type Church, type NewActividad, type RecFin, type Recurrencia, type RecurrenciaTipo,
 } from "../db";
 import { Seccion } from "./FichaMiembroModal";
-import { IconClose } from "../icons";
+import { IconClose, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+
+/** Un choque de horario detectado (lo calcula la página, que tiene todas las ocurrencias). */
+export interface ConflictoAgenda {
+  nombre: string;
+  detalle: string;
+}
+
+const REC_TIPOS: RecurrenciaTipo[] = ["ninguna", "semanal", "quincenal", "mensual", "anual", "personalizada"];
 
 interface Props {
   church: Church;
@@ -19,15 +28,26 @@ interface Props {
   duplicarDe?: Actividad | null;
   /** Fecha preseleccionada (YYYY-MM-DD) al crear desde una celda del calendario. */
   fechaInicial?: string | null;
+  /** Oculta la sección de repetición (p. ej. al editar "solo esta" ocurrencia). */
+  mostrarRecurrencia?: boolean;
+  /** Título personalizado (para editar el alcance de una serie). */
+  tituloModo?: string;
+  /** Si se provee, se llama en vez de insertar/actualizar (la página decide qué hacer). */
+  onSubmitOverride?: (payload: NewActividad) => Promise<void>;
+  /** Detección de conflictos de horario para la fecha/lugar del payload. */
+  detectarConflictos?: (payload: NewActividad) => ConflictoAgenda[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function ActividadModal({ church, actividad, duplicarDe, fechaInicial, onClose, onSaved }: Props) {
+export default function ActividadModal({
+  church, actividad, duplicarDe, fechaInicial, mostrarRecurrencia = true, tituloModo,
+  onSubmitOverride, detectarConflictos, onClose, onSaved,
+}: Props) {
   const { t } = useTranslation();
   const editar = actividad !== null;
-  // Base de la que se toman los valores iniciales (edición o duplicado).
   const base = actividad ?? duplicarDe ?? null;
+  const recBase = useMemo(() => parseRecurrencia(base?.recurrencia), [base]);
 
   const [nombre, setNombre] = useState(
     base ? (duplicarDe && !actividad ? `${base.nombre} ${t("agenda.sufijoCopia")}` : base.nombre) : ""
@@ -47,15 +67,23 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
   const [responsableMinisterio, setResponsableMinisterio] = useState(base?.responsable_ministerio ?? "");
   const [invitado, setInvitado] = useState(base?.invitado ?? "");
   const [contacto, setContacto] = useState(base?.contacto ?? "");
-  // Al duplicar, la copia arranca como programada (no hereda "completada/cancelada").
   const [estado, setEstado] = useState(
     duplicarDe && !actividad ? "programada" : (base?.estado ?? "programada")
   );
   const [esFechaImportante, setEsFechaImportante] = useState(base ? base.es_fecha_importante === 1 : false);
 
+  // ---- Recurrencia ----
+  const [recTipo, setRecTipo] = useState<RecurrenciaTipo>(recBase.tipo);
+  const [recDias, setRecDias] = useState<number[]>(recBase.diasSemana);
+  const [recIntervalo, setRecIntervalo] = useState(recBase.intervalo);
+  const [recFinTipo, setRecFinTipo] = useState<RecFin["tipo"]>(recBase.fin.tipo);
+  const [recHasta, setRecHasta] = useState(recBase.fin.tipo === "hasta" ? recBase.fin.hasta : "");
+  const [recConteo, setRecConteo] = useState(recBase.fin.tipo === "conteo" ? recBase.fin.conteo : 10);
+
   const [miembros, setMiembros] = useState<{ id: number; nombre: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflictos, setConflictos] = useState<ConflictoAgenda[] | null>(null);
 
   useEscapeClose(onClose);
 
@@ -67,47 +95,70 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
     return () => { cancelado = true; };
   }, [church.id]);
 
-  const validar = useMemo(() => {
-    return (): string | null => {
-      if (!nombre.trim()) return t("agenda.errNombre");
-      if (!fecha) return t("agenda.errFecha");
-      if (!diaCompleto && !horaInicio) return t("agenda.errHoraInicio");
-      if (!diaCompleto && horaInicio && horaFin && horaFin < horaInicio) return t("agenda.errHoraFin");
-      if (tipo === "otra" && !tipoPersonalizado.trim()) return t("agenda.errTipoPersonalizado");
-      return null;
-    };
-  }, [nombre, fecha, diaCompleto, horaInicio, horaFin, tipo, tipoPersonalizado, t]);
+  const diasSemana = t("agenda.diasSemana", { returnObjects: true }) as string[];
+  const muestraDias = recTipo === "semanal" || recTipo === "personalizada";
 
-  async function guardar() {
-    const problema = validar();
-    if (problema) { setError(problema); return; }
-    setSaving(true);
-    setError(null);
+  function toggleDia(d: number) {
+    setRecDias((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b));
+  }
+
+  function construirRecurrencia(): Recurrencia {
+    if (!mostrarRecurrencia || recTipo === "ninguna") return { ...RECURRENCIA_NINGUNA };
+    const fin: RecFin = recFinTipo === "hasta"
+      ? { tipo: "hasta", hasta: recHasta }
+      : recFinTipo === "conteo"
+        ? { tipo: "conteo", conteo: Math.max(1, recConteo) }
+        : { tipo: "nunca" };
+    const intervalo = recTipo === "personalizada" ? Math.max(1, recIntervalo) : recTipo === "quincenal" ? 2 : 1;
+    const diasSem = muestraDias ? recDias : [];
+    return { tipo: recTipo, intervalo, diasSemana: diasSem, fin };
+  }
+
+  function validar(): string | null {
+    if (!nombre.trim()) return t("agenda.errNombre");
+    if (!fecha) return t("agenda.errFecha");
+    if (!diaCompleto && !horaInicio) return t("agenda.errHoraInicio");
+    if (!diaCompleto && horaInicio && horaFin && horaFin < horaInicio) return t("agenda.errHoraFin");
+    if (tipo === "otra" && !tipoPersonalizado.trim()) return t("agenda.errTipoPersonalizado");
+    if (mostrarRecurrencia && recTipo !== "ninguna" && recFinTipo === "hasta" && recHasta && recHasta < fecha) {
+      return t("agenda.errFinRepeticion");
+    }
+    return null;
+  }
+
+  function armarPayload(): NewActividad {
     const memberId = responsableMemberId ? Number(responsableMemberId) : null;
-    const payload: NewActividad = {
-      nombre,
-      tipo,
-      tipo_personalizado: tipoPersonalizado,
-      fecha,
-      hora_inicio: horaInicio,
-      hora_fin: horaFin,
-      dia_completo: diaCompleto,
-      lugar,
-      descripcion,
+    return {
+      nombre, tipo, tipo_personalizado: tipoPersonalizado, fecha,
+      hora_inicio: horaInicio, hora_fin: horaFin, dia_completo: diaCompleto,
+      lugar, descripcion,
       responsable_member_id: memberId,
-      // Si se eligió un miembro, la persona externa se ignora (mutuamente excluyentes).
       responsable_persona: memberId ? "" : responsablePersona,
       responsable_ministerio: responsableMinisterio,
-      invitado,
-      contacto,
-      estado,
-      es_fecha_importante: esFechaImportante,
+      invitado, contacto, estado, es_fecha_importante: esFechaImportante,
+      recurrencia: construirRecurrencia(),
     };
+  }
+
+  async function guardar(forzar = false) {
+    const problema = validar();
+    if (problema) { setError(problema); return; }
+    const payload = armarPayload();
+
+    if (!forzar && detectarConflictos) {
+      const ch = detectarConflictos(payload);
+      if (ch.length > 0) { setConflictos(ch); return; }
+    }
+
+    setSaving(true);
+    setError(null);
+    setConflictos(null);
     try {
-      if (editar) await updateActividad(actividad!.id, church.id, payload);
+      if (onSubmitOverride) await onSubmitOverride(payload);
+      else if (editar) await updateActividad(actividad!.id, church.id, payload);
       else await insertActividad(church.id, payload);
       playSound("guardado");
-      showToast(editar ? t("agenda.toastActualizada") : t("agenda.toastCreada"));
+      showToast(editar || onSubmitOverride ? t("agenda.toastActualizada") : t("agenda.toastCreada"));
       onSaved();
       onClose();
     } catch (e) {
@@ -117,12 +168,14 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
     }
   }
 
+  const titulo = tituloModo ?? (editar ? t("agenda.editarActividad") : t("agenda.nuevaActividad"));
+
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-card" style={{ width: 640 }}>
         <div className="modal-header">
           <div>
-            <div className="modal-title">{editar ? t("agenda.editarActividad") : t("agenda.nuevaActividad")}</div>
+            <div className="modal-title">{titulo}</div>
             <div className="modal-sub">{t("secretaria.agenda.sub")}</div>
           </div>
           <div className="modal-close" onClick={onClose}><IconClose /></div>
@@ -132,32 +185,19 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
           <Seccion titulo={t("agenda.secBasica")}>
             <div className="form-group full">
               <label className="form-label">{t("agenda.nombre")} *</label>
-              <input
-                className="form-input"
-                value={nombre}
-                autoFocus
-                placeholder={t("agenda.nombrePlaceholder")}
-                onChange={(e) => setNombre(e.target.value)}
-              />
+              <input className="form-input" value={nombre} autoFocus placeholder={t("agenda.nombrePlaceholder")} onChange={(e) => setNombre(e.target.value)} />
             </div>
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("agenda.tipo")} *</label>
                 <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                  {TIPOS_ACTIVIDAD.map((k) => (
-                    <option key={k} value={k}>{t(`agenda.tipos.${k}`)}</option>
-                  ))}
+                  {TIPOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.tipos.${k}`)}</option>)}
                 </select>
               </div>
               {tipo === "otra" && (
                 <div className="form-group">
                   <label className="form-label">{t("agenda.tipoPersonalizado")} *</label>
-                  <input
-                    className="form-input"
-                    value={tipoPersonalizado}
-                    placeholder={t("agenda.tipoPersonalizadoPlaceholder")}
-                    onChange={(e) => setTipoPersonalizado(e.target.value)}
-                  />
+                  <input className="form-input" value={tipoPersonalizado} placeholder={t("agenda.tipoPersonalizadoPlaceholder")} onChange={(e) => setTipoPersonalizado(e.target.value)} />
                 </div>
               )}
             </div>
@@ -168,11 +208,7 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
               </div>
               <div className="form-group" style={{ justifyContent: "flex-end" }}>
                 <label className="check-inline">
-                  <input
-                    type="checkbox"
-                    checked={diaCompleto}
-                    onChange={(e) => setDiaCompleto(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={diaCompleto} onChange={(e) => setDiaCompleto(e.target.checked)} />
                   {t("agenda.diaCompleto")}
                 </label>
               </div>
@@ -203,26 +239,15 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("agenda.responsable")}</label>
-                <select
-                  className="form-input"
-                  value={responsableMemberId}
-                  onChange={(e) => setResponsableMemberId(e.target.value)}
-                >
+                <select className="form-input" value={responsableMemberId} onChange={(e) => setResponsableMemberId(e.target.value)}>
                   <option value="">{t("agenda.responsableExterno")}</option>
-                  {miembros.map((m) => (
-                    <option key={m.id} value={String(m.id)}>{m.nombre}</option>
-                  ))}
+                  {miembros.map((m) => <option key={m.id} value={String(m.id)}>{m.nombre}</option>)}
                 </select>
               </div>
               {!responsableMemberId && (
                 <div className="form-group">
                   <label className="form-label">{t("agenda.responsablePersona")}</label>
-                  <input
-                    className="form-input"
-                    value={responsablePersona}
-                    placeholder={t("agenda.responsablePersonaPlaceholder")}
-                    onChange={(e) => setResponsablePersona(e.target.value)}
-                  />
+                  <input className="form-input" value={responsablePersona} placeholder={t("agenda.responsablePersonaPlaceholder")} onChange={(e) => setResponsablePersona(e.target.value)} />
                 </div>
               )}
             </div>
@@ -242,28 +267,91 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
             </div>
           </Seccion>
 
+          {mostrarRecurrencia && (
+            <Seccion titulo={t("agenda.secRepeticion")}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">{t("agenda.repeticion")}</label>
+                  <select className="form-input" value={recTipo} onChange={(e) => setRecTipo(e.target.value as RecurrenciaTipo)}>
+                    {REC_TIPOS.map((k) => <option key={k} value={k}>{t(`agenda.rec.${k}`)}</option>)}
+                  </select>
+                </div>
+                {recTipo === "personalizada" && (
+                  <div className="form-group">
+                    <label className="form-label">{t("agenda.cadaNSemanas")}</label>
+                    <input type="number" min={1} className="form-input" value={recIntervalo} onChange={(e) => setRecIntervalo(Math.max(1, Number(e.target.value) || 1))} />
+                  </div>
+                )}
+              </div>
+              {muestraDias && (
+                <div className="form-group full">
+                  <label className="form-label">{t("agenda.diasRepeticion")}</label>
+                  <div className="dias-toggle">
+                    {diasSemana.map((d, i) => (
+                      <button key={i} type="button" className={`dia-chip${recDias.includes(i) ? " active" : ""}`} onClick={() => toggleDia(i)}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {recTipo !== "ninguna" && (
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">{t("agenda.finRepeticion")}</label>
+                    <select className="form-input" value={recFinTipo} onChange={(e) => setRecFinTipo(e.target.value as RecFin["tipo"])}>
+                      <option value="nunca">{t("agenda.finNunca")}</option>
+                      <option value="hasta">{t("agenda.finHasta")}</option>
+                      <option value="conteo">{t("agenda.finConteo")}</option>
+                    </select>
+                  </div>
+                  {recFinTipo === "hasta" && (
+                    <div className="form-group">
+                      <label className="form-label">{t("agenda.finFecha")}</label>
+                      <input type="date" className="form-input" value={recHasta} onChange={(e) => setRecHasta(e.target.value)} />
+                    </div>
+                  )}
+                  {recFinTipo === "conteo" && (
+                    <div className="form-group">
+                      <label className="form-label">{t("agenda.finVeces")}</label>
+                      <input type="number" min={1} className="form-input" value={recConteo} onChange={(e) => setRecConteo(Math.max(1, Number(e.target.value) || 1))} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </Seccion>
+          )}
+
           <Seccion titulo={t("agenda.secEstado")}>
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("agenda.estado")}</label>
                 <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
-                  {ESTADOS_ACTIVIDAD.map((k) => (
-                    <option key={k} value={k}>{t(`agenda.estados.${k}`)}</option>
-                  ))}
+                  {ESTADOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.estados.${k}`)}</option>)}
                 </select>
               </div>
               <div className="form-group" style={{ justifyContent: "flex-end" }}>
                 <label className="check-inline">
-                  <input
-                    type="checkbox"
-                    checked={esFechaImportante}
-                    onChange={(e) => setEsFechaImportante(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={esFechaImportante} onChange={(e) => setEsFechaImportante(e.target.checked)} />
                   {t("agenda.esFechaImportante")}
                 </label>
               </div>
             </div>
           </Seccion>
+
+          {conflictos && (
+            <div className="agenda-conflicto">
+              <div className="agenda-conflicto-head"><IconWarn size={15} /> {t("agenda.conflictoTitulo")}</div>
+              <div className="agenda-conflicto-sub">{t("agenda.conflictoSub")}</div>
+              <ul className="agenda-conflicto-lista">
+                {conflictos.map((c, i) => <li key={i}><strong>{c.nombre}</strong> — {c.detalle}</li>)}
+              </ul>
+              <div className="agenda-conflicto-acciones">
+                <button className="btn secondary sm" onClick={() => setConflictos(null)}>{t("agenda.conflictoEditar")}</button>
+                <button className="btn primary danger sm" onClick={() => guardar(true)} disabled={saving}>{t("agenda.conflictoGuardar")}</button>
+              </div>
+            </div>
+          )}
 
           {error && <div className="field-error">{error}</div>}
         </div>
@@ -272,8 +360,8 @@ export default function ActividadModal({ church, actividad, duplicarDe, fechaIni
           <span />
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
-            <button className="btn primary" onClick={guardar} disabled={saving}>
-              {saving ? t("common.guardando") : editar ? t("common.guardarCambios") : t("agenda.guardarActividad")}
+            <button className="btn primary" onClick={() => guardar(false)} disabled={saving || conflictos !== null}>
+              {saving ? t("common.guardando") : editar || onSubmitOverride ? t("common.guardarCambios") : t("agenda.guardarActividad")}
             </button>
           </div>
         </div>

@@ -2635,3 +2635,56 @@ a { color: inherit; text-decoration: none; }
   .agenda-semana { grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .agenda-sem-body .agenda-evt-hora { display: none; }
 }
+
+/* ---------- Agenda Fase 3: recurrencia, conflictos, alcance ---------- */
+.dias-toggle { display: flex; flex-wrap: wrap; gap: 6px; }
+.dia-chip {
+  min-width: 40px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.dia-chip:hover { border-color: var(--text-3); }
+.dia-chip.active { background: var(--ink); color: var(--ink-contrast); border-color: var(--ink); }
+
+.agenda-conflicto {
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+:root[data-theme="dark"] .agenda-conflicto { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.4); }
+.agenda-conflicto-head {
+  display: flex; align-items: center; gap: 7px;
+  font-weight: 700; font-size: 13px; color: #b45309;
+}
+:root[data-theme="dark"] .agenda-conflicto-head { color: #fbbf24; }
+.agenda-conflicto-sub { font-size: 12.5px; color: var(--text-2); margin: 4px 0 6px; }
+.agenda-conflicto-lista { margin: 0 0 10px; padding-left: 18px; font-size: 12.5px; color: var(--text); }
+.agenda-conflicto-lista li { margin: 2px 0; }
+.agenda-conflicto-acciones { display: flex; gap: 8px; justify-content: flex-end; }
+
+.alcance-opciones { display: flex; flex-direction: column; gap: 8px; }
+.alcance-opcion {
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.alcance-opcion:hover { background: var(--surface-2); border-color: var(--text-3); }
+.alcance-opcion.danger { color: #dc2626; }
+.alcance-opcion.danger:hover { background: #fef2f2; border-color: #fca5a5; }
+:root[data-theme="dark"] .alcance-opcion.danger:hover { background: rgba(220,38,38,.14); }
