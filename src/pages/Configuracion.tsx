@@ -211,16 +211,10 @@ export default function Configuracion({
                 value={institucionForm}
                 onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
               />
-
-              <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
-
-              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-
-              <BackupSettings church={church} />
             </div>
 
-            {/* Columna derecha: vista previa del PDF + ajustes ligeros,
-                para aprovechar el espacio bajo la vista previa. */}
+            {/* Columna derecha: vista previa del PDF + ajustes y administración,
+                para equilibrar la altura con la columna izquierda. */}
             <div className="settings-stack">
               <PDFPreview
                 churchNombre={churchForm.nombre}
@@ -235,6 +229,12 @@ export default function Configuracion({
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
 
               <SoundSettings />
+
+              <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
+
+              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+
+              <BackupSettings church={church} />
             </div>
           </div>
 
