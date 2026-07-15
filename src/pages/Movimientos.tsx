@@ -169,6 +169,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           <LoadingState />
         ) : (
           <>
+            <div className="dash-canvas">
             <div className="summary-4">
               <div className="stat-card">
                 <div className="stat-head">
@@ -197,6 +198,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   </div>
                 );
               })}
+            </div>
             </div>
 
             {recurrentes.length > 0 && (
