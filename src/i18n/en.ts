@@ -578,7 +578,19 @@ export const en: Resources = {
     reporteMiembros: "Membership reports",
     agenda: "Agenda & calendar",
     bandeja: "Inbox",
+    inbox: "Inbox",
+    porRevisar: "Pending review",
     configuracion: "Settings",
+  },
+
+  mensajes: {
+    titulo: "Inbox",
+    sub: "Communication between treasury and secretariat",
+    vacioTitulo: "No messages yet",
+    vacioSub: "Write the first message to report an error or coordinate something.",
+    placeholder: "Type a message…",
+    enviar: "Send",
+    enviado: "Message sent",
   },
 
   membresia: {

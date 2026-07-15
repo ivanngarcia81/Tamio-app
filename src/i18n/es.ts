@@ -572,7 +572,19 @@ export const es = {
     reporteMiembros: "Informes de membresía",
     agenda: "Agenda y calendario",
     bandeja: "Bandeja",
+    inbox: "Mensajes",
+    porRevisar: "Por revisar",
     configuracion: "Configuración",
+  },
+
+  mensajes: {
+    titulo: "Mensajes",
+    sub: "Comunicación entre tesorería y secretaría",
+    vacioTitulo: "No hay mensajes todavía",
+    vacioSub: "Escribe el primer mensaje para avisar de un error o coordinar algo.",
+    placeholder: "Escribe un mensaje…",
+    enviar: "Enviar",
+    enviado: "Mensaje enviado",
   },
 
   membresia: {

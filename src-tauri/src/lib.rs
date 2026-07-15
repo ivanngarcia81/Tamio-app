@@ -476,6 +476,21 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_agenda_church_fecha ON agenda(church_id, fecha);
         "#,
+    }, Migration {
+        version: 22,
+        description: "mensajes internos entre tesorería y secretaría",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS mensajes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                de_rol TEXT NOT NULL,
+                cuerpo TEXT NOT NULL,
+                leido INTEGER NOT NULL DEFAULT 0,
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_mensajes_church ON mensajes(church_id, id);
+        "#,
     }]
 }
 

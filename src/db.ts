@@ -2298,6 +2298,52 @@ export async function listMembersRoster(churchId: number): Promise<{ id: number;
   );
 }
 
+// ---------- Mensajes internos (tesorería ↔ secretaría) ----------
+
+export interface Mensaje {
+  id: number;
+  church_id: number;
+  /** Rol que envió el mensaje: "tesorero" | "secretaria". */
+  de_rol: string;
+  cuerpo: string;
+  leido: number;
+  creado_en: string;
+}
+
+export async function listMensajes(churchId: number): Promise<Mensaje[]> {
+  const d = await getDb();
+  return d.select<Mensaje[]>(
+    "SELECT * FROM mensajes WHERE church_id = $1 ORDER BY id ASC",
+    [churchId]
+  );
+}
+
+export async function insertMensaje(churchId: number, deRol: string, cuerpo: string): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "INSERT INTO mensajes (church_id, de_rol, cuerpo) VALUES ($1, $2, $3)",
+    [churchId, deRol, cuerpo.trim()]
+  );
+}
+
+/** Marca como leídos los mensajes que recibió `paraRol` (los que NO envió él). */
+export async function marcarMensajesLeidos(churchId: number, paraRol: string): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE mensajes SET leido = 1 WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
+    [churchId, paraRol]
+  );
+}
+
+export async function countMensajesNoLeidos(churchId: number, paraRol: string): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    "SELECT count(*) AS n FROM mensajes WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
+    [churchId, paraRol]
+  );
+  return rows[0]?.n ?? 0;
+}
+
 // ---------- Agenda y calendarios ----------
 
 /** Catálogo de tipos de actividad (clave estable; la etiqueta la resuelve i18n). */

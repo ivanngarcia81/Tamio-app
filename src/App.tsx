@@ -17,9 +17,10 @@ import Cartas from "./pages/Cartas";
 import InformesMembresia from "./pages/InformesMembresia";
 import Agenda from "./pages/Agenda";
 import Bandeja from "./pages/Bandeja";
+import Mensajes from "./pages/Mensajes";
 import Configuracion from "./pages/Configuracion";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
-import { countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
+import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import "./styles.css";
@@ -56,6 +57,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
   // sin necesidad de recargar la app cuando el usuario lo cambia en macOS/
@@ -91,7 +93,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   useEffect(() => {
     listMembers(church.id).then((m) => setMemberCount(m.length)).catch(() => {});
     countPendingTx(church.id).then(setPendingCount).catch(() => {});
-  }, [church.id, refreshKey]);
+    countMensajesNoLeidos(church.id, role).then(setUnreadCount).catch(() => {});
+  }, [church.id, refreshKey, role]);
 
   const onSaved = useCallback(() => setRefreshKey((k) => k + 1), []);
   const onChanged = onSaved; // editar/eliminar fuera del modal también dispara el mismo refresh global
@@ -119,7 +122,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   return (
     <div className="app">
-      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} role={role} />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} />
       <main className="main">
         <Routes>
           <Route
@@ -217,6 +220,10 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             }
           />
           <Route path="/agenda" element={<Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />} />
+          <Route
+            path="/inbox"
+            element={<Mensajes church={church} role={role} refreshKey={refreshKey} onChanged={onChanged} />}
+          />
           <Route
             path="/bandeja"
             element={guard("/bandeja",

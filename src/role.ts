@@ -28,9 +28,10 @@ export function puedeVer(role: Role, path: string): boolean {
   if (role === "tesorero") return true;
   if (path === "/") return true;               // Home (con contenido secretarial)
   if (RUTAS_SECRETARIA.includes(path)) return true;
+  if (path === "/inbox") return true;          // mensajería (ambos roles)
   if (path === "/reportes") return true;       // único acceso a Tesorería
   if (path === "/configuracion") return true;  // ajustes básicos
-  return false; // Ingresos, Gastos, Contribuyentes, Depósitos, Bandeja
+  return false; // Ingresos, Gastos, Contribuyentes, Depósitos, Por revisar
 }
 
 /** Página inicial según el rol. */

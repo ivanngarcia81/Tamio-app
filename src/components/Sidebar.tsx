@@ -14,6 +14,7 @@ interface Props {
   church: Church;
   memberCount: number;
   pendingCount: number;
+  unreadCount: number;
   role: Role;
 }
 
@@ -69,7 +70,7 @@ function Grupo({ abierto, etiqueta, onToggle, children }: {
   );
 }
 
-export default function Sidebar({ church, memberCount, pendingCount, role }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
   // La secretaria solo ve Secretaría + el Reporte de Tesorería (sin Home
@@ -165,7 +166,8 @@ export default function Sidebar({ church, memberCount, pendingCount, role }: Pro
       </nav>
 
       <div className="sidebar-footer">
-        {!esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.bandeja")} badge={pendingCount} />}
+        <Item to="/inbox" icon={<IconMail />} label={t("nav.inbox")} badge={unreadCount} />
+        {!esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />
       </div>
     </aside>
