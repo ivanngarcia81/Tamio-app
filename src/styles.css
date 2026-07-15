@@ -1069,7 +1069,7 @@ a { color: inherit; text-decoration: none; }
 /* Data table (structured) */
 .data-table {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-rest);
   overflow: hidden;
@@ -1093,7 +1093,7 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase;
   letter-spacing: var(--track-caps);
   font-weight: 700;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--field-border);
   position: sticky;
   top: 0;
   z-index: 2;
