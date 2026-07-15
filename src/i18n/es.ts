@@ -909,7 +909,7 @@ export const es = {
   },
 
   cartas: {
-    tab: { resumen: "Resumen", nueva: "Nueva carta", archivo: "Archivo" },
+    tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
     nuevaCarta: "Nueva carta",
     guardarBorrador: "Guardar borrador",
     cardPreparacion: "En preparación",
