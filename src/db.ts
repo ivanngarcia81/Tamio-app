@@ -2335,6 +2335,11 @@ export async function marcarMensajesLeidos(churchId: number, paraRol: string): P
   );
 }
 
+export async function deleteMensaje(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM mensajes WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
 export async function countMensajesNoLeidos(churchId: number, paraRol: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(

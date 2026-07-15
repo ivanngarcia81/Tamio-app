@@ -2828,3 +2828,18 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
 }
 .msg-composer .form-textarea { flex: 1; resize: none; min-height: 44px; }
+
+.msg-del {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0;
+  display: inline-grid;
+  place-items: center;
+  padding: 1px;
+  border-radius: 4px;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+.msg-bubble:hover .msg-del { opacity: 0.55; }
+.msg-del:hover { opacity: 1; background: rgba(127,127,127,0.18); }

@@ -591,6 +591,10 @@ export const en: Resources = {
     placeholder: "Type a message…",
     enviar: "Send",
     enviado: "Message sent",
+    eliminar: "Delete message",
+    eliminado: "Message deleted",
+    eliminarTitulo: "Delete message",
+    eliminarMensaje: "Delete this message? This cannot be undone.",
   },
 
   membresia: {

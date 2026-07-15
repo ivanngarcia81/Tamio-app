@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  fmtRelativo, insertMensaje, listMensajes, marcarMensajesLeidos,
+  deleteMensaje, fmtRelativo, insertMensaje, listMensajes, marcarMensajesLeidos,
   type Church, type Mensaje,
 } from "../db";
 import type { Role } from "../role";
 import LoadingState from "../components/LoadingState";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { EmptyState } from "../components/TxList";
-import { IconMail } from "../icons";
+import { IconClose, IconMail } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 
@@ -24,6 +25,7 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
   const [loading, setLoading] = useState(true);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Mensaje | null>(null);
   const finRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -50,6 +52,17 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
 
   function nombreRol(r: string): string {
     return t(`rol.${r === "secretaria" ? "secretaria" : "tesorero"}`);
+  }
+
+  async function confirmarBorrar() {
+    if (!pendingDelete) return;
+    await deleteMensaje(pendingDelete.id, church.id);
+    setPendingDelete(null);
+    playSound("eliminar");
+    showToast(t("mensajes.eliminado"));
+    const rows = await listMensajes(church.id);
+    setMensajes(rows);
+    onChanged();
   }
 
   async function enviar() {
@@ -101,6 +114,11 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
                         <div className="msg-meta">
                           <span className="msg-autor">{nombreRol(m.de_rol)}</span>
                           <span className="msg-fecha">{fmtRelativo(m.creado_en)}</span>
+                          {propio && (
+                            <button className="msg-del" aria-label={t("mensajes.eliminar")} title={t("mensajes.eliminar")} onClick={() => setPendingDelete(m)}>
+                              <IconClose size={12} strokeWidth={2.4} />
+                            </button>
+                          )}
                         </div>
                         <div className="msg-cuerpo">{m.cuerpo}</div>
                       </div>
@@ -129,6 +147,17 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
           </div>
         </div>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={t("mensajes.eliminarTitulo")}
+          message={t("mensajes.eliminarMensaje")}
+          confirmLabel={t("common.eliminar")}
+          danger
+          onConfirm={confirmarBorrar}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </>
   );
 }

@@ -585,6 +585,10 @@ export const es = {
     placeholder: "Escribe un mensaje…",
     enviar: "Enviar",
     enviado: "Mensaje enviado",
+    eliminar: "Eliminar mensaje",
+    eliminado: "Mensaje eliminado",
+    eliminarTitulo: "Eliminar mensaje",
+    eliminarMensaje: "¿Seguro que deseas eliminar este mensaje? No se puede deshacer.",
   },
 
   membresia: {
