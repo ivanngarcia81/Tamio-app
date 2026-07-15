@@ -1746,6 +1746,22 @@ export async function hayPlantillasIniciales(churchId: number): Promise<boolean>
   return (rows[0]?.n ?? 0) > 0;
 }
 
+/** Elimina plantillas iniciales duplicadas conservando una por nombre
+ *  (la de menor id). Repara siembras dobles antiguas. */
+export async function dedupPlantillasIniciales(churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `DELETE FROM plantillas
+       WHERE church_id = $1 AND es_inicial = 1
+         AND id NOT IN (
+           SELECT MIN(id) FROM plantillas
+            WHERE church_id = $1 AND es_inicial = 1
+            GROUP BY nombre
+         )`,
+    [churchId]
+  );
+}
+
 // ---------- Traslados de salida ----------
 
 export interface TrasladoSalida {

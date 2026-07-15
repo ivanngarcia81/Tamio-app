@@ -1,6 +1,29 @@
+import { dedupPlantillasIniciales, hayPlantillasIniciales, insertPlantilla } from "../../db";
 import type { Church, Member, NewPlantilla } from "../../db";
 import i18n from "../../i18n";
 import { fmtFechaLarga } from "../print/printUtils";
+
+/** Guard por iglesia: evita que corridas concurrentes del efecto (React en
+ *  modo desarrollo invoca los efectos dos veces) siembren las plantillas dos
+ *  veces. Todas comparten la misma promesa. */
+const siembraEnProgreso = new Map<number, Promise<void>>();
+
+/** Siembra las plantillas iniciales una sola vez y elimina duplicados
+ *  (repara bases donde ya se sembraron dos veces). */
+export function asegurarPlantillasIniciales(churchId: number): Promise<void> {
+  const existente = siembraEnProgreso.get(churchId);
+  if (existente) return existente;
+  const tarea = (async () => {
+    if (!(await hayPlantillasIniciales(churchId))) {
+      for (const p of plantillasIniciales()) {
+        await insertPlantilla(churchId, p, true);
+      }
+    }
+    await dedupPlantillasIniciales(churchId);
+  })();
+  siembraEnProgreso.set(churchId, tarea);
+  return tarea;
+}
 
 /** Catálogo de variables. Sintaxis interna {{clave}}, etiquetas legibles en
  *  la UI (plantillas.variable.*). */

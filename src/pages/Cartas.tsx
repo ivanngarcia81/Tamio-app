@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { useTranslation } from "react-i18next";
 import {
   deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
-  estadoAnteriorDeHistorial, fmtFechaCorta, hayPlantillasIniciales, insertCarta, insertPlantilla,
+  estadoAnteriorDeHistorial, fmtFechaCorta, insertCarta,
   listCartas, listMembersRegistro, listPlantillas, listSolicitudes, listTrasladosEntrada,
   listTrasladosSalida, updateCarta, updatePlantilla, updateSolicitud, updateTrasladoEntrada,
   updateTrasladoSalida, vincularCartaSolicitud,
@@ -10,7 +10,7 @@ import {
   type NewTrasladoEntrada, type NewTrasladoSalida, type Plantilla, type Solicitud,
   type TrasladoEntrada, type TrasladoSalida,
 } from "../db";
-import { plantillasIniciales } from "../services/cartas/plantillas";
+import { asegurarPlantillasIniciales } from "../services/cartas/plantillas";
 import { EmptyState } from "../components/TxList";
 import RowMenu, { type RowMenuItem } from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -135,12 +135,9 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     let cancelado = false;
     setLoading(true);
     (async () => {
-      // Las 11 plantillas iniciales se siembran una sola vez (idempotente).
-      if (!(await hayPlantillasIniciales(church.id))) {
-        for (const p of plantillasIniciales()) {
-          await insertPlantilla(church.id, p, true);
-        }
-      }
+      // Siembra idempotente + limpieza de duplicados (blindada contra
+      // corridas concurrentes del efecto en modo desarrollo).
+      await asegurarPlantillasIniciales(church.id);
       const [nuevasCartas, nuevasSolicitudes, nuevosTS, nuevosTE, nuevasPlantillas, nuevosMembers] = await Promise.all([
         listCartas(church.id),
         listSolicitudes(church.id),
