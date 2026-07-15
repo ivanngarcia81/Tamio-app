@@ -594,7 +594,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 items.length === 0 ? null : (
                   <div key={clave} className="agenda-grupo">
                     <div className="agenda-grupo-titulo">{t(`agenda.${clave}`)} <span className="agenda-grupo-n">{items.length}</span></div>
-                    {items.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
+                    <div className="data-table">
+                      {items.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
+                    </div>
                   </div>
                 )
               ))}
@@ -607,7 +609,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           ) : (
             <div className="agenda-grupo">
               <div className="agenda-grupo-titulo">{t("agenda.historialTitulo")} <span className="agenda-grupo-n">{historial.length}</span></div>
-              {historial.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
+              <div className="data-table">
+                {historial.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
+              </div>
             </div>
           )
         )}

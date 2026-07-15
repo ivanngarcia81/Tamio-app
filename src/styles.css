@@ -2632,6 +2632,18 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.12s ease, border-color 0.12s ease;
 }
 .agenda-fila:hover { background: var(--surface-2); border-color: var(--line); }
+/* Cuando las filas van dentro de la "hoja" de tabla (vistas Lista e
+   Historial de la Agenda), pierden su borde individual y se separan con
+   el mismo divisor sutil que las demás tablas. Solo aplica dentro de
+   .data-table, así el panel de Inicio Secretaría no se ve afectado. */
+.data-table .agenda-fila {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--line-soft);
+}
+.data-table .agenda-fila:last-child { border-bottom: none; }
+.data-table .agenda-fila:hover { background: var(--surface-2); }
 .agenda-fila-fecha {
   width: 96px;
   flex-shrink: 0;
