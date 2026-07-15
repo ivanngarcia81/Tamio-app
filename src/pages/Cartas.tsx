@@ -461,6 +461,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           <LoadingState />
         ) : tab === "resumen" ? (
           <>
+            <div className="dash-canvas">
             <div className="summary-4 enter">
               <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
@@ -490,6 +491,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   {trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}
                 </div>
               </button>
+            </div>
             </div>
 
             <div style={{ display: "flex", gap: 8, marginTop: 14 }}>

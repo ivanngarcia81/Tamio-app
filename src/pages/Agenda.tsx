@@ -422,6 +422,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
+        <div className="dash-canvas">
         <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           <div className="stat-card accent" style={accent("var(--accent-3)")}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
@@ -439,6 +440,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
             <div className="stat-value md">{stats.porConfirmar}</div>
           </div>
+        </div>
         </div>
 
         {!loading && !vacio && recordatorios.length > 0 && (

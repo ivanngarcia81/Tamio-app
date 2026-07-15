@@ -134,6 +134,7 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
       </div>
 
       <div className="content">
+        <div className="dash-canvas">
         <div className="summary-4 enter">
           <div className="stat-card accent" style={accent("var(--accent-2)")}>
             <div className="stat-head">
@@ -163,6 +164,7 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
             </div>
             <div className="stat-value md">{stats?.total ?? "—"}</div>
           </div>
+        </div>
         </div>
 
         <div className="tx-head">

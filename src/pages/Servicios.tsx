@@ -103,6 +103,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
+        <div className="dash-canvas">
         <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
           <div className="stat-card accent" style={accent("var(--accent-4)")}>
             <div className="stat-head">
@@ -125,6 +126,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             </div>
             <div className="stat-value md">{statsMes.visitantes}</div>
           </div>
+        </div>
         </div>
 
         <div className="tx-head">
