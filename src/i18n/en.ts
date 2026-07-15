@@ -1666,6 +1666,21 @@ export const en: Resources = {
     titulo: "Role (preview)",
     sub: "Temporary until login is available",
     hint: "The treasurer sees everything. The secretary only sees Secretariat and the Treasury Report. Once login is added, the role will come from the signed-in user.",
+    tituloSesion: "Session",
+    subSesion: "Your role is assigned by the administrator",
+  },
+
+  login: {
+    sub: "Sign in to continue",
+    email: "Email",
+    password: "Password",
+    entrar: "Sign in",
+    entrando: "Signing in…",
+    error: "Incorrect email or password.",
+    cargando: "Loading…",
+    salir: "Sign out",
+    sinRolTitulo: "Your account has no role assigned",
+    sinRolSub: "Ask the administrator to assign a role to {{email}}.",
   },
 
   inicioSec: {

@@ -1673,6 +1673,21 @@ export const es = {
     titulo: "Rol (vista previa)",
     sub: "Provisional hasta que exista inicio de sesión",
     hint: "El tesorero ve todo. La secretaria ve solo Secretaría y el Reporte de Tesorería. Cuando se agregue el inicio de sesión, el rol vendrá del usuario que entra.",
+    tituloSesion: "Sesión",
+    subSesion: "Tu rol lo asigna el administrador",
+  },
+
+  login: {
+    sub: "Inicia sesión para continuar",
+    email: "Correo",
+    password: "Contraseña",
+    entrar: "Entrar",
+    entrando: "Entrando…",
+    error: "Correo o contraseña incorrectos.",
+    cargando: "Cargando…",
+    salir: "Cerrar sesión",
+    sinRolTitulo: "Tu cuenta no tiene un rol asignado",
+    sinRolSub: "Pídele al administrador que asigne un rol a {{email}}.",
   },
 
   inicioSec: {

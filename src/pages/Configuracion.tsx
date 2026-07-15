@@ -31,6 +31,9 @@ interface Props {
   onLangPrefChange: (pref: LangPref) => void;
   role: Role;
   onRoleChange: (r: Role) => void;
+  authActivo: boolean;
+  sesionEmail: string | null;
+  onSalir: () => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,6 +41,7 @@ const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
 export default function Configuracion({
   church, onChurchUpdated, themePref, onThemePrefChange, langPref, onLangPrefChange, role, onRoleChange,
+  authActivo, sesionEmail, onSalir,
 }: Props) {
   const { t } = useTranslation();
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
@@ -222,7 +226,7 @@ export default function Configuracion({
                 tesoreroCargo={treasurerForm.cargo}
               />
 
-              <RoleSettings value={role} onChange={onRoleChange} />
+              <RoleSettings value={role} onChange={onRoleChange} authActivo={authActivo} sesionEmail={sesionEmail} onSalir={onSalir} />
 
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 

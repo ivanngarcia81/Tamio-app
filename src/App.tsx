@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import ToastHost from "./components/ToastHost";
@@ -23,6 +24,9 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
+import { authHabilitado } from "./supabase";
+import { useSupabaseAuth } from "./auth";
+import Login from "./components/Login";
 import "./styles.css";
 
 function initialThemePref(): ThemePref {
@@ -48,16 +52,21 @@ function esPrimerArranque(church: Church): boolean {
 }
 
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
+  const { t } = useTranslation();
   const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
-  const [role, setRole] = useState<Role>(initialRole);
+  const [rolManual, setRolManual] = useState<Role>(initialRole);
   const [showWelcome, setShowWelcome] = useState(() => esPrimerArranque(church));
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Con login activo el rol viene del servidor; sin login, del selector manual.
+  const { estado: authEstado, salir } = useSupabaseAuth();
+  const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
 
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
   // sin necesidad de recargar la app cuando el usuario lo cambia en macOS/
@@ -114,11 +123,30 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);
-  const onRoleChange = useCallback((r: Role) => { setRole(r); saveRole(r); }, []);
+  const onRoleChange = useCallback((r: Role) => { setRolManual(r); saveRole(r); }, []);
 
   // Bloquea una ruta según el rol (redirige al inicio permitido).
   const guard = (path: string, element: ReactNode) =>
     puedeVer(role, path) ? element : <Navigate to={HOME_POR_ROL[role]} replace />;
+
+  // Puerta de autenticación (solo si hay credenciales de Supabase configuradas).
+  if (authHabilitado) {
+    if (authEstado.cargando) {
+      return <div className="login-screen"><div className="login-cargando">{t("login.cargando")}</div></div>;
+    }
+    if (!authEstado.autenticado) return <Login />;
+    if (authEstado.sinRol) {
+      return (
+        <div className="login-screen">
+          <div className="login-card" style={{ textAlign: "center" }}>
+            <div className="login-title">{t("login.sinRolTitulo")}</div>
+            <div className="login-sub">{t("login.sinRolSub", { email: authEstado.email ?? "" })}</div>
+            <button className="btn secondary login-btn" onClick={salir}>{t("login.salir")}</button>
+          </div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="app">
@@ -242,6 +270,9 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onLangPrefChange={setLangPref}
                 role={role}
                 onRoleChange={onRoleChange}
+                authActivo={authHabilitado}
+                sesionEmail={authEstado.email}
+                onSalir={salir}
               />
             }
           />
