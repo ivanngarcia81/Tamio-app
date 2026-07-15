@@ -433,6 +433,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             <EmptyState titulo={t("informes.vacioTitulo")} sub={t("informes.vacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
           ) : (
             <div className="enter">
+              <div className="dash-canvas">
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
                 <Distrib titulo={t("informes.distEstado")} items={distEstado} etiqueta={(k) => t(`membresia.estado.${k}`)} />
                 <Distrib titulo={t("informes.distMinisterio")} items={distMinisterio} etiqueta={(k) => (MINISTERIOS.includes(k as typeof MINISTERIOS[number]) ? t(`ficha.ministerio.${k}`) : k)} />
@@ -440,7 +441,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               </div>
 
               {/* Nuevos por mes en el periodo */}
-              <div className="card" style={{ marginTop: 16 }}>
+              <div className="card">
                 <div className="card-head"><span className="card-title">{t("informes.nuevosPorMes")}</span></div>
                 {nuevosPorMes.length === 0 ? (
                   <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
@@ -455,6 +456,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     ))}
                   </div>
                 )}
+              </div>
               </div>
 
               {/* Movimientos de membresía */}
@@ -529,7 +531,8 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           )
         ) : vista === "miembros" ? (
           <>
-            {/* Tarjetas de resumen clicables */}
+            {/* Tarjetas de resumen clicables — agrupadas en el lienzo. */}
+            <div className="dash-canvas">
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
               {tarjetas.map((c) => (
                 <button
@@ -543,6 +546,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                   <div className="stat-value md">{c.valor}</div>
                 </button>
               ))}
+            </div>
             </div>
 
             {/* Filtros combinables */}
@@ -640,7 +644,8 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           <EmptyState titulo={t("informes.asistVacioTitulo")} sub={t("informes.asistVacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
         ) : (
           <>
-            {/* Indicadores generales de asistencia */}
+            {/* Indicadores generales + destacados: panel de resumen. */}
+            <div className="dash-canvas">
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("informes.totalServicios")}</span></div>
@@ -661,7 +666,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             </div>
 
             {/* Mejores asistencias + sin asistir recientemente */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, marginTop: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
               <div className="card">
                 <div className="card-head"><span className="card-title">{t("informes.mejoresTitulo")}</span></div>
                 {mejores.length === 0 ? (
@@ -690,6 +695,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                   </div>
                 ))}
               </div>
+            </div>
             </div>
 
             {/* Asistencia por miembro */}

@@ -182,6 +182,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
       <div className="content">
         {loading ? <LoadingState /> : <>
+        <div className="dash-canvas">
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
@@ -269,6 +270,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               </div>
             )}
           </div>
+        </div>
         </div>
 
         <div className="report-preview">

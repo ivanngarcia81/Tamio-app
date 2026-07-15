@@ -90,7 +90,7 @@ export default function InicioSecretaria({ church, refreshKey }: Props) {
         {loading ? (
           <LoadingState />
         ) : (
-          <>
+          <div className="dash-canvas">
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
               <div className="stat-card accent" style={accent("var(--accent-1)")}>
                 <div className="stat-head">
@@ -169,7 +169,7 @@ export default function InicioSecretaria({ church, refreshKey }: Props) {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </>
