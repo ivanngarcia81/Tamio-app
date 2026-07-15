@@ -55,6 +55,9 @@
   --fs-stat-sm: 22px;
   --lh-tight: 1.1;
   /* Sombras del sistema */
+  /* Sombra en reposo, apenas perceptible: da definición a tarjetas de
+     resumen y a la "hoja" de las tablas sobre el fondo, sin recargar. */
+  --shadow-rest: 0 1px 3px rgba(0,0,0,0.06);
   --shadow-hover: 0 10px 28px rgba(0,0,0,.05);
   --shadow-hover-dark: 0 10px 28px rgba(0,0,0,.28);
   --shadow-modal: 0 30px 80px rgba(0,0,0,.28);
@@ -78,6 +81,7 @@
   --ink-contrast: #0b0b0c;
   --stripe: rgba(255,255,255,0.018);
   --line-soft: #2a2b2e;
+  --shadow-rest: 0 1px 3px rgba(0,0,0,0.28);
   /* En oscuro: verde/rojo más luminosos para contraste, y fondos suaves
      translúcidos (tinte) en vez de pasteles claros que brillarían. */
   --pos: #34d399;
@@ -520,6 +524,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-rest);
   padding: 20px 22px 18px;
   display: flex;
   flex-direction: column;
@@ -1056,6 +1061,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-rest);
   overflow: hidden;
   overflow-x: auto;
 }
