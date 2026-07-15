@@ -19,7 +19,7 @@ function fileNameFromPath(path: string): string {
 export type ModalTab = "ingreso" | "gasto" | "miembro";
 
 export type ModalMode =
-  | { kind: "create"; tab: ModalTab }
+  | { kind: "create"; tab: ModalTab; bloquearPestana?: boolean }
   | { kind: "editTx"; tx: Tx }
   | { kind: "editMember"; member: Member };
 
@@ -41,6 +41,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const { t } = useTranslation();
   useEscapeClose(onClose);
   const isEdit = mode.kind !== "create";
+  // Cuando se abre desde Membresía (Secretaría) la pestaña queda fija en
+  // "miembro" y no se muestran Ingreso/Gasto (no aplican a su rol).
+  const pestanaBloqueada = mode.kind === "create" && mode.bloquearPestana === true;
   const initialTab: ModalTab =
     mode.kind === "create" ? mode.tab : mode.kind === "editTx" ? mode.tx.tipo : "miembro";
 
@@ -329,7 +332,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         </div>
 
         <div className="modal-body">
-          {!isEdit && (
+          {!isEdit && !pestanaBloqueada && (
             <div className="tabs-segmented">
               <div className={`seg${tab === "ingreso" ? " active" : ""}`} onClick={() => setTab("ingreso")}>
                 <IconArrowUp size={14} strokeWidth={2.2} /> {t("recordModal.segIngreso")}
