@@ -7,7 +7,7 @@ import {
   insertMovimientoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
-import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconMiembros, IconRepeat, IconWarn } from "../icons";
+import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -339,9 +339,6 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               </div>
               <div className={`seg${tab === "gasto" ? " active" : ""}`} onClick={() => setTab("gasto")}>
                 <IconArrowDown size={14} strokeWidth={2.2} /> {t("recordModal.segGasto")}
-              </div>
-              <div className={`seg${tab === "miembro" ? " active" : ""}`} onClick={() => setTab("miembro")}>
-                <IconMiembros size={14} strokeWidth={2.2} /> {t("recordModal.segMiembro")}
               </div>
             </div>
           )}
