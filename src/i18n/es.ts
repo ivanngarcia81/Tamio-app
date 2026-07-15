@@ -180,6 +180,10 @@ export const es = {
 
   miembros: {
     titulo: "Aportantes",
+    statTotal: "Aportantes",
+    statDiezmadores: "Diezmadores",
+    statAportaronAnio: "Aportaron este año",
+    statTotalAnio: "Total del año",
     activos_one: "{{count}} persona registrada",
     activos_other: "{{count}} personas registradas",
     importarCsv: "Importar CSV",

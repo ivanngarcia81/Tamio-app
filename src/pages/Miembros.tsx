@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
@@ -122,6 +122,19 @@ export default function Miembros({ church, refreshKey, onEdit, onChanged }: Prop
     });
   }
 
+  // Resumen calculado a partir de los datos ya cargados (sin consultas nuevas).
+  const resumen = useMemo(() => {
+    let diezmadores = 0, aportaron = 0, totalAnio = 0;
+    for (const m of members) {
+      let ets: string[] = [];
+      try { ets = JSON.parse(m.etiquetas); } catch { /* noop */ }
+      if (ets.includes("diezmador")) diezmadores++;
+      const s = stats[m.id];
+      if (s?.totalAnio) { aportaron++; totalAnio += s.totalAnio; }
+    }
+    return { total: members.length, diezmadores, aportaron, totalAnio };
+  }, [members, stats]);
+
   const q = query.trim().toLowerCase();
   const visibles = q
     ? members.filter(
@@ -149,6 +162,29 @@ export default function Miembros({ church, refreshKey, onEdit, onChanged }: Prop
       </div>
 
       <div className="content">
+        {!loading && (
+          <div className="dash-canvas">
+            <div className="summary-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
+                <div className="stat-value md">{resumen.total}</div>
+              </div>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("miembros.statDiezmadores")}</span></div>
+                <div className="stat-value md">{resumen.diezmadores}</div>
+              </div>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("miembros.statAportaronAnio")}</span></div>
+                <div className="stat-value md">{resumen.aportaron}</div>
+              </div>
+              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
+                <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
+                <div className="stat-value md">{fmtMoney(resumen.totalAnio)}<span className="stat-cur">{church.moneda}</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="tx-head">
           <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
             <IconSearch size={15} strokeWidth={2} />

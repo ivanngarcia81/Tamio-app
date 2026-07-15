@@ -186,6 +186,10 @@ export const en: Resources = {
 
   miembros: {
     titulo: "Contributors",
+    statTotal: "Contributors",
+    statDiezmadores: "Tithers",
+    statAportaronAnio: "Gave this year",
+    statTotalAnio: "Year total",
     activos_one: "{{count}} person on file",
     activos_other: "{{count}} people on file",
     importarCsv: "Import CSV",
