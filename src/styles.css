@@ -1170,10 +1170,15 @@ a { color: inherit; text-decoration: none; }
 .report-item .r-title { font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
 .report-item .r-desc { font-size: 11.5px; color: var(--text-3); }
 
+/* Bloque principal del estado financiero: una sola tarjeta con borde algo
+   más presente que el resto y sombra suave. Solo de pantalla: el PDF se
+   genera con jsPDF a partir de los datos, no captura este DOM, así que la
+   tarjeta no aparece en el export. */
 .report-preview {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-rest);
   padding: 40px 44px;
 }
 .report-preview .r-head {
