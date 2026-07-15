@@ -14,34 +14,44 @@ interface Props {
   church: Church;
   /** null = actividad nueva. */
   actividad: Actividad | null;
+  /** Cuando se abre para duplicar: precarga los campos de esta actividad
+   *  pero guarda como una NUEVA (actividad debe ser null). */
+  duplicarDe?: Actividad | null;
   /** Fecha preseleccionada (YYYY-MM-DD) al crear desde una celda del calendario. */
   fechaInicial?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function ActividadModal({ church, actividad, fechaInicial, onClose, onSaved }: Props) {
+export default function ActividadModal({ church, actividad, duplicarDe, fechaInicial, onClose, onSaved }: Props) {
   const { t } = useTranslation();
   const editar = actividad !== null;
+  // Base de la que se toman los valores iniciales (edición o duplicado).
+  const base = actividad ?? duplicarDe ?? null;
 
-  const [nombre, setNombre] = useState(actividad?.nombre ?? "");
-  const [tipo, setTipo] = useState(actividad?.tipo ?? "cultoRegular");
-  const [tipoPersonalizado, setTipoPersonalizado] = useState(actividad?.tipo_personalizado ?? "");
-  const [fecha, setFecha] = useState(actividad?.fecha ?? fechaInicial ?? hoyISO());
-  const [diaCompleto, setDiaCompleto] = useState(actividad ? actividad.dia_completo === 1 : false);
-  const [horaInicio, setHoraInicio] = useState(actividad?.hora_inicio ?? "");
-  const [horaFin, setHoraFin] = useState(actividad?.hora_fin ?? "");
-  const [lugar, setLugar] = useState(actividad?.lugar ?? "");
-  const [descripcion, setDescripcion] = useState(actividad?.descripcion ?? "");
-  const [responsableMemberId, setResponsableMemberId] = useState<string>(
-    actividad?.responsable_member_id != null ? String(actividad.responsable_member_id) : ""
+  const [nombre, setNombre] = useState(
+    base ? (duplicarDe && !actividad ? `${base.nombre} ${t("agenda.sufijoCopia")}` : base.nombre) : ""
   );
-  const [responsablePersona, setResponsablePersona] = useState(actividad?.responsable_persona ?? "");
-  const [responsableMinisterio, setResponsableMinisterio] = useState(actividad?.responsable_ministerio ?? "");
-  const [invitado, setInvitado] = useState(actividad?.invitado ?? "");
-  const [contacto, setContacto] = useState(actividad?.contacto ?? "");
-  const [estado, setEstado] = useState(actividad?.estado ?? "programada");
-  const [esFechaImportante, setEsFechaImportante] = useState(actividad ? actividad.es_fecha_importante === 1 : false);
+  const [tipo, setTipo] = useState(base?.tipo ?? "cultoRegular");
+  const [tipoPersonalizado, setTipoPersonalizado] = useState(base?.tipo_personalizado ?? "");
+  const [fecha, setFecha] = useState(base?.fecha ?? fechaInicial ?? hoyISO());
+  const [diaCompleto, setDiaCompleto] = useState(base ? base.dia_completo === 1 : false);
+  const [horaInicio, setHoraInicio] = useState(base?.hora_inicio ?? "");
+  const [horaFin, setHoraFin] = useState(base?.hora_fin ?? "");
+  const [lugar, setLugar] = useState(base?.lugar ?? "");
+  const [descripcion, setDescripcion] = useState(base?.descripcion ?? "");
+  const [responsableMemberId, setResponsableMemberId] = useState<string>(
+    base?.responsable_member_id != null ? String(base.responsable_member_id) : ""
+  );
+  const [responsablePersona, setResponsablePersona] = useState(base?.responsable_persona ?? "");
+  const [responsableMinisterio, setResponsableMinisterio] = useState(base?.responsable_ministerio ?? "");
+  const [invitado, setInvitado] = useState(base?.invitado ?? "");
+  const [contacto, setContacto] = useState(base?.contacto ?? "");
+  // Al duplicar, la copia arranca como programada (no hereda "completada/cancelada").
+  const [estado, setEstado] = useState(
+    duplicarDe && !actividad ? "programada" : (base?.estado ?? "programada")
+  );
+  const [esFechaImportante, setEsFechaImportante] = useState(base ? base.es_fecha_importante === 1 : false);
 
   const [miembros, setMiembros] = useState<{ id: number; nombre: string }[]>([]);
   const [saving, setSaving] = useState(false);

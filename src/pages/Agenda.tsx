@@ -1,52 +1,68 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  currentMonth, deleteActividad, fmtFecha, fmtFechaCorta, hoyISO, listActividades, nextMonth, prevMonth,
+  ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, deleteActividad, fmtFecha, fmtFechaCorta, hoyISO,
+  listActividades, listMembersRoster, nextMonth, prevMonth, setEstadoActividad,
   type Actividad, type Church,
 } from "../db";
 import { EmptyState } from "../components/TxList";
-import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ActividadModal from "../components/ActividadModal";
+import ActividadDetalle from "../components/ActividadDetalle";
 import LoadingState from "../components/LoadingState";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
-import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus } from "../icons";
+import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
 
-type Vista = "mes" | "lista";
+type Vista = "mes" | "semana" | "lista";
+
+interface Filtros {
+  q: string;
+  tipo: string;
+  estado: string;
+  ministerio: string;
+  responsable: string;
+  desde: string;
+  hasta: string;
+}
+const FILTROS_VACIOS: Filtros = { q: "", tipo: "", estado: "", ministerio: "", responsable: "", desde: "", hasta: "" };
 
 function accent(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
 }
 
-/** Domingo de la semana en que comienza el mes → matriz de 6×7 fechas locales. */
-function matrizMes(yyyyMm: string): (string | null)[][] {
+function isoLocal(dt: Date): string {
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(iso: string, n: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return isoLocal(dt);
+}
+
+/** Domingo de la semana en que comienza el mes → matriz de fechas locales. */
+function matrizMes(yyyyMm: string): (string | null)[] {
   const [y, m] = yyyyMm.split("-").map(Number);
-  const primero = new Date(y, m - 1, 1);
   const diasEnMes = new Date(y, m, 0).getDate();
-  const offset = primero.getDay(); // 0 = domingo
+  const offset = new Date(y, m - 1, 1).getDay();
   const celdas: (string | null)[] = [];
   for (let i = 0; i < offset; i++) celdas.push(null);
   for (let d = 1; d <= diasEnMes; d++) {
     celdas.push(`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
   }
   while (celdas.length % 7 !== 0) celdas.push(null);
-  const semanas: (string | null)[][] = [];
-  for (let i = 0; i < celdas.length; i += 7) semanas.push(celdas.slice(i, i + 7));
-  return semanas;
+  return celdas;
 }
 
-/** Domingo (inicio) y sábado (fin) de la semana que contiene a `iso`. */
-function rangoSemana(iso: string): { desde: string; hasta: string } {
+/** Los 7 días (domingo→sábado) de la semana que contiene a `iso`. */
+function diasDeSemana(iso: string): string[] {
   const [y, m, d] = iso.split("-").map(Number);
   const base = new Date(y, m - 1, d);
-  const inicio = new Date(base);
-  inicio.setDate(base.getDate() - base.getDay());
-  const fin = new Date(inicio);
-  fin.setDate(inicio.getDate() + 6);
-  const iso2 = (dt: Date) =>
-    `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-  return { desde: iso2(inicio), hasta: iso2(fin) };
+  const dom = new Date(base);
+  dom.setDate(base.getDate() - base.getDay());
+  return Array.from({ length: 7 }, (_, i) => addDays(isoLocal(dom), i));
 }
 
 interface Props {
@@ -58,12 +74,13 @@ interface Props {
 export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
   const [actividades, setActividades] = useState<Actividad[]>([]);
+  const [miembros, setMiembros] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState<Vista>("mes");
-  const [mesCursor, setMesCursor] = useState(currentMonth());
-  const [modal, setModal] = useState<{ open: boolean; actividad: Actividad | null; fecha: string | null }>(
-    { open: false, actividad: null, fecha: null }
-  );
+  const [cursor, setCursor] = useState(hoyISO());
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS);
+  const [modal, setModal] = useState<{ actividad: Actividad | null; duplicarDe: Actividad | null; fecha: string | null } | null>(null);
+  const [detalle, setDetalle] = useState<Actividad | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Actividad | null>(null);
 
   const hoy = hoyISO();
@@ -71,70 +88,156 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    listActividades(church.id)
-      .then((rows) => { if (!cancelado) setActividades(rows); })
+    Promise.all([listActividades(church.id), listMembersRoster(church.id)])
+      .then(([rows, ms]) => {
+        if (cancelado) return;
+        setActividades(rows);
+        setMiembros(new Map(ms.map((m) => [m.id, m.nombre])));
+      })
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
     return () => { cancelado = true; };
   }, [church.id, refreshKey]);
-
-  const porFecha = useMemo(() => {
-    const mapa = new Map<string, Actividad[]>();
-    for (const a of actividades) {
-      const arr = mapa.get(a.fecha) ?? [];
-      arr.push(a);
-      mapa.set(a.fecha, arr);
-    }
-    return mapa;
-  }, [actividades]);
-
-  const stats = useMemo(() => {
-    const { desde, hasta } = rangoSemana(hoy);
-    const deHoy = actividades.filter((a) => a.fecha === hoy && a.estado !== "cancelada").length;
-    const deSemana = actividades.filter(
-      (a) => a.fecha >= desde && a.fecha <= hasta && a.estado !== "cancelada"
-    ).length;
-    const proximas = actividades.filter(
-      (a) => a.fecha >= hoy && a.estado !== "cancelada" && a.estado !== "completada"
-    ).length;
-    const porConfirmar = actividades.filter(
-      (a) => a.fecha >= hoy && (a.estado === "programada" || a.estado === "borrador")
-    ).length;
-    return { deHoy, deSemana, proximas, porConfirmar };
-  }, [actividades, hoy]);
-
-  const semanas = useMemo(() => matrizMes(mesCursor), [mesCursor]);
-  // fmtFecha da "Julio 2026" / "July 2026" respetando el idioma actual.
-  const tituloMes = useMemo(() => fmtFecha(`${mesCursor}-01`).mesAnio, [mesCursor]);
-
-  const diasSemana = t("agenda.diasSemana", { returnObjects: true }) as string[];
-
-  const proximas = useMemo(
-    () => actividades
-      .filter((a) => a.fecha >= hoy)
-      .sort((a, b) => (a.fecha === b.fecha
-        ? (a.hora_inicio ?? "").localeCompare(b.hora_inicio ?? "")
-        : a.fecha.localeCompare(b.fecha))),
-    [actividades, hoy]
-  );
-
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    await deleteActividad(pendingDelete.id, church.id);
-    setPendingDelete(null);
-    playSound("eliminar");
-    showToast(t("agenda.toastEliminada"));
-    onChanged();
-  }
 
   function etiquetaTipo(a: Actividad): string {
     if (a.tipo === "otra" && a.tipo_personalizado) return a.tipo_personalizado;
     return t(`agenda.tipos.${a.tipo}`);
   }
 
-  function abrirNueva(fecha: string | null) {
-    setModal({ open: true, actividad: null, fecha });
+  function nombreResponsable(a: Actividad): string | null {
+    if (a.responsable_member_id != null) return miembros.get(a.responsable_member_id) ?? null;
+    return a.responsable_persona || null;
   }
+
+  // ---- Filtros ----
+  const hayFiltros = useMemo(
+    () => Object.values(filtros).some((v) => v !== ""),
+    [filtros]
+  );
+
+  const ministeriosPresentes = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of actividades) if (a.responsable_ministerio) set.add(a.responsable_ministerio);
+    return [...set].sort((x, y) => x.localeCompare(y));
+  }, [actividades]);
+
+  const responsablesPresentes = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of actividades) {
+      const n = nombreResponsable(a);
+      if (n) set.add(n);
+    }
+    return [...set].sort((x, y) => x.localeCompare(y));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actividades, miembros]);
+
+  const filtradas = useMemo(() => {
+    const q = filtros.q.trim().toLowerCase();
+    return actividades.filter((a) => {
+      if (filtros.tipo && a.tipo !== filtros.tipo) return false;
+      if (filtros.estado && a.estado !== filtros.estado) return false;
+      if (filtros.ministerio && a.responsable_ministerio !== filtros.ministerio) return false;
+      if (filtros.responsable && nombreResponsable(a) !== filtros.responsable) return false;
+      if (filtros.desde && a.fecha < filtros.desde) return false;
+      if (filtros.hasta && a.fecha > filtros.hasta) return false;
+      if (q) {
+        const heno = [
+          a.nombre, nombreResponsable(a), a.lugar, a.responsable_ministerio, a.invitado, a.descripcion,
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!heno.includes(q)) return false;
+      }
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actividades, filtros, miembros]);
+
+  const porFecha = useMemo(() => {
+    const mapa = new Map<string, Actividad[]>();
+    for (const a of filtradas) {
+      const arr = mapa.get(a.fecha) ?? [];
+      arr.push(a);
+      mapa.set(a.fecha, arr);
+    }
+    for (const arr of mapa.values()) {
+      arr.sort((a, b) => (a.dia_completo !== b.dia_completo
+        ? (a.dia_completo ? -1 : 1)
+        : (a.hora_inicio ?? "").localeCompare(b.hora_inicio ?? "")));
+    }
+    return mapa;
+  }, [filtradas]);
+
+  // ---- Estadísticas (sobre el total real, no filtrado) ----
+  const stats = useMemo(() => {
+    const semana = diasDeSemana(hoy);
+    const iniSem = semana[0], finSem = semana[6];
+    return {
+      deHoy: actividades.filter((a) => a.fecha === hoy && a.estado !== "cancelada").length,
+      deSemana: actividades.filter((a) => a.fecha >= iniSem && a.fecha <= finSem && a.estado !== "cancelada").length,
+      proximas: actividades.filter((a) => a.fecha >= hoy && a.estado !== "cancelada" && a.estado !== "completada").length,
+      porConfirmar: actividades.filter((a) => a.fecha >= hoy && (a.estado === "programada" || a.estado === "borrador")).length,
+    };
+  }, [actividades, hoy]);
+
+  // ---- Navegación / títulos ----
+  const mesCursor = cursor.slice(0, 7);
+  const semanaDias = useMemo(() => diasDeSemana(cursor), [cursor]);
+  const diasSemana = t("agenda.diasSemana", { returnObjects: true }) as string[];
+
+  const titulo = useMemo(() => {
+    if (vista === "semana") {
+      return `${fmtFechaCorta(semanaDias[0])} – ${fmtFechaCorta(semanaDias[6])}`;
+    }
+    return fmtFecha(`${mesCursor}-01`).mesAnio;
+  }, [vista, semanaDias, mesCursor]);
+
+  function irAtras() {
+    setCursor((c) => (vista === "semana" ? addDays(c, -7) : `${prevMonth(c.slice(0, 7))}-01`));
+  }
+  function irAdelante() {
+    setCursor((c) => (vista === "semana" ? addDays(c, 7) : `${nextMonth(c.slice(0, 7))}-01`));
+  }
+
+  // ---- Próximas agrupadas (vista lista) ----
+  const grupos = useMemo(() => {
+    const manana = addDays(hoy, 1);
+    const finSemana = diasDeSemana(hoy)[6];
+    const upc = filtradas
+      .filter((a) => a.fecha >= hoy)
+      .sort((a, b) => (a.fecha === b.fecha
+        ? (a.hora_inicio ?? "").localeCompare(b.hora_inicio ?? "")
+        : a.fecha.localeCompare(b.fecha)));
+    return {
+      hoy: upc.filter((a) => a.fecha === hoy),
+      manana: upc.filter((a) => a.fecha === manana),
+      semana: upc.filter((a) => a.fecha > manana && a.fecha <= finSemana),
+      despues: upc.filter((a) => a.fecha > finSemana),
+    };
+  }, [filtradas, hoy]);
+
+  // ---- Acciones ----
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    await deleteActividad(pendingDelete.id, church.id);
+    setPendingDelete(null);
+    setDetalle(null);
+    playSound("eliminar");
+    showToast(t("agenda.toastEliminada"));
+    onChanged();
+  }
+
+  async function cambiarEstado(a: Actividad, nuevo: string) {
+    await setEstadoActividad(a.id, church.id, nuevo);
+    setDetalle(null);
+    playSound("guardado");
+    showToast(t("agenda.toastEstado"));
+    onChanged();
+  }
+
+  function abrirNueva(fecha: string | null) {
+    setModal({ actividad: null, duplicarDe: null, fecha });
+  }
+
+  const colToolbarVacia = actividades.length === 0;
 
   return (
     <>
@@ -182,40 +285,79 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           </div>
         </div>
 
+        {/* Filtros y búsqueda */}
+        {!colToolbarVacia && (
+          <div className="agenda-filtros">
+            <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
+              <IconSearch size={15} strokeWidth={2} />
+              <input
+                className="form-input"
+                placeholder={t("agenda.buscarPlaceholder")}
+                value={filtros.q}
+                onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))}
+              />
+            </div>
+            <select className="form-input sm" aria-label={t("agenda.filtrarTipo")} value={filtros.tipo} onChange={(e) => setFiltros((f) => ({ ...f, tipo: e.target.value }))}>
+              <option value="">{t("agenda.filtroTodosTipos")}</option>
+              {TIPOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.tipos.${k}`)}</option>)}
+            </select>
+            <select className="form-input sm" aria-label={t("agenda.filtrarEstado")} value={filtros.estado} onChange={(e) => setFiltros((f) => ({ ...f, estado: e.target.value }))}>
+              <option value="">{t("agenda.filtroTodosEstados")}</option>
+              {ESTADOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.estados.${k}`)}</option>)}
+            </select>
+            {ministeriosPresentes.length > 0 && (
+              <select className="form-input sm" aria-label={t("agenda.filtrarMinisterio")} value={filtros.ministerio} onChange={(e) => setFiltros((f) => ({ ...f, ministerio: e.target.value }))}>
+                <option value="">{t("agenda.filtroTodosMinisterios")}</option>
+                {ministeriosPresentes.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            )}
+            {responsablesPresentes.length > 0 && (
+              <select className="form-input sm" aria-label={t("agenda.filtrarResponsable")} value={filtros.responsable} onChange={(e) => setFiltros((f) => ({ ...f, responsable: e.target.value }))}>
+                <option value="">{t("agenda.filtroTodosResponsables")}</option>
+                {responsablesPresentes.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            )}
+            <input type="date" className="form-input sm" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
+            <input type="date" className="form-input sm" aria-label={t("agenda.rangoHasta")} value={filtros.hasta} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value }))} />
+            {hayFiltros && (
+              <button className="btn ghost sm" onClick={() => setFiltros(FILTROS_VACIOS)}>{t("agenda.limpiarFiltros")}</button>
+            )}
+          </div>
+        )}
+
         <div className="agenda-toolbar">
           <div className="agenda-nav">
-            <button className="icon-btn" aria-label={t("agenda.mesAnterior")} onClick={() => setMesCursor(prevMonth(mesCursor))}>
-              <IconChevronLeft size={16} />
-            </button>
-            <button className="btn secondary sm" onClick={() => setMesCursor(currentMonth())}>{t("agenda.hoy")}</button>
-            <button className="icon-btn" aria-label={t("agenda.mesSiguiente")} onClick={() => setMesCursor(nextMonth(mesCursor))}>
-              <IconChevronRight size={16} />
-            </button>
-            <span className="agenda-mes-titulo">{tituloMes}</span>
+            {vista !== "lista" && (
+              <>
+                <button className="icon-btn" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}>
+                  <IconChevronLeft size={16} />
+                </button>
+                <button className="btn secondary sm" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+                <button className="icon-btn" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}>
+                  <IconChevronRight size={16} />
+                </button>
+                <span className="agenda-mes-titulo">{titulo}</span>
+              </>
+            )}
           </div>
           <div className="chip-toggle" role="tablist" aria-label={t("agenda.cambiarVista")}>
-            <button
-              className={`chip ${vista === "mes" ? "active" : ""}`}
-              role="tab"
-              aria-selected={vista === "mes"}
-              onClick={() => setVista("mes")}
-            >
-              {t("agenda.vistaMes")}
-            </button>
-            <button
-              className={`chip ${vista === "lista" ? "active" : ""}`}
-              role="tab"
-              aria-selected={vista === "lista"}
-              onClick={() => setVista("lista")}
-            >
-              {t("agenda.vistaLista")}
-            </button>
+            {(["mes", "semana", "lista"] as Vista[]).map((v) => (
+              <button
+                key={v}
+                className={`chip ${vista === v ? "active" : ""}`}
+                role="tab"
+                aria-selected={vista === v}
+                onClick={() => setVista(v)}
+              >
+                {t(`agenda.vista${v === "mes" ? "Mes" : v === "semana" ? "Semana" : "Lista"}`)}
+              </button>
+            ))}
           </div>
         </div>
 
         {loading ? (
           <LoadingState />
-        ) : actividades.length === 0 ? (
+        ) : colToolbarVacia ? (
           <div className="agenda-vacio">
             <EmptyState
               icon={<IconCalendar size={22} strokeWidth={1.6} />}
@@ -227,35 +369,27 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
         ) : vista === "mes" ? (
           <div className="agenda-cal card">
             <div className="agenda-dow">
-              {diasSemana.map((d, i) => (
-                <div key={i} className="agenda-dow-cell">{d}</div>
-              ))}
+              {diasSemana.map((d, i) => <div key={i} className="agenda-dow-cell">{d}</div>)}
             </div>
             <div className="agenda-grid">
-              {semanas.flat().map((fecha, i) => {
+              {matrizMes(mesCursor).map((fecha, i) => {
                 if (!fecha) return <div key={i} className="agenda-cell empty" />;
-                const dia = Number(fecha.slice(8, 10));
                 const items = porFecha.get(fecha) ?? [];
-                const esHoy = fecha === hoy;
                 return (
                   <div
                     key={i}
-                    className={`agenda-cell${esHoy ? " today" : ""}`}
+                    className={`agenda-cell${fecha === hoy ? " today" : ""}`}
                     onClick={() => abrirNueva(fecha)}
                     role="button"
                     tabIndex={0}
                     aria-label={fmtFechaCorta(fecha)}
                     onKeyDown={(e) => { if (e.key === "Enter") abrirNueva(fecha); }}
                   >
-                    <div className="agenda-cell-num">{dia}</div>
+                    <div className="agenda-cell-num">{Number(fecha.slice(8, 10))}</div>
                     <div className="agenda-cell-items">
                       {items.slice(0, 3).map((a) => (
-                        <button
-                          key={a.id}
-                          className={`agenda-evt estado-${a.estado}`}
-                          title={etiquetaTipo(a)}
-                          onClick={(e) => { e.stopPropagation(); setModal({ open: true, actividad: a, fecha: null }); }}
-                        >
+                        <button key={a.id} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)}
+                          onClick={(e) => { e.stopPropagation(); setDetalle(a); }}>
                           {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
                           <span className="agenda-evt-nombre">{a.nombre}</span>
                         </button>
@@ -267,66 +401,97 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               })}
             </div>
           </div>
-        ) : proximas.length === 0 ? (
-          <EmptyState
-            icon={<IconCalendar size={22} strokeWidth={1.6} />}
-            titulo={t("agenda.sinProximas")}
-            sub={t("agenda.sinProximasSub")}
-          />
-        ) : (
-          <div className="data-table roomy">
-            <div className="thead" style={{ gridTemplateColumns: "130px 1.6fr 1fr 130px 110px 40px" }}>
-              <div className="th">{t("agenda.colFecha")}</div>
-              <div className="th">{t("agenda.colActividad")}</div>
-              <div className="th">{t("agenda.colResponsable")}</div>
-              <div className="th">{t("agenda.colLugar")}</div>
-              <div className="th">{t("agenda.colEstado")}</div>
-              <div className="th"></div>
-            </div>
-            {proximas.map((a) => (
-              <div
-                key={a.id}
-                className="tr"
-                style={{ gridTemplateColumns: "130px 1.6fr 1fr 130px 110px 40px", cursor: "pointer" }}
-                onClick={() => setModal({ open: true, actividad: a, fecha: null })}
-              >
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                  <div>{fmtFechaCorta(a.fecha)}</div>
-                  {!a.dia_completo && a.hora_inicio && (
-                    <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{a.hora_inicio}{a.hora_fin ? `–${a.hora_fin}` : ""}</div>
-                  )}
-                  {a.dia_completo && <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t("agenda.diaCompletoCorto")}</div>}
+        ) : vista === "semana" ? (
+          <div className="agenda-semana card">
+            {semanaDias.map((fecha) => {
+              const items = porFecha.get(fecha) ?? [];
+              const f = fmtFecha(fecha);
+              return (
+                <div key={fecha} className={`agenda-sem-col${fecha === hoy ? " today" : ""}`}>
+                  <button className="agenda-sem-head" onClick={() => abrirNueva(fecha)}>
+                    <span className="agenda-sem-dow">{f.nombreDia}</span>
+                    <span className="agenda-sem-num">{f.dia}</span>
+                  </button>
+                  <div className="agenda-sem-body">
+                    {items.length === 0 ? (
+                      <div className="agenda-sem-vacio">·</div>
+                    ) : items.map((a) => (
+                      <button key={a.id} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)} onClick={() => setDetalle(a)}>
+                        {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
+                        <span className="agenda-evt-nombre">{a.nombre}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="td" style={{ minWidth: 0 }}>
-                  <div className="p-name truncate">{a.nombre}</div>
-                  <div className="p-mail truncate">{etiquetaTipo(a)}</div>
-                </div>
-                <div className="td truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                  {a.responsable_persona || a.responsable_ministerio || "—"}
-                </div>
-                <div className="td truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{a.lugar || "—"}</div>
-                <div className="td">
-                  <span className={`tag estado-tag estado-${a.estado}`}>{t(`agenda.estados.${a.estado}`)}</span>
-                </div>
-                <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
-                  <RowMenu
-                    onEdit={() => setModal({ open: true, actividad: a, fecha: null })}
-                    onDelete={() => setPendingDelete(a)}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+        ) : (
+          // ---- Vista lista: próximas agrupadas ----
+          (grupos.hoy.length + grupos.manana.length + grupos.semana.length + grupos.despues.length) === 0 ? (
+            <EmptyState
+              icon={<IconCalendar size={22} strokeWidth={1.6} />}
+              titulo={hayFiltros ? t("agenda.sinResultados") : t("agenda.sinProximas")}
+              sub={hayFiltros ? t("agenda.sinResultadosSub") : t("agenda.sinProximasSub")}
+            />
+          ) : (
+            <div className="agenda-grupos">
+              {([
+                ["grupoHoy", grupos.hoy],
+                ["grupoManana", grupos.manana],
+                ["grupoEstaSemana", grupos.semana],
+                ["grupoProximamente", grupos.despues],
+              ] as [string, Actividad[]][]).map(([clave, items]) => (
+                items.length === 0 ? null : (
+                  <div key={clave} className="agenda-grupo">
+                    <div className="agenda-grupo-titulo">{t(`agenda.${clave}`)} <span className="agenda-grupo-n">{items.length}</span></div>
+                    {items.map((a) => (
+                      <button key={a.id} className="agenda-fila" onClick={() => setDetalle(a)}>
+                        <div className="agenda-fila-fecha">
+                          <div>{fmtFechaCorta(a.fecha)}</div>
+                          <div className="agenda-fila-hora">
+                            {a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ? `${a.hora_inicio}${a.hora_fin ? `–${a.hora_fin}` : ""}` : "—")}
+                          </div>
+                        </div>
+                        <div className="agenda-fila-main">
+                          <div className="agenda-fila-nombre">{a.nombre}</div>
+                          <div className="agenda-fila-meta">
+                            {etiquetaTipo(a)}
+                            {a.lugar && <> · {a.lugar}</>}
+                            {nombreResponsable(a) && <> · {nombreResponsable(a)}</>}
+                          </div>
+                        </div>
+                        <span className={`tag estado-tag estado-${a.estado}`}>{t(`agenda.estados.${a.estado}`)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )
+              ))}
+            </div>
+          )
         )}
       </div>
 
-      {modal.open && (
+      {modal && (
         <ActividadModal
           church={church}
           actividad={modal.actividad}
+          duplicarDe={modal.duplicarDe}
           fechaInicial={modal.fecha}
-          onClose={() => setModal({ open: false, actividad: null, fecha: null })}
+          onClose={() => setModal(null)}
           onSaved={onChanged}
+        />
+      )}
+
+      {detalle && (
+        <ActividadDetalle
+          actividad={detalle}
+          responsableNombre={nombreResponsable(detalle)}
+          onClose={() => setDetalle(null)}
+          onEditar={() => { setModal({ actividad: detalle, duplicarDe: null, fecha: null }); setDetalle(null); }}
+          onDuplicar={() => { setModal({ actividad: null, duplicarDe: detalle, fecha: null }); setDetalle(null); }}
+          onEliminar={() => setPendingDelete(detalle)}
+          onEstado={(nuevo) => cambiarEstado(detalle, nuevo)}
         />
       )}
 

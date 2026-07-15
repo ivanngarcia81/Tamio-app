@@ -2469,3 +2469,169 @@ a { color: inherit; text-decoration: none; }
   .agenda-evt-nombre { display: none; }
   .agenda-evt { justify-content: center; }
 }
+
+/* ---------- Agenda Fase 2: filtros, semana, lista agrupada, detalle ---------- */
+.form-input.sm {
+  padding: 7px 10px;
+  font-size: 12.5px;
+  height: auto;
+}
+.btn.ghost.danger { color: #dc2626; }
+
+.agenda-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.agenda-filtros .search-input-wrap { margin: 0; }
+.agenda-filtros .form-input.sm { width: auto; min-width: 130px; max-width: 200px; flex: 0 1 auto; }
+.agenda-filtros input[type="date"].form-input.sm { min-width: 150px; }
+
+/* Vista semanal */
+.agenda-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0;
+  overflow: hidden;
+}
+.agenda-sem-col {
+  border-right: 1px solid var(--line-soft);
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+.agenda-sem-col:last-child { border-right: none; }
+.agenda-sem-col.today { background: var(--surface-2); }
+.agenda-sem-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+.agenda-sem-head:hover { background: var(--surface-2); }
+.agenda-sem-dow {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.agenda-sem-num {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+.agenda-sem-col.today .agenda-sem-num { background: var(--ink); color: var(--ink-contrast); }
+.agenda-sem-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 5px;
+  flex: 1;
+}
+.agenda-sem-body .agenda-evt { white-space: normal; }
+.agenda-sem-body .agenda-evt .agenda-evt-nombre { white-space: normal; }
+.agenda-sem-vacio {
+  color: var(--text-3);
+  text-align: center;
+  font-size: 13px;
+  padding-top: 10px;
+  opacity: 0.5;
+}
+
+/* Vista lista: próximas agrupadas */
+.agenda-grupos { display: flex; flex-direction: column; gap: 20px; }
+.agenda-grupo { display: flex; flex-direction: column; gap: 6px; }
+.agenda-grupo-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.agenda-grupo-n {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.agenda-fila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.agenda-fila:hover { background: var(--surface-2); border-color: var(--line); }
+.agenda-fila-fecha {
+  width: 96px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.agenda-fila-hora { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.agenda-fila-main { flex: 1; min-width: 0; }
+.agenda-fila-nombre {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-fila-meta {
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Detalle de actividad */
+.detalle-kv {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+.detalle-kv.col { flex-direction: column; gap: 4px; }
+.detalle-k { color: var(--text-2); min-width: 110px; flex-shrink: 0; }
+.detalle-v { color: var(--text); font-weight: 500; }
+.detalle-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+@media (max-width: 720px) {
+  .agenda-semana { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .agenda-sem-body .agenda-evt-hora { display: none; }
+}
