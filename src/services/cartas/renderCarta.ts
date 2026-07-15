@@ -99,8 +99,8 @@ export function renderCartaHtml(d: CartaRenderData): string {
   .cuerpo ul, .cuerpo ol { margin: 0 0 10px 24px; }
   .cuerpo li { margin-bottom: 4px; }
   .despedida { margin-top: 18px; font-size: 11pt; }
-  .firmas { display: flex; justify-content: space-around; gap: 40px; margin-top: 84px; }
-  .firma { text-align: center; min-width: 180px; }
+  .firmas { display: flex; justify-content: flex-start; gap: 64px; margin-top: 84px; }
+  .firma { text-align: center; min-width: 200px; }
   .firma-linea { border-bottom: 1px solid #111; margin-bottom: 6px; height: 1px; }
   .firma-nombre { font-size: 10.5pt; font-weight: 700; }
   .firma-cargo { font-size: 9pt; color: #333; margin-top: 2px; }
