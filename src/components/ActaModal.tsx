@@ -234,7 +234,7 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
 
           <Seccion titulo={t("actas.secMociones")}>
             {mociones.map((m, i) => (
-              <div key={i} className="form-group full" style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", padding: 12 }}>
+              <div key={i} className="form-group full form-subcard">
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <textarea
                     className="form-textarea"
@@ -266,7 +266,7 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
 
           <Seccion titulo={t("actas.secAcuerdos")}>
             {acuerdos.map((a, i) => (
-              <div key={i} className="form-group full" style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", padding: 12 }}>
+              <div key={i} className="form-group full form-subcard">
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <textarea
                     className="form-textarea"

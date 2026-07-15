@@ -1334,6 +1334,15 @@ a { color: inherit; text-decoration: none; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .form-group.full { grid-column: 1 / -1; }
+/* Sub-panel dentro de formularios modales (mociones, acuerdos, visitantes,
+   cajas informativas de recurrencia/depósito): mismo borde y radio en todos
+   los modales para que se vean hermanos. Reutiliza los tokens; sin sombra
+   para no recargar dentro del modal. */
+.form-subcard {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
 .form-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .form-label .opt { font-weight: 500; color: var(--text-3); }
 .form-input, .form-select, .form-textarea {

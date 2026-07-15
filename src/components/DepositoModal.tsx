@@ -170,10 +170,8 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
             <label className="form-label">{t("tx.comprobante")} <span className="opt">{t("common.opcional")}</span></label>
             {comprobantePath ? (
               <div
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px",
-                }}
+                className="form-subcard"
+                style={{ display: "flex", alignItems: "center", gap: 10 }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--pos)" }}>
                   <IconCheck size={14} />

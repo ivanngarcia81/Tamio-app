@@ -523,7 +523,7 @@ export default function ServicioModal({ church, servicio, onClose, onSaved }: Pr
 
           <Seccion titulo={t("servicios.visitantes")}>
             {visitantes.map((v, i) => (
-              <div key={i} className="form-group full" style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", padding: 12 }}>
+              <div key={i} className="form-group full form-subcard">
                 <div className="form-grid" style={{ marginBottom: 10 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">{t("servicios.visitanteNombre")}</label>

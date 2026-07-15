@@ -429,9 +429,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
 
               {(tab === "gasto" || tab === "ingreso") && (
                 <div
+                  className="form-subcard"
                   style={{
                     display: "flex", alignItems: "center", gap: 12, marginTop: 6,
-                    border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px",
                     background: esRecurrente ? "var(--surface-2)" : "transparent",
                   }}
                 >
@@ -544,10 +544,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 </label>
                 {comprobantePath ? (
                   <div
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px",
-                    }}
+                    className="form-subcard"
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--pos)" }}>
                       <IconCheck size={14} />
