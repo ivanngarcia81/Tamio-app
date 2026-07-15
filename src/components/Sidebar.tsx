@@ -144,7 +144,7 @@ export default function Sidebar({ church, memberCount, pendingCount, role }: Pro
       </div>
 
       <nav className="nav">
-        {!esSecretaria && <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />}
+        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />
 
         <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")}>
           {!esSecretaria && <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />}

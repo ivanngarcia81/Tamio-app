@@ -5,6 +5,7 @@ import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
 import Welcome from "./components/Welcome";
 import Dashboard from "./pages/Dashboard";
+import InicioSecretaria from "./pages/InicioSecretaria";
 import Movimientos from "./pages/Movimientos";
 import Miembros from "./pages/Miembros";
 import Reportes from "./pages/Reportes";
@@ -123,16 +124,17 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         <Routes>
           <Route
             path="/"
-            element={guard("/",
-              <Dashboard
-                church={church}
-                refreshKey={refreshKey}
-                memberCount={memberCount}
-                onEditTx={openEditTx}
-                onChanged={onChanged}
-                onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
-              />
-            )}
+            element={role === "secretaria"
+              ? <InicioSecretaria church={church} refreshKey={refreshKey} />
+              : <Dashboard
+                  church={church}
+                  refreshKey={refreshKey}
+                  memberCount={memberCount}
+                  onEditTx={openEditTx}
+                  onChanged={onChanged}
+                  onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
+                />
+            }
           />
           <Route
             path="/ingresos"

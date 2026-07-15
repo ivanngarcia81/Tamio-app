@@ -26,14 +26,15 @@ export const RUTAS_SECRETARIA = ["/membresia", "/actas", "/servicios", "/cartas"
  *  El tesorero (y futuros admin) ve todo. */
 export function puedeVer(role: Role, path: string): boolean {
   if (role === "tesorero") return true;
+  if (path === "/") return true;               // Home (con contenido secretarial)
   if (RUTAS_SECRETARIA.includes(path)) return true;
   if (path === "/reportes") return true;       // único acceso a Tesorería
   if (path === "/configuracion") return true;  // ajustes básicos
-  return false; // Home financiero, Ingresos, Gastos, Contribuyentes, Depósitos, Bandeja
+  return false; // Ingresos, Gastos, Contribuyentes, Depósitos, Bandeja
 }
 
-/** Página inicial según el rol (la secretaria no ve el Home financiero). */
+/** Página inicial según el rol. */
 export const HOME_POR_ROL: Record<Role, string> = {
   tesorero: "/",
-  secretaria: "/membresia",
+  secretaria: "/",
 };

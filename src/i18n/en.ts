@@ -1652,6 +1652,18 @@ export const en: Resources = {
     hint: "The treasurer sees everything. The secretary only sees Secretariat and the Treasury Report. Once login is added, the role will come from the signed-in user.",
   },
 
+  inicioSec: {
+    titulo: "Home",
+    statActivos: "Active members",
+    statAltas: "Additions in {{anio}}",
+    statIncompletos: "Incomplete records",
+    statProximas: "Upcoming activities",
+    proximasTitulo: "Upcoming activities",
+    verAgenda: "View agenda",
+    sinProximas: "No upcoming activities.",
+    accesosTitulo: "Quick access",
+  },
+
   validacion: {
     nombreObligatorio: "Name is required.",
     cargoObligatorio: "Title is required.",

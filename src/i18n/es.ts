@@ -1659,6 +1659,18 @@ export const es = {
     hint: "El tesorero ve todo. La secretaria ve solo Secretaría y el Reporte de Tesorería. Cuando se agregue el inicio de sesión, el rol vendrá del usuario que entra.",
   },
 
+  inicioSec: {
+    titulo: "Inicio",
+    statActivos: "Miembros activos",
+    statAltas: "Altas en {{anio}}",
+    statIncompletos: "Expedientes incompletos",
+    statProximas: "Actividades próximas",
+    proximasTitulo: "Próximas actividades",
+    verAgenda: "Ver agenda",
+    sinProximas: "No hay actividades próximas.",
+    accesosTitulo: "Accesos rápidos",
+  },
+
   validacion: {
     nombreObligatorio: "El nombre es obligatorio.",
     cargoObligatorio: "El cargo es obligatorio.",
