@@ -495,9 +495,11 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           <div className="agenda-nav">
             {(vista === "mes" || vista === "semana") && (
               <>
-                <button className="icon-btn" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={16} /></button>
-                <button className="btn secondary sm" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
-                <button className="icon-btn" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={16} /></button>
+                <div className="agenda-nav-group">
+                  <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={15} /></button>
+                  <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+                  <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={15} /></button>
+                </div>
                 <span className="agenda-mes-titulo">{titulo}</span>
               </>
             )}
