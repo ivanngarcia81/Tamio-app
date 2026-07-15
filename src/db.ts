@@ -2385,6 +2385,19 @@ export interface NewActividad {
   es_fecha_importante: boolean;
   /** Regla de recurrencia; por defecto "ninguna" (evento único). */
   recurrencia?: Recurrencia;
+  /** Offsets de recordatorio en días antes de la fecha (0 = el mismo día). */
+  recordatorios?: number[];
+}
+
+/** Parsea el JSON de recordatorios de una actividad a una lista de días de anticipación. */
+export function parseRecordatorios(json: string | null | undefined): number[] {
+  if (!json) return [];
+  try {
+    const v = JSON.parse(json);
+    return Array.isArray(v) ? v.filter((x) => typeof x === "number" && x >= 0).sort((a, b) => a - b) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function listActividades(churchId: number): Promise<Actividad[]> {
@@ -2416,6 +2429,7 @@ function actividadParams(a: NewActividad): unknown[] {
     a.estado,
     a.es_fecha_importante ? 1 : 0,
     JSON.stringify(a.recurrencia ?? RECURRENCIA_NINGUNA),
+    JSON.stringify(a.recordatorios ?? []),
   ];
 }
 
@@ -2425,8 +2439,8 @@ export async function insertActividad(churchId: number, a: NewActividad): Promis
     `INSERT INTO agenda (
        nombre, tipo, tipo_personalizado, fecha, hora_inicio, hora_fin, dia_completo,
        lugar, descripcion, responsable_member_id, responsable_persona, responsable_ministerio,
-       invitado, contacto, estado, es_fecha_importante, recurrencia, church_id
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+       invitado, contacto, estado, es_fecha_importante, recurrencia, recordatorios, church_id
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
     [...actividadParams(a), churchId]
   );
   const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
@@ -2442,8 +2456,8 @@ export async function updateActividad(id: number, churchId: number, a: NewActivi
        hora_fin = $6, dia_completo = $7, lugar = $8, descripcion = $9,
        responsable_member_id = $10, responsable_persona = $11, responsable_ministerio = $12,
        invitado = $13, contacto = $14, estado = $15, es_fecha_importante = $16, recurrencia = $17,
-       modificado_en = datetime('now', 'localtime')
-     WHERE id = $18 AND church_id = $19`,
+       recordatorios = $18, modificado_en = datetime('now', 'localtime')
+     WHERE id = $19 AND church_id = $20`,
     [...actividadParams(a), id, churchId]
   );
 }

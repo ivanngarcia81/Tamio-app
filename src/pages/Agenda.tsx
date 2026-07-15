@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, agregarExcepcionAgenda, deleteActividad, fmtFecha, fmtFechaCorta,
-  hoyISO, insertActividad, listActividades, listMembersRoster, nextMonth, prevMonth, setEstadoActividad,
-  truncarSerieAgenda, type Actividad, type Church, type ExcepcionAgenda, type NewActividad,
+  hoyISO, insertActividad, listActividades, listMembersRoster, nextMonth, parseRecordatorios, prevMonth,
+  setEstadoActividad, truncarSerieAgenda, type Actividad, type Church, type ExcepcionAgenda, type NewActividad,
 } from "../db";
 import { expandirTodas, normalizarLugar, solapanHorario, type OcurrenciaVista } from "../services/agenda/recurrencia";
 import { EmptyState } from "../components/TxList";
@@ -16,7 +17,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
 
-type Vista = "mes" | "semana" | "lista";
+type Vista = "mes" | "semana" | "lista" | "historial";
 
 interface Filtros {
   q: string; tipo: string; estado: string; ministerio: string; responsable: string; desde: string; hasta: string;
@@ -89,6 +90,33 @@ function payloadACambios(p: NewActividad): ExcepcionAgenda["cambios"] {
   };
 }
 
+/** Fila compacta reutilizada por la vista de lista y el historial. */
+function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }: {
+  a: OcurrenciaVista;
+  onOpen: () => void;
+  etiquetaTipo: (x: Actividad) => string;
+  nombreResponsable: (x: Actividad) => string | null;
+  t: TFunction;
+}) {
+  return (
+    <button className="agenda-fila" onClick={onOpen}>
+      <div className="agenda-fila-fecha">
+        <div>{fmtFechaCorta(a.fecha)}</div>
+        <div className="agenda-fila-hora">{a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ? `${a.hora_inicio}${a.hora_fin ? `–${a.hora_fin}` : ""}` : "—")}</div>
+      </div>
+      <div className="agenda-fila-main">
+        <div className="agenda-fila-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</div>
+        <div className="agenda-fila-meta">
+          {etiquetaTipo(a)}
+          {a.lugar && <> · {a.lugar}</>}
+          {nombreResponsable(a) && <> · {nombreResponsable(a)}</>}
+        </div>
+      </div>
+      <span className={`tag estado-tag estado-${a.estado}`}>{t(`agenda.estados.${a.estado}`)}</span>
+    </button>
+  );
+}
+
 interface Props {
   church: Church;
   refreshKey: number;
@@ -103,6 +131,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const [vista, setVista] = useState<Vista>("mes");
   const [cursor, setCursor] = useState(hoyISO());
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS);
+  const [soloImportantes, setSoloImportantes] = useState(false);
+  const [anioHist, setAnioHist] = useState("");
+  const [mesHist, setMesHist] = useState("");
   const [modal, setModal] = useState<ModalState | null>(null);
   const [detalle, setDetalle] = useState<OcurrenciaVista | null>(null);
   const [alcance, setAlcance] = useState<{ modo: "editar" | "eliminar"; vista: OcurrenciaVista } | null>(null);
@@ -151,7 +182,30 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   );
 
   // ---- Filtros ----
-  const hayFiltros = useMemo(() => Object.values(filtros).some((v) => v !== ""), [filtros]);
+  const hayFiltros = useMemo(
+    () => Object.values(filtros).some((v) => v !== "") || soloImportantes,
+    [filtros, soloImportantes]
+  );
+  function limpiarFiltros() {
+    setFiltros(FILTROS_VACIOS);
+    setSoloImportantes(false);
+  }
+  function pasaFiltros(a: Actividad): boolean {
+    if (filtros.tipo && a.tipo !== filtros.tipo) return false;
+    if (filtros.estado && a.estado !== filtros.estado) return false;
+    if (filtros.ministerio && a.responsable_ministerio !== filtros.ministerio) return false;
+    if (filtros.responsable && nombreResponsable(a) !== filtros.responsable) return false;
+    if (filtros.desde && a.fecha < filtros.desde) return false;
+    if (filtros.hasta && a.fecha > filtros.hasta) return false;
+    if (soloImportantes && a.es_fecha_importante !== 1) return false;
+    const q = filtros.q.trim().toLowerCase();
+    if (q) {
+      const heno = [a.nombre, nombreResponsable(a), a.lugar, a.responsable_ministerio, a.invitado, a.descripcion]
+        .filter(Boolean).join(" ").toLowerCase();
+      if (!heno.includes(q)) return false;
+    }
+    return true;
+  }
   const ministeriosPresentes = useMemo(() => {
     const set = new Set<string>();
     for (const a of actividades) if (a.responsable_ministerio) set.add(a.responsable_ministerio);
@@ -164,24 +218,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actividades, miembros]);
 
-  const filtradas = useMemo(() => {
-    const q = filtros.q.trim().toLowerCase();
-    return ocurrencias.filter((a) => {
-      if (filtros.tipo && a.tipo !== filtros.tipo) return false;
-      if (filtros.estado && a.estado !== filtros.estado) return false;
-      if (filtros.ministerio && a.responsable_ministerio !== filtros.ministerio) return false;
-      if (filtros.responsable && nombreResponsable(a) !== filtros.responsable) return false;
-      if (filtros.desde && a.fecha < filtros.desde) return false;
-      if (filtros.hasta && a.fecha > filtros.hasta) return false;
-      if (q) {
-        const heno = [a.nombre, nombreResponsable(a), a.lugar, a.responsable_ministerio, a.invitado, a.descripcion]
-          .filter(Boolean).join(" ").toLowerCase();
-        if (!heno.includes(q)) return false;
-      }
-      return true;
-    });
+  const filtradas = useMemo(() => ocurrencias.filter(pasaFiltros),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ocurrencias, filtros, miembros]);
+    [ocurrencias, filtros, soloImportantes, miembros]);
 
   const porFecha = useMemo(() => {
     const mapa = new Map<string, OcurrenciaVista[]>();
@@ -235,6 +274,54 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
       despues: upc.filter((a) => a.fecha > finSemana),
     };
   }, [filtradas, hoy]);
+
+  // ---- Recordatorios activos (in-app) ----
+  const recordatorios = useMemo(() => {
+    const map = new Map<string, OcurrenciaVista>();
+    for (const o of ocurrencias) {
+      if (o.estado === "cancelada" || o.estado === "completada" || o.fecha < hoy) continue;
+      const offs = parseRecordatorios(o._master.recordatorios);
+      if (offs.length && offs.some((off) => addDays(o.fecha, -off) <= hoy && hoy <= o.fecha)) {
+        const k = `${o._master.id}:${o._fechaOriginal}`;
+        if (!map.has(k)) map.set(k, o);
+      }
+    }
+    return [...map.values()].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  }, [ocurrencias, hoy]);
+
+  function diasFaltan(fecha: string): number {
+    const [y, m, d] = fecha.split("-").map(Number);
+    const [hy, hm, hd] = hoy.split("-").map(Number);
+    return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(hy, hm - 1, hd)) / 86400000);
+  }
+  function etiquetaFaltan(fecha: string): string {
+    const n = diasFaltan(fecha);
+    if (n <= 0) return t("agenda.recHoy");
+    if (n === 1) return t("agenda.recManana");
+    return t("agenda.recEnDias", { n });
+  }
+
+  // ---- Historial (pasadas / completadas / canceladas) ----
+  const aniosHist = useMemo(() => {
+    const cur = new Date().getFullYear();
+    let min = cur;
+    for (const a of actividades) { const y = Number(a.fecha.slice(0, 4)); if (y && y < min) min = y; }
+    return Array.from({ length: cur - min + 1 }, (_, i) => cur - i);
+  }, [actividades]);
+  const mesesNombres = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => fmtFecha(`2000-${String(i + 1).padStart(2, "0")}-01`).mesAnio.split(" ")[0]),
+    []
+  );
+  const historial = useMemo(() => {
+    const desde = anioHist ? `${anioHist}-01-01` : addDays(hoy, -731);
+    const hasta = anioHist ? `${anioHist}-12-31` : hoy;
+    return expandirTodas(actividades, desde, hasta)
+      .filter((o) => o.fecha < hoy || o.estado === "completada" || o.estado === "cancelada")
+      .filter((o) => !mesHist || o.fecha.slice(5, 7) === mesHist)
+      .filter(pasaFiltros)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.hora_inicio ?? "").localeCompare(a.hora_inicio ?? ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actividades, anioHist, mesHist, hoy, filtros, soloImportantes, miembros]);
 
   // ---- Detección de conflictos ----
   function detectarConflictos(p: NewActividad, excluirMasterId?: number | null): ConflictoAgenda[] {
@@ -354,6 +441,21 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           </div>
         </div>
 
+        {!loading && !vacio && recordatorios.length > 0 && (
+          <div className="agenda-recordatorios">
+            <div className="agenda-rec-head"><IconClock size={14} strokeWidth={1.9} /> {t("agenda.recordatoriosTitulo")} <span className="agenda-grupo-n">{recordatorios.length}</span></div>
+            <div className="agenda-rec-lista">
+              {recordatorios.map((o) => (
+                <button key={`${o._master.id}:${o._fechaOriginal}`} className="agenda-rec-item" onClick={() => setDetalle(o)}>
+                  <span className="agenda-rec-cuando">{etiquetaFaltan(o.fecha)}</span>
+                  <span className="agenda-rec-nombre">{o.nombre}</span>
+                  <span className="agenda-rec-fecha">{fmtFechaCorta(o.fecha)}{!o.dia_completo && o.hora_inicio ? ` · ${o.hora_inicio}` : ""}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!vacio && (
           <div className="agenda-filtros">
             <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
@@ -382,13 +484,16 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             )}
             <input type="date" className="form-input sm" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
             <input type="date" className="form-input sm" aria-label={t("agenda.rangoHasta")} value={filtros.hasta} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value }))} />
-            {hayFiltros && <button className="btn ghost sm" onClick={() => setFiltros(FILTROS_VACIOS)}>{t("agenda.limpiarFiltros")}</button>}
+            <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
+              ★ {t("agenda.soloImportantes")}
+            </button>
+            {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
           </div>
         )}
 
         <div className="agenda-toolbar">
           <div className="agenda-nav">
-            {vista !== "lista" && (
+            {(vista === "mes" || vista === "semana") && (
               <>
                 <button className="icon-btn" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={16} /></button>
                 <button className="btn secondary sm" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
@@ -396,11 +501,23 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 <span className="agenda-mes-titulo">{titulo}</span>
               </>
             )}
+            {vista === "historial" && (
+              <>
+                <select className="form-input sm" aria-label={t("agenda.filtrarAnio")} value={anioHist} onChange={(e) => setAnioHist(e.target.value)}>
+                  <option value="">{t("agenda.ultimosMeses")}</option>
+                  {aniosHist.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                </select>
+                <select className="form-input sm" aria-label={t("agenda.filtrarMes")} value={mesHist} onChange={(e) => setMesHist(e.target.value)}>
+                  <option value="">{t("agenda.todosLosMeses")}</option>
+                  {mesesNombres.map((nom, i) => <option key={i} value={String(i + 1).padStart(2, "0")}>{nom}</option>)}
+                </select>
+              </>
+            )}
           </div>
           <div className="chip-toggle" role="tablist" aria-label={t("agenda.cambiarVista")}>
-            {(["mes", "semana", "lista"] as Vista[]).map((v) => (
+            {(["mes", "semana", "lista", "historial"] as Vista[]).map((v) => (
               <button key={v} className={`chip ${vista === v ? "active" : ""}`} role="tab" aria-selected={vista === v} onClick={() => setVista(v)}>
-                {t(`agenda.vista${v === "mes" ? "Mes" : v === "semana" ? "Semana" : "Lista"}`)}
+                {t(`agenda.vista${v === "mes" ? "Mes" : v === "semana" ? "Semana" : v === "lista" ? "Lista" : "Historial"}`)}
               </button>
             ))}
           </div>
@@ -429,7 +546,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                         <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)}
                           onClick={(e) => { e.stopPropagation(); setDetalle(a); }}>
                           {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
-                          <span className="agenda-evt-nombre">{a.nombre}</span>
+                          <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
                         </button>
                       ))}
                       {items.length > 3 && <div className="agenda-mas">+{items.length - 3}</div>}
@@ -454,7 +571,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                     {items.length === 0 ? <div className="agenda-sem-vacio">·</div> : items.map((a) => (
                       <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)} onClick={() => setDetalle(a)}>
                         {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
-                        <span className="agenda-evt-nombre">{a.nombre}</span>
+                        <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
                       </button>
                     ))}
                   </div>
@@ -462,7 +579,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               );
             })}
           </div>
-        ) : (
+        ) : vista === "lista" ? (
           (grupos.hoy.length + grupos.manana.length + grupos.semana.length + grupos.despues.length) === 0 ? (
             <EmptyState icon={<IconCalendar size={22} strokeWidth={1.6} />}
               titulo={hayFiltros ? t("agenda.sinResultados") : t("agenda.sinProximas")}
@@ -473,26 +590,20 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 items.length === 0 ? null : (
                   <div key={clave} className="agenda-grupo">
                     <div className="agenda-grupo-titulo">{t(`agenda.${clave}`)} <span className="agenda-grupo-n">{items.length}</span></div>
-                    {items.map((a) => (
-                      <button key={`${a._master.id}:${a._fechaOriginal}`} className="agenda-fila" onClick={() => setDetalle(a)}>
-                        <div className="agenda-fila-fecha">
-                          <div>{fmtFechaCorta(a.fecha)}</div>
-                          <div className="agenda-fila-hora">{a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ? `${a.hora_inicio}${a.hora_fin ? `–${a.hora_fin}` : ""}` : "—")}</div>
-                        </div>
-                        <div className="agenda-fila-main">
-                          <div className="agenda-fila-nombre">{a.nombre}</div>
-                          <div className="agenda-fila-meta">
-                            {etiquetaTipo(a)}
-                            {a.lugar && <> · {a.lugar}</>}
-                            {nombreResponsable(a) && <> · {nombreResponsable(a)}</>}
-                          </div>
-                        </div>
-                        <span className={`tag estado-tag estado-${a.estado}`}>{t(`agenda.estados.${a.estado}`)}</span>
-                      </button>
-                    ))}
+                    {items.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
                   </div>
                 )
               ))}
+            </div>
+          )
+        ) : (
+          // ---- Historial ----
+          historial.length === 0 ? (
+            <EmptyState icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.historialVacio")} sub={t("agenda.historialVacioSub")} />
+          ) : (
+            <div className="agenda-grupo">
+              <div className="agenda-grupo-titulo">{t("agenda.historialTitulo")} <span className="agenda-grupo-n">{historial.length}</span></div>
+              {historial.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
             </div>
           )
         )}

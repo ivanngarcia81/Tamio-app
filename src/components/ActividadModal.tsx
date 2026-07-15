@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ESTADOS_ACTIVIDAD, RECURRENCIA_NINGUNA, TIPOS_ACTIVIDAD, hoyISO, insertActividad, listMembersRoster,
-  parseRecurrencia, updateActividad,
+  parseRecordatorios, parseRecurrencia, updateActividad,
   type Actividad, type Church, type NewActividad, type RecFin, type Recurrencia, type RecurrenciaTipo,
 } from "../db";
 import { Seccion } from "./FichaMiembroModal";
@@ -18,6 +18,13 @@ export interface ConflictoAgenda {
 }
 
 const REC_TIPOS: RecurrenciaTipo[] = ["ninguna", "semanal", "quincenal", "mensual", "anual", "personalizada"];
+/** Presets de recordatorio: días de anticipación → clave i18n. */
+const RECORDATORIOS_PRESET: { offset: number; clave: string }[] = [
+  { offset: 0, clave: "mismoDia" },
+  { offset: 1, clave: "unDiaAntes" },
+  { offset: 2, clave: "dosDiasAntes" },
+  { offset: 7, clave: "unaSemanaAntes" },
+];
 
 interface Props {
   church: Church;
@@ -71,6 +78,7 @@ export default function ActividadModal({
     duplicarDe && !actividad ? "programada" : (base?.estado ?? "programada")
   );
   const [esFechaImportante, setEsFechaImportante] = useState(base ? base.es_fecha_importante === 1 : false);
+  const [recordatorios, setRecordatorios] = useState<number[]>(parseRecordatorios(base?.recordatorios));
 
   // ---- Recurrencia ----
   const [recTipo, setRecTipo] = useState<RecurrenciaTipo>(recBase.tipo);
@@ -100,6 +108,9 @@ export default function ActividadModal({
 
   function toggleDia(d: number) {
     setRecDias((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b));
+  }
+  function toggleRecordatorio(off: number) {
+    setRecordatorios((prev) => prev.includes(off) ? prev.filter((x) => x !== off) : [...prev, off].sort((a, b) => a - b));
   }
 
   function construirRecurrencia(): Recurrencia {
@@ -137,6 +148,7 @@ export default function ActividadModal({
       responsable_ministerio: responsableMinisterio,
       invitado, contacto, estado, es_fecha_importante: esFechaImportante,
       recurrencia: construirRecurrencia(),
+      recordatorios,
     };
   }
 
@@ -335,6 +347,16 @@ export default function ActividadModal({
                   <input type="checkbox" checked={esFechaImportante} onChange={(e) => setEsFechaImportante(e.target.checked)} />
                   {t("agenda.esFechaImportante")}
                 </label>
+              </div>
+            </div>
+            <div className="form-group full">
+              <label className="form-label">{t("agenda.recordatorios")}</label>
+              <div className="dias-toggle">
+                {RECORDATORIOS_PRESET.map((r) => (
+                  <button key={r.offset} type="button" className={`dia-chip${recordatorios.includes(r.offset) ? " active" : ""}`} onClick={() => toggleRecordatorio(r.offset)}>
+                    {t(`agenda.recordatorio.${r.clave}`)}
+                  </button>
+                ))}
               </div>
             </div>
           </Seccion>
