@@ -582,21 +582,30 @@ a { color: inherit; text-decoration: none; }
 .stat-pct { font-size: 11.5px; color: var(--text-2); }
 
 /* Charts row */
-/* Panel agrupador de las dos gráficas del inicio: fondo gris muy claro que
-   agrupa las tarjetas blancas; solo se aplica a esta fila. */
 .charts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* Lienzo único del inicio de Tesorería: un solo panel gris muy claro que
+   agrupa gráficas, métricas y desglose sobre el fondo de la app. Las
+   tarjetas internas quedan blancas para contrastar. No anidar paneles
+   grises: este es el único envoltorio gris del dashboard. */
+.dash-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   background: #f6f6f6;
   border-radius: var(--radius);
-  padding: 22px;
+  padding: 28px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
-:root[data-theme="dark"] .charts {
+:root[data-theme="dark"] .dash-canvas {
   background: rgba(255, 255, 255, 0.03);
   box-shadow: none;
 }
+
 .split-2-1 {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -2060,6 +2069,7 @@ a { color: inherit; text-decoration: none; }
    evitan que las grillas se rompan al angostarse (no es un layout móvil). */
 @media (max-width: 1180px) {
   .charts { grid-template-columns: 1fr; }
+  .dash-canvas { padding: 18px; gap: 16px; }
   .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
   .report-preview .r-summary { grid-template-columns: repeat(2, 1fr); }

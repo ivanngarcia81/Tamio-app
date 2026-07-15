@@ -225,6 +225,9 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
       )}
 
       <div className="content">
+        {/* Lienzo único: gráficas, métricas y desglose comparten un solo panel
+            gris claro para verse como un dashboard unificado. */}
+        <div className="dash-canvas">
         <div ref={chartsRef}>
           <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
         </div>
@@ -371,6 +374,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               </div>
             ))
           )}
+        </div>
         </div>
 
         <div className="tx-head">
