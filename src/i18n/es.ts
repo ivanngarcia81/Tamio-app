@@ -179,9 +179,9 @@ export const es = {
   },
 
   miembros: {
-    titulo: "Miembros",
-    activos_one: "{{count}} miembro activo",
-    activos_other: "{{count}} miembros activos",
+    titulo: "Aportantes",
+    activos_one: "{{count}} persona registrada",
+    activos_other: "{{count}} personas registradas",
     importarCsv: "Importar CSV",
     nuevoMiembro: "Nuevo miembro",
     buscarPlaceholder: "Buscar por nombre, email o RFC…",
@@ -562,7 +562,7 @@ export const es = {
     grupoSecretaria: "Secretaría",
     ingresos: "Ingresos",
     gastos: "Gastos",
-    miembros: "Miembros",
+    miembros: "Aportantes",
     reportes: "Reportes",
     depositos: "Depósito bancario",
     membresia: "Membresía",

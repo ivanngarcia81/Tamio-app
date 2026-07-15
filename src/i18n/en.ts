@@ -185,9 +185,9 @@ export const en: Resources = {
   },
 
   miembros: {
-    titulo: "Members",
-    activos_one: "{{count}} active member",
-    activos_other: "{{count}} active members",
+    titulo: "Contributors",
+    activos_one: "{{count}} person on file",
+    activos_other: "{{count}} people on file",
     importarCsv: "Import CSV",
     nuevoMiembro: "New member",
     buscarPlaceholder: "Search by name, email or tax ID…",
@@ -568,7 +568,7 @@ export const en: Resources = {
     grupoSecretaria: "Secretary",
     ingresos: "Income",
     gastos: "Expenses",
-    miembros: "Members",
+    miembros: "Contributors",
     reportes: "Reports",
     depositos: "Bank deposit",
     membresia: "Membership",
