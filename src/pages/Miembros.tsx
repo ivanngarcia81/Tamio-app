@@ -41,7 +41,6 @@ function initials(nombre: string): string {
 interface Props {
   church: Church;
   refreshKey: number;
-  onNew: () => void;
   onEdit: (member: Member) => void;
   onChanged: () => void;
 }
@@ -52,7 +51,7 @@ interface PendingDelete {
   count: number;
 }
 
-export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged }: Props) {
+export default function Miembros({ church, refreshKey, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
@@ -145,9 +144,6 @@ export default function Miembros({ church, refreshKey, onNew, onEdit, onChanged 
         <div className="header-actions">
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
             <IconUpload size={13} /> {t("miembros.importarCsv")}
-          </button>
-          <button className="btn primary" onClick={onNew}>
-            <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
           </button>
         </div>
       </div>
