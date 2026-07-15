@@ -549,7 +549,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                       border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px",
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#059669" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--pos)" }}>
                       <IconCheck size={14} />
                     </span>
                     <span style={{ flex: 1, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

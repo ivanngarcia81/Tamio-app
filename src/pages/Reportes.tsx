@@ -299,7 +299,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <div className="r-row total">
             <span></span>
             <span>{t("reportes.totalIngresos")}</span>
-            <span className="r-amt" style={{ color: "#059669" }}>{fmtMoney(ingresos)}</span>
+            <span className="r-amt" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</span>
             <span className="r-pct" style={{ color: "var(--text)" }}>100%</span>
           </div>
 
@@ -320,18 +320,18 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <div className="r-row total">
             <span></span>
             <span>{t("reportes.totalGastos")}</span>
-            <span className="r-amt" style={{ color: "#dc2626" }}>{fmtMoney(gastos)}</span>
+            <span className="r-amt" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</span>
             <span className="r-pct" style={{ color: "var(--text)" }}>100%</span>
           </div>
 
           <div className="r-summary">
             <div>
               <div className="k">{t("reportes.totalIngresos")}</div>
-              <div className="v" style={{ color: "#059669" }}>{fmtMoney(ingresos)}</div>
+              <div className="v" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</div>
             </div>
             <div>
               <div className="k">{t("reportes.totalGastos")}</div>
-              <div className="v" style={{ color: "#dc2626" }}>{fmtMoney(gastos)}</div>
+              <div className="v" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</div>
             </div>
             <div>
               <div className="k">{t("reportes.balanceNeto")}</div>
@@ -365,10 +365,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 return (
                   <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
                     <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
-                    <div className="td" style={{ textAlign: "right", color: "#059669", fontVariantNumeric: "tabular-nums" }}>
+                    <div className="td" style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
                       {fmtMoney(h.ingresos)}
                     </div>
-                    <div className="td" style={{ textAlign: "right", color: "#dc2626", fontVariantNumeric: "tabular-nums" }}>
+                    <div className="td" style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
                       {fmtMoney(h.gastos)}
                     </div>
                     <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>

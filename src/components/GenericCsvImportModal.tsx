@@ -181,11 +181,11 @@ export default function GenericCsvImportModal<T>({
               <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
                 <div className="stat-card" style={{ flex: 1, padding: "14px 16px" }}>
                   <div className="stat-label">{t("importar.listas")}</div>
-                  <div className="stat-value md" style={{ color: "#059669" }}>{step.validas.length}</div>
+                  <div className="stat-value md" style={{ color: "var(--pos)" }}>{step.validas.length}</div>
                 </div>
                 <div className="stat-card" style={{ flex: 1, padding: "14px 16px" }}>
                   <div className="stat-label">{t("importar.conErrores")}</div>
-                  <div className="stat-value md" style={{ color: step.errores.length > 0 ? "#dc2626" : "inherit" }}>
+                  <div className="stat-value md" style={{ color: step.errores.length > 0 ? "var(--neg)" : "inherit" }}>
                     {step.errores.length}
                   </div>
                 </div>
