@@ -1647,9 +1647,16 @@ export const es = {
     tesorero: "Tesorero",
     pastor: "Pastor",
     secretario: "Secretario",
+    secretaria: "Secretaria",
     auditor: "Auditor",
     consejo: "Consejo administrativo",
     otro: "Otro",
+  },
+
+  rolConfig: {
+    titulo: "Rol (vista previa)",
+    sub: "Provisional hasta que exista inicio de sesión",
+    hint: "El tesorero ve todo. La secretaria ve solo Secretaría y el Reporte de Tesorería. Cuando se agregue el inicio de sesión, el rol vendrá del usuario que entra.",
   },
 
   validacion: {

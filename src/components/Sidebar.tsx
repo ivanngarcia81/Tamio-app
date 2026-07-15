@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
+import type { Role } from "../role";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
   IconChurch, IconClipboardList, IconConfig, IconFileText, IconGasto,
@@ -13,6 +14,7 @@ interface Props {
   church: Church;
   memberCount: number;
   pendingCount: number;
+  role: Role;
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -67,9 +69,12 @@ function Grupo({ abierto, etiqueta, onToggle, children }: {
   );
 }
 
-export default function Sidebar({ church, memberCount, pendingCount }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount, role }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
+  // La secretaria solo ve Secretaría + el Reporte de Tesorería (sin Home
+  // financiero, Ingresos, Gastos, Contribuyentes, Depósitos ni Bandeja).
+  const esSecretaria = role === "secretaria";
   const initials = church.nombre
     .split(" ")
     .filter((w) => w.length > 2)
@@ -139,14 +144,14 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
       </div>
 
       <nav className="nav">
-        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />
+        {!esSecretaria && <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />}
 
         <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")}>
-          <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />
-          <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />
-          <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />
+          {!esSecretaria && <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />}
+          {!esSecretaria && <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />}
+          {!esSecretaria && <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />}
           <Item to="/reportes" icon={<IconReportes />} label={t("nav.reportes")} />
-          <Item to="/depositos" icon={<IconBank />} label={t("nav.depositos")} />
+          {!esSecretaria && <Item to="/depositos" icon={<IconBank />} label={t("nav.depositos")} />}
         </Grupo>
 
         <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
@@ -160,7 +165,7 @@ export default function Sidebar({ church, memberCount, pendingCount }: Props) {
       </nav>
 
       <div className="sidebar-footer">
-        <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.bandeja")} badge={pendingCount} />
+        {!esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.bandeja")} badge={pendingCount} />}
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />
       </div>
     </aside>

@@ -17,8 +17,10 @@ import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
+import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
+import type { Role } from "../role";
 
 interface Props {
   church: Church;
@@ -27,13 +29,15 @@ interface Props {
   onThemePrefChange: (pref: ThemePref) => void;
   langPref: LangPref;
   onLangPrefChange: (pref: LangPref) => void;
+  role: Role;
+  onRoleChange: (r: Role) => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
 export default function Configuracion({
-  church, onChurchUpdated, themePref, onThemePrefChange, langPref, onLangPrefChange,
+  church, onChurchUpdated, themePref, onThemePrefChange, langPref, onLangPrefChange, role, onRoleChange,
 }: Props) {
   const { t } = useTranslation();
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
@@ -223,6 +227,8 @@ export default function Configuracion({
                 tesoreroNombre={treasurerForm.nombre}
                 tesoreroCargo={treasurerForm.cargo}
               />
+
+              <RoleSettings value={role} onChange={onRoleChange} />
 
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 

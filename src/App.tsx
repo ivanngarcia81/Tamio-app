@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
@@ -20,6 +20,7 @@ import Configuracion from "./pages/Configuracion";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
+import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import "./styles.css";
 
 function initialThemePref(): ThemePref {
@@ -49,6 +50,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [role, setRole] = useState<Role>(initialRole);
   const [showWelcome, setShowWelcome] = useState(() => esPrimerArranque(church));
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
@@ -108,15 +110,20 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);
+  const onRoleChange = useCallback((r: Role) => { setRole(r); saveRole(r); }, []);
+
+  // Bloquea una ruta según el rol (redirige al inicio permitido).
+  const guard = (path: string, element: ReactNode) =>
+    puedeVer(role, path) ? element : <Navigate to={HOME_POR_ROL[role]} replace />;
 
   return (
     <div className="app">
-      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} role={role} />
       <main className="main">
         <Routes>
           <Route
             path="/"
-            element={
+            element={guard("/",
               <Dashboard
                 church={church}
                 refreshKey={refreshKey}
@@ -125,11 +132,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onChanged={onChanged}
                 onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
               />
-            }
+            )}
           />
           <Route
             path="/ingresos"
-            element={
+            element={guard("/ingresos",
               <Movimientos
                 church={church}
                 tipo="ingreso"
@@ -138,11 +145,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onEditTx={openEditTx}
                 onChanged={onChanged}
               />
-            }
+            )}
           />
           <Route
             path="/gastos"
-            element={
+            element={guard("/gastos",
               <Movimientos
                 church={church}
                 tipo="gasto"
@@ -151,18 +158,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onEditTx={openEditTx}
                 onChanged={onChanged}
               />
-            }
+            )}
           />
           <Route
             path="/miembros"
-            element={
+            element={guard("/miembros",
               <Miembros
                 church={church}
                 refreshKey={refreshKey}
                 onEdit={openEditMember}
                 onChanged={onChanged}
               />
-            }
+            )}
           />
           <Route
             path="/reportes"
@@ -170,7 +177,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           />
           <Route
             path="/depositos"
-            element={<Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+            element={guard("/depositos", <Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
           />
           <Route
             path="/membresia"
@@ -210,9 +217,9 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           <Route path="/agenda" element={<Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />} />
           <Route
             path="/bandeja"
-            element={
+            element={guard("/bandeja",
               <Bandeja church={church} refreshKey={refreshKey} onEditTx={openEditTx} onChanged={onChanged} />
-            }
+            )}
           />
           <Route
             path="/configuracion"
@@ -224,6 +231,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onThemePrefChange={setThemePref}
                 langPref={langPref}
                 onLangPrefChange={setLangPref}
+                role={role}
+                onRoleChange={onRoleChange}
               />
             }
           />

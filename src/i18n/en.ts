@@ -1640,9 +1640,16 @@ export const en: Resources = {
     tesorero: "Treasurer",
     pastor: "Pastor",
     secretario: "Secretary",
+    secretaria: "Secretary",
     auditor: "Auditor",
     consejo: "Administrative board",
     otro: "Other",
+  },
+
+  rolConfig: {
+    titulo: "Role (preview)",
+    sub: "Temporary until login is available",
+    hint: "The treasurer sees everything. The secretary only sees Secretariat and the Treasury Report. Once login is added, the role will come from the signed-in user.",
   },
 
   validacion: {
