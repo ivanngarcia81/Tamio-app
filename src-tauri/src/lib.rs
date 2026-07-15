@@ -444,6 +444,38 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE members ADD COLUMN seguimiento_notas TEXT NOT NULL DEFAULT '[]';
             ALTER TABLE churches ADD COLUMN umbrales_informes TEXT;
         "#,
+    }, Migration {
+        version: 21,
+        description: "agendas y calendarios: actividades, recurrencia, recordatorios",
+        kind: MigrationKind::Up,
+        sql: r#"
+            CREATE TABLE IF NOT EXISTS agenda (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id INTEGER NOT NULL REFERENCES churches(id),
+                nombre TEXT NOT NULL,
+                tipo TEXT NOT NULL DEFAULT 'otra',
+                tipo_personalizado TEXT,
+                fecha TEXT NOT NULL,
+                hora_inicio TEXT,
+                hora_fin TEXT,
+                dia_completo INTEGER NOT NULL DEFAULT 0,
+                lugar TEXT,
+                descripcion TEXT,
+                responsable_member_id INTEGER,
+                responsable_persona TEXT,
+                responsable_ministerio TEXT,
+                invitado TEXT,
+                contacto TEXT,
+                estado TEXT NOT NULL DEFAULT 'programada',
+                recurrencia TEXT NOT NULL DEFAULT '{"tipo":"ninguna"}',
+                excepciones TEXT NOT NULL DEFAULT '[]',
+                recordatorios TEXT NOT NULL DEFAULT '[]',
+                es_fecha_importante INTEGER NOT NULL DEFAULT 0,
+                creado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_agenda_church_fecha ON agenda(church_id, fecha);
+        "#,
     }]
 }
 

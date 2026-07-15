@@ -2281,6 +2281,145 @@ export async function listMembersRoster(churchId: number): Promise<{ id: number;
   );
 }
 
+// ---------- Agenda y calendarios ----------
+
+/** Catálogo de tipos de actividad (clave estable; la etiqueta la resuelve i18n). */
+export const TIPOS_ACTIVIDAD = [
+  "cultoRegular", "cultoEspecial", "reunionLideres", "reunionAdministrativa", "asamblea",
+  "escuelaBiblica", "santaCena", "bautismo", "presentacionNinos", "boda", "funeral",
+  "vigilia", "campana", "congreso", "retiro", "ensayo", "actividadJuvenil", "actividadDamas",
+  "actividadCaballeros", "actividadInfantil", "actividadComunitaria", "fechaLimite", "otra",
+] as const;
+
+/** Estados posibles de una actividad. */
+export const ESTADOS_ACTIVIDAD = [
+  "borrador", "programada", "confirmada", "completada", "cancelada",
+] as const;
+
+/** Fila cruda de la tabla agenda (fechas como cadenas locales, sin objetos Date). */
+export interface Actividad {
+  id: number;
+  church_id: number;
+  nombre: string;
+  tipo: string;
+  tipo_personalizado: string | null;
+  /** YYYY-MM-DD (fecha local, nunca UTC). */
+  fecha: string;
+  /** HH:mm o null. */
+  hora_inicio: string | null;
+  hora_fin: string | null;
+  dia_completo: number;
+  lugar: string | null;
+  descripcion: string | null;
+  /** Referencia al miembro (solo el id); el nombre se resuelve al render. */
+  responsable_member_id: number | null;
+  /** Persona externa por texto libre (alternativa al miembro). */
+  responsable_persona: string | null;
+  responsable_ministerio: string | null;
+  invitado: string | null;
+  contacto: string | null;
+  estado: string;
+  /** JSON de la regla de recurrencia (fases futuras). */
+  recurrencia: string;
+  /** JSON de excepciones de la serie (fases futuras). */
+  excepciones: string;
+  /** JSON de offsets de recordatorio (fases futuras). */
+  recordatorios: string;
+  es_fecha_importante: number;
+  creado_en: string;
+  modificado_en: string;
+}
+
+export interface NewActividad {
+  nombre: string;
+  tipo: string;
+  tipo_personalizado: string | null;
+  fecha: string;
+  hora_inicio: string | null;
+  hora_fin: string | null;
+  dia_completo: boolean;
+  lugar: string | null;
+  descripcion: string | null;
+  responsable_member_id: number | null;
+  responsable_persona: string | null;
+  responsable_ministerio: string | null;
+  invitado: string | null;
+  contacto: string | null;
+  estado: string;
+  es_fecha_importante: boolean;
+}
+
+export async function listActividades(churchId: number): Promise<Actividad[]> {
+  const d = await getDb();
+  return d.select<Actividad[]>(
+    "SELECT * FROM agenda WHERE church_id = $1 ORDER BY fecha ASC, hora_inicio ASC, id ASC",
+    [churchId]
+  );
+}
+
+function actividadParams(a: NewActividad): unknown[] {
+  const diaCompleto = a.dia_completo;
+  return [
+    a.nombre.trim(),
+    a.tipo,
+    a.tipo === "otra" ? (a.tipo_personalizado?.trim() || null) : null,
+    a.fecha,
+    // Si es de día completo no se guardan horas (los campos ocultos no se persisten).
+    diaCompleto ? null : (a.hora_inicio || null),
+    diaCompleto ? null : (a.hora_fin || null),
+    diaCompleto ? 1 : 0,
+    a.lugar?.trim() || null,
+    a.descripcion?.trim() || null,
+    a.responsable_member_id,
+    a.responsable_member_id ? null : (a.responsable_persona?.trim() || null),
+    a.responsable_ministerio?.trim() || null,
+    a.invitado?.trim() || null,
+    a.contacto?.trim() || null,
+    a.estado,
+    a.es_fecha_importante ? 1 : 0,
+  ];
+}
+
+export async function insertActividad(churchId: number, a: NewActividad): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `INSERT INTO agenda (
+       nombre, tipo, tipo_personalizado, fecha, hora_inicio, hora_fin, dia_completo,
+       lugar, descripcion, responsable_member_id, responsable_persona, responsable_ministerio,
+       invitado, contacto, estado, es_fecha_importante, church_id
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+    [...actividadParams(a), churchId]
+  );
+}
+
+export async function updateActividad(id: number, churchId: number, a: NewActividad): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE agenda SET
+       nombre = $1, tipo = $2, tipo_personalizado = $3, fecha = $4, hora_inicio = $5,
+       hora_fin = $6, dia_completo = $7, lugar = $8, descripcion = $9,
+       responsable_member_id = $10, responsable_persona = $11, responsable_ministerio = $12,
+       invitado = $13, contacto = $14, estado = $15, es_fecha_importante = $16,
+       modificado_en = datetime('now', 'localtime')
+     WHERE id = $17 AND church_id = $18`,
+    [...actividadParams(a), id, churchId]
+  );
+}
+
+/** Cambia solo el estado (confirmar/completar/cancelar) sin abrir el editor. */
+export async function setEstadoActividad(id: number, churchId: number, estado: string): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE agenda SET estado = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3",
+    [estado, id, churchId]
+  );
+}
+
+export async function deleteActividad(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM agenda WHERE id = $1 AND church_id = $2", [id, churchId]);
+}
+
 /** Cuántos servicios referencian a un miembro (para archivar en vez de borrar). */
 export async function countMemberAsistencias(memberId: number, churchId: number): Promise<number> {
   const d = await getDb();
@@ -2626,6 +2765,11 @@ export function currentMonth(): string {
 
 export function currentYear(): string {
   return String(new Date().getFullYear());
+}
+
+/** Fecha local de hoy como "YYYY-MM-DD" (nunca UTC; base de la agenda). */
+export function hoyISO(): string {
+  return nowLocalIso().slice(0, 10);
 }
 
 export function prevMonth(yyyyMm: string): string {

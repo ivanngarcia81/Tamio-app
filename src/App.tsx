@@ -14,7 +14,7 @@ import Actas from "./pages/Actas";
 import Servicios from "./pages/Servicios";
 import Cartas from "./pages/Cartas";
 import InformesMembresia from "./pages/InformesMembresia";
-import SeccionSecretaria from "./pages/SeccionSecretaria";
+import Agenda from "./pages/Agenda";
 import Bandeja from "./pages/Bandeja";
 import Configuracion from "./pages/Configuracion";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
@@ -208,7 +208,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               />
             }
           />
-          <Route path="/agenda" element={<SeccionSecretaria seccion="agenda" />} />
+          <Route path="/agenda" element={<Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />} />
           <Route
             path="/bandeja"
             element={
