@@ -44,6 +44,16 @@ export default function Configuracion({
   authActivo,
 }: Props) {
   const { t } = useTranslation();
+  // Reparto de Ajustes por rol: cada quien ve solo lo suyo + lo común.
+  // - Tesorería (tesorero + admin): datos/firma del tesorero, vista previa del
+  //   PDF, categorías y la moneda.
+  // - Secretaría (secretaria + admin): datos institucionales.
+  // - Pastor: compartido (firma en ambas áreas), visible para todos.
+  // - Usuarios y Respaldo: solo administrador (datos sensibles / acción
+  //   destructiva de importar).
+  const esAdmin = role === "administrador";
+  const verTesoreria = esAdmin || role === "tesorero";
+  const verSecretaria = esAdmin || role === "secretaria";
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
@@ -114,14 +124,18 @@ export default function Configuracion({
     setGeneralError(null);
 
     const nextChurchError = churchForm.nombre.trim() ? null : t("config.nombreIglesiaObligatorio");
+    // La sección del tesorero solo se valida cuando el rol la ve (si no, sus
+    // campos ni se muestran y no deben bloquear el guardado de la secretaria).
     const nextTreasurerErrors: TreasurerFormErrors = {};
-    if (!treasurerForm.nombre.trim()) nextTreasurerErrors.nombre = t("validacion.nombreObligatorio");
-    if (!treasurerForm.cargo.trim()) nextTreasurerErrors.cargo = t("validacion.cargoObligatorio");
-    if (treasurerForm.email.trim() && !EMAIL_RE.test(treasurerForm.email.trim())) {
-      nextTreasurerErrors.email = t("validacion.correoInvalido");
-    }
-    if (treasurerForm.telefono.trim() && !PHONE_RE.test(treasurerForm.telefono.trim())) {
-      nextTreasurerErrors.telefono = t("validacion.telefonoInvalido");
+    if (verTesoreria) {
+      if (!treasurerForm.nombre.trim()) nextTreasurerErrors.nombre = t("validacion.nombreObligatorio");
+      if (!treasurerForm.cargo.trim()) nextTreasurerErrors.cargo = t("validacion.cargoObligatorio");
+      if (treasurerForm.email.trim() && !EMAIL_RE.test(treasurerForm.email.trim())) {
+        nextTreasurerErrors.email = t("validacion.correoInvalido");
+      }
+      if (treasurerForm.telefono.trim() && !PHONE_RE.test(treasurerForm.telefono.trim())) {
+        nextTreasurerErrors.telefono = t("validacion.telefonoInvalido");
+      }
     }
 
     // El pastor es opcional: solo se valida el formato si se llenó algo.
@@ -193,16 +207,22 @@ export default function Configuracion({
                 error={churchError}
                 logoPath={logoPath}
                 onLogoPathChange={setLogoPath}
+                showCurrency={verTesoreria}
               />
 
-              <TreasurerSettings
-                value={treasurerForm}
-                onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
-                errors={treasurerErrors}
-              />
+              {verTesoreria && (
+                <>
+                  <TreasurerSettings
+                    value={treasurerForm}
+                    onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
+                    errors={treasurerErrors}
+                  />
 
-              <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+                  <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+                </>
+              )}
 
+              {/* Pastor: compartido (firma en tesorería y secretaría), visible a todos. */}
               <PastorSettings
                 value={pastorForm}
                 onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
@@ -211,20 +231,24 @@ export default function Configuracion({
 
               <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
 
-              <InstitucionSettings
-                value={institucionForm}
-                onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
-              />
+              {verSecretaria && (
+                <InstitucionSettings
+                  value={institucionForm}
+                  onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
+                />
+              )}
             </div>
 
             {/* Columna derecha: vista previa del PDF + ajustes y administración,
                 para equilibrar la altura con la columna izquierda. */}
             <div className="settings-stack">
-              <PDFPreview
-                churchNombre={churchForm.nombre}
-                tesoreroNombre={treasurerForm.nombre}
-                tesoreroCargo={treasurerForm.cargo}
-              />
+              {verTesoreria && (
+                <PDFPreview
+                  churchNombre={churchForm.nombre}
+                  tesoreroNombre={treasurerForm.nombre}
+                  tesoreroCargo={treasurerForm.cargo}
+                />
+              )}
 
               {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
 
@@ -234,11 +258,14 @@ export default function Configuracion({
 
               <SoundSettings />
 
-              <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
+              {/* Usuarios y Respaldo: administración sensible, solo administrador. */}
+              {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
 
-              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+              {verTesoreria && (
+                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+              )}
 
-              <BackupSettings church={church} />
+              {esAdmin && <BackupSettings church={church} />}
             </div>
           </div>
 

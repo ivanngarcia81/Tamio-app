@@ -17,6 +17,8 @@ interface Props {
   error?: string | null;
   logoPath: string | null;
   onLogoPathChange: (path: string | null) => void;
+  /** La moneda es dato de tesorería; se oculta a roles que no la manejan. */
+  showCurrency?: boolean;
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -28,7 +30,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export default function ChurchSettings({ value, onChange, error, logoPath, onLogoPathChange }: Props) {
+export default function ChurchSettings({ value, onChange, error, logoPath, onLogoPathChange, showCurrency = true }: Props) {
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -143,14 +145,16 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
         </div>
       </div>
 
-      <div className="form-group full">
-        <label className="form-label">{t("iglesia.moneda")}</label>
-        <select className="form-select" value={value.moneda} onChange={(e) => onChange({ moneda: e.target.value })}>
-          <option value="USD">{t("iglesia.monedaUsd")}</option>
-          <option value="MXN">{t("iglesia.monedaMxn")}</option>
-        </select>
-        <div className="form-hint">{t("iglesia.monedaHint")}</div>
-      </div>
+      {showCurrency && (
+        <div className="form-group full">
+          <label className="form-label">{t("iglesia.moneda")}</label>
+          <select className="form-select" value={value.moneda} onChange={(e) => onChange({ moneda: e.target.value })}>
+            <option value="USD">{t("iglesia.monedaUsd")}</option>
+            <option value="MXN">{t("iglesia.monedaMxn")}</option>
+          </select>
+          <div className="form-hint">{t("iglesia.monedaHint")}</div>
+        </div>
+      )}
     </div>
   );
 }
