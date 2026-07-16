@@ -206,7 +206,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           />
           <Route
             path="/reportes"
-            element={<Reportes church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+            element={guard("/reportes", <Reportes church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
           />
           <Route
             path="/depositos"
@@ -214,7 +214,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           />
           <Route
             path="/membresia"
-            element={
+            element={guard("/membresia",
               <Membresia
                 church={church}
                 refreshKey={refreshKey}
@@ -222,32 +222,32 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onEdit={openEditMember}
                 onChanged={onChanged}
               />
-            }
+            )}
           />
           <Route
             path="/actas"
-            element={<Actas church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+            element={guard("/actas", <Actas church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
           />
           <Route
             path="/servicios"
-            element={<Servicios church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+            element={guard("/servicios", <Servicios church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
           />
           <Route
             path="/cartas"
-            element={<Cartas church={church} refreshKey={refreshKey} onChanged={onChanged} />}
+            element={guard("/cartas", <Cartas church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
           />
           <Route
             path="/reporte-miembros"
-            element={
+            element={guard("/reporte-miembros",
               <InformesMembresia
                 church={church}
                 refreshKey={refreshKey}
                 onEdit={openEditMember}
                 onChanged={onChanged}
               />
-            }
+            )}
           />
-          <Route path="/agenda" element={<Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />} />
+          <Route path="/agenda" element={guard("/agenda", <Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />)} />
           <Route
             path="/inbox"
             element={<Mensajes church={church} role={role} refreshKey={refreshKey} onChanged={onChanged} />}

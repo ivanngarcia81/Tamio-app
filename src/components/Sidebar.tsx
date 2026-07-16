@@ -73,9 +73,11 @@ function Grupo({ abierto, etiqueta, onToggle, children }: {
 export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
-  // La secretaria solo ve Secretaría + el Reporte de Tesorería (sin Home
-  // financiero, Ingresos, Gastos, Contribuyentes, Depósitos ni Bandeja).
+  // Separación estricta de funciones:
+  // - La secretaria solo ve Secretaría + el Reporte de Tesorería.
+  // - El tesorero solo ve Tesorería (no el grupo de Secretaría).
   const esSecretaria = role === "secretaria";
+  const esTesorero = role === "tesorero";
   const initials = church.nombre
     .split(" ")
     .filter((w) => w.length > 2)
@@ -155,14 +157,16 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
           {!esSecretaria && <Item to="/depositos" icon={<IconBank />} label={t("nav.depositos")} />}
         </Grupo>
 
-        <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
-          <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
-          <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
-          <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />
-          <Item to="/cartas" icon={<IconMail />} label={t("nav.cartas")} />
-          <Item to="/reporte-miembros" icon={<IconClipboardList />} label={t("nav.reporteMiembros")} />
-          <Item to="/agenda" icon={<IconCalendar />} label={t("nav.agenda")} />
-        </Grupo>
+        {!esTesorero && (
+          <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
+            <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
+            <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
+            <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />
+            <Item to="/cartas" icon={<IconMail />} label={t("nav.cartas")} />
+            <Item to="/reporte-miembros" icon={<IconClipboardList />} label={t("nav.reporteMiembros")} />
+            <Item to="/agenda" icon={<IconCalendar />} label={t("nav.agenda")} />
+          </Grupo>
+        )}
       </nav>
 
       <div className="sidebar-footer">

@@ -18,20 +18,26 @@ export function saveRole(r: Role): void {
   try { localStorage.setItem(KEY, r); } catch { /* noop */ }
 }
 
-/** Rutas de Secretaría (visibles para tesorero y secretaria). */
+/** Rutas de Tesorería (solo el tesorero, salvo /reportes que también ve la
+ *  secretaria). */
+export const RUTAS_TESORERIA = ["/ingresos", "/gastos", "/miembros", "/reportes", "/depositos", "/bandeja"];
+/** Rutas de Secretaría (solo la secretaria). */
 export const RUTAS_SECRETARIA = ["/membresia", "/actas", "/servicios", "/cartas", "/reporte-miembros", "/agenda"];
 
-/** ¿Puede el rol acceder a esta ruta?
- *  La secretaria ve todo Secretaría + solo el Reporte de Tesorería + Configuración.
- *  El tesorero (y futuros admin) ve todo. */
+/** ¿Puede el rol acceder a esta ruta? Separación estricta de funciones:
+ *  - El tesorero ve solo Tesorería (+ Home, Inbox y Configuración).
+ *  - La secretaria ve solo Secretaría + el Reporte de Tesorería (+ Home,
+ *    Inbox y Configuración). */
 export function puedeVer(role: Role, path: string): boolean {
-  if (role === "tesorero") return true;
-  if (path === "/") return true;               // Home (con contenido secretarial)
+  // Comunes a ambos roles.
+  if (path === "/") return true;               // Home (Dashboard o Inicio Secretaría)
+  if (path === "/inbox") return true;          // mensajería
+  if (path === "/configuracion") return true;  // ajustes
+  if (role === "tesorero") return RUTAS_TESORERIA.includes(path);
+  // secretaria: su área + solo el Reporte de Tesorería.
   if (RUTAS_SECRETARIA.includes(path)) return true;
-  if (path === "/inbox") return true;          // mensajería (ambos roles)
-  if (path === "/reportes") return true;       // único acceso a Tesorería
-  if (path === "/configuracion") return true;  // ajustes básicos
-  return false; // Ingresos, Gastos, Contribuyentes, Depósitos, Por revisar
+  if (path === "/reportes") return true;
+  return false;
 }
 
 /** Página inicial según el rol. */
