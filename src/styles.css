@@ -143,7 +143,12 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   overflow: hidden;
 }
-.main { overflow-y: auto; }
+/* min-height:0 es imprescindible: .main es un ítem de grid y sin esto conserva
+   min-height:auto (no encoge por debajo de su contenido). En ventanas más bajas
+   que el contenido, crecería más allá de la fila de 100vh y .app (overflow:hidden)
+   recortaría el final en vez de dejar que .main haga scroll. Con min-height:0
+   queda acotado a la fila y su overflow-y:auto sí desplaza hasta el último ítem. */
+.main { overflow-y: auto; min-height: 0; }
 .sidebar { user-select: none; }
 
 /* Scrollbars al estilo overlay de macOS: delgados, redondeados, sin
@@ -530,7 +535,9 @@ a { color: inherit; text-decoration: none; }
 
 /* Content */
 .content {
-  padding: 6px var(--content-pad-x) 24px;
+  /* El padding inferior da holgura al final del scroll para que el último
+     ítem no quede pegado al borde de la ventana. */
+  padding: 6px var(--content-pad-x) 40px;
   display: flex;
   flex-direction: column;
   gap: 22px;
