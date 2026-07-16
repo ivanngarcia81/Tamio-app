@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../supabase";
-import { IconChurch } from "../icons";
+import { IconTamio } from "../icons";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -26,7 +26,7 @@ export default function Login() {
   return (
     <div className="login-screen">
       <form className="login-card" onSubmit={entrar}>
-        <div className="login-logo"><IconChurch /></div>
+        <div className="login-logo"><IconTamio size={56} /></div>
         <div className="login-title">Tamio</div>
         <div className="login-sub">{t("login.sub")}</div>
 

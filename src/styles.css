@@ -201,8 +201,11 @@ a { color: inherit; text-decoration: none; }
 }
 /* Placeholder mientras no hay logo subido: capilla atenuada sobre
    superficie suave, al estilo de los avatares vacíos de macOS. */
+/* Sin logo de iglesia subido, se muestra el logo de Tamio (trae su propio
+   fondo), así que el marco queda transparente para no encajonarlo. */
 .logo.placeholder {
-  background: var(--surface-2);
+  background: transparent;
+  border-color: transparent;
   color: var(--text-3);
 }
 .church-select {
@@ -3110,14 +3113,13 @@ a { color: inherit; text-decoration: none; }
   gap: 13px;
   color: #f4f4f6;
 }
+/* El logo trae su propio fondo (cuadrado redondeado verde); el contenedor solo
+   lo centra y le da un halo verde que sigue la forma del icono. */
 .login-logo {
-  width: 46px; height: 46px;
   display: grid; place-items: center;
-  border-radius: 13px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(37, 99, 235, 0.95));
-  color: #fff;
   margin: 0 auto 4px;
-  box-shadow: 0 8px 22px rgba(49, 46, 129, 0.5);
+  line-height: 0;
+  filter: drop-shadow(0 10px 22px rgba(5, 150, 105, 0.4));
 }
 .login-title { font-size: 21px; font-weight: 700; text-align: center; letter-spacing: -0.02em; color: #fff; }
 .login-sub { font-size: 13px; color: rgba(255, 255, 255, 0.5); text-align: center; margin-bottom: 8px; }

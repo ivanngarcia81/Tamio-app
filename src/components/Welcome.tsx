@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { updateChurch, type Church } from "../db";
 import type { LangPref } from "../i18n";
-import { IconDownload, IconFileText, IconIngreso, IconLogo, IconMiembros, IconMonitor } from "../icons";
+import { IconDownload, IconFileText, IconIngreso, IconMiembros, IconMonitor, IconTamio } from "../icons";
 
 interface Props {
   church: Church;
@@ -96,7 +96,7 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
         ) : (
           <div className="welcome-slide" key="form">
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 22 }}>
-              <div className="logo" style={{ marginBottom: 14 }}><IconLogo /></div>
+              <div style={{ marginBottom: 14, lineHeight: 0 }}><IconTamio size={60} /></div>
               <div className="card-title-lg" style={{ fontSize: 20 }}>{t("bienvenida.titulo")}</div>
               <div className="card-title-sub" style={{ marginTop: 4 }}>{t("bienvenida.sub")}</div>
             </div>

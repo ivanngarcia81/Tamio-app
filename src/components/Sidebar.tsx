@@ -6,8 +6,8 @@ import type { Church } from "../db";
 import type { Role } from "../role";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
-  IconChurch, IconClipboardList, IconConfig, IconFileText, IconGasto,
-  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes,
+  IconClipboardList, IconConfig, IconFileText, IconGasto,
+  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconTamio,
 } from "../icons";
 
 interface Props {
@@ -136,7 +136,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       {/* Muestra el logo de la iglesia (Configuración → Subir logo) en cuanto
           existe; mientras tanto una capilla atenuada hace de placeholder. */}
       <div className={`logo${logoUrl ? "" : " placeholder"}`} title={logoUrl ? church.nombre : "Tamio"}>
-        {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconChurch />}
+        {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconTamio size={44} />}
       </div>
 
       <div className="church-select">

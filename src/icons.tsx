@@ -1,7 +1,33 @@
+import { useId } from "react";
+
 interface IconProps {
   size?: number;
   strokeWidth?: number;
 }
+
+/** Logo de marca de Tamio: la "T" sobre barras de crecimiento, en el verde de
+ *  ingresos del dashboard. Es el mismo símbolo del icono de la app; se usa en
+ *  login, bienvenida y como placeholder del logo en el sidebar. Trae su propio
+ *  fondo (cuadrado redondeado), así que va sobre superficie transparente. */
+export const IconTamio = ({ size = 44 }: { size?: number }) => {
+  const id = useId();
+  return (
+    <svg width={size} height={size} viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#34d399" />
+          <stop offset="1" stopColor="#059669" />
+        </linearGradient>
+      </defs>
+      <rect width="180" height="180" rx="40" fill={`url(#${id})`} />
+      <rect x="44" y="42" width="92" height="19" rx="8" fill="#fff" />
+      <rect x="81" y="42" width="18" height="60" rx="8" fill="#fff" fillOpacity="0.45" />
+      <rect x="56" y="112" width="17" height="26" rx="6" fill="#fff" fillOpacity="0.72" />
+      <rect x="81" y="96" width="17" height="42" rx="6" fill="#fff" fillOpacity="0.86" />
+      <rect x="106" y="76" width="17" height="62" rx="6" fill="#fff" />
+    </svg>
+  );
+};
 
 function base(size: number, strokeWidth: number) {
   return {
