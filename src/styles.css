@@ -252,7 +252,18 @@ a { color: inherit; text-decoration: none; }
   display: block;
   font-weight: 500;
 }
-.nav { display: flex; flex-direction: column; gap: 2px; }
+/* La lista de navegación ocupa el espacio libre y hace scroll internamente,
+   de modo que el selector de organización (arriba) y el footer con Cerrar
+   sesión (abajo) queden siempre fijos y accesibles aunque haya muchos ítems
+   o la ventana sea baja. */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 .nav-item {
   display: flex;
   align-items: center;
