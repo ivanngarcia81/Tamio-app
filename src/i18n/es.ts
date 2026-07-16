@@ -1665,6 +1665,7 @@ export const es = {
 
   rol: {
     tesorero: "Tesorero",
+    administrador: "Administrador",
     pastor: "Pastor",
     secretario: "Secretario",
     secretaria: "Secretaria",

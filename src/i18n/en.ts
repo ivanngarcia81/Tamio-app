@@ -1658,6 +1658,7 @@ export const en: Resources = {
 
   rol: {
     tesorero: "Treasurer",
+    administrador: "Administrator",
     pastor: "Pastor",
     secretario: "Secretary",
     secretaria: "Secretary",

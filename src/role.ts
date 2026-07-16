@@ -2,7 +2,7 @@
 // Configuración (selector temporal); cuando exista backend con login, el rol
 // vendrá del usuario autenticado y este módulo solo cambia su origen.
 
-export type Role = "tesorero" | "secretaria";
+export type Role = "tesorero" | "secretaria" | "administrador";
 
 const KEY = "tamio-rol";
 
@@ -25,11 +25,13 @@ export const RUTAS_TESORERIA = ["/ingresos", "/gastos", "/miembros", "/reportes"
 export const RUTAS_SECRETARIA = ["/membresia", "/actas", "/servicios", "/cartas", "/reporte-miembros", "/agenda"];
 
 /** ¿Puede el rol acceder a esta ruta? Separación estricta de funciones:
+ *  - El administrador ve todo (Tesorería + Secretaría).
  *  - El tesorero ve solo Tesorería (+ Home, Inbox y Configuración).
  *  - La secretaria ve solo Secretaría + el Reporte de Tesorería (+ Home,
  *    Inbox y Configuración). */
 export function puedeVer(role: Role, path: string): boolean {
-  // Comunes a ambos roles.
+  if (role === "administrador") return true;   // acceso total
+  // Comunes a los demás roles.
   if (path === "/") return true;               // Home (Dashboard o Inicio Secretaría)
   if (path === "/inbox") return true;          // mensajería
   if (path === "/configuracion") return true;  // ajustes
@@ -44,4 +46,5 @@ export function puedeVer(role: Role, path: string): boolean {
 export const HOME_POR_ROL: Record<Role, string> = {
   tesorero: "/",
   secretaria: "/",
+  administrador: "/",
 };

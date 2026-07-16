@@ -30,7 +30,7 @@ export function useSupabaseAuth(): { estado: EstadoAuth; salir: () => Promise<vo
       .eq("id", userId)
       .single();
     const rol = (data as { rol?: string; nombre?: string } | null)?.rol;
-    const roleOk: Role | null = rol === "tesorero" || rol === "secretaria" ? rol : null;
+    const roleOk: Role | null = rol === "tesorero" || rol === "secretaria" || rol === "administrador" ? rol : null;
     setEstado({
       cargando: false,
       autenticado: true,

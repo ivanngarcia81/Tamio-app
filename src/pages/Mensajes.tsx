@@ -51,7 +51,9 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
   }, [mensajes.length]);
 
   function nombreRol(r: string): string {
-    return t(`rol.${r === "secretaria" ? "secretaria" : "tesorero"}`);
+    if (r === "secretaria") return t("rol.secretaria");
+    if (r === "administrador") return t("rol.administrador");
+    return t("rol.tesorero");
   }
 
   async function confirmarBorrar() {

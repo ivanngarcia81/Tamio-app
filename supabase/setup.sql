@@ -7,7 +7,7 @@
 create table if not exists public.perfiles (
   id uuid primary key references auth.users (id) on delete cascade,
   nombre text,
-  rol text not null check (rol in ('tesorero', 'secretaria')),
+  rol text not null check (rol in ('tesorero', 'secretaria', 'administrador')),
   creado_en timestamptz not null default now()
 );
 
