@@ -2236,15 +2236,24 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Pantalla de bienvenida (primer arranque) */
+/* La bienvenida comparte el telón cinematográfico oscuro del login (mismas
+   auroras, grano y rejilla; ver .login-screen). Siempre oscuro, independiente
+   del tema de la app. */
 .welcome-overlay {
   position: fixed;
   inset: 0;
-  background: var(--bg);
   z-index: 60;
   display: grid;
   place-items: center;
   overflow-y: auto;
   padding: 40px;
+  isolation: isolate;
+  color-scheme: dark;
+  background-color: #08080a;
+  background-image:
+    radial-gradient(58% 55% at 16% 10%, rgba(79, 70, 229, 0.30), transparent 60%),
+    radial-gradient(55% 55% at 86% 90%, rgba(37, 99, 235, 0.26), transparent 62%),
+    radial-gradient(120% 120% at 50% 50%, rgba(23, 21, 58, 0.22), transparent 72%);
 }
 
 /* Recorrido de bienvenida (diapositivas) */
@@ -2281,6 +2290,63 @@ a { color: inherit; text-decoration: none; }
   background: var(--ink);
   width: 18px;
 }
+
+/* Tarjeta de bienvenida sobre el telón oscuro: vidrio con blur y controles en
+   versión oscura, replicando el tratamiento del login e independiente del tema
+   de la app. */
+.welcome-overlay .card {
+  background: rgba(20, 21, 27, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
+  color: #f4f4f6;
+}
+.welcome-overlay .card-title-lg { color: #fff; }
+.welcome-overlay .card-title-sub { color: rgba(255, 255, 255, 0.55); }
+.welcome-overlay .welcome-slide-icon {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(37, 99, 235, 0.22));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.welcome-overlay .logo {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(37, 99, 235, 0.95));
+  border: none;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(49, 46, 129, 0.5);
+}
+.welcome-overlay .form-label { color: rgba(255, 255, 255, 0.6); }
+.welcome-overlay .opt { color: rgba(255, 255, 255, 0.4); }
+.welcome-overlay .field-error { color: #f87171; }
+.welcome-overlay .form-input,
+.welcome-overlay .form-select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.welcome-overlay .form-input::placeholder { color: rgba(255, 255, 255, 0.35); opacity: 1; }
+.welcome-overlay .form-input:focus,
+.welcome-overlay .form-select:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(129, 140, 248, 0.85);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+.welcome-overlay .welcome-dot { background: rgba(255, 255, 255, 0.18); }
+.welcome-overlay .welcome-dot.active { background: #fff; }
+/* Selector segmentado (idioma) sobre el vidrio oscuro */
+.welcome-overlay .tabs-segmented {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.welcome-overlay .tabs-segmented .seg { color: rgba(255, 255, 255, 0.6); }
+.welcome-overlay .tabs-segmented .seg:hover:not(.active) { background: rgba(255, 255, 255, 0.07); color: #fff; }
+.welcome-overlay .tabs-segmented .seg.active { background: rgba(255, 255, 255, 0.14); color: #fff; }
+/* Botones */
+.welcome-overlay .btn.primary { background: #fff; color: #0b0b0c; border: none; }
+.welcome-overlay .btn.primary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.9); opacity: 1; }
+.welcome-overlay .btn.ghost { color: rgba(255, 255, 255, 0.7); }
+.welcome-overlay .btn.ghost:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
 
 /* Switch (interruptor) */
 .switch {
@@ -2997,7 +3063,8 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
 }
 /* Rejilla fina que se disuelve hacia el centro y las sombras. */
-.login-screen::before {
+.login-screen::before,
+.welcome-overlay::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -3010,7 +3077,8 @@ a { color: inherit; text-decoration: none; }
   mask-image: radial-gradient(72% 72% at 50% 46%, transparent 24%, #000 78%);
 }
 /* Grano de película: ruido SVG a muy baja opacidad sobre todo el telón. */
-.login-screen::after {
+.login-screen::after,
+.welcome-overlay::after {
   content: "";
   position: absolute;
   inset: 0;
