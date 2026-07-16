@@ -150,7 +150,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   return (
     <div className="app">
-      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} onSalir={salir} />
       <main className="main">
         <Routes>
           <Route
@@ -271,8 +271,6 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 role={role}
                 onRoleChange={onRoleChange}
                 authActivo={authHabilitado}
-                sesionEmail={authEstado.email}
-                onSalir={salir}
               />
             }
           />

@@ -7,7 +7,7 @@ import type { Role } from "../role";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
   IconChurch, IconClipboardList, IconConfig, IconFileText, IconGasto,
-  IconHome, IconIdBadge, IconIngreso, IconMail, IconMiembros, IconReportes,
+  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes,
 } from "../icons";
 
 interface Props {
@@ -16,6 +16,10 @@ interface Props {
   pendingCount: number;
   unreadCount: number;
   role: Role;
+  /** Con login activo se muestra el correo de la sesión y el botón de salir. */
+  authActivo?: boolean;
+  sesionEmail?: string | null;
+  onSalir?: () => void;
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -70,7 +74,7 @@ function Grupo({ abierto, etiqueta, onToggle, children }: {
   );
 }
 
-export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, onSalir }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
   // Separación estricta de funciones:
@@ -173,6 +177,15 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         <Item to="/inbox" icon={<IconMail />} label={t("nav.inbox")} badge={unreadCount} />
         {!esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />
+        {authActivo && (
+          <>
+            {sesionEmail && <div className="sidebar-session-email" title={sesionEmail}>{sesionEmail}</div>}
+            <button type="button" className="nav-item nav-signout" onClick={onSalir}>
+              <span className="icon"><IconLogout /></span>
+              {t("login.salir")}
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );

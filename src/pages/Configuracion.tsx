@@ -31,9 +31,9 @@ interface Props {
   onLangPrefChange: (pref: LangPref) => void;
   role: Role;
   onRoleChange: (r: Role) => void;
+  /** Con login activo la sesión vive en el sidebar; aquí solo se muestra el
+   *  selector manual de rol cuando NO hay login configurado. */
   authActivo: boolean;
-  sesionEmail: string | null;
-  onSalir: () => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,7 +41,7 @@ const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
 export default function Configuracion({
   church, onChurchUpdated, themePref, onThemePrefChange, langPref, onLangPrefChange, role, onRoleChange,
-  authActivo, sesionEmail, onSalir,
+  authActivo,
 }: Props) {
   const { t } = useTranslation();
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
@@ -226,7 +226,7 @@ export default function Configuracion({
                 tesoreroCargo={treasurerForm.cargo}
               />
 
-              <RoleSettings value={role} onChange={onRoleChange} authActivo={authActivo} sesionEmail={sesionEmail} onSalir={onSalir} />
+              {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
 
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 

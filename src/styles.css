@@ -333,6 +333,22 @@ a { color: inherit; text-decoration: none; }
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
+/* Correo de la sesión + botón de cerrar sesión (solo con login activo). */
+.sidebar-session-email {
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 6px 12px 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-signout {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+}
 /* Main */
 .main {
   display: flex;
