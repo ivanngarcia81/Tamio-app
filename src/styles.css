@@ -2976,38 +2976,96 @@ a { color: inherit; text-decoration: none; }
 .msg-del:hover { opacity: 1; background: rgba(127,127,127,0.18); }
 
 /* ---------- Inicio de sesión (Supabase) ---------- */
+/* Pantalla de login: telón cinematográfico oscuro, independiente del tema de
+   la app (siempre oscuro). Todo el ambiente —auroras índigo/azul eléctrico,
+   grano de película y rejilla tenue— se compone en CSS, sin imágenes: nítido
+   a cualquier resolución y sin peso de assets. El centro queda limpio (espacio
+   negativo) para que la tarjeta de acceso repose sobre la oscuridad. */
 .login-screen {
   position: fixed;
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--bg);
   padding: 24px;
+  isolation: isolate;
+  color-scheme: dark;
+  background-color: #08080a;
+  background-image:
+    radial-gradient(58% 55% at 16% 10%, rgba(79, 70, 229, 0.30), transparent 60%),
+    radial-gradient(55% 55% at 86% 90%, rgba(37, 99, 235, 0.26), transparent 62%),
+    radial-gradient(120% 120% at 50% 50%, rgba(23, 21, 58, 0.22), transparent 72%);
+  overflow: hidden;
+}
+/* Rejilla fina que se disuelve hacia el centro y las sombras. */
+.login-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(72% 72% at 50% 46%, transparent 24%, #000 78%);
+  mask-image: radial-gradient(72% 72% at 50% 46%, transparent 24%, #000 78%);
+}
+/* Grano de película: ruido SVG a muy baja opacidad sobre todo el telón. */
+.login-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.05;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .login-card {
+  position: relative;
   width: 100%;
   max-width: 360px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 32px 28px;
-  box-shadow: 0 18px 44px rgba(0,0,0,.08);
+  background: rgba(20, 21, 27, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 34px 30px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 13px;
+  color: #f4f4f6;
 }
 .login-logo {
-  width: 44px; height: 44px;
+  width: 46px; height: 46px;
   display: grid; place-items: center;
-  border-radius: 12px;
-  background: var(--surface-2);
-  color: var(--text-2);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(37, 99, 235, 0.95));
+  color: #fff;
   margin: 0 auto 4px;
+  box-shadow: 0 8px 22px rgba(49, 46, 129, 0.5);
 }
-.login-title { font-size: 20px; font-weight: 700; text-align: center; letter-spacing: -0.02em; }
-.login-sub { font-size: 13px; color: var(--text-2); text-align: center; margin-bottom: 8px; }
+.login-title { font-size: 21px; font-weight: 700; text-align: center; letter-spacing: -0.02em; color: #fff; }
+.login-sub { font-size: 13px; color: rgba(255, 255, 255, 0.5); text-align: center; margin-bottom: 8px; }
 .login-btn { width: 100%; justify-content: center; margin-top: 6px; }
-.login-cargando { font-size: 13px; color: var(--text-2); }
+.login-cargando { font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+/* Controles del formulario en versión oscura, sin depender del tema global. */
+.login-card .form-label { color: rgba(255, 255, 255, 0.6); }
+.login-card .form-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.login-card .form-input::placeholder { color: rgba(255, 255, 255, 0.35); opacity: 1; }
+.login-card .form-input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(129, 140, 248, 0.85);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+.login-card .field-error { color: #f87171; }
+/* Botón de acceso: blanco limpio de alto contraste sobre el vidrio oscuro. */
+.login-btn.primary { background: #fff; color: #0b0b0c; border: none; }
+.login-btn.primary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.9); }
+.login-btn.primary:disabled { opacity: 0.6; }
 
 .sesion-box { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .sesion-email { font-size: 13px; color: var(--text); font-weight: 600; }
