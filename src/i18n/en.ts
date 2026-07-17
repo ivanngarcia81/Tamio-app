@@ -288,6 +288,7 @@ export const en: Resources = {
     guardarIngreso: "Save income",
     guardarGasto: "Save expense",
     guardarMiembro: "Save member",
+    guardarYAgregarOtro: "Save and add another",
     segIngreso: "Income",
     segGasto: "Expense",
     segMiembro: "Member",

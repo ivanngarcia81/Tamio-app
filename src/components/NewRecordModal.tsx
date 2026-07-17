@@ -225,7 +225,32 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     }
   }
 
-  async function guardar() {
+  /** Deja el modal listo para el siguiente registro: limpia los campos de la
+   *  entrada pero conserva el tipo (ingreso/gasto/miembro), la categoría, la
+   *  fecha, la hora y el método de pago, para meter varios seguidos. */
+  function limpiarParaOtro() {
+    setConcepto("");
+    setSubcategoria("");
+    setMonto("");
+    setDetalle("");
+    setAportanteQuery("");
+    setAportanteId(null);
+    setBeneficiario("");
+    setBeneficiarioRfc("");
+    setConstancia(false);
+    setMarcarPendiente(false);
+    setEsRecurrente(false);
+    setComprobantePath(null);
+    setMNombre("");
+    setMEmail("");
+    setMTelefono("");
+    setMRfc("");
+    setMNotas("");
+    setError(null);
+    setSaving(false);
+  }
+
+  async function guardar(cerrar = true) {
     setError(null);
     try {
       if (tab === "miembro") {
@@ -277,7 +302,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           );
           playSound(tab === "ingreso" ? "ingreso" : "gasto");
           onSaved();
-          onClose();
+          if (cerrar) onClose(); else limpiarParaOtro();
           return;
         }
         const payload = {
@@ -313,7 +338,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       );
       playSound(isEdit || tab === "miembro" ? "guardado" : tab === "ingreso" ? "ingreso" : "gasto");
       onSaved();
-      onClose();
+      if (cerrar) onClose(); else limpiarParaOtro();
     } catch (e) {
       setError(t("common.noSePudoGuardar", { error: String(e) }));
       setSaving(false);
@@ -639,7 +664,12 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           <div className="form-hint">{t("common.camposOpcionales")}</div>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose} disabled={saving}>{t("common.cancelar")}</button>
-            <button className="btn primary" onClick={guardar} disabled={saving}>
+            {!isEdit && (
+              <button className="btn secondary" onClick={() => guardar(false)} disabled={saving}>
+                {t("recordModal.guardarYAgregarOtro")}
+              </button>
+            )}
+            <button className="btn primary" onClick={() => guardar(true)} disabled={saving}>
               {botonGuardar}
             </button>
           </div>

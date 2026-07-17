@@ -282,6 +282,7 @@ export const es = {
     guardarIngreso: "Guardar ingreso",
     guardarGasto: "Guardar gasto",
     guardarMiembro: "Guardar miembro",
+    guardarYAgregarOtro: "Guardar y agregar otro",
     segIngreso: "Ingreso",
     segGasto: "Gasto",
     segMiembro: "Miembro",
