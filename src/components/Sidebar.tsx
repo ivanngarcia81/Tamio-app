@@ -6,7 +6,7 @@ import type { Church } from "../db";
 import type { Role } from "../role";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
-  IconClipboardList, IconConfig, IconFileText, IconGasto,
+  IconClipboardList, IconConfig, IconFileText, IconGasto, IconHelp,
   IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconTamio,
 } from "../icons";
 
@@ -45,9 +45,9 @@ function initialOpen(): Record<GroupId, boolean> {
   return { tesoreria: true, secretaria: true };
 }
 
-function Item({ to, icon, label, badge }: { to: string; icon: ReactNode; label: string; badge?: number }) {
+function Item({ to, icon, label, badge, dataTour }: { to: string; icon: ReactNode; label: string; badge?: number; dataTour?: string }) {
   return (
-    <NavLink to={to} end={to === "/"} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+    <NavLink to={to} end={to === "/"} data-tour={dataTour} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
       <span className="icon">{icon}</span>
       {label}
       {badge !== undefined && badge > 0 && <span className="badge">{badge}</span>}
@@ -55,14 +55,15 @@ function Item({ to, icon, label, badge }: { to: string; icon: ReactNode; label: 
   );
 }
 
-function Grupo({ abierto, etiqueta, onToggle, children }: {
+function Grupo({ abierto, etiqueta, onToggle, children, dataTour }: {
   abierto: boolean;
   etiqueta: string;
   onToggle: () => void;
   children: ReactNode;
+  dataTour?: string;
 }) {
   return (
-    <div className={`nav-group${abierto ? "" : " closed"}`}>
+    <div className={`nav-group${abierto ? "" : " closed"}`} data-tour={dataTour}>
       <button type="button" className="nav-group-head" onClick={onToggle} aria-expanded={abierto}>
         {etiqueta}
         <span className="chev"><IconChevronDown size={12} strokeWidth={2.2} /></span>
@@ -139,7 +140,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconTamio size={44} />}
       </div>
 
-      <div className="church-select">
+      <div className="church-select" data-tour="marca">
         <div className="church-avatar">
           {logoUrl ? <img src={logoUrl} alt="" /> : initials}
         </div>
@@ -151,9 +152,9 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       </div>
 
       <nav className="nav">
-        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />
+        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} dataTour="inicio" />
 
-        <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")}>
+        <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")} dataTour="tesoreria">
           {!esSecretaria && <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />}
           {!esSecretaria && <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />}
           {!esSecretaria && <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />}
@@ -162,7 +163,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         </Grupo>
 
         {!esTesorero && (
-          <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
+          <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")} dataTour="secretaria">
             <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
             <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
             <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />
@@ -176,7 +177,8 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       <div className="sidebar-footer">
         <Item to="/inbox" icon={<IconMail />} label={t("nav.inbox")} badge={unreadCount} />
         {!esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
-        <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />
+        <Item to="/ayuda" icon={<IconHelp />} label={t("nav.ayuda")} dataTour="ayuda" />
+        <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} dataTour="config" />
         {authActivo && (
           <>
             {sesionEmail && <div className="sidebar-session-email" title={sesionEmail}>{sesionEmail}</div>}

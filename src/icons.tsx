@@ -363,3 +363,18 @@ export const IconLogout = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
     <line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
+
+export const IconEye = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+export const IconHelp = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);

@@ -20,6 +20,8 @@ import Agenda from "./pages/Agenda";
 import Bandeja from "./pages/Bandeja";
 import Mensajes from "./pages/Mensajes";
 import Configuracion from "./pages/Configuracion";
+import Ayuda from "./pages/Ayuda";
+import { iniciarTour, marcarTourHecho, tourPendiente } from "./tour";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
@@ -120,6 +122,15 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Tutorial guiado la primera vez, tras cerrar la bienvenida. El sidebar ya
+  // está montado, así que los pasos existen; se marca como hecho para no
+  // repetirlo (se puede relanzar desde Ayuda).
+  useEffect(() => {
+    if (showWelcome || !tourPendiente()) return;
+    const id = window.setTimeout(() => { iniciarTour(t); marcarTourHecho(); }, 700);
+    return () => window.clearTimeout(id);
+  }, [showWelcome, t]);
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);
@@ -257,6 +268,10 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             element={guard("/bandeja",
               <Bandeja church={church} refreshKey={refreshKey} onEditTx={openEditTx} onChanged={onChanged} />
             )}
+          />
+          <Route
+            path="/ayuda"
+            element={<Ayuda role={role} onIniciarTour={() => iniciarTour(t)} />}
           />
           <Route
             path="/configuracion"

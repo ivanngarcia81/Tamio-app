@@ -17,6 +17,7 @@
     "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-sql": "^2.4.0",
+    "driver.js": "^1.7.0",
     "html2canvas": "^1.4.1",
     "i18next": "^26.3.6",
     "jspdf": "^4.2.1",
