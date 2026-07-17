@@ -21,7 +21,7 @@ import Bandeja from "./pages/Bandeja";
 import Mensajes from "./pages/Mensajes";
 import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
-import { iniciarTour, marcarTourHecho, tourPendiente } from "./tour";
+import { iniciarTour } from "./tour";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
@@ -122,17 +122,6 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-
-  // Tutorial guiado la primera vez, tras cerrar la bienvenida. Solo cuando la
-  // app real está a la vista (sesión iniciada y con rol): en la pantalla de
-  // login el sidebar aún no existe y el tour saldría vacío. Se marca como hecho
-  // para no repetirlo (se puede relanzar desde Ayuda).
-  const appVisible = !authHabilitado || (authEstado.autenticado && !authEstado.sinRol && !authEstado.cargando);
-  useEffect(() => {
-    if (showWelcome || !appVisible || !tourPendiente()) return;
-    const id = window.setTimeout(() => { iniciarTour(t); marcarTourHecho(); }, 700);
-    return () => window.clearTimeout(id);
-  }, [showWelcome, appVisible, t]);
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);
