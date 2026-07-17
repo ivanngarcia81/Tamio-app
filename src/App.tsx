@@ -123,14 +123,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Tutorial guiado la primera vez, tras cerrar la bienvenida. El sidebar ya
-  // está montado, así que los pasos existen; se marca como hecho para no
-  // repetirlo (se puede relanzar desde Ayuda).
+  // Tutorial guiado la primera vez, tras cerrar la bienvenida. Solo cuando la
+  // app real está a la vista (sesión iniciada y con rol): en la pantalla de
+  // login el sidebar aún no existe y el tour saldría vacío. Se marca como hecho
+  // para no repetirlo (se puede relanzar desde Ayuda).
+  const appVisible = !authHabilitado || (authEstado.autenticado && !authEstado.sinRol && !authEstado.cargando);
   useEffect(() => {
-    if (showWelcome || !tourPendiente()) return;
+    if (showWelcome || !appVisible || !tourPendiente()) return;
     const id = window.setTimeout(() => { iniciarTour(t); marcarTourHecho(); }, 700);
     return () => window.clearTimeout(id);
-  }, [showWelcome, t]);
+  }, [showWelcome, appVisible, t]);
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);

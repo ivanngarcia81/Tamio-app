@@ -29,7 +29,9 @@ export function iniciarTour(t: TFunction): void {
   d.drive();
 }
 
-const CLAVE = "tamio-tour-hecho";
+// v2: la v1 podía marcarse por error en la pantalla de login; al cambiar la
+// clave, el tour se relanza una vez ya dentro de la app.
+const CLAVE = "tamio-tour-hecho-v2";
 
 /** true si el usuario aún no ha visto (ni saltado) el tutorial guiado. */
 export function tourPendiente(): boolean {
