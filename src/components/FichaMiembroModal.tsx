@@ -205,7 +205,20 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
     return () => { cancelado = true; };
   }, [member, church.id]);
 
-  async function guardar() {
+  /** Deja el formulario de alta limpio para registrar otro miembro sin cerrar. */
+  function limpiarParaOtro() {
+    setNombre(""); setEmail(""); setTelefono(""); setRfc(""); setNotas("");
+    setEstado("activo");
+    setFechaCongregacion(""); setFechaIngreso(hoy); setIglesiaAnterior("");
+    setBautizadoAgua(false); setFechaBautismoAgua("");
+    setBautizadoEspiritu(false); setFechaBautismoEspiritu("");
+    setCursoMembresia(false);
+    setMinisterios([]); setCargos([]); setMinisteriosInteres([]); setInstrumentos([]); setHabilidades([]);
+    setDisponibilidad(""); setInteresServir(false);
+    setError(null);
+  }
+
+  async function guardar(cerrar = true) {
     if (crear && !nombre.trim()) { setError(t("validacion.nombreObligatorio")); return; }
     setSaving(true);
     try {
@@ -243,7 +256,7 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
       playSound("guardado");
       showToast(crear ? t("toast.miembroGuardado") : t("ficha.toastGuardada"));
       onSaved();
-      onClose();
+      if (crear && !cerrar) limpiarParaOtro(); else onClose();
     } finally {
       setSaving(false);
     }
@@ -573,7 +586,12 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
           )}
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
-            <button className="btn primary" onClick={guardar} disabled={saving}>
+            {crear && (
+              <button className="btn secondary" onClick={() => guardar(false)} disabled={saving}>
+                {t("recordModal.guardarYAgregarOtro")}
+              </button>
+            )}
+            <button className="btn primary" onClick={() => guardar(true)} disabled={saving}>
               {saving ? t("common.guardando") : (crear ? t("recordModal.guardarMiembro") : t("common.guardarCambios"))}
             </button>
           </div>
