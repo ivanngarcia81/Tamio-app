@@ -54,12 +54,11 @@ function accent(color: string): CSSProperties {
 interface Props {
   church: Church;
   refreshKey: number;
-  onNew: () => void;
   onEdit: (member: Member) => void;
   onChanged: () => void;
 }
 
-export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged }: Props) {
+export default function Membresia({ church, refreshKey, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MembresiaStats | null>(null);
@@ -68,6 +67,7 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
   const [pendingBaja, setPendingBaja] = useState<Member | null>(null);
   const [pendingReactivar, setPendingReactivar] = useState<Member | null>(null);
   const [ficha, setFicha] = useState<Member | null>(null);
+  const [crearFicha, setCrearFicha] = useState(false);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const anio = currentYear();
@@ -127,7 +127,7 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
           <div className="page-sub">{t("secretaria.membresia.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={onNew}>
+          <button className="btn primary" onClick={() => setCrearFicha(true)}>
             <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
           </button>
         </div>
@@ -279,6 +279,15 @@ export default function Membresia({ church, refreshKey, onNew, onEdit, onChanged
           church={church}
           member={ficha}
           onClose={() => setFicha(null)}
+          onSaved={onChanged}
+        />
+      )}
+
+      {crearFicha && (
+        <FichaMiembroModal
+          church={church}
+          member={null}
+          onClose={() => setCrearFicha(false)}
           onSaved={onChanged}
         />
       )}

@@ -725,6 +725,7 @@ export const en: Resources = {
 
   ficha: {
     sub: "Membership, spiritual life, and service profile",
+    secPersonal: "Personal details",
     secMembresia: "Membership information",
     secEspiritual: "Spiritual information",
     secServicio: "Service and skills",

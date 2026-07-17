@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  fmtFechaCorta, memberAsistenciaStats, memberDocs, updateMemberFicha,
-  type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha,
+  fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, nowLocalIso, updateMemberFicha,
+  type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha, type NewMember,
 } from "../db";
 import { IconClose, IconPrinter } from "../icons";
 import { showToast } from "../toast";
@@ -140,46 +140,61 @@ export function SwitchRow({ label, value, onChange }: { label: string; value: bo
 
 interface Props {
   church: Church;
-  member: Member;
+  /** Miembro existente (editar su ficha) o null para dar de alta uno nuevo con
+   *  toda la ficha de una vez (datos personales + espiritual + servicio). */
+  member: Member | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-/** Ficha completa del miembro: información de membresía, vida espiritual y
- *  servicio/habilidades. Los datos personales se editan con el botón Editar. */
+/** Ficha completa del miembro: datos de membresía, vida espiritual y servicio.
+ *  En modo edición los datos personales se editan aparte (botón Editar); en
+ *  modo alta (member === null) se incluyen aquí para no tener que completarlos
+ *  después. */
 export default function FichaMiembroModal({ church, member, onClose, onSaved }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
+  const crear = member === null;
+  const hoy = nowLocalIso().slice(0, 10);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Datos personales (solo se editan aquí en el alta).
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [rfc, setRfc] = useState("");
+  const [notas, setNotas] = useState("");
 
   const [estado, setEstado] = useState(
-    ESTADOS_REGISTRO.includes(member.estado_membresia as (typeof ESTADOS_REGISTRO)[number])
-      ? member.estado_membresia
+    ESTADOS_REGISTRO.includes(member?.estado_membresia as (typeof ESTADOS_REGISTRO)[number])
+      ? (member?.estado_membresia ?? "activo")
       : "activo"
   );
-  const [fechaCongregacion, setFechaCongregacion] = useState(member.fecha_congregacion ?? "");
-  const [fechaIngreso, setFechaIngreso] = useState(member.fecha_ingreso ?? "");
-  const [iglesiaAnterior, setIglesiaAnterior] = useState(member.iglesia_anterior ?? "");
-  const [bautizadoAgua, setBautizadoAgua] = useState(member.bautizado_agua === 1);
-  const [fechaBautismoAgua, setFechaBautismoAgua] = useState(member.fecha_bautismo_agua ?? "");
-  const [bautizadoEspiritu, setBautizadoEspiritu] = useState(member.bautizado_espiritu === 1);
-  const [fechaBautismoEspiritu, setFechaBautismoEspiritu] = useState(member.fecha_bautismo_espiritu ?? "");
-  const [cursoMembresia, setCursoMembresia] = useState(member.curso_membresia === 1);
-  const [ministerios, setMinisterios] = useState<string[]>(() => parseLista(member.ministerios));
-  const [cargos, setCargos] = useState<string[]>(() => parseLista(member.cargos));
-  const [ministeriosInteres, setMinisteriosInteres] = useState<string[]>(() => parseLista(member.ministerios_interes));
-  const [instrumentos, setInstrumentos] = useState<string[]>(() => parseLista(member.instrumentos));
-  const [habilidades, setHabilidades] = useState<string[]>(() => parseLista(member.habilidades));
-  const [disponibilidad, setDisponibilidad] = useState(member.disponibilidad ?? "");
-  const [interesServir, setInteresServir] = useState(member.interes_servir === 1);
+  const [fechaCongregacion, setFechaCongregacion] = useState(member?.fecha_congregacion ?? "");
+  const [fechaIngreso, setFechaIngreso] = useState(member?.fecha_ingreso ?? (crear ? hoy : ""));
+  const [iglesiaAnterior, setIglesiaAnterior] = useState(member?.iglesia_anterior ?? "");
+  const [bautizadoAgua, setBautizadoAgua] = useState(member?.bautizado_agua === 1);
+  const [fechaBautismoAgua, setFechaBautismoAgua] = useState(member?.fecha_bautismo_agua ?? "");
+  const [bautizadoEspiritu, setBautizadoEspiritu] = useState(member?.bautizado_espiritu === 1);
+  const [fechaBautismoEspiritu, setFechaBautismoEspiritu] = useState(member?.fecha_bautismo_espiritu ?? "");
+  const [cursoMembresia, setCursoMembresia] = useState(member?.curso_membresia === 1);
+  const [ministerios, setMinisterios] = useState<string[]>(() => parseLista(member?.ministerios ?? "[]"));
+  const [cargos, setCargos] = useState<string[]>(() => parseLista(member?.cargos ?? "[]"));
+  const [ministeriosInteres, setMinisteriosInteres] = useState<string[]>(() => parseLista(member?.ministerios_interes ?? "[]"));
+  const [instrumentos, setInstrumentos] = useState<string[]>(() => parseLista(member?.instrumentos ?? "[]"));
+  const [habilidades, setHabilidades] = useState<string[]>(() => parseLista(member?.habilidades ?? "[]"));
+  const [disponibilidad, setDisponibilidad] = useState(member?.disponibilidad ?? "");
+  const [interesServir, setInteresServir] = useState(member?.interes_servir === 1);
 
-  const esBaja = member.activo === 0;
+  const esBaja = member?.activo === 0;
 
   // Estadísticas de asistencia: derivadas de los servicios guardados
   // (snapshots), nunca almacenadas por separado.
   const [asistencia, setAsistencia] = useState<MemberAsistenciaStats | null>(null);
   const [docs, setDocs] = useState<MemberDoc[] | null>(null);
   useEffect(() => {
+    if (!member) return;
     let cancelado = false;
     memberAsistenciaStats(member.id, church.id)
       .then((s) => { if (!cancelado) setAsistencia(s); })
@@ -188,9 +203,10 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
       .then((d) => { if (!cancelado) setDocs(d); })
       .catch(console.error);
     return () => { cancelado = true; };
-  }, [member.id, church.id]);
+  }, [member, church.id]);
 
   async function guardar() {
+    if (crear && !nombre.trim()) { setError(t("validacion.nombreObligatorio")); return; }
     setSaving(true);
     try {
       const ficha: MemberFicha = {
@@ -211,9 +227,21 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
         disponibilidad: disponibilidad.trim() || null,
         interes_servir: interesServir,
       };
-      await updateMemberFicha(member.id, church.id, ficha);
+      if (crear) {
+        const nuevo: NewMember = {
+          nombre: nombre.trim(),
+          email: email.trim() || null,
+          telefono: telefono.trim() || null,
+          rfc: rfc.trim() || null,
+          notas: notas.trim() || null,
+          fecha_ingreso: fechaIngreso || hoy,
+        };
+        await insertMemberConFicha(church.id, nuevo, ficha);
+      } else {
+        await updateMemberFicha(member!.id, church.id, ficha);
+      }
       playSound("guardado");
-      showToast(t("ficha.toastGuardada"));
+      showToast(crear ? t("toast.miembroGuardado") : t("ficha.toastGuardada"));
       onSaved();
       onClose();
     } finally {
@@ -226,13 +254,41 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
       <div className="modal-card">
         <div className="modal-header">
           <div>
-            <div className="modal-title">{member.nombre}</div>
-            <div className="modal-sub">{t("ficha.sub")}</div>
+            <div className="modal-title">{crear ? t("recordModal.nuevoMiembro") : member!.nombre}</div>
+            <div className="modal-sub">{crear ? t("recordModal.subMiembro") : t("ficha.sub")}</div>
           </div>
           <div className="modal-close" onClick={onClose}><IconClose /></div>
         </div>
 
         <div className="modal-body">
+          {crear && (
+            <Seccion titulo={t("ficha.secPersonal")}>
+              <div className="form-group full">
+                <label className="form-label">{t("recordModal.nombreFamilia")}</label>
+                <input className="form-input" value={nombre} autoFocus onChange={(e) => setNombre(e.target.value)} placeholder={t("recordModal.nombreFamiliaPlaceholder")} />
+                {error && <div className="field-error">{error}</div>}
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">{t("tesorero.correo")} <span className="opt">{t("common.opcional")}</span></label>
+                  <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("tesorero.correoPlaceholder")} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">{t("tesorero.telefono")} <span className="opt">{t("common.opcional")}</span></label>
+                  <input className="form-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder={t("tesorero.telefonoPlaceholder")} />
+                </div>
+              </div>
+              <div className="form-group full">
+                <label className="form-label">{t("recordModal.rfc")} <span className="opt">{t("recordModal.rfcMiembroHint")}</span></label>
+                <input className="form-input" value={rfc} onChange={(e) => setRfc(e.target.value)} placeholder={t("recordModal.rfcMiembroPlaceholder")} />
+              </div>
+              <div className="form-group full">
+                <label className="form-label">{t("recordModal.notas")} <span className="opt">{t("common.opcional")}</span></label>
+                <textarea className="form-textarea" value={notas} onChange={(e) => setNotas(e.target.value)} placeholder={t("usuarios.notasPlaceholder")} />
+              </div>
+            </Seccion>
+          )}
+
           <Seccion titulo={t("ficha.secMembresia")}>
             <div className="form-grid">
               <div className="form-group">
@@ -368,6 +424,7 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
             </div>
           </Seccion>
 
+          {!crear && (<>
           <Seccion titulo={t("ficha.secAsistencia")}>
             {!asistencia ? (
               <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("common.preparando")}</div>
@@ -431,15 +488,15 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
             {(() => {
               let cambios: { de: string; a: string; fecha: string }[] = [];
               let notasAdmin: { fecha: string; texto: string }[] = [];
-              try { cambios = JSON.parse(member.historial_estados); } catch { /* noop */ }
-              try { notasAdmin = JSON.parse(member.seguimiento_notas); } catch { /* noop */ }
+              try { cambios = JSON.parse(member!.historial_estados); } catch { /* noop */ }
+              try { notasAdmin = JSON.parse(member!.seguimiento_notas); } catch { /* noop */ }
               const nombreEstado = (k: string) =>
                 ["activo", "inactivo", "visitante", "enProceso", "trasladado", "retirado", "fallecido", "baja"].includes(k)
                   ? t(`membresia.estado.${k}`) : k;
               return (
                 <div style={{ fontSize: 13 }}>
                   <div style={{ color: "var(--text-3)", marginBottom: cambios.length || notasAdmin.length ? 12 : 0 }}>
-                    {t("ficha.registradoEl", { fecha: member.created_at ? member.created_at.slice(0, 10) : "—" })}
+                    {t("ficha.registradoEl", { fecha: member!.created_at ? member!.created_at.slice(0, 10) : "—" })}
                   </div>
                   {cambios.length > 0 && (
                     <div style={{ marginBottom: notasAdmin.length ? 12 : 0 }}>
@@ -502,19 +559,22 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
               </div>
             )}
           </Seccion>
+          </>)}
         </div>
 
         <div className="modal-footer">
-          <button
-            className="btn secondary"
-            onClick={() => printInformeIndividual(church, member).catch((e) => showToast(t("common.noSePudoImprimir", { error: String(e) })))}
-          >
-            <IconPrinter size={13} /> {t("ficha.generarInforme")}
-          </button>
+          {crear ? <div /> : (
+            <button
+              className="btn secondary"
+              onClick={() => printInformeIndividual(church, member!).catch((e) => showToast(t("common.noSePudoImprimir", { error: String(e) })))}
+            >
+              <IconPrinter size={13} /> {t("ficha.generarInforme")}
+            </button>
+          )}
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
             <button className="btn primary" onClick={guardar} disabled={saving}>
-              {saving ? t("common.guardando") : t("common.guardarCambios")}
+              {saving ? t("common.guardando") : (crear ? t("recordModal.guardarMiembro") : t("common.guardarCambios"))}
             </button>
           </div>
         </div>

@@ -231,7 +231,6 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               <Membresia
                 church={church}
                 refreshKey={refreshKey}
-                onNew={() => setModalMode({ kind: "create", tab: "miembro", bloquearPestana: true })}
                 onEdit={openEditMember}
                 onChanged={onChanged}
               />

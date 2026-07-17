@@ -719,6 +719,7 @@ export const es = {
 
   ficha: {
     sub: "Ficha de membresía, vida espiritual y servicio",
+    secPersonal: "Datos personales",
     secMembresia: "Información de membresía",
     secEspiritual: "Información espiritual",
     secServicio: "Servicio y habilidades",
