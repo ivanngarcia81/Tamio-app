@@ -19,6 +19,7 @@ import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
 import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
+import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
 import type { Role } from "../role";
 
@@ -266,6 +267,8 @@ export default function Configuracion({
               )}
 
               {esAdmin && <BackupSettings church={church} />}
+
+              {esAdmin && <DangerZoneSettings church={church} />}
             </div>
           </div>
 

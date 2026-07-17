@@ -645,6 +645,22 @@ export const es = {
     },
   },
 
+  reset: {
+    titulo: "Zona de peligro",
+    sub: "Acciones irreversibles. Exporta un respaldo antes de continuar.",
+    palabraConfirmar: "BORRAR",
+    escribePalabra: "Escribe {{palabra}} para confirmar:",
+    confirmarTitulo: "¿Estás seguro?",
+    borrarDatosTitulo: "Borrar todos los registros",
+    borrarDatosDesc: "Elimina movimientos, miembros, cartas, actas y servicios. Conserva la configuración de la iglesia (nombre, logo, firmas, categorías y plantillas).",
+    borrarDatosBtn: "Borrar registros",
+    confirmarDatos: "Se borrarán TODOS los registros de la iglesia (movimientos, miembros, cartas, etc.). La configuración se conserva. Esta acción no se puede deshacer.",
+    fabricaTitulo: "Reinicio de fábrica",
+    fabricaDesc: "Borra TODO, incluida la configuración de la iglesia. La app vuelve como recién instalada.",
+    fabricaBtn: "Reiniciar de fábrica",
+    confirmarFabrica: "Se borrará TODO, incluida la configuración, y la app volverá a cero. Esta acción no se puede deshacer.",
+  },
+
   mensajes: {
     titulo: "Mensajes",
     sub: "Comunicación entre tesorería y secretaría",

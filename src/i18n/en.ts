@@ -651,6 +651,22 @@ export const en: Resources = {
     },
   },
 
+  reset: {
+    titulo: "Danger zone",
+    sub: "Irreversible actions. Export a backup before continuing.",
+    palabraConfirmar: "DELETE",
+    escribePalabra: "Type {{palabra}} to confirm:",
+    confirmarTitulo: "Are you sure?",
+    borrarDatosTitulo: "Delete all records",
+    borrarDatosDesc: "Removes transactions, members, letters, minutes and services. Keeps the church configuration (name, logo, signatures, categories and templates).",
+    borrarDatosBtn: "Delete records",
+    confirmarDatos: "This will delete ALL of the church's records (transactions, members, letters, etc.). The configuration is kept. This action cannot be undone.",
+    fabricaTitulo: "Factory reset",
+    fabricaDesc: "Deletes EVERYTHING, including the church configuration. The app returns to a fresh install.",
+    fabricaBtn: "Factory reset",
+    confirmarFabrica: "This will delete EVERYTHING, including the configuration, and reset the app to zero. This action cannot be undone.",
+  },
+
   mensajes: {
     titulo: "Inbox",
     sub: "Communication between treasury and secretariat",

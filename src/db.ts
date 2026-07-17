@@ -3015,3 +3015,43 @@ export function mesLegible(yyyyMm: string): string {
   const mes = MESES[lang][m - 1];
   return `${mes[0].toUpperCase()}${mes.slice(1)} ${y}`;
 }
+
+// ---------- Borrado masivo (Ajustes → solo administrador) ----------
+
+/** Datos transaccionales de la iglesia, en orden seguro para borrar. Todas
+ *  tienen columna church_id (servicio_asistencia se limpia por servicio). */
+const TABLAS_DATOS = [
+  "transactions", "depositos_bancarios", "members", "actas", "cartas",
+  "solicitudes", "traslados_salida", "traslados_entrada", "servicios",
+  "agenda", "mensajes", "gastos_recurrentes",
+] as const;
+
+/** Opción A: borra todos los REGISTROS de la iglesia (movimientos, miembros,
+ *  cartas, actas, servicios, etc.) pero CONSERVA la configuración: la fila de
+ *  la iglesia (nombre, logo, firmas, datos del tesorero/pastor), las categorías
+ *  personalizadas, las plantillas de cartas y los usuarios locales. */
+export async function borrarDatosIglesia(churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "DELETE FROM servicio_asistencia WHERE servicio_id IN (SELECT id FROM servicios WHERE church_id = $1)",
+    [churchId]
+  );
+  for (const tabla of TABLAS_DATOS) {
+    await d.execute(`DELETE FROM ${tabla} WHERE church_id = $1`, [churchId]);
+  }
+}
+
+/** Opción B: reinicio de fábrica. Borra TODO, incluida la configuración de la
+ *  iglesia, dejando la base como recién instalada. Tras llamarla, la app debe
+ *  recargarse: getOrCreateChurch creará una iglesia nueva y saldrá la
+ *  bienvenida. */
+export async function reinicioDeFabrica(): Promise<void> {
+  const d = await getDb();
+  const todas = [
+    "servicio_asistencia", ...TABLAS_DATOS,
+    "plantillas", "categorias_custom", "usuarios", "churches",
+  ];
+  for (const tabla of todas) {
+    await d.execute(`DELETE FROM ${tabla}`);
+  }
+}
