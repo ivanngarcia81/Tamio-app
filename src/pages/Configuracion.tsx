@@ -267,9 +267,11 @@ export default function Configuracion({
                 <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
               )}
 
-              {/* Sincronización (beta): solo con login activo y para quienes
-                  manejan miembros (secretaría) o todo (admin). */}
-              {authActivo && verSecretaria && <SyncSettings church={church} />}
+              {/* Sincronización (beta): visible para cualquier usuario con sesión.
+                  Sincronizar es una acción de dispositivo/cuenta (no de rol); la
+                  seguridad por iglesia la garantiza RLS en la nube. Debe estar
+                  disponible tanto en la Mac de Tesorería como en la de Secretaría. */}
+              {authActivo && <SyncSettings church={church} />}
 
               {esAdmin && <BackupSettings church={church} />}
 
