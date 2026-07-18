@@ -123,7 +123,8 @@ export async function updateMemberFicha(id: number, churchId: number, f: MemberF
        estado_membresia = $1, fecha_congregacion = $2, fecha_ingreso = $3, iglesia_anterior = $4,
        bautizado_agua = $5, fecha_bautismo_agua = $6, bautizado_espiritu = $7, fecha_bautismo_espiritu = $8,
        curso_membresia = $9, ministerios = $10, ministerios_interes = $11, instrumentos = $12,
-       habilidades = $13, disponibilidad = $14, interes_servir = $15, cargos = $18
+       habilidades = $13, disponibilidad = $14, interes_servir = $15, cargos = $18,
+       updated_at = datetime('now')
      WHERE id = $16 AND church_id = $17`,
     [
       f.estado_membresia,
@@ -158,7 +159,7 @@ export interface NotaSeguimiento {
 export async function marcarMiembroRevisado(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "UPDATE members SET seguimiento_revisado_en = $1 WHERE id = $2 AND church_id = $3",
+    "UPDATE members SET seguimiento_revisado_en = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
     [nowLocalIso(), id, churchId]
   );
 }
@@ -173,7 +174,7 @@ export async function agregarNotaSeguimiento(id: number, churchId: number, texto
   try { notas = JSON.parse(rows[0]?.seguimiento_notas ?? "[]"); } catch { /* noop */ }
   notas.push({ fecha: nowLocalIso(), texto });
   await d.execute(
-    "UPDATE members SET seguimiento_notas = $1 WHERE id = $2 AND church_id = $3",
+    "UPDATE members SET seguimiento_notas = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
     [JSON.stringify(notas), id, churchId]
   );
 }
@@ -1068,8 +1069,8 @@ export interface NewMember {
 export async function insertMember(churchId: number, m: NewMember): Promise<void> {
   const d = await getDb();
   await d.execute(
-    `INSERT INTO members (church_id, nombre, email, telefono, rfc, etiquetas, fecha_ingreso, notas)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    `INSERT INTO members (church_id, nombre, email, telefono, rfc, etiquetas, fecha_ingreso, notas, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'))`,
     [
       churchId,
       m.nombre,
@@ -1079,6 +1080,7 @@ export async function insertMember(churchId: number, m: NewMember): Promise<void
       JSON.stringify(m.etiquetas ?? []),
       m.fecha_ingreso ?? null,
       m.notas ?? null,
+      crypto.randomUUID(),
     ]
   );
 }
@@ -1089,8 +1091,8 @@ export async function insertMember(churchId: number, m: NewMember): Promise<void
 export async function insertMemberConFicha(churchId: number, m: NewMember, ficha: MemberFicha): Promise<void> {
   const d = await getDb();
   const res = await d.execute(
-    `INSERT INTO members (church_id, nombre, email, telefono, rfc, etiquetas, fecha_ingreso, notas)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    `INSERT INTO members (church_id, nombre, email, telefono, rfc, etiquetas, fecha_ingreso, notas, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'))`,
     [
       churchId,
       m.nombre,
@@ -1100,6 +1102,7 @@ export async function insertMemberConFicha(churchId: number, m: NewMember, ficha
       JSON.stringify(m.etiquetas ?? []),
       m.fecha_ingreso ?? null,
       m.notas ?? null,
+      crypto.randomUUID(),
     ]
   );
   const id = res.lastInsertId;
@@ -1109,7 +1112,7 @@ export async function insertMemberConFicha(churchId: number, m: NewMember, ficha
 export async function updateMember(id: number, churchId: number, m: NewMember): Promise<void> {
   const d = await getDb();
   await d.execute(
-    `UPDATE members SET nombre = $1, email = $2, telefono = $3, rfc = $4, notas = $5
+    `UPDATE members SET nombre = $1, email = $2, telefono = $3, rfc = $4, notas = $5, updated_at = datetime('now')
      WHERE id = $6 AND church_id = $7`,
     [m.nombre, m.email ?? null, m.telefono ?? null, m.rfc ?? null, m.notas ?? null, id, churchId]
   );
@@ -1119,7 +1122,8 @@ export async function archiveMember(id: number, churchId: number): Promise<void>
   const d = await getDb();
   await d.execute(
     `UPDATE members SET activo = 0,
-            fecha_baja = coalesce(fecha_baja, date('now', 'localtime'))
+            fecha_baja = coalesce(fecha_baja, date('now', 'localtime')),
+            updated_at = datetime('now')
       WHERE id = $1 AND church_id = $2`,
     [id, churchId]
   );
@@ -1153,7 +1157,7 @@ async function registrarCambioEstadoMiembro(id: number, churchId: number, de: st
   let hist: { de: string; a: string; fecha: string }[] = [];
   try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
   hist.push({ de, a, fecha: nowLocalIso() });
-  await d.execute("UPDATE members SET historial_estados = $1 WHERE id = $2 AND church_id = $3", [
+  await d.execute("UPDATE members SET historial_estados = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3", [
     JSON.stringify(hist), id, churchId,
   ]);
 }
@@ -1172,7 +1176,7 @@ export async function darDeBajaMember(
   const de = rows[0]?.activo === 1 ? rows[0].estado_membresia : "baja";
   await registrarCambioEstadoMiembro(id, churchId, de, estadoDeBaja(motivo));
   await d.execute(
-    "UPDATE members SET activo = 0, fecha_baja = $1, motivo_baja = $2 WHERE id = $3 AND church_id = $4",
+    "UPDATE members SET activo = 0, fecha_baja = $1, motivo_baja = $2, updated_at = datetime('now') WHERE id = $3 AND church_id = $4",
     [fecha, motivo, id, churchId]
   );
 }
@@ -1222,7 +1226,7 @@ export async function restoreMember(id: number, churchId: number): Promise<void>
     await registrarCambioEstadoMiembro(id, churchId, estadoDeBaja(rows[0].motivo_baja), "activo");
   }
   await d.execute(
-    "UPDATE members SET activo = 1, fecha_baja = NULL, motivo_baja = NULL WHERE id = $1 AND church_id = $2",
+    "UPDATE members SET activo = 1, fecha_baja = NULL, motivo_baja = NULL, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [id, churchId]
   );
 }
@@ -2069,15 +2073,15 @@ export async function insertMemberDesdeTraslado(
   const d = await getDb();
   const hoy = nowLocalIso().slice(0, 10);
   await d.execute(
-    `INSERT INTO members (church_id, nombre, email, telefono, etiquetas, fecha_ingreso)
-     VALUES ($1,$2,$3,$4,'[]',$5)`,
-    [churchId, te.nombre, te.correo ?? null, te.telefono ?? null, hoy]
+    `INSERT INTO members (church_id, nombre, email, telefono, etiquetas, fecha_ingreso, uid, updated_at)
+     VALUES ($1,$2,$3,$4,'[]',$5,$6,datetime('now'))`,
+    [churchId, te.nombre, te.correo ?? null, te.telefono ?? null, hoy, crypto.randomUUID()]
   );
   const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
   const id = rows[0]?.id ?? null;
   if (id) {
     await d.execute(
-      "UPDATE members SET iglesia_anterior = $1, fecha_congregacion = $2 WHERE id = $3 AND church_id = $4",
+      "UPDATE members SET iglesia_anterior = $1, fecha_congregacion = $2, updated_at = datetime('now') WHERE id = $3 AND church_id = $4",
       [te.iglesia_procedencia ?? null, te.fecha_congregacion ?? null, id, churchId]
     );
   }

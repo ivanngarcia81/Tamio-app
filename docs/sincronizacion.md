@@ -97,8 +97,10 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
   Supabase con `uid` (id global), `church_id/updated_at/deleted` y RLS por
   iglesia. SQL en `supabase/sync-e2-members.sql`. Piloto: primero solo miembros;
   el resto de tablas se replica cuando el piloto funcione de punta a punta.
-- ⬜ **E3 — Metadatos locales:** migración que añade `updated_at/deleted` a las
-  tablas locales y los setea en cada escritura.
+- 🔨 **E3 — Metadatos locales (piloto members):** migración v23 añade
+  `uid/updated_at/deleted` a la tabla local `members`; las escrituras generan
+  `uid` (crypto.randomUUID) y bumpean `updated_at`. El borrado físico de miembros
+  aún NO sincroniza (se maneja al productizar); la columna `deleted` queda lista.
 - ⬜ **E4 — Motor de sync (push/pull):** una tabla a la vez, empezando por las
   más simples (categorías, plantillas) antes de las críticas (transactions,
   members). Probar a fondo con dos equipos.

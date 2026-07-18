@@ -491,6 +491,18 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_mensajes_church ON mensajes(church_id, id);
         "#,
+    }, Migration {
+        version: 23,
+        description: "sincronización E3: metadatos (uid/updated_at/deleted) en members",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE members ADD COLUMN uid TEXT;
+            ALTER TABLE members ADD COLUMN updated_at TEXT;
+            ALTER TABLE members ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE members SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE members SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_members_sync ON members(church_id, updated_at);
+        "#,
     }]
 }
 
