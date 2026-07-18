@@ -1785,6 +1785,15 @@ export const en: Resources = {
     cambiarClave: "Change password",
     guardandoClave: "Saving…",
     errorClave: "Couldn't change the password.",
+    crearCuenta: "Create a new account",
+    registroTitulo: "Create account",
+    registroSub: "Register your church. You'll be the administrator.",
+    nombre: "Your name",
+    registrar: "Create account",
+    registrando: "Creating…",
+    errorRegistro: "Couldn't create the account. Does that email already exist?",
+    confirmaCorreo: "Account created. Check your email ({{email}}) to confirm it, then sign in.",
+    yaTengoCuenta: "I already have an account",
   },
 
   inicioSec: {

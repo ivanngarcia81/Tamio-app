@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "../supabase";
 import { IconTamio } from "../icons";
 
-type Modo = "login" | "pedirCodigo" | "nuevaClave";
+type Modo = "login" | "registro" | "pedirCodigo" | "nuevaClave";
 
 export default function Login() {
   const { t } = useTranslation();
   const [modo, setModo] = useState<Modo>("login");
+  const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [codigo, setCodigo] = useState("");
@@ -27,6 +28,31 @@ export default function Login() {
     });
     if (err) { setError(t("login.error")); setCargando(false); }
     // En caso de éxito, onAuthStateChange vuelve a renderizar la app.
+  }
+
+  // Registro self-service: crea la cuenta. El rol de administrador se asigna
+  // automáticamente con un trigger en Supabase (ver docs/registro.md). Si el
+  // proyecto exige confirmar el correo, se avisa; si no, entra directo.
+  async function registrar(e: FormEvent) {
+    e.preventDefault();
+    if (!supabase || cargando) return;
+    if (!email.trim()) { setError(t("login.escribeCorreo")); return; }
+    if (pass.length < 6) { setError(t("login.claveCorta")); return; }
+    setCargando(true);
+    setError(null);
+    const { data, error: err } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: pass,
+      options: { data: { nombre: nombre.trim() } },
+    });
+    if (err) { setError(t("login.errorRegistro")); setCargando(false); return; }
+    // Si no hay sesión, el proyecto pide confirmar el correo antes de entrar.
+    if (!data.session) {
+      setCargando(false);
+      setAviso(t("login.confirmaCorreo", { email: email.trim() }));
+      setModo("login");
+    }
+    // Con sesión, onAuthStateChange entra directo a la app.
   }
 
   // Paso 1: envía un código de recuperación al correo.
@@ -64,7 +90,7 @@ export default function Login() {
 
   function volverALogin() {
     setModo("login");
-    setError(null); setAviso(null); setCodigo(""); setNueva("");
+    setError(null); setAviso(null); setCodigo(""); setNueva(""); setNombre("");
   }
 
   return (
@@ -73,7 +99,7 @@ export default function Login() {
         <form className="login-card" onSubmit={entrar}>
           <div className="login-logo"><IconTamio size={56} /></div>
           <div className="login-title">Tamio</div>
-          <div className="login-sub">{t("login.sub")}</div>
+          <div className="login-sub">{aviso ?? t("login.sub")}</div>
 
           <div className="form-group full">
             <label className="form-label">{t("login.email")}</label>
@@ -92,8 +118,43 @@ export default function Login() {
             {cargando ? t("login.entrando") : t("login.entrar")}
           </button>
 
-          <button type="button" className="login-link" onClick={() => { setModo("pedirCodigo"); setError(null); }}>
+          <button type="button" className="login-link" onClick={() => { setModo("pedirCodigo"); setError(null); setAviso(null); }}>
             {t("login.olvidaste")}
+          </button>
+          <button type="button" className="login-link" onClick={() => { setModo("registro"); setError(null); setAviso(null); }}>
+            {t("login.crearCuenta")}
+          </button>
+        </form>
+      )}
+
+      {modo === "registro" && (
+        <form className="login-card" onSubmit={registrar}>
+          <div className="login-logo"><IconTamio size={56} /></div>
+          <div className="login-title">{t("login.registroTitulo")}</div>
+          <div className="login-sub">{t("login.registroSub")}</div>
+
+          <div className="form-group full">
+            <label className="form-label">{t("login.nombre")} <span className="opt">{t("common.opcional")}</span></label>
+            <input className="form-input" autoFocus value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          </div>
+          <div className="form-group full">
+            <label className="form-label">{t("login.email")}</label>
+            <input className="form-input" type="email" autoComplete="username"
+              value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="form-group full">
+            <label className="form-label">{t("login.password")}</label>
+            <input className="form-input" type="password" autoComplete="new-password"
+              value={pass} onChange={(e) => setPass(e.target.value)} required />
+          </div>
+
+          {error && <div className="field-error">{error}</div>}
+
+          <button className="btn primary login-btn" type="submit" disabled={cargando}>
+            {cargando ? t("login.registrando") : t("login.registrar")}
+          </button>
+          <button type="button" className="login-link" onClick={volverALogin}>
+            {t("login.yaTengoCuenta")}
           </button>
         </form>
       )}

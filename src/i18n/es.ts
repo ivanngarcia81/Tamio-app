@@ -1792,6 +1792,15 @@ export const es = {
     cambiarClave: "Cambiar contraseña",
     guardandoClave: "Guardando…",
     errorClave: "No se pudo cambiar la contraseña.",
+    crearCuenta: "Crear una cuenta nueva",
+    registroTitulo: "Crear cuenta",
+    registroSub: "Registra tu iglesia. Quedarás como administrador.",
+    nombre: "Tu nombre",
+    registrar: "Crear cuenta",
+    registrando: "Creando…",
+    errorRegistro: "No se pudo crear la cuenta. ¿Ya existe ese correo?",
+    confirmaCorreo: "Cuenta creada. Revisa tu correo ({{email}}) para confirmarla y luego inicia sesión.",
+    yaTengoCuenta: "Ya tengo cuenta",
   },
 
   inicioSec: {
