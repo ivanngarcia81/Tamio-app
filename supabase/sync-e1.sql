@@ -14,15 +14,16 @@ create table if not exists public.iglesias (
 
 alter table public.iglesias enable row level security;
 
+-- 2) Vincular el perfil a su iglesia (crear la columna ANTES de la política que
+--    la referencia; si no, Postgres da "column church_id does not exist").
+alter table public.perfiles
+  add column if not exists church_id uuid references public.iglesias (id);
+
 -- Cada usuario solo puede leer la iglesia a la que pertenece.
 drop policy if exists "leer_mi_iglesia" on public.iglesias;
 create policy "leer_mi_iglesia"
   on public.iglesias for select
   using (id = (select church_id from public.perfiles where id = auth.uid()));
-
--- 2) Vincular el perfil a su iglesia.
-alter table public.perfiles
-  add column if not exists church_id uuid references public.iglesias (id);
 
 -- 3) Backfill: los usuarios que YA existían (admin, tesorero, secretaria) se
 --    agrupan en UNA misma iglesia (son la misma congregación).
