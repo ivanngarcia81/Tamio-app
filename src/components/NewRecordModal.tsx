@@ -96,7 +96,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       setMetodo(tx.metodo_pago);
       setDetalle(tx.detalle ?? "");
       setAportanteId(tx.member_id ?? null);
-      setAportanteQuery(tx.member_nombre ?? "");
+      // Si no es miembro (visitante), el nombre quedó guardado en beneficiario.
+      setAportanteQuery(tx.member_nombre ?? tx.beneficiario ?? "");
       setBeneficiario(tx.beneficiario ?? "");
       setBeneficiarioRfc(tx.beneficiario_rfc ?? "");
       setConstancia(!!tx.emitir_constancia);
@@ -138,6 +139,16 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     if (descripcionOculta) return catNombre(categoria);
     if (!escrito) return descripcionOpcional ? catNombre(categoria) : null;
     return escrito;
+  }
+
+  /** Nombre a guardar en `beneficiario`. Para gasto es el beneficiario normal.
+   *  Para ingreso: si se eligió un miembro se liga por member_id y esto queda
+   *  null; si se escribió un nombre libre (un visitante que NO es miembro) se
+   *  guarda ese nombre aquí para que la fila muestre quién aportó. */
+  function beneficiarioFinal(): string | null {
+    if (tab === "gasto") return beneficiario.trim() || null;
+    if (tab === "ingreso" && !aportanteId) return aportanteQuery.trim() || null;
+    return null;
   }
 
   const titulo = isEdit
@@ -187,7 +198,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         monto: m,
         metodo_pago: metodo,
         member_id: tab === "ingreso" ? aportanteId : null,
-        beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
+        beneficiario: beneficiarioFinal(),
         beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
         emitir_constancia: tab === "ingreso" ? constancia : false,
         estado: marcarPendiente ? "pendiente" : "aprobado",
@@ -315,7 +326,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           monto: m,
           metodo_pago: metodo,
           member_id: tab === "ingreso" ? aportanteId : null,
-          beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
+          beneficiario: beneficiarioFinal(),
           beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
           emitir_constancia: tab === "ingreso" ? constancia : false,
           estado: marcarPendiente ? "pendiente" : "aprobado",
