@@ -89,8 +89,10 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
 
 - ✅ **E0 — Registro self-service** (hecho): cada iglesia crea su cuenta; el
   administrador es el dueño de su iglesia.
-- ⬜ **E1 — Vincular usuario ↔ iglesia:** `perfiles.church_id`; al registrarse se
-  crea la iglesia en la nube y se guarda su id.
+- ✅ **E1 — Vincular usuario ↔ iglesia:** tabla `iglesias`, `perfiles.church_id`,
+  backfill de usuarios existentes en una misma iglesia, y trigger que crea la
+  iglesia al registrarse. SQL en `supabase/sync-e1.sql`. (La app aún no usa el
+  church_id; es el cimiento para E2/E3.)
 - ⬜ **E2 — Esquema en la nube + RLS:** crear las tablas espejo en Supabase con
   `church_id/updated_at/deleted` y las políticas de seguridad por iglesia.
 - ⬜ **E3 — Metadatos locales:** migración que añade `updated_at/deleted` a las
