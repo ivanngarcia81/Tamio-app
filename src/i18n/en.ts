@@ -416,6 +416,19 @@ export const en: Resources = {
     sinDatos: "There is no data to export.",
   },
 
+  sync: {
+    titulo: "Sync (beta)",
+    sub: "Share members across your church's Macs",
+    sincronizarAhora: "Sync now",
+    sincronizando: "Syncing…",
+    hint: "Pilot: for now it syncs only the members list with the cloud (Supabase). It uploads your changes and downloads those from the other computers in your church. Requires signing in and an internet connection.",
+    resultado: "Synced — {{subidos}} uploaded, {{bajados}} downloaded.",
+    errorSinLogin: "Sign in to sync.",
+    errorSinIglesia: "Your account is not linked to a cloud church yet.",
+    errorSinConexion: "No connection to the cloud. Check your internet and try again.",
+    errorGeneral: "Could not sync. Please try again.",
+  },
+
   paginacion: {
     anterior: "Previous page",
     siguiente: "Next page",

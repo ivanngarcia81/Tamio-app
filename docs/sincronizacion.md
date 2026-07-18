@@ -97,13 +97,17 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
   Supabase con `uid` (id global), `church_id/updated_at/deleted` y RLS por
   iglesia. SQL en `supabase/sync-e2-members.sql`. Piloto: primero solo miembros;
   el resto de tablas se replica cuando el piloto funcione de punta a punta.
-- 🔨 **E3 — Metadatos locales (piloto members):** migración v23 añade
+- ✅ **E3 — Metadatos locales (piloto members):** migración v23 añade
   `uid/updated_at/deleted` a la tabla local `members`; las escrituras generan
   `uid` (crypto.randomUUID) y bumpean `updated_at`. El borrado físico de miembros
   aún NO sincroniza (se maneja al productizar); la columna `deleted` queda lista.
-- ⬜ **E4 — Motor de sync (push/pull):** una tabla a la vez, empezando por las
-  más simples (categorías, plantillas) antes de las críticas (transactions,
-  members). Probar a fondo con dos equipos.
+- 🔨 **E4 — Motor de sync (push/pull), piloto members:** `src/sync.ts` con
+  `sincronizarMiembros(churchIdLocal)`. Trae el estado completo local y remoto,
+  compara `updated_at` (last-write-wins por `uid`), sube lo local más nuevo
+  (upsert por `uid`) y baja lo remoto más nuevo (insert/update local). Mapea el
+  `church_id` local (int) al `church_id` remoto (uuid, leído del perfil). Botón
+  manual "Sincronizar ahora" en Configuración (con login, admin/secretaría). El
+  borrado físico aún no se propaga. Falta replicar a las otras 14 tablas.
 - ⬜ **E5 — Estado en la UI + automatización:** indicador de sincronización,
   sync al guardar / al reconectar / periódico.
 - ⬜ **E6 — Pruebas de estrés:** dos Macs editando, sin conexión, conflictos,
@@ -126,4 +130,5 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
 ---
 
 ## Estado
-- E0 hecho. E1–E6 pendientes, se construyen por etapas en la Mac contra Supabase.
+- E0, E1, E2, E3 hechos. E4 (piloto members) en curso: motor push/pull con botón
+  manual, a probar con dos Macs. E5–E6 pendientes.

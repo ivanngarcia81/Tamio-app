@@ -410,6 +410,19 @@ export const es = {
     sinDatos: "No hay datos para exportar.",
   },
 
+  sync: {
+    titulo: "Sincronización (beta)",
+    sub: "Comparte los miembros entre las Macs de tu iglesia",
+    sincronizarAhora: "Sincronizar ahora",
+    sincronizando: "Sincronizando…",
+    hint: "Piloto: por ahora sincroniza solo la lista de miembros con la nube (Supabase). Sube tus cambios y baja los de las otras computadoras de tu iglesia. Requiere haber iniciado sesión y tener conexión a internet.",
+    resultado: "Sincronizado — {{subidos}} subidos, {{bajados}} bajados.",
+    errorSinLogin: "Inicia sesión para sincronizar.",
+    errorSinIglesia: "Tu cuenta aún no está vinculada a una iglesia en la nube.",
+    errorSinConexion: "Sin conexión con la nube. Revisa tu internet e intenta de nuevo.",
+    errorGeneral: "No se pudo sincronizar. Intenta de nuevo.",
+  },
+
   paginacion: {
     anterior: "Página anterior",
     siguiente: "Página siguiente",

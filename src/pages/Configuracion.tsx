@@ -20,6 +20,7 @@ import SoundSettings from "../components/settings/SoundSettings";
 import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
+import SyncSettings from "../components/settings/SyncSettings";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
 import type { Role } from "../role";
 
@@ -265,6 +266,10 @@ export default function Configuracion({
               {verTesoreria && (
                 <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
               )}
+
+              {/* Sincronización (beta): solo con login activo y para quienes
+                  manejan miembros (secretaría) o todo (admin). */}
+              {authActivo && verSecretaria && <SyncSettings church={church} />}
 
               {esAdmin && <BackupSettings church={church} />}
 
