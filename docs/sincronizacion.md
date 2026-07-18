@@ -93,8 +93,10 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
   backfill de usuarios existentes en una misma iglesia, y trigger que crea la
   iglesia al registrarse. SQL en `supabase/sync-e1.sql`. (La app aún no usa el
   church_id; es el cimiento para E2/E3.)
-- ⬜ **E2 — Esquema en la nube + RLS:** crear las tablas espejo en Supabase con
-  `church_id/updated_at/deleted` y las políticas de seguridad por iglesia.
+- 🔨 **E2 — Esquema en la nube + RLS (piloto):** tabla espejo `members` en
+  Supabase con `uid` (id global), `church_id/updated_at/deleted` y RLS por
+  iglesia. SQL en `supabase/sync-e2-members.sql`. Piloto: primero solo miembros;
+  el resto de tablas se replica cuando el piloto funcione de punta a punta.
 - ⬜ **E3 — Metadatos locales:** migración que añade `updated_at/deleted` a las
   tablas locales y los setea en cada escritura.
 - ⬜ **E4 — Motor de sync (push/pull):** una tabla a la vez, empezando por las
