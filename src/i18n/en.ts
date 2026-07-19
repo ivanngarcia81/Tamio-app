@@ -1823,6 +1823,9 @@ export const en: Resources = {
     enGracia: "in grace period ({{dias}} days)",
     esCortesia: "courtesy (never expires)",
     guardado: "Plan updated",
+    bannerPorVencer: "Your subscription expires in {{dias}} days. Renew it to keep access.",
+    bannerGracia: "Your subscription expired. You have {{dias}} grace days left; renew soon.",
+    bannerVencida: "Your subscription expired. Contact the administrator to renew it.",
   },
 
   login: {

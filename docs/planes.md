@@ -108,10 +108,19 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
 - Se puede **probar hoy** en local: cambia el plan en Ajustes y mira cómo el
   menú lateral muestra/oculta Tesorería o Secretaría.
 
+**Parte 2 — Guardas por ruta + aviso de vigencia: HECHA.**
+
+- **Guarda por ruta** (`rutaPermitidaPorPlan` en `plan.ts`, aplicada en el
+  `guard()` de `App.tsx`): entrar por URL directa al área no contratada ahora
+  redirige al inicio. Cierra el hueco que dejaba el ocultar-solo-el-menú.
+- **Aviso de vigencia** (`SubBanner.tsx`): banner no bloqueante que avisa
+  cuando la suscripción está por vencer (≤7 días), en gracia o vencida. Solo
+  con login en la nube; en cortesía o sin fecha no aparece (el dueño no lo ve).
+  Usa `evaluarVigencia()` (con `diasGracia`).
+
 **Pendiente (siguientes partes):**
-- Pantalla de "suscripción no vigente" (bloqueo suave al vencer) usando
-  `evaluarVigencia()` — la lógica de gracia ya está lista.
-- Guardas por ruta (hoy se oculta el menú; falta redirigir si se teclea la URL).
+- Bloqueo **duro** al vencer (pantalla con botón "renovar") — va junto con el
+  pago, porque sin botón de pago un bloqueo total es un callejón sin salida.
 - Formulario de **miembro básico** dentro de Tesorería (plan solo-Tesorería).
 - **Integración** exclusiva del Completo (que Tesorería consuma miembros de
   Secretaría) — gate con `integracionActiva()`.

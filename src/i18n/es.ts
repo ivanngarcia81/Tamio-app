@@ -1830,6 +1830,9 @@ export const es = {
     enGracia: "en periodo de gracia ({{dias}} días)",
     esCortesia: "cortesía (no caduca)",
     guardado: "Plan actualizado",
+    bannerPorVencer: "Tu suscripción vence en {{dias}} días. Renuévala para no perder acceso.",
+    bannerGracia: "Tu suscripción venció. Te quedan {{dias}} días de gracia; renueva pronto.",
+    bannerVencida: "Tu suscripción venció. Contacta al administrador para renovarla.",
   },
 
   login: {

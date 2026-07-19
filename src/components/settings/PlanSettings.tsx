@@ -95,7 +95,7 @@ export default function PlanSettings({ church, onSaved }: Props) {
         <b style={{ color: vig.activa ? "var(--verde, #059669)" : "var(--rojo, #dc2626)" }}>
           {vig.activa ? t("plan.vigente") : t("plan.noVigente")}
         </b>
-        {vig.enGracia && ` — ${t("plan.enGracia", { dias: Math.max(0, (vig.diasRestantes ?? 0) + 1) })}`}
+        {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
         {estado === "cortesia" && ` — ${t("plan.esCortesia")}`}
       </div>
 

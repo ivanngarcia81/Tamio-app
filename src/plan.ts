@@ -9,6 +9,8 @@
 // mecanismo de "cortesía". Más adelante, un webhook de pago actualizará estos
 // mismos campos y la nube será la autoridad.
 
+import { RUTAS_TESORERIA, RUTAS_SECRETARIA } from "./role";
+
 export type Plan = "completo" | "tesoreria" | "secretaria";
 export type EstadoSub = "activa" | "cortesia" | "vencida" | "prueba";
 
@@ -35,6 +37,15 @@ export function integracionActiva(plan: string): boolean {
   return plan === "completo";
 }
 
+/** ¿El plan permite acceder a esta ruta? Cierra el hueco de "teclear la URL"
+ *  del área no contratada; las rutas comunes (Inicio, Inbox, Ajustes, Ayuda)
+ *  siempre pasan. Se combina con el gate por rol (puedeVer). */
+export function rutaPermitidaPorPlan(plan: string, path: string): boolean {
+  if (RUTAS_TESORERIA.includes(path)) return incluyeTesoreria(plan);
+  if (RUTAS_SECRETARIA.includes(path)) return incluyeSecretaria(plan);
+  return true;
+}
+
 export interface Vigencia {
   /** true si la app debe funcionar (incluye el periodo de gracia). */
   activa: boolean;
@@ -44,20 +55,22 @@ export interface Vigencia {
   enGracia: boolean;
   /** Días hasta el vencimiento (negativo si ya pasó); null si no vence nunca. */
   diasRestantes: number | null;
+  /** Días de gracia que quedan cuando enGracia = true; null en otro caso. */
+  diasGracia: number | null;
 }
 
 /** Evalúa si la suscripción está vigente hoy. La cortesía y el plan sin fecha
  *  de vencimiento se consideran siempre activos. */
 export function evaluarVigencia(estado: string, vence: string | null, hoy: Date = new Date()): Vigencia {
   if (estado === "cortesia") {
-    return { activa: true, vencida: false, enGracia: false, diasRestantes: null };
+    return { activa: true, vencida: false, enGracia: false, diasRestantes: null, diasGracia: null };
   }
   if (estado === "vencida") {
-    return { activa: false, vencida: true, enGracia: false, diasRestantes: null };
+    return { activa: false, vencida: true, enGracia: false, diasRestantes: null, diasGracia: null };
   }
   if (!vence) {
     // Activa/prueba sin fecha = perpetua (útil en modo local o cortesía informal).
-    return { activa: true, vencida: false, enGracia: false, diasRestantes: null };
+    return { activa: true, vencida: false, enGracia: false, diasRestantes: null, diasGracia: null };
   }
   const finMs = Date.parse(`${vence}T23:59:59`);
   const ahora = hoy.getTime();
@@ -66,5 +79,6 @@ export function evaluarVigencia(estado: string, vence: string | null, hoy: Date 
   const finGraciaMs = finMs + DIAS_GRACIA * dia;
   const activa = ahora <= finGraciaMs;
   const enGracia = ahora > finMs && ahora <= finGraciaMs;
-  return { activa, vencida: !activa, enGracia, diasRestantes };
+  const diasGracia = enGracia ? Math.max(0, Math.ceil((finGraciaMs - ahora) / dia)) : null;
+  return { activa, vencida: !activa, enGracia, diasRestantes, diasGracia };
 }
