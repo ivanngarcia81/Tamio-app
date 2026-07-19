@@ -39,6 +39,17 @@ echo "▸  Notarizando con Apple ID: $APPLE_ID (equipo $APPLE_TEAM_ID)"
 echo "▸  Construyendo .dmg universal (Intel + Apple Silicon)…"
 echo
 
+# macOS pega "atributos extendidos" (resource forks / Finder info) a los
+# archivos al copiarlos o descargarlos, y codesign los rechaza con
+# "resource fork, Finder information, or similar detritus not allowed".
+# Se limpian los assets que entran al bundle y se borra cualquier bundle
+# previo a medio firmar, para que la firma parta limpia.
+echo "▸  Limpiando atributos extendidos (evita el error de 'detritus')…"
+xattr -cr src 2>/dev/null || true
+xattr -cr src-tauri/icons 2>/dev/null || true
+xattr -cr src-tauri/capabilities 2>/dev/null || true
+rm -rf src-tauri/target/universal-apple-darwin/release/bundle 2>/dev/null || true
+
 # Tauri firma con APPLE_SIGNING_IDENTITY y notariza con APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID.
 npm run dist:universal
 
