@@ -27,7 +27,7 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
-import { rutaPermitidaPorPlan } from "./plan";
+import { evaluarVigencia, rutaPermitidaPorPlan } from "./plan";
 import { authHabilitado } from "./supabase";
 import { configurarSync, iniciarAutoSync, programarSync } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
@@ -160,6 +160,20 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           <div className="login-card" style={{ textAlign: "center" }}>
             <div className="login-title">{t("login.sinRolTitulo")}</div>
             <div className="login-sub">{t("login.sinRolSub", { email: authEstado.email ?? "" })}</div>
+            <button className="btn secondary login-btn" onClick={salir}>{t("login.salir")}</button>
+          </div>
+        </div>
+      );
+    }
+    // Bloqueo duro: suscripción vencida MÁS ALLÁ del periodo de gracia.
+    // Solo aplica con sesión en la nube; la cortesía y el modo local nunca
+    // llegan aquí (evaluarVigencia los considera siempre activos).
+    if (evaluarVigencia(church.sub_estado, church.sub_vence).vencida) {
+      return (
+        <div className="login-screen">
+          <div className="login-card" style={{ textAlign: "center" }}>
+            <div className="login-title">{t("plan.bloqueoTitulo")}</div>
+            <div className="login-sub">{t("plan.bloqueoSub")}</div>
             <button className="btn secondary login-btn" onClick={salir}>{t("login.salir")}</button>
           </div>
         </div>

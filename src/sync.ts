@@ -84,6 +84,31 @@ async function churchIdRemoto(): Promise<string | null> {
   return (data as { church_id?: string } | null)?.church_id ?? null;
 }
 
+/** Baja el plan de suscripción desde la nube (autoridad) y lo aplica en local.
+ *  Solo lectura nube→local: el plan lo escriben el webhook de pago o el dueño
+ *  en el panel de Supabase, nunca el cliente. Si las columnas aún no existen
+ *  en la nube (SQL sub-1 sin correr), no hace nada y no rompe el sync. */
+export async function sincronizarPlan(churchIdLocal: number): Promise<void> {
+  if (!supabase) return;
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return;
+  const { data, error } = await supabase
+    .from("iglesias")
+    .select("plan, sub_estado, sub_vence")
+    .eq("id", remoteChurch)
+    .single();
+  if (error || !data) return; // columnas ausentes o sin permiso: se ignora
+  const plan = (data as { plan?: string }).plan;
+  const estado = (data as { sub_estado?: string }).sub_estado;
+  const vence = (data as { sub_vence?: string | null }).sub_vence ?? null;
+  if (!plan || !estado) return;
+  const d = await getDb();
+  await d.execute(
+    "UPDATE churches SET plan = $1, sub_estado = $2, sub_vence = $3 WHERE id = $4",
+    [plan, estado, vence, churchIdLocal],
+  );
+}
+
 /**
  * Sincroniza la tabla de miembros de una iglesia local contra Supabase.
  * No lanza excepciones: siempre devuelve un ResultadoSync (ok/motivo) para que
@@ -743,6 +768,8 @@ function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
  *  las transacciones), luego transacciones y depósitos. Si miembros falla, no
  *  sigue (las transacciones dependen de ellos). */
 export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoSync> {
+  // El plan baja primero (nube = autoridad); si falla, no afecta a los datos.
+  await sincronizarPlan(churchIdLocal).catch(() => {});
   const m = await sincronizarMiembros(churchIdLocal);
   if (!m.ok) return m;
   const t = await sincronizarTransacciones(churchIdLocal);

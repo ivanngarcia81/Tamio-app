@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { updateSuscripcion, type Church } from "../../db";
+import { authHabilitado } from "../../supabase";
 import { PLANES, ESTADOS_SUB, evaluarVigencia, incluyeTesoreria, incluyeSecretaria } from "../../plan";
 import { IconIdBadge, IconCheck } from "../../icons";
 import { showToast } from "../../toast";
@@ -98,6 +99,10 @@ export default function PlanSettings({ church, onSaved }: Props) {
         {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
         {estado === "cortesia" && ` — ${t("plan.esCortesia")}`}
       </div>
+
+      {authHabilitado && (
+        <div className="form-hint" style={{ marginBottom: 12 }}>{t("plan.nubeManda")}</div>
+      )}
 
       <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
         {saving ? t("common.guardando") : t("common.guardarCambios")}

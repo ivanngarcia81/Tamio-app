@@ -129,9 +129,27 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
   podía desde el botón global "Nuevo registro"), clave para el plan
   solo-Tesorería, donde los miembros son el centro del trabajo.
 
-**Pendiente (siguientes partes):**
-- Bloqueo **duro** al vencer (pantalla con botón "renovar") — va junto con el
-  pago, porque sin botón de pago un bloqueo total es un callejón sin salida.
+**Parte 4 — Nube como autoridad + bloqueo duro + webhook: HECHA.**
+
+- **`supabase/sub-1-plan.sql`** *(correr en Supabase una vez)*: la iglesia lleva
+  `plan/sub_estado/sub_vence` en la nube. Los usuarios solo LEEN; escribe el
+  webhook de pago o el dueño desde el panel (Table Editor). Un cliente no puede
+  auto-regalarse el plan.
+- **La app obedece la nube**: `sincronizarPlan()` baja el plan en cada
+  sincronización y lo aplica en local (con sesión, la nube manda; el panel de
+  Ajustes lo avisa). En modo local sin login, el panel sigue mandando.
+- **Bloqueo duro**: con sesión, si la suscripción venció Y pasó el periodo de
+  gracia, la app muestra una pantalla de "Suscripción vencida" (datos intactos,
+  se recuperan al renovar). La cortesía y el modo local jamás se bloquean.
+- **Webhook de pago listo**: `supabase/functions/pago-webhook/index.ts`
+  (Lemon Squeezy). Verifica la firma, encuentra la iglesia por el correo del
+  comprador y escribe el plan. Mapeo variant→plan por nombre; la cortesía es
+  intocable (un evento de pago nunca degrada una cuenta regalada). Se despliega
+  cuando exista la cuenta de Lemon Squeezy (instrucciones en el archivo).
+
+**Único pendiente real:** abrir la cuenta del proveedor de pago (Lemon Squeezy
+recomendado), crear los 3 productos (Tesorería/Secretaría/Completo), desplegar
+el webhook y poner el enlace de compra en la pantalla de bloqueo/banner.
 - **Integración** exclusiva del Completo (que Tesorería consuma miembros de
   Secretaría) — gate con `integracionActiva()`.
 - **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y

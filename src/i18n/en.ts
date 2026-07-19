@@ -1827,6 +1827,9 @@ export const en: Resources = {
     bannerPorVencer: "Your subscription expires in {{dias}} days. Renew it to keep access.",
     bannerGracia: "Your subscription expired. You have {{dias}} grace days left; renew soon.",
     bannerVencida: "Your subscription expired. Contact the administrator to renew it.",
+    bloqueoTitulo: "Subscription expired",
+    bloqueoSub: "Access is paused because the subscription expired and the grace period ended. Renew to continue; your data is intact and will come back as-is once renewed.",
+    nubeManda: "While signed in, the plan is controlled by the cloud (payment or the owner's panel): changes made here are overwritten on the next sync.",
   },
 
   login: {
