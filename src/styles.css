@@ -384,6 +384,35 @@ a { color: inherit; text-decoration: none; }
   font-family: inherit;
   text-align: left;
 }
+/* Indicador de sincronización (E5): estado + forzar sync al hacer clic. */
+.sync-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 11.5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+.sync-indicator:hover:not(:disabled) { background: var(--surface-2); }
+.sync-indicator:disabled { cursor: default; }
+.sync-dot {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.sync-dot.girando { animation: sync-spin 0.9s linear infinite; }
+.sync-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes sync-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .sync-dot.girando { animation: none; }
+}
 /* Main */
 .main {
   display: flex;

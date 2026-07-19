@@ -108,8 +108,12 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
   `church_id` local (int) al `church_id` remoto (uuid, leído del perfil). Botón
   manual "Sincronizar ahora" en Configuración (con login, admin/secretaría). El
   borrado físico aún no se propaga. Falta replicar a las otras 14 tablas.
-- ⬜ **E5 — Estado en la UI + automatización:** indicador de sincronización,
-  sync al guardar / al reconectar / periódico.
+- 🔨 **E5 — Estado en la UI + automatización:** `src/syncManager.ts` envuelve el
+  motor con un estado observable y disparadores automáticos (al abrir, al
+  guardar vía `programarSync`, al reconectar `online`, al volver a la ventana
+  `focus`, y cada 3 min). Indicador en el pie del sidebar (`SyncIndicator`) con
+  estado (Sincronizado / Sincronizando / Sin conexión / Error) y clic para
+  forzar. El botón de Ajustes comparte el mismo estado. Falta pulir con dos Macs.
 - ⬜ **E6 — Pruebas de estrés:** dos Macs editando, sin conexión, conflictos,
   borrados. Confirmar que **no se pierde nada**.
 
@@ -130,5 +134,6 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
 ---
 
 ## Estado
-- E0, E1, E2, E3 hechos. E4 (piloto members) en curso: motor push/pull con botón
-  manual, a probar con dos Macs. E5–E6 pendientes.
+- E0–E4 hechos (E4 validado con dos Macs: sube/baja miembros). E5 en curso:
+  sincronización automática + indicador de estado, a pulir con dos Macs. E6
+  pendiente (pruebas de estrés). Luego replicar a las otras tablas.

@@ -4,6 +4,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import type { Role } from "../role";
+import SyncIndicator from "./SyncIndicator";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
   IconClipboardList, IconConfig, IconFileText, IconGasto, IconHelp,
@@ -181,6 +182,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} dataTour="config" />
         {authActivo && (
           <>
+            <SyncIndicator />
             {sesionEmail && <div className="sidebar-session-email" title={sesionEmail}>{sesionEmail}</div>}
             <button type="button" className="nav-item nav-signout" onClick={onSalir}>
               <span className="icon"><IconLogout /></span>

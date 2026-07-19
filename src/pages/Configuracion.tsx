@@ -271,7 +271,7 @@ export default function Configuracion({
                   Sincronizar es una acción de dispositivo/cuenta (no de rol); la
                   seguridad por iglesia la garantiza RLS en la nube. Debe estar
                   disponible tanto en la Mac de Tesorería como en la de Secretaría. */}
-              {authActivo && <SyncSettings church={church} />}
+              {authActivo && <SyncSettings />}
 
               {esAdmin && <BackupSettings church={church} />}
 

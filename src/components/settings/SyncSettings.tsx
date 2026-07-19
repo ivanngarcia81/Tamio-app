@@ -1,50 +1,17 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Church } from "../../db";
-import { sincronizarMiembros, type MotivoSync } from "../../sync";
+import { ejecutarSync, useSync } from "../../syncManager";
 import { IconRefreshCw, IconCheck, IconWarn } from "../../icons";
-
-interface Props {
-  church: Church;
-}
 
 /**
  * Sincronización (beta) — piloto de la tabla de miembros.
- * Botón manual que sube los cambios locales a la nube y baja los de las otras
- * Macs de la misma iglesia. La automatización (al guardar / periódica) y el
- * indicador de estado permanente llegan en E5.
+ * La sincronización ya es automática (al abrir, al guardar, al reconectar y
+ * cada pocos minutos); este panel muestra el estado y deja forzarla a mano.
+ * El estado se comparte con el indicador del sidebar vía el gestor de sync.
  */
-export default function SyncSettings({ church }: Props) {
+export default function SyncSettings() {
   const { t } = useTranslation();
-  const [working, setWorking] = useState(false);
-  const [ok, setOk] = useState<{ subidos: number; bajados: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  function mensajeMotivo(motivo?: MotivoSync): string {
-    switch (motivo) {
-      case "sin-login": return t("sync.errorSinLogin");
-      case "sin-iglesia": return t("sync.errorSinIglesia");
-      case "sin-conexion": return t("sync.errorSinConexion");
-      default: return t("sync.errorGeneral");
-    }
-  }
-
-  async function sincronizar() {
-    setError(null);
-    setOk(null);
-    setWorking(true);
-    try {
-      const res = await sincronizarMiembros(church.id);
-      if (res.ok) {
-        setOk({ subidos: res.subidos, bajados: res.bajados });
-        setTimeout(() => setOk(null), 6000);
-      } else {
-        setError(mensajeMotivo(res.motivo));
-      }
-    } finally {
-      setWorking(false);
-    }
-  }
+  const snap = useSync();
+  const sincronizando = snap.estado === "sincronizando";
 
   return (
     <div className="card pad-lg settings-card">
@@ -59,22 +26,28 @@ export default function SyncSettings({ church }: Props) {
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-        <button type="button" className="btn secondary" onClick={sincronizar} disabled={working}>
-          <IconRefreshCw size={13} /> {working ? t("sync.sincronizando") : t("sync.sincronizarAhora")}
+        <button type="button" className="btn secondary" onClick={() => { void ejecutarSync(); }} disabled={sincronizando}>
+          <IconRefreshCw size={13} /> {sincronizando ? t("sync.sincronizando") : t("sync.sincronizarAhora")}
         </button>
       </div>
 
-      <div className="form-hint">{t("sync.hint")}</div>
+      <div className="form-hint">{t("sync.hintAuto")}</div>
 
-      {ok && (
+      {snap.estado === "ok" && snap.ultima != null && (
         <div className="form-hint" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, color: "var(--pos)" }}>
-          <IconCheck size={13} /> {t("sync.resultado", { subidos: ok.subidos, bajados: ok.bajados })}
+          <IconCheck size={13} /> {t("sync.resultado", { subidos: snap.subidos, bajados: snap.bajados })}
         </div>
       )}
 
-      {error && (
+      {snap.estado === "offline" && (
         <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12 }}>
-          <IconWarn size={13} /> {error}
+          <IconWarn size={13} /> {t("sync.errorSinConexion")}
+        </div>
+      )}
+
+      {snap.estado === "error" && (
+        <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12 }}>
+          <IconWarn size={13} /> {snap.motivo === "sin-iglesia" ? t("sync.errorSinIglesia") : snap.motivo === "sin-login" ? t("sync.errorSinLogin") : t("sync.errorGeneral")}
         </div>
       )}
     </div>

@@ -27,6 +27,7 @@ import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, 
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import { authHabilitado } from "./supabase";
+import { configurarSync, iniciarAutoSync, programarSync } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
 import Login from "./components/Login";
 import "./styles.css";
@@ -107,8 +108,19 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     countMensajesNoLeidos(church.id, role).then(setUnreadCount).catch(() => {});
   }, [church.id, refreshKey, role]);
 
-  const onSaved = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const onSaved = useCallback(() => { setRefreshKey((k) => k + 1); programarSync(); }, []);
   const onChanged = onSaved; // editar/eliminar fuera del modal también dispara el mismo refresh global
+
+  // Sincronización automática (E5): se enciende solo con login válido y arranca
+  // los disparadores (al abrir, cada X min, al reconectar y al volver a la
+  // ventana). programarSync() en onSaved sube los cambios locales poco después
+  // de guardar. El indicador del sidebar refleja el estado.
+  useEffect(() => {
+    const on = authHabilitado && authEstado.autenticado && !authEstado.sinRol;
+    configurarSync(on ? church.id : null, on);
+    if (!on) return;
+    return iniciarAutoSync();
+  }, [church.id, authEstado.autenticado, authEstado.sinRol]);
 
   // Cmd/Ctrl+N abre "Nuevo registro" desde cualquier pantalla (si no hay
   // ya un modal abierto).
