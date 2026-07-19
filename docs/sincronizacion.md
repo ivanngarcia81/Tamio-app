@@ -99,8 +99,9 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
   el resto de tablas se replica cuando el piloto funcione de punta a punta.
 - ✅ **E3 — Metadatos locales (piloto members):** migración v23 añade
   `uid/updated_at/deleted` a la tabla local `members`; las escrituras generan
-  `uid` (crypto.randomUUID) y bumpean `updated_at`. El borrado físico de miembros
-  aún NO sincroniza (se maneja al productizar); la columna `deleted` queda lista.
+  `uid` (crypto.randomUUID) y bumpean `updated_at`. El borrado de miembros ya es
+  SUAVE (`deleted = 1`) y se propaga; las listas excluyen los borrados y el
+  "Deshacer" restaura la misma fila (mismo uid).
 - 🔨 **E4 — Motor de sync (push/pull), piloto members:** `src/sync.ts` con
   `sincronizarMiembros(churchIdLocal)`. Trae el estado completo local y remoto,
   compara `updated_at` (last-write-wins por `uid`), sube lo local más nuevo

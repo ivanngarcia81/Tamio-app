@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
-  insertMember, listMembers, memberStats, type Church, type Member, type MemberStat, type NewMember,
+  insertMember, listMembers, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -110,13 +110,8 @@ export default function Miembros({ church, refreshKey, onEdit, onChanged }: Prop
     showToast(t("deshacer.miembroEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {
-        await insertMember(church.id, {
-          nombre: member.nombre,
-          email: member.email,
-          telefono: member.telefono,
-          rfc: member.rfc,
-          notas: member.notas,
-        });
+        // Borrado suave: se restaura la MISMA fila (mismo uid), no una nueva.
+        await undeleteMember(member.id, church.id);
         onChanged();
       },
     });

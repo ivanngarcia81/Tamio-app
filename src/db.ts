@@ -1051,7 +1051,7 @@ export async function deleteUsuario(id: number, churchId: number): Promise<void>
 export async function listMembers(churchId: number): Promise<Member[]> {
   const d = await getDb();
   return d.select<Member[]>(
-    "SELECT * FROM members WHERE church_id = $1 AND activo = 1 ORDER BY nombre",
+    "SELECT * FROM members WHERE church_id = $1 AND activo = 1 AND deleted = 0 ORDER BY nombre",
     [churchId]
   );
 }
@@ -1137,7 +1137,7 @@ export async function archiveMember(id: number, churchId: number): Promise<void>
 export async function listMembersRegistro(churchId: number): Promise<Member[]> {
   const d = await getDb();
   return d.select<Member[]>(
-    "SELECT * FROM members WHERE church_id = $1 ORDER BY activo DESC, nombre",
+    "SELECT * FROM members WHERE church_id = $1 AND deleted = 0 ORDER BY activo DESC, nombre",
     [churchId]
   );
 }
@@ -1200,7 +1200,7 @@ export async function membresiaStats(churchId: number, yyyy: string): Promise<Me
        SUM(CASE WHEN substr(coalesce(fecha_ingreso, ''), 1, 4) = $2 THEN 1 ELSE 0 END) AS altas,
        SUM(CASE WHEN activo = 0 AND substr(coalesce(fecha_baja, ''), 1, 4) = $2 THEN 1 ELSE 0 END) AS bajas,
        COUNT(*) AS total
-     FROM members WHERE church_id = $1`,
+     FROM members WHERE church_id = $1 AND deleted = 0`,
     [churchId, yyyy]
   );
   const r = rows[0];
@@ -1215,7 +1215,7 @@ export async function membresiaStats(churchId: number, yyyy: string): Promise<Me
 export async function listArchivedMembers(churchId: number): Promise<Member[]> {
   const d = await getDb();
   return d.select<Member[]>(
-    "SELECT * FROM members WHERE church_id = $1 AND activo = 0 ORDER BY nombre",
+    "SELECT * FROM members WHERE church_id = $1 AND activo = 0 AND deleted = 0 ORDER BY nombre",
     [churchId]
   );
 }
@@ -2324,7 +2324,7 @@ export async function getServicioAsistencia(servicioId: number): Promise<Asisten
 export async function listMembersRoster(churchId: number): Promise<{ id: number; nombre: string }[]> {
   const d = await getDb();
   return d.select<{ id: number; nombre: string }[]>(
-    "SELECT id, nombre FROM members WHERE church_id = $1 AND activo = 1 AND estado_membresia = 'activo' ORDER BY nombre",
+    "SELECT id, nombre FROM members WHERE church_id = $1 AND activo = 1 AND estado_membresia = 'activo' AND deleted = 0 ORDER BY nombre",
     [churchId]
   );
 }
@@ -2716,9 +2716,25 @@ export async function countMemberTx(memberId: number, churchId: number): Promise
   return rows[0]?.n ?? 0;
 }
 
+/** Borrado SUAVE: marca deleted = 1 (no borra físico) para que el borrado se
+ *  propague en la sincronización en vez de "revivir" al bajar de la nube.
+ *  Las listas de miembros excluyen deleted = 1, así que desaparece de la UI. */
 export async function deleteMember(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM members WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE members SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
+/** Deshace un borrado suave (para el "Deshacer" del toast): conserva el mismo
+ *  uid, así que la sincronización lo trata como una reactivación de la fila. */
+export async function undeleteMember(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE members SET deleted = 0, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 // ---------- Movimientos recurrentes (ingreso o gasto fijo) ----------

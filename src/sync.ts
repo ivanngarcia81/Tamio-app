@@ -8,8 +8,8 @@
 // `updated_at`. La identidad global es `uid` (no el id numérico local, que
 // choca entre dispositivos). El aislamiento por iglesia lo hace RLS en la nube.
 //
-// Piloto (miembros): el borrado FÍSICO local todavía no se propaga; la columna
-// `deleted` viaja pero por ahora siempre es 0 en local. Ver docs/sincronizacion.md.
+// Borrados: son SUAVES (deleted = 1, ver deleteMember en db.ts) y sí se
+// propagan por la columna `deleted`; las listas locales excluyen los borrados.
 // ============================================================================
 
 import { getDb } from "./db";
