@@ -1,5 +1,5 @@
 // ============================================================================
-// Tamio · Motor de sincronización (E4) — piloto: tabla MIEMBROS
+// Tamio · Motor de sincronización — MIEMBROS (E4) + TRANSACCIONES (T2)
 // ----------------------------------------------------------------------------
 // Offline-first: la app sigue usando SQLite local; esto sube los cambios
 // locales a Supabase y baja los de las otras Macs de la misma iglesia.
@@ -8,8 +8,13 @@
 // `updated_at`. La identidad global es `uid` (no el id numérico local, que
 // choca entre dispositivos). El aislamiento por iglesia lo hace RLS en la nube.
 //
-// Borrados: son SUAVES (deleted = 1, ver deleteMember en db.ts) y sí se
-// propagan por la columna `deleted`; las listas locales excluyen los borrados.
+// Borrados de miembros: SUAVES (deleted = 1, ver deleteMember en db.ts). Las
+// transacciones aún usan borrado físico (no se propaga todavía; llega en T2b).
+//
+// Vínculo transacción→aportante: en la nube se guarda `member_uid` (uid global
+// del miembro), no el `member_id` local (que difiere por dispositivo). Al subir
+// se mapea member_id→member_uid; al bajar, member_uid→member_id local. Por eso
+// se sincronizan primero los miembros y luego las transacciones.
 // ============================================================================
 
 import { getDb } from "./db";
@@ -166,4 +171,130 @@ export async function sincronizarMiembros(churchIdLocal: number): Promise<Result
   } catch (e) {
     return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
   }
+}
+
+// ============================================================================
+// TRANSACCIONES (T2)
+// ============================================================================
+
+// Columnas 1:1 entre local y nube. Se excluyen: `id`, `church_id` (int↔uuid),
+// `member_id` (se mapea a `member_uid`), `recurrente_id` (link local, no viaja)
+// y los metadatos de sync (`uid`, `updated_at`, `deleted`).
+const TX_DATA_COLS = [
+  "tipo", "categoria", "subcategoria", "concepto", "detalle", "fecha", "monto",
+  "moneda", "metodo_pago", "beneficiario", "beneficiario_rfc", "comprobante_path",
+  "emitir_constancia", "estado", "notas", "created_at",
+] as const;
+
+/** Sincroniza las transacciones de una iglesia local contra Supabase, mapeando
+ *  el vínculo con el aportante por `member_uid` (global) en vez del id local. */
+export async function sincronizarTransacciones(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+
+    // Mapas de miembros en ambos sentidos (id local ↔ uid global).
+    const miembros = await d.select<{ id: number; uid: string | null }[]>(
+      "SELECT id, uid FROM members WHERE church_id = $1",
+      [churchIdLocal],
+    );
+    const uidPorId = new Map<number, string>();
+    const idPorUid = new Map<string, number>();
+    for (const m of miembros) {
+      if (m.uid) { uidPorId.set(m.id, m.uid); idPorUid.set(m.uid, m.id); }
+    }
+
+    const locales = await d.select<FilaLocal[]>(
+      "SELECT * FROM transactions WHERE church_id = $1",
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("church_id", remoteChurch);
+    if (errPull) {
+      return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    }
+    const remotas = (remotasRaw ?? []) as FilaRemota[];
+
+    const remotasPorUid = new Map<string, FilaRemota>();
+    for (const r of remotas) remotasPorUid.set(r.uid, r);
+    const localesPorUid = new Map<string, FilaLocal>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid, l);
+
+    // PUSH — subir locales nuevas o más nuevas, mapeando member_id → member_uid.
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      if (!l.uid) continue;
+      const r = remotasPorUid.get(l.uid);
+      if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
+        const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
+        for (const c of TX_DATA_COLS) fila[c] = l[c] ?? null;
+        const midLocal = l.member_id as number | null;
+        fila.member_uid = midLocal != null ? uidPorId.get(midLocal) ?? null : null;
+        fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
+        fila.deleted = l.deleted === 1;
+        aSubir.push(fila);
+      }
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("transactions").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL — aplicar remotas nuevas o más nuevas, mapeando member_uid → member_id.
+    let bajados = 0;
+    for (const r of remotas) {
+      const l = localesPorUid.get(r.uid);
+      const remotaGana = !l || epoch(r.updated_at) > epoch(l.updated_at);
+      if (!remotaGana) continue;
+
+      const valores = TX_DATA_COLS.map((c) => r[c] ?? null);
+      const memberUid = r.member_uid as string | null;
+      const memberIdLocal = memberUid ? idPorUid.get(memberUid) ?? null : null;
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const n = TX_DATA_COLS.length;
+
+      if (l) {
+        const sets = TX_DATA_COLS.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        await d.execute(
+          `UPDATE transactions SET ${sets}, member_id = $${n + 1}, updated_at = $${n + 2}, deleted = $${n + 3} WHERE uid = $${n + 4}`,
+          [...valores, memberIdLocal, updatedAt, del, r.uid],
+        );
+      } else {
+        const cols = ["church_id", ...TX_DATA_COLS, "member_id", "uid", "updated_at", "deleted"];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO transactions (${cols.join(", ")}) VALUES (${placeholders})`,
+          [churchIdLocal, ...valores, memberIdLocal, r.uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+/** Sincroniza todo lo que el piloto cubre: primero miembros (para que las
+ *  transacciones puedan resolver su member_uid), luego transacciones. */
+export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoSync> {
+  const m = await sincronizarMiembros(churchIdLocal);
+  if (!m.ok) return m;
+  const t = await sincronizarTransacciones(churchIdLocal);
+  return {
+    ok: t.ok,
+    subidos: m.subidos + t.subidos,
+    bajados: m.bajados + t.bajados,
+    motivo: t.motivo,
+    error: t.error,
+  };
 }

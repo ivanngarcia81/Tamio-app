@@ -143,6 +143,11 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     `member_uid` (no id local) en `supabase/sync-t1-transactions.sql`. Migración
     local **v24** añade `uid/updated_at/deleted` a `transactions` y las escrituras
     ya generan `uid`/bumpean `updated_at`. Aún sin borrado suave ni motor.
-  - ⬜ **T2 — Motor + borrado + filtros:** extender el motor con mapeo
-    `member_id ↔ member_uid`, borrado suave de transacciones y excluir borrados
-    en todas las consultas (dinero: cuidado con no doble-contar). Probar 2 Macs.
+  - 🔨 **T2a — Motor (crear/editar):** `sincronizarTransacciones` en `src/sync.ts`
+    con mapeo `member_id ↔ member_uid`; `sincronizarTodo` corre miembros y luego
+    transacciones. El gestor (E5) ya lo usa, así que crear/editar movimientos se
+    sincroniza solo. Borrado de transacciones aún es físico (no se propaga).
+    Probar con dos Macs: crear/editar ingresos y gastos viaja.
+  - ⬜ **T2b — Borrado suave + filtros:** borrado suave de transacciones y
+    excluir borrados en todas las consultas de dinero (cuidado de no
+    doble-contar). Probar borrados con dos Macs.

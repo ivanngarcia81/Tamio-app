@@ -11,7 +11,7 @@
 // ============================================================================
 
 import { useSyncExternalStore } from "react";
-import { sincronizarMiembros, type MotivoSync } from "./sync";
+import { sincronizarTodo, type MotivoSync } from "./sync";
 
 export type SyncEstado =
   | "desactivado"    // sin login / sin credenciales: la sync no aplica
@@ -76,7 +76,7 @@ export async function ejecutarSync(): Promise<void> {
   corriendo = true;
   set({ estado: "sincronizando" });
   try {
-    const res = await sincronizarMiembros(churchId);
+    const res = await sincronizarTodo(churchId);
     if (res.ok) {
       set({ estado: "ok", ultima: Date.now(), subidos: res.subidos, bajados: res.bajados, motivo: undefined });
     } else {
