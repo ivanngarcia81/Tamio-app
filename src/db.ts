@@ -706,7 +706,7 @@ export async function listDepositos(churchId: number, opts: { limit?: number } =
   const d = await getDb();
   const limit = opts.limit ?? 300;
   return d.select<Deposito[]>(
-    `SELECT * FROM depositos_bancarios WHERE church_id = $1 ORDER BY fecha DESC, id DESC LIMIT ${limit}`,
+    `SELECT * FROM depositos_bancarios WHERE church_id = $1 AND deleted = 0 ORDER BY fecha DESC, id DESC LIMIT ${limit}`,
     [churchId]
   );
 }
@@ -722,7 +722,7 @@ export async function findDuplicateDeposito(
 ): Promise<boolean> {
   const d = await getDb();
   const params: unknown[] = [churchId, fecha, monto, cuentaBanco.trim()];
-  let where = "church_id = $1 AND fecha = $2 AND monto = $3 AND cuenta_banco = $4";
+  let where = "church_id = $1 AND fecha = $2 AND monto = $3 AND cuenta_banco = $4 AND deleted = 0";
   if (excludeId != null) {
     params.push(excludeId);
     where += ` AND id != $${params.length}`;
@@ -738,8 +738,8 @@ export async function insertDeposito(churchId: number, moneda: string, dep: NewD
   const d = await getDb();
   await d.execute(
     `INSERT INTO depositos_bancarios
-      (church_id, fecha, periodo, monto, moneda, cuenta_banco, referencia, comprobante_path, notas)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      (church_id, fecha, periodo, monto, moneda, cuenta_banco, referencia, comprobante_path, notas, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,datetime('now'))`,
     [
       churchId,
       dep.fecha,
@@ -750,6 +750,7 @@ export async function insertDeposito(churchId: number, moneda: string, dep: NewD
       dep.referencia?.trim() || null,
       dep.comprobante_path ?? null,
       dep.notas?.trim() || null,
+      crypto.randomUUID(),
     ]
   );
 }
@@ -759,7 +760,7 @@ export async function updateDeposito(id: number, churchId: number, moneda: strin
   await d.execute(
     `UPDATE depositos_bancarios SET
        fecha = $1, periodo = $2, monto = $3, moneda = $4, cuenta_banco = $5,
-       referencia = $6, comprobante_path = $7, notas = $8
+       referencia = $6, comprobante_path = $7, notas = $8, updated_at = datetime('now')
      WHERE id = $9 AND church_id = $10`,
     [
       dep.fecha,
@@ -776,15 +777,28 @@ export async function updateDeposito(id: number, churchId: number, moneda: strin
   );
 }
 
+/** Borrado SUAVE (deleted = 1) para que se propague en la sincronización. */
 export async function deleteDeposito(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM depositos_bancarios WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE depositos_bancarios SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
+/** Deshace el borrado suave de un depósito (para el "Deshacer" del toast). */
+export async function undeleteDeposito(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE depositos_bancarios SET deleted = 0, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 export async function monthDepositos(churchId: number, yyyyMm: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ total: number | null }[]>(
-    "SELECT SUM(monto) AS total FROM depositos_bancarios WHERE church_id = $1 AND periodo = $2",
+    "SELECT SUM(monto) AS total FROM depositos_bancarios WHERE church_id = $1 AND periodo = $2 AND deleted = 0",
     [churchId, yyyyMm]
   );
   return rows[0]?.total ?? 0;
@@ -793,7 +807,7 @@ export async function monthDepositos(churchId: number, yyyyMm: string): Promise<
 export async function yearDepositos(churchId: number, yyyy: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ total: number | null }[]>(
-    "SELECT SUM(monto) AS total FROM depositos_bancarios WHERE church_id = $1 AND substr(periodo, 1, 4) = $2",
+    "SELECT SUM(monto) AS total FROM depositos_bancarios WHERE church_id = $1 AND substr(periodo, 1, 4) = $2 AND deleted = 0",
     [churchId, yyyy]
   );
   return rows[0]?.total ?? 0;
@@ -802,7 +816,7 @@ export async function yearDepositos(churchId: number, yyyy: string): Promise<num
 export async function countDepositos(churchId: number, yyyyMm: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM depositos_bancarios WHERE church_id = $1 AND periodo = $2",
+    "SELECT count(*) AS n FROM depositos_bancarios WHERE church_id = $1 AND periodo = $2 AND deleted = 0",
     [churchId, yyyyMm]
   );
   return rows[0]?.n ?? 0;

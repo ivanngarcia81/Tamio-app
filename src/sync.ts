@@ -284,17 +284,114 @@ export async function sincronizarTransacciones(churchIdLocal: number): Promise<R
   }
 }
 
-/** Sincroniza todo lo que el piloto cubre: primero miembros (para que las
- *  transacciones puedan resolver su member_uid), luego transacciones. */
+// ============================================================================
+// DEPÓSITOS BANCARIOS (D1) — sin vínculos externos, igual de simple que miembros
+// ============================================================================
+
+const DEP_DATA_COLS = [
+  "fecha", "periodo", "monto", "moneda", "cuenta_banco", "referencia",
+  "comprobante_path", "notas", "created_at",
+] as const;
+
+/** Sincroniza los depósitos bancarios de una iglesia local contra Supabase. */
+export async function sincronizarDepositos(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+
+    const locales = await d.select<FilaLocal[]>(
+      "SELECT * FROM depositos_bancarios WHERE church_id = $1",
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("depositos_bancarios")
+      .select("*")
+      .eq("church_id", remoteChurch);
+    if (errPull) {
+      return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    }
+    const remotas = (remotasRaw ?? []) as FilaRemota[];
+
+    const remotasPorUid = new Map<string, FilaRemota>();
+    for (const r of remotas) remotasPorUid.set(r.uid, r);
+    const localesPorUid = new Map<string, FilaLocal>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid, l);
+
+    // PUSH
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      if (!l.uid) continue;
+      const r = remotasPorUid.get(l.uid);
+      if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
+        const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
+        for (const c of DEP_DATA_COLS) fila[c] = l[c] ?? null;
+        fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
+        fila.deleted = l.deleted === 1;
+        aSubir.push(fila);
+      }
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("depositos_bancarios").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL
+    let bajados = 0;
+    for (const r of remotas) {
+      const l = localesPorUid.get(r.uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+
+      const valores = DEP_DATA_COLS.map((c) => r[c] ?? null);
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const n = DEP_DATA_COLS.length;
+
+      if (l) {
+        const sets = DEP_DATA_COLS.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        await d.execute(
+          `UPDATE depositos_bancarios SET ${sets}, updated_at = $${n + 1}, deleted = $${n + 2} WHERE uid = $${n + 3}`,
+          [...valores, updatedAt, del, r.uid],
+        );
+      } else {
+        const cols = ["church_id", ...DEP_DATA_COLS, "uid", "updated_at", "deleted"];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO depositos_bancarios (${cols.join(", ")}) VALUES (${placeholders})`,
+          [churchIdLocal, ...valores, r.uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+/** Suma parcial de dos resultados de sincronización, propagando el primer fallo. */
+function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
+  return {
+    ok: a.ok && b.ok,
+    subidos: a.subidos + b.subidos,
+    bajados: a.bajados + b.bajados,
+    motivo: b.motivo ?? a.motivo,
+    error: b.error ?? a.error,
+  };
+}
+
+/** Sincroniza todo lo cubierto: miembros (primero, para resolver member_uid de
+ *  las transacciones), luego transacciones y depósitos. Si miembros falla, no
+ *  sigue (las transacciones dependen de ellos). */
 export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoSync> {
   const m = await sincronizarMiembros(churchIdLocal);
   if (!m.ok) return m;
   const t = await sincronizarTransacciones(churchIdLocal);
-  return {
-    ok: t.ok,
-    subidos: m.subidos + t.subidos,
-    bajados: m.bajados + t.bajados,
-    motivo: t.motivo,
-    error: t.error,
-  };
+  const dep = await sincronizarDepositos(churchIdLocal);
+  return combinar(combinar(m, t), dep);
 }

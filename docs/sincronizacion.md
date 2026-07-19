@@ -154,5 +154,13 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     `deleted = 0`. Probar borrados con dos Macs.
 
   Con esto la sincronización de transacciones cubre alta, edición y borrado.
-  Falta replicar a las demás tablas (depósitos, actas, cartas, servicios…) con
-  el mismo patrón.
+
+- **Depósitos bancarios** (sin vínculos externos, patrón simple):
+  - 🔨 **D1 — Completo:** tabla espejo `public.depositos_bancarios` con RLS
+    (`supabase/sync-d1-depositos.sql`), migración local **v25** (uid/updated_at/
+    deleted), `sincronizarDepositos` en el motor (dentro de `sincronizarTodo`),
+    borrado suave + `undeleteDeposito`, y filtros `deleted = 0` en las 5 consultas
+    de depósitos. Probar con dos Macs (alta/edición/borrado).
+
+  Falta replicar a las tablas de Secretaría (actas, cartas, servicios,
+  asistencia…) y catálogos/plantillas, con el mismo patrón.
