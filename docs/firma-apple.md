@@ -86,15 +86,20 @@ Abre `.env.firma` y rellena los 4 valores:
 
 ## Paso 5 · Firmar y notarizar
 
-Un solo comando:
+Un solo comando (**usar el manual — es el que funciona**):
 ```bash
-npm run firmar
+npm run firmar:manual
 ```
+
+> ✅ **Validado el 2026-07-19**: con este comando Apple aceptó y notarizó Tamio
+> (status: Accepted + staple OK). `npm run firmar` (el firmado interno de
+> Tauri) falla por el `com.apple.FinderInfo` que macOS re-estampa en las
+> carpetas `.app`; `firmar:manual` lo esquiva firmando la carpeta renombrada.
 Esto construye el `.dmg` universal (Intel + Apple Silicon), lo **firma** y lo
-manda a **notarizar** a Apple. La notarización puede tardar de **2 a 15 minutos**
-(Tauri espera la respuesta de Apple). Al terminar, el archivo queda en:
+manda a **notarizar** a Apple. La notarización puede tardar de **2 a 15 minutos**.
+Al terminar, el archivo queda en:
 ```
-src-tauri/target/universal-apple-darwin/release/bundle/dmg/Tamio_1.0.0_universal.dmg
+src-tauri/target/universal-apple-darwin/release/bundle/dmg/Tamio_universal.dmg
 ```
 
 ## Paso 6 · Comprobar que quedó bien
