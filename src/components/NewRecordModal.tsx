@@ -78,6 +78,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [mTelefono, setMTelefono] = useState("");
   const [mRfc, setMRfc] = useState("");
   const [mNotas, setMNotas] = useState("");
+  // Alta rápida desde Tesorería: distingue miembro (activo) de visitante.
+  const [mEstado, setMEstado] = useState<"activo" | "visitante">("activo");
 
   useEffect(() => {
     listMembers(church.id).then(setMembers).catch(() => {});
@@ -257,6 +259,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     setMTelefono("");
     setMRfc("");
     setMNotas("");
+    setMEstado("activo");
     setError(null);
     setSaving(false);
   }
@@ -279,7 +282,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         } else {
           // La fecha de alta del registro de membresía es el día en que se
           // agrega el miembro (el CSV puede traer fechas históricas propias).
-          await insertMember(church.id, { ...payload, fecha_ingreso: hoy });
+          await insertMember(church.id, { ...payload, fecha_ingreso: hoy, estado_membresia: mEstado });
         }
       } else {
         const m = parseMonto(monto);
@@ -639,6 +642,26 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
 
           {tab === "miembro" && (
             <>
+              {!isEdit && (
+                <div className="form-group full">
+                  <label className="form-label">{t("recordModal.tipoPersona")}</label>
+                  <div className="method-group">
+                    <div
+                      className={`method-choice${mEstado === "activo" ? " is-selected" : ""}`}
+                      onClick={() => setMEstado("activo")}
+                    >
+                      {t("recordModal.tipoMiembro")}
+                    </div>
+                    <div
+                      className={`method-choice${mEstado === "visitante" ? " is-selected" : ""}`}
+                      onClick={() => setMEstado("visitante")}
+                    >
+                      {t("recordModal.tipoVisitante")}
+                    </div>
+                  </div>
+                  <div className="form-hint" style={{ marginTop: 6 }}>{t("recordModal.tipoPersonaHint")}</div>
+                </div>
+              )}
               <div className="form-group full">
                 <label className="form-label">{t("recordModal.nombreFamilia")}</label>
                 <input className="form-input" value={mNombre} onChange={(e) => setMNombre(e.target.value)} placeholder={t("recordModal.nombreFamiliaPlaceholder")} />

@@ -1064,13 +1064,16 @@ export interface NewMember {
   etiquetas?: string[];
   fecha_ingreso?: string | null;
   notas?: string | null;
+  /** Estado dentro del registro al darlo de alta (activo | visitante | …).
+   *  Si no se pasa, la base usa 'activo' por defecto. */
+  estado_membresia?: string | null;
 }
 
 export async function insertMember(churchId: number, m: NewMember): Promise<void> {
   const d = await getDb();
   await d.execute(
-    `INSERT INTO members (church_id, nombre, email, telefono, rfc, etiquetas, fecha_ingreso, notas, uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'))`,
+    `INSERT INTO members (church_id, nombre, email, telefono, rfc, etiquetas, fecha_ingreso, notas, estado_membresia, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,datetime('now'))`,
     [
       churchId,
       m.nombre,
@@ -1080,6 +1083,7 @@ export async function insertMember(churchId: number, m: NewMember): Promise<void
       JSON.stringify(m.etiquetas ?? []),
       m.fecha_ingreso ?? null,
       m.notas ?? null,
+      m.estado_membresia ?? "activo",
       crypto.randomUUID(),
     ]
   );
