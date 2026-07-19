@@ -162,5 +162,19 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     borrado suave + `undeleteDeposito`, y filtros `deleted = 0` en las 5 consultas
     de depósitos. Probar con dos Macs (alta/edición/borrado).
 
-  Falta replicar a las tablas de Secretaría (actas, cartas, servicios,
-  asistencia…) y catálogos/plantillas, con el mismo patrón.
+- **Actas** (texto independiente, sin vínculos):
+  - 🔨 **A1 — Completo:** tabla espejo `public.actas` con RLS
+    (`supabase/sync-a1-actas.sql`), migración local **v26** (uid/updated_at/
+    deleted), `sincronizarActas` en `sincronizarTodo`, borrado suave, y filtros
+    `deleted = 0` en las 2 consultas de actas. Probar con dos Macs.
+
+- **Pendientes de replicar:**
+  - **Categorías personalizadas:** OJO — las transacciones referencian una
+    categoría personalizada por `custom-{id_local}`, que difiere entre Macs.
+    Sincronizarlas sin re-mapear esa referencia dejaría movimientos apuntando a
+    la categoría equivocada. Requiere cambiar el vínculo a algo global antes.
+  - **Plantillas:** las plantillas `es_inicial` se auto-crean por separado en
+    cada Mac; hay que evitar duplicados al sincronizar (p. ej. no sincronizar las
+    iniciales, o darles uid determinista).
+  - **Secretaría con vínculo a miembro:** cartas, solicitudes, traslados,
+    servicios + asistencia — usan el mapeo `member_uid` (como transacciones).

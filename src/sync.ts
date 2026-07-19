@@ -374,6 +374,98 @@ export async function sincronizarDepositos(churchIdLocal: number): Promise<Resul
   }
 }
 
+// ============================================================================
+// ACTAS (A1) — texto independiente, sin vínculos externos
+// ============================================================================
+
+const ACTA_DATA_COLS = [
+  "folio", "tipo", "titulo", "fecha", "hora_inicio", "hora_cierre", "lugar",
+  "preside", "secretario", "presentes", "ausentes", "invitados", "quorum",
+  "agenda", "resumen", "mociones", "acuerdos", "estado", "confidencial",
+  "fecha_aprobacion", "creado_en",
+] as const;
+
+/** Sincroniza las actas de una iglesia local contra Supabase. */
+export async function sincronizarActas(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+
+    const locales = await d.select<FilaLocal[]>(
+      "SELECT * FROM actas WHERE church_id = $1",
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("actas")
+      .select("*")
+      .eq("church_id", remoteChurch);
+    if (errPull) {
+      return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    }
+    const remotas = (remotasRaw ?? []) as FilaRemota[];
+
+    const remotasPorUid = new Map<string, FilaRemota>();
+    for (const r of remotas) remotasPorUid.set(r.uid, r);
+    const localesPorUid = new Map<string, FilaLocal>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid, l);
+
+    // PUSH
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      if (!l.uid) continue;
+      const r = remotasPorUid.get(l.uid);
+      if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
+        const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
+        for (const c of ACTA_DATA_COLS) fila[c] = l[c] ?? null;
+        fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
+        fila.deleted = l.deleted === 1;
+        aSubir.push(fila);
+      }
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("actas").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL
+    let bajados = 0;
+    for (const r of remotas) {
+      const l = localesPorUid.get(r.uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+
+      const valores = ACTA_DATA_COLS.map((c) => r[c] ?? null);
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const n = ACTA_DATA_COLS.length;
+
+      if (l) {
+        const sets = ACTA_DATA_COLS.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        await d.execute(
+          `UPDATE actas SET ${sets}, updated_at = $${n + 1}, deleted = $${n + 2} WHERE uid = $${n + 3}`,
+          [...valores, updatedAt, del, r.uid],
+        );
+      } else {
+        const cols = ["church_id", ...ACTA_DATA_COLS, "uid", "updated_at", "deleted"];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO actas (${cols.join(", ")}) VALUES (${placeholders})`,
+          [churchIdLocal, ...valores, r.uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
 /** Suma parcial de dos resultados de sincronización, propagando el primer fallo. */
 function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
   return {
@@ -393,5 +485,6 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   if (!m.ok) return m;
   const t = await sincronizarTransacciones(churchIdLocal);
   const dep = await sincronizarDepositos(churchIdLocal);
-  return combinar(combinar(m, t), dep);
+  const act = await sincronizarActas(churchIdLocal);
+  return combinar(combinar(combinar(m, t), dep), act);
 }
