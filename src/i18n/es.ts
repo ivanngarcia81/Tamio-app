@@ -188,6 +188,7 @@ export const es = {
     activos_one: "{{count}} persona registrada",
     activos_other: "{{count}} personas registradas",
     importarCsv: "Importar CSV",
+    nuevo: "Nuevo miembro",
     nuevoMiembro: "Nuevo miembro",
     buscarPlaceholder: "Buscar por nombre, email o RFC…",
     aunNoHay: "Aún no hay miembros",

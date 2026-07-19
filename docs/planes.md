@@ -118,10 +118,20 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
   con login en la nube; en cortesía o sin fecha no aparece (el dueño no lo ve).
   Usa `evaluarVigencia()` (con `diasGracia`).
 
+**Parte 3 — Miembro básico en Tesorería: HECHA.**
+
+- El **alta/edición de miembro básico** ya existía (pestaña "Miembro" del modal:
+  nombre, email, teléfono, RFC, nota + selector Miembro/Visitante) y el detalle
+  en Tesorería es puramente financiero (aportes + constancia). Las secciones de
+  Secretaría (bautismo, ministerios…) viven en la ficha completa, que ya queda
+  oculta por plan. Así que el "miembro básico" estaba cubierto por diseño.
+- Se añadió el botón **"Nuevo miembro"** en la página de Miembros (antes solo se
+  podía desde el botón global "Nuevo registro"), clave para el plan
+  solo-Tesorería, donde los miembros son el centro del trabajo.
+
 **Pendiente (siguientes partes):**
 - Bloqueo **duro** al vencer (pantalla con botón "renovar") — va junto con el
   pago, porque sin botón de pago un bloqueo total es un callejón sin salida.
-- Formulario de **miembro básico** dentro de Tesorería (plan solo-Tesorería).
 - **Integración** exclusiva del Completo (que Tesorería consuma miembros de
   Secretaría) — gate con `integracionActiva()`.
 - **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y

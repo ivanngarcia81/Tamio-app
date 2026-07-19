@@ -194,6 +194,7 @@ export const en: Resources = {
     activos_one: "{{count}} person on file",
     activos_other: "{{count}} people on file",
     importarCsv: "Import CSV",
+    nuevo: "New member",
     nuevoMiembro: "New member",
     buscarPlaceholder: "Search by name, email or tax ID…",
     aunNoHay: "No members yet",

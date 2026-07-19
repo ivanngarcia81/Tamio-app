@@ -42,6 +42,7 @@ interface Props {
   church: Church;
   refreshKey: number;
   onEdit: (member: Member) => void;
+  onNew: () => void;
   onChanged: () => void;
 }
 
@@ -51,7 +52,7 @@ interface PendingDelete {
   count: number;
 }
 
-export default function Miembros({ church, refreshKey, onEdit, onChanged }: Props) {
+export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged }: Props) {
   const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
@@ -152,6 +153,9 @@ export default function Miembros({ church, refreshKey, onEdit, onChanged }: Prop
         <div className="header-actions">
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
             <IconUpload size={13} /> {t("miembros.importarCsv")}
+          </button>
+          <button className="btn primary" onClick={onNew}>
+            <IconPlus size={14} /> {t("miembros.nuevo")}
           </button>
         </div>
       </div>

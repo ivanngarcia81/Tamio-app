@@ -220,6 +220,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 church={church}
                 refreshKey={refreshKey}
                 onEdit={openEditMember}
+                onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
                 onChanged={onChanged}
               />
             )}
