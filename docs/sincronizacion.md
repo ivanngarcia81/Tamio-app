@@ -168,6 +168,15 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     deleted), `sincronizarActas` en `sincronizarTodo`, borrado suave, y filtros
     `deleted = 0` en las 2 consultas de actas. Probar con dos Macs.
 
+- **Cartas y solicitudes** (con vínculo a miembro):
+  - 🔨 **C1 — Completo (sin enlace mutuo):** tablas espejo `public.cartas` y
+    `public.solicitudes` con RLS (`supabase/sync-c1-cartas-solicitudes.sql`),
+    migración local **v27** (uid/updated_at/deleted en ambas), motor
+    `sincronizarCartas` / `sincronizarSolicitudes` (helper genérico con mapeo
+    `member_uid`), borrado suave (respeta los guards: cartas solo borrador,
+    solicitudes solo nuevas sin carta), filtros `deleted = 0`. El enlace mutuo
+    carta↔solicitud NO se sincroniza (queda local en cada Mac). Probar 2 Macs.
+
 - **Pendientes de replicar:**
   - **Categorías personalizadas:** OJO — las transacciones referencian una
     categoría personalizada por `custom-{id_local}`, que difiere entre Macs.

@@ -466,6 +466,138 @@ export async function sincronizarActas(churchIdLocal: number): Promise<Resultado
   }
 }
 
+// ============================================================================
+// CARTAS y SOLICITUDES (C1) — con vínculo a miembro (member_uid). El enlace
+// mutuo carta↔solicitud NO se sincroniza (queda local en cada Mac).
+// ============================================================================
+
+const CARTA_DATA_COLS = [
+  "numero_seq", "folio", "tipo", "fecha_emision", "lugar_emision", "destinatario_tipo",
+  "destinatario_nombre", "destinatario_direccion", "asunto", "saludo", "cuerpo_html",
+  "despedida", "firmas", "observaciones", "estado", "historial_estados",
+  "entregada_a", "fecha_entrega", "creado_en", "modificado_en",
+] as const;
+
+const SOLICITUD_DATA_COLS = [
+  "numero_seq", "folio", "solicitante_externo", "tipo_carta", "motivo", "fecha_solicitud",
+  "fecha_requerida", "medio_entrega", "responsable", "prioridad", "estado", "observaciones",
+  "historial_estados", "creado_en", "modificado_en",
+] as const;
+
+/** Construye los mapas id local ↔ uid global de los miembros de una iglesia. */
+async function cargarMapasMiembros(
+  d: Awaited<ReturnType<typeof getDb>>,
+  churchIdLocal: number,
+): Promise<{ uidPorId: Map<number, string>; idPorUid: Map<string, number> }> {
+  const miembros = await d.select<{ id: number; uid: string | null }[]>(
+    "SELECT id, uid FROM members WHERE church_id = $1",
+    [churchIdLocal],
+  );
+  const uidPorId = new Map<number, string>();
+  const idPorUid = new Map<string, number>();
+  for (const m of miembros) {
+    if (m.uid) { uidPorId.set(m.id, m.uid); idPorUid.set(m.uid, m.id); }
+  }
+  return { uidPorId, idPorUid };
+}
+
+/** Sincroniza una tabla con vínculo a miembro (cartas o solicitudes), mapeando
+ *  member_id ↔ member_uid. Las columnas de datos van en `dataCols`. */
+async function sincronizarTablaConMiembro(
+  churchIdLocal: number,
+  tabla: string,
+  dataCols: readonly string[],
+): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const { uidPorId, idPorUid } = await cargarMapasMiembros(d, churchIdLocal);
+
+    const locales = await d.select<FilaLocal[]>(
+      `SELECT * FROM ${tabla} WHERE church_id = $1`,
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from(tabla)
+      .select("*")
+      .eq("church_id", remoteChurch);
+    if (errPull) {
+      return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    }
+    const remotas = (remotasRaw ?? []) as FilaRemota[];
+
+    const remotasPorUid = new Map<string, FilaRemota>();
+    for (const r of remotas) remotasPorUid.set(r.uid, r);
+    const localesPorUid = new Map<string, FilaLocal>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid, l);
+
+    // PUSH — mapeando member_id → member_uid.
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      if (!l.uid) continue;
+      const r = remotasPorUid.get(l.uid);
+      if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
+        const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
+        for (const c of dataCols) fila[c] = l[c] ?? null;
+        const midLocal = l.member_id as number | null;
+        fila.member_uid = midLocal != null ? uidPorId.get(midLocal) ?? null : null;
+        fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
+        fila.deleted = l.deleted === 1;
+        aSubir.push(fila);
+      }
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from(tabla).upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL — mapeando member_uid → member_id local. No se toca el enlace mutuo.
+    let bajados = 0;
+    for (const r of remotas) {
+      const l = localesPorUid.get(r.uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+
+      const valores = dataCols.map((c) => r[c] ?? null);
+      const memberUid = r.member_uid as string | null;
+      const memberIdLocal = memberUid ? idPorUid.get(memberUid) ?? null : null;
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const n = dataCols.length;
+
+      if (l) {
+        const sets = dataCols.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        await d.execute(
+          `UPDATE ${tabla} SET ${sets}, member_id = $${n + 1}, updated_at = $${n + 2}, deleted = $${n + 3} WHERE uid = $${n + 4}`,
+          [...valores, memberIdLocal, updatedAt, del, r.uid],
+        );
+      } else {
+        const cols = ["church_id", ...dataCols, "member_id", "uid", "updated_at", "deleted"];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO ${tabla} (${cols.join(", ")}) VALUES (${placeholders})`,
+          [churchIdLocal, ...valores, memberIdLocal, r.uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+export function sincronizarCartas(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaConMiembro(churchIdLocal, "cartas", CARTA_DATA_COLS);
+}
+export function sincronizarSolicitudes(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaConMiembro(churchIdLocal, "solicitudes", SOLICITUD_DATA_COLS);
+}
+
 /** Suma parcial de dos resultados de sincronización, propagando el primer fallo. */
 function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
   return {
@@ -486,5 +618,7 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   const t = await sincronizarTransacciones(churchIdLocal);
   const dep = await sincronizarDepositos(churchIdLocal);
   const act = await sincronizarActas(churchIdLocal);
-  return combinar(combinar(combinar(m, t), dep), act);
+  const car = await sincronizarCartas(churchIdLocal);
+  const sol = await sincronizarSolicitudes(churchIdLocal);
+  return [t, dep, act, car, sol].reduce(combinar, m);
 }

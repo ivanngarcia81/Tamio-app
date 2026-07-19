@@ -1474,7 +1474,7 @@ export interface NewCarta {
 export async function listCartas(churchId: number): Promise<Carta[]> {
   const d = await getDb();
   return d.select<Carta[]>(
-    "SELECT * FROM cartas WHERE church_id = $1 ORDER BY fecha_emision DESC, id DESC",
+    "SELECT * FROM cartas WHERE church_id = $1 AND deleted = 0 ORDER BY fecha_emision DESC, id DESC",
     [churchId]
   );
 }
@@ -1510,9 +1510,9 @@ export async function insertCarta(churchId: number, c: NewCarta): Promise<Carta 
        tipo, fecha_emision, lugar_emision, destinatario_tipo, member_id,
        destinatario_nombre, destinatario_direccion, asunto, saludo, cuerpo_html,
        despedida, firmas, observaciones, estado, entregada_a, fecha_entrega,
-       church_id, numero_seq, folio, historial_estados
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
-    [...cartaParams(c), churchId, seq, folio, historial]
+       church_id, numero_seq, folio, historial_estados, uid, updated_at
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,datetime('now'))`,
+    [...cartaParams(c), churchId, seq, folio, historial, crypto.randomUUID()]
   );
   const rows = await d.select<Carta[]>(
     "SELECT * FROM cartas WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
@@ -1542,7 +1542,7 @@ export async function updateCarta(id: number, churchId: number, c: NewCarta, est
        destinatario_nombre = $6, destinatario_direccion = $7, asunto = $8, saludo = $9,
        cuerpo_html = $10, despedida = $11, firmas = $12, observaciones = $13, estado = $14,
        entregada_a = $15, fecha_entrega = $16,
-       modificado_en = datetime('now', 'localtime')
+       modificado_en = datetime('now', 'localtime'), updated_at = datetime('now')
      WHERE id = $17 AND church_id = $18`,
     [...cartaParams(c), id, churchId]
   );
@@ -1563,7 +1563,7 @@ export async function updateCarta(id: number, churchId: number, c: NewCarta, est
       if (previo && previo !== "entregada" && previo !== "cancelada") {
         await registrarCambioEstadoSolicitud(solicitudId, churchId, previo, "entregada");
         await d.execute(
-          "UPDATE solicitudes SET estado = 'entregada' WHERE id = $1 AND church_id = $2",
+          "UPDATE solicitudes SET estado = 'entregada', updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
           [solicitudId, churchId]
         );
       }
@@ -1576,7 +1576,11 @@ export async function deleteCarta(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   // Si el borrador venía de una solicitud, la solicitud queda desvinculada.
   await d.execute("UPDATE solicitudes SET carta_id = NULL WHERE carta_id = $1 AND church_id = $2", [id, churchId]);
-  await d.execute("DELETE FROM cartas WHERE id = $1 AND church_id = $2 AND estado = 'borrador'", [id, churchId]);
+  // Borrado SUAVE (solo borradores) para que se propague en la sincronización.
+  await d.execute(
+    "UPDATE cartas SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2 AND estado = 'borrador'",
+    [id, churchId]
+  );
 }
 
 /** Estado previo al actual según el historial (para "Restaurar"). */
@@ -1635,7 +1639,7 @@ export interface NewSolicitud {
 export async function listSolicitudes(churchId: number): Promise<Solicitud[]> {
   const d = await getDb();
   return d.select<Solicitud[]>(
-    "SELECT * FROM solicitudes WHERE church_id = $1 ORDER BY fecha_solicitud DESC, id DESC",
+    "SELECT * FROM solicitudes WHERE church_id = $1 AND deleted = 0 ORDER BY fecha_solicitud DESC, id DESC",
     [churchId]
   );
 }
@@ -1661,9 +1665,9 @@ export async function insertSolicitud(churchId: number, s: NewSolicitud): Promis
     `INSERT INTO solicitudes (
        member_id, solicitante_externo, tipo_carta, motivo, fecha_solicitud, fecha_requerida,
        medio_entrega, responsable, prioridad, estado, observaciones,
-       church_id, numero_seq, folio, historial_estados
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-    [...solicitudParams(s), churchId, seq, folio, historial]
+       church_id, numero_seq, folio, historial_estados, uid, updated_at
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,datetime('now'))`,
+    [...solicitudParams(s), churchId, seq, folio, historial, crypto.randomUUID()]
   );
   const rows = await d.select<Solicitud[]>(
     "SELECT * FROM solicitudes WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
@@ -1683,7 +1687,7 @@ async function registrarCambioEstadoSolicitud(id: number, churchId: number, de: 
   try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
   hist.push({ de, a, fecha: nowLocalIso() });
   await d.execute(
-    "UPDATE solicitudes SET historial_estados = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3",
+    "UPDATE solicitudes SET historial_estados = $1, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
     [JSON.stringify(hist), id, churchId]
   );
 }
@@ -1696,7 +1700,7 @@ export async function updateSolicitud(id: number, churchId: number, s: NewSolici
        member_id = $1, solicitante_externo = $2, tipo_carta = $3, motivo = $4,
        fecha_solicitud = $5, fecha_requerida = $6, medio_entrega = $7, responsable = $8,
        prioridad = $9, estado = $10, observaciones = $11,
-       modificado_en = datetime('now', 'localtime')
+       modificado_en = datetime('now', 'localtime'), updated_at = datetime('now')
      WHERE id = $12 AND church_id = $13`,
     [...solicitudParams(s), id, churchId]
   );
@@ -1705,8 +1709,9 @@ export async function updateSolicitud(id: number, churchId: number, s: NewSolici
 /** Eliminar solo solicitudes nuevas sin carta vinculada; el resto se cancela. */
 export async function deleteSolicitud(id: number, churchId: number): Promise<void> {
   const d = await getDb();
+  // Borrado SUAVE (solo nuevas sin carta) para que se propague en la sincronización.
   await d.execute(
-    "DELETE FROM solicitudes WHERE id = $1 AND church_id = $2 AND estado = 'nueva' AND carta_id IS NULL",
+    "UPDATE solicitudes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2 AND estado = 'nueva' AND carta_id IS NULL",
     [id, churchId]
   );
 }
