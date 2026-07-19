@@ -104,3 +104,62 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
   impuestos por país).
 - Prueba gratis / periodo de evaluación.
 - Qué pasa exactamente al vencer (solo lectura vs bloqueo total).
+
+---
+
+## Regalar cuentas sin cobro (modo "cortesía")
+
+Como dueño, se puede regalar una versión completa sin que la persona pague. La
+suscripción es solo un **dato** que dice "esta cuenta está activa"; regalar es
+marcarla activa **sin pasar por el cobro**.
+
+Diseño acordado: el campo de estado de la cuenta incluye un valor **`cortesia`**
+(además de `activa` y `vencida`). Una cuenta de regalo queda:
+
+| campo | regalo |
+|---|---|
+| `plan` | `completo` |
+| `estado` | `cortesia` |
+| `vence` | `null` (nunca caduca) |
+
+- La app solo pregunta *"¿está activa?"* — le da igual si es de pago o cortesía.
+- Se mantiene **separado** de `activa` para distinguir en reportes quién paga de
+  quién es regalo (y no cortar por error una cuenta que "no pagó").
+- Con `vence = null` nunca caduca; el modo offline ni molesta.
+- Solo el **dueño/administrador general** puede otorgar cortesías (un usuario
+  normal no puede auto-regalarse).
+- Alternativa: **códigos de licencia** que se generan y se entregan (para
+  regalar sin conocer el correo de antemano, p. ej. en una conferencia).
+
+---
+
+## Hoja de ruta general (orden completo del proyecto)
+
+Dónde encaja cada gran bloque, incluida la app de iPad. Orden lógico, no fechas.
+
+| # | Bloque | Estado | De quién |
+|---|---|---|---|
+| 1 | App Mac completa (Tesorería + Secretaría) | ✅ Hecho | — |
+| 2 | Sincronización en la nube entre Macs | ✅ Código listo; falta probar 2 Macs | Tú (probar) |
+| 3 | **Cuenta Apple Developer** ($99/año) — firmar/notarizar | 🔴 Pendiente | Tú (trámite) |
+| 4 | **Suscripciones** (planes por módulo + cortesía + pago) | 🟡 Diseñado, sin construir | Yo |
+| 5 | Política de privacidad + términos | 🟡 Pendiente | Los dos |
+| 6 | **IA**: cartas (lista), luego actas, resúmenes, preguntas | 🟢 Cartas hecha; resto por hacer | Yo (+ tu clave) |
+| 7 | **📱 Tamio para iPad** (ver `docs/ipad-plan.md`) | ⚪ Planeado, al final | Yo |
+
+### Por qué el iPad va casi al final
+No es por dificultad de programar (Tauri 2 soporta iPad y se reutiliza el
+70–80% del código), sino porque **depende de los pasos previos**:
+
+- Necesita la **cuenta Apple Developer** (#3) — sin ella no se instala en iPad.
+- Necesita la **sincronización en la nube ya probada** (#2) — es lo que permite
+  que iPad y Mac compartan datos; sin eso el iPad sería una isla.
+
+Por eso, cerrar la sincronización (lo de ahora) es justo el **cimiento** del
+iPad. El grueso del trabajo de iPad no es reprogramar, son dos cosas: la
+**interfaz táctil** (Fase 2 de `docs/ipad-plan.md`) y el **trámite de Apple**.
+
+### Recomendación de secuencia
+1. **Ahora:** probar sync de las 2 Macs (#2) + generar el `.dmg` final.
+2. **Luego:** Apple Developer (#3) → suscripciones (#4) para poder vender.
+3. **Después:** más IA (#6) e iPad (#7), sobre la base ya estable y en uso.
