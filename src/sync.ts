@@ -585,12 +585,14 @@ async function cargarMapasMiembros(
   return { uidPorId, idPorUid };
 }
 
-/** Sincroniza una tabla con vínculo a miembro (cartas o solicitudes), mapeando
- *  member_id ↔ member_uid. Las columnas de datos van en `dataCols`. */
+/** Sincroniza una tabla con vínculo a miembro, mapeando el id local del miembro
+ *  (columna `memberCol`, p. ej. member_id o responsable_member_id) ↔ member_uid
+ *  global. Las columnas de datos van en `dataCols`. */
 async function sincronizarTablaConMiembro(
   churchIdLocal: number,
   tabla: string,
   dataCols: readonly string[],
+  memberCol = "member_id",
 ): Promise<ResultadoSync> {
   if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
   const remoteChurch = await churchIdRemoto();
@@ -627,7 +629,7 @@ async function sincronizarTablaConMiembro(
       if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
         const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
         for (const c of dataCols) fila[c] = l[c] ?? null;
-        const midLocal = l.member_id as number | null;
+        const midLocal = l[memberCol] as number | null;
         fila.member_uid = midLocal != null ? uidPorId.get(midLocal) ?? null : null;
         fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
         fila.deleted = l.deleted === 1;
@@ -655,11 +657,11 @@ async function sincronizarTablaConMiembro(
       if (l) {
         const sets = dataCols.map((c, i) => `${c} = $${i + 1}`).join(", ");
         await d.execute(
-          `UPDATE ${tabla} SET ${sets}, member_id = $${n + 1}, updated_at = $${n + 2}, deleted = $${n + 3} WHERE uid = $${n + 4}`,
+          `UPDATE ${tabla} SET ${sets}, ${memberCol} = $${n + 1}, updated_at = $${n + 2}, deleted = $${n + 3} WHERE uid = $${n + 4}`,
           [...valores, memberIdLocal, updatedAt, del, r.uid],
         );
       } else {
-        const cols = ["church_id", ...dataCols, "member_id", "uid", "updated_at", "deleted"];
+        const cols = ["church_id", ...dataCols, memberCol, "uid", "updated_at", "deleted"];
         const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
         await d.execute(
           `INSERT INTO ${tabla} (${cols.join(", ")}) VALUES (${placeholders})`,
@@ -706,6 +708,26 @@ export function sincronizarTrasladosEntrada(churchIdLocal: number): Promise<Resu
   return sincronizarTablaConMiembro(churchIdLocal, "traslados_entrada", TRASLADO_ENTRADA_DATA_COLS);
 }
 
+// Agenda (AG1): el responsable puede ser un miembro (responsable_member_id →
+// member_uid). El resto es contenido del evento.
+const AGENDA_DATA_COLS = [
+  "nombre", "tipo", "tipo_personalizado", "fecha", "hora_inicio", "hora_fin", "dia_completo",
+  "lugar", "descripcion", "responsable_persona", "responsable_ministerio", "invitado", "contacto",
+  "estado", "recurrencia", "excepciones", "recordatorios", "es_fecha_importante",
+  "creado_en", "modificado_en",
+] as const;
+
+export function sincronizarAgenda(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaConMiembro(churchIdLocal, "agenda", AGENDA_DATA_COLS, "responsable_member_id");
+}
+
+// Mensajes (MSG1): buzón interno entre roles, tabla simple.
+const MENSAJE_DATA_COLS = ["de_rol", "cuerpo", "leido", "creado_en"] as const;
+
+export function sincronizarMensajes(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaSimple(churchIdLocal, "mensajes", MENSAJE_DATA_COLS);
+}
+
 /** Suma parcial de dos resultados de sincronización, propagando el primer fallo. */
 function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
   return {
@@ -731,5 +753,7 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   const ts = await sincronizarTrasladosSalida(churchIdLocal);
   const te = await sincronizarTrasladosEntrada(churchIdLocal);
   const sv = await sincronizarServicios(churchIdLocal);
-  return [t, dep, act, car, sol, ts, te, sv].reduce(combinar, m);
+  const ag = await sincronizarAgenda(churchIdLocal);
+  const msg = await sincronizarMensajes(churchIdLocal);
+  return [t, dep, act, car, sol, ts, te, sv, ag, msg].reduce(combinar, m);
 }

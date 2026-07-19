@@ -587,6 +587,24 @@ fn migrations() -> Vec<Migration> {
             UPDATE servicios SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_servicios_sync ON servicios(church_id, updated_at);
         "#,
+    }, Migration {
+        version: 30,
+        description: "sincronización AG1/MSG1: metadatos (uid/updated_at/deleted) en agenda y mensajes",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE agenda ADD COLUMN uid TEXT;
+            ALTER TABLE agenda ADD COLUMN updated_at TEXT;
+            ALTER TABLE agenda ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE agenda SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE agenda SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_agenda_sync ON agenda(church_id, updated_at);
+            ALTER TABLE mensajes ADD COLUMN uid TEXT;
+            ALTER TABLE mensajes ADD COLUMN updated_at TEXT;
+            ALTER TABLE mensajes ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE mensajes SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE mensajes SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_mensajes_sync ON mensajes(church_id, updated_at);
+        "#,
     }]
 }
 

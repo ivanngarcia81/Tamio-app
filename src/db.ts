@@ -2391,7 +2391,7 @@ export interface Mensaje {
 export async function listMensajes(churchId: number): Promise<Mensaje[]> {
   const d = await getDb();
   return d.select<Mensaje[]>(
-    "SELECT * FROM mensajes WHERE church_id = $1 ORDER BY id ASC",
+    "SELECT * FROM mensajes WHERE church_id = $1 AND deleted = 0 ORDER BY id ASC",
     [churchId]
   );
 }
@@ -2399,8 +2399,8 @@ export async function listMensajes(churchId: number): Promise<Mensaje[]> {
 export async function insertMensaje(churchId: number, deRol: string, cuerpo: string): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "INSERT INTO mensajes (church_id, de_rol, cuerpo) VALUES ($1, $2, $3)",
-    [churchId, deRol, cuerpo.trim()]
+    "INSERT INTO mensajes (church_id, de_rol, cuerpo, uid, updated_at) VALUES ($1, $2, $3, $4, datetime('now'))",
+    [churchId, deRol, cuerpo.trim(), crypto.randomUUID()]
   );
 }
 
@@ -2408,20 +2408,24 @@ export async function insertMensaje(churchId: number, deRol: string, cuerpo: str
 export async function marcarMensajesLeidos(churchId: number, paraRol: string): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "UPDATE mensajes SET leido = 1 WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
+    "UPDATE mensajes SET leido = 1, updated_at = datetime('now') WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
     [churchId, paraRol]
   );
 }
 
+/** Borrado SUAVE (deleted = 1) para que se propague en la sincronización. */
 export async function deleteMensaje(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM mensajes WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE mensajes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 export async function countMensajesNoLeidos(churchId: number, paraRol: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM mensajes WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
+    "SELECT count(*) AS n FROM mensajes WHERE church_id = $1 AND de_rol <> $2 AND leido = 0 AND deleted = 0",
     [churchId, paraRol]
   );
   return rows[0]?.n ?? 0;
@@ -2548,7 +2552,7 @@ export function parseRecordatorios(json: string | null | undefined): number[] {
 export async function listActividades(churchId: number): Promise<Actividad[]> {
   const d = await getDb();
   return d.select<Actividad[]>(
-    "SELECT * FROM agenda WHERE church_id = $1 ORDER BY fecha ASC, hora_inicio ASC, id ASC",
+    "SELECT * FROM agenda WHERE church_id = $1 AND deleted = 0 ORDER BY fecha ASC, hora_inicio ASC, id ASC",
     [churchId]
   );
 }
@@ -2584,9 +2588,9 @@ export async function insertActividad(churchId: number, a: NewActividad): Promis
     `INSERT INTO agenda (
        nombre, tipo, tipo_personalizado, fecha, hora_inicio, hora_fin, dia_completo,
        lugar, descripcion, responsable_member_id, responsable_persona, responsable_ministerio,
-       invitado, contacto, estado, es_fecha_importante, recurrencia, recordatorios, church_id
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
-    [...actividadParams(a), churchId]
+       invitado, contacto, estado, es_fecha_importante, recurrencia, recordatorios, church_id, uid, updated_at
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,datetime('now'))`,
+    [...actividadParams(a), churchId, crypto.randomUUID()]
   );
   const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
   return rows[0]?.id ?? 0;
@@ -2601,7 +2605,7 @@ export async function updateActividad(id: number, churchId: number, a: NewActivi
        hora_fin = $6, dia_completo = $7, lugar = $8, descripcion = $9,
        responsable_member_id = $10, responsable_persona = $11, responsable_ministerio = $12,
        invitado = $13, contacto = $14, estado = $15, es_fecha_importante = $16, recurrencia = $17,
-       recordatorios = $18, modificado_en = datetime('now', 'localtime')
+       recordatorios = $18, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now')
      WHERE id = $19 AND church_id = $20`,
     [...actividadParams(a), id, churchId]
   );
@@ -2622,7 +2626,7 @@ export async function agregarExcepcionAgenda(masterId: number, churchId: number,
     : exc;
   lista.push(fusionada);
   await d.execute(
-    "UPDATE agenda SET excepciones = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3",
+    "UPDATE agenda SET excepciones = $1, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
     [JSON.stringify(lista), masterId, churchId]
   );
 }
@@ -2645,7 +2649,7 @@ export async function truncarSerieAgenda(masterId: number, churchId: number, des
   rec.fin = { tipo: "hasta", hasta: diaAntes(desdeISO) };
   const exc = parseExcepciones(rows[0]?.excepciones).filter((e) => e.fechaOriginal < desdeISO);
   await d.execute(
-    "UPDATE agenda SET recurrencia = $1, excepciones = $2, modificado_en = datetime('now', 'localtime') WHERE id = $3 AND church_id = $4",
+    "UPDATE agenda SET recurrencia = $1, excepciones = $2, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now') WHERE id = $3 AND church_id = $4",
     [JSON.stringify(rec), JSON.stringify(exc), masterId, churchId]
   );
 }
@@ -2654,14 +2658,14 @@ export async function truncarSerieAgenda(masterId: number, churchId: number, des
 export async function setEstadoActividad(id: number, churchId: number, estado: string): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "UPDATE agenda SET estado = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3",
+    "UPDATE agenda SET estado = $1, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
     [estado, id, churchId]
   );
 }
 
 export async function deleteActividad(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM agenda WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute("UPDATE agenda SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2", [id, churchId]);
 }
 
 /** Cuántos servicios referencian a un miembro (para archivar en vez de borrar). */

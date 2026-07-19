@@ -192,6 +192,13 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     borrado suave, filtros `deleted = 0` (listas + joins de asistencia). El
     **roster por miembro** (`servicio_asistencia`) NO se sincroniza aún.
 
+- **Agenda y mensajes** (AG1/MSG1):
+  - 🔨 **Completo:** tablas espejo `public.agenda` (responsable por `member_uid`)
+    y `public.mensajes` (buzón interno, simple) con RLS
+    (`supabase/sync-ag1-agenda-mensajes.sql`), migración local **v30**, motor
+    (`sincronizarAgenda` con el helper de miembro generalizado por columna, y
+    `sincronizarMensajes` simple), borrado suave y filtros `deleted = 0`.
+
 - **Pendientes de replicar:**
   - **servicio_asistencia (roster por miembro):** tabla de UNIÓN con clave
     compuesta (servicio_id + member_id), sin uid, guardado por reemplazo total.
