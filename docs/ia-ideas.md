@@ -52,3 +52,38 @@
 1. Terminar Supabase (login + roles) y el `.dmg`.
 2. (Opcional) Tamio para iPad — ver `docs/ipad-plan.md`.
 3. IA: primero cartas/actas + resúmenes; luego, con cuidado, el resto.
+
+---
+
+## Preguntas sobre los datos en Tesorería (caso #4, con detalle)
+
+Un cuadro en Tesorería donde el usuario escribe (o dicta) una pregunta en
+español y recibe la respuesta con **el dato real de su base**. Ejemplos:
+
+- *"¿Cuánto se gastó este año?"*
+  → "En 2026 se han gastado $44,150. Mayor rubro: compensación pastoral
+    ($18,000), seguido de servicios ($12,300)."
+- *"¿Cuánto se recibió en diezmos en julio?"*
+- *"¿Cuál fue el mes con más ofrendas?"*
+- *"¿Cuánto saldo le queda a la iglesia?"*
+- *"¿Cuánto ha aportado Juan este año?"*
+
+### Regla de oro: **la app calcula, la IA explica**
+En temas de dinero la IA **NO debe inventar ni estimar cifras**. El flujo seguro:
+
+1. La **app** calcula el número exacto, con las MISMAS funciones que ya usan los
+   reportes (`monthTotals`, `yearTotals`, `yearCategoriaTotals`, `memberStats`,
+   etc. en `db.ts`) — cifras ya auditadas.
+2. La **IA** solo redacta la respuesta en lenguaje natural sobre ese número.
+
+Así los números siempre son exactos; la IA aporta la conversación, no el cálculo.
+Técnicamente: la IA interpreta la intención de la pregunta → elige qué función/
+periodo consultar (o se le pasan totales precalculados como contexto) → redacta.
+
+### Enlace con reportes/PDF
+La respuesta puede **ofrecer el reporte**: "¿Genero el PDF del gasto anual?" y
+dispararlo con el motor de PDF que ya existe (`printDashboard` / reporte anual).
+
+### Privacidad
+Se envía a la IA **solo el dato/total necesario** para redactar (no toda la base).
+Nunca salen datos sensibles que no hagan falta para responder.
