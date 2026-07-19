@@ -135,6 +135,14 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
 ---
 
 ## Estado
-- E0–E4 hechos (E4 validado con dos Macs: sube/baja miembros). E5 en curso:
-  sincronización automática + indicador de estado, a pulir con dos Macs. E6
-  pendiente (pruebas de estrés). Luego replicar a las otras tablas.
+- Piloto de **miembros** completo y validado (E0–E6): registro, iglesia, nube,
+  metadatos, motor push/pull, automatización + indicador, y pruebas de estrés.
+- **Replicando a `transactions`** (la más crítica: dinero + vínculo al miembro
+  que difiere por dispositivo):
+  - 🔨 **T1 — Cimiento:** tabla espejo `public.transactions` con RLS y
+    `member_uid` (no id local) en `supabase/sync-t1-transactions.sql`. Migración
+    local **v24** añade `uid/updated_at/deleted` a `transactions` y las escrituras
+    ya generan `uid`/bumpean `updated_at`. Aún sin borrado suave ni motor.
+  - ⬜ **T2 — Motor + borrado + filtros:** extender el motor con mapeo
+    `member_id ↔ member_uid`, borrado suave de transacciones y excluir borrados
+    en todas las consultas (dinero: cuidado con no doble-contar). Probar 2 Macs.

@@ -500,8 +500,9 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
   await d.execute(
     `INSERT INTO transactions
       (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
-       member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+       member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
+       uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,datetime('now'))`,
     [
       churchId,
       tx.tipo,
@@ -521,6 +522,7 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
       tx.estado ?? "aprobado",
       tx.comprobante_path ?? null,
       tx.recurrente_id ?? null,
+      crypto.randomUUID(),
     ]
   );
 }
@@ -537,7 +539,7 @@ export async function updateTx(
        categoria = $1, subcategoria = $2, concepto = $3, detalle = $4, fecha = $5,
        monto = $6, moneda = $7, metodo_pago = $8, member_id = $9,
        beneficiario = $10, beneficiario_rfc = $11, emitir_constancia = $12, notas = $13, estado = $14,
-       comprobante_path = $15
+       comprobante_path = $15, updated_at = datetime('now')
      WHERE id = $16 AND church_id = $17`,
     [
       tx.categoria,
@@ -581,7 +583,7 @@ export async function listPendingTx(churchId: number): Promise<Tx[]> {
 export async function markTxReviewed(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "UPDATE transactions SET estado = 'aprobado' WHERE id = $1 AND church_id = $2",
+    "UPDATE transactions SET estado = 'aprobado', updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [id, churchId]
   );
 }
@@ -2850,12 +2852,13 @@ async function materializarDef(
     await d.execute(
       `INSERT INTO transactions
         (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
-         member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13)`,
+         member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
+         uid, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13,$14,datetime('now'))`,
       [
         def.church_id, def.tipo, def.categoria, def.subcategoria, def.concepto, def.detalle,
         fechaEnMes(mes, def.dia), def.monto, moneda, def.metodo_pago,
-        def.beneficiario, def.beneficiario_rfc, def.id,
+        def.beneficiario, def.beneficiario_rfc, def.id, crypto.randomUUID(),
       ]
     );
   }
