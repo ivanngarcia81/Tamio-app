@@ -375,7 +375,7 @@ export async function deleteCategoriaCustom(id: number, churchId: number): Promi
 export async function countTxByCategoria(churchId: number, categoriaId: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND categoria = $2",
+    "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND categoria = $2 AND deleted = 0",
     [churchId, categoriaId]
   );
   return rows[0]?.n ?? 0;
@@ -563,9 +563,25 @@ export async function updateTx(
   );
 }
 
+/** Borrado SUAVE (deleted = 1) para que el borrado se propague en la
+ *  sincronización en vez de "revivir" al bajar de la nube. Todas las consultas
+ *  de movimientos excluyen deleted = 1, así que desaparece de la app. */
 export async function deleteTx(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM transactions WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE transactions SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
+/** Deshace un borrado suave de movimiento (para el "Deshacer" del toast),
+ *  conservando el mismo uid para que la sincronización lo reactive. */
+export async function undeleteTx(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE transactions SET deleted = 0, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 export async function listPendingTx(churchId: number): Promise<Tx[]> {
@@ -574,7 +590,7 @@ export async function listPendingTx(churchId: number): Promise<Tx[]> {
     `SELECT t.*, m.nombre AS member_nombre
        FROM transactions t
        LEFT JOIN members m ON m.id = t.member_id
-      WHERE t.church_id = $1 AND t.estado = 'pendiente'
+      WHERE t.church_id = $1 AND t.estado = 'pendiente' AND t.deleted = 0
       ORDER BY t.fecha DESC, t.id DESC`,
     [churchId]
   );
@@ -591,7 +607,7 @@ export async function markTxReviewed(id: number, churchId: number): Promise<void
 export async function countPendingTx(churchId: number): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND estado = 'pendiente'",
+    "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND estado = 'pendiente' AND deleted = 0",
     [churchId]
   );
   return rows[0]?.n ?? 0;
@@ -603,7 +619,7 @@ export async function listTx(
 ): Promise<Tx[]> {
   const d = await getDb();
   const params: unknown[] = [churchId];
-  let where = "t.church_id = $1 AND t.estado != 'rechazado'";
+  let where = "t.church_id = $1 AND t.estado != 'rechazado' AND t.deleted = 0";
   if (opts.tipo) {
     params.push(opts.tipo);
     where += ` AND t.tipo = $${params.length}`;
@@ -638,7 +654,7 @@ export async function monthTotals(churchId: number, yyyyMm: string): Promise<Mon
   const rows = await d.select<{ tipo: string; categoria: string; total: number; cnt: number }[]>(
     `SELECT tipo, categoria, SUM(monto) AS total, COUNT(*) AS cnt
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 7) = $2
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 7) = $2 AND deleted = 0
       GROUP BY tipo, categoria`,
     [churchId, yyyyMm]
   );
@@ -802,7 +818,7 @@ export async function yearTotals(churchId: number, yyyy: string): Promise<YearTo
   const rows = await d.select<{ tipo: string; total: number }[]>(
     `SELECT tipo, SUM(monto) AS total
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2 AND deleted = 0
       GROUP BY tipo`,
     [churchId, yyyy]
   );
@@ -832,7 +848,7 @@ export async function dailyTotals(churchId: number, days: number): Promise<Daily
   const rows = await d.select<{ fecha: string; tipo: string; total: number }[]>(
     `SELECT substr(fecha, 1, 10) AS fecha, tipo, SUM(monto) AS total
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 10) >= $2
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 10) >= $2 AND deleted = 0
       GROUP BY fecha, tipo`,
     [churchId, startStr]
   );
@@ -864,7 +880,7 @@ export async function monthlySummary(churchId: number, months: number): Promise<
   const rows = await d.select<{ mes: string; tipo: string; total: number }[]>(
     `SELECT substr(fecha, 1, 7) AS mes, tipo, SUM(monto) AS total
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado'
+      WHERE church_id = $1 AND estado = 'aprobado' AND deleted = 0
       GROUP BY mes, tipo`,
     [churchId]
   );
@@ -885,7 +901,7 @@ export async function yearMonthlySummary(churchId: number, yyyy: string): Promis
   const rows = await d.select<{ mes: string; tipo: string; total: number }[]>(
     `SELECT substr(fecha, 1, 7) AS mes, tipo, SUM(monto) AS total
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2 AND deleted = 0
       GROUP BY mes, tipo`,
     [churchId, yyyy]
   );
@@ -910,7 +926,7 @@ export async function yearCategoriaTotals(churchId: number, yyyy: string): Promi
   const rows = await d.select<{ tipo: string; categoria: string; total: number }[]>(
     `SELECT tipo, categoria, SUM(monto) AS total
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2
+      WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2 AND deleted = 0
       GROUP BY tipo, categoria`,
     [churchId, yyyy]
   );
@@ -933,14 +949,14 @@ export async function memberStats(churchId: number, yyyy: string): Promise<Recor
     `SELECT member_id, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso'
-        AND member_id IS NOT NULL AND substr(fecha, 1, 4) = $2
+        AND member_id IS NOT NULL AND substr(fecha, 1, 4) = $2 AND deleted = 0
       GROUP BY member_id`,
     [churchId, yyyy]
   );
   const ultimos = await d.select<{ member_id: number; ultimo: string }[]>(
     `SELECT member_id, MAX(fecha) AS ultimo
        FROM transactions
-      WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso' AND member_id IS NOT NULL
+      WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso' AND member_id IS NOT NULL AND deleted = 0
       GROUP BY member_id`,
     [churchId]
   );
@@ -960,7 +976,7 @@ export async function listMemberAportes(memberId: number, churchId: number, yyyy
        FROM transactions t
        LEFT JOIN members m ON m.id = t.member_id
       WHERE t.church_id = $1 AND t.member_id = $2 AND t.tipo = 'ingreso'
-        AND t.estado = 'aprobado' AND substr(t.fecha, 1, 4) = $3
+        AND t.estado = 'aprobado' AND substr(t.fecha, 1, 4) = $3 AND t.deleted = 0
       ORDER BY t.fecha DESC, t.id DESC`,
     [churchId, memberId, yyyy]
   );
@@ -972,7 +988,7 @@ export async function memberAporteYears(memberId: number, churchId: number): Pro
   const rows = await d.select<{ anio: string }[]>(
     `SELECT DISTINCT substr(fecha, 1, 4) AS anio
        FROM transactions
-      WHERE church_id = $1 AND member_id = $2 AND tipo = 'ingreso' AND estado = 'aprobado'
+      WHERE church_id = $1 AND member_id = $2 AND tipo = 'ingreso' AND estado = 'aprobado' AND deleted = 0
       ORDER BY anio DESC`,
     [churchId, memberId]
   );
@@ -982,7 +998,7 @@ export async function memberAporteYears(memberId: number, churchId: number): Pro
 export async function lastActivityAt(churchId: number): Promise<string | null> {
   const d = await getDb();
   const rows = await d.select<{ m: string | null }[]>(
-    "SELECT MAX(created_at) AS m FROM transactions WHERE church_id = $1",
+    "SELECT MAX(created_at) AS m FROM transactions WHERE church_id = $1 AND deleted = 0",
     [churchId]
   );
   return rows[0]?.m ?? null;
@@ -2703,7 +2719,7 @@ export async function listAllTxForExport(churchId: number): Promise<Tx[]> {
     `SELECT t.*, m.nombre AS member_nombre
        FROM transactions t
        LEFT JOIN members m ON m.id = t.member_id
-      WHERE t.church_id = $1
+      WHERE t.church_id = $1 AND t.deleted = 0
       ORDER BY t.fecha ASC, t.id ASC`,
     [churchId]
   );
@@ -2712,7 +2728,7 @@ export async function listAllTxForExport(churchId: number): Promise<Tx[]> {
 export async function countMemberTx(memberId: number, churchId: number): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM transactions WHERE member_id = $1 AND church_id = $2",
+    "SELECT count(*) AS n FROM transactions WHERE member_id = $1 AND church_id = $2 AND deleted = 0",
     [memberId, churchId]
   );
   return rows[0]?.n ?? 0;

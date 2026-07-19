@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, insertTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
+import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, undeleteTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconEdit, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { showToast } from "../toast";
@@ -33,24 +33,8 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
     showToast(t("deshacer.movimientoEliminado"), {
       actionLabel: t("deshacer.accion"),
       onAction: async () => {
-        await insertTx(borrado.church_id, borrado.moneda, {
-          tipo: borrado.tipo,
-          categoria: borrado.categoria,
-          subcategoria: borrado.subcategoria,
-          concepto: borrado.concepto,
-          detalle: borrado.detalle,
-          fecha: borrado.fecha,
-          monto: borrado.monto,
-          metodo_pago: borrado.metodo_pago,
-          member_id: borrado.member_id,
-          beneficiario: borrado.beneficiario,
-          beneficiario_rfc: borrado.beneficiario_rfc,
-          emitir_constancia: !!borrado.emitir_constancia,
-          notas: borrado.notas,
-          estado: borrado.estado === "rechazado" ? "aprobado" : borrado.estado,
-          comprobante_path: borrado.comprobante_path,
-          recurrente_id: borrado.recurrente_id,
-        });
+        // Borrado suave: se restaura la MISMA fila (mismo uid), no una nueva.
+        await undeleteTx(borrado.id, borrado.church_id);
         onChanged();
       },
     });

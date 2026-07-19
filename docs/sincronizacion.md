@@ -148,6 +148,11 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     transacciones. El gestor (E5) ya lo usa, así que crear/editar movimientos se
     sincroniza solo. Borrado de transacciones aún es físico (no se propaga).
     Probar con dos Macs: crear/editar ingresos y gastos viaja.
-  - ⬜ **T2b — Borrado suave + filtros:** borrado suave de transacciones y
-    excluir borrados en todas las consultas de dinero (cuidado de no
-    doble-contar). Probar borrados con dos Macs.
+  - 🔨 **T2b — Borrado suave + filtros:** `deleteTx` ahora es borrado suave
+    (deleted = 1) y se propaga; `undeleteTx` para el "Deshacer". Las 17 consultas
+    de movimientos (listas, totales, reportes, stats de aportes, export) excluyen
+    `deleted = 0`. Probar borrados con dos Macs.
+
+  Con esto la sincronización de transacciones cubre alta, edición y borrado.
+  Falta replicar a las demás tablas (depósitos, actas, cartas, servicios…) con
+  el mismo patrón.

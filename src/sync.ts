@@ -8,8 +8,8 @@
 // `updated_at`. La identidad global es `uid` (no el id numérico local, que
 // choca entre dispositivos). El aislamiento por iglesia lo hace RLS en la nube.
 //
-// Borrados de miembros: SUAVES (deleted = 1, ver deleteMember en db.ts). Las
-// transacciones aún usan borrado físico (no se propaga todavía; llega en T2b).
+// Borrados: SUAVES en miembros y transacciones (deleted = 1). Se propagan por
+// la columna `deleted`; las listas/consultas locales excluyen los borrados.
 //
 // Vínculo transacción→aportante: en la nube se guarda `member_uid` (uid global
 // del miembro), no el `member_id` local (que difiere por dispositivo). Al subir
