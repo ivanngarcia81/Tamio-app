@@ -36,7 +36,18 @@ export async function redactarCarta(datos: DatosCartaIA): Promise<string> {
   const { data, error } = await supabase.functions.invoke("redactar-ia", {
     body: datos,
   });
-  if (error) throw error;
+  if (error) {
+    // FunctionsHttpError trae la respuesta original: se extrae el detalle real
+    // (p. ej. "Anthropic 401 ..."), mucho más útil que "non-2xx status code".
+    const ctx = (error as { context?: Response }).context;
+    if (ctx) {
+      const cuerpo = await ctx.json().catch(() => null) as { error?: string; detalle?: string } | null;
+      if (cuerpo?.error) {
+        throw new Error(cuerpo.detalle ? `${cuerpo.error} — ${cuerpo.detalle}` : cuerpo.error);
+      }
+    }
+    throw error;
+  }
   const html = (data as { html?: string } | null)?.html;
   if (!html) throw new Error("La IA no devolvió contenido.");
   return html;
