@@ -198,7 +198,7 @@ export async function listServiciosLigero(churchId: number, desde?: string | nul
   const d = await getDb();
   return d.select<ServicioLigero[]>(
     `SELECT id, fecha, tipo FROM servicios
-      WHERE church_id = $1 AND ($2 IS NULL OR fecha >= $2) AND ($3 IS NULL OR fecha <= $3)
+      WHERE church_id = $1 AND deleted = 0 AND ($2 IS NULL OR fecha >= $2) AND ($3 IS NULL OR fecha <= $3)
       ORDER BY fecha DESC, id DESC`,
     [churchId, desde ?? null, hasta ?? null]
   );
@@ -210,7 +210,7 @@ export async function listAsistenciaLigera(churchId: number, desde?: string | nu
     `SELECT a.servicio_id, a.member_id, a.presente, s.fecha
        FROM servicio_asistencia a
        JOIN servicios s ON s.id = a.servicio_id
-      WHERE s.church_id = $1 AND ($2 IS NULL OR s.fecha >= $2) AND ($3 IS NULL OR s.fecha <= $3)
+      WHERE s.church_id = $1 AND s.deleted = 0 AND ($2 IS NULL OR s.fecha >= $2) AND ($3 IS NULL OR s.fecha <= $3)
       ORDER BY s.fecha DESC, s.id DESC`,
     [churchId, desde ?? null, hasta ?? null]
   );
@@ -2245,7 +2245,7 @@ export interface NewServicio {
 export async function listServicios(churchId: number): Promise<Servicio[]> {
   const d = await getDb();
   return d.select<Servicio[]>(
-    "SELECT * FROM servicios WHERE church_id = $1 ORDER BY fecha DESC, id DESC",
+    "SELECT * FROM servicios WHERE church_id = $1 AND deleted = 0 ORDER BY fecha DESC, id DESC",
     [churchId]
   );
 }
@@ -2311,9 +2311,9 @@ export async function insertServicio(churchId: number, s: NewServicio): Promise<
     `INSERT INTO servicios (
        fecha, tipo, dirige, predica, titulo_mensaje, texto_biblico, resumen_mensaje,
        participaciones, tema_escuela, maestro_escuela, asistentes, ausentes, visitantes,
-       ninos, jovenes, adultos, eventos, church_id
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
-    [...servicioParams(s), churchId]
+       ninos, jovenes, adultos, eventos, church_id, uid, updated_at
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,datetime('now'))`,
+    [...servicioParams(s), churchId, crypto.randomUUID()]
   );
   const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
   const servicioId = rows[0]?.id;
@@ -2327,17 +2327,23 @@ export async function updateServicio(id: number, churchId: number, s: NewServici
        fecha = $1, tipo = $2, dirige = $3, predica = $4, titulo_mensaje = $5,
        texto_biblico = $6, resumen_mensaje = $7, participaciones = $8, tema_escuela = $9,
        maestro_escuela = $10, asistentes = $11, ausentes = $12, visitantes = $13,
-       ninos = $14, jovenes = $15, adultos = $16, eventos = $17
+       ninos = $14, jovenes = $15, adultos = $16, eventos = $17, updated_at = datetime('now')
      WHERE id = $18 AND church_id = $19`,
     [...servicioParams(s), id, churchId]
   );
   await replaceAsistencia(id, s.asistencia);
 }
 
+/** Borrado SUAVE del servicio (se propaga en la sincronización). El roster
+ *  local (servicio_asistencia) se limpia físicamente: no se sincroniza y el
+ *  servicio queda oculto de todas las consultas. */
 export async function deleteServicio(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute("DELETE FROM servicio_asistencia WHERE servicio_id = $1", [id]);
-  await d.execute("DELETE FROM servicios WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE servicios SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 /** Snapshot guardado del roster de un servicio, ordenado por nombre. */
@@ -2665,7 +2671,7 @@ export async function countMemberAsistencias(memberId: number, churchId: number)
     `SELECT count(*) AS n
        FROM servicio_asistencia a
        JOIN servicios s ON s.id = a.servicio_id
-      WHERE a.member_id = $1 AND s.church_id = $2`,
+      WHERE a.member_id = $1 AND s.church_id = $2 AND s.deleted = 0`,
     [memberId, churchId]
   );
   return rows[0]?.n ?? 0;
@@ -2703,7 +2709,7 @@ export async function memberAsistenciaStats(memberId: number, churchId: number):
     `SELECT s.fecha, s.tipo, a.presente, a.razon, a.razon_otra
        FROM servicio_asistencia a
        JOIN servicios s ON s.id = a.servicio_id
-      WHERE a.member_id = $1 AND s.church_id = $2
+      WHERE a.member_id = $1 AND s.church_id = $2 AND s.deleted = 0
       ORDER BY s.fecha DESC, s.id DESC`,
     [memberId, churchId]
   );

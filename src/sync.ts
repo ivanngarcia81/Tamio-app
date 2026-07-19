@@ -484,6 +484,90 @@ const SOLICITUD_DATA_COLS = [
   "historial_estados", "creado_en", "modificado_en",
 ] as const;
 
+/** Sincroniza una tabla simple sin vínculos externos (LWW por uid). */
+async function sincronizarTablaSimple(
+  churchIdLocal: number,
+  tabla: string,
+  dataCols: readonly string[],
+): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const locales = await d.select<FilaLocal[]>(`SELECT * FROM ${tabla} WHERE church_id = $1`, [churchIdLocal]);
+
+    const { data: remotasRaw, error: errPull } = await supabase.from(tabla).select("*").eq("church_id", remoteChurch);
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remotas = (remotasRaw ?? []) as FilaRemota[];
+
+    const remotasPorUid = new Map<string, FilaRemota>();
+    for (const r of remotas) remotasPorUid.set(r.uid, r);
+    const localesPorUid = new Map<string, FilaLocal>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid, l);
+
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      if (!l.uid) continue;
+      const r = remotasPorUid.get(l.uid);
+      if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
+        const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
+        for (const c of dataCols) fila[c] = l[c] ?? null;
+        fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
+        fila.deleted = l.deleted === 1;
+        aSubir.push(fila);
+      }
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from(tabla).upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    let bajados = 0;
+    for (const r of remotas) {
+      const l = localesPorUid.get(r.uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+      const valores = dataCols.map((c) => r[c] ?? null);
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const n = dataCols.length;
+      if (l) {
+        const sets = dataCols.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        await d.execute(
+          `UPDATE ${tabla} SET ${sets}, updated_at = $${n + 1}, deleted = $${n + 2} WHERE uid = $${n + 3}`,
+          [...valores, updatedAt, del, r.uid],
+        );
+      } else {
+        const cols = ["church_id", ...dataCols, "uid", "updated_at", "deleted"];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO ${tabla} (${cols.join(", ")}) VALUES (${placeholders})`,
+          [churchIdLocal, ...valores, r.uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+const SERVICIO_DATA_COLS = [
+  "fecha", "tipo", "dirige", "predica", "titulo_mensaje", "texto_biblico", "resumen_mensaje",
+  "participaciones", "tema_escuela", "maestro_escuela", "asistentes", "ausentes", "visitantes",
+  "ninos", "jovenes", "adultos", "eventos", "creado_en",
+] as const;
+
+/** Sincroniza el registro de cultos (servicios). El roster por miembro
+ *  (servicio_asistencia) NO se sincroniza: es una tabla de unión con clave
+ *  compuesta y guardado por reemplazo total (pendiente aparte). */
+export function sincronizarServicios(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaSimple(churchIdLocal, "servicios", SERVICIO_DATA_COLS);
+}
+
 /** Construye los mapas id local ↔ uid global de los miembros de una iglesia. */
 async function cargarMapasMiembros(
   d: Awaited<ReturnType<typeof getDb>>,
@@ -646,5 +730,6 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   const sol = await sincronizarSolicitudes(churchIdLocal);
   const ts = await sincronizarTrasladosSalida(churchIdLocal);
   const te = await sincronizarTrasladosEntrada(churchIdLocal);
-  return [t, dep, act, car, sol, ts, te].reduce(combinar, m);
+  const sv = await sincronizarServicios(churchIdLocal);
+  return [t, dep, act, car, sol, ts, te, sv].reduce(combinar, m);
 }

@@ -185,9 +185,19 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     (respeta guards), filtros `deleted = 0` (listas, "traslado activo" y los
     documentos del miembro). El enlace a la carta (`carta_id`) NO se sincroniza.
 
+- **Servicios** (registro de cultos):
+  - 🔨 **SV1 — Registro del culto:** tabla espejo `public.servicios` con RLS
+    (`supabase/sync-sv1-servicios.sql`), migración local **v29**, motor
+    `sincronizarServicios` (tabla simple, helper `sincronizarTablaSimple`),
+    borrado suave, filtros `deleted = 0` (listas + joins de asistencia). El
+    **roster por miembro** (`servicio_asistencia`) NO se sincroniza aún.
+
 - **Pendientes de replicar:**
-  - **Servicios + asistencia:** registro de cultos y su roster por miembro
-    (servicio_asistencia con member_id) — con vínculo a miembro.
+  - **servicio_asistencia (roster por miembro):** tabla de UNIÓN con clave
+    compuesta (servicio_id + member_id), sin uid, guardado por reemplazo total.
+    Es el objetivo más difícil (mapear dos vínculos + LWW en full-replace);
+    requiere diseño aparte. Sin ella, el registro del culto sí viaja pero el
+    "quién asistió" por miembro se mantiene local.
   - **Categorías personalizadas:** OJO — las transacciones referencian una
     categoría personalizada por `custom-{id_local}`, que difiere entre Macs.
     Sincronizarlas sin re-mapear esa referencia dejaría movimientos apuntando a
