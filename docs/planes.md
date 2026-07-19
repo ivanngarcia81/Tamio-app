@@ -92,6 +92,32 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
 
 ---
 
+## Estado de construcción
+
+**Parte 1 — Cimiento de módulos por plan: HECHA** (migración v31).
+
+- La iglesia guarda `plan` (completo/tesoreria/secretaria), `sub_estado`
+  (activa/cortesia/prueba/vencida) y `sub_vence` en la tabla `churches`.
+  Por defecto **completo/activa** → las instalaciones actuales no cambian nada.
+- El **sidebar oculta el área no contratada** según el plan (lógica en
+  `src/plan.ts`, aplicada en `Sidebar.tsx`). El gate por plan se suma al gate
+  por rol que ya existía.
+- Panel **Ajustes → Plan y suscripción** (`PlanSettings.tsx`) donde el dueño
+  (admin, o cualquiera en modo local) elige plan/estado/vencimiento. Esto hace
+  también de mecanismo de **cortesía** manual mientras no haya pagos.
+- Se puede **probar hoy** en local: cambia el plan en Ajustes y mira cómo el
+  menú lateral muestra/oculta Tesorería o Secretaría.
+
+**Pendiente (siguientes partes):**
+- Pantalla de "suscripción no vigente" (bloqueo suave al vencer) usando
+  `evaluarVigencia()` — la lógica de gracia ya está lista.
+- Guardas por ruta (hoy se oculta el menú; falta redirigir si se teclea la URL).
+- Formulario de **miembro básico** dentro de Tesorería (plan solo-Tesorería).
+- **Integración** exclusiva del Completo (que Tesorería consuma miembros de
+  Secretaría) — gate con `integracionActiva()`.
+- **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y
+  sincronizar la suscripción desde la nube como autoridad.
+
 ## Decisiones tomadas
 - Tres planes: Tesorería, Secretaría, Completo (Completo más barato que la suma).
 - La integración entre áreas es exclusiva del Completo.

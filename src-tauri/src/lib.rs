@@ -605,6 +605,15 @@ fn migrations() -> Vec<Migration> {
             UPDATE mensajes SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_mensajes_sync ON mensajes(church_id, updated_at);
         "#,
+    }, Migration {
+        version: 31,
+        description: "suscripción: plan/estado/vencimiento por iglesia (default completo/activa)",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE churches ADD COLUMN plan TEXT NOT NULL DEFAULT 'completo';
+            ALTER TABLE churches ADD COLUMN sub_estado TEXT NOT NULL DEFAULT 'activa';
+            ALTER TABLE churches ADD COLUMN sub_vence TEXT;
+        "#,
     }]
 }
 

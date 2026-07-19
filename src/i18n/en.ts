@@ -1795,6 +1795,36 @@ export const en: Resources = {
     subSesion: "Your role is assigned by the administrator",
   },
 
+  plan: {
+    titulo: "Plan & subscription",
+    sub: "Which areas this church sees. Also used to gift accounts (courtesy).",
+    plan: "Plan",
+    nombre: {
+      completo: "Complete",
+      tesoreria: "Treasury only",
+      secretaria: "Secretariat only",
+    },
+    estado: "Status",
+    estadoNombre: {
+      activa: "Active",
+      cortesia: "Courtesy",
+      prueba: "Trial",
+      vencida: "Expired",
+    },
+    vence: "Expires on",
+    venceHint: "Leave empty so it never expires. After the date there are a few grace days.",
+    resumenAreas: "Will see",
+    areaTesoreria: "Treasury",
+    areaSecretaria: "Secretariat",
+    ninguna: "None",
+    resumenEstado: "Subscription",
+    vigente: "Active",
+    noVigente: "Not active",
+    enGracia: "in grace period ({{dias}} days)",
+    esCortesia: "courtesy (never expires)",
+    guardado: "Plan updated",
+  },
+
   login: {
     sub: "Sign in to continue",
     email: "Email",

@@ -4,6 +4,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import type { Role } from "../role";
+import { incluyeTesoreria, incluyeSecretaria } from "../plan";
 import SyncIndicator from "./SyncIndicator";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
@@ -84,6 +85,11 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
   // - El tesorero solo ve Tesorería (no el grupo de Secretaría).
   const esSecretaria = role === "secretaria";
   const esTesorero = role === "tesorero";
+  // Gate por plan de suscripción (además del gate por rol). Por defecto la
+  // iglesia es "completo", así que esto no cambia nada salvo en planes por
+  // módulo, donde oculta el área no contratada.
+  const verGrupoTesoreria = incluyeTesoreria(church.plan);
+  const verGrupoSecretaria = incluyeSecretaria(church.plan);
   const initials = church.nombre
     .split(" ")
     .filter((w) => w.length > 2)
@@ -155,15 +161,17 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       <nav className="nav">
         <Item to="/" icon={<IconHome />} label={t("nav.inicio")} dataTour="inicio" />
 
-        <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")} dataTour="tesoreria">
-          {!esSecretaria && <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />}
-          {!esSecretaria && <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />}
-          {!esSecretaria && <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />}
-          <Item to="/reportes" icon={<IconReportes />} label={t("nav.reportes")} />
-          {!esSecretaria && <Item to="/depositos" icon={<IconBank />} label={t("nav.depositos")} />}
-        </Grupo>
+        {verGrupoTesoreria && (
+          <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")} dataTour="tesoreria">
+            {!esSecretaria && <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />}
+            {!esSecretaria && <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />}
+            {!esSecretaria && <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />}
+            <Item to="/reportes" icon={<IconReportes />} label={t("nav.reportes")} />
+            {!esSecretaria && <Item to="/depositos" icon={<IconBank />} label={t("nav.depositos")} />}
+          </Grupo>
+        )}
 
-        {!esTesorero && (
+        {verGrupoSecretaria && !esTesorero && (
           <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")} dataTour="secretaria">
             <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
             <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
@@ -177,7 +185,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
 
       <div className="sidebar-footer">
         <Item to="/inbox" icon={<IconMail />} label={t("nav.inbox")} badge={unreadCount} />
-        {!esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
+        {verGrupoTesoreria && !esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
         <Item to="/ayuda" icon={<IconHelp />} label={t("nav.ayuda")} dataTour="ayuda" />
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} dataTour="config" />
         {authActivo && (

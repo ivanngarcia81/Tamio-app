@@ -22,6 +22,7 @@ import BackupSettings from "../components/settings/BackupSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import SyncSettings from "../components/settings/SyncSettings";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
+import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 
 interface Props {
@@ -259,6 +260,10 @@ export default function Configuracion({
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
 
               <SoundSettings />
+
+              {/* Suscripción: la administra el dueño (admin) o, en modo local
+                  sin login, quien usa la app en su propia instalación. */}
+              {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
 
               {/* Usuarios y Respaldo: administración sensible, solo administrador. */}
               {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}

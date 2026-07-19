@@ -1802,6 +1802,36 @@ export const es = {
     subSesion: "Tu rol lo asigna el administrador",
   },
 
+  plan: {
+    titulo: "Plan y suscripción",
+    sub: "Qué áreas ve esta iglesia. También sirve para regalar cuentas (cortesía).",
+    plan: "Plan",
+    nombre: {
+      completo: "Completo",
+      tesoreria: "Solo Tesorería",
+      secretaria: "Solo Secretaría",
+    },
+    estado: "Estado",
+    estadoNombre: {
+      activa: "Activa",
+      cortesia: "Cortesía",
+      prueba: "Prueba",
+      vencida: "Vencida",
+    },
+    vence: "Vence el",
+    venceHint: "Déjalo vacío para que no caduque. Tras la fecha hay unos días de gracia.",
+    resumenAreas: "Verá",
+    areaTesoreria: "Tesorería",
+    areaSecretaria: "Secretaría",
+    ninguna: "Ninguna",
+    resumenEstado: "Suscripción",
+    vigente: "Vigente",
+    noVigente: "No vigente",
+    enGracia: "en periodo de gracia ({{dias}} días)",
+    esCortesia: "cortesía (no caduca)",
+    guardado: "Plan actualizado",
+  },
+
   login: {
     sub: "Inicia sesión para continuar",
     email: "Correo",
