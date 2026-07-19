@@ -40,8 +40,20 @@ env -u APPLE_SIGNING_IDENTITY -u APPLE_ID -u APPLE_PASSWORD -u APPLE_TEAM_ID \
 
 if [ ! -d "$APP" ]; then echo "✖  No se encontró $APP"; exit 1; fi
 
-echo "▸  [2/5] Limpiando atributos extendidos de la app ya construida…"
-xattr -cr "$APP"
+echo "▸  [2/5] Limpiando atributos extendidos (copia limpia con ditto)…"
+# xattr -cr no logra quitar com.apple.FinderInfo del propio directorio .app.
+# ditto --noextattr reconstruye TODO el árbol sin atributos extendidos ni
+# resource forks ni quarantine: garantiza cero FinderInfo antes de firmar.
+ditto --norsrc --noextattr --noqtn "$APP" "${APP}.limpia"
+rm -rf "$APP"
+mv "${APP}.limpia" "$APP"
+# Por si acaso, un barrido extra.
+xattr -cr "$APP" 2>/dev/null || true
+# Comprobación: si aún quedara FinderInfo, aborta con mensaje claro.
+if xattr "$APP" 2>/dev/null | grep -q FinderInfo; then
+  echo "✖  Aún hay com.apple.FinderInfo en $APP. Avisa para intentar otra vía."
+  exit 1
+fi
 
 echo "▸  [3/5] Firmando la app (hardened runtime + entitlements)…"
 codesign --force --deep --options runtime --timestamp \
