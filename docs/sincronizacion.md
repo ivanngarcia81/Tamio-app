@@ -177,7 +177,17 @@ usuario (leído de `perfiles`). Así una iglesia **nunca** ve datos de otra.
     solicitudes solo nuevas sin carta), filtros `deleted = 0`. El enlace mutuo
     carta↔solicitud NO se sincroniza (queda local en cada Mac). Probar 2 Macs.
 
+- **Traslados** (salida y entrada, con vínculo a miembro):
+  - 🔨 **TR1 — Completo:** tablas espejo `public.traslados_salida` y
+    `public.traslados_entrada` con RLS (`supabase/sync-tr1-traslados.sql`),
+    migración local **v28** (uid/updated_at/deleted en ambas), motor con el
+    helper `member_uid` (`sincronizarTrasladosSalida/Entrada`), borrado suave
+    (respeta guards), filtros `deleted = 0` (listas, "traslado activo" y los
+    documentos del miembro). El enlace a la carta (`carta_id`) NO se sincroniza.
+
 - **Pendientes de replicar:**
+  - **Servicios + asistencia:** registro de cultos y su roster por miembro
+    (servicio_asistencia con member_id) — con vínculo a miembro.
   - **Categorías personalizadas:** OJO — las transacciones referencian una
     categoría personalizada por `custom-{id_local}`, que difiere entre Macs.
     Sincronizarlas sin re-mapear esa referencia dejaría movimientos apuntando a

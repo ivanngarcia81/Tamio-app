@@ -557,6 +557,24 @@ fn migrations() -> Vec<Migration> {
             UPDATE solicitudes SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_solicitudes_sync ON solicitudes(church_id, updated_at);
         "#,
+    }, Migration {
+        version: 28,
+        description: "sincronización TR1: metadatos (uid/updated_at/deleted) en traslados",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE traslados_salida ADD COLUMN uid TEXT;
+            ALTER TABLE traslados_salida ADD COLUMN updated_at TEXT;
+            ALTER TABLE traslados_salida ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE traslados_salida SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE traslados_salida SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_traslados_salida_sync ON traslados_salida(church_id, updated_at);
+            ALTER TABLE traslados_entrada ADD COLUMN uid TEXT;
+            ALTER TABLE traslados_entrada ADD COLUMN updated_at TEXT;
+            ALTER TABLE traslados_entrada ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE traslados_entrada SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE traslados_entrada SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_traslados_entrada_sync ON traslados_entrada(church_id, updated_at);
+        "#,
     }]
 }
 

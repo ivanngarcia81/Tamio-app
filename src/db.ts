@@ -1893,7 +1893,7 @@ async function registrarCambioEstadoEn(tabla: string, id: number, churchId: numb
   try { hist = JSON.parse(rows[0]?.historial_estados ?? "[]"); } catch { /* noop */ }
   hist.push({ de, a, fecha: nowLocalIso() });
   await d.execute(
-    `UPDATE ${tabla} SET historial_estados = $1, modificado_en = datetime('now', 'localtime') WHERE id = $2 AND church_id = $3`,
+    `UPDATE ${tabla} SET historial_estados = $1, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now') WHERE id = $2 AND church_id = $3`,
     [JSON.stringify(hist), id, churchId]
   );
 }
@@ -1901,7 +1901,7 @@ async function registrarCambioEstadoEn(tabla: string, id: number, churchId: numb
 export async function listTrasladosSalida(churchId: number): Promise<TrasladoSalida[]> {
   const d = await getDb();
   return d.select<TrasladoSalida[]>(
-    "SELECT * FROM traslados_salida WHERE church_id = $1 ORDER BY fecha_solicitud DESC, id DESC",
+    "SELECT * FROM traslados_salida WHERE church_id = $1 AND deleted = 0 ORDER BY fecha_solicitud DESC, id DESC",
     [churchId]
   );
 }
@@ -1924,9 +1924,9 @@ export async function insertTrasladoSalida(churchId: number, s: NewTrasladoSalid
   const { seq, folio } = await nextFolio("traslados_salida", "fecha_solicitud", "TS", churchId, s.fecha_solicitud);
   const historial = JSON.stringify([{ de: "", a: s.estado, fecha: nowLocalIso() }]);
   await d.execute(
-    `INSERT INTO traslados_salida (${TS_CAMPOS}, church_id, numero_seq, folio, historial_estados)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
-    [...tsParams(s), churchId, seq, folio, historial]
+    `INSERT INTO traslados_salida (${TS_CAMPOS}, church_id, numero_seq, folio, historial_estados, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,datetime('now'))`,
+    [...tsParams(s), churchId, seq, folio, historial, crypto.randomUUID()]
   );
   const rows = await d.select<TrasladoSalida[]>(
     "SELECT * FROM traslados_salida WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
@@ -1945,7 +1945,7 @@ export async function updateTrasladoSalida(id: number, churchId: number, s: NewT
        fecha_aprobacion = $12, aprobado_por = $13, carta_id = $14, fecha_entrega = $15,
        metodo_entrega = $16, confirmacion_recibida = $17, fecha_confirmacion = $18,
        observaciones = $19, estado = $20,
-       modificado_en = datetime('now', 'localtime')
+       modificado_en = datetime('now', 'localtime'), updated_at = datetime('now')
      WHERE id = $21 AND church_id = $22`,
     [...tsParams(s), id, churchId]
   );
@@ -1955,7 +1955,7 @@ export async function updateTrasladoSalida(id: number, churchId: number, s: NewT
 export async function deleteTrasladoSalida(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "DELETE FROM traslados_salida WHERE id = $1 AND church_id = $2 AND estado = 'borrador'",
+    "UPDATE traslados_salida SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2 AND estado = 'borrador'",
     [id, churchId]
   );
 }
@@ -1966,7 +1966,7 @@ export async function memberTieneTrasladoActivo(memberId: number, churchId: numb
   const rows = await d.select<{ n: number }[]>(
     `SELECT count(*) AS n FROM traslados_salida
       WHERE church_id = $1 AND member_id = $2 AND estado NOT IN ('completado', 'cancelado')
-        AND ($3 IS NULL OR id != $3)`,
+        AND deleted = 0 AND ($3 IS NULL OR id != $3)`,
     [churchId, memberId, excluirId ?? null]
   );
   return (rows[0]?.n ?? 0) > 0;
@@ -2015,7 +2015,7 @@ export type NewTrasladoEntrada = Omit<TrasladoEntrada, "id" | "church_id" | "num
 export async function listTrasladosEntrada(churchId: number): Promise<TrasladoEntrada[]> {
   const d = await getDb();
   return d.select<TrasladoEntrada[]>(
-    "SELECT * FROM traslados_entrada WHERE church_id = $1 ORDER BY id DESC",
+    "SELECT * FROM traslados_entrada WHERE church_id = $1 AND deleted = 0 ORDER BY id DESC",
     [churchId]
   );
 }
@@ -2044,9 +2044,9 @@ export async function insertTrasladoEntrada(churchId: number, s: NewTrasladoEntr
        adjunto_path, adjunto_nombre, adjunto_fecha,
        fecha_congregacion, fecha_entrevista, entrevistador, decision,
        fecha_aprobacion, observaciones, estado, member_id,
-       church_id, numero_seq, folio, historial_estados
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
-    [...teParams(s), churchId, seq, folio, historial]
+       church_id, numero_seq, folio, historial_estados, uid, updated_at
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,datetime('now'))`,
+    [...teParams(s), churchId, seq, folio, historial, crypto.randomUUID()]
   );
   const rows = await d.select<TrasladoEntrada[]>(
     "SELECT * FROM traslados_entrada WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
@@ -2066,7 +2066,7 @@ export async function updateTrasladoEntrada(id: number, churchId: number, s: New
        adjunto_path = $12, adjunto_nombre = $13, adjunto_fecha = $14,
        fecha_congregacion = $15, fecha_entrevista = $16, entrevistador = $17, decision = $18,
        fecha_aprobacion = $19, observaciones = $20, estado = $21, member_id = $22,
-       modificado_en = datetime('now', 'localtime')
+       modificado_en = datetime('now', 'localtime'), updated_at = datetime('now')
      WHERE id = $23 AND church_id = $24`,
     [...teParams(s), id, churchId]
   );
@@ -2075,7 +2075,7 @@ export async function updateTrasladoEntrada(id: number, churchId: number, s: New
 export async function deleteTrasladoEntrada(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "DELETE FROM traslados_entrada WHERE id = $1 AND church_id = $2 AND estado = 'recibida' AND member_id IS NULL",
+    "UPDATE traslados_entrada SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2 AND estado = 'recibida' AND member_id IS NULL",
     [id, churchId]
   );
 }
@@ -2145,19 +2145,19 @@ export async function memberDocs(memberId: number, churchId: number): Promise<Me
   const d = await getDb();
   const [cartas, sols, salidas, entradas] = await Promise.all([
     d.select<{ folio: string; fecha: string; estado: string }[]>(
-      "SELECT folio, fecha_emision AS fecha, estado FROM cartas WHERE church_id = $1 AND member_id = $2",
+      "SELECT folio, fecha_emision AS fecha, estado FROM cartas WHERE church_id = $1 AND member_id = $2 AND deleted = 0",
       [churchId, memberId]
     ),
     d.select<{ folio: string; fecha: string; estado: string }[]>(
-      "SELECT folio, fecha_solicitud AS fecha, estado FROM solicitudes WHERE church_id = $1 AND member_id = $2",
+      "SELECT folio, fecha_solicitud AS fecha, estado FROM solicitudes WHERE church_id = $1 AND member_id = $2 AND deleted = 0",
       [churchId, memberId]
     ),
     d.select<{ folio: string; fecha: string; estado: string }[]>(
-      "SELECT folio, fecha_solicitud AS fecha, estado FROM traslados_salida WHERE church_id = $1 AND member_id = $2",
+      "SELECT folio, fecha_solicitud AS fecha, estado FROM traslados_salida WHERE church_id = $1 AND member_id = $2 AND deleted = 0",
       [churchId, memberId]
     ),
     d.select<{ folio: string; fecha: string; estado: string }[]>(
-      "SELECT folio, coalesce(fecha_recepcion, substr(creado_en, 1, 10)) AS fecha, estado FROM traslados_entrada WHERE church_id = $1 AND member_id = $2",
+      "SELECT folio, coalesce(fecha_recepcion, substr(creado_en, 1, 10)) AS fecha, estado FROM traslados_entrada WHERE church_id = $1 AND member_id = $2 AND deleted = 0",
       [churchId, memberId]
     ),
   ]);

@@ -598,6 +598,30 @@ export function sincronizarSolicitudes(churchIdLocal: number): Promise<Resultado
   return sincronizarTablaConMiembro(churchIdLocal, "solicitudes", SOLICITUD_DATA_COLS);
 }
 
+// Traslados (TR1). Salida lleva member_id (obligatorio) y carta_id (NO se
+// sincroniza, queda local). Entrada lleva member_id (opcional).
+const TRASLADO_SALIDA_DATA_COLS = [
+  "numero_seq", "folio", "fecha_solicitud", "motivo", "iglesia_destino", "pastor_receptor",
+  "direccion", "ciudad", "region", "pais", "telefono", "email", "fecha_aprobacion",
+  "aprobado_por", "fecha_entrega", "metodo_entrega", "confirmacion_recibida",
+  "fecha_confirmacion", "observaciones", "estado", "historial_estados", "creado_en", "modificado_en",
+] as const;
+
+const TRASLADO_ENTRADA_DATA_COLS = [
+  "numero_seq", "folio", "nombre", "fecha_nacimiento", "telefono", "correo", "direccion",
+  "iglesia_procedencia", "pastor_anterior", "direccion_anterior", "fecha_emision_carta",
+  "fecha_recepcion", "referencia_carta", "adjunto_path", "adjunto_nombre", "adjunto_fecha",
+  "fecha_congregacion", "fecha_entrevista", "entrevistador", "decision", "fecha_aprobacion",
+  "observaciones", "estado", "historial_estados", "creado_en", "modificado_en",
+] as const;
+
+export function sincronizarTrasladosSalida(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaConMiembro(churchIdLocal, "traslados_salida", TRASLADO_SALIDA_DATA_COLS);
+}
+export function sincronizarTrasladosEntrada(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaConMiembro(churchIdLocal, "traslados_entrada", TRASLADO_ENTRADA_DATA_COLS);
+}
+
 /** Suma parcial de dos resultados de sincronización, propagando el primer fallo. */
 function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
   return {
@@ -620,5 +644,7 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   const act = await sincronizarActas(churchIdLocal);
   const car = await sincronizarCartas(churchIdLocal);
   const sol = await sincronizarSolicitudes(churchIdLocal);
-  return [t, dep, act, car, sol].reduce(combinar, m);
+  const ts = await sincronizarTrasladosSalida(churchIdLocal);
+  const te = await sincronizarTrasladosEntrada(churchIdLocal);
+  return [t, dep, act, car, sol, ts, te].reduce(combinar, m);
 }
