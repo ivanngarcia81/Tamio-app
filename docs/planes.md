@@ -157,6 +157,14 @@ Diseño acordado: el campo de estado de la cuenta incluye un valor **`cortesia`*
 - Alternativa: **códigos de licencia** que se generan y se entregan (para
   regalar sin conocer el correo de antemano, p. ej. en una conferencia).
 
+### La cuenta del dueño NUNCA paga
+El dueño (quien vende Tamio) **no se cobra a sí mismo**. Su propia cuenta va en
+estado **`cortesia`** con `vence = null`: activa para siempre, sin cobro y sin
+avisos de suscripción. Además, en **modo local** (sin login en la nube) no hay
+ninguna revisión de suscripción: la app corre completa siempre. El cobro solo
+aplica a las cuentas de **clientes** marcadas como de pago. En resumen: el dueño
+controla el interruptor de las suscripciones, no está del lado de quien paga.
+
 ---
 
 ## Hoja de ruta general (orden completo del proyecto)
