@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Construye Tamio para macOS firmado y notarizado por Apple.
+#
+# Requisitos (una sola vez): ver docs/firma-apple.md
+#   - Cuenta Apple Developer activa.
+#   - Certificado "Developer ID Application" instalado en el Llavero.
+#   - Archivo .env.firma con tus credenciales (copiado de .env.firma.example).
+#
+# Uso:   npm run firmar
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+if [ ! -f .env.firma ]; then
+  echo "✖  Falta el archivo .env.firma"
+  echo "   Cópialo de la plantilla y rellena tus datos:"
+  echo "     cp .env.firma.example .env.firma"
+  echo "   Guía completa: docs/firma-apple.md"
+  exit 1
+fi
+
+# Carga las credenciales (APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID).
+set -a
+# shellcheck disable=SC1091
+source .env.firma
+set +a
+
+falta=""
+for v in APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+  if [ -z "${!v:-}" ]; then falta="$falta $v"; fi
+done
+if [ -n "$falta" ]; then
+  echo "✖  Faltan variables en .env.firma:$falta"
+  exit 1
+fi
+
+echo "▸  Firmando como: $APPLE_SIGNING_IDENTITY"
+echo "▸  Notarizando con Apple ID: $APPLE_ID (equipo $APPLE_TEAM_ID)"
+echo "▸  Construyendo .dmg universal (Intel + Apple Silicon)…"
+echo
+
+# Tauri firma con APPLE_SIGNING_IDENTITY y notariza con APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID.
+npm run dist:universal
+
+echo
+echo "✔  Listo. El .dmg firmado y notarizado está en:"
+echo "   src-tauri/target/universal-apple-darwin/release/bundle/dmg/"
+echo
+echo "   Verifica la firma con:"
+echo "     spctl -a -vvv -t install \"src-tauri/target/universal-apple-darwin/release/bundle/macos/Tamio.app\""
