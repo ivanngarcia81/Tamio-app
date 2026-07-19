@@ -40,29 +40,26 @@ env -u APPLE_SIGNING_IDENTITY -u APPLE_ID -u APPLE_PASSWORD -u APPLE_TEAM_ID \
 
 if [ ! -d "$APP" ]; then echo "✖  No se encontró $APP"; exit 1; fi
 
-echo "▸  [2/5] Limpiando atributos extendidos (copia limpia con ditto)…"
-# xattr -cr no logra quitar com.apple.FinderInfo del propio directorio .app.
-# ditto --noextattr reconstruye TODO el árbol sin atributos extendidos ni
-# resource forks ni quarantine: garantiza cero FinderInfo antes de firmar.
-ditto --norsrc --noextattr --noqtn "$APP" "${APP}.limpia"
-rm -rf "$APP"
-mv "${APP}.limpia" "$APP"
-# Por si acaso, un barrido extra.
-xattr -cr "$APP" 2>/dev/null || true
-# Comprobación: si aún quedara FinderInfo, aborta con mensaje claro.
-if xattr "$APP" 2>/dev/null | grep -q FinderInfo; then
-  echo "✖  Aún hay com.apple.FinderInfo en $APP. Avisa para intentar otra vía."
-  exit 1
-fi
-
-echo "▸  [3/5] Firmando la app (hardened runtime + entitlements)…"
+echo "▸  [2/5] Firmando la app (hardened runtime + entitlements)…"
+# CLAVE: macOS (LaunchServices) le re-estampa com.apple.FinderInfo a CUALQUIER
+# carpeta que termine en .app (la marca como aplicación), y codesign rechaza
+# ese atributo. Por eso limpiar antes no basta: reaparece.
+# Solución: renombrar la carpeta FUERA de .app mientras se firma (así no la
+# re-estampa), limpiar y firmar, y renombrar de vuelta. El nombre real de la
+# app lo da el Info.plist, no la carpeta, así que la firma es correcta. El
+# FinderInfo que macOS re-agregue después NO invalida la firma (no está sellado).
+SIGNDIR="$(dirname "$APP")/Tamio_firmando"
+rm -rf "$SIGNDIR"
+mv "$APP" "$SIGNDIR"
+xattr -cr "$SIGNDIR" 2>/dev/null || true
 codesign --force --deep --options runtime --timestamp \
   --entitlements "$ENT" \
-  --sign "$APPLE_SIGNING_IDENTITY" "$APP"
+  --sign "$APPLE_SIGNING_IDENTITY" "$SIGNDIR"
+mv "$SIGNDIR" "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 echo "   Firma verificada."
 
-echo "▸  [4/5] Armando el .dmg…"
+echo "▸  [3/4] Armando el .dmg…"
 mkdir -p "$DMG_DIR"
 rm -f "$DMG"
 STAGING="$(mktemp -d)"
@@ -73,7 +70,7 @@ hdiutil create -volname "Tamio" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/
 rm -rf "$STAGING"
 codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$DMG"
 
-echo "▸  [5/5] Notarizando con Apple (esto tarda 2–15 min, espera)…"
+echo "▸  [4/4] Notarizando con Apple (esto tarda 2–15 min, espera)…"
 xcrun notarytool submit "$DMG" \
   --apple-id "$APPLE_ID" \
   --password "$APPLE_PASSWORD" \
