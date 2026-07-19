@@ -38,7 +38,17 @@ export default function ToastHost() {
             <button
               type="button"
               className="toast-action"
-              onClick={() => { t.onAction?.(); dismiss(t.id); }}
+              onClick={async () => {
+                // La acción (p. ej. Deshacer) puede ser asíncrona: se espera y
+                // se registra cualquier error en vez de tragárselo en silencio.
+                try {
+                  await t.onAction?.();
+                } catch (err) {
+                  console.error("Error en la acción del toast:", err);
+                } finally {
+                  dismiss(t.id);
+                }
+              }}
             >
               {t.actionLabel}
             </button>

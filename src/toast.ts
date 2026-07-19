@@ -1,7 +1,7 @@
 export interface ToastOptions {
   /** Texto del botón de acción (p. ej. "Deshacer"). */
   actionLabel?: string;
-  onAction?: () => void;
+  onAction?: () => void | Promise<void>;
   /** Duración en ms antes de desaparecer solo. Más larga cuando hay acción,
    *  para dar tiempo a reaccionar. */
   duration?: number;
