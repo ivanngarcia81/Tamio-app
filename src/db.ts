@@ -2404,13 +2404,16 @@ export async function insertMensaje(churchId: number, deRol: string, cuerpo: str
   );
 }
 
-/** Marca como leídos los mensajes que recibió `paraRol` (los que NO envió él). */
-export async function marcarMensajesLeidos(churchId: number, paraRol: string): Promise<void> {
+/** Marca como leídos los mensajes que recibió `paraRol` (los que NO envió él).
+ *  Devuelve cuántos marcó (0 si no había ninguno sin leer) para que la UI evite
+ *  refrescos innecesarios. */
+export async function marcarMensajesLeidos(churchId: number, paraRol: string): Promise<number> {
   const d = await getDb();
-  await d.execute(
+  const res = await d.execute(
     "UPDATE mensajes SET leido = 1, updated_at = datetime('now') WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
     [churchId, paraRol]
   );
+  return res.rowsAffected ?? 0;
 }
 
 /** Borrado SUAVE (deleted = 1) para que se propague en la sincronización. */

@@ -36,9 +36,11 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
         if (cancelado) return;
         setMensajes(rows);
         // Al abrir, se marcan como leídos los mensajes recibidos y se refresca
-        // el contador del sidebar.
-        await marcarMensajesLeidos(church.id, role);
-        onChanged();
+        // el contador del sidebar. Solo se notifica si de verdad se marcó algo,
+        // para no reactivar este mismo efecto (onChanged sube refreshKey) en un
+        // lazo infinito que hace parpadear la lista.
+        const marcados = await marcarMensajesLeidos(church.id, role);
+        if (marcados > 0) onChanged();
       })
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
