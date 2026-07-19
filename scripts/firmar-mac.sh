@@ -45,10 +45,13 @@ echo
 # Se limpian los assets que entran al bundle y se borra cualquier bundle
 # previo a medio firmar, para que la firma parta limpia.
 echo "▸  Limpiando atributos extendidos (evita el error de 'detritus')…"
-xattr -cr src 2>/dev/null || true
-xattr -cr src-tauri/icons 2>/dev/null || true
-xattr -cr src-tauri/capabilities 2>/dev/null || true
+# Limpia TODO el proyecto menos node_modules (que no entra al bundle). Cubre
+# src, public, icons, capabilities, Info.plist y los artefactos ya compilados.
+find . -path ./node_modules -prune -o -print0 2>/dev/null | xargs -0 xattr -c 2>/dev/null || true
+# Borra el bundle previo (puede traer FinderInfo de un vistazo en Finder) para
+# que la app se reensamble limpia.
 rm -rf src-tauri/target/universal-apple-darwin/release/bundle 2>/dev/null || true
+rm -rf src-tauri/target/release/bundle 2>/dev/null || true
 
 # Tauri firma con APPLE_SIGNING_IDENTITY y notariza con APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID.
 npm run dist:universal
