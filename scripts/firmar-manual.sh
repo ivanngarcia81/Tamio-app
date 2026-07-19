@@ -33,8 +33,10 @@ DMG="$DMG_DIR/Tamio_universal.dmg"
 
 echo "▸  [1/5] Construyendo la app SIN firmar (Tauri no firma si no hay identidad)…"
 rm -rf "src-tauri/target/$TARGET/release/bundle"
-# APPLE_SIGNING_IDENTITY vacío => Tauri NO firma. Solo la app (sin dmg).
-APPLE_SIGNING_IDENTITY="" npx tauri build --bundles app --target "$TARGET"
+# Se QUITAN (no se vacían) las variables de firma/notarización para que Tauri
+# no intente firmar ni notarizar en este paso; lo haremos nosotros después.
+env -u APPLE_SIGNING_IDENTITY -u APPLE_ID -u APPLE_PASSWORD -u APPLE_TEAM_ID \
+  npx tauri build --bundles app --target "$TARGET"
 
 if [ ! -d "$APP" ]; then echo "✖  No se encontró $APP"; exit 1; fi
 
