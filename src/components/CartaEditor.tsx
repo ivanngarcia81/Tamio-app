@@ -12,6 +12,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import { IconClose, IconPrinter, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
+import { iaHabilitada, redactarCarta } from "../ia";
 
 export const TIPOS_CARTA = [
   "recomendacion", "certificacion", "constanciaActivo", "buenaConducta", "presentacion",
@@ -59,12 +60,16 @@ interface Props {
 }
 
 export default function CartaEditor({ church, carta, members, dirtyRef, onSaved, prefill, vinculo, plantillas }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirmEntrega, setConfirmEntrega] = useState(false);
   const [pendingPlantilla, setPendingPlantilla] = useState<Plantilla | null>(null);
+  const [iaAbierta, setIaAbierta] = useState(false);
+  const [iaPuntos, setIaPuntos] = useState("");
+  const [iaGenerando, setIaGenerando] = useState(false);
+  const [iaError, setIaError] = useState<string | null>(null);
 
   const [tipo, setTipo] = useState(carta?.tipo ?? prefill?.tipo ?? "recomendacion");
   const [fechaEmision, setFechaEmision] = useState(carta?.fecha_emision ?? hoyLocal());
@@ -144,6 +149,32 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
     const hayContenido = (cuerpoRef.current?.textContent ?? "").trim().length > 0;
     if (hayContenido) setPendingPlantilla(p);
     else aplicarPlantilla(p);
+  }
+
+  async function generarConIA() {
+    const puntos = iaPuntos.trim();
+    if (!puntos) { setIaError(t("cartas.ia.vacio")); return; }
+    setIaGenerando(true);
+    setIaError(null);
+    try {
+      const html = await redactarCarta({
+        tipo,
+        puntos,
+        iglesia: church.nombre,
+        destinatario: destTipo === "miembro" ? (miembroSel?.nombre ?? "") : destNombre.trim(),
+        pastor: church.pastor_nombre ?? "",
+        idioma: i18n.language?.startsWith("en") ? "en" : "es",
+      });
+      if (cuerpoRef.current) cuerpoRef.current.innerHTML = html;
+      setDirty(true);
+      setIaAbierta(false);
+      setIaPuntos("");
+      playSound("guardado");
+    } catch (e) {
+      setIaError(t("cartas.ia.error", { error: String((e as { message?: string })?.message ?? e) }));
+    } finally {
+      setIaGenerando(false);
+    }
   }
 
   function nombreFirma(rol: RolFirma): { nombre: string; cargo: string } {
@@ -414,6 +445,17 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
               {miembroSel?.fecha_ingreso && <option value="fechaMembresia">{t("cartas.varFechaMembresia")}</option>}
               {miembroSel?.fecha_congregacion && <option value="fechaCongregacion">{t("cartas.varFechaCongregacion")}</option>}
             </select>
+            {iaHabilitada && (
+              <button
+                type="button"
+                className="btn secondary"
+                style={{ marginLeft: "auto" }}
+                title={t("cartas.ia.boton")}
+                onClick={() => { setIaError(null); setIaAbierta(true); }}
+              >
+                ✨ {t("cartas.ia.boton")}
+              </button>
+            )}
           </div>
           <div
             ref={cuerpoRef}
@@ -531,6 +573,44 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
           onConfirm={() => aplicarPlantilla(pendingPlantilla)}
           onCancel={() => setPendingPlantilla(null)}
         />
+      )}
+
+      {iaAbierta && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !iaGenerando) setIaAbierta(false); }}>
+          <div className="modal-card" style={{ width: 560, maxWidth: "94vw" }}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">✨ {t("cartas.ia.titulo")}</div>
+                <div className="modal-sub">{t("cartas.ia.sub")}</div>
+              </div>
+              <div className="modal-close" onClick={() => { if (!iaGenerando) setIaAbierta(false); }}><IconClose /></div>
+            </div>
+            <div style={{ padding: "4px 4px 0" }}>
+              <textarea
+                className="form-textarea"
+                rows={6}
+                autoFocus
+                placeholder={t("cartas.ia.placeholder")}
+                value={iaPuntos}
+                onChange={(e) => setIaPuntos(e.target.value)}
+                disabled={iaGenerando}
+              />
+              {(cuerpoRef.current?.textContent ?? "").trim().length > 0 && (
+                <div className="form-warning" style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                  <IconWarn size={14} /> <span>{t("cartas.ia.reemplazar")}</span>
+                </div>
+              )}
+              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.72 }}>{t("cartas.ia.nota")}</div>
+              {iaError && <div className="field-error" style={{ marginTop: 10 }}>{iaError}</div>}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+                <button className="btn secondary" onClick={() => setIaAbierta(false)} disabled={iaGenerando}>{t("cartas.ia.cancelar")}</button>
+                <button className="btn primary" onClick={generarConIA} disabled={iaGenerando || !iaPuntos.trim()}>
+                  {iaGenerando ? t("cartas.ia.generando") : t("cartas.ia.generar")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmEntrega && (
