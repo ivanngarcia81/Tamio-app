@@ -191,6 +191,7 @@ a { color: inherit; text-decoration: none; }
 .logo {
   width: 44px;
   height: 44px;
+  flex: 0 0 auto;      /* nunca se encoge en la columna flex del sidebar */
   border-radius: 12px;
   background: var(--surface);
   display: grid;
@@ -205,6 +206,7 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
   object-fit: cover;
 }
+.logo svg { display: block; width: 100%; height: 100%; }
 /* Placeholder mientras no hay logo subido: capilla atenuada sobre
    superficie suave, al estilo de los avatares vacíos de macOS. */
 /* Sin logo de iglesia subido, se muestra el logo de Tamio (trae su propio
@@ -418,6 +420,33 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   background: var(--surface);
+}
+/* Aviso de vigencia de la suscripción (no bloquea). */
+.sub-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #92620a;
+  background: #fef6e6;
+  border-bottom: 1px solid #f4e2bb;
+}
+.sub-banner.grave {
+  color: #9f1d1d;
+  background: #fdecec;
+  border-bottom-color: #f4c9c9;
+}
+:root[data-theme="dark"] .sub-banner {
+  color: #f5d79a;
+  background: #3a2f14;
+  border-bottom-color: #4d3f1c;
+}
+:root[data-theme="dark"] .sub-banner.grave {
+  color: #f6b4b4;
+  background: #3a1c1c;
+  border-bottom-color: #522626;
 }
 .header {
   display: flex;

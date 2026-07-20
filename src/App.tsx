@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Sidebar";
+import SubBanner from "./components/SubBanner";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
 import Welcome from "./components/Welcome";
@@ -26,6 +28,7 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
+import { evaluarVigencia, rutaPermitidaPorPlan } from "./plan";
 import { authHabilitado } from "./supabase";
 import { configurarSync, iniciarAutoSync, programarSync } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
@@ -56,6 +59,7 @@ function esPrimerArranque(church: Church): boolean {
 
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
@@ -135,13 +139,28 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Acciones del menú nativo de macOS (Archivo→Nuevo, Tamio→Ajustes, Ayuda).
+  // El menú intercepta sus atajos (p. ej. ⌘N) antes que el teclado del web,
+  // así que estas acciones llegan como eventos de Tauri.
+  useEffect(() => {
+    const offs: Array<() => void> = [];
+    listen("menu-nuevo", () => setModalMode((m) => m ?? { kind: "create", tab: "ingreso" })).then((f) => offs.push(f));
+    listen("menu-ajustes", () => navigate("/configuracion")).then((f) => offs.push(f));
+    listen("menu-ayuda", () => navigate("/ayuda")).then((f) => offs.push(f));
+    return () => { offs.forEach((f) => f()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
   const openEditMember = useCallback((m: Member) => setModalMode({ kind: "editMember", member: m }), []);
   const onRoleChange = useCallback((r: Role) => { setRolManual(r); saveRole(r); }, []);
 
-  // Bloquea una ruta según el rol (redirige al inicio permitido).
+  // Bloquea una ruta según el rol Y el plan contratado (redirige al inicio).
+  // El gate por plan evita entrar al área no contratada tecleando la URL.
   const guard = (path: string, element: ReactNode) =>
-    puedeVer(role, path) ? element : <Navigate to={HOME_POR_ROL[role]} replace />;
+    puedeVer(role, path) && rutaPermitidaPorPlan(church.plan, path)
+      ? element
+      : <Navigate to={HOME_POR_ROL[role]} replace />;
 
   // Puerta de autenticación (solo si hay credenciales de Supabase configuradas).
   if (authHabilitado) {
@@ -160,12 +179,27 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         </div>
       );
     }
+    // Bloqueo duro: suscripción vencida MÁS ALLÁ del periodo de gracia.
+    // Solo aplica con sesión en la nube; la cortesía y el modo local nunca
+    // llegan aquí (evaluarVigencia los considera siempre activos).
+    if (evaluarVigencia(church.sub_estado, church.sub_vence).vencida) {
+      return (
+        <div className="login-screen">
+          <div className="login-card" style={{ textAlign: "center" }}>
+            <div className="login-title">{t("plan.bloqueoTitulo")}</div>
+            <div className="login-sub">{t("plan.bloqueoSub")}</div>
+            <button className="btn secondary login-btn" onClick={salir}>{t("login.salir")}</button>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
     <div className="app">
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} onSalir={salir} />
       <main className="main">
+        {authHabilitado && <SubBanner church={church} />}
         <Routes>
           <Route
             path="/"
@@ -214,6 +248,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 church={church}
                 refreshKey={refreshKey}
                 onEdit={openEditMember}
+                onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
                 onChanged={onChanged}
               />
             )}

@@ -40,6 +40,12 @@ export interface Church {
   pie_institucional: string | null;
   secretaria_nombre: string | null;
   secretaria_cargo: string | null;
+  /** Suscripción (migración v31). plan: completo | tesoreria | secretaria.
+   *  sub_estado: activa | cortesia | prueba | vencida. sub_vence: fecha ISO o null.
+   *  Por defecto completo/activa para no alterar instalaciones existentes. */
+  plan: string;
+  sub_estado: string;
+  sub_vence: string | null;
 }
 
 export interface Member {
@@ -467,6 +473,24 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       c.pie_institucional ?? null, c.secretaria_nombre ?? null, c.secretaria_cargo ?? null,
       id,
     ]
+  );
+  const rows = await d.select<Church[]>("SELECT * FROM churches WHERE id = $1", [id]);
+  return rows[0];
+}
+
+/** Actualiza el plan y estado de suscripción de la iglesia. Separado de
+ *  updateChurch porque es administración de la cuenta (no datos institucionales)
+ *  y a futuro lo escribirá el webhook de pago. */
+export async function updateSuscripcion(
+  id: number,
+  plan: string,
+  subEstado: string,
+  subVence: string | null,
+): Promise<Church> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE churches SET plan = $1, sub_estado = $2, sub_vence = $3 WHERE id = $4",
+    [plan, subEstado, subVence ?? null, id],
   );
   const rows = await d.select<Church[]>("SELECT * FROM churches WHERE id = $1", [id]);
   return rows[0];

@@ -92,6 +92,69 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
 
 ---
 
+## Estado de construcción
+
+**Parte 1 — Cimiento de módulos por plan: HECHA** (migración v31).
+
+- La iglesia guarda `plan` (completo/tesoreria/secretaria), `sub_estado`
+  (activa/cortesia/prueba/vencida) y `sub_vence` en la tabla `churches`.
+  Por defecto **completo/activa** → las instalaciones actuales no cambian nada.
+- El **sidebar oculta el área no contratada** según el plan (lógica en
+  `src/plan.ts`, aplicada en `Sidebar.tsx`). El gate por plan se suma al gate
+  por rol que ya existía.
+- Panel **Ajustes → Plan y suscripción** (`PlanSettings.tsx`) donde el dueño
+  (admin, o cualquiera en modo local) elige plan/estado/vencimiento. Esto hace
+  también de mecanismo de **cortesía** manual mientras no haya pagos.
+- Se puede **probar hoy** en local: cambia el plan en Ajustes y mira cómo el
+  menú lateral muestra/oculta Tesorería o Secretaría.
+
+**Parte 2 — Guardas por ruta + aviso de vigencia: HECHA.**
+
+- **Guarda por ruta** (`rutaPermitidaPorPlan` en `plan.ts`, aplicada en el
+  `guard()` de `App.tsx`): entrar por URL directa al área no contratada ahora
+  redirige al inicio. Cierra el hueco que dejaba el ocultar-solo-el-menú.
+- **Aviso de vigencia** (`SubBanner.tsx`): banner no bloqueante que avisa
+  cuando la suscripción está por vencer (≤7 días), en gracia o vencida. Solo
+  con login en la nube; en cortesía o sin fecha no aparece (el dueño no lo ve).
+  Usa `evaluarVigencia()` (con `diasGracia`).
+
+**Parte 3 — Miembro básico en Tesorería: HECHA.**
+
+- El **alta/edición de miembro básico** ya existía (pestaña "Miembro" del modal:
+  nombre, email, teléfono, RFC, nota + selector Miembro/Visitante) y el detalle
+  en Tesorería es puramente financiero (aportes + constancia). Las secciones de
+  Secretaría (bautismo, ministerios…) viven en la ficha completa, que ya queda
+  oculta por plan. Así que el "miembro básico" estaba cubierto por diseño.
+- Se añadió el botón **"Nuevo miembro"** en la página de Miembros (antes solo se
+  podía desde el botón global "Nuevo registro"), clave para el plan
+  solo-Tesorería, donde los miembros son el centro del trabajo.
+
+**Parte 4 — Nube como autoridad + bloqueo duro + webhook: HECHA.**
+
+- **`supabase/sub-1-plan.sql`** *(correr en Supabase una vez)*: la iglesia lleva
+  `plan/sub_estado/sub_vence` en la nube. Los usuarios solo LEEN; escribe el
+  webhook de pago o el dueño desde el panel (Table Editor). Un cliente no puede
+  auto-regalarse el plan.
+- **La app obedece la nube**: `sincronizarPlan()` baja el plan en cada
+  sincronización y lo aplica en local (con sesión, la nube manda; el panel de
+  Ajustes lo avisa). En modo local sin login, el panel sigue mandando.
+- **Bloqueo duro**: con sesión, si la suscripción venció Y pasó el periodo de
+  gracia, la app muestra una pantalla de "Suscripción vencida" (datos intactos,
+  se recuperan al renovar). La cortesía y el modo local jamás se bloquean.
+- **Webhook de pago listo**: `supabase/functions/pago-webhook/index.ts`
+  (Lemon Squeezy). Verifica la firma, encuentra la iglesia por el correo del
+  comprador y escribe el plan. Mapeo variant→plan por nombre; la cortesía es
+  intocable (un evento de pago nunca degrada una cuenta regalada). Se despliega
+  cuando exista la cuenta de Lemon Squeezy (instrucciones en el archivo).
+
+**Único pendiente real:** abrir la cuenta del proveedor de pago (Lemon Squeezy
+recomendado), crear los 3 productos (Tesorería/Secretaría/Completo), desplegar
+el webhook y poner el enlace de compra en la pantalla de bloqueo/banner.
+- **Integración** exclusiva del Completo (que Tesorería consuma miembros de
+  Secretaría) — gate con `integracionActiva()`.
+- **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y
+  sincronizar la suscripción desde la nube como autoridad.
+
 ## Decisiones tomadas
 - Tres planes: Tesorería, Secretaría, Completo (Completo más barato que la suma).
 - La integración entre áreas es exclusiva del Completo.
@@ -104,3 +167,70 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
   impuestos por país).
 - Prueba gratis / periodo de evaluación.
 - Qué pasa exactamente al vencer (solo lectura vs bloqueo total).
+
+---
+
+## Regalar cuentas sin cobro (modo "cortesía")
+
+Como dueño, se puede regalar una versión completa sin que la persona pague. La
+suscripción es solo un **dato** que dice "esta cuenta está activa"; regalar es
+marcarla activa **sin pasar por el cobro**.
+
+Diseño acordado: el campo de estado de la cuenta incluye un valor **`cortesia`**
+(además de `activa` y `vencida`). Una cuenta de regalo queda:
+
+| campo | regalo |
+|---|---|
+| `plan` | `completo` |
+| `estado` | `cortesia` |
+| `vence` | `null` (nunca caduca) |
+
+- La app solo pregunta *"¿está activa?"* — le da igual si es de pago o cortesía.
+- Se mantiene **separado** de `activa` para distinguir en reportes quién paga de
+  quién es regalo (y no cortar por error una cuenta que "no pagó").
+- Con `vence = null` nunca caduca; el modo offline ni molesta.
+- Solo el **dueño/administrador general** puede otorgar cortesías (un usuario
+  normal no puede auto-regalarse).
+- Alternativa: **códigos de licencia** que se generan y se entregan (para
+  regalar sin conocer el correo de antemano, p. ej. en una conferencia).
+
+### La cuenta del dueño NUNCA paga
+El dueño (quien vende Tamio) **no se cobra a sí mismo**. Su propia cuenta va en
+estado **`cortesia`** con `vence = null`: activa para siempre, sin cobro y sin
+avisos de suscripción. Además, en **modo local** (sin login en la nube) no hay
+ninguna revisión de suscripción: la app corre completa siempre. El cobro solo
+aplica a las cuentas de **clientes** marcadas como de pago. En resumen: el dueño
+controla el interruptor de las suscripciones, no está del lado de quien paga.
+
+---
+
+## Hoja de ruta general (orden completo del proyecto)
+
+Dónde encaja cada gran bloque, incluida la app de iPad. Orden lógico, no fechas.
+
+| # | Bloque | Estado | De quién |
+|---|---|---|---|
+| 1 | App Mac completa (Tesorería + Secretaría) | ✅ Hecho | — |
+| 2 | Sincronización en la nube entre Macs | ✅ Código listo; falta probar 2 Macs | Tú (probar) |
+| 3 | **Cuenta Apple Developer** ($99/año) — firmar/notarizar | 🔴 Pendiente | Tú (trámite) |
+| 4 | **Suscripciones** (planes por módulo + cortesía + pago) | 🟡 Diseñado, sin construir | Yo |
+| 5 | Política de privacidad + términos | 🟡 Pendiente | Los dos |
+| 6 | **IA**: cartas (lista), luego actas, resúmenes, preguntas | 🟢 Cartas hecha; resto por hacer | Yo (+ tu clave) |
+| 7 | **📱 Tamio para iPad** (ver `docs/ipad-plan.md`) | ⚪ Planeado, al final | Yo |
+
+### Por qué el iPad va casi al final
+No es por dificultad de programar (Tauri 2 soporta iPad y se reutiliza el
+70–80% del código), sino porque **depende de los pasos previos**:
+
+- Necesita la **cuenta Apple Developer** (#3) — sin ella no se instala en iPad.
+- Necesita la **sincronización en la nube ya probada** (#2) — es lo que permite
+  que iPad y Mac compartan datos; sin eso el iPad sería una isla.
+
+Por eso, cerrar la sincronización (lo de ahora) es justo el **cimiento** del
+iPad. El grueso del trabajo de iPad no es reprogramar, son dos cosas: la
+**interfaz táctil** (Fase 2 de `docs/ipad-plan.md`) y el **trámite de Apple**.
+
+### Recomendación de secuencia
+1. **Ahora:** probar sync de las 2 Macs (#2) + generar el `.dmg` final.
+2. **Luego:** Apple Developer (#3) → suscripciones (#4) para poder vender.
+3. **Después:** más IA (#6) e iPad (#7), sobre la base ya estable y en uso.

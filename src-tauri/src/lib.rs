@@ -605,11 +605,23 @@ fn migrations() -> Vec<Migration> {
             UPDATE mensajes SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_mensajes_sync ON mensajes(church_id, updated_at);
         "#,
+    }, Migration {
+        version: 31,
+        description: "suscripción: plan/estado/vencimiento por iglesia (default completo/activa)",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE churches ADD COLUMN plan TEXT NOT NULL DEFAULT 'completo';
+            ALTER TABLE churches ADD COLUMN sub_estado TEXT NOT NULL DEFAULT 'activa';
+            ALTER TABLE churches ADD COLUMN sub_vence TEXT;
+        "#,
     }]
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use tauri::menu::{AboutMetadata, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+    use tauri::Emitter;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -619,6 +631,71 @@ pub fn run() {
                 .add_migrations("sqlite:tesoreria.db", migrations())
                 .build(),
         )
+        .setup(|app| {
+            // Menú nativo de macOS. Los ítems con id emiten un evento que el
+            // frontend escucha (menu-nuevo, menu-ayuda, menu-ajustes).
+            let acerca = AboutMetadata {
+                name: Some("Tamio".into()),
+                comments: Some("Tesorería y secretaría para iglesias".into()),
+                copyright: Some("© 2026 Tamio".into()),
+                ..Default::default()
+            };
+
+            let menu_app = SubmenuBuilder::new(app, "Tamio")
+                .item(&PredefinedMenuItem::about(app, Some("Acerca de Tamio"), Some(acerca))?)
+                .separator()
+                .item(&MenuItemBuilder::new("Ajustes…").id("ajustes").accelerator("CmdOrCtrl+,").build(app)?)
+                .separator()
+                .item(&PredefinedMenuItem::hide(app, Some("Ocultar Tamio"))?)
+                .item(&PredefinedMenuItem::hide_others(app, Some("Ocultar otros"))?)
+                .item(&PredefinedMenuItem::show_all(app, Some("Mostrar todo"))?)
+                .separator()
+                .item(&PredefinedMenuItem::quit(app, Some("Salir de Tamio"))?)
+                .build()?;
+
+            let menu_archivo = SubmenuBuilder::new(app, "Archivo")
+                .item(&MenuItemBuilder::new("Nuevo registro…").id("nuevo").accelerator("CmdOrCtrl+N").build(app)?)
+                .separator()
+                .item(&PredefinedMenuItem::close_window(app, Some("Cerrar ventana"))?)
+                .build()?;
+
+            let menu_edicion = SubmenuBuilder::new(app, "Edición")
+                .item(&PredefinedMenuItem::undo(app, Some("Deshacer"))?)
+                .item(&PredefinedMenuItem::redo(app, Some("Rehacer"))?)
+                .separator()
+                .item(&PredefinedMenuItem::cut(app, Some("Cortar"))?)
+                .item(&PredefinedMenuItem::copy(app, Some("Copiar"))?)
+                .item(&PredefinedMenuItem::paste(app, Some("Pegar"))?)
+                .item(&PredefinedMenuItem::select_all(app, Some("Seleccionar todo"))?)
+                .build()?;
+
+            let menu_ver = SubmenuBuilder::new(app, "Ver")
+                .item(&PredefinedMenuItem::fullscreen(app, Some("Pantalla completa"))?)
+                .build()?;
+
+            let menu_ventana = SubmenuBuilder::new(app, "Ventana")
+                .item(&PredefinedMenuItem::minimize(app, Some("Minimizar"))?)
+                .item(&PredefinedMenuItem::maximize(app, Some("Ampliar"))?)
+                .build()?;
+
+            let menu_ayuda = SubmenuBuilder::new(app, "Ayuda")
+                .item(&MenuItemBuilder::new("Ayuda de Tamio").id("ayuda").build(app)?)
+                .build()?;
+
+            let menu = MenuBuilder::new(app)
+                .items(&[&menu_app, &menu_archivo, &menu_edicion, &menu_ver, &menu_ventana, &menu_ayuda])
+                .build()?;
+            app.set_menu(menu)?;
+            Ok(())
+        })
+        .on_menu_event(|app, event| {
+            match event.id().as_ref() {
+                "nuevo" => { let _ = app.emit("menu-nuevo", ()); }
+                "ajustes" => { let _ = app.emit("menu-ajustes", ()); }
+                "ayuda" => { let _ = app.emit("menu-ayuda", ()); }
+                _ => {}
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

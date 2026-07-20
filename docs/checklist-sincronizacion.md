@@ -66,3 +66,14 @@ ahora" en Ajustes). Con eso se ubica el problema.
 Cuando todo el Paso 3 esté ✅, **la sincronización queda concluida y probada**.
 El siguiente gran bloque del proyecto es la **suscripción + Apple Developer**
 para vender Tamio (ver `docs/planes.md` y `docs/fase-2.md`).
+
+## ✅ Estado: CONCLUIDA (2026-07-19)
+
+El usuario confirmó tras probar en las dos Macs: *"todo quedó bien, no he visto
+falla entre computadoras"*. La Fase 2 de sincronización en la nube se da por
+**terminada y validada** en uso real. Queda como base para la app de iPad
+(comparte datos vía esta misma sincronización) y para las suscripciones.
+
+Recordatorio de lo que sigue local a propósito (no es falla): roster de
+asistencia por persona, categorías personalizadas, plantillas y el enlace mutuo
+carta↔solicitud / traslado↔carta. Se sincronizarán más adelante si se necesita.

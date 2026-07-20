@@ -10,7 +10,9 @@
     "tauri": "tauri",
     "dist": "tauri build --bundles dmg",
     "dist:intel": "tauri build --bundles dmg --target x86_64-apple-darwin",
-    "dist:universal": "tauri build --bundles dmg --target universal-apple-darwin"
+    "dist:universal": "tauri build --bundles dmg --target universal-apple-darwin",
+    "firmar": "bash scripts/firmar-mac.sh",
+    "firmar:manual": "bash scripts/firmar-manual.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",

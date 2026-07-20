@@ -19,12 +19,10 @@ export const IconTamio = ({ size = 44 }: { size?: number }) => {
           <stop offset="1" stopColor="#059669" />
         </linearGradient>
       </defs>
-      <rect width="180" height="180" rx="40" fill={`url(#${id})`} />
-      <rect x="44" y="42" width="92" height="19" rx="8" fill="#fff" />
-      <rect x="81" y="42" width="18" height="60" rx="8" fill="#fff" fillOpacity="0.45" />
-      <rect x="56" y="112" width="17" height="26" rx="6" fill="#fff" fillOpacity="0.72" />
-      <rect x="81" y="96" width="17" height="42" rx="6" fill="#fff" fillOpacity="0.86" />
-      <rect x="106" y="76" width="17" height="62" rx="6" fill="#fff" />
+      <rect width="180" height="180" rx="42" fill={`url(#${id})`} />
+      {/* Monograma "T" limpio y centrado: se lee nítido incluso a 44px. */}
+      <rect x="46" y="52" width="88" height="22" rx="7" fill="#fff" />
+      <rect x="79" y="52" width="22" height="80" rx="7" fill="#fff" />
     </svg>
   );
 };

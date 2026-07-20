@@ -26,3 +26,5 @@ dist-ssr
 # Credenciales locales (Supabase) — no versionar
 .env
 .env.local
+# Credenciales de firma de Apple — NUNCA versionar
+.env.firma
