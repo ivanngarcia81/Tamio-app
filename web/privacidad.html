@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de privacidad — Tamio</title>
+  <meta name="description" content="Política de privacidad de Tamio. Tus datos viven en tu Mac; la nube y la IA son opcionales y mínimas. Nunca vendemos datos.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='2' y='2' width='44' height='44' rx='13' fill='%23059669'/%3E%3Crect x='13' y='12' width='22' height='5' rx='2.5' fill='white'/%3E%3Crect x='21.5' y='12' width='5' height='22' rx='2.5' fill='white'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --paper:#f5f7f3; --surface:#ffffff; --ink:#151b12; --muted:#5f6f5c;
+      --line:#e0e6db; --brand:#059669; --head:#07341f;
+      --font-display: ui-serif, "New York", Georgia, "Times New Roman", serif;
+      --font-sans: -apple-system, system-ui, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --paper:#0c110d; --surface:#131a15; --ink:#e9efe6; --muted:#94a390; --line:#253026; --brand:#10b981; --head:#eaf3ea; }
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); line-height: 1.65; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+    a { color: var(--brand); }
+    h1 { font-family: var(--font-display); color: var(--head); font-size: 34px; line-height: 1.15; margin-bottom: 6px; }
+    .fecha { color: var(--muted); font-size: 14px; margin-bottom: 34px; }
+    h2 { font-family: var(--font-display); color: var(--head); font-size: 21px; margin: 34px 0 10px; }
+    p, li { font-size: 15.5px; }
+    ul { padding-left: 22px; margin: 8px 0; }
+    .tarjeta { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 14px 0; }
+    .volver { display: inline-block; margin-bottom: 26px; font-size: 14px; text-decoration: none; }
+    .en { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 34px; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+    th { background: var(--surface); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="volver" href="index.html">← Tamio</a>
+  <h1>Política de privacidad</h1>
+  <div class="fecha">Última actualización: 20 de julio de 2026 · <a href="#english">English version below</a></div>
+
+  <div class="tarjeta">
+    <b>La idea central: tus datos viven en tu Mac.</b> Tamio funciona primero en
+    local. Sin iniciar sesión en la nube, nada sale de tu computadora y la app
+    funciona completa sin internet. Nosotros no vemos ni recibimos tus datos
+    financieros ni de miembros. <b>Nunca vendemos datos.</b>
+  </div>
+
+  <h2>1. Quiénes somos</h2>
+  <p>Tamio es una aplicación de escritorio para Mac que ayuda a las iglesias a
+  llevar su tesorería (ingresos, gastos, reportes) y su secretaría (membresía,
+  actas, cartas). Contacto: <a href="mailto:ig07644@gmail.com">ig07644@gmail.com</a>.</p>
+
+  <h2>2. Qué datos se procesan y dónde</h2>
+  <table>
+    <tr><th>Dato</th><th>Dónde vive</th><th>Cuándo sale de tu Mac</th></tr>
+    <tr><td>Movimientos financieros</td><td>Tu Mac (base local)</td><td>Solo si activas la sincronización</td></tr>
+    <tr><td>Miembros y su ficha</td><td>Tu Mac (base local)</td><td>Solo si activas la sincronización</td></tr>
+    <tr><td>Actas, cartas, agenda…</td><td>Tu Mac (base local)</td><td>Solo si activas la sincronización</td></tr>
+    <tr><td>Correo y contraseña</td><td>Supabase (autenticación)</td><td>Al crear la cuenta</td></tr>
+    <tr><td>Puntos para redactar con IA</td><td>—</td><td>Solo si usas "Redactar con IA"</td></tr>
+    <tr><td>Datos de pago (tarjeta)</td><td>El procesador de pagos</td><td>Solo al comprar</td></tr>
+  </table>
+
+  <h2>3. Sincronización en la nube (opcional)</h2>
+  <p>Si la iglesia inicia sesión, Tamio sincroniza sus datos entre sus propias
+  computadoras a través de Supabase, con cifrado en tránsito y en reposo. Los
+  datos de cada iglesia están aislados por reglas de seguridad a nivel de base
+  de datos (RLS). La sincronización existe para ti — no usamos esos datos para
+  publicidad, perfiles ni venta a terceros.</p>
+
+  <h2>4. Funciones de inteligencia artificial (opcionales)</h2>
+  <p>Tamio puede redactar el cuerpo de cartas formales con IA. La IA recibe solo
+  lo mínimo: el tipo de carta, los puntos que tú escribes y, si eliges, nombres
+  de destinatario, iglesia y pastor. <b>No se envían datos financieros ni la base
+  de miembros.</b> Si no usas la función, nada se envía. Las llamadas pasan por
+  nuestro servidor; la clave del servicio de IA nunca está en tu computadora.</p>
+
+  <h2>5. Pagos</h2>
+  <p>El cobro de la suscripción lo procesa un proveedor especializado. Tamio
+  nunca ve ni guarda tu número de tarjeta; recibimos solo la confirmación del
+  pago (correo del comprador, plan y vigencia) para activar tu cuenta.</p>
+
+  <h2>6. Retención y eliminación</h2>
+  <ul>
+    <li><b>Datos locales:</b> bajo tu control; puedes exportar respaldos desde la app.</li>
+    <li><b>Datos sincronizados:</b> permanecen mientras la cuenta exista. Si pides
+    eliminar tu cuenta, se eliminan de la nube en un máximo de 30 días.</li>
+    <li><b>Cuenta vencida:</b> los datos NO se borran; esperan la renovación.</li>
+  </ul>
+
+  <h2>7. Seguridad</h2>
+  <p>Cifrado HTTPS/TLS, aislamiento por iglesia (RLS), claves del lado del
+  servidor y app firmada y notarizada por Apple.</p>
+
+  <h2>8. Tus derechos</h2>
+  <p>Puedes solicitar acceso, corrección o eliminación de los datos de tu cuenta
+  escribiendo a <a href="mailto:ig07644@gmail.com">ig07644@gmail.com</a>.
+  Respondemos en un máximo de 30 días. Los datos de miembros los administra la
+  propia iglesia; Tamio solo provee la herramienta.</p>
+
+  <h2>9. Cambios</h2>
+  <p>Si esta política cambia, se actualizará la fecha de arriba y, en cambios
+  importantes, se avisará dentro de la app.</p>
+
+  <div class="en" id="english">
+    <h1>Privacy Policy (English)</h1>
+    <div class="fecha">Last updated: July 20, 2026</div>
+
+    <div class="tarjeta">
+      <b>The core idea: your data lives on your Mac.</b> Tamio is local-first.
+      Without signing in to the cloud, nothing leaves your computer and the app
+      works fully offline. We do not see or receive your financial or membership
+      data. <b>We never sell data.</b>
+    </div>
+
+    <h2>Who we are</h2>
+    <p>Tamio is a Mac desktop app that helps churches manage their treasury and
+    secretariat. Contact: <a href="mailto:ig07644@gmail.com">ig07644@gmail.com</a>.</p>
+
+    <h2>Cloud sync (optional)</h2>
+    <p>If the church signs in, Tamio syncs its data between its own computers
+    through Supabase (encrypted in transit and at rest). Each church's data is
+    isolated by database-level security rules (RLS). No advertising use, no
+    selling data.</p>
+
+    <h2>AI features (optional)</h2>
+    <p>Tamio can draft formal letter bodies with AI. The AI receives only the
+    minimum (letter type, your bullet points, and optionally recipient/church/
+    pastor names). <b>Financial data and the membership database are never
+    sent.</b> If you don't use an AI feature, nothing is sent.</p>
+
+    <h2>Payments</h2>
+    <p>Billing is processed by a specialized provider. Tamio never sees or
+    stores your card number; we only receive the payment confirmation (buyer
+    email, plan, term) to activate your account.</p>
+
+    <h2>Retention &amp; deletion</h2>
+    <p>Local data is under your control. Synced data persists while the account
+    exists; upon deletion request, your church's cloud data is removed within
+    30 days. Expired subscriptions do NOT delete data.</p>
+
+    <h2>Your rights</h2>
+    <p>Request access, correction or deletion at
+    <a href="mailto:ig07644@gmail.com">ig07644@gmail.com</a>. We respond within
+    30 days.</p>
+  </div>
+</div>
+</body>
+</html>

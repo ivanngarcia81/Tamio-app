@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tamio — La administración de tu iglesia, en orden</title>
+  <meta name="description" content="Tamio: tesorería y secretaría para iglesias, en tu Mac. Ingresos, gastos, reportes, membresía, actas y cartas — funciona sin internet. App firmada y notarizada por Apple.">
+  <meta property="og:title" content="Tamio — Tesorería y secretaría para iglesias, en tu Mac">
+  <meta property="og:description" content="Ingresos, gastos, reportes, membresía, actas y cartas. Funciona sin internet. Firmada y notarizada por Apple.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect x='2' y='2' width='44' height='44' rx='13' fill='%23059669'/%3E%3Crect x='13' y='12' width='22' height='5' rx='2.5' fill='white'/%3E%3Crect x='21.5' y='12' width='5' height='22' rx='2.5' fill='white'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<style>
+  :root {
+    --paper:#f5f7f3; --surface:#ffffff; --surface-2:#eef2ec;
+    --ink:#151b12; --muted:#5f6f5c; --line:#e0e6db;
+    --brand:#059669; --brand-2:#34d399; --pine:#064e3b;
+    --head:#07341f; --gold:#a8792f; --pos:#0a8a5f; --neg:#c34a55;
+    --shadow: 0 1px 2px rgba(20,40,25,.04), 0 12px 34px -12px rgba(20,50,30,.16);
+    --shadow-sm: 0 1px 2px rgba(20,40,25,.05), 0 6px 16px -10px rgba(20,50,30,.18);
+    --radius:18px;
+    --font-display: ui-serif, "New York", Georgia, "Times New Roman", serif;
+    --font-sans: -apple-system, system-ui, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    --maxw: 1080px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#0c110d; --surface:#131a15; --surface-2:#18211a;
+      --ink:#e9efe6; --muted:#94a390; --line:#253026;
+      --brand:#10b981; --brand-2:#34d399; --pine:#34d399;
+      --head:#eaf3ea; --gold:#d3a552;
+      --pos:#34d399; --neg:#e77682;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -14px rgba(0,0,0,.6);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 8px 20px -12px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#f5f7f3; --surface:#ffffff; --surface-2:#eef2ec;
+    --ink:#151b12; --muted:#5f6f5c; --line:#e0e6db;
+    --brand:#059669; --brand-2:#34d399; --pine:#064e3b; --head:#07341f;
+    --gold:#a8792f; --pos:#0a8a5f; --neg:#c34a55;
+    --shadow: 0 1px 2px rgba(20,40,25,.04), 0 12px 34px -12px rgba(20,50,30,.16);
+    --shadow-sm: 0 1px 2px rgba(20,40,25,.05), 0 6px 16px -10px rgba(20,50,30,.18);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0c110d; --surface:#131a15; --surface-2:#18211a;
+    --ink:#e9efe6; --muted:#94a390; --line:#253026;
+    --brand:#10b981; --brand-2:#34d399; --pine:#34d399; --head:#eaf3ea;
+    --gold:#d3a552; --pos:#34d399; --neg:#e77682;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -14px rgba(0,0,0,.6);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 8px 20px -12px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin:0; }
+  .page {
+    background:
+      linear-gradient(var(--paper), var(--paper));
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  h1,h2,h3 { font-family: var(--font-display); color: var(--head); font-weight: 600;
+    text-wrap: balance; letter-spacing: -0.01em; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+
+  .eyebrow { font-size: 12.5px; font-weight: 650; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--brand); font-family: var(--font-sans); }
+
+  /* ---------- top bar ---------- */
+  .topbar { position: sticky; top: 0; z-index: 40;
+    backdrop-filter: saturate(1.4) blur(12px);
+    background: color-mix(in srgb, var(--paper) 82%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+  .topbar .wrap { display: flex; align-items: center; gap: 16px; height: 62px; }
+  .brand { display: inline-flex; align-items: center; gap: 11px; font-weight: 680;
+    letter-spacing: -0.02em; font-size: 19px; color: var(--ink); text-decoration: none; }
+  .brand .mark { filter: drop-shadow(0 3px 8px color-mix(in srgb, var(--brand) 40%, transparent)); }
+  .spacer { flex: 1 1 auto; }
+  .top-note { font-size: 13px; color: var(--muted); }
+  @media (max-width: 620px){ .top-note{ display:none; } }
+  .btn { font-family: var(--font-sans); font-size: 14.5px; font-weight: 600;
+    border-radius: 11px; padding: 10px 16px; border: 1px solid transparent;
+    cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+    gap: 8px; transition: transform .15s ease, box-shadow .2s ease, background .2s ease; }
+  .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .btn-primary { color: #fff;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand));
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--brand) 60%, transparent); }
+  .btn-primary:hover { transform: translateY(-1px);
+    box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--brand) 65%, transparent); }
+  .btn-ghost { color: var(--ink); border-color: var(--line); background: var(--surface); }
+  .btn-ghost:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .btn-lg { padding: 13px 22px; font-size: 15.5px; border-radius: 13px; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 74px 0 34px; }
+  .hero::before { /* faint ledger rules */
+    content:""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+    background: repeating-linear-gradient(to bottom, transparent 0 46px,
+      color-mix(in srgb, var(--line) 55%, transparent) 46px 47px);
+    -webkit-mask-image: radial-gradient(120% 80% at 70% 0%, #000 30%, transparent 78%);
+            mask-image: radial-gradient(120% 80% at 70% 0%, #000 30%, transparent 78%); }
+  .hero .wrap { position: relative; display: grid; grid-template-columns: 1.05fr .95fr;
+    gap: 48px; align-items: center; }
+  @media (max-width: 900px){ .hero .wrap{ grid-template-columns: 1fr; gap: 30px; } }
+  .hero h1 { font-size: clamp(34px, 5.4vw, 58px); line-height: 1.04; margin: 18px 0 0; }
+  .hero .lede { font-size: clamp(16.5px, 2vw, 19px); color: var(--muted);
+    margin-top: 20px; max-width: 30em; }
+  .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .assure { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 26px; }
+  .assure span { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px;
+    color: var(--muted); }
+  .assure .dot { color: var(--brand); }
+
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ---------- product vignette (hero) ---------- */
+  .hero-visual { position: relative; }
+  .stage { position: relative; padding: 6px; }
+  .glow { position: absolute; inset: -6% -4% -12% -4%; z-index: 0; border-radius: 40px;
+    background: radial-gradient(60% 60% at 60% 30%, color-mix(in srgb, var(--brand-2) 34%, transparent), transparent 70%); filter: blur(10px); }
+  .card { position: relative; z-index: 1; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .balance-card { padding: 22px 22px 18px; }
+  .bc-top { display: flex; align-items: center; justify-content: space-between; }
+  .bc-label { font-size: 13px; color: var(--muted); font-weight: 550; }
+  .pill { font-size: 12.5px; font-weight: 650; padding: 4px 10px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 5px; }
+  .pill.pos { color: var(--pos); background: color-mix(in srgb, var(--pos) 14%, transparent); }
+  .bc-amount { font-size: 40px; font-weight: 720; letter-spacing: -0.02em; margin-top: 8px;
+    font-variant-numeric: tabular-nums; color: var(--ink); }
+  .spark { margin-top: 6px; }
+  .bc-rows { margin-top: 16px; display: grid; gap: 10px; }
+  .bc-row { display: flex; align-items: center; gap: 12px; padding-top: 12px;
+    border-top: 1px solid var(--line); }
+  .bc-row .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    flex: 0 0 auto; }
+  .ic.up { color: var(--pos); background: color-mix(in srgb, var(--pos) 13%, transparent); }
+  .ic.down { color: var(--neg); background: color-mix(in srgb, var(--neg) 13%, transparent); }
+  .bc-row .t { flex: 1 1 auto; font-size: 13.5px; color: var(--muted); }
+  .bc-row .v { font-weight: 660; font-variant-numeric: tabular-nums; font-size: 14.5px; }
+  .float-chip { position: absolute; z-index: 2; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 13px; box-shadow: var(--shadow-sm);
+    padding: 9px 12px; display: flex; align-items: center; gap: 9px; font-size: 12.5px;
+    font-weight: 600; }
+  .float-chip.a { right: -14px; top: -18px; }
+  .float-chip.b { left: -18px; bottom: 34px; }
+  @media (max-width: 460px){ .float-chip{ display:none; } }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    color: #fff; font-size: 11px; font-weight: 700;
+    background: linear-gradient(135deg, var(--brand-2), var(--pine)); }
+
+  /* ---------- section scaffold ---------- */
+  section.block { padding: 40px 0; }
+  .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 46px; align-items: center; }
+  .feat.flip .copy { order: 2; }
+  @media (max-width: 860px){ .feat, .feat.flip{ grid-template-columns: 1fr; gap: 26px; }
+    .feat.flip .copy{ order: 0; } }
+  .feat h2 { font-size: clamp(25px, 3.4vw, 33px); line-height: 1.12; margin-top: 12px; }
+  .feat .copy p { color: var(--muted); margin-top: 14px; font-size: 16px; max-width: 34em; }
+  .ticks { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 9px; }
+  .ticks li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; }
+  .ticks .ck { color: var(--brand); flex: 0 0 auto; margin-top: 2px; }
+
+  .vis { display: grid; place-items: center; }
+  .vis .card { width: 100%; }
+
+  /* member ficha */
+  .ficha { padding: 20px; }
+  .ficha-head { display: flex; align-items: center; gap: 13px; }
+  .ficha-head .av { width: 46px; height: 46px; border-radius: 50%; font-size: 16px; }
+  .ficha-head .nm { font-weight: 680; font-size: 16px; color: var(--ink); }
+  .ficha-head .sb { font-size: 12.5px; color: var(--muted); }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+  .tag { font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--surface-2); }
+  .tag.g { color: var(--brand); border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+    background: color-mix(in srgb, var(--brand) 10%, transparent); }
+  .ficha-grid { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px;
+    border-top: 1px solid var(--line); padding-top: 16px; }
+  .fg .k { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .fg .v { font-size: 14px; font-weight: 600; margin-top: 2px; }
+
+  /* pdf / constancia */
+  .doc { padding: 26px; background: var(--surface); }
+  .paper2 { background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 22px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 40%, transparent); }
+  .doc-title { font-family: var(--font-display); color: var(--head); font-weight: 600;
+    font-size: 17px; text-align: center; }
+  .doc-sub { text-align: center; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+  .rule { height: 1px; background: var(--line); margin: 16px 0; }
+  .lines { display: grid; gap: 9px; }
+  .lines i { display: block; height: 8px; border-radius: 4px;
+    background: color-mix(in srgb, var(--muted) 22%, transparent); }
+  .lines i.s60 { width: 60%; } .lines i.s85 { width: 85%; } .lines i.s40 { width: 40%; }
+  .doc-foot { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 22px; }
+  .sign { text-align: center; }
+  .sign .ln { width: 120px; height: 1px; background: var(--ink); opacity: .55; margin-bottom: 6px; }
+  .sign .cap { font-size: 10.5px; color: var(--muted); }
+  .seal { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center;
+    color: var(--gold); border: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
+    font-size: 10px; font-weight: 700; text-align: center; line-height: 1.1; letter-spacing: .04em;
+    transform: rotate(-8deg); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+
+  /* roles + sync */
+  .roles { display: grid; gap: 11px; padding: 20px; }
+  .role { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--surface-2); }
+  .role .rn { font-weight: 660; font-size: 14.5px; flex: 1 1 auto; }
+  .role .rt { font-size: 12px; color: var(--muted); }
+  .role .lock { color: var(--brand); }
+
+  .sync { padding: 26px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    gap: 8px; }
+  .mac { text-align: center; }
+  .mac .screen { border: 1.5px solid var(--line); border-radius: 12px; height: 92px; background:
+      linear-gradient(160deg, var(--surface-2), var(--surface)); display: grid; place-items: center;
+      color: var(--brand); position: relative; overflow: hidden; }
+  .mac .screen::after{ content:""; position:absolute; left:12px; right:12px; bottom:12px; height:6px;
+      border-radius:3px; background: color-mix(in srgb, var(--brand) 30%, transparent); }
+  .mac .foot { height: 7px; width: 56%; margin: 5px auto 0; border-radius: 0 0 5px 5px;
+    background: var(--line); }
+  .mac .cap { margin-top: 9px; font-size: 12.5px; font-weight: 640; }
+  .mac .cap small { display:block; color: var(--muted); font-weight: 500; font-size: 11px; }
+  .syncarrows { color: var(--brand); display: grid; place-items: center; }
+
+  /* ---------- planes ---------- */
+  .planes { background: var(--surface-2); border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line); }
+  .planes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 30px; }
+  @media (max-width: 820px){ .planes-grid{ grid-template-columns: 1fr; } }
+  .plan { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+  .plan.feature { border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent), var(--shadow); }
+  .plan .pn { font-family: var(--font-display); font-size: 21px; color: var(--head); font-weight: 600; }
+  .plan .pd { font-size: 13.5px; color: var(--muted); margin-top: 6px; min-height: 40px; }
+  .plan .badge { align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #fff; background: linear-gradient(135deg,var(--brand-2),var(--brand));
+    padding: 4px 10px; border-radius: 999px; margin-bottom: 12px; }
+  .plan ul { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 9px; }
+  .plan li { display: flex; gap: 9px; font-size: 14px; align-items: flex-start; }
+  .plan li .ck { color: var(--brand); flex: 0 0 auto; margin-top: 2px; }
+  .plan li.off { color: var(--muted); opacity: .7; }
+  .plan li.off .ck { color: var(--muted); }
+
+  /* ---------- closing ---------- */
+  .closing { padding: 76px 0; text-align: center; position: relative; }
+  .closing::before { content:""; position:absolute; inset:0; opacity:.6;
+    background: radial-gradient(60% 120% at 50% 0%, color-mix(in srgb, var(--brand-2) 20%, transparent), transparent 70%); }
+  .closing .wrap { position: relative; }
+  .closing h2 { font-size: clamp(28px, 4.4vw, 44px); line-height: 1.08; }
+  .closing p { color: var(--muted); margin: 16px auto 0; max-width: 32em; font-size: 17px; }
+  .closing .cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .kicker { font-family: var(--font-display); font-style: italic; color: var(--brand);
+    font-size: clamp(18px,2.4vw,22px); margin-top: 30px; }
+
+  footer { border-top: 1px solid var(--line); padding: 30px 0 44px; }
+  footer .wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    color: var(--muted); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { transition: none; opacity: 1; transform: none; }
+    .spark-path { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
+  }
+</style>
+
+<div class="page">
+
+  <!-- ================= TOP BAR ================= -->
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="#top">
+        <span class="mark" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 48 48" role="img" aria-label="Tamio">
+            <defs>
+              <linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#34d399"/><stop offset="1" stop-color="#059669"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="44" height="44" rx="13" fill="url(#tg)"/>
+            <rect x="14" y="26" width="5.4" height="9" rx="2" fill="#fff" opacity=".55"/>
+            <rect x="21.3" y="21" width="5.4" height="14" rx="2" fill="#fff" opacity=".78"/>
+            <rect x="28.6" y="16" width="5.4" height="19" rx="2" fill="#fff"/>
+            <rect x="13" y="12" width="22" height="4.4" rx="2.2" fill="#fff"/>
+            <rect x="21.6" y="12" width="4.8" height="10" rx="2.4" fill="#fff"/>
+          </svg>
+        </span>
+        Tamio
+      </a>
+      <span class="spacer"></span>
+      <span class="top-note">Para Mac · Español &amp; English</span>
+      <a class="btn btn-primary" href="#descargar">Probar Tamio</a>
+    </div>
+  </header>
+
+  <!-- ================= HERO ================= -->
+  <a id="top"></a>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy reveal">
+        <span class="eyebrow">Tesorería y secretaría de tu iglesia</span>
+        <h1>La administración de tu iglesia, por fin en orden.</h1>
+        <p class="lede">Finanzas y membresía en una sola app para Mac. Rápida, profesional
+          y hecha para cómo trabaja de verdad una congregación — sin hojas de cálculo sueltas.</p>
+        <div class="cta">
+          <a class="btn btn-primary btn-lg" href="#descargar">Descargar para Mac</a>
+          <a class="btn btn-ghost btn-lg" href="#funciones">Ver funciones</a>
+        </div>
+        <div class="assure">
+          <span><span class="dot">●</span> Funciona sin internet</span>
+          <span><span class="dot">●</span> Tus datos en tu Mac</span>
+          <span><span class="dot">●</span> Reportes en PDF</span>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal">
+        <div class="stage">
+          <div class="glow" aria-hidden="true"></div>
+          <div class="float-chip a"><span class="avatar">AM</span> Miembro agregado</div>
+          <div class="float-chip b"><span style="color:var(--pos);font-weight:800">✓</span> Constancia lista</div>
+          <div class="card balance-card" role="img" aria-label="Panel de balance mensual de ejemplo">
+            <div class="bc-top">
+              <span class="bc-label">Balance de julio</span>
+              <span class="pill pos">▲ 12%</span>
+            </div>
+            <div class="bc-amount">$48,250</div>
+            <svg class="spark" width="100%" height="52" viewBox="0 0 320 52" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="sf" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="var(--brand)" stop-opacity=".28"/>
+                  <stop offset="1" stop-color="var(--brand)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="spark-fill" d="M0,40 L26,36 L52,38 L78,28 L104,31 L130,22 L156,25 L182,16 L208,20 L234,12 L260,15 L286,7 L320,10 L320,52 L0,52 Z" fill="url(#sf)"/>
+              <path class="spark-path" d="M0,40 L26,36 L52,38 L78,28 L104,31 L130,22 L156,25 L182,16 L208,20 L234,12 L260,15 L286,7 L320,10"
+                fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle class="spark-dot" cx="286" cy="7" r="3.6" fill="var(--brand)"/>
+            </svg>
+            <div class="bc-rows">
+              <div class="bc-row">
+                <span class="ic up" aria-hidden="true">↑</span>
+                <span class="t">Ingresos del mes</span>
+                <span class="v" style="color:var(--pos)">$92,400</span>
+              </div>
+              <div class="bc-row">
+                <span class="ic down" aria-hidden="true">↓</span>
+                <span class="t">Gastos del mes</span>
+                <span class="v" style="color:var(--neg)">$44,150</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FEATURES ================= -->
+  <a id="funciones"></a>
+
+  <!-- Tesorería -->
+  <section class="block">
+    <div class="wrap">
+      <div class="feat reveal">
+        <div class="copy">
+          <span class="eyebrow">Tesorería</span>
+          <h2>Lleva las finanzas en segundos, no en fin de semana.</h2>
+          <p>Registra diezmos, ofrendas, donaciones y gastos con categorías, método de pago y
+            comprobante adjunto. El inicio te muestra el balance del mes de un vistazo, con gráficas.</p>
+          <ul class="ticks">
+            <li><span class="ck">✓</span> Ingresos y gastos recurrentes que se generan solos</li>
+            <li><span class="ck">✓</span> Categorías personalizables y búsqueda instantánea</li>
+            <li><span class="ck">✓</span> Depósitos bancarios y conciliación al día</li>
+          </ul>
+        </div>
+        <div class="vis">
+          <div class="card balance-card" aria-hidden="true">
+            <div class="bc-top"><span class="bc-label">Resumen del mes</span><span class="pill pos">Aprobado</span></div>
+            <div class="bc-amount" style="font-size:32px">$48,250 <span style="font-size:14px;color:var(--muted);font-weight:600">balance</span></div>
+            <div class="bc-rows">
+              <div class="bc-row"><span class="ic up">◷</span><span class="t">Diezmos</span><span class="v">$61,300</span></div>
+              <div class="bc-row"><span class="ic up">◷</span><span class="t">Ofrendas</span><span class="v">$24,900</span></div>
+              <div class="bc-row"><span class="ic down">◷</span><span class="t">Servicios y pagos</span><span class="v" style="color:var(--neg)">$44,150</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Secretaría -->
+  <section class="block">
+    <div class="wrap">
+      <div class="feat flip reveal">
+        <div class="copy">
+          <span class="eyebrow">Secretaría</span>
+          <h2>Cada miembro, con su historia completa.</h2>
+          <p>Un directorio de verdad: ficha con bautismos, ministerios, dones e instrumentos,
+            estado de membresía y seguimiento pastoral. Todo lo que un pastor quiere saber, a la mano.</p>
+          <ul class="ticks">
+            <li><span class="ck">✓</span> Actas, cartas y traslados con plantillas automáticas</li>
+            <li><span class="ck">✓</span> Asistencia por servicio, ligada a cada miembro</li>
+            <li><span class="ck">✓</span> Seguimiento y notas para no perder a nadie</li>
+          </ul>
+        </div>
+        <div class="vis">
+          <div class="card ficha" aria-hidden="true">
+            <div class="ficha-head">
+              <span class="avatar av">AM</span>
+              <div>
+                <div class="nm">Ana Martínez</div>
+                <div class="sb">Miembro desde 2019 · Activa</div>
+              </div>
+            </div>
+            <div class="tags">
+              <span class="tag g">Diezmadora</span>
+              <span class="tag g">Bautizada</span>
+              <span class="tag">Coro</span>
+              <span class="tag">Piano</span>
+              <span class="tag">Comité</span>
+            </div>
+            <div class="ficha-grid">
+              <div class="fg"><div class="k">Bautismo en agua</div><div class="v">12 mar 2019</div></div>
+              <div class="fg"><div class="k">Ministerio</div><div class="v">Alabanza</div></div>
+              <div class="fg"><div class="k">Asistencia</div><div class="v">92% este año</div></div>
+              <div class="fg"><div class="k">Teléfono</div><div class="v">55 1234 5678</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reportes -->
+  <section class="block">
+    <div class="wrap">
+      <div class="feat reveal">
+        <div class="copy">
+          <span class="eyebrow">Reportes en PDF</span>
+          <h2>Documentos que impresionan en la asamblea.</h2>
+          <p>Con un clic: estado financiero mensual, reporte anual y constancias de aportes por
+            miembro — con folio de auditoría, la firma del tesorero y el pastor, y el logo de tu iglesia.</p>
+          <ul class="ticks">
+            <li><span class="ck">✓</span> Listos para imprimir, presentar o entregar</li>
+            <li><span class="ck">✓</span> Optimizados para impresión en blanco y negro</li>
+            <li><span class="ck">✓</span> Exporta también a CSV para tu contador</li>
+          </ul>
+        </div>
+        <div class="vis">
+          <div class="card doc" aria-hidden="true">
+            <div class="paper2">
+              <div class="doc-title">Constancia de Aportaciones 2025</div>
+              <div class="doc-sub">Iglesia Monte de Sion · Folio A-0428</div>
+              <div class="rule"></div>
+              <div class="lines">
+                <i class="s85"></i><i class="s60"></i><i></i><i class="s40"></i>
+              </div>
+              <div class="doc-foot">
+                <div class="sign"><div class="ln"></div><div class="cap">Tesorero</div></div>
+                <div class="seal">SELLO<br>OFICIAL</div>
+                <div class="sign"><div class="ln"></div><div class="cap">Pastor</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Datos + roles -->
+  <section class="block">
+    <div class="wrap">
+      <div class="feat flip reveal">
+        <div class="copy">
+          <span class="eyebrow">Seguridad y roles</span>
+          <h2>Tus datos son tuyos. Cada quien ve lo suyo.</h2>
+          <p>Todo vive en tu propia Mac y funciona sin internet. Con roles para administrador,
+            tesorero y secretaria, cada persona entra solo a lo que le corresponde.</p>
+          <ul class="ticks">
+            <li><span class="ck">✓</span> Respaldos y exportación cuando quieras</li>
+            <li><span class="ck">✓</span> Modo claro y oscuro, en español e inglés</li>
+            <li><span class="ck">✓</span> Sin suscripción obligatoria a la nube para usarla</li>
+          </ul>
+        </div>
+        <div class="vis">
+          <div class="card roles" aria-hidden="true">
+            <div class="role"><span class="avatar" style="background:linear-gradient(135deg,#34d399,#064e3b)">A</span><span class="rn">Administrador</span><span class="rt">Todo</span></div>
+            <div class="role"><span class="avatar" style="background:linear-gradient(135deg,#34d399,#0a8a5f)">T</span><span class="rn">Tesorero</span><span class="rt">Finanzas</span><span class="lock">🔒</span></div>
+            <div class="role"><span class="avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669)">S</span><span class="rn">Secretaria</span><span class="rt">Miembros</span><span class="lock">🔒</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sincronización -->
+  <section class="block">
+    <div class="wrap">
+      <div class="feat reveal">
+        <div class="copy">
+          <span class="eyebrow">Sincronización</span>
+          <h2>Trabajen juntos, aunque estén separados.</h2>
+          <p>¿Tesorería en una Mac y Secretaría en otra? Tamio mantiene los datos de tu iglesia
+            al día entre computadoras — cada quien en lo suyo, todos con la misma información.</p>
+          <ul class="ticks">
+            <li><span class="ck">✓</span> Los miembros que registra Secretaría llegan a Tesorería</li>
+            <li><span class="ck">✓</span> Cada iglesia con sus datos aislados y protegidos</li>
+          </ul>
+        </div>
+        <div class="vis">
+          <div class="card sync" aria-hidden="true">
+            <div class="mac">
+              <div class="screen">$</div><div class="foot"></div>
+              <div class="cap">Tesorería<small>MacBook Pro</small></div>
+            </div>
+            <div class="syncarrows">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 9a8 8 0 0 1 14-4l2 2"/><path d="M20 15a8 8 0 0 1-14 4l-2-2"/>
+                <path d="M20 3v4h-4"/><path d="M4 21v-4h4"/>
+              </svg>
+            </div>
+            <div class="mac">
+              <div class="screen">☺</div><div class="foot"></div>
+              <div class="cap">Secretaría<small>Mac Studio</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PLANES ================= -->
+  <section class="block planes">
+    <div class="wrap">
+      <div class="reveal" style="text-align:center; max-width:36em; margin:0 auto;">
+        <span class="eyebrow">Un plan para cada iglesia</span>
+        <h2 style="font-size:clamp(26px,3.6vw,34px); margin-top:10px;">Toma solo lo que necesitas, crece cuando quieras.</h2>
+        <p style="color:var(--muted); margin-top:12px;">Contrata un área o la suite completa. Al subir de plan,
+          tus datos siguen intactos — nada se pierde.</p>
+      </div>
+      <div class="planes-grid reveal">
+        <div class="plan">
+          <div class="pn">Tesorería</div>
+          <div class="pd">Para el equipo de finanzas.</div>
+          <ul>
+            <li><span class="ck">✓</span> Ingresos, gastos y depósitos</li>
+            <li><span class="ck">✓</span> Reportes y constancias en PDF</li>
+            <li><span class="ck">✓</span> Miembros básicos para aportes</li>
+            <li class="off"><span class="ck">–</span> Actas, cartas y fichas completas</li>
+          </ul>
+        </div>
+        <div class="plan feature">
+          <span class="badge">Recomendado</span>
+          <div class="pn">Completo</div>
+          <div class="pd">Toda la iglesia, integrada.</div>
+          <ul>
+            <li><span class="ck">✓</span> Tesorería + Secretaría juntas</li>
+            <li><span class="ck">✓</span> Los datos fluyen entre áreas</li>
+            <li><span class="ck">✓</span> Roles y sincronización entre Macs</li>
+            <li><span class="ck">✓</span> Todos los reportes y documentos</li>
+          </ul>
+        </div>
+        <div class="plan">
+          <div class="pn">Secretaría</div>
+          <div class="pd">Para el equipo de membresía.</div>
+          <ul>
+            <li><span class="ck">✓</span> Miembros con ficha completa</li>
+            <li><span class="ck">✓</span> Actas, cartas y traslados</li>
+            <li><span class="ck">✓</span> Servicios, asistencia y seguimiento</li>
+            <li class="off"><span class="ck">–</span> Módulo financiero</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CLOSING ================= -->
+  <a id="descargar"></a>
+  <section class="closing">
+    <div class="wrap reveal">
+      <h2>Ordena las finanzas. Cuida a tu gente.<br>Presenta con orgullo.</h2>
+      <p>Tamio no es una hoja de cálculo con esteroides. Es la herramienta que tu iglesia
+        merecía desde hace años.</p>
+      <div class="cta">
+        <a class="btn btn-primary btn-lg" href="#top">Descargar para Mac</a>
+        <a class="btn btn-ghost btn-lg" href="#funciones">Ver todas las funciones</a>
+      </div>
+      <div class="kicker">Tamio — todo tu ministerio administrativo, en un solo lugar.</div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span class="brand" style="font-size:16px">
+        <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="2" y="2" width="44" height="44" rx="13" fill="url(#tg)"/>
+          <rect x="14" y="26" width="5.4" height="9" rx="2" fill="#fff" opacity=".55"/>
+          <rect x="21.3" y="21" width="5.4" height="14" rx="2" fill="#fff" opacity=".78"/>
+          <rect x="28.6" y="16" width="5.4" height="19" rx="2" fill="#fff"/>
+          <rect x="13" y="12" width="22" height="4.4" rx="2.2" fill="#fff"/>
+          <rect x="21.6" y="12" width="4.8" height="10" rx="2.4" fill="#fff"/>
+        </svg>
+        Tamio
+      </span>
+      <span class="spacer"></span>
+      <span>
+        Aplicación de escritorio para macOS · Español &amp; English ·
+        <a href="privacidad.html" style="color:inherit">Política de privacidad</a> ·
+        <a href="mailto:ig07644@gmail.com" style="color:inherit">Contacto</a>
+      </span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Prime the sparkline stroke for a draw-in.
+    var path = document.querySelector(".spark-path");
+    if (path && !reduce) {
+      try {
+        var len = path.getTotalLength();
+        path.style.strokeDasharray = len;
+        path.style.strokeDashoffset = len;
+        path.style.transition = "stroke-dashoffset 1.6s ease .2s";
+      } catch (e) {}
+    }
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          en.target.classList.add("in");
+          if (en.target.querySelector) {
+            var p = en.target.querySelector(".spark-path");
+            if (p && !reduce) { p.style.strokeDashoffset = "0"; }
+          }
+          io.unobserve(en.target);
+        }
+      });
+    }, { threshold: 0.16 });
+
+    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+</body>
+</html>
