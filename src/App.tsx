@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import ToastHost from "./components/ToastHost";
@@ -58,6 +59,7 @@ function esPrimerArranque(church: Church): boolean {
 
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
@@ -135,6 +137,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Acciones del menú nativo de macOS (Archivo→Nuevo, Tamio→Ajustes, Ayuda).
+  // El menú intercepta sus atajos (p. ej. ⌘N) antes que el teclado del web,
+  // así que estas acciones llegan como eventos de Tauri.
+  useEffect(() => {
+    const offs: Array<() => void> = [];
+    listen("menu-nuevo", () => setModalMode((m) => m ?? { kind: "create", tab: "ingreso" })).then((f) => offs.push(f));
+    listen("menu-ajustes", () => navigate("/configuracion")).then((f) => offs.push(f));
+    listen("menu-ayuda", () => navigate("/ayuda")).then((f) => offs.push(f));
+    return () => { offs.forEach((f) => f()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openEditTx = useCallback((tx: Tx) => setModalMode({ kind: "editTx", tx }), []);
