@@ -53,7 +53,9 @@ serve(async (req: Request) => {
     const nombreEvento: string = evento?.meta?.event_name ?? "";
     const attrs = evento?.data?.attributes ?? {};
     const email: string = String(attrs.user_email ?? "").trim().toLowerCase();
-    const variant: string = String(attrs.variant_name ?? "");
+    // El plan se detecta en el nombre del PRODUCTO o de la VARIANTE (así las
+    // variantes pueden llamarse solo "Mensual"/"Anual" bajo cada producto).
+    const variant: string = `${attrs.product_name ?? ""} ${attrs.variant_name ?? ""}`;
     const renuevaEl: string | null = attrs.renews_at ? String(attrs.renews_at).slice(0, 10) : null;
     const status: string = String(attrs.status ?? "");
 
