@@ -21,6 +21,12 @@ export const ESTADOS_SUB: EstadoSub[] = ["activa", "cortesia", "prueba", "vencid
  *  nadie fuera en una asamblea sin internet). */
 export const DIAS_GRACIA = 10;
 
+/** URL de la tienda/checkout (Lemon Squeezy) donde se compra o renueva la
+ *  suscripción. Viene de VITE_URL_COMPRA en el .env; si no está configurada,
+ *  los botones de "Renovar/Comprar" simplemente no se muestran. */
+export const urlCompra: string | null =
+  (import.meta.env.VITE_URL_COMPRA as string | undefined)?.trim() || null;
+
 /** ¿El plan incluye el área de Tesorería (finanzas)? */
 export function incluyeTesoreria(plan: string): boolean {
   return plan === "completo" || plan === "tesoreria";

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Church } from "../db";
-import { evaluarVigencia } from "../plan";
+import { evaluarVigencia, urlCompra } from "../plan";
 import { IconWarn } from "../icons";
 
 /** Aviso de vigencia de la suscripción. No bloquea; solo informa cuando está
@@ -8,6 +9,7 @@ import { IconWarn } from "../icons";
  *  así que la cuenta del dueño (cortesía) nunca lo ve. */
 export default function SubBanner({ church }: { church: Church }) {
   const { t } = useTranslation();
+  const compra = urlCompra;
   if (church.sub_estado === "cortesia") return null;
 
   const vig = evaluarVigencia(church.sub_estado, church.sub_vence);
@@ -25,6 +27,15 @@ export default function SubBanner({ church }: { church: Church }) {
     <div className={`sub-banner${vig.vencida ? " grave" : ""}`} role="status">
       <IconWarn size={15} />
       <span>{texto}</span>
+      {compra && (
+        <button
+          type="button"
+          className="sub-banner-btn"
+          onClick={() => { void openUrl(compra).catch(console.error); }}
+        >
+          {t("plan.renovar")}
+        </button>
+      )}
     </div>
   );
 }

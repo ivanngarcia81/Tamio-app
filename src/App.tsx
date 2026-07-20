@@ -28,7 +28,8 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
-import { evaluarVigencia, rutaPermitidaPorPlan } from "./plan";
+import { evaluarVigencia, rutaPermitidaPorPlan, urlCompra } from "./plan";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { authHabilitado } from "./supabase";
 import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
@@ -191,6 +192,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           <div className="login-card" style={{ textAlign: "center" }}>
             <div className="login-title">{t("plan.bloqueoTitulo")}</div>
             <div className="login-sub">{t("plan.bloqueoSub")}</div>
+            {urlCompra !== null && (
+              <button className="btn primary login-btn" onClick={() => { void openUrl(urlCompra as string).catch(console.error); }}>
+                {t("plan.renovar")}
+              </button>
+            )}
             <button className="btn secondary login-btn" onClick={salir}>{t("login.salir")}</button>
           </div>
         </div>

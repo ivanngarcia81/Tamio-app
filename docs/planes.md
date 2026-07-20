@@ -147,9 +147,46 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
   intocable (un evento de pago nunca degrada una cuenta regalada). Se despliega
   cuando exista la cuenta de Lemon Squeezy (instrucciones en el archivo).
 
-**Único pendiente real:** abrir la cuenta del proveedor de pago (Lemon Squeezy
-recomendado), crear los 3 productos (Tesorería/Secretaría/Completo), desplegar
-el webhook y poner el enlace de compra en la pantalla de bloqueo/banner.
+**Parte 5 — Botón Renovar/Comprar: HECHA.** El banner de vigencia y la
+pantalla de bloqueo muestran "Renovar suscripción" (abre el checkout en el
+navegador) cuando `VITE_URL_COMPRA` está en el `.env`. Sin la variable, los
+botones no aparecen (igual que la IA con su bandera).
+
+## Cómo conectar Lemon Squeezy (pasos del dueño)
+
+1. **Cuenta y tienda:** <https://lemonsqueezy.com> → Sign up → crear tu
+   *store* (nombre: Tamio). Se puede trabajar en **modo test** de inmediato;
+   activar pagos reales pide verificación (días).
+2. **Productos:** crear 1 producto "Tamio" con **3 variantes** (o 3 productos):
+   - `Tamio Completo` · `Tamio Tesoreria` · `Tamio Secretaria`
+   - ⚠️ El nombre del variant DEBE contener "tesoreria" o "secretaria" para
+     esos planes (así el webhook los mapea); cualquier otro nombre = completo.
+   - Tipo: **suscripción** (mensual o anual, como se decida el precio).
+3. **Webhook:** Settings → Webhooks → New:
+   - URL: `https://hkpbkpojeierxqtbmagh.supabase.co/functions/v1/pago-webhook`
+   - Signing secret: inventa uno fuerte y guárdalo.
+   - Eventos: `subscription_created`, `subscription_updated`,
+     `subscription_expired`, `subscription_cancelled`.
+4. **Desplegar la función** (en la Mac, una vez):
+   ```bash
+   cd ~/Desktop/tesoreria-mac-
+   supabase functions deploy pago-webhook --no-verify-jwt
+   supabase secrets set LEMON_WEBHOOK_SECRET=el-secreto-del-paso-3
+   ```
+5. **Enlace de compra en la app:** copiar la URL de checkout de la tienda
+   (botón Share/Buy del producto) y ponerla en el `.env`:
+   ```
+   VITE_URL_COMPRA=https://TU-TIENDA.lemonsqueezy.com/checkout/...
+   ```
+   Reconstruir (`npm run tauri dev` o `npm run firmar:manual`).
+6. **Prueba en modo test:** comprar con la tarjeta de prueba de Lemon Squeezy
+   usando el correo de una cuenta de prueba de Tamio → en Supabase → iglesias,
+   esa iglesia debe cambiar a plan/estado según lo comprado → la app lo baja
+   en su siguiente sincronización.
+
+> Importante: el comprador debe pagar con **el mismo correo** de su cuenta de
+> Tamio (así el webhook encuentra su iglesia). El checkout de Lemon Squeezy
+> pide el correo; conviene decirlo en la página de venta.
 - **Integración** exclusiva del Completo (que Tesorería consuma miembros de
   Secretaría) — gate con `integracionActiva()`.
 - **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y

@@ -1829,6 +1829,7 @@ export const en: Resources = {
     bannerVencida: "Your subscription expired. Contact the administrator to renew it.",
     bloqueoTitulo: "Subscription expired",
     bloqueoSub: "Access is paused because the subscription expired and the grace period ended. Renew to continue; your data is intact and will come back as-is once renewed.",
+    renovar: "Renew subscription",
     nubeManda: "While signed in, the plan is controlled by the cloud (payment or the owner's panel): changes made here are overwritten on the next sync.",
   },
 

@@ -1836,6 +1836,7 @@ export const es = {
     bannerVencida: "Tu suscripción venció. Contacta al administrador para renovarla.",
     bloqueoTitulo: "Suscripción vencida",
     bloqueoSub: "El acceso está pausado porque la suscripción venció y terminó el periodo de gracia. Renueva para continuar; tus datos están intactos y volverán tal cual al renovar.",
+    renovar: "Renovar suscripción",
     nubeManda: "Con sesión iniciada, el plan lo controla la nube (pago o panel del dueño): lo que cambies aquí se sobreescribe en la próxima sincronización.",
   },
 

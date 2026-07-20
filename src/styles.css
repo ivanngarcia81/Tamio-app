@@ -438,6 +438,19 @@ a { color: inherit; text-decoration: none; }
   background: #fdecec;
   border-bottom-color: #f4c9c9;
 }
+.sub-banner-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sub-banner-btn:hover { background: rgba(0,0,0,.06); }
 :root[data-theme="dark"] .sub-banner {
   color: #f5d79a;
   background: #3a2f14;
