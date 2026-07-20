@@ -30,7 +30,7 @@ import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from 
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import { evaluarVigencia, rutaPermitidaPorPlan } from "./plan";
 import { authHabilitado } from "./supabase";
-import { configurarSync, iniciarAutoSync, programarSync } from "./syncManager";
+import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
 import Login from "./components/Login";
 import "./styles.css";
@@ -147,6 +147,9 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     listen("menu-nuevo", () => setModalMode((m) => m ?? { kind: "create", tab: "ingreso" })).then((f) => offs.push(f));
     listen("menu-ajustes", () => navigate("/configuracion")).then((f) => offs.push(f));
     listen("menu-ayuda", () => navigate("/ayuda")).then((f) => offs.push(f));
+    listen<string>("menu-nav", (e) => navigate(e.payload)).then((f) => offs.push(f));
+    listen("menu-sync", () => { if (authHabilitado) void ejecutarSync(); }).then((f) => offs.push(f));
+    listen("menu-tour", () => iniciarTour(t)).then((f) => offs.push(f));
     return () => { offs.forEach((f) => f()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

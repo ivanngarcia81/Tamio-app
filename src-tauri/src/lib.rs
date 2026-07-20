@@ -656,6 +656,8 @@ pub fn run() {
             let menu_archivo = SubmenuBuilder::new(app, "Archivo")
                 .item(&MenuItemBuilder::new("Nuevo registro…").id("nuevo").accelerator("CmdOrCtrl+N").build(app)?)
                 .separator()
+                .item(&MenuItemBuilder::new("Sincronizar ahora").id("sync").accelerator("CmdOrCtrl+R").build(app)?)
+                .separator()
                 .item(&PredefinedMenuItem::close_window(app, Some("Cerrar ventana"))?)
                 .build()?;
 
@@ -669,7 +671,23 @@ pub fn run() {
                 .item(&PredefinedMenuItem::select_all(app, Some("Seleccionar todo"))?)
                 .build()?;
 
+            // "Ver" como navegación completa de la app, con atajos ⌘1–⌘9.
+            // Los ids "nav:<ruta>" se emiten al frontend, que navega (y sus
+            // guardas por rol/plan redirigen si esa área no aplica).
             let menu_ver = SubmenuBuilder::new(app, "Ver")
+                .item(&MenuItemBuilder::new("Inicio").id("nav:/").accelerator("CmdOrCtrl+1").build(app)?)
+                .separator()
+                .item(&MenuItemBuilder::new("Ingresos").id("nav:/ingresos").accelerator("CmdOrCtrl+2").build(app)?)
+                .item(&MenuItemBuilder::new("Gastos").id("nav:/gastos").accelerator("CmdOrCtrl+3").build(app)?)
+                .item(&MenuItemBuilder::new("Reportes").id("nav:/reportes").accelerator("CmdOrCtrl+4").build(app)?)
+                .item(&MenuItemBuilder::new("Depósitos").id("nav:/depositos").accelerator("CmdOrCtrl+5").build(app)?)
+                .separator()
+                .item(&MenuItemBuilder::new("Membresía").id("nav:/membresia").accelerator("CmdOrCtrl+6").build(app)?)
+                .item(&MenuItemBuilder::new("Cartas").id("nav:/cartas").accelerator("CmdOrCtrl+7").build(app)?)
+                .item(&MenuItemBuilder::new("Agenda").id("nav:/agenda").accelerator("CmdOrCtrl+8").build(app)?)
+                .separator()
+                .item(&MenuItemBuilder::new("Inbox").id("nav:/inbox").accelerator("CmdOrCtrl+9").build(app)?)
+                .separator()
                 .item(&PredefinedMenuItem::fullscreen(app, Some("Pantalla completa"))?)
                 .build()?;
 
@@ -680,6 +698,7 @@ pub fn run() {
 
             let menu_ayuda = SubmenuBuilder::new(app, "Ayuda")
                 .item(&MenuItemBuilder::new("Ayuda de Tamio").id("ayuda").build(app)?)
+                .item(&MenuItemBuilder::new("Guía de bienvenida (tour)").id("tour").build(app)?)
                 .build()?;
 
             let menu = MenuBuilder::new(app)
@@ -689,10 +708,17 @@ pub fn run() {
             Ok(())
         })
         .on_menu_event(|app, event| {
-            match event.id().as_ref() {
+            let id = event.id().as_ref();
+            if let Some(ruta) = id.strip_prefix("nav:") {
+                let _ = app.emit("menu-nav", ruta.to_string());
+                return;
+            }
+            match id {
                 "nuevo" => { let _ = app.emit("menu-nuevo", ()); }
                 "ajustes" => { let _ = app.emit("menu-ajustes", ()); }
+                "sync" => { let _ = app.emit("menu-sync", ()); }
                 "ayuda" => { let _ = app.emit("menu-ayuda", ()); }
+                "tour" => { let _ = app.emit("menu-tour", ()); }
                 _ => {}
             }
         })
