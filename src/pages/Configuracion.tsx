@@ -202,86 +202,83 @@ export default function Configuracion({
 
       <div className="content">
         <div className="settings-page">
-          <div className="settings-grid">
-            <div className="settings-stack">
-              <ChurchSettings
-                value={churchForm}
-                onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
-                error={churchError}
-                logoPath={logoPath}
-                onLogoPathChange={setLogoPath}
-                showCurrency={verTesoreria}
-              />
+          {/* Mosaico de 2 columnas balanceadas: las tarjetas fluyen y el CSS
+              reparte las alturas, así no queda una columna larga y otra vacía
+              cuando el rol/plan oculta tarjetas. */}
+          <div className="settings-masonry">
+            <ChurchSettings
+              value={churchForm}
+              onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
+              error={churchError}
+              logoPath={logoPath}
+              onLogoPathChange={setLogoPath}
+              showCurrency={verTesoreria}
+            />
 
-              {verTesoreria && (
-                <>
-                  <TreasurerSettings
-                    value={treasurerForm}
-                    onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
-                    errors={treasurerErrors}
-                  />
-
-                  <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
-                </>
-              )}
-
-              {/* Pastor: compartido (firma en tesorería y secretaría), visible a todos. */}
-              <PastorSettings
-                value={pastorForm}
-                onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
-                errors={pastorErrors}
-              />
-
-              <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
-
-              {verSecretaria && (
-                <InstitucionSettings
-                  value={institucionForm}
-                  onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
+            {verTesoreria && (
+              <>
+                <TreasurerSettings
+                  value={treasurerForm}
+                  onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
+                  errors={treasurerErrors}
                 />
-              )}
-            </div>
 
-            {/* Columna derecha: vista previa del PDF + ajustes y administración,
-                para equilibrar la altura con la columna izquierda. */}
-            <div className="settings-stack">
-              {verTesoreria && (
-                <PDFPreview
-                  churchNombre={churchForm.nombre}
-                  tesoreroNombre={treasurerForm.nombre}
-                  tesoreroCargo={treasurerForm.cargo}
-                />
-              )}
+                <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+              </>
+            )}
 
-              {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
+            {/* Pastor: compartido (firma en tesorería y secretaría), visible a todos. */}
+            <PastorSettings
+              value={pastorForm}
+              onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
+              errors={pastorErrors}
+            />
 
-              <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
+            <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
 
-              <LanguageSettings value={langPref} onChange={onLangPrefChange} />
+            {verSecretaria && (
+              <InstitucionSettings
+                value={institucionForm}
+                onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
+              />
+            )}
 
-              <SoundSettings />
+            {verTesoreria && (
+              <PDFPreview
+                churchNombre={churchForm.nombre}
+                tesoreroNombre={treasurerForm.nombre}
+                tesoreroCargo={treasurerForm.cargo}
+              />
+            )}
 
-              {/* Suscripción: la administra el dueño (admin) o, en modo local
-                  sin login, quien usa la app en su propia instalación. */}
-              {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
+            {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
 
-              {/* Usuarios y Respaldo: administración sensible, solo administrador. */}
-              {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
+            <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
 
-              {verTesoreria && (
-                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-              )}
+            <LanguageSettings value={langPref} onChange={onLangPrefChange} />
 
-              {/* Sincronización (beta): visible para cualquier usuario con sesión.
-                  Sincronizar es una acción de dispositivo/cuenta (no de rol); la
-                  seguridad por iglesia la garantiza RLS en la nube. Debe estar
-                  disponible tanto en la Mac de Tesorería como en la de Secretaría. */}
-              {authActivo && <SyncSettings />}
+            <SoundSettings />
 
-              {esAdmin && <BackupSettings church={church} />}
+            {/* Suscripción: la administra el dueño (admin) o, en modo local
+                sin login, quien usa la app en su propia instalación. */}
+            {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
 
-              {esAdmin && <DangerZoneSettings church={church} />}
-            </div>
+            {/* Usuarios y Respaldo: administración sensible, solo administrador. */}
+            {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
+
+            {verTesoreria && (
+              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+            )}
+
+            {/* Sincronización (beta): visible para cualquier usuario con sesión.
+                Sincronizar es una acción de dispositivo/cuenta (no de rol); la
+                seguridad por iglesia la garantiza RLS en la nube. Debe estar
+                disponible tanto en la Mac de Tesorería como en la de Secretaría. */}
+            {authActivo && <SyncSettings />}
+
+            {esAdmin && <BackupSettings church={church} />}
+
+            {esAdmin && <DangerZoneSettings church={church} />}
           </div>
 
           {generalError && <div className="form-warning">{generalError}</div>}
