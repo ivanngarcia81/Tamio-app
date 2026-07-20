@@ -35,8 +35,8 @@ async function firmaValida(cuerpo: string, firma: string | null, secreto: string
 
 function planDeVariant(nombre: string): string {
   const n = nombre.toLowerCase();
-  if (n.includes("tesoreria") || n.includes("tesorería")) return "tesoreria";
-  if (n.includes("secretaria") || n.includes("secretaría")) return "secretaria";
+  if (n.includes("tesoreria") || n.includes("tesorería") || n.includes("treasury")) return "tesoreria";
+  if (n.includes("secretaria") || n.includes("secretaría") || n.includes("secretariat")) return "secretaria";
   return "completo";
 }
 
