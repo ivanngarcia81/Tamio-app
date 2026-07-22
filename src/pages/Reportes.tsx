@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
   catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
+  listMembers, memberStats,
   mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
   yearCategoriaTotals, yearDepositos, yearMonthlySummary,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
@@ -14,7 +15,7 @@ import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
 import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconPrinter, IconUpload } from "../icons";
-import { iaHabilitada, resumirReporte } from "../ia";
+import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
@@ -45,6 +46,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [loading, setLoading] = useState(true);
   const [iaResumen, setIaResumen] = useState<string | null>(null);
   const [iaGenerando, setIaGenerando] = useState(false);
+  const [pregOpen, setPregOpen] = useState(false);
+  const [pregTexto, setPregTexto] = useState("");
+  const [pregRespuesta, setPregRespuesta] = useState<string | null>(null);
+  const [pregGenerando, setPregGenerando] = useState(false);
   const esMesActual = mes >= currentMonth();
   const mesStr = mesLegible(mes);
   const mesAnterior = prevMonth(mes);
@@ -110,6 +115,71 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       showToast(t("cartas.ia.error", { error: String((e as { message?: string })?.message ?? e) }));
     } finally {
       setIaGenerando(false);
+    }
+  }
+
+  /** Pregunta sobre los datos. La app CALCULA todas las cifras (año, meses,
+   *  categorías, depósitos y — solo si la pregunta menciona a un miembro —
+   *  los aportes de ese miembro) y la IA responde únicamente con ellas. */
+  async function preguntarIA() {
+    const pregunta = pregTexto.trim();
+    if (!pregunta) return;
+    setPregGenerando(true);
+    setPregRespuesta(null);
+    try {
+      const anio = mes.slice(0, 4);
+      const [meses, catsAnio, depAnio] = await Promise.all([
+        yearMonthlySummary(church.id, anio),
+        yearCategoriaTotals(church.id, anio),
+        yearDepositos(church.id, anio),
+      ]);
+      const ingAnio = meses.reduce((s, m) => s + m.ingresos, 0);
+      const gasAnio = meses.reduce((s, m) => s + m.gastos, 0);
+      const lineas: string[] = [
+        `Hoy: ${nowLocalIso().slice(0, 10)} · Moneda: ${church.moneda}`,
+        `Año ${anio} — ingresos: ${fmtMoney(ingAnio)}, gastos: ${fmtMoney(gasAnio)}, balance: ${fmtMoney(ingAnio - gasAnio)}`,
+        `Depositado al banco en ${anio}: ${fmtMoney(depAnio)}`,
+      ];
+      const listaCats = (m: Record<string, number>) =>
+        Object.entries(m).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${catNombre(c)}: ${fmtMoney(v)}`).join("; ");
+      if (Object.keys(catsAnio.porCategoriaIngreso).length) {
+        lineas.push(`Ingresos ${anio} por categoría: ${listaCats(catsAnio.porCategoriaIngreso)}`);
+      }
+      if (Object.keys(catsAnio.porCategoriaGasto).length) {
+        lineas.push(`Gastos ${anio} por categoría: ${listaCats(catsAnio.porCategoriaGasto)}`);
+      }
+      lineas.push(`Por mes en ${anio}: ` + meses.map((m) => `${m.mes}: +${fmtMoney(m.ingresos)} / -${fmtMoney(m.gastos)}`).join(" · "));
+      if (totales) {
+        lineas.push(`Mes actual (${mesStr}) — ingresos: ${fmtMoney(totales.ingresos)}, gastos: ${fmtMoney(totales.gastos)}`);
+      }
+      // Privacidad: los aportes por persona solo se incluyen si la pregunta
+      // menciona a ese miembro por nombre (máximo 3 coincidencias).
+      const preguntaLower = pregunta.toLowerCase();
+      const miembros = await listMembers(church.id);
+      const mencionados = miembros.filter((m) =>
+        m.nombre.toLowerCase().split(/\s+/).some((p) => p.length >= 4 && preguntaLower.includes(p)),
+      ).slice(0, 3);
+      if (mencionados.length) {
+        const stats = await memberStats(church.id, anio);
+        for (const m of mencionados) {
+          const st = stats[m.id];
+          lineas.push(
+            st
+              ? `Aportes de ${m.nombre} en ${anio}: ${fmtMoney(st.totalAnio)} (último: ${st.ultimoAporte ?? "—"})`
+              : `Aportes de ${m.nombre} en ${anio}: ${fmtMoney(0)}`,
+          );
+        }
+      }
+      const texto = await preguntarDatos({
+        pregunta,
+        datos: lineas.join("\n"),
+        idioma: i18n.language?.startsWith("en") ? "en" : "es",
+      });
+      setPregRespuesta(texto);
+    } catch (e) {
+      showToast(t("cartas.ia.error", { error: String((e as { message?: string })?.message ?? e) }));
+    } finally {
+      setPregGenerando(false);
     }
   }
 
@@ -207,6 +277,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <IconChevronRight size={16} />
             </span>
           </div>
+          {iaHabilitada && (
+            <button className="btn secondary" onClick={() => setPregOpen(true)}>
+              ✨ {t("reportes.pregunta.boton")}
+            </button>
+          )}
           {iaHabilitada && (
             <button className="btn secondary" onClick={resumirIA} disabled={iaGenerando || loading || !totales}>
               ✨ {iaGenerando ? t("cartas.ia.generando") : t("reportes.ia.boton")}
@@ -467,6 +542,46 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           onClose={() => setImportOpen(false)}
           onImportado={onChanged}
         />
+      )}
+
+      {pregOpen && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !pregGenerando) setPregOpen(false); }}>
+          <div className="modal-card" style={{ width: 560 }}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">✨ {t("reportes.pregunta.titulo")}</div>
+                <div className="modal-sub">{t("reportes.pregunta.sub")}</div>
+              </div>
+              <div className="modal-close" onClick={() => { if (!pregGenerando) setPregOpen(false); }}><IconClose /></div>
+            </div>
+            <div style={{ padding: "4px 4px 0" }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  autoFocus
+                  placeholder={t("reportes.pregunta.placeholder")}
+                  value={pregTexto}
+                  onChange={(e) => setPregTexto(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") preguntarIA(); }}
+                  disabled={pregGenerando}
+                />
+                <button className="btn primary" onClick={preguntarIA} disabled={pregGenerando || !pregTexto.trim()}>
+                  {pregGenerando ? t("reportes.pregunta.pensando") : t("reportes.pregunta.preguntar")}
+                </button>
+              </div>
+              {pregRespuesta && (
+                <div className="form-subcard" style={{ marginTop: 12, whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5, padding: "12px 14px" }}>
+                  {pregRespuesta}
+                </div>
+              )}
+              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.72 }}>{t("reportes.ia.nota")}</div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+                <button className="btn secondary" onClick={() => setPregOpen(false)} disabled={pregGenerando}>{t("common.cerrar")}</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {iaResumen && (

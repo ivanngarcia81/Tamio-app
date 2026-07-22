@@ -70,3 +70,13 @@ export async function redactarActa(datos: {
 export async function resumirReporte(datos: { datos: string; idioma: string }): Promise<string> {
   return invocarIA({ modo: "resumen", ...datos }, "texto");
 }
+
+/** Responde una pregunta del usuario usando SOLO cifras precalculadas por la
+ *  app (puede compararlas; jamás inventar otras). */
+export async function preguntarDatos(datos: {
+  pregunta: string;
+  datos: string;
+  idioma: string;
+}): Promise<string> {
+  return invocarIA({ modo: "pregunta", ...datos }, "texto");
+}

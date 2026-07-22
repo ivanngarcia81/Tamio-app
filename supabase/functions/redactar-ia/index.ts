@@ -52,8 +52,8 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    // modo: "carta" (default, devuelve {html}) | "acta" | "resumen" ({texto}).
-    const modo = body.modo === "acta" || body.modo === "resumen" ? body.modo : "carta";
+    // modo: "carta" (default, devuelve {html}) | "acta" | "resumen" | "pregunta" ({texto}).
+    const modo = ["acta", "resumen", "pregunta"].includes(body.modo) ? body.modo : "carta";
     const tipo = String(body.tipo ?? "personalizada");
     const puntos = String(body.puntos ?? "").trim();
     const iglesia = String(body.iglesia ?? "").trim();
@@ -65,7 +65,28 @@ serve(async (req: Request) => {
     let sistema: string;
     let usuario: string;
 
-    if (modo === "resumen") {
+    if (modo === "pregunta") {
+      // La app manda la PREGUNTA + las cifras ya calculadas; la IA responde
+      // solo con esas cifras (puede compararlas, jamás inventar otras).
+      const datos = String(body.datos ?? "").trim();
+      const pregunta = String(body.pregunta ?? "").trim();
+      if (!datos || !pregunta) return json({ error: "Faltan la pregunta o los datos." }, 400);
+      sistema = esES
+        ? `Eres el asistente de tesorería de una iglesia cristiana. Responde la pregunta del ` +
+          `usuario usando ÚNICAMENTE las cifras proporcionadas. Puedes comparar o sumar cifras ` +
+          `dadas, pero NUNCA inventes, estimes ni extrapoles datos que no estén. Si la pregunta ` +
+          `no puede responderse con estos datos, dilo con claridad y sugiere consultar los ` +
+          `reportes de la app. Responde breve y directo (un párrafo), en texto plano.`
+        : `You are the treasury assistant of a Christian church. Answer the user's question ` +
+          `using ONLY the figures provided. You may compare or add given figures, but NEVER ` +
+          `invent, estimate, or extrapolate data that is not present. If the question cannot ` +
+          `be answered from this data, say so clearly and suggest checking the app's reports. ` +
+          `Answer briefly and directly (one paragraph), in plain text.`;
+      usuario =
+        (esES ? `Cifras disponibles (calculadas por la app):\n` : `Available figures (calculated by the app):\n`) +
+        datos +
+        (esES ? `\n\nPregunta: ${pregunta}` : `\n\nQuestion: ${pregunta}`);
+    } else if (modo === "resumen") {
       // Los NÚMEROS vienen ya calculados por la app; la IA solo los narra.
       const datos = String(body.datos ?? "").trim();
       if (!datos) return json({ error: "Faltan los datos del reporte." }, 400);
@@ -161,8 +182,8 @@ serve(async (req: Request) => {
 
     if (!texto) return json({ error: "Respuesta vacía de la IA." }, 502);
 
-    // acta / resumen: texto plano tal cual (van a un <textarea> o a un párrafo).
-    if (modo === "acta" || modo === "resumen") {
+    // acta / resumen / pregunta: texto plano tal cual.
+    if (modo !== "carta") {
       return json({ texto: texto.replace(/<[^>]+>/g, "") });
     }
 
