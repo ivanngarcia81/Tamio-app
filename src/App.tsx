@@ -4,6 +4,7 @@ import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-d
 import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
+import CmdPalette from "./components/CmdPalette";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
 import Welcome from "./components/Welcome";
@@ -65,6 +66,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const [rolManual, setRolManual] = useState<Role>(initialRole);
   const [showWelcome, setShowWelcome] = useState(() => esPrimerArranque(church));
   const [refreshKey, setRefreshKey] = useState(0);
@@ -127,13 +129,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     return iniciarAutoSync();
   }, [church.id, authEstado.autenticado, authEstado.sinRol]);
 
-  // Cmd/Ctrl+N abre "Nuevo registro" desde cualquier pantalla (si no hay
-  // ya un modal abierto).
+  // Cmd/Ctrl+N abre "Nuevo registro"; Cmd/Ctrl+K abre la paleta de comandos.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
         e.preventDefault();
         setModalMode((m) => m ?? { kind: "create", tab: "ingreso" });
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -151,6 +156,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     listen<string>("menu-nav", (e) => navigate(e.payload)).then((f) => offs.push(f));
     listen("menu-sync", () => { if (authHabilitado) void ejecutarSync(); }).then((f) => offs.push(f));
     listen("menu-tour", () => iniciarTour(t)).then((f) => offs.push(f));
+    listen("menu-cmdk", () => setCmdOpen((v) => !v)).then((f) => offs.push(f));
     return () => { offs.forEach((f) => f()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -208,6 +214,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     <div className="app">
       {/* Franja para arrastrar la ventana con la barra de título integrada. */}
       <div className="titlebar-drag" data-tauri-drag-region />
+      {cmdOpen && (
+        <CmdPalette
+          church={church}
+          role={role}
+          onClose={() => setCmdOpen(false)}
+          onNavigate={navigate}
+          onNuevo={(tab) => setModalMode({ kind: "create", tab })}
+          onEditMember={openEditMember}
+        />
+      )}
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} onSalir={salir} />
       <main className="main">
         {authHabilitado && <SubBanner church={church} />}

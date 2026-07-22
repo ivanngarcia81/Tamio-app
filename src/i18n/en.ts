@@ -1818,6 +1818,21 @@ export const en: Resources = {
     subSesion: "Your role is assigned by the administrator",
   },
 
+  cmdk: {
+    titulo: "Command palette",
+    placeholder: "Search page, action, or member…",
+    sinResultados: "No results",
+    nuevoIngreso: "New income…",
+    nuevoGasto: "New expense…",
+    nuevoMiembro: "New member…",
+    sincronizar: "Sync now",
+    sincronizando: "Syncing…",
+    seccion: { nav: "Go to", accion: "Actions", miembro: "Members" },
+    pieNavegar: "navigate",
+    pieAbrir: "open",
+    pieCerrar: "close",
+  },
+
   plan: {
     titulo: "Plan & subscription",
     sub: "Which areas this church sees. Also used to gift accounts (courtesy).",

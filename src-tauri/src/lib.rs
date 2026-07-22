@@ -675,6 +675,8 @@ pub fn run() {
             // Los ids "nav:<ruta>" se emiten al frontend, que navega (y sus
             // guardas por rol/plan redirigen si esa área no aplica).
             let menu_ver = SubmenuBuilder::new(app, "Ver")
+                .item(&MenuItemBuilder::new("Paleta de comandos…").id("cmdk").accelerator("CmdOrCtrl+K").build(app)?)
+                .separator()
                 .item(&MenuItemBuilder::new("Inicio").id("nav:/").accelerator("CmdOrCtrl+1").build(app)?)
                 .separator()
                 .item(&MenuItemBuilder::new("Ingresos").id("nav:/ingresos").accelerator("CmdOrCtrl+2").build(app)?)
@@ -715,6 +717,7 @@ pub fn run() {
             }
             match id {
                 "nuevo" => { let _ = app.emit("menu-nuevo", ()); }
+                "cmdk" => { let _ = app.emit("menu-cmdk", ()); }
                 "ajustes" => { let _ = app.emit("menu-ajustes", ()); }
                 "sync" => { let _ = app.emit("menu-sync", ()); }
                 "ayuda" => { let _ = app.emit("menu-ayuda", ()); }

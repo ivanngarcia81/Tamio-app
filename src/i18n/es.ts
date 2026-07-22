@@ -1825,6 +1825,21 @@ export const es = {
     subSesion: "Tu rol lo asigna el administrador",
   },
 
+  cmdk: {
+    titulo: "Paleta de comandos",
+    placeholder: "Buscar página, acción o miembro…",
+    sinResultados: "Sin resultados",
+    nuevoIngreso: "Nuevo ingreso…",
+    nuevoGasto: "Nuevo gasto…",
+    nuevoMiembro: "Nuevo miembro…",
+    sincronizar: "Sincronizar ahora",
+    sincronizando: "Sincronizando…",
+    seccion: { nav: "Ir a", accion: "Acciones", miembro: "Miembros" },
+    pieNavegar: "navegar",
+    pieAbrir: "abrir",
+    pieCerrar: "cerrar",
+  },
+
   plan: {
     titulo: "Plan y suscripción",
     sub: "Qué áreas ve esta iglesia. También sirve para regalar cuentas (cortesía).",
