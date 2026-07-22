@@ -96,6 +96,11 @@ export const es = {
     comprobante: "Comprobante",
   },
 
+  comprobante: {
+    abrirSistema: "Abrir con el sistema",
+    error: "No se pudo mostrar la vista previa. Prueba \"Abrir con el sistema\".",
+  },
+
   dashboard: {
     balanceDelMes: "Balance del mes · {{mes}}",
     nuevoRegistro: "Nuevo registro",

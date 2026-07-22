@@ -6,6 +6,7 @@ import {
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
+import { useContextMenu } from "../components/ContextMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import MemberDetailModal from "../components/MemberDetailModal";
@@ -62,6 +63,7 @@ export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged 
   const [detalle, setDetalle] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const { abrirMenu, menu } = useContextMenu();
 
   useEffect(() => {
     let cancelado = false;
@@ -224,6 +226,12 @@ export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged 
                   key={m.id}
                   style={{ gridTemplateColumns: MEMBER_COLS, cursor: "pointer" }}
                   onClick={() => setDetalle(m)}
+                  onContextMenu={(e) =>
+                    abrirMenu(e, [
+                      { label: t("common.verFicha"), onClick: () => setDetalle(m) },
+                      { label: t("common.editar"), onClick: () => onEdit(m) },
+                      { label: t("common.eliminar"), danger: true, onClick: () => requestDelete(m) },
+                    ])}
                 >
                   <div className="td">
                     <div className="person" style={{ minWidth: 0 }}>
@@ -276,6 +284,8 @@ export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged 
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      {menu}
 
       {detalle && (
         <MemberDetailModal church={church} member={detalle} onClose={() => setDetalle(null)} />

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, undeleteTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
-import { IconArrowDown, IconArrowUp, IconEdit, IconRepeat } from "../icons";
+import { IconArrowDown, IconArrowUp, IconClip, IconEdit, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
+import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
+import ComprobantePreview from "./ComprobantePreview";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
@@ -20,8 +22,19 @@ const COLS_GASTO = "110px 140px 1fr 170px 150px 130px 110px 40px";
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const { abrirMenu, menu } = useContextMenu();
   const esIngreso = tipo === "ingreso";
   const cols = esIngreso ? COLS_INGRESO : COLS_GASTO;
+
+  function itemsDe(tx: Tx): CtxMenuItem[] {
+    const items: CtxMenuItem[] = [{ label: t("common.editar"), onClick: () => onEdit(tx) }];
+    if (tx.comprobante_path) {
+      items.push({ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) });
+    }
+    items.push({ label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(tx) });
+    return items;
+  }
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -89,7 +102,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           );
 
           return (
-            <div className="tr" key={tx.id} style={{ gridTemplateColumns: cols }}>
+            <div className="tr" key={tx.id} style={{ gridTemplateColumns: cols }} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
               {celdaFecha}
               {esIngreso ? celdaConcepto : celdaCategoria}
               {esIngreso ? celdaCategoria : celdaConcepto}
@@ -136,16 +149,30 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
               </div>
               <div className="td" style={{ textAlign: "center" }}>
                 <span className="row-actions">
+                  {tx.comprobante_path && (
+                    <span className="row-icon-btn" title={t("tx.verComprobante")} onClick={() => setPreview(tx.comprobante_path!)}>
+                      <IconClip size={13} strokeWidth={2} />
+                    </span>
+                  )}
                   <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(tx)}>
                     <IconEdit size={13} strokeWidth={2} />
                   </span>
                 </span>
-                <RowMenu onEdit={() => onEdit(tx)} onDelete={() => setPendingDelete(tx)} />
+                <RowMenu
+                  onEdit={() => onEdit(tx)}
+                  onDelete={() => setPendingDelete(tx)}
+                  extraItems={tx.comprobante_path
+                    ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
+                    : undefined}
+                />
               </div>
             </div>
           );
         })}
       </div>
+
+      {menu}
+      {preview && <ComprobantePreview path={preview} onClose={() => setPreview(null)} />}
 
       {pendingDelete && (
         <ConfirmDialog

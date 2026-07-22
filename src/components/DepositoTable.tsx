@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { deleteDeposito, fmtFechaCorta, fmtMoney, undeleteDeposito, type Deposito } from "../db";
 import { IconEdit } from "../icons";
 import RowMenu from "./RowMenu";
+import { useContextMenu } from "./ContextMenu";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
@@ -18,6 +19,7 @@ const COLS = "100px 1fr 140px 1fr 150px 40px";
 export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Deposito | null>(null);
+  const { abrirMenu, menu } = useContextMenu();
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -48,7 +50,16 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
           <div className="th"></div>
         </div>
         {depositos.map((dep) => (
-          <div className="tr" key={dep.id} style={{ gridTemplateColumns: COLS }}>
+          <div
+            className="tr"
+            key={dep.id}
+            style={{ gridTemplateColumns: COLS }}
+            onContextMenu={(e) =>
+              abrirMenu(e, [
+                { label: t("common.editar"), onClick: () => onEdit(dep) },
+                { label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(dep) },
+              ])}
+          >
             <div className="td">
               <div style={{ fontWeight: 600 }}>{fmtFechaCorta(dep.fecha)}</div>
               <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dep.periodo}</div>
@@ -80,6 +91,8 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
           </div>
         ))}
       </div>
+
+      {menu}
 
       {pendingDelete && (
         <ConfirmDialog

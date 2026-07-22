@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, undeleteTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconReportes, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
+import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
+import ComprobantePreview from "./ComprobantePreview";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
@@ -27,8 +28,19 @@ interface Props {
 export default function TxList({ txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const { abrirMenu, menu } = useContextMenu();
 
   if (txs.length === 0) return null;
+
+  function itemsDe(tx: Tx): CtxMenuItem[] {
+    const items: CtxMenuItem[] = [{ label: t("common.editar"), onClick: () => onEdit(tx) }];
+    if (tx.comprobante_path) {
+      items.push({ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) });
+    }
+    items.push({ label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(tx) });
+    return items;
+  }
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -75,7 +87,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                   const quien =
                     tx.member_nombre ?? tx.beneficiario ?? tx.detalle ?? tx.subcategoria ?? "";
                   return (
-                    <div className="tx-row" key={tx.id}>
+                    <div className="tx-row" key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
                       <span className="tx-time">{fmtFecha(tx.fecha).hora}</span>
                       <div className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}>
                         {tx.tipo === "ingreso" ? <IconArrowUp /> : <IconArrowDown />}
@@ -110,7 +122,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         {tx.comprobante_path && (
                           <span
                             title={t("tx.verComprobante")}
-                            onClick={(e) => { e.stopPropagation(); openPath(tx.comprobante_path!); }}
+                            onClick={(e) => { e.stopPropagation(); setPreview(tx.comprobante_path!); }}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 3,
                               marginLeft: 8, fontSize: 11, color: "var(--text-2)", cursor: "pointer",
@@ -135,7 +147,13 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         {fmtMoney(tx.monto).replace("−", "")}
                         <span className="cur">{tx.moneda}</span>
                       </span>
-                      <RowMenu onEdit={() => onEdit(tx)} onDelete={() => setPendingDelete(tx)} />
+                      <RowMenu
+                        onEdit={() => onEdit(tx)}
+                        onDelete={() => setPendingDelete(tx)}
+                        extraItems={tx.comprobante_path
+                          ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
+                          : undefined}
+                      />
                     </div>
                   );
                 })}
@@ -144,6 +162,9 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
           );
         })}
       </div>
+
+      {menu}
+      {preview && <ComprobantePreview path={preview} onClose={() => setPreview(null)} />}
 
       {pendingDelete && (
         <ConfirmDialog

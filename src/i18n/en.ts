@@ -102,6 +102,11 @@ export const en: Resources = {
     comprobante: "Receipt",
   },
 
+  comprobante: {
+    abrirSistema: "Open externally",
+    error: "The preview could not be shown. Try \"Open externally\".",
+  },
+
   dashboard: {
     balanceDelMes: "Balance for the month · {{mes}}",
     nuevoRegistro: "New record",
