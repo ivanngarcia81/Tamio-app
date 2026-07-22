@@ -2145,19 +2145,19 @@ html.vibrancy .main { background: var(--surface); }
   flex-direction: column;
   gap: 24px;
 }
-/* Mosaico de Ajustes: 2 columnas que el navegador balancea por altura, sin
-   importar cuántas tarjetas oculte el rol o el plan. Cada tarjeta es
-   indivisible (break-inside) para que no se corte entre columnas. */
+/* Rejilla de Ajustes: 2 columnas deterministas (las CSS columns de WebKit
+   apilaban todo a la izquierda y dejaban huecos). Las tarjetas fluyen por
+   filas, alineadas arriba, y el hueco bajo una tarjeta corta se rellena con
+   la siguiente gracias a grid-auto-flow: dense. */
 .settings-masonry {
-  columns: 2;
-  column-gap: 20px;
-}
-.settings-masonry > * {
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  align-items: start;
+  grid-auto-flow: dense;
   margin-bottom: 20px;
-  display: block;
 }
+.settings-masonry > * { min-width: 0; }
 
 /* Zonas de Ajustes: jerarquía de elevación por categoría. El panel de la
    zona es plano y apenas tintado (nivel 0); las tarjetas dentro conservan
@@ -2429,7 +2429,7 @@ html.vibrancy .main { background: var(--surface); }
   .dash-canvas { padding: 18px; gap: 16px; }
   .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
-  .settings-masonry { columns: 1; }
+  .settings-masonry { grid-template-columns: 1fr; }
   .report-preview .r-summary { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 860px) {
