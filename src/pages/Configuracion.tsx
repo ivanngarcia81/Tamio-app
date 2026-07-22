@@ -205,6 +205,11 @@ export default function Configuracion({
           {/* Mosaico de 2 columnas balanceadas: las tarjetas fluyen y el CSS
               reparte las alturas, así no queda una columna larga y otra vacía
               cuando el rol/plan oculta tarjetas. */}
+          {/* Orden por importancia: identidad y cuenta arriba (iglesia, plan,
+              sincronización), datos de trabajo al medio (tesorero, pastor,
+              institución, usuarios, categorías), preferencias después
+              (apariencia, idioma, sonidos) y lo delicado al final (respaldo,
+              zona de peligro). */}
           <div className="settings-masonry">
             <ChurchSettings
               value={churchForm}
@@ -214,6 +219,14 @@ export default function Configuracion({
               onLogoPathChange={setLogoPath}
               showCurrency={verTesoreria}
             />
+
+            {/* Suscripción: la administra el dueño (admin) o, en modo local
+                sin login, quien usa la app en su propia instalación. */}
+            {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
+
+            {/* Sincronización: acción de dispositivo/cuenta (no de rol); la
+                seguridad por iglesia la garantiza RLS en la nube. */}
+            {authActivo && <SyncSettings />}
 
             {verTesoreria && (
               <>
@@ -243,6 +256,13 @@ export default function Configuracion({
               />
             )}
 
+            {/* Usuarios: administración sensible, solo administrador. */}
+            {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
+
+            {verTesoreria && (
+              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+            )}
+
             {verTesoreria && (
               <PDFPreview
                 churchNombre={churchForm.nombre}
@@ -258,23 +278,6 @@ export default function Configuracion({
             <LanguageSettings value={langPref} onChange={onLangPrefChange} />
 
             <SoundSettings />
-
-            {/* Suscripción: la administra el dueño (admin) o, en modo local
-                sin login, quien usa la app en su propia instalación. */}
-            {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
-
-            {/* Usuarios y Respaldo: administración sensible, solo administrador. */}
-            {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
-
-            {verTesoreria && (
-              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-            )}
-
-            {/* Sincronización (beta): visible para cualquier usuario con sesión.
-                Sincronizar es una acción de dispositivo/cuenta (no de rol); la
-                seguridad por iglesia la garantiza RLS en la nube. Debe estar
-                disponible tanto en la Mac de Tesorería como en la de Secretaría. */}
-            {authActivo && <SyncSettings />}
 
             {esAdmin && <BackupSettings church={church} />}
 
