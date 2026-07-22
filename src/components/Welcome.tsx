@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { updateChurch, type Church } from "../db";
+import { cargarDatosDemo } from "../demo";
+import { authHabilitado } from "../supabase";
 import type { LangPref } from "../i18n";
 import { IconDownload, IconFileText, IconIngreso, IconMiembros, IconMonitor, IconTamio } from "../icons";
 
@@ -59,6 +61,32 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
         tesorero_telefono: church.tesorero_telefono,
         tesorero_firma_path: church.tesorero_firma_path,
       });
+      onDone(updated);
+    } catch (e) {
+      setError(t("common.noSePudoGuardar", { error: String(e) }));
+      setSaving(false);
+    }
+  }
+
+  /** Explorar con datos de ejemplo: nombra la iglesia de demo, siembra
+   *  miembros y ~3 meses de movimientos, y entra directo a la app. */
+  async function explorarDemo() {
+    setError(null);
+    setSaving(true);
+    try {
+      const updated = await updateChurch(church.id, {
+        nombre: nombre.trim() || t("bienvenida.demoNombre"),
+        ciudad: ciudad.trim() || null,
+        pais: church.pais || null,
+        moneda,
+        logo_path: church.logo_path,
+        tesorero_nombre: church.tesorero_nombre,
+        tesorero_cargo: church.tesorero_cargo,
+        tesorero_email: church.tesorero_email,
+        tesorero_telefono: church.tesorero_telefono,
+        tesorero_firma_path: church.tesorero_firma_path,
+      });
+      await cargarDatosDemo(church.id, moneda);
       onDone(updated);
     } catch (e) {
       setError(t("common.noSePudoGuardar", { error: String(e) }));
@@ -165,14 +193,33 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
             </button>
           </div>
         ) : (
-          <button
-            className="btn primary"
-            style={{ width: "100%", justifyContent: "center", marginTop: 16 }}
-            onClick={comenzar}
-            disabled={saving}
-          >
-            {saving ? t("common.guardando") : t("bienvenida.comenzar")}
-          </button>
+          <>
+            <button
+              className="btn primary"
+              style={{ width: "100%", justifyContent: "center", marginTop: 16 }}
+              onClick={comenzar}
+              disabled={saving}
+            >
+              {saving ? t("common.guardando") : t("bienvenida.comenzar")}
+            </button>
+            {/* Solo en modo local: en la nube sembraría datos falsos que se
+                sincronizarían a la cuenta real. */}
+            {!authHabilitado && (
+              <>
+                <button
+                  className="btn ghost"
+                  style={{ width: "100%", justifyContent: "center", marginTop: 10 }}
+                  onClick={explorarDemo}
+                  disabled={saving}
+                >
+                  {saving ? t("common.guardando") : t("bienvenida.demoBoton")}
+                </button>
+                <div className="form-hint" style={{ textAlign: "center", marginTop: 8 }}>
+                  {t("bienvenida.demoHint")}
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>

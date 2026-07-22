@@ -213,7 +213,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <button className="btn secondary" onClick={handlePrint} disabled={printing}>
             <IconPrinter size={14} /> {printing ? t("common.preparando") : t("common.imprimir")}
           </button>
-          <button className="btn primary" onClick={onNew}>
+          <button className="btn primary" onClick={onNew} title={`${t("dashboard.nuevoRegistro")}  ⌘N`}>
             <IconPlus size={14} /> {t("dashboard.nuevoRegistro")}
           </button>
         </div>

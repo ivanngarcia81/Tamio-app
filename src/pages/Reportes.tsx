@@ -14,7 +14,8 @@ import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconPrinter, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconPrinter, IconUpload } from "../icons";
+import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
 
@@ -47,6 +48,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [iaResumen, setIaResumen] = useState<string | null>(null);
   const [iaGenerando, setIaGenerando] = useState(false);
   const [pregOpen, setPregOpen] = useState(false);
+  const [asambleaOpen, setAsambleaOpen] = useState(false);
   const [pregTexto, setPregTexto] = useState("");
   const [pregRespuesta, setPregRespuesta] = useState<string | null>(null);
   const [pregGenerando, setPregGenerando] = useState(false);
@@ -277,6 +279,9 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <IconChevronRight size={16} />
             </span>
           </div>
+          <button className="btn secondary" onClick={() => setAsambleaOpen(true)} disabled={loading || !totales}>
+            <IconMonitor size={14} /> {t("reportes.asamblea.boton")}
+          </button>
           {iaHabilitada && (
             <button className="btn secondary" onClick={() => setPregOpen(true)}>
               ✨ {t("reportes.pregunta.boton")}
@@ -542,6 +547,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           onClose={() => setImportOpen(false)}
           onImportado={onChanged}
         />
+      )}
+
+      {asambleaOpen && totales && (
+        <Asamblea church={church} mesStr={mesStr} totales={totales} onClose={() => setAsambleaOpen(false)} />
       )}
 
       {pregOpen && (

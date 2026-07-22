@@ -227,6 +227,13 @@ export const en: Resources = {
       copiar: "Copy text",
       copiado: "Summary copied",
     },
+    asamblea: {
+      boton: "Present",
+      titulo: "Financial statement",
+      mayoresGastos: "Largest expenses this month",
+      salir: "Exit (esc)",
+      pie: "Presented with Tamio",
+    },
     pregunta: {
       boton: "Ask AI",
       titulo: "Ask your data",
@@ -479,6 +486,9 @@ export const en: Resources = {
     titulo: "Welcome to Tamio",
     sub: "Set up your church in a minute — everything can be changed later in Settings.",
     comenzar: "Get started",
+    demoBoton: "Explore with sample data",
+    demoHint: "Fills the app with a fictional church so you can try it. You can wipe it later from Settings → Sensitive zone.",
+    demoNombre: "Sample Church",
     siguiente: "Next",
     omitir: "Skip",
     slide1Titulo: "Your church finances, made clear",

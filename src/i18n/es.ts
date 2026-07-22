@@ -221,6 +221,13 @@ export const es = {
       copiar: "Copiar texto",
       copiado: "Resumen copiado",
     },
+    asamblea: {
+      boton: "Presentar",
+      titulo: "Estado financiero",
+      mayoresGastos: "Mayores gastos del mes",
+      salir: "Salir (esc)",
+      pie: "Presentado con Tamio",
+    },
     pregunta: {
       boton: "Preguntar",
       titulo: "Pregunta a tus datos",
@@ -473,6 +480,9 @@ export const es = {
     titulo: "Bienvenido a Tamio",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
     comenzar: "Comenzar",
+    demoBoton: "Explorar con datos de ejemplo",
+    demoHint: "Llena la app con una iglesia ficticia para conocerla. Luego puedes borrar todo desde Ajustes → Zona delicada.",
+    demoNombre: "Iglesia de Ejemplo",
     siguiente: "Siguiente",
     omitir: "Omitir",
     slide1Titulo: "Las finanzas de tu iglesia, claras",

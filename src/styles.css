@@ -1481,14 +1481,14 @@ html.vibrancy .main { background: var(--surface); }
   overflow-y: auto;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
-  animation: modalIn .2s cubic-bezier(.2,.8,.3,1) both;
+  animation: modalIn .28s cubic-bezier(.34,1.45,.64,1) both;
 }
 @keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(.975) translateY(8px); }
+  from { opacity: 0; transform: scale(.955) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2187,6 +2187,51 @@ html.vibrancy .main { background: var(--surface); }
 @supports not (border-color: color-mix(in srgb, red 35%, blue)) {
   .settings-zona.peligro { border-color: #e4b3b3; }
 }
+
+/* ============ Modo Asamblea (presentación para proyector) ============ */
+.asamblea {
+  position: fixed; inset: 0; z-index: 200;
+  background: radial-gradient(1200px 700px at 70% -10%, #0d5c40 0%, #07341f 45%, #041d12 100%);
+  color: #eef7f1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 5vh 6vw;
+  animation: asambleaIn .35s ease both;
+}
+@keyframes asambleaIn { from { opacity: 0; } }
+.asamblea-cerrar {
+  position: absolute; top: 40px; right: 26px;
+  background: rgba(255,255,255,.1); border: none; color: #eef7f1;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+}
+.asamblea-cerrar:hover { background: rgba(255,255,255,.2); }
+.asamblea-head { text-align: center; margin-bottom: 5vh; }
+.asamblea-iglesia { font-size: clamp(15px, 1.6vw, 20px); font-weight: 700; opacity: .85; letter-spacing: .3px; }
+.asamblea-titulo {
+  font-family: ui-serif, "New York", Georgia, serif;
+  font-size: clamp(26px, 3.4vw, 44px); font-weight: 700; margin-top: 8px;
+}
+.asamblea-mes { font-size: clamp(13px, 1.3vw, 17px); opacity: .65; margin-top: 6px; text-transform: capitalize; }
+.asamblea-stats {
+  display: flex; align-items: center; gap: clamp(24px, 5vw, 80px);
+  margin-bottom: 5vh; flex-wrap: wrap; justify-content: center;
+}
+.asamblea-stat { text-align: center; }
+.as-label { font-size: clamp(11px, 1vw, 14px); text-transform: uppercase; letter-spacing: 1.2px; opacity: .6; margin-bottom: 8px; }
+.as-valor { font-size: clamp(34px, 4.2vw, 62px); font-weight: 800; font-variant-numeric: tabular-nums; }
+.asamblea-stat.grande .as-valor { font-size: clamp(52px, 7vw, 104px); }
+.as-valor.pos { color: #6ee7b7; }
+.as-valor.neg { color: #fda4af; }
+.as-moneda { font-size: clamp(12px, 1.1vw, 15px); opacity: .55; margin-top: 4px; }
+.asamblea-gastos { width: min(680px, 88vw); }
+.asamblea-gastos-titulo { font-size: clamp(11px, 1vw, 14px); text-transform: uppercase; letter-spacing: 1.2px; opacity: .6; margin-bottom: 14px; text-align: center; }
+.as-barra-fila { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; font-size: clamp(13px, 1.2vw, 16px); }
+.as-barra-nombre { width: 34%; text-align: right; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.as-barra-pista { flex: 1; height: 12px; background: rgba(255,255,255,.12); border-radius: 99px; overflow: hidden; }
+.as-barra { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #34d399, #6ee7b7); animation: asBarra .9s cubic-bezier(.22,1,.36,1) both; transform-origin: left; }
+@keyframes asBarra { from { transform: scaleX(0); } }
+.as-barra-monto { width: 110px; font-variant-numeric: tabular-nums; opacity: .9; }
+.asamblea-pie { position: absolute; bottom: 22px; font-size: 12px; opacity: .4; }
 
 .settings-card {
   animation: fadeInUp .3s cubic-bezier(.22,1,.36,1) both;
