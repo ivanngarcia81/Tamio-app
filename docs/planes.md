@@ -152,6 +152,18 @@ pantalla de bloqueo muestran "Renovar suscripción" (abre el checkout en el
 navegador) cuando `VITE_URL_COMPRA` está en el `.env`. Sin la variable, los
 botones no aparecen (igual que la IA con su bandera).
 
+## ✅ CIRCUITO COMPLETO PROBADO (2026-07-21)
+
+Compra de prueba real en modo test (Tamio Complete, tarjeta 4242): Lemon
+Squeezy → webhook `pago-webhook` → `iglesias` actualizada sola
+(`plan=completo, sub_estado=activa, sub_vence=2026-08-21`). Tienda:
+`tamio1.lemonsqueezy.com` con 3 productos (Complete $15/150, Treasury
+$10/100, Secretariat $10/100). Web pública:
+`ivanngarcia81.github.io/Tamio-web` (es/en + privacidad).
+**El sistema de suscripciones queda terminado y validado de punta a punta.**
+Falta solo: aprobación de la tienda por Lemon Squeezy (trámite) y apagar el
+modo test cuando llegue.
+
 ## Cómo conectar Lemon Squeezy (pasos del dueño)
 
 1. **Cuenta y tienda:** <https://lemonsqueezy.com> → Sign up → crear tu
