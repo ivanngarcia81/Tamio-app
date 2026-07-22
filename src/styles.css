@@ -188,6 +188,27 @@ a { color: inherit; text-decoration: none; }
   padding: 22px 16px 16px;
   gap: 8px;
 }
+/* Barra de título integrada (macOS Overlay): los semáforos flotan sobre la
+   app y esta franja superior permite arrastrar la ventana. Va por debajo de
+   los modales para no robarles clics. */
+.titlebar-drag {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 28px;
+  z-index: 40;
+}
+/* Transición sutil al navegar entre páginas (solo al montar la ruta). */
+@media (prefers-reduced-motion: no-preference) {
+  .main .header, .main .content { animation: routeIn .18s ease both; }
+}
+@keyframes routeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+/* Con la barra integrada, el sidebar baja su contenido para dejar sitio a
+   los semáforos de macOS (esquina superior izquierda). */
+.sidebar { padding-top: 44px; }
+
 .logo {
   width: 44px;
   height: 44px;

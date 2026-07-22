@@ -206,6 +206,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   return (
     <div className="app">
+      {/* Franja para arrastrar la ventana con la barra de título integrada. */}
+      <div className="titlebar-drag" data-tauri-drag-region />
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} onSalir={salir} />
       <main className="main">
         {authHabilitado && <SubBanner church={church} />}
