@@ -338,6 +338,8 @@ export const en: Resources = {
     comprobante: "Receipt",
     recomendado: "(recommended)",
     clicElegir: "Click to choose an image or PDF",
+    soltarAqui: "Drop the file here…",
+    comprobanteAdjunto: "Receipt attached",
     comprobanteWarn: "Attaching a receipt is recommended to back up this expense in your reports.",
     notas: "Notes",
     notasPlaceholder: "Additional details, number of people, folio…",

@@ -617,10 +617,21 @@ fn migrations() -> Vec<Migration> {
     }]
 }
 
+/// Si el efecto translúcido (vibrancy) del sidebar quedó activo en esta
+/// ventana. El frontend lo consulta para encender los fondos transparentes
+/// SOLO cuando el efecto nativo existe (si no, se queda el fondo sólido).
+struct VibrancyOk(bool);
+
+#[tauri::command]
+fn vibrancy_ok(state: tauri::State<VibrancyOk>) -> bool {
+    state.0
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{AboutMetadata, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
     use tauri::Emitter;
+    use tauri::Manager;
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -707,8 +718,23 @@ pub fn run() {
                 .items(&[&menu_app, &menu_archivo, &menu_edicion, &menu_ver, &menu_ventana, &menu_ayuda])
                 .build()?;
             app.set_menu(menu)?;
+
+            // Vibrancy del sidebar (translúcido estilo Finder), solo macOS.
+            #[cfg(target_os = "macos")]
+            {
+                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                let ok = app
+                    .get_webview_window("main")
+                    .map(|w| apply_vibrancy(&w, NSVisualEffectMaterial::Sidebar, None, None).is_ok())
+                    .unwrap_or(false);
+                app.manage(VibrancyOk(ok));
+            }
+            #[cfg(not(target_os = "macos"))]
+            app.manage(VibrancyOk(false));
+
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![vibrancy_ok])
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
             if let Some(ruta) = id.strip_prefix("nav:") {

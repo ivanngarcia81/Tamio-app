@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
   METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
   insertMovimientoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
@@ -70,6 +71,31 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [marcarPendiente, setMarcarPendiente] = useState(false);
   const [esRecurrente, setEsRecurrente] = useState(false);
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
+  const [dropActivo, setDropActivo] = useState(false);
+
+  // Arrastrar y soltar un comprobante (PDF/imagen) sobre el modal lo adjunta.
+  // Los eventos de arrastre nativos llegan por la API del webview de Tauri.
+  useEffect(() => {
+    if (tab === "miembro") return;
+    let off: (() => void) | undefined;
+    let cancelado = false;
+    getCurrentWebview().onDragDropEvent((e) => {
+      if (e.payload.type === "drop") {
+        setDropActivo(false);
+        const p = e.payload.paths.find((x) => /\.(pdf|png|jpe?g|heic)$/i.test(x));
+        if (p) {
+          setComprobantePath(p);
+          showToast(t("recordModal.comprobanteAdjunto"));
+        }
+      } else if (e.payload.type === "leave") {
+        setDropActivo(false);
+      } else {
+        setDropActivo(true);
+      }
+    }).then((f) => { if (cancelado) f(); else off = f; }).catch(() => {});
+    return () => { cancelado = true; off?.(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
   const [members, setMembers] = useState<Member[]>([]);
 
   // --- estado miembro ---
@@ -604,9 +630,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                     </button>
                   </div>
                 ) : (
-                  <div className="file-drop" onClick={pickComprobante}>
+                  <div className={`file-drop${dropActivo ? " activo" : ""}`} onClick={pickComprobante}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                    <div>{t("recordModal.clicElegir")}</div>
+                    <div>{dropActivo ? t("recordModal.soltarAqui") : t("recordModal.clicElegir")}</div>
                   </div>
                 )}
                 {tab === "gasto" && !comprobantePath && (

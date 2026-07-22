@@ -332,6 +332,8 @@ export const es = {
     comprobante: "Comprobante",
     recomendado: "(recomendado)",
     clicElegir: "Haz clic para elegir una imagen o PDF",
+    soltarAqui: "Suelta el archivo aquí…",
+    comprobanteAdjunto: "Comprobante adjuntado",
     comprobanteWarn: "Se recomienda adjuntar un comprobante para respaldar este gasto en tus reportes.",
     notas: "Notas",
     notasPlaceholder: "Detalle adicional, número de personas, folio…",

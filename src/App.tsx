@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import CmdPalette from "./components/CmdPalette";
@@ -81,6 +82,14 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
   // sin necesidad de recargar la app cuando el usuario lo cambia en macOS/
   // Windows mientras Tesorería está abierta.
+  // Vibrancy (macOS): los fondos transparentes solo se encienden si el efecto
+  // nativo quedó activo; si no, el sidebar conserva su fondo sólido.
+  useEffect(() => {
+    invoke<boolean>("vibrancy_ok")
+      .then((ok) => { if (ok) document.documentElement.classList.add("vibrancy"); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);

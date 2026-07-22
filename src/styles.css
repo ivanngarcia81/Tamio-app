@@ -256,6 +256,25 @@ a { color: inherit; text-decoration: none; }
   font-size: 11.5px; color: var(--text-3);
 }
 .cmdk-pie b { font-weight: 700; color: var(--text-2); }
+
+/* Zona de soltar comprobante iluminada mientras se arrastra un archivo. */
+.file-drop.activo {
+  border-color: var(--accent-1);
+  background: color-mix(in srgb, var(--accent-1) 10%, var(--surface));
+  color: var(--accent-1);
+}
+@supports not (background: color-mix(in srgb, red 10%, blue)) {
+  .file-drop.activo { background: var(--surface-2); }
+}
+
+/* Vibrancy (macOS): la clase .vibrancy solo se pone cuando el efecto nativo
+   quedó activo. El contenido principal sigue opaco; el sidebar se vuelve
+   semitransparente para dejar ver el material translúcido de la ventana. */
+html.vibrancy, html.vibrancy body { background: transparent; }
+html.vibrancy .app { background: transparent; }
+html.vibrancy .sidebar { background: rgba(246, 246, 246, 0.55); }
+html.vibrancy[data-theme="dark"] .sidebar { background: rgba(21, 21, 23, 0.5); }
+html.vibrancy .main { background: var(--surface); }
 /* Con la barra integrada, el sidebar baja su contenido para dejar sitio a
    los semáforos de macOS (esquina superior izquierda). */
 .sidebar { padding-top: 44px; }
