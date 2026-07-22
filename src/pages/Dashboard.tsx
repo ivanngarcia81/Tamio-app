@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import html2canvas from "html2canvas";
 import {
   catNombre, categoriaInfo, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
@@ -77,6 +78,15 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const ingresos = totales?.ingresos ?? 0;
   const gastos = totales?.gastos ?? 0;
   const balance = ingresos - gastos;
+
+  // Refleja el balance del mes en el menú de la barra de menús de macOS,
+  // para verlo de un vistazo sin abrir la ventana.
+  useEffect(() => {
+    if (!totales) return;
+    invoke("tray_balance", {
+      texto: `${t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}: ${fmtMoney(balance)} ${church.moneda}`,
+    }).catch(() => {});
+  }, [totales, balance, church.moneda, mes, t]);
   const ingresosAnt = totalesAnt?.ingresos ?? 0;
   const gastosAnt = totalesAnt?.gastos ?? 0;
   const balanceAnt = ingresosAnt - gastosAnt;
@@ -386,6 +396,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <EmptyState
             titulo={t("dashboard.emptyTitulo")}
             sub={t("dashboard.emptySub")}
+            accion={{ label: t("dashboard.nuevoRegistro"), onClick: onNew }}
           />
         ) : (
           <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} />

@@ -627,6 +627,25 @@ fn vibrancy_ok(state: tauri::State<VibrancyOk>) -> bool {
     state.0
 }
 
+/// Ítem "Balance del mes" del menú de la barra de menús (tray). Se guarda el
+/// handle para que el frontend pueda actualizar el texto con el balance real
+/// cada vez que recalcula los totales del mes.
+#[cfg(desktop)]
+struct TrayBalance(tauri::menu::MenuItem<tauri::Wry>);
+
+#[tauri::command]
+fn tray_balance(app: tauri::AppHandle, texto: String) {
+    #[cfg(desktop)]
+    {
+        use tauri::Manager;
+        if let Some(state) = app.try_state::<TrayBalance>() {
+            let _ = state.0.set_text(texto);
+        }
+    }
+    #[cfg(not(desktop))]
+    let _ = (app, texto);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{AboutMetadata, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
@@ -719,6 +738,34 @@ pub fn run() {
                 .build()?;
             app.set_menu(menu)?;
 
+            // Ícono en la barra de menús (junto al reloj): muestra el balance
+            // del mes y accesos rápidos aunque la ventana esté cerrada.
+            #[cfg(desktop)]
+            {
+                use tauri::tray::TrayIconBuilder;
+
+                let balance_item = MenuItemBuilder::new("Balance del mes: —")
+                    .id("tray-balance")
+                    .enabled(false)
+                    .build(app)?;
+                let tray_menu = MenuBuilder::new(app)
+                    .item(&balance_item)
+                    .separator()
+                    .item(&MenuItemBuilder::new("Abrir Tamio").id("tray-abrir").build(app)?)
+                    .item(&MenuItemBuilder::new("Nuevo registro…").id("tray-nuevo").build(app)?)
+                    .build()?;
+
+                let mut tray = TrayIconBuilder::with_id("tamio-tray")
+                    .menu(&tray_menu)
+                    .show_menu_on_left_click(true)
+                    .tooltip("Tamio");
+                if let Some(icono) = app.default_window_icon() {
+                    tray = tray.icon(icono.clone());
+                }
+                tray.build(app)?;
+                app.manage(TrayBalance(balance_item));
+            }
+
             // Vibrancy del sidebar (translúcido estilo Finder), solo macOS.
             #[cfg(target_os = "macos")]
             {
@@ -734,14 +781,27 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![vibrancy_ok])
+        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance])
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
             if let Some(ruta) = id.strip_prefix("nav:") {
                 let _ = app.emit("menu-nav", ruta.to_string());
                 return;
             }
+            // La ventana puede estar cerrada cuando se usa el menú del tray.
+            let mostrar = |app: &tauri::AppHandle| {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.show();
+                    let _ = w.unminimize();
+                    let _ = w.set_focus();
+                }
+            };
             match id {
+                "tray-abrir" => mostrar(app),
+                "tray-nuevo" => {
+                    mostrar(app);
+                    let _ = app.emit("menu-nuevo", ());
+                }
                 "nuevo" => { let _ = app.emit("menu-nuevo", ()); }
                 "cmdk" => { let _ = app.emit("menu-cmdk", ()); }
                 "ajustes" => { let _ = app.emit("menu-ajustes", ()); }

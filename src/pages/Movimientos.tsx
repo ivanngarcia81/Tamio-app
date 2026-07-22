@@ -305,6 +305,9 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       : t("mov.pruebaOtroMes")
                 }
                 icon={esIngreso ? <IconIngreso size={22} strokeWidth={1.6} /> : <IconGasto size={22} strokeWidth={1.6} />}
+                accion={txs.length === 0 && esMesActual
+                  ? { label: esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto"), onClick: onNew }
+                  : undefined}
               />
             ) : (
               <>

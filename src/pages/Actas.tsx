@@ -128,6 +128,9 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
             titulo={actas.length === 0 ? t("actas.aunNoHay") : t("actas.sinResultados")}
             sub={actas.length === 0 ? t("actas.agregaPrimera") : t("actas.sinResultadosSub")}
             icon={<IconFileText size={20} strokeWidth={1.8} />}
+            accion={actas.length === 0
+              ? { label: t("actas.nuevaActa"), onClick: () => setModal({ open: true, acta: null }) }
+              : undefined}
           />
         ) : (
           <div className="data-table roomy">

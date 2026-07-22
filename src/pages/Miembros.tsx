@@ -205,6 +205,9 @@ export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged 
             titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
             sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
             icon={<IconPlus size={20} strokeWidth={1.8} />}
+            accion={members.length === 0
+              ? { label: t("miembros.nuevo"), onClick: onNew }
+              : undefined}
           />
         ) : (
           <div className="data-table roomy">

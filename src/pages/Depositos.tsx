@@ -107,6 +107,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             titulo={t("depositos.emptyTitulo")}
             sub={t("depositos.emptySub")}
             icon={<IconBank size={22} strokeWidth={1.6} />}
+            accion={{ label: t("depositos.nuevoDeposito"), onClick: abrirNuevo }}
           />
         ) : (
           <>

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, undeleteTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
-import { IconArrowDown, IconArrowUp, IconReportes, IconRepeat } from "../icons";
+import { IconArrowDown, IconArrowUp, IconPlus, IconReportes, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
 import ComprobantePreview from "./ComprobantePreview";
@@ -9,12 +9,24 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
-export function EmptyState({ titulo, sub, icon }: { titulo: string; sub: string; icon?: ReactNode }) {
+export function EmptyState({ titulo, sub, icon, accion }: {
+  titulo: string;
+  sub: string;
+  icon?: ReactNode;
+  /** Acción principal ("Registrar gasto"): solo se pasa cuando el vacío es
+   *  real (aún no hay datos), no cuando es resultado de un filtro/búsqueda. */
+  accion?: { label: string; onClick: () => void };
+}) {
   return (
     <div className="empty-state">
       <div className="empty-icon">{icon ?? <IconReportes size={22} strokeWidth={1.6} />}</div>
       <div className="empty-title">{titulo}</div>
       <div className="empty-sub">{sub}</div>
+      {accion && (
+        <button className="btn primary empty-accion" onClick={accion.onClick}>
+          <IconPlus size={14} /> {accion.label}
+        </button>
+      )}
     </div>
   );
 }

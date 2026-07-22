@@ -148,6 +148,9 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             titulo={servicios.length === 0 ? t("servicios.aunNoHay") : t("servicios.sinResultados")}
             sub={servicios.length === 0 ? t("servicios.agregaPrimero") : t("servicios.sinResultadosSub")}
             icon={<IconBookOpen size={20} strokeWidth={1.8} />}
+            accion={servicios.length === 0
+              ? { label: t("servicios.nuevoServicio"), onClick: () => setModal({ open: true, servicio: null }) }
+              : undefined}
           />
         ) : (
           <div className="data-table roomy">

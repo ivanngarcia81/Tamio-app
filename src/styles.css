@@ -1219,6 +1219,9 @@ html.vibrancy .main { background: var(--surface); }
   gap: 4px;
   animation: fadeInUp .22s ease both;
 }
+.empty-state .empty-accion {
+  margin-top: 14px;
+}
 .empty-icon {
   width: 48px; height: 48px;
   border-radius: 14px;
