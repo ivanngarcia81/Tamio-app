@@ -220,6 +220,13 @@ export const en: Resources = {
   reportes: {
     titulo: "Reports",
     sub: "Monthly financial statement · {{mes}}",
+    ia: {
+      boton: "AI summary",
+      titulo: "{{mes}} summary",
+      nota: "The app calculates the numbers; the AI only writes them up. Review before sharing.",
+      copiar: "Copy text",
+      copiado: "Summary copied",
+    },
     balanceNeto: "Net balance",
     mesAnterior: "Last month",
     distGastos: "Expense breakdown",
@@ -885,6 +892,13 @@ export const en: Resources = {
     agendaPlaceholder: "One item per line…",
     resumen: "Summary of matters discussed",
     resumenPlaceholder: "What was discussed and the context of the decisions…",
+    ia: {
+      boton: "Draft with AI",
+      titulo: "Draft the minutes body with AI",
+      sub: "List the points discussed in bullets; the AI drafts the formal body and you review it.",
+      placeholder: "• 2026 budget was presented\n• Approved buying new chairs\n• Ana was appointed to the youth committee",
+      reemplazar: "The body already has text; it will be replaced with the AI draft.",
+    },
     mocionTexto: "Motion or proposal",
     mocionPresenta: "Presented by",
     mocionSecunda: "Seconded by",

@@ -13,7 +13,9 @@ import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconFileText, IconPrinter, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconPrinter, IconUpload } from "../icons";
+import { iaHabilitada, resumirReporte } from "../ia";
+import { showToast } from "../toast";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -31,7 +33,7 @@ interface Props {
 }
 
 export default function Reportes({ church, refreshKey, onChanged }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
@@ -41,6 +43,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [importOpen, setImportOpen] = useState(false);
   const [mes, setMes] = useState(currentMonth());
   const [loading, setLoading] = useState(true);
+  const [iaResumen, setIaResumen] = useState<string | null>(null);
+  const [iaGenerando, setIaGenerando] = useState(false);
   const esMesActual = mes >= currentMonth();
   const mesStr = mesLegible(mes);
   const mesAnterior = prevMonth(mes);
@@ -65,6 +69,49 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       .finally(() => { if (!cancelado) setLoading(false); });
     return () => { cancelado = true; };
   }, [church.id, refreshKey, mes, mesAnterior]);
+
+  /** Resumen del mes con IA. Regla de oro: la app CALCULA (aquí se arman las
+   *  cifras ya listas) y la IA solo las narra — jamás inventa números. */
+  async function resumirIA() {
+    if (!totales) return;
+    setIaGenerando(true);
+    try {
+      const lineas: string[] = [
+        `Mes: ${mesStr}`,
+        `Moneda: ${church.moneda}`,
+        `Ingresos del mes: ${fmtMoney(totales.ingresos)}`,
+        `Gastos del mes: ${fmtMoney(totales.gastos)}`,
+        `Balance del mes: ${fmtMoney(totales.ingresos - totales.gastos)}`,
+      ];
+      if (totalesAnt) {
+        lineas.push(
+          `Mes anterior (${mesLegible(mesAnterior)}): ingresos ${fmtMoney(totalesAnt.ingresos)}, gastos ${fmtMoney(totalesAnt.gastos)}`,
+        );
+      }
+      const cats = (m: Record<string, number>) =>
+        Object.entries(m)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 4)
+          .map(([c, v]) => `${catNombre(c)}: ${fmtMoney(v)}`)
+          .join("; ");
+      if (Object.keys(totales.porCategoriaIngreso).length) {
+        lineas.push(`Ingresos por categoría: ${cats(totales.porCategoriaIngreso)}`);
+      }
+      if (Object.keys(totales.porCategoriaGasto).length) {
+        lineas.push(`Gastos por categoría: ${cats(totales.porCategoriaGasto)}`);
+      }
+      if (depositosMes > 0) lineas.push(`Depositado al banco en el mes: ${fmtMoney(depositosMes)}`);
+      const texto = await resumirReporte({
+        datos: lineas.join("\n"),
+        idioma: i18n.language?.startsWith("en") ? "en" : "es",
+      });
+      setIaResumen(texto);
+    } catch (e) {
+      showToast(t("cartas.ia.error", { error: String((e as { message?: string })?.message ?? e) }));
+    } finally {
+      setIaGenerando(false);
+    }
+  }
 
   const ingresos = totales?.ingresos ?? 0;
   const gastos = totales?.gastos ?? 0;
@@ -160,6 +207,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <IconChevronRight size={16} />
             </span>
           </div>
+          {iaHabilitada && (
+            <button className="btn secondary" onClick={resumirIA} disabled={iaGenerando || loading || !totales}>
+              ✨ {iaGenerando ? t("cartas.ia.generando") : t("reportes.ia.boton")}
+            </button>
+          )}
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
             <IconUpload size={13} /> {t("miembros.importarCsv")}
           </button>
@@ -415,6 +467,37 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           onClose={() => setImportOpen(false)}
           onImportado={onChanged}
         />
+      )}
+
+      {iaResumen && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIaResumen(null); }}>
+          <div className="modal-card" style={{ width: 560 }}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">✨ {t("reportes.ia.titulo", { mes: mesStr })}</div>
+                <div className="modal-sub">{t("reportes.ia.nota")}</div>
+              </div>
+              <div className="modal-close" onClick={() => setIaResumen(null)}><IconClose /></div>
+            </div>
+            <div style={{ padding: "4px 4px 0", whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5 }}>
+              {iaResumen}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+              <button className="btn secondary" onClick={() => setIaResumen(null)}>{t("common.cerrar")}</button>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  navigator.clipboard.writeText(iaResumen).then(
+                    () => showToast(t("reportes.ia.copiado")),
+                    () => {},
+                  );
+                }}
+              >
+                {t("reportes.ia.copiar")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

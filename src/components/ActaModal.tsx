@@ -9,6 +9,7 @@ import { IconClose, IconPlus } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { iaHabilitada, redactarActa } from "../ia";
 
 export const TIPOS_ACTA = [
   "administrativa", "lideres", "asamblea", "pastoral", "eleccion", "nombramiento",
@@ -59,9 +60,13 @@ interface Props {
 }
 
 export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   useEscapeClose(onClose);
   const [saving, setSaving] = useState(false);
+  const [iaAbierta, setIaAbierta] = useState(false);
+  const [iaPuntos, setIaPuntos] = useState("");
+  const [iaGenerando, setIaGenerando] = useState(false);
+  const [iaError, setIaError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [tipo, setTipo] = useState(acta?.tipo ?? "administrativa");
@@ -81,6 +86,29 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
   const [mociones, setMociones] = useState<ActaMocion[]>(() => (acta ? parseMociones(acta.mociones) : []));
   const [acuerdos, setAcuerdos] = useState<ActaAcuerdo[]>(() => (acta ? parseAcuerdos(acta.acuerdos) : []));
   const [estado, setEstado] = useState(acta?.estado ?? "borrador");
+
+  async function generarActaIA() {
+    const puntos = iaPuntos.trim();
+    if (!puntos) return;
+    setIaGenerando(true);
+    setIaError(null);
+    try {
+      const texto = await redactarActa({
+        puntos,
+        titulo: titulo.trim() || undefined,
+        iglesia: church.nombre,
+        idioma: i18n.language?.startsWith("en") ? "en" : "es",
+      });
+      setResumen(texto);
+      setIaAbierta(false);
+      setIaPuntos("");
+      playSound("guardado");
+    } catch (e) {
+      setIaError(t("cartas.ia.error", { error: String((e as { message?: string })?.message ?? e) }));
+    } finally {
+      setIaGenerando(false);
+    }
+  }
   const [confidencial, setConfidencial] = useState(acta ? acta.confidencial === 1 : false);
   const [fechaAprobacion, setFechaAprobacion] = useState(acta?.fecha_aprobacion ?? "");
 
@@ -221,7 +249,19 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
               />
             </div>
             <div className="form-group full">
-              <label className="form-label">{t("actas.resumen")}</label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <label className="form-label">{t("actas.resumen")}</label>
+                {iaHabilitada && (
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    style={{ padding: "4px 10px", fontSize: 12 }}
+                    onClick={() => { setIaError(null); setIaAbierta(true); }}
+                  >
+                    ✨ {t("actas.ia.boton")}
+                  </button>
+                )}
+              </div>
               <textarea
                 className="form-textarea"
                 rows={5}
@@ -230,6 +270,34 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
                 onChange={(e) => setResumen(e.target.value)}
               />
             </div>
+
+            {iaAbierta && (
+              <div className="form-group full form-subcard">
+                <div className="form-label" style={{ marginBottom: 6 }}>✨ {t("actas.ia.titulo")}</div>
+                <div className="form-hint" style={{ marginBottom: 8 }}>{t("actas.ia.sub")}</div>
+                <textarea
+                  className="form-textarea"
+                  rows={4}
+                  autoFocus
+                  placeholder={t("actas.ia.placeholder")}
+                  value={iaPuntos}
+                  onChange={(e) => setIaPuntos(e.target.value)}
+                  disabled={iaGenerando}
+                />
+                {resumen.trim().length > 0 && (
+                  <div className="form-hint" style={{ marginTop: 6 }}>{t("actas.ia.reemplazar")}</div>
+                )}
+                {iaError && <div className="field-error" style={{ marginTop: 6 }}>{iaError}</div>}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                  <button type="button" className="btn secondary" onClick={() => setIaAbierta(false)} disabled={iaGenerando}>
+                    {t("cartas.ia.cancelar")}
+                  </button>
+                  <button type="button" className="btn primary" onClick={generarActaIA} disabled={iaGenerando || !iaPuntos.trim()}>
+                    {iaGenerando ? t("cartas.ia.generando") : t("cartas.ia.generar")}
+                  </button>
+                </div>
+              </div>
+            )}
           </Seccion>
 
           <Seccion titulo={t("actas.secMociones")}>

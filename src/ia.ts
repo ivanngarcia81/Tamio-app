@@ -29,16 +29,12 @@ export interface DatosCartaIA {
   idioma: string;
 }
 
-/** Pide a la IA el cuerpo de una carta en HTML simple (<p>…</p>).
- *  Devuelve el HTML listo para colocar en el editor. Lanza si algo falla. */
-export async function redactarCarta(datos: DatosCartaIA): Promise<string> {
+/** Invoca la función redactar-ia y devuelve el campo pedido, con errores
+ *  legibles (extrae el detalle real de la respuesta, no solo "non-2xx"). */
+async function invocarIA(body: Record<string, unknown>, campo: "html" | "texto"): Promise<string> {
   if (!supabase) throw new Error("Supabase no está configurado.");
-  const { data, error } = await supabase.functions.invoke("redactar-ia", {
-    body: datos,
-  });
+  const { data, error } = await supabase.functions.invoke("redactar-ia", { body });
   if (error) {
-    // FunctionsHttpError trae la respuesta original: se extrae el detalle real
-    // (p. ej. "Anthropic 401 ..."), mucho más útil que "non-2xx status code".
     const ctx = (error as { context?: Response }).context;
     if (ctx) {
       const cuerpo = await ctx.json().catch(() => null) as { error?: string; detalle?: string } | null;
@@ -48,7 +44,29 @@ export async function redactarCarta(datos: DatosCartaIA): Promise<string> {
     }
     throw error;
   }
-  const html = (data as { html?: string } | null)?.html;
-  if (!html) throw new Error("La IA no devolvió contenido.");
-  return html;
+  const valor = (data as Record<string, string> | null)?.[campo];
+  if (!valor) throw new Error("La IA no devolvió contenido.");
+  return valor;
+}
+
+/** Pide a la IA el cuerpo de una carta en HTML simple (<p>…</p>). */
+export async function redactarCarta(datos: DatosCartaIA): Promise<string> {
+  return invocarIA({ ...datos }, "html");
+}
+
+/** Redacta el desarrollo de un acta (texto plano) a partir de los puntos
+ *  tratados en la reunión. */
+export async function redactarActa(datos: {
+  puntos: string;
+  titulo?: string;
+  iglesia: string;
+  idioma: string;
+}): Promise<string> {
+  return invocarIA({ modo: "acta", ...datos }, "texto");
+}
+
+/** Narra en lenguaje natural las cifras YA CALCULADAS por la app (regla de
+ *  oro: la app calcula, la IA explica — nunca inventa números). */
+export async function resumirReporte(datos: { datos: string; idioma: string }): Promise<string> {
+  return invocarIA({ modo: "resumen", ...datos }, "texto");
 }

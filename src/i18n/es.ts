@@ -214,6 +214,13 @@ export const es = {
   reportes: {
     titulo: "Reportes",
     sub: "Estado financiero mensual · {{mes}}",
+    ia: {
+      boton: "Resumen IA",
+      titulo: "Resumen de {{mes}}",
+      nota: "Los números los calcula la app; la IA solo los redacta. Revisa antes de compartir.",
+      copiar: "Copiar texto",
+      copiado: "Resumen copiado",
+    },
     balanceNeto: "Balance neto",
     mesAnterior: "Mes anterior",
     distGastos: "Distribución de gastos",
@@ -879,6 +886,13 @@ export const es = {
     agendaPlaceholder: "Un tema por línea…",
     resumen: "Resumen de los asuntos discutidos",
     resumenPlaceholder: "Qué se discutió y el contexto de las decisiones…",
+    ia: {
+      boton: "Redactar con IA",
+      titulo: "Redactar el desarrollo con IA",
+      sub: "Escribe en viñetas los puntos tratados; la IA redacta el desarrollo formal y tú lo revisas.",
+      placeholder: "• Se presentó el presupuesto 2026\n• Se aprobó comprar sillas nuevas\n• Se nombró a Ana al comité de jóvenes",
+      reemplazar: "El desarrollo ya tiene texto; se reemplazará con el borrador de la IA.",
+    },
     mocionTexto: "Moción o propuesta",
     mocionPresenta: "Presentada por",
     mocionSecunda: "Secundada por",

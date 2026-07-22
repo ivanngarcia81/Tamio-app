@@ -1,5 +1,13 @@
 # Ideas: Inteligencia artificial en Tamio
 
+> **Estado (2026-07-21):** construidos los casos 1 y 2 — **cartas** (botón en el
+> editor), **actas** (botón en el desarrollo del acta) y **resúmenes del mes**
+> (botón "Resumen IA" en Reportes, con cifras precalculadas por la app). Todo
+> tras la bandera `VITE_IA_HABILITADA` y la función `redactar-ia` (modos
+> carta/acta/resumen). Tras cambiar la función hay que redesplegarla:
+> `supabase functions deploy redactar-ia`. Pendientes: preguntas sobre datos,
+> registro por lenguaje natural y OCR de recibos.
+
 > Meta futura, exploratoria. Se retoma **después** de cerrar la versión Mac
 > (login Supabase + `.dmg`). Técnicamente sencillo de integrar (Tamio es
 > JS/React; llamar a una IA es una petición web), pero con consideraciones de
