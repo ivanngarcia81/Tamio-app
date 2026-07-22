@@ -205,84 +205,98 @@ export default function Configuracion({
           {/* Mosaico de 2 columnas balanceadas: las tarjetas fluyen y el CSS
               reparte las alturas, así no queda una columna larga y otra vacía
               cuando el rol/plan oculta tarjetas. */}
-          {/* Orden por importancia: identidad y cuenta arriba (iglesia, plan,
-              sincronización), datos de trabajo al medio (tesorero, pastor,
-              institución, usuarios, categorías), preferencias después
-              (apariencia, idioma, sonidos) y lo delicado al final (respaldo,
-              zona de peligro). */}
-          <div className="settings-masonry">
-            <ChurchSettings
-              value={churchForm}
-              onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
-              error={churchError}
-              logoPath={logoPath}
-              onLogoPathChange={setLogoPath}
-              showCurrency={verTesoreria}
-            />
+          {/* Zonas con jerarquía visual: cada categoría vive en su propio
+              contenedor (panel plano) con título, y las tarjetas se elevan
+              encima. El mosaico interno balancea las alturas por zona. */}
+          <section className="settings-zona">
+            <div className="settings-zona-head">
+              <div className="settings-zona-titulo">{t("config.zona.identidad")}</div>
+              <div className="settings-zona-sub">{t("config.zona.identidadSub")}</div>
+            </div>
+            <div className="settings-masonry">
+              <ChurchSettings
+                value={churchForm}
+                onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
+                error={churchError}
+                logoPath={logoPath}
+                onLogoPathChange={setLogoPath}
+                showCurrency={verTesoreria}
+              />
+              {/* Suscripción: la administra el dueño (admin) o, en modo local
+                  sin login, quien usa la app en su propia instalación. */}
+              {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
+              {authActivo && <SyncSettings />}
+            </div>
+          </section>
 
-            {/* Suscripción: la administra el dueño (admin) o, en modo local
-                sin login, quien usa la app en su propia instalación. */}
-            {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
-
-            {/* Sincronización: acción de dispositivo/cuenta (no de rol); la
-                seguridad por iglesia la garantiza RLS en la nube. */}
-            {authActivo && <SyncSettings />}
-
-            {verTesoreria && (
-              <>
-                <TreasurerSettings
-                  value={treasurerForm}
-                  onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
-                  errors={treasurerErrors}
+          <section className="settings-zona">
+            <div className="settings-zona-head">
+              <div className="settings-zona-titulo">{t("config.zona.trabajo")}</div>
+              <div className="settings-zona-sub">{t("config.zona.trabajoSub")}</div>
+            </div>
+            <div className="settings-masonry">
+              {verTesoreria && (
+                <>
+                  <TreasurerSettings
+                    value={treasurerForm}
+                    onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
+                    errors={treasurerErrors}
+                  />
+                  <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+                </>
+              )}
+              {/* Pastor: compartido (firma en tesorería y secretaría). */}
+              <PastorSettings
+                value={pastorForm}
+                onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
+                errors={pastorErrors}
+              />
+              <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
+              {verSecretaria && (
+                <InstitucionSettings
+                  value={institucionForm}
+                  onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
                 />
+              )}
+              {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
+              {verTesoreria && (
+                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+              )}
+              {verTesoreria && (
+                <PDFPreview
+                  churchNombre={churchForm.nombre}
+                  tesoreroNombre={treasurerForm.nombre}
+                  tesoreroCargo={treasurerForm.cargo}
+                />
+              )}
+            </div>
+          </section>
 
-                <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
-              </>
-            )}
+          <section className="settings-zona">
+            <div className="settings-zona-head">
+              <div className="settings-zona-titulo">{t("config.zona.preferencias")}</div>
+              <div className="settings-zona-sub">{t("config.zona.preferenciasSub")}</div>
+            </div>
+            <div className="settings-masonry">
+              {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
+              <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
+              <LanguageSettings value={langPref} onChange={onLangPrefChange} />
+              <SoundSettings />
+            </div>
+          </section>
 
-            {/* Pastor: compartido (firma en tesorería y secretaría), visible a todos. */}
-            <PastorSettings
-              value={pastorForm}
-              onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
-              errors={pastorErrors}
-            />
-
-            <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
-
-            {verSecretaria && (
-              <InstitucionSettings
-                value={institucionForm}
-                onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
-              />
-            )}
-
-            {/* Usuarios: administración sensible, solo administrador. */}
-            {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
-
-            {verTesoreria && (
-              <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-            )}
-
-            {verTesoreria && (
-              <PDFPreview
-                churchNombre={churchForm.nombre}
-                tesoreroNombre={treasurerForm.nombre}
-                tesoreroCargo={treasurerForm.cargo}
-              />
-            )}
-
-            {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
-
-            <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
-
-            <LanguageSettings value={langPref} onChange={onLangPrefChange} />
-
-            <SoundSettings />
-
-            {esAdmin && <BackupSettings church={church} />}
-
-            {esAdmin && <DangerZoneSettings church={church} />}
-          </div>
+          {esAdmin && (
+            <section className="settings-zona peligro">
+              <div className="settings-zona-head">
+                <div className="settings-zona-titulo">{t("config.zona.delicada")}</div>
+                <div className="settings-zona-sub">{t("config.zona.delicadaSub")}</div>
+              </div>
+              <div className="settings-masonry">
+                <BackupSettings church={church} />
+                <DangerZoneSettings church={church} />
+              </div>
+            </section>
+          )}
 
           {generalError && <div className="form-warning">{generalError}</div>}
 

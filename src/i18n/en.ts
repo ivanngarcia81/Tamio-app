@@ -1934,6 +1934,16 @@ export const en: Resources = {
   config: {
     titulo: "Settings",
     sub: "Church and treasurer information",
+    zona: {
+      identidad: "Identity & account",
+      identidadSub: "Who your church is, your plan, and sync",
+      trabajo: "Working data",
+      trabajoSub: "What feeds your documents and reports",
+      preferencias: "Preferences",
+      preferenciasSub: "Appearance, language, and sounds",
+      delicada: "Sensitive zone",
+      delicadaSub: "Backups and actions with no way back",
+    },
     nombreIglesiaObligatorio: "The church name is required.",
   },
 

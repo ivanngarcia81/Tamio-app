@@ -1941,6 +1941,16 @@ export const es = {
   config: {
     titulo: "Configuración",
     sub: "Datos de la iglesia y del tesorero",
+    zona: {
+      identidad: "Identidad y cuenta",
+      identidadSub: "Quién es tu iglesia, tu plan y la sincronización",
+      trabajo: "Datos de trabajo",
+      trabajoSub: "Lo que alimenta tus documentos y reportes",
+      preferencias: "Preferencias",
+      preferenciasSub: "Apariencia, idioma y sonidos",
+      delicada: "Zona delicada",
+      delicadaSub: "Respaldos y acciones que no tienen vuelta atrás",
+    },
     nombreIglesiaObligatorio: "El nombre de la iglesia es obligatorio.",
   },
 
