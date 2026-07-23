@@ -859,6 +859,7 @@ export const es = {
     secHistorial: "Historial de membresía",
     generarInforme: "Generar informe",
     registradoEl: "Registrado el {{fecha}}",
+    desde: "Desde {{fecha}}",
     cambiosEstado: "Cambios de estado",
     notasAdmin: "Notas administrativas",
     secDocumentos: "Cartas y traslados",

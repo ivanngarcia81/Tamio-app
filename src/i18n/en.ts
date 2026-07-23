@@ -865,6 +865,7 @@ export const en: Resources = {
     secHistorial: "Membership history",
     generarInforme: "Generate report",
     registradoEl: "Registered on {{fecha}}",
+    desde: "Since {{fecha}}",
     cambiosEstado: "Status changes",
     notasAdmin: "Administrative notes",
     secDocumentos: "Letters and transfers",

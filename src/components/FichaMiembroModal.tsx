@@ -4,7 +4,7 @@ import {
   fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, nowLocalIso, updateMemberFicha,
   type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha, type NewMember,
 } from "../db";
-import { IconClose, IconPrinter } from "../icons";
+import { IconCalendar, IconClose, IconMail, IconPrinter } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { printInformeIndividual } from "../services/informes/printInforme";
@@ -28,6 +28,22 @@ export const CARGOS = [
 ] as const;
 
 const ESTADOS_REGISTRO = ["activo", "inactivo", "visitante", "enProceso"] as const;
+
+const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
+
+function inicialesFicha(nombre: string): string {
+  return nombre
+    .split(" ").filter((w) => w.length > 2).slice(0, 2).map((w) => w[0]).join("")
+    .toUpperCase() || nombre.slice(0, 2).toUpperCase();
+}
+
+function IconPhoneFicha() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
+    </svg>
+  );
+}
 
 function parseLista(json: string): string[] {
   try {
@@ -265,11 +281,34 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-card">
-        <div className="modal-header">
-          <div>
-            <div className="modal-title">{crear ? t("recordModal.nuevoMiembro") : member!.nombre}</div>
-            <div className="modal-sub">{crear ? t("recordModal.subMiembro") : t("ficha.sub")}</div>
-          </div>
+        <div className={`modal-header${crear ? "" : " member-detail-head"}`}>
+          {crear ? (
+            <div>
+              <div className="modal-title">{t("recordModal.nuevoMiembro")}</div>
+              <div className="modal-sub">{t("recordModal.subMiembro")}</div>
+            </div>
+          ) : (
+            <div className="member-detail-id">
+              <div className={`mini-avatar ${AVATAR_COLORS[member!.id % AVATAR_COLORS.length]} member-detail-avatar`}>
+                {inicialesFicha(member!.nombre)}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="member-detail-name">
+                  <span className="truncate">{member!.nombre}</span>
+                  <span className={`status-pill ${esBaja ? "rechazado" : estado === "activo" ? "aprobado" : "pendiente"}`}>
+                    {esBaja ? t("membresia.estadoBaja") : t(`membresia.estado.${estado}`)}
+                  </span>
+                </div>
+                <div className="member-chips">
+                  {member!.email && <span className="member-chip"><IconMail size={12} /> <span className="truncate">{member!.email}</span></span>}
+                  {member!.telefono && <span className="member-chip"><IconPhoneFicha /> {member!.telefono}</span>}
+                  {member!.fecha_ingreso && (
+                    <span className="member-chip"><IconCalendar size={12} /> {t("ficha.desde", { fecha: fmtFechaCorta(member!.fecha_ingreso) })}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="modal-close" onClick={onClose}><IconClose /></div>
         </div>
 
@@ -445,32 +484,26 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
               <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("ficha.sinAsistencias")}</div>
             ) : (
               <>
-                <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", marginBottom: 10 }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <span className="form-label">{t("ficha.ultimaAsistencia")}</span>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
-                      {asistencia.ultimaAsistencia ? fmtFechaCorta(asistencia.ultimaAsistencia) : "—"}
-                    </div>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <span className="form-label">{t("ficha.pctAsistencia")}</span>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                <div className="ficha-stats">
+                  <div className="stat-card" style={{ padding: "12px 14px" }}>
+                    <div className="stat-label">{t("ficha.pctAsistencia")}</div>
+                    <div className="stat-value md" style={{ color: asistencia.pct !== null && asistencia.pct >= 60 ? "var(--pos, #059669)" : undefined }}>
                       {asistencia.pct !== null ? `${asistencia.pct}%` : "—"}
-                      <span style={{ fontWeight: 500, color: "var(--text-3)", marginLeft: 6, fontSize: 12 }}>
-                        {t("ficha.deServicios", { asistencias: asistencia.asistencias, total: asistencia.enRoster })}
-                      </span>
                     </div>
+                    <div className="stat-pct">{t("ficha.deServicios", { asistencias: asistencia.asistencias, total: asistencia.enRoster })}</div>
                   </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <span className="form-label">{t("ficha.ausenciasConsecutivas")}</span>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                  <div className="stat-card" style={{ padding: "12px 14px" }}>
+                    <div className="stat-label">{t("ficha.ultimaAsistencia")}</div>
+                    <div className="stat-value md">{asistencia.ultimaAsistencia ? fmtFechaCorta(asistencia.ultimaAsistencia) : "—"}</div>
+                  </div>
+                  <div className="stat-card" style={{ padding: "12px 14px" }}>
+                    <div className="stat-label">{t("ficha.ausenciasConsecutivas")}</div>
+                    <div className="stat-value md" style={{ color: asistencia.rachaAusencias >= 3 ? "var(--neg, #dc2626)" : undefined }}>
                       {asistencia.rachaAusencias}
-                      {asistencia.rachaJustificadas > 0 && (
-                        <span style={{ fontWeight: 500, color: "var(--text-3)", marginLeft: 6, fontSize: 12 }}>
-                          {t("ficha.justificadasEnRacha", { count: asistencia.rachaJustificadas })}
-                        </span>
-                      )}
                     </div>
+                    {asistencia.rachaJustificadas > 0 && (
+                      <div className="stat-pct">{t("ficha.justificadasEnRacha", { count: asistencia.rachaJustificadas })}</div>
+                    )}
                   </div>
                 </div>
                 <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", maxHeight: 170, overflowY: "auto" }}>

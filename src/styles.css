@@ -2191,6 +2191,13 @@ html.vibrancy .main { background: var(--surface); }
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: 30px 0; color: var(--text-3); font-size: 13px; text-align: center;
 }
+/* Métricas de asistencia de la ficha, como mini-tarjetas. */
+.ficha-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
 
 /* Visor rápido de comprobantes (estilo Quick Look) */
 .ql-overlay {
