@@ -322,15 +322,22 @@ html.vibrancy .main { background: var(--surface); }
 .church-select:hover { background: var(--line); }
 .church-select:active { transform: scale(.98); }
 .church-select .church-avatar {
-  width: 28px; height: 28px;
+  width: 34px; height: 34px;
   flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--ink);
-  color: var(--ink-contrast);
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
   display: grid; place-items: center;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 12.5px;
   overflow: hidden;
+}
+/* Cuando muestra iniciales (sin logo) usa el color de tinta para destacar. */
+.church-select .church-avatar.ini {
+  background: linear-gradient(135deg, #34d399, #059669);
+  border-color: transparent;
+  color: #fff;
 }
 .church-select .church-avatar img {
   width: 100%;
@@ -411,6 +418,17 @@ html.vibrancy .main { background: var(--surface); }
   color: var(--active-text);
   font-weight: 600;
 }
+/* Indicador "estás aquí": barrita de acento a la izquierda del ítem activo. */
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 3px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 17px;
+  border-radius: 3px;
+  background: var(--accent-1, #2563eb);
+}
+.nav-item.active .icon { color: var(--accent-1, #2563eb); opacity: 1; }
 .nav-item.active .badge { background: var(--ink-contrast); color: var(--ink); }
 /* Grupos del sidebar (Tesorería / Secretaría) */
 .nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }

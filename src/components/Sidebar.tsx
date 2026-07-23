@@ -141,21 +141,18 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
 
   return (
     <aside className="sidebar">
-      {/* Muestra el logo de la iglesia (Configuración → Subir logo) en cuanto
-          existe; mientras tanto una capilla atenuada hace de placeholder. */}
-      <div className={`logo${logoUrl ? "" : " placeholder"}`} title={logoUrl ? church.nombre : "Tamio"}>
-        {logoUrl ? <img src={logoUrl} alt={church.nombre} /> : <IconTamio size={44} />}
-      </div>
-
+      {/* Tarjeta de marca: logo de la iglesia (Configuración → Subir logo) o
+          sus iniciales, con nombre y ciudad. Es el único bloque de identidad
+          del sidebar (antes había además un logo grande duplicado arriba). */}
       <div className="church-select" data-tour="marca">
-        <div className="church-avatar">
-          {logoUrl ? <img src={logoUrl} alt="" /> : initials}
+        <div className={`church-avatar${logoUrl ? "" : " ini"}`}>
+          {logoUrl ? <img src={logoUrl} alt="" /> : (initials || <IconTamio size={26} />)}
         </div>
         <div className="church-info">
           <div className="church-name" title={church.nombre}>{church.nombre}</div>
           <span className="church-sub">{church.ciudad || "—"}</span>
         </div>
-        <span className="church-chevron" style={{ color: "var(--text-3)" }}><IconChevronDown /></span>
+        <span className="church-chevron"><IconChevronDown /></span>
       </div>
 
       <nav className="nav">
