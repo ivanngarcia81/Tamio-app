@@ -419,6 +419,8 @@ export const en: Resources = {
 
   detalleMiembro: {
     sub: "Member contribution history",
+    activo: "Active",
+    inactivo: "Inactive",
     totalAnio: "Total {{anio}}",
     aportes_one: "{{count}} contribution",
     aportes_other: "{{count}} contributions",

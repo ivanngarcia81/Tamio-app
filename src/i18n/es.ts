@@ -413,6 +413,8 @@ export const es = {
 
   detalleMiembro: {
     sub: "Historial de aportes del miembro",
+    activo: "Activo",
+    inactivo: "Inactivo",
     totalAnio: "Total {{anio}}",
     aportes_one: "{{count}} aporte",
     aportes_other: "{{count}} aportes",
