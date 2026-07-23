@@ -30,6 +30,14 @@ function accentStyle(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
 }
 
+/** Franja del día según la hora local, para el saludo del encabezado. */
+function franjaDelDia(): "manana" | "tarde" | "noche" {
+  const h = new Date().getHours();
+  if (h < 12) return "manana";
+  if (h < 19) return "tarde";
+  return "noche";
+}
+
 function fechaCortaSinAnio(fecha: string): string {
   return fmtFechaCorta(fecha).split(" ").slice(0, 2).join(" ");
 }
@@ -213,6 +221,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     <>
       <div className="header">
         <div>
+          <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>
           <div className="balance">
             <div className="amount"><CountUp value={balance} format={fmtMoney} /></div>
             <div className="currency">{church.moneda}</div>

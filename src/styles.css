@@ -590,6 +590,13 @@ html.vibrancy .main { background: var(--surface); }
   width: 100%;
   margin-inline: auto;
 }
+.dash-saludo {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 0.01em;
+  margin-bottom: 5px;
+}
 .balance { display: flex; align-items: baseline; gap: 14px; }
 .balance .amount {
   font-size: var(--fs-display);
