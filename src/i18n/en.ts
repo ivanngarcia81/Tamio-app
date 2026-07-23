@@ -1916,6 +1916,15 @@ export const en: Resources = {
 
   login: {
     sub: "Sign in to continue",
+    heroTitulo: "Your church's treasury and secretariat, in order.",
+    heroTagline: "Keep income, expenses, members, minutes and letters in one place — clear, secure and simple.",
+    feat1t: "Clear treasury",
+    feat1d: "Income, expenses and reports ready to present.",
+    feat2t: "Full secretariat",
+    feat2d: "Members, minutes and letters always at hand.",
+    feat3t: "Secure cloud",
+    feat3d: "Sync across your devices; your data, always with you.",
+    privacidadPie: "Your data is stored encrypted and only your church can see it.",
     email: "Email",
     password: "Password",
     entrar: "Sign in",

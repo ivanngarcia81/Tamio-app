@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../supabase";
-import { IconTamio } from "../icons";
+import { IconTamio, IconBank, IconMiembros, IconGlobe } from "../icons";
 
 type Modo = "login" | "registro" | "pedirCodigo" | "nuevaClave";
 
@@ -95,6 +95,31 @@ export default function Login() {
 
   return (
     <div className="login-screen">
+      <div className="login-split">
+        <aside className="login-hero">
+          <div className="login-hero-brand">
+            <IconTamio size={38} />
+            <span className="login-hero-word">Tamio</span>
+          </div>
+          <h1 className="login-hero-title">{t("login.heroTitulo")}</h1>
+          <p className="login-hero-tagline">{t("login.heroTagline")}</p>
+          <ul className="login-hero-feats">
+            <li>
+              <span className="lhf-ico"><IconBank size={17} /></span>
+              <div><b>{t("login.feat1t")}</b><span>{t("login.feat1d")}</span></div>
+            </li>
+            <li>
+              <span className="lhf-ico"><IconMiembros size={17} /></span>
+              <div><b>{t("login.feat2t")}</b><span>{t("login.feat2d")}</span></div>
+            </li>
+            <li>
+              <span className="lhf-ico"><IconGlobe size={17} /></span>
+              <div><b>{t("login.feat3t")}</b><span>{t("login.feat3d")}</span></div>
+            </li>
+          </ul>
+        </aside>
+
+        <div className="login-forms">
       {modo === "login" && (
         <form className="login-card" onSubmit={entrar}>
           <div className="login-logo"><IconTamio size={56} /></div>
@@ -209,6 +234,9 @@ export default function Login() {
           </button>
         </form>
       )}
+          <div className="login-foot">{t("login.privacidadPie")}</div>
+        </div>
+      </div>
     </div>
   );
 }

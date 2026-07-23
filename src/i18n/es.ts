@@ -1923,6 +1923,15 @@ export const es = {
 
   login: {
     sub: "Inicia sesión para continuar",
+    heroTitulo: "La tesorería y secretaría de tu iglesia, en orden.",
+    heroTagline: "Lleva ingresos, gastos, miembros, actas y cartas en un solo lugar — claro, seguro y fácil.",
+    feat1t: "Tesorería clara",
+    feat1d: "Ingresos, gastos y reportes listos para presentar.",
+    feat2t: "Secretaría completa",
+    feat2d: "Miembros, actas y cartas siempre a la mano.",
+    feat3t: "En la nube, seguro",
+    feat3d: "Sincroniza entre tus equipos; tus datos, siempre contigo.",
+    privacidadPie: "Tus datos se guardan cifrados y solo tu iglesia puede verlos.",
     email: "Correo",
     password: "Contraseña",
     entrar: "Entrar",
