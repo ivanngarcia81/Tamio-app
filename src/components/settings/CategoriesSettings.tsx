@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, countTxByCategoria, customCatId, deleteCategoriaCustom, getCategoriasGasto,
-  getCategoriasIngreso, insertCategoriaCustom, type CategoriaCustom, type Church,
+  catNombre, countTxByCategoria, customCatRef, deleteCategoriaCustom, getCategoriasGasto,
+  getCategoriasIngreso, insertCategoriaCustom, type Church,
 } from "../../db";
 import ConfirmDialog from "../ConfirmDialog";
 import { showToast } from "../../toast";
@@ -25,7 +25,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
   const [color, setColor] = useState(COLORES[0]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<CategoriaCustom | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ uid: string; nombre: string } | null>(null);
   // Contador local para re-render tras editar la caché de categorías.
   const [, setBump] = useState(0);
 
@@ -61,9 +61,9 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
     }
   }
 
-  async function requestDelete(c: CategoriaCustom) {
+  async function requestDelete(c: { uid: string; nombre: string }) {
     setError(null);
-    const n = await countTxByCategoria(church.id, customCatId(c.id));
+    const n = await countTxByCategoria(church.id, customCatRef(c.uid));
     if (n > 0) {
       setError(t("categorias.enUso", { count: n }));
       return;
@@ -73,7 +73,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
 
   async function confirmDelete() {
     if (!pendingDelete) return;
-    await deleteCategoriaCustom(pendingDelete.id, church.id);
+    await deleteCategoriaCustom(pendingDelete.uid, church.id);
     setPendingDelete(null);
     setBump((b) => b + 1);
     showToast(t("categorias.eliminada"));
@@ -110,8 +110,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
                     style={{ cursor: "pointer", display: "inline-flex", opacity: 0.7 }}
                     title={t("common.eliminar")}
                     onClick={() => {
-                      const raw = Number(c.id.replace("custom-", ""));
-                      requestDelete({ id: raw, church_id: church.id, tipo: lista.tipo, nombre: c.nombre, color: c.color ?? COLORES[0] });
+                      if (c.uid) requestDelete({ uid: c.uid, nombre: c.nombre });
                     }}
                   >
                     <IconClose size={10} strokeWidth={2.2} />

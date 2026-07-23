@@ -17,7 +17,7 @@
 // se sincronizan primero los miembros y luego las transacciones.
 // ============================================================================
 
-import { getDb } from "./db";
+import { getDb, dedupPlantillasIniciales, loadCategoriasCustom } from "./db";
 import { supabase } from "./supabase";
 
 // Columnas de datos que existen igual en local (SQLite) y en la nube (Postgres).
@@ -753,6 +753,145 @@ export function sincronizarMensajes(churchIdLocal: number): Promise<ResultadoSyn
   return sincronizarTablaSimple(churchIdLocal, "mensajes", MENSAJE_DATA_COLS);
 }
 
+// Plantillas de cartas (P1): tabla simple. Cada equipo siembra sus iniciales,
+// así que tras bajar se deduplica por nombre (soft-delete determinista).
+const PLANTILLA_DATA_COLS = [
+  "nombre", "tipo", "asunto", "saludo", "cuerpo_html", "despedida",
+  "activa", "predeterminada", "es_inicial", "creado_en", "modificado_en",
+] as const;
+
+export async function sincronizarPlantillas(churchIdLocal: number): Promise<ResultadoSync> {
+  const r = await sincronizarTablaSimple(churchIdLocal, "plantillas", PLANTILLA_DATA_COLS);
+  if (r.ok) { try { await dedupPlantillasIniciales(churchIdLocal); } catch { /* noop */ } }
+  return r;
+}
+
+// Categorías personalizadas (CAT1): tabla simple. Los movimientos ya las
+// referencian por uid global (custom-<uid>), así que viajan sin ambigüedad.
+const CATEGORIA_DATA_COLS = ["tipo", "nombre", "color", "created_at"] as const;
+
+export async function sincronizarCategorias(churchIdLocal: number): Promise<ResultadoSync> {
+  const r = await sincronizarTablaSimple(churchIdLocal, "categorias_custom", CATEGORIA_DATA_COLS);
+  if (r.ok) { try { await loadCategoriasCustom(churchIdLocal); } catch { /* noop */ } }
+  return r;
+}
+
+// ============================================================================
+// ROSTER de asistencia (SV2) — tabla de unión con clave compuesta
+// ----------------------------------------------------------------------------
+// Enlaza a un servicio (servicio_uid) y a un miembro (member_uid), ambos por su
+// uid global. Al subir se mapea id local → uid; al bajar, uid → id local. Se
+// omiten filas cuyo servicio o miembro aún no exista localmente (se resuelven en
+// una sincronización posterior, cuando su padre baje).
+// ============================================================================
+
+export async function sincronizarRoster(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const { uidPorId: uidPorMember, idPorUid: idPorMemberUid } = await cargarMapasMiembros(d, churchIdLocal);
+
+    const servicios = await d.select<{ id: number; uid: string | null }[]>(
+      "SELECT id, uid FROM servicios WHERE church_id = $1",
+      [churchIdLocal],
+    );
+    const uidPorServ = new Map<number, string>();
+    const servPorUid = new Map<string, number>();
+    for (const s of servicios) if (s.uid) { uidPorServ.set(s.id, s.uid); servPorUid.set(s.uid, s.id); }
+
+    const locales = await d.select<Record<string, unknown>[]>(
+      `SELECT servicio_id, member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot, uid, updated_at, deleted
+         FROM servicio_asistencia WHERE church_id = $1`,
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("servicio_asistencia").select("*").eq("church_id", remoteChurch);
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remotas = (remotasRaw ?? []) as Record<string, unknown>[];
+
+    const remotasPorUid = new Map<string, Record<string, unknown>>();
+    for (const r of remotas) remotasPorUid.set(r.uid as string, r);
+    const localesPorUid = new Map<string, Record<string, unknown>>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid as string, l);
+
+    // PUSH — mapeando servicio_id → servicio_uid y member_id → member_uid.
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      const uid = l.uid as string | null;
+      if (!uid) continue;
+      const servUid = uidPorServ.get(l.servicio_id as number);
+      const memUid = uidPorMember.get(l.member_id as number);
+      if (!servUid || !memUid) continue; // padre sin uid (no debería pasar): se omite
+      const r = remotasPorUid.get(uid);
+      if (!r || epoch(l.updated_at) > epoch(r.updated_at)) {
+        aSubir.push({
+          uid, church_id: remoteChurch, servicio_uid: servUid, member_uid: memUid,
+          presente: (l.presente as number) === 1 ? 1 : 0,
+          razon: l.razon ?? null, razon_otra: l.razon_otra ?? null,
+          seguimiento: (l.seguimiento as number) === 1 ? 1 : 0,
+          nombre_snapshot: l.nombre_snapshot ?? null,
+          updated_at: new Date(epoch(l.updated_at) || Date.now()).toISOString(),
+          deleted: (l.deleted as number) === 1,
+        });
+      }
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("servicio_asistencia").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL — mapeando servicio_uid → id local y member_uid → id local.
+    let bajados = 0;
+    for (const r of remotas) {
+      const uid = r.uid as string;
+      const l = localesPorUid.get(uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+      const servIdLocal = servPorUid.get(r.servicio_uid as string);
+      const memIdLocal = idPorMemberUid.get(r.member_uid as string);
+      if (!servIdLocal || !memIdLocal) continue; // padre aún no sincronizado: luego
+
+      const presente = r.presente ? 1 : 0;
+      const seguimiento = r.seguimiento ? 1 : 0;
+      const del = r.deleted ? 1 : 0;
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+
+      if (l) {
+        await d.execute(
+          `UPDATE servicio_asistencia
+              SET presente = $1, razon = $2, razon_otra = $3, seguimiento = $4, nombre_snapshot = $5,
+                  deleted = $6, updated_at = $7, church_id = $8, servicio_id = $9, member_id = $10
+            WHERE uid = $11`,
+          [presente, r.razon ?? null, r.razon_otra ?? null, seguimiento, r.nombre_snapshot ?? null,
+            del, updatedAt, churchIdLocal, servIdLocal, memIdLocal, uid],
+        );
+      } else {
+        // Respeta la clave compuesta (servicio_id, member_id): si ya hay una
+        // fila local para ese par con otro uid, la remota gana ese lugar.
+        await d.execute(
+          "DELETE FROM servicio_asistencia WHERE servicio_id = $1 AND member_id = $2",
+          [servIdLocal, memIdLocal],
+        );
+        await d.execute(
+          `INSERT INTO servicio_asistencia
+             (servicio_id, member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot, church_id, uid, updated_at, deleted)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [servIdLocal, memIdLocal, presente, r.razon ?? null, r.razon_otra ?? null, seguimiento,
+            r.nombre_snapshot ?? null, churchIdLocal, uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
 // ============================================================================
 // COMPACTACIÓN — purga física de "lápidas" (deleted = 1) + VACUUM
 // ----------------------------------------------------------------------------
@@ -889,6 +1028,9 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   await sincronizarPlan(churchIdLocal).catch(() => {});
   const m = await sincronizarMiembros(churchIdLocal);
   if (!m.ok) return m;
+  // Categorías antes que las transacciones, para que sus referencias
+  // (custom-<uid>) resuelvan al pintar los movimientos que bajen.
+  const cat = await sincronizarCategorias(churchIdLocal);
   const t = await sincronizarTransacciones(churchIdLocal);
   const dep = await sincronizarDepositos(churchIdLocal);
   const act = await sincronizarActas(churchIdLocal);
@@ -897,7 +1039,10 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   const ts = await sincronizarTrasladosSalida(churchIdLocal);
   const te = await sincronizarTrasladosEntrada(churchIdLocal);
   const sv = await sincronizarServicios(churchIdLocal);
+  // El roster depende de servicios y miembros ya sincronizados (por uid).
+  const ros = await sincronizarRoster(churchIdLocal);
   const ag = await sincronizarAgenda(churchIdLocal);
   const msg = await sincronizarMensajes(churchIdLocal);
-  return [t, dep, act, car, sol, ts, te, sv, ag, msg].reduce(combinar, m);
+  const pla = await sincronizarPlantillas(churchIdLocal);
+  return [cat, t, dep, act, car, sol, ts, te, sv, ros, ag, msg, pla].reduce(combinar, m);
 }

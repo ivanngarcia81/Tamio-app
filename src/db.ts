@@ -216,7 +216,7 @@ export async function listAsistenciaLigera(churchId: number, desde?: string | nu
     `SELECT a.servicio_id, a.member_id, a.presente, s.fecha
        FROM servicio_asistencia a
        JOIN servicios s ON s.id = a.servicio_id
-      WHERE s.church_id = $1 AND s.deleted = 0 AND ($2 IS NULL OR s.fecha >= $2) AND ($3 IS NULL OR s.fecha <= $3)
+      WHERE s.church_id = $1 AND s.deleted = 0 AND a.deleted = 0 AND ($2 IS NULL OR s.fecha >= $2) AND ($3 IS NULL OR s.fecha <= $3)
       ORDER BY s.fecha DESC, s.id DESC`,
     [churchId, desde ?? null, hasta ?? null]
   );
@@ -301,6 +301,8 @@ export interface CategoriaCustom {
   tipo: "ingreso" | "gasto";
   nombre: string;
   color: string;
+  /** Identidad global estable entre equipos (para sincronizar). */
+  uid: string;
 }
 
 /** Forma unificada de categoría para la UI: integradas + personalizadas. */
@@ -310,6 +312,8 @@ export interface CategoriaUI {
   tagClass: string;
   color?: string;
   custom?: boolean;
+  /** Solo en personalizadas: uid global (para borrarlas al sincronizar). */
+  uid?: string;
 }
 
 /** Caché en memoria de las categorías personalizadas. Se carga una vez al
@@ -325,7 +329,7 @@ export function setCategoriasCustomCache(rows: CategoriaCustom[]): void {
 export async function loadCategoriasCustom(churchId: number): Promise<CategoriaCustom[]> {
   const d = await getDb();
   const rows = await d.select<CategoriaCustom[]>(
-    "SELECT * FROM categorias_custom WHERE church_id = $1 ORDER BY nombre",
+    "SELECT * FROM categorias_custom WHERE church_id = $1 AND deleted = 0 ORDER BY nombre",
     [churchId]
   );
   setCategoriasCustomCache(rows);
@@ -333,13 +337,14 @@ export async function loadCategoriasCustom(churchId: number): Promise<CategoriaC
 }
 
 /** Id textual con el que una categoría personalizada se guarda en las
- *  transacciones (p. ej. "custom-3"). */
-export function customCatId(rowId: number): string {
-  return `custom-${rowId}`;
+ *  transacciones (p. ej. "custom-ab12…"). Usa el `uid` GLOBAL, no el id local,
+ *  para que la referencia viaje bien entre equipos al sincronizar. */
+export function customCatRef(uid: string): string {
+  return `custom-${uid}`;
 }
 
 function customToUI(c: CategoriaCustom): CategoriaUI {
-  return { id: customCatId(c.id), nombre: c.nombre, tagClass: "otros", color: c.color, custom: true };
+  return { id: customCatRef(c.uid), nombre: c.nombre, tagClass: "otros", color: c.color, custom: true, uid: c.uid };
 }
 
 /** Catálogo completo (integradas + personalizadas) para la UI y los PDFs. */
@@ -365,15 +370,20 @@ export async function insertCategoriaCustom(
 ): Promise<void> {
   const d = await getDb();
   await d.execute(
-    "INSERT INTO categorias_custom (church_id, tipo, nombre, color) VALUES ($1,$2,$3,$4)",
-    [churchId, tipo, nombre.trim(), color]
+    "INSERT INTO categorias_custom (church_id, tipo, nombre, color, uid, updated_at) VALUES ($1,$2,$3,$4,$5,datetime('now'))",
+    [churchId, tipo, nombre.trim(), color, crypto.randomUUID()]
   );
   await loadCategoriasCustom(churchId);
 }
 
-export async function deleteCategoriaCustom(id: number, churchId: number): Promise<void> {
+/** Borrado SUAVE (deleted = 1) por uid, para que se propague en la
+ *  sincronización. Las consultas ya excluyen deleted = 1. */
+export async function deleteCategoriaCustom(uid: string, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM categorias_custom WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE categorias_custom SET deleted = 1, updated_at = datetime('now') WHERE uid = $1 AND church_id = $2",
+    [uid, churchId]
+  );
   await loadCategoriasCustom(churchId);
 }
 
@@ -392,7 +402,7 @@ export async function countTxByCategoria(churchId: number, categoriaId: string):
  *  emparejar archivos CSV); todo lo que se muestra en pantalla o en PDFs
  *  debe pasar por aquí. Las personalizadas usan su propio nombre tal cual. */
 export function catNombre(id: string): string {
-  const custom = categoriasCustomCache.find((c) => customCatId(c.id) === id);
+  const custom = categoriasCustomCache.find((c) => customCatRef(c.uid) === id);
   if (custom) return custom.nombre;
   return i18n.t(`cat.${id}`, { defaultValue: id });
 }
@@ -406,7 +416,7 @@ export function categoriaInfo(tipo: "ingreso" | "gasto", id: string) {
     tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;
   const found = list.find((c) => c.id === id);
   if (found) return { ...found, nombre: catNombre(found.id) };
-  const custom = categoriasCustomCache.find((c) => customCatId(c.id) === id && c.tipo === tipo);
+  const custom = categoriasCustomCache.find((c) => customCatRef(c.uid) === id && c.tipo === tipo);
   if (custom) return { id, nombre: custom.nombre, tagClass: "otros" };
   // Ids retirados del catálogo (datos históricos) conservan nombre legible.
   return { id, nombre: catNombre(id), tagClass: "otros" };
@@ -1791,7 +1801,7 @@ export interface NewPlantilla {
 export async function listPlantillas(churchId: number): Promise<Plantilla[]> {
   const d = await getDb();
   return d.select<Plantilla[]>(
-    "SELECT * FROM plantillas WHERE church_id = $1 ORDER BY predeterminada DESC, nombre",
+    "SELECT * FROM plantillas WHERE church_id = $1 AND deleted = 0 ORDER BY predeterminada DESC, nombre",
     [churchId]
   );
 }
@@ -1809,9 +1819,9 @@ export async function insertPlantilla(churchId: number, p: NewPlantilla, esInici
   const d = await getDb();
   if (p.predeterminada) await despejarPredeterminada(churchId, p.tipo);
   await d.execute(
-    `INSERT INTO plantillas (church_id, nombre, tipo, asunto, saludo, cuerpo_html, despedida, activa, predeterminada, es_inicial)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-    [churchId, p.nombre, p.tipo, p.asunto, p.saludo, p.cuerpo_html, p.despedida, p.activa ? 1 : 0, p.predeterminada ? 1 : 0, esInicial ? 1 : 0]
+    `INSERT INTO plantillas (church_id, nombre, tipo, asunto, saludo, cuerpo_html, despedida, activa, predeterminada, es_inicial, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,datetime('now'))`,
+    [churchId, p.nombre, p.tipo, p.asunto, p.saludo, p.cuerpo_html, p.despedida, p.activa ? 1 : 0, p.predeterminada ? 1 : 0, esInicial ? 1 : 0, crypto.randomUUID()]
   );
 }
 
@@ -1821,39 +1831,47 @@ export async function updatePlantilla(id: number, churchId: number, p: NewPlanti
   await d.execute(
     `UPDATE plantillas SET
        nombre = $1, tipo = $2, asunto = $3, saludo = $4, cuerpo_html = $5, despedida = $6,
-       activa = $7, predeterminada = $8, modificado_en = datetime('now', 'localtime')
+       activa = $7, predeterminada = $8, modificado_en = datetime('now', 'localtime'), updated_at = datetime('now')
      WHERE id = $9 AND church_id = $10`,
     [p.nombre, p.tipo, p.asunto, p.saludo, p.cuerpo_html, p.despedida, p.activa ? 1 : 0, p.predeterminada ? 1 : 0, id, churchId]
   );
 }
 
+/** Borrado SUAVE (deleted = 1) para que se propague en la sincronización. */
 export async function deletePlantilla(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM plantillas WHERE id = $1 AND church_id = $2", [id, churchId]);
+  await d.execute(
+    "UPDATE plantillas SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 /** ¿Ya se sembraron las plantillas iniciales? (idempotente) */
 export async function hayPlantillasIniciales(churchId: number): Promise<boolean> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM plantillas WHERE church_id = $1 AND es_inicial = 1",
+    "SELECT count(*) AS n FROM plantillas WHERE church_id = $1 AND es_inicial = 1 AND deleted = 0",
     [churchId]
   );
   return (rows[0]?.n ?? 0) > 0;
 }
 
-/** Elimina plantillas iniciales duplicadas conservando una por nombre
- *  (la de menor id). Repara siembras dobles antiguas. */
+/** Deduplica las plantillas iniciales conservando una por nombre. Como cada
+ *  equipo siembra las suyas, al sincronizar aparecen dobles con el mismo
+ *  nombre; se conserva la de MENOR uid (regla determinista igual en todos los
+ *  equipos, para que converjan) y las demás se marcan borradas (soft-delete),
+ *  de modo que el borrado también se propague. */
 export async function dedupPlantillasIniciales(churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
-    `DELETE FROM plantillas
-       WHERE church_id = $1 AND es_inicial = 1
-         AND id NOT IN (
-           SELECT MIN(id) FROM plantillas
-            WHERE church_id = $1 AND es_inicial = 1
-            GROUP BY nombre
-         )`,
+    `UPDATE plantillas
+        SET deleted = 1, updated_at = datetime('now')
+      WHERE church_id = $1 AND es_inicial = 1 AND deleted = 0
+        AND uid NOT IN (
+          SELECT MIN(uid) FROM plantillas
+           WHERE church_id = $1 AND es_inicial = 1 AND deleted = 0
+           GROUP BY nombre
+        )`,
     [churchId]
   );
 }
@@ -2307,25 +2325,53 @@ function servicioParams(s: NewServicio): unknown[] {
   ];
 }
 
-async function replaceAsistencia(servicioId: number, asistencia: AsistenciaEntry[]): Promise<void> {
+async function replaceAsistencia(churchId: number, servicioId: number, asistencia: AsistenciaEntry[]): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM servicio_asistencia WHERE servicio_id = $1", [servicioId]);
+  // Guardado por DIFERENCIAS (no borrar-y-reinsertar): así el uid de cada par
+  // (servicio, miembro) se conserva entre guardados y el borrado de quien se
+  // quitó se propaga como lápida en vez de perderse. Necesario para sincronizar.
+  const existentes = await d.select<{ member_id: number }[]>(
+    "SELECT member_id FROM servicio_asistencia WHERE servicio_id = $1 AND deleted = 0",
+    [servicioId]
+  );
+  const nuevos = new Set(asistencia.map((a) => a.member_id));
+
   for (const a of asistencia) {
-    await d.execute(
-      `INSERT INTO servicio_asistencia
-         (servicio_id, member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [
-        servicioId,
-        a.member_id,
-        a.presente ? 1 : 0,
-        // Al estar presente no hay razón de ausencia ni seguimiento.
-        a.presente ? null : a.razon,
-        a.presente ? null : a.razon_otra,
-        a.presente ? 0 : a.seguimiento ? 1 : 0,
-        a.nombre_snapshot,
-      ]
+    const presente = a.presente ? 1 : 0;
+    const razon = a.presente ? null : a.razon;
+    const razonOtra = a.presente ? null : a.razon_otra;
+    const seguimiento = a.presente ? 0 : a.seguimiento ? 1 : 0;
+    // UPSERT por la clave compuesta (servicio_id, member_id), conservando uid.
+    const yaEsta = await d.select<{ n: number }[]>(
+      "SELECT count(*) AS n FROM servicio_asistencia WHERE servicio_id = $1 AND member_id = $2",
+      [servicioId, a.member_id]
     );
+    if ((yaEsta[0]?.n ?? 0) > 0) {
+      await d.execute(
+        `UPDATE servicio_asistencia
+            SET presente = $1, razon = $2, razon_otra = $3, seguimiento = $4, nombre_snapshot = $5,
+                deleted = 0, church_id = $6, updated_at = datetime('now')
+          WHERE servicio_id = $7 AND member_id = $8`,
+        [presente, razon, razonOtra, seguimiento, a.nombre_snapshot, churchId, servicioId, a.member_id]
+      );
+    } else {
+      await d.execute(
+        `INSERT INTO servicio_asistencia
+           (servicio_id, member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot, church_id, uid, updated_at, deleted)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'),0)`,
+        [servicioId, a.member_id, presente, razon, razonOtra, seguimiento, a.nombre_snapshot, churchId, crypto.randomUUID()]
+      );
+    }
+  }
+
+  // Quien estaba y ya no: borrado suave (lápida) para propagar la baja.
+  for (const e of existentes) {
+    if (!nuevos.has(e.member_id)) {
+      await d.execute(
+        "UPDATE servicio_asistencia SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND member_id = $2",
+        [servicioId, e.member_id]
+      );
+    }
   }
 }
 
@@ -2341,7 +2387,7 @@ export async function insertServicio(churchId: number, s: NewServicio): Promise<
   );
   const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
   const servicioId = rows[0]?.id;
-  if (servicioId) await replaceAsistencia(servicioId, s.asistencia);
+  if (servicioId) await replaceAsistencia(churchId, servicioId, s.asistencia);
 }
 
 export async function updateServicio(id: number, churchId: number, s: NewServicio): Promise<void> {
@@ -2355,15 +2401,17 @@ export async function updateServicio(id: number, churchId: number, s: NewServici
      WHERE id = $18 AND church_id = $19`,
     [...servicioParams(s), id, churchId]
   );
-  await replaceAsistencia(id, s.asistencia);
+  await replaceAsistencia(churchId, id, s.asistencia);
 }
 
-/** Borrado SUAVE del servicio (se propaga en la sincronización). El roster
- *  local (servicio_asistencia) se limpia físicamente: no se sincroniza y el
- *  servicio queda oculto de todas las consultas. */
+/** Borrado SUAVE del servicio y de su roster (ambos se propagan en la
+ *  sincronización como lápidas). */
 export async function deleteServicio(id: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM servicio_asistencia WHERE servicio_id = $1", [id]);
+  await d.execute(
+    "UPDATE servicio_asistencia SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
+    [id]
+  );
   await d.execute(
     "UPDATE servicios SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [id, churchId]
@@ -2377,7 +2425,7 @@ export async function getServicioAsistencia(servicioId: number): Promise<Asisten
     member_id: number; presente: number; razon: string | null;
     razon_otra: string | null; seguimiento: number; nombre_snapshot: string;
   }[]>(
-    "SELECT member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot FROM servicio_asistencia WHERE servicio_id = $1 ORDER BY nombre_snapshot",
+    "SELECT member_id, presente, razon, razon_otra, seguimiento, nombre_snapshot FROM servicio_asistencia WHERE servicio_id = $1 AND deleted = 0 ORDER BY nombre_snapshot",
     [servicioId]
   );
   return rows.map((r) => ({
@@ -2702,7 +2750,7 @@ export async function countMemberAsistencias(memberId: number, churchId: number)
     `SELECT count(*) AS n
        FROM servicio_asistencia a
        JOIN servicios s ON s.id = a.servicio_id
-      WHERE a.member_id = $1 AND s.church_id = $2 AND s.deleted = 0`,
+      WHERE a.member_id = $1 AND s.church_id = $2 AND s.deleted = 0 AND a.deleted = 0`,
     [memberId, churchId]
   );
   return rows[0]?.n ?? 0;
@@ -2740,7 +2788,7 @@ export async function memberAsistenciaStats(memberId: number, churchId: number):
     `SELECT s.fecha, s.tipo, a.presente, a.razon, a.razon_otra
        FROM servicio_asistencia a
        JOIN servicios s ON s.id = a.servicio_id
-      WHERE a.member_id = $1 AND s.church_id = $2 AND s.deleted = 0
+      WHERE a.member_id = $1 AND s.church_id = $2 AND s.deleted = 0 AND a.deleted = 0
       ORDER BY s.fecha DESC, s.id DESC`,
     [memberId, churchId]
   );

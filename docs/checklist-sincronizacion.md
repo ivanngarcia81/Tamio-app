@@ -49,13 +49,21 @@ Marca ✅ lo que viaja bien de una Mac a la otra:
 - [ ] **Mensajes** (Inbox) — el buzón entre tesorería y secretaría
 - [ ] **Borrar** algo en A → desaparece en B (borrado suave)
 
-## Qué NO se sincroniza todavía (a propósito)
+## Sincronización ampliada (2026-07-23): roster + categorías + plantillas
 
-- **Roster de asistencia por miembro** (quién asistió a cada culto). El registro
-  del culto sí viaja; el detalle por persona se queda local.
-- **Categorías personalizadas** y **plantillas de cartas** (tienen enredos
-  propios; se harán con cuidado si se necesitan).
-- El **enlace mutuo** carta↔solicitud y traslado↔carta (queda local).
+Se sincronizan ahora, además de lo anterior:
+- **Categorías personalizadas** — los movimientos ya las referencian por uid
+  global (`custom-<uid>`), no por id local, así viajan bien entre equipos.
+- **Plantillas de cartas** — cada equipo siembra las suyas; tras bajar se
+  deduplican por nombre (soft-delete determinista por menor uid).
+- **Roster de asistencia por miembro** — tabla de unión mapeada por
+  `servicio_uid` + `member_uid`; guardado por diferencias (soft-delete de quien
+  se quita) para que la baja se propague.
+
+**SQL de nube a correr una vez** (Supabase → SQL Editor), además de los E1–SV1:
+`sync-cat1-categorias.sql`, `sync-p1-plantillas.sql`, `sync-sv2-roster.sql`.
+
+Sigue local a propósito: el **enlace mutuo** carta↔solicitud y traslado↔carta.
 
 ## Si algo falla
 Anota el módulo y el mensaje del indicador (o el error en rojo de "Sincronizar

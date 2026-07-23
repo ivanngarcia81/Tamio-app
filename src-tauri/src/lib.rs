@@ -614,6 +614,74 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE churches ADD COLUMN sub_estado TEXT NOT NULL DEFAULT 'activa';
             ALTER TABLE churches ADD COLUMN sub_vence TEXT;
         "#,
+    }, Migration {
+        version: 32,
+        description: "sincronización P1/CAT1/SV2: metadatos en plantillas, categorias_custom y roster",
+        kind: MigrationKind::Up,
+        sql: r#"
+            ALTER TABLE plantillas ADD COLUMN uid TEXT;
+            ALTER TABLE plantillas ADD COLUMN updated_at TEXT;
+            ALTER TABLE plantillas ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE plantillas SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE plantillas SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_plantillas_sync ON plantillas(church_id, updated_at);
+
+            ALTER TABLE categorias_custom ADD COLUMN uid TEXT;
+            ALTER TABLE categorias_custom ADD COLUMN updated_at TEXT;
+            ALTER TABLE categorias_custom ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE categorias_custom SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE categorias_custom SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_categorias_custom_sync ON categorias_custom(church_id, updated_at);
+
+            -- El roster (servicio_asistencia) no tenía church_id: se hereda del
+            -- servicio al que pertenece cada fila para poder aislarlo por iglesia.
+            ALTER TABLE servicio_asistencia ADD COLUMN church_id INTEGER;
+            ALTER TABLE servicio_asistencia ADD COLUMN uid TEXT;
+            ALTER TABLE servicio_asistencia ADD COLUMN updated_at TEXT;
+            ALTER TABLE servicio_asistencia ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE servicio_asistencia
+               SET church_id = (SELECT s.church_id FROM servicios s WHERE s.id = servicio_asistencia.servicio_id)
+             WHERE church_id IS NULL;
+            UPDATE servicio_asistencia SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE servicio_asistencia SET updated_at = datetime('now') WHERE updated_at IS NULL;
+            CREATE INDEX IF NOT EXISTS idx_roster_sync ON servicio_asistencia(church_id, updated_at);
+        "#,
+    }, Migration {
+        version: 33,
+        description: "categorías portables: referencia custom-<uid> en movimientos (en vez de id local)",
+        kind: MigrationKind::Up,
+        sql: r#"
+            -- Los movimientos guardaban la categoría personalizada como
+            -- 'custom-<id local>', que difiere entre equipos. Se reescribe a
+            -- 'custom-<uid global>' para que la referencia viaje bien en la
+            -- sincronización. Se sube updated_at para que se re-suban.
+            UPDATE transactions
+               SET categoria = 'custom-' || (
+                     SELECT c.uid FROM categorias_custom c
+                      WHERE 'custom-' || c.id = transactions.categoria
+                        AND c.church_id = transactions.church_id
+                   ),
+                   updated_at = datetime('now')
+             WHERE categoria LIKE 'custom-%'
+               AND EXISTS (
+                     SELECT 1 FROM categorias_custom c
+                      WHERE 'custom-' || c.id = transactions.categoria
+                        AND c.church_id = transactions.church_id
+                   );
+
+            UPDATE gastos_recurrentes
+               SET categoria = 'custom-' || (
+                     SELECT c.uid FROM categorias_custom c
+                      WHERE 'custom-' || c.id = gastos_recurrentes.categoria
+                        AND c.church_id = gastos_recurrentes.church_id
+                   )
+             WHERE categoria LIKE 'custom-%'
+               AND EXISTS (
+                     SELECT 1 FROM categorias_custom c
+                      WHERE 'custom-' || c.id = gastos_recurrentes.categoria
+                        AND c.church_id = gastos_recurrentes.church_id
+                   );
+        "#,
     }]
 }
 
