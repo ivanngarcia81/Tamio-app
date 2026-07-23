@@ -99,3 +99,33 @@ dispararlo con el motor de PDF que ya existe (`printDashboard` / reporte anual).
 ### Privacidad
 Se envía a la IA **solo el dato/total necesario** para redactar (no toda la base).
 Nunca salen datos sensibles que no hagan falta para responder.
+
+---
+
+## Idea futura: burbuja de chat de IA (asistente conversacional) — ANOTADA 2026-07-23
+
+Pregunta del dueño: ¿no sería mejor una burbuja de chat de IA en vez de botones?
+
+**Decisión: por ahora se quedan los botones contextuales** (columna vertebral).
+La burbuja se anota como mejora futura, no como reemplazo. Razones:
+
+- **Descubribilidad:** los botones están donde se necesitan y muestran qué se
+  puede hacer; una burbuja vacía no guía al usuario (público no técnico: tesoreros
+  de iglesia, a veces mayores).
+- **Seguridad del dinero:** un chat abierto invita a pedir cosas que rompen la
+  regla de oro ("estima el diezmo", "cuánto debería gastar"). Los botones
+  mantienen a la IA en su carril (explicar, no calcular/inventar).
+- **Costo:** un chat invita a uso frecuente → más gasto de créditos; los botones
+  son puntuales.
+
+**Si se construye a futuro — versión híbrida ACOTADA (no agente suelto):**
+- Mantener todos los botones actuales tal cual.
+- Añadir una burbuja global que sobre todo **responde preguntas** sobre los datos
+  (reusa el modo `pregunta` ya existente, con cifras precalculadas por la app y el
+  filtro de privacidad por nombre).
+- Cuando el usuario pida una acción ("hazme una carta", "registra un gasto"), el
+  asistente **enruta al botón/modal correcto** (abre el editor de cartas, el modal
+  de nuevo registro con el modo `interpretar`, etc.) en vez de ejecutarla suelto.
+- Nunca toca dinero directamente: sigue valiendo "la app calcula, la IA explica".
+- Sugerencias/atajos visibles dentro de la burbuja para evitar la "pantalla en
+  blanco" (chips con ejemplos: "¿Cuánto entró este mes?", "Redactar una carta…").
