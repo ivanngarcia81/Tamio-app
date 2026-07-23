@@ -454,6 +454,12 @@ export const en: Resources = {
     archivo: "Annual-report",
   },
 
+  update: {
+    titulo: "A new version of Tamio is available ({{version}})",
+    descargar: "Download",
+    ahoraNo: "Not now",
+  },
+
   respaldo: {
     titulo: "Backup",
     sub: "Export your data or save a backup copy",

@@ -448,6 +448,12 @@ export const es = {
     archivo: "Reporte-anual",
   },
 
+  update: {
+    titulo: "Hay una versión nueva de Tamio ({{version}})",
+    descargar: "Descargar",
+    ahoraNo: "Ahora no",
+  },
+
   respaldo: {
     titulo: "Respaldo",
     sub: "Exporta tus datos o guarda una copia de seguridad",

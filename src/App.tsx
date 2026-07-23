@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
+import UpdateBanner from "./components/UpdateBanner";
 import CmdPalette from "./components/CmdPalette";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
@@ -235,6 +236,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       )}
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} onSalir={salir} />
       <main className="main">
+        <UpdateBanner />
         {authHabilitado && <SubBanner church={church} />}
         <Routes>
           <Route
