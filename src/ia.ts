@@ -29,9 +29,10 @@ export interface DatosCartaIA {
   idioma: string;
 }
 
-/** Invoca la función redactar-ia y devuelve el campo pedido, con errores
- *  legibles (extrae el detalle real de la respuesta, no solo "non-2xx"). */
-async function invocarIA(body: Record<string, unknown>, campo: "html" | "texto"): Promise<string> {
+/** Invoca la función redactar-ia y traduce los errores a algo legible (extrae
+ *  el detalle real de la respuesta, no solo "non-2xx"). Devuelve el objeto de
+ *  datos crudo; los helpers extraen el campo que les toca. */
+async function invocarIACruda(body: Record<string, unknown>): Promise<Record<string, unknown>> {
   if (!supabase) throw new Error("Supabase no está configurado.");
   const { data, error } = await supabase.functions.invoke("redactar-ia", { body });
   if (error) {
@@ -44,8 +45,13 @@ async function invocarIA(body: Record<string, unknown>, campo: "html" | "texto")
     }
     throw error;
   }
-  const valor = (data as Record<string, string> | null)?.[campo];
-  if (!valor) throw new Error("La IA no devolvió contenido.");
+  return (data as Record<string, unknown> | null) ?? {};
+}
+
+async function invocarIA(body: Record<string, unknown>, campo: "html" | "texto"): Promise<string> {
+  const data = await invocarIACruda(body);
+  const valor = data[campo];
+  if (typeof valor !== "string" || !valor) throw new Error("La IA no devolvió contenido.");
   return valor;
 }
 
@@ -79,4 +85,41 @@ export async function preguntarDatos(datos: {
   idioma: string;
 }): Promise<string> {
   return invocarIA({ modo: "pregunta", ...datos }, "texto");
+}
+
+/** Un movimiento interpretado por la IA a partir de texto y/o de la foto de un
+ *  comprobante. Todos los campos son opcionales: la IA deja en null lo que no
+ *  puede deducir con seguridad (nunca inventa montos). El humano revisa el
+ *  formulario prellenado antes de guardar. */
+export interface MovimientoInterpretado {
+  tipo?: "ingreso" | "gasto" | null;
+  categoria?: string | null;
+  concepto?: string | null;
+  monto?: number | null;
+  fecha?: string | null;
+  metodo?: string | null;
+  persona?: string | null;
+  confianza?: "alta" | "media" | "baja" | null;
+}
+
+/** Catálogo mínimo (id + nombre) que se envía a la IA para que elija SOLO de
+ *  las categorías y métodos válidos de esta iglesia. */
+export interface OpcionIA { id: string; nombre: string; }
+
+/** Convierte una descripción en lenguaje natural y/o la foto de un comprobante
+ *  (OCR) en los campos de un movimiento. La imagen va en base64 sin el prefijo
+ *  "data:". */
+export async function interpretarMovimiento(datos: {
+  texto?: string;
+  imagen?: { media_type: string; data: string };
+  hoy: string;
+  categoriasIngreso: OpcionIA[];
+  categoriasGasto: OpcionIA[];
+  metodos: OpcionIA[];
+  idioma: string;
+}): Promise<MovimientoInterpretado> {
+  const data = await invocarIACruda({ modo: "interpretar", ...datos });
+  const interp = data.interpretacion as MovimientoInterpretado | undefined;
+  if (!interp || typeof interp !== "object") throw new Error("La IA no devolvió una interpretación.");
+  return interp;
 }

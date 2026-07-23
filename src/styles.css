@@ -1751,6 +1751,19 @@ html.vibrancy .main { background: var(--surface); }
 .method-choice.is-selected:hover { background: var(--line); }
 
 /* File dropzone */
+/* Captura por IA: barra de lenguaje natural arriba del formulario de registro */
+.ia-capture {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-1) 7%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--accent-1) 22%, var(--line));
+}
+.ia-capture-row { display: flex; align-items: center; gap: 8px; }
+.ia-capture-row .form-input { flex: 1; min-width: 0; }
+.ia-capture-spark { font-size: 15px; flex-shrink: 0; }
+.ia-capture-hint { font-size: 11.5px; color: var(--text-3); margin-top: 6px; padding-left: 23px; }
+
 .file-drop {
   border: 1.5px dashed var(--line);
   border-radius: 12px;

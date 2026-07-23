@@ -52,8 +52,9 @@ serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    // modo: "carta" (default, devuelve {html}) | "acta" | "resumen" | "pregunta" ({texto}).
-    const modo = ["acta", "resumen", "pregunta"].includes(body.modo) ? body.modo : "carta";
+    // modo: "carta" (default, devuelve {html}) | "acta" | "resumen" | "pregunta"
+    //       ({texto}) | "interpretar" (devuelve {interpretacion} JSON).
+    const modo = ["acta", "resumen", "pregunta", "interpretar"].includes(body.modo) ? body.modo : "carta";
     const tipo = String(body.tipo ?? "personalizada");
     const puntos = String(body.puntos ?? "").trim();
     const iglesia = String(body.iglesia ?? "").trim();
@@ -64,8 +65,78 @@ serve(async (req: Request) => {
 
     let sistema: string;
     let usuario: string;
+    // Contenido del mensaje del usuario: texto normalmente, o bloques (texto +
+    // imagen) para el OCR de comprobantes en el modo "interpretar".
+    let contenido: unknown = null;
 
-    if (modo === "pregunta") {
+    if (modo === "interpretar") {
+      // Convierte una descripción en lenguaje natural y/o la foto de un
+      // comprobante en los campos de un movimiento. La IA SOLO extrae datos
+      // presentes (nunca inventa montos) y el humano los revisa antes de
+      // guardar, así que respeta la regla de oro (la app calcula, no la IA).
+      const texto = String(body.texto ?? "").trim();
+      const imagen = body.imagen as { media_type?: string; data?: string } | undefined;
+      const hoy = String(body.hoy ?? "").trim();
+      const catIngreso = Array.isArray(body.categoriasIngreso) ? body.categoriasIngreso : [];
+      const catGasto = Array.isArray(body.categoriasGasto) ? body.categoriasGasto : [];
+      const metodos = Array.isArray(body.metodos) ? body.metodos : [];
+      if (!texto && !(imagen && imagen.data)) {
+        return json({ error: esES ? "No hay texto ni imagen para interpretar." : "No text or image to interpret." }, 400);
+      }
+
+      const listaCat = (arr: any[]) => arr.map((c) => `${c.id} (${c.nombre})`).join(", ");
+      sistema = esES
+        ? `Eres el asistente de captura de una app de tesorería de iglesia. Conviertes la ` +
+          `descripción del usuario y/o la foto de un comprobante en UN movimiento estructurado. ` +
+          `Devuelves EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown) con estas claves:\n` +
+          `- "tipo": "ingreso" o "gasto" o null.\n` +
+          `- "categoria": el id EXACTO de una categoría de la lista que corresponda al tipo, o null.\n` +
+          `- "concepto": descripción corta, o null.\n` +
+          `- "monto": número (sin símbolo de moneda), o null.\n` +
+          `- "fecha": "YYYY-MM-DD", resolviendo expresiones relativas contra HOY, o null.\n` +
+          `- "metodo": un id de método de pago de la lista, o null.\n` +
+          `- "persona": nombre del aportante (ingreso) o beneficiario (gasto), o null.\n` +
+          `- "confianza": "alta", "media" o "baja".\n` +
+          `REGLAS: NUNCA inventes un monto que no esté escrito o visible en la imagen; si no hay ` +
+          `monto claro, pon null. Elige "categoria" y "metodo" SOLO de las listas dadas. Un ` +
+          `comprobante o factura casi siempre es un GASTO. Si algo no está, usa null; no adivines.`
+        : `You are the data-entry assistant of a church treasury app. You turn the user's ` +
+          `description and/or a receipt photo into ONE structured transaction. You return ` +
+          `EXCLUSIVELY a JSON object (no extra text, no markdown) with these keys:\n` +
+          `- "tipo": "ingreso" or "gasto" or null.\n` +
+          `- "categoria": the EXACT id of a category from the list matching the type, or null.\n` +
+          `- "concepto": short description, or null.\n` +
+          `- "monto": number (no currency symbol), or null.\n` +
+          `- "fecha": "YYYY-MM-DD", resolving relative expressions against TODAY, or null.\n` +
+          `- "metodo": a payment-method id from the list, or null.\n` +
+          `- "persona": contributor (income) or payee (expense) name, or null.\n` +
+          `- "confianza": "alta", "media" or "baja".\n` +
+          `RULES: NEVER invent an amount not written or visible in the image; if there is no ` +
+          `clear amount, use null. Choose "categoria" and "metodo" ONLY from the given lists. A ` +
+          `receipt or invoice is almost always a GASTO (expense). If something is missing, use ` +
+          `null; do not guess.`;
+
+      const ctxI: string[] = [];
+      ctxI.push((esES ? `HOY: ${hoy}` : `TODAY: ${hoy}`));
+      ctxI.push((esES ? `Categorías de ingreso: ${listaCat(catIngreso)}` : `Income categories: ${listaCat(catIngreso)}`));
+      ctxI.push((esES ? `Categorías de gasto: ${listaCat(catGasto)}` : `Expense categories: ${listaCat(catGasto)}`));
+      ctxI.push((esES ? `Métodos de pago: ${listaCat(metodos)}` : `Payment methods: ${listaCat(metodos)}`));
+      usuario =
+        ctxI.join("\n") +
+        (texto
+          ? (esES ? `\n\nDescripción del usuario:\n${texto}` : `\n\nUser description:\n${texto}`)
+          : (esES ? `\n\nExtrae los datos del comprobante de la imagen.` : `\n\nExtract the data from the receipt image.`));
+
+      if (imagen && imagen.data) {
+        contenido = [
+          { type: "text", text: usuario },
+          {
+            type: "image",
+            source: { type: "base64", media_type: imagen.media_type ?? "image/jpeg", data: imagen.data },
+          },
+        ];
+      }
+    } else if (modo === "pregunta") {
       // La app manda la PREGUNTA + las cifras ya calculadas; la IA responde
       // solo con esas cifras (puede compararlas, jamás inventar otras).
       const datos = String(body.datos ?? "").trim();
@@ -163,7 +234,7 @@ serve(async (req: Request) => {
         max_tokens: 1500,
         thinking: { type: "adaptive" },
         system: sistema,
-        messages: [{ role: "user", content: usuario }],
+        messages: [{ role: "user", content: contenido ?? usuario }],
       }),
     });
 
@@ -181,6 +252,18 @@ serve(async (req: Request) => {
       .trim();
 
     if (!texto) return json({ error: "Respuesta vacía de la IA." }, 502);
+
+    // interpretar: la IA devuelve JSON; se limpia cualquier ``` y se valida.
+    if (modo === "interpretar") {
+      const limpio = texto.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+      let interpretacion: unknown;
+      try {
+        interpretacion = JSON.parse(limpio);
+      } catch {
+        return json({ error: "La IA no devolvió un JSON válido.", detalle: texto.slice(0, 200) }, 502);
+      }
+      return json({ interpretacion });
+    }
 
     // acta / resumen / pregunta: texto plano tal cual.
     if (modo !== "carta") {

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
   METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
@@ -12,9 +13,25 @@ import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconWarn 
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { iaHabilitada, interpretarMovimiento, type MovimientoInterpretado } from "../ia";
 
 function fileNameFromPath(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
+}
+
+/** Tipos de imagen que Claude puede leer para el OCR (HEIC y PDF no van como
+ *  imagen, así que para esos no se ofrece "Leer con IA"). */
+const OCR_MEDIA: Record<string, string> = {
+  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif",
+};
+
+function bytesABase64(bytes: Uint8Array): string {
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
 }
 
 export type ModalTab = "ingreso" | "gasto" | "miembro";
@@ -39,7 +56,7 @@ function parseMonto(s: string): number | null {
 }
 
 export default function NewRecordModal({ church, mode, onClose, onSaved }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   useEscapeClose(onClose);
   const isEdit = mode.kind !== "create";
   // Cuando se abre desde Membresía (Secretaría) la pestaña queda fija en
@@ -72,6 +89,13 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [esRecurrente, setEsRecurrente] = useState(false);
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
   const [dropActivo, setDropActivo] = useState(false);
+
+  // --- captura por IA (lenguaje natural + OCR de comprobantes) ---
+  const [iaTexto, setIaTexto] = useState("");
+  const [iaCargando, setIaCargando] = useState(false);
+  // Categoría que la IA quiere aplicar tras cambiar de pestaña; el efecto de
+  // cambio de pestaña la usa en vez del valor por defecto (si no, lo pisaría).
+  const catPendiente = useRef<string | null>(null);
 
   // Arrastrar y soltar un comprobante (PDF/imagen) sobre el modal lo adjunta.
   // Los eventos de arrastre nativos llegan por la API del webview de Tauri.
@@ -144,7 +168,14 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
 
   useEffect(() => {
     if (mode.kind !== "create") return;
-    setCategoria(tab === "gasto" ? "servicios" : "ofrenda");
+    // Si la IA dejó una categoría pendiente para esta pestaña, se respeta;
+    // si no, se vuelve al valor por defecto del tipo.
+    if (catPendiente.current) {
+      setCategoria(catPendiente.current);
+      catPendiente.current = null;
+    } else {
+      setCategoria(tab === "gasto" ? "servicios" : "ofrenda");
+    }
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
@@ -188,6 +219,96 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const botonGuardar = saving
     ? t("common.guardando")
     : isEdit ? t("common.guardarCambios") : tab === "miembro" ? t("recordModal.guardarMiembro") : tab === "ingreso" ? t("recordModal.guardarIngreso") : t("recordModal.guardarGasto");
+
+  /** Vuelca en el formulario los campos que la IA logró deducir. Nada se
+   *  guarda: el humano revisa y confirma. Valida categoría/método contra los
+   *  catálogos reales y descarta lo que no encaje. */
+  function aplicarInterpretacion(it: MovimientoInterpretado): boolean {
+    const tipoX: ModalTab =
+      (it.tipo === "ingreso" || it.tipo === "gasto") && !pestanaBloqueada ? it.tipo : tab;
+    const listaCat = tipoX === "gasto" ? getCategoriasGasto() : getCategoriasIngreso();
+    const cat = it.categoria && listaCat.some((c) => c.id === it.categoria) ? it.categoria : null;
+
+    let algo = false;
+    if (tipoX !== tab) {
+      catPendiente.current = cat; // el efecto de cambio de pestaña la aplica
+      setTab(tipoX);
+      algo = true;
+    } else if (cat) {
+      setCategoria(cat);
+      algo = true;
+    }
+    if (it.concepto) { setConcepto(it.concepto); algo = true; }
+    if (typeof it.monto === "number" && it.monto > 0) { setMonto(String(it.monto)); algo = true; }
+    if (it.fecha && /^\d{4}-\d{2}-\d{2}$/.test(it.fecha) && it.fecha <= hoy) { setFecha(it.fecha); algo = true; }
+    if (it.metodo && METODOS_PAGO.some((m) => m.id === it.metodo)) { setMetodo(it.metodo); algo = true; }
+    if (it.persona) {
+      algo = true;
+      if (tipoX === "gasto") {
+        setBeneficiario(it.persona);
+      } else {
+        const p = it.persona.toLowerCase();
+        const m = members.find((mm) => mm.nombre.toLowerCase() === p)
+          ?? members.find((mm) => mm.nombre.toLowerCase().includes(p));
+        if (m) { setAportanteId(m.id); setAportanteQuery(m.nombre); }
+        else { setAportanteId(null); setAportanteQuery(it.persona); }
+      }
+    }
+    return algo;
+  }
+
+  async function interpretarTexto() {
+    const texto = iaTexto.trim();
+    if (!texto || iaCargando) return;
+    setIaCargando(true);
+    setError(null);
+    try {
+      const it = await interpretarMovimiento({
+        texto,
+        hoy,
+        categoriasIngreso: getCategoriasIngreso().map((c) => ({ id: c.id, nombre: catNombre(c.id) })),
+        categoriasGasto: getCategoriasGasto().map((c) => ({ id: c.id, nombre: catNombre(c.id) })),
+        metodos: METODOS_PAGO.map((m) => ({ id: m.id, nombre: metodoNombre(m.id) })),
+        idioma: i18n.language?.startsWith("en") ? "en" : "es",
+      });
+      const algo = aplicarInterpretacion(it);
+      showToast(algo ? t("recordModal.ia.listo") : t("recordModal.ia.nada"));
+      if (algo) setIaTexto("");
+    } catch (e) {
+      setError(t("recordModal.ia.error", { error: String(e) }));
+    } finally {
+      setIaCargando(false);
+    }
+  }
+
+  async function interpretarComprobante() {
+    if (!comprobantePath || iaCargando) return;
+    const ext = comprobantePath.split(".").pop()?.toLowerCase() ?? "";
+    const media = OCR_MEDIA[ext];
+    if (!media) return;
+    setIaCargando(true);
+    setError(null);
+    try {
+      const bytes = await readFile(comprobantePath);
+      const it = await interpretarMovimiento({
+        imagen: { media_type: media, data: bytesABase64(bytes) },
+        hoy,
+        categoriasIngreso: getCategoriasIngreso().map((c) => ({ id: c.id, nombre: catNombre(c.id) })),
+        categoriasGasto: getCategoriasGasto().map((c) => ({ id: c.id, nombre: catNombre(c.id) })),
+        metodos: METODOS_PAGO.map((m) => ({ id: m.id, nombre: metodoNombre(m.id) })),
+        idioma: i18n.language?.startsWith("en") ? "en" : "es",
+      });
+      const algo = aplicarInterpretacion(it);
+      showToast(algo ? t("recordModal.ia.listo") : t("recordModal.ia.nada"));
+    } catch (e) {
+      setError(t("recordModal.ia.error", { error: String(e) }));
+    } finally {
+      setIaCargando(false);
+    }
+  }
+
+  const comprobanteEsImagen =
+    !!comprobantePath && !!OCR_MEDIA[comprobantePath.split(".").pop()?.toLowerCase() ?? ""];
 
   async function pickComprobante() {
     try {
@@ -408,6 +529,31 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
             </div>
           )}
 
+          {tab !== "miembro" && iaHabilitada && !isEdit && (
+            <div className="ia-capture">
+              <div className="ia-capture-row">
+                <span className="ia-capture-spark" aria-hidden>✨</span>
+                <input
+                  className="form-input"
+                  value={iaTexto}
+                  onChange={(e) => setIaTexto(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); interpretarTexto(); } }}
+                  placeholder={t("recordModal.ia.placeholder")}
+                  disabled={iaCargando}
+                />
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={interpretarTexto}
+                  disabled={iaCargando || !iaTexto.trim()}
+                >
+                  {iaCargando ? t("recordModal.ia.interpretando") : t("recordModal.ia.interpretar")}
+                </button>
+              </div>
+              <div className="ia-capture-hint">{t("recordModal.ia.hint")}</div>
+            </div>
+          )}
+
           {tab !== "miembro" && (
             <>
               <div className="form-group full">
@@ -618,6 +764,17 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                     <span style={{ flex: 1, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {fileNameFromPath(comprobantePath)}
                     </span>
+                    {iaHabilitada && comprobanteEsImagen && !isEdit && (
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        onClick={interpretarComprobante}
+                        disabled={iaCargando}
+                        title={t("recordModal.ia.leerHint")}
+                      >
+                        {iaCargando ? t("recordModal.ia.leyendo") : `✨ ${t("recordModal.ia.leerComprobante")}`}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="btn ghost sm"
