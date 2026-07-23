@@ -462,6 +462,21 @@ export const en: Resources = {
     sinDatos: "There is no data to export.",
   },
 
+  compactar: {
+    titulo: "Compact database",
+    sub: "Permanently remove already-deleted records and reclaim space",
+    pendientes: "{{count}} deleted record is taking up space",
+    pendientes_other: "{{count}} deleted records are taking up space",
+    estaCompacta: "The database is already compact",
+    boton: "Compact now",
+    compactando: "Compacting…",
+    listo: "Freed {{count}} record.",
+    listo_other: "Freed {{count}} records.",
+    yaCompacta: "There was nothing to compact.",
+    hint: "When you delete a record it is flagged as deleted (so it can be undone and so the deletion syncs). Compacting removes them for good. With the cloud on, only records deleted more than 90 days ago — already synced to your other devices — are removed.",
+    error: "Could not compact: {{error}}",
+  },
+
   sync: {
     titulo: "Sync (beta)",
     sub: "Share members across your church's Macs",

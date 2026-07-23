@@ -753,6 +753,123 @@ export function sincronizarMensajes(churchIdLocal: number): Promise<ResultadoSyn
   return sincronizarTablaSimple(churchIdLocal, "mensajes", MENSAJE_DATA_COLS);
 }
 
+// ============================================================================
+// COMPACTACIÓN — purga física de "lápidas" (deleted = 1) + VACUUM
+// ----------------------------------------------------------------------------
+// Los borrados son SUAVES: la fila queda con deleted = 1 para que el borrado se
+// propague por sincronización. Con el tiempo esas lápidas se acumulan. Compactar
+// las elimina de verdad y recupera el espacio del archivo SQLite.
+//
+// Seguridad frente a "resurrección":
+//  - Modo LOCAL (sin nube): no hay que propagar nada → se purgan TODAS.
+//  - Modo NUBE: solo se purgan lápidas VIEJAS (> DIAS_TOMBSTONE), y además se
+//    borran de la nube por uid para que no vuelvan a bajar. Si un equipo llevara
+//    más de DIAS_TOMBSTONE sin sincronizar podría resucitar una fila; el margen
+//    amplio hace ese caso prácticamente imposible en el uso real.
+// ============================================================================
+
+/** Margen (días) antes de purgar una lápida en modo nube: debe haberse
+ *  propagado a todos los equipos con holgura. */
+const DIAS_TOMBSTONE = 90;
+
+export interface CompactResultado {
+  ok: boolean;
+  /** Filas físicamente eliminadas en local. */
+  filasLocal: number;
+  /** Filas eliminadas también en la nube (0 en modo local). */
+  filasNube: number;
+  /** true si corrió en modo local (sin sincronización). */
+  soloLocal: boolean;
+  error?: string;
+}
+
+/** Marca de corte en formato UTC de SQLite ('YYYY-MM-DD HH:MM:SS'). */
+function cutoffUtc(dias: number): string {
+  return new Date(Date.now() - dias * 86400000).toISOString().replace("T", " ").slice(0, 19);
+}
+
+/** Tablas de la base que tienen columna `deleted` y `church_id` (las que
+ *  acumulan lápidas). Se descubre en tiempo real para cubrir tablas futuras. */
+async function tablasConDeleted(
+  d: Awaited<ReturnType<typeof getDb>>,
+): Promise<{ tabla: string; tieneUid: boolean }[]> {
+  const tablas = await d.select<{ name: string }[]>(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+  );
+  const res: { tabla: string; tieneUid: boolean }[] = [];
+  for (const { name } of tablas) {
+    // El nombre viene de sqlite_master (no de entrada del usuario): seguro.
+    const cols = await d.select<{ name: string }[]>(`PRAGMA table_info(${name})`);
+    const nombres = new Set(cols.map((c) => c.name));
+    if (nombres.has("deleted") && nombres.has("church_id")) {
+      res.push({ tabla: name, tieneUid: nombres.has("uid") });
+    }
+  }
+  return res;
+}
+
+/** Cuántas lápidas hay listas para purgar (para mostrarlo en Ajustes). */
+export async function contarPurgables(churchIdLocal: number): Promise<number> {
+  const d = await getDb();
+  const synced = Boolean(supabase) && (await churchIdRemoto()) !== null;
+  const cutoff = synced ? cutoffUtc(DIAS_TOMBSTONE) : null;
+  const tablas = await tablasConDeleted(d);
+  let total = 0;
+  for (const { tabla } of tablas) {
+    const sql = cutoff
+      ? `SELECT count(*) AS n FROM ${tabla} WHERE church_id = $1 AND deleted = 1 AND coalesce(updated_at, '') < $2`
+      : `SELECT count(*) AS n FROM ${tabla} WHERE church_id = $1 AND deleted = 1`;
+    const r = await d.select<{ n: number }[]>(sql, cutoff ? [churchIdLocal, cutoff] : [churchIdLocal]);
+    total += r[0]?.n ?? 0;
+  }
+  return total;
+}
+
+/** Purga física las lápidas purgables y ejecuta VACUUM para recuperar espacio.
+ *  No lanza: devuelve un CompactResultado con el conteo o el error. */
+export async function compactarBase(churchIdLocal: number): Promise<CompactResultado> {
+  try {
+    const d = await getDb();
+    const remoteChurch = supabase ? await churchIdRemoto() : null;
+    const synced = remoteChurch !== null;
+    const cutoff = synced ? cutoffUtc(DIAS_TOMBSTONE) : null;
+    const tablas = await tablasConDeleted(d);
+
+    let filasLocal = 0;
+    let filasNube = 0;
+
+    for (const { tabla, tieneUid } of tablas) {
+      const selSql = cutoff
+        ? `SELECT id, uid FROM ${tabla} WHERE church_id = $1 AND deleted = 1 AND coalesce(updated_at, '') < $2`
+        : `SELECT id, uid FROM ${tabla} WHERE church_id = $1 AND deleted = 1`;
+      const params = cutoff ? [churchIdLocal, cutoff] : [churchIdLocal];
+      const filas = await d.select<{ id: number; uid: string | null }[]>(selSql, params);
+      if (filas.length === 0) continue;
+
+      // Modo nube: borrar primero en la nube por uid. Si falla (offline u otro
+      // error), NO se purga local — así la lápida sigue viva y no resucita.
+      if (synced && tieneUid && supabase && remoteChurch) {
+        const uids = filas.map((f) => f.uid).filter((u): u is string => !!u);
+        if (uids.length > 0) {
+          const { error } = await supabase.from(tabla).delete().eq("church_id", remoteChurch).in("uid", uids);
+          if (error) continue;
+          filasNube += uids.length;
+        }
+      }
+
+      await d.execute(selSql.replace("SELECT id, uid", "DELETE"), params);
+      filasLocal += filas.length;
+    }
+
+    // Reordena el archivo y libera las páginas que quedaron vacías.
+    await d.execute("VACUUM");
+
+    return { ok: true, filasLocal, filasNube, soloLocal: !synced };
+  } catch (e) {
+    return { ok: false, filasLocal: 0, filasNube: 0, soloLocal: true, error: String(e) };
+  }
+}
+
 /** Suma parcial de dos resultados de sincronización, propagando el primer fallo. */
 function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
   return {

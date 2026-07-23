@@ -456,6 +456,21 @@ export const es = {
     sinDatos: "No hay datos para exportar.",
   },
 
+  compactar: {
+    titulo: "Compactar base de datos",
+    sub: "Elimina de verdad los registros ya borrados y recupera espacio",
+    pendientes: "{{count}} registro eliminado ocupa espacio",
+    pendientes_other: "{{count}} registros eliminados ocupan espacio",
+    estaCompacta: "La base ya está compacta",
+    boton: "Compactar ahora",
+    compactando: "Compactando…",
+    listo: "Se liberó {{count}} registro.",
+    listo_other: "Se liberaron {{count}} registros.",
+    yaCompacta: "No había nada que compactar.",
+    hint: "Al borrar un registro queda marcado como eliminado (para poder deshacer y para sincronizar el borrado). Compactar los quita definitivamente. Con la nube activa solo se quitan los borrados de hace más de 90 días, ya sincronizados con tus otros equipos.",
+    error: "No se pudo compactar: {{error}}",
+  },
+
   sync: {
     titulo: "Sincronización (beta)",
     sub: "Comparte los miembros entre las Macs de tu iglesia",

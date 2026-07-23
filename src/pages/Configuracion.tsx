@@ -19,6 +19,7 @@ import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
 import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
+import CompactSettings from "../components/settings/CompactSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import SyncSettings from "../components/settings/SyncSettings";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
@@ -293,6 +294,7 @@ export default function Configuracion({
               </div>
               <div className="settings-masonry">
                 <BackupSettings church={church} />
+                <CompactSettings church={church} />
                 <DangerZoneSettings church={church} />
               </div>
             </section>
