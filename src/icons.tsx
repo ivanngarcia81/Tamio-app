@@ -382,3 +382,13 @@ export const IconClip = ({ size = 14, strokeWidth = 2 }: IconProps) => (
     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
   </svg>
 );
+
+/** Destellos (IA). Un destello grande de cuatro puntas y dos chispas pequeñas;
+ *  relleno para que se lea nítido a tamaño pequeño en los botones. */
+export const IconSparkles = ({ size = 14 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+    <path d="M12 2.5c.3 0 .56.2.65.49l1.06 3.44a3 3 0 0 0 1.96 1.96l3.44 1.06a.68.68 0 0 1 0 1.3l-3.44 1.06a3 3 0 0 0-1.96 1.96l-1.06 3.44a.68.68 0 0 1-1.3 0l-1.06-3.44a3 3 0 0 0-1.96-1.96L4.9 11.7a.68.68 0 0 1 0-1.3l3.44-1.06a3 3 0 0 0 1.96-1.96l1.06-3.44A.68.68 0 0 1 12 2.5Z" />
+    <path d="M19 3c.14 0 .27.1.31.24l.42 1.35a1 1 0 0 0 .68.68l1.35.42a.33.33 0 0 1 0 .62l-1.35.42a1 1 0 0 0-.68.68l-.42 1.35a.33.33 0 0 1-.62 0l-.42-1.35a1 1 0 0 0-.68-.68l-1.35-.42a.33.33 0 0 1 0-.62l1.35-.42a1 1 0 0 0 .68-.68l.42-1.35A.33.33 0 0 1 19 3Z" opacity=".85" />
+    <path d="M5.5 15.5c.12 0 .23.08.27.2l.32 1.03a1 1 0 0 0 .68.68l1.03.32a.29.29 0 0 1 0 .54l-1.03.32a1 1 0 0 0-.68.68l-.32 1.03a.29.29 0 0 1-.54 0l-.32-1.03a1 1 0 0 0-.68-.68l-1.03-.32a.29.29 0 0 1 0-.54l1.03-.32a1 1 0 0 0 .68-.68l.32-1.03a.29.29 0 0 1 .27-.2Z" opacity=".7" />
+  </svg>
+);

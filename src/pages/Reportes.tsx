@@ -14,7 +14,7 @@ import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconPrinter, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconPrinter, IconSparkles, IconUpload } from "../icons";
 import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
@@ -283,13 +283,13 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             <IconMonitor size={14} /> {t("reportes.asamblea.boton")}
           </button>
           {iaHabilitada && (
-            <button className="btn secondary" onClick={() => setPregOpen(true)}>
-              ✨ {t("reportes.pregunta.boton")}
+            <button className="btn ia" onClick={() => setPregOpen(true)}>
+              <IconSparkles size={14} /> {t("reportes.pregunta.boton")}
             </button>
           )}
           {iaHabilitada && (
-            <button className="btn secondary" onClick={resumirIA} disabled={iaGenerando || loading || !totales}>
-              ✨ {iaGenerando ? t("cartas.ia.generando") : t("reportes.ia.boton")}
+            <button className="btn ia" onClick={resumirIA} disabled={iaGenerando || loading || !totales}>
+              <IconSparkles size={14} /> {iaGenerando ? t("cartas.ia.generando") : t("reportes.ia.boton")}
             </button>
           )}
           <button className="btn secondary" onClick={() => setImportOpen(true)}>
@@ -558,7 +558,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <div className="modal-card" style={{ width: 560 }}>
             <div className="modal-header">
               <div>
-                <div className="modal-title">✨ {t("reportes.pregunta.titulo")}</div>
+                <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.pregunta.titulo")}</div>
                 <div className="modal-sub">{t("reportes.pregunta.sub")}</div>
               </div>
               <div className="modal-close" onClick={() => { if (!pregGenerando) setPregOpen(false); }}><IconClose /></div>
@@ -575,8 +575,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                   onKeyDown={(e) => { if (e.key === "Enter") preguntarIA(); }}
                   disabled={pregGenerando}
                 />
-                <button className="btn primary" onClick={preguntarIA} disabled={pregGenerando || !pregTexto.trim()}>
-                  {pregGenerando ? t("reportes.pregunta.pensando") : t("reportes.pregunta.preguntar")}
+                <button className="btn ia-primary" onClick={preguntarIA} disabled={pregGenerando || !pregTexto.trim()}>
+                  <IconSparkles size={14} /> {pregGenerando ? t("reportes.pregunta.pensando") : t("reportes.pregunta.preguntar")}
                 </button>
               </div>
               {pregRespuesta && (
@@ -598,7 +598,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <div className="modal-card" style={{ width: 560 }}>
             <div className="modal-header">
               <div>
-                <div className="modal-title">✨ {t("reportes.ia.titulo", { mes: mesStr })}</div>
+                <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.ia.titulo", { mes: mesStr })}</div>
                 <div className="modal-sub">{t("reportes.ia.nota")}</div>
               </div>
               <div className="modal-close" onClick={() => setIaResumen(null)}><IconClose /></div>

@@ -9,7 +9,7 @@ import { aplicarVariables, contextoDe } from "../services/cartas/plantillas";
 import { parseFirmas, buildCartaHtml, abrirCartaParaImprimir } from "../services/cartas/cartaDoc";
 import { Seccion } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
-import { IconClose, IconPrinter, IconWarn } from "../icons";
+import { IconClose, IconPrinter, IconSparkles, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { iaHabilitada, redactarCarta } from "../ia";
@@ -448,12 +448,12 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
             {iaHabilitada && (
               <button
                 type="button"
-                className="btn secondary"
+                className="btn ia"
                 style={{ marginLeft: "auto" }}
                 title={t("cartas.ia.boton")}
                 onClick={() => { setIaError(null); setIaAbierta(true); }}
               >
-                ✨ {t("cartas.ia.boton")}
+                <IconSparkles size={14} /> {t("cartas.ia.boton")}
               </button>
             )}
           </div>
@@ -580,7 +580,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
           <div className="modal-card" style={{ width: 560, maxWidth: "94vw" }}>
             <div className="modal-header">
               <div>
-                <div className="modal-title">✨ {t("cartas.ia.titulo")}</div>
+                <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("cartas.ia.titulo")}</div>
                 <div className="modal-sub">{t("cartas.ia.sub")}</div>
               </div>
               <div className="modal-close" onClick={() => { if (!iaGenerando) setIaAbierta(false); }}><IconClose /></div>
@@ -604,8 +604,8 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
               {iaError && <div className="field-error" style={{ marginTop: 10 }}>{iaError}</div>}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
                 <button className="btn secondary" onClick={() => setIaAbierta(false)} disabled={iaGenerando}>{t("cartas.ia.cancelar")}</button>
-                <button className="btn primary" onClick={generarConIA} disabled={iaGenerando || !iaPuntos.trim()}>
-                  {iaGenerando ? t("cartas.ia.generando") : t("cartas.ia.generar")}
+                <button className="btn ia-primary" onClick={generarConIA} disabled={iaGenerando || !iaPuntos.trim()}>
+                  <IconSparkles size={14} /> {iaGenerando ? t("cartas.ia.generando") : t("cartas.ia.generar")}
                 </button>
               </div>
             </div>

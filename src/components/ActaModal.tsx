@@ -5,7 +5,7 @@ import {
   type Acta, type ActaAcuerdo, type ActaMocion, type Church, type NewActa,
 } from "../db";
 import { ChipGroup, Seccion, SwitchRow } from "./FichaMiembroModal";
-import { IconClose, IconPlus } from "../icons";
+import { IconClose, IconPlus, IconSparkles } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -254,11 +254,11 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
                 {iaHabilitada && (
                   <button
                     type="button"
-                    className="btn secondary"
+                    className="btn ia"
                     style={{ padding: "4px 10px", fontSize: 12 }}
                     onClick={() => { setIaError(null); setIaAbierta(true); }}
                   >
-                    ✨ {t("actas.ia.boton")}
+                    <IconSparkles size={13} /> {t("actas.ia.boton")}
                   </button>
                 )}
               </div>
@@ -273,7 +273,7 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
 
             {iaAbierta && (
               <div className="form-group full form-subcard">
-                <div className="form-label" style={{ marginBottom: 6 }}>✨ {t("actas.ia.titulo")}</div>
+                <div className="form-label modal-title-ia" style={{ marginBottom: 6 }}><IconSparkles size={14} /> {t("actas.ia.titulo")}</div>
                 <div className="form-hint" style={{ marginBottom: 8 }}>{t("actas.ia.sub")}</div>
                 <textarea
                   className="form-textarea"
@@ -292,8 +292,8 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
                   <button type="button" className="btn secondary" onClick={() => setIaAbierta(false)} disabled={iaGenerando}>
                     {t("cartas.ia.cancelar")}
                   </button>
-                  <button type="button" className="btn primary" onClick={generarActaIA} disabled={iaGenerando || !iaPuntos.trim()}>
-                    {iaGenerando ? t("cartas.ia.generando") : t("cartas.ia.generar")}
+                  <button type="button" className="btn ia-primary" onClick={generarActaIA} disabled={iaGenerando || !iaPuntos.trim()}>
+                    <IconSparkles size={14} /> {iaGenerando ? t("cartas.ia.generando") : t("cartas.ia.generar")}
                   </button>
                 </div>
               </div>

@@ -9,7 +9,7 @@ import {
   insertMovimientoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
-import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconWarn } from "../icons";
+import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconSparkles, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -532,7 +532,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           {tab !== "miembro" && iaHabilitada && !isEdit && (
             <div className="ia-capture">
               <div className="ia-capture-row">
-                <span className="ia-capture-spark" aria-hidden>✨</span>
+                <span className="ia-capture-spark" aria-hidden><IconSparkles size={16} /></span>
                 <input
                   className="form-input"
                   value={iaTexto}
@@ -543,11 +543,11 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 />
                 <button
                   type="button"
-                  className="btn secondary"
+                  className="btn ia-primary"
                   onClick={interpretarTexto}
                   disabled={iaCargando || !iaTexto.trim()}
                 >
-                  {iaCargando ? t("recordModal.ia.interpretando") : t("recordModal.ia.interpretar")}
+                  <IconSparkles size={14} /> {iaCargando ? t("recordModal.ia.interpretando") : t("recordModal.ia.interpretar")}
                 </button>
               </div>
               <div className="ia-capture-hint">{t("recordModal.ia.hint")}</div>
@@ -767,12 +767,12 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                     {iaHabilitada && comprobanteEsImagen && !isEdit && (
                       <button
                         type="button"
-                        className="btn ghost sm"
+                        className="btn ia sm"
                         onClick={interpretarComprobante}
                         disabled={iaCargando}
                         title={t("recordModal.ia.leerHint")}
                       >
-                        {iaCargando ? t("recordModal.ia.leyendo") : `✨ ${t("recordModal.ia.leerComprobante")}`}
+                        <IconSparkles size={12} /> {iaCargando ? t("recordModal.ia.leyendo") : t("recordModal.ia.leerComprobante")}
                       </button>
                     )}
                     <button
