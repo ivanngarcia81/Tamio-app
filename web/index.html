@@ -315,7 +315,7 @@
         <p class="lede">Finanzas y membresía en una sola app para Mac. Rápida, profesional
           y hecha para cómo trabaja de verdad una congregación — sin hojas de cálculo sueltas.</p>
         <div class="cta">
-          <a class="btn btn-primary btn-lg" href="#descargar">Descargar para Mac</a>
+          <a class="btn btn-primary btn-lg js-descargar" href="#descargar">Descargar para Mac</a>
           <a class="btn btn-ghost btn-lg" href="#funciones">Ver funciones</a>
         </div>
         <div class="assure">
@@ -593,7 +593,7 @@
       <p>Tamio no es una hoja de cálculo con esteroides. Es la herramienta que tu iglesia
         merecía desde hace años.</p>
       <div class="cta">
-        <a class="btn btn-primary btn-lg" href="#top">Descargar para Mac</a>
+        <a class="btn btn-primary btn-lg js-descargar" href="#top">Descargar para Mac</a>
         <a class="btn btn-ghost btn-lg" href="#funciones">Ver todas las funciones</a>
       </div>
       <div class="kicker">Tamio — todo tu ministerio administrativo, en un solo lugar.</div>
@@ -653,6 +653,27 @@
     }, { threshold: 0.16 });
 
     document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+<script>
+  // ==================== ENLACE DE DESCARGA DEL .DMG ====================
+  // Fuente única de la verdad: cambia SOLO esta línea cuando publiques la app.
+  //
+  // Recomendado: sube el .dmg a "Releases" del repo de la app con el nombre
+  // Tamio_universal.dmg. Con la URL "latest" de abajo, el botón siempre apunta
+  // a la última versión y NO hay que tocar nada en cada actualización.
+  //
+  // Mientras no exista ningún release, el enlace dará 404: hasta publicar el
+  // primer .dmg, los botones siguen llevando a la sección de descarga (fallback).
+  var TAMIO_DMG = "https://github.com/ivanngarcia81/tesoreria-Mac-/releases/latest/download/Tamio_universal.dmg";
+  var TAMIO_DMG_LISTO = false; // ← pon true cuando ya exista el primer release
+
+  (function () {
+    if (!TAMIO_DMG_LISTO) return; // sin release aún: deja el fallback (#descargar / #top)
+    document.querySelectorAll(".js-descargar").forEach(function (a) {
+      a.setAttribute("href", TAMIO_DMG);
+    });
   })();
 </script>
 

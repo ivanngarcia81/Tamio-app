@@ -314,7 +314,7 @@
         <h1>Your church's administration, finally in order.</h1>
         <p class="lede">Finances and membership in one Mac app. Fast, professional, and built for how a congregation actually works — no scattered spreadsheets.</p>
         <div class="cta">
-          <a class="btn btn-primary btn-lg" href="#descargar">Download for Mac</a>
+          <a class="btn btn-primary btn-lg js-descargar" href="#descargar">Download for Mac</a>
           <a class="btn btn-ghost btn-lg" href="#funciones">See features</a>
         </div>
         <div class="assure">
@@ -585,7 +585,7 @@
       <h2>Order the finances. Care for your people.<br>Present with pride.</h2>
       <p>Tamio isn't a spreadsheet on steroids. It's the tool your church deserved years ago.</p>
       <div class="cta">
-        <a class="btn btn-primary btn-lg" href="#top">Download for Mac</a>
+        <a class="btn btn-primary btn-lg js-descargar" href="#top">Download for Mac</a>
         <a class="btn btn-ghost btn-lg" href="#funciones">See all features</a>
       </div>
       <div class="kicker">Tamio — your entire administrative ministry, in one place.</div>
@@ -645,6 +645,23 @@
     }, { threshold: 0.16 });
 
     document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+<script>
+  // ==================== .DMG DOWNLOAD LINK ====================
+  // Single source of truth: change ONLY this line when you publish the app.
+  // Recommended: upload the .dmg to the app repo "Releases" as Tamio_universal.dmg.
+  // The "latest" URL below always points to the newest version — no per-release edits.
+  // Until the first release exists this URL 404s, so buttons keep the #descargar fallback.
+  var TAMIO_DMG = "https://github.com/ivanngarcia81/tesoreria-Mac-/releases/latest/download/Tamio_universal.dmg";
+  var TAMIO_DMG_LISTO = false; // ← set true once the first release exists
+
+  (function () {
+    if (!TAMIO_DMG_LISTO) return;
+    document.querySelectorAll(".js-descargar").forEach(function (a) {
+      a.setAttribute("href", TAMIO_DMG);
+    });
   })();
 </script>
 
