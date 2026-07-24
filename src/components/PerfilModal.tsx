@@ -10,19 +10,20 @@ interface Props {
   nombre: string | null;
   email: string | null;
   foto: string | null;
-  onGuardarFoto: (foto: string | null) => Promise<void>;
+  onGuardar: (cambios: { nombre: string; foto: string | null }) => Promise<void>;
   onClose: () => void;
 }
 
-export default function PerfilModal({ nombre, email, foto, onGuardarFoto, onClose }: Props) {
+export default function PerfilModal({ nombre, email, foto, onGuardar, onClose }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
+  const [nombreLocal, setNombreLocal] = useState<string>(nombre ?? "");
   const [fotoLocal, setFotoLocal] = useState<string | null>(foto);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const sinCambios = fotoLocal === foto;
-  const ini = iniciales(nombre, email);
+  const sinCambios = fotoLocal === foto && nombreLocal.trim() === (nombre ?? "").trim();
+  const ini = iniciales(nombreLocal || nombre, email);
 
   async function elegir() {
     setError(null);
@@ -45,7 +46,7 @@ export default function PerfilModal({ nombre, email, foto, onGuardarFoto, onClos
     setGuardando(true);
     setError(null);
     try {
-      await onGuardarFoto(fotoLocal);
+      await onGuardar({ nombre: nombreLocal, foto: fotoLocal });
       onClose();
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));
@@ -67,7 +68,6 @@ export default function PerfilModal({ nombre, email, foto, onGuardarFoto, onClos
             : (ini ? <span className="perfil-ini">{ini}</span> : <IconUser size={40} />)}
         </div>
 
-        <div className="perfil-nombre">{(nombre && nombre.trim()) || (email ? email.split("@")[0] : t("perfil.usuario"))}</div>
         {email && <div className="perfil-email">{email}</div>}
 
         <div className="perfil-acciones">
@@ -79,6 +79,17 @@ export default function PerfilModal({ nombre, email, foto, onGuardarFoto, onClos
               {t("perfil.quitarFoto")}
             </button>
           )}
+        </div>
+
+        <div className="perfil-campo">
+          <label className="form-label">{t("perfil.nombre")}</label>
+          <input
+            className="form-input"
+            value={nombreLocal}
+            onChange={(e) => setNombreLocal(e.target.value)}
+            placeholder={t("perfil.nombrePlaceholder")}
+            maxLength={80}
+          />
         </div>
 
         <div className="form-hint" style={{ textAlign: "center" }}>{t("perfil.hint")}</div>

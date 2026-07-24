@@ -24,7 +24,7 @@ const VACIO: EstadoAuth = {
 export function useSupabaseAuth(): {
   estado: EstadoAuth;
   salir: () => Promise<void>;
-  guardarFoto: (foto: string | null) => Promise<void>;
+  guardarPerfil: (cambios: { nombre: string; foto: string | null }) => Promise<void>;
 } {
   const [estado, setEstado] = useState<EstadoAuth>(VACIO);
   const userIdRef = useRef<string | null>(null);
@@ -76,15 +76,16 @@ export function useSupabaseAuth(): {
 
   const salir = useCallback(async () => { await supabase?.auth.signOut(); }, []);
 
-  const guardarFoto = useCallback(async (foto: string | null) => {
+  const guardarPerfil = useCallback(async (cambios: { nombre: string; foto: string | null }) => {
     if (!supabase || !userIdRef.current) return;
+    const nombre = cambios.nombre.trim() || null;
     const { error } = await supabase
       .from("perfiles")
-      .update({ foto })
+      .update({ nombre, foto: cambios.foto })
       .eq("id", userIdRef.current);
     if (error) throw error;
-    setEstado((e) => ({ ...e, foto }));
+    setEstado((e) => ({ ...e, nombre, foto: cambios.foto }));
   }, []);
 
-  return { estado, salir, guardarFoto };
+  return { estado, salir, guardarPerfil };
 }

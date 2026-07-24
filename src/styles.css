@@ -565,6 +565,8 @@ html.vibrancy .main { background: var(--surface); }
 .perfil-nombre { margin-top: 14px; font-size: 16px; font-weight: 700; color: var(--text); text-align: center; }
 .perfil-email { font-size: 12.5px; color: var(--text-3); margin-top: 2px; text-align: center; }
 .perfil-acciones { display: flex; gap: 8px; margin: 18px 0 4px; flex-wrap: wrap; justify-content: center; }
+.perfil-campo { width: 100%; margin-top: 12px; }
+.perfil-campo .form-label { display: block; margin-bottom: 5px; }
 .perfil-footer {
   display: flex;
   gap: 8px;

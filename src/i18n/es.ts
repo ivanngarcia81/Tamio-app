@@ -1935,6 +1935,8 @@ export const es = {
     titulo: "Mi perfil",
     editar: "Editar perfil",
     usuario: "Usuario",
+    nombre: "Nombre",
+    nombrePlaceholder: "Tu nombre",
     subirFoto: "Subir foto",
     cambiarFoto: "Cambiar foto",
     quitarFoto: "Quitar foto",

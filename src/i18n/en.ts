@@ -1928,6 +1928,8 @@ export const en: Resources = {
     titulo: "My profile",
     editar: "Edit profile",
     usuario: "User",
+    nombre: "Name",
+    nombrePlaceholder: "Your name",
     subirFoto: "Upload photo",
     cambiarFoto: "Change photo",
     quitarFoto: "Remove photo",

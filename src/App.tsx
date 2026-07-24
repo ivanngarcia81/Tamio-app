@@ -78,7 +78,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Con login activo el rol viene del servidor; sin login, del selector manual.
-  const { estado: authEstado, salir, guardarFoto } = useSupabaseAuth();
+  const { estado: authEstado, salir, guardarPerfil } = useSupabaseAuth();
   const [perfilAbierto, setPerfilAbierto] = useState(false);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
 
@@ -383,7 +383,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           nombre={authEstado.nombre}
           email={authEstado.email}
           foto={authEstado.foto}
-          onGuardarFoto={guardarFoto}
+          onGuardar={guardarPerfil}
           onClose={() => setPerfilAbierto(false)}
         />
       )}
