@@ -2042,6 +2042,7 @@ export const en: Resources = {
     monedaUsd: "USD — US Dollar",
     monedaMxn: "MXN — Mexican Peso",
     monedaHint: "Used for all new transactions, reports and balances.",
+    abrirAjustes: "Church settings",
   },
 
   tesorero: {

@@ -42,14 +42,38 @@ Forma del archivo:
   de la web).
 - `notas`: opcional, una línea de qué trae la versión.
 
-## Qué hacer al lanzar una versión nueva
+## Botones de descarga de la web (una sola línea)
+
+Los botones "Descargar para Mac" de `web/index.html` y `web/en.html` leen el
+enlace del `.dmg` de una **sola constante** al final del archivo:
+
+```js
+var TAMIO_DMG = "https://github.com/ivanngarcia81/tesoreria-Mac-/releases/latest/download/Tamio_universal.dmg";
+var TAMIO_DMG_LISTO = false; // ← pon true cuando ya exista el primer release
+```
+
+- Mientras `TAMIO_DMG_LISTO = false`, los botones llevan a la sección de descarga
+  (fallback), para no dar un enlace roto antes de publicar.
+- La URL usa el patrón **`releases/latest/download/`** de GitHub: si subes el
+  `.dmg` a *Releases* con el nombre exacto `Tamio_universal.dmg`, ese enlace
+  apunta siempre a la última versión y **no hay que cambiarlo nunca más**.
+
+## El primer lanzamiento
+
+1. Firma el `.dmg` (`npm run firmar:manual`).
+2. Crea un *Release* en GitHub y sube el `.dmg` con el nombre `Tamio_universal.dmg`.
+3. En `web/index.html` y `web/en.html` pon `TAMIO_DMG_LISTO = true`.
+4. Publica la web (`Tamio-web`).
+
+## Qué hacer al lanzar una versión NUEVA (después del primero)
 
 1. Sube la versión en `src-tauri/tauri.conf.json` y `package.json` (p. ej.
    `1.0.0` → `1.1.0`).
-2. Firma el `.dmg` en la Mac del certificado (`npm run firmar:manual`).
-3. Sube el `.dmg` nuevo a donde lo distribuyes (GitHub Releases o Storage).
-4. Edita `web/version.json`: pon la nueva `version` y la nueva `url`, y publícalo
-   en la web (`Tamio-web`).
+2. Firma el `.dmg` (`npm run firmar:manual`).
+3. Crea un *Release* nuevo con el `.dmg` (mismo nombre `Tamio_universal.dmg`).
+   Los botones de la web ya no se tocan (el enlace "latest" se actualiza solo).
+4. Edita `web/version.json`: pon la nueva `version` (y `notas` si quieres). La
+   `url` ya apunta al "latest", así que normalmente no cambia. Publica la web.
 
 Con eso, todos los que ya tienen Tamio verán el aviso la próxima vez que abran la
 app.
