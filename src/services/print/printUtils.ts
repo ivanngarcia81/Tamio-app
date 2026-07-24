@@ -3,6 +3,7 @@ import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { currentLang } from "../../i18n";
+import { currencySymbol } from "../../currencies";
 
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
 // No se recalcula ni se comprime según la cantidad de datos: un reporte de
@@ -77,7 +78,7 @@ export function pct(part: number, total: number): string {
  */
 export function fmtMoneyPdf(n: number, moneda: string): string {
   const abs = Math.abs(n);
-  const formatted = `$${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${moneda}`;
+  const formatted = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${moneda}`;
   return n < 0 ? `(${formatted})` : formatted;
 }
 

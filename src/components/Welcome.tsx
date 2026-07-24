@@ -4,6 +4,8 @@ import { updateChurch, type Church } from "../db";
 import { cargarDatosDemo } from "../demo";
 import { authHabilitado } from "../supabase";
 import type { LangPref } from "../i18n";
+import { currentLang } from "../i18n";
+import { CURRENCIES, currencyLabel } from "../currencies";
 import { IconDownload, IconFileText, IconIngreso, IconMiembros, IconMonitor, IconTamio } from "../icons";
 
 interface Props {
@@ -150,8 +152,9 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
               <div className="form-group">
                 <label className="form-label">{t("iglesia.moneda")}</label>
                 <select className="form-select" value={moneda} onChange={(e) => setMoneda(e.target.value)}>
-                  <option value="USD">{t("iglesia.monedaUsd")}</option>
-                  <option value="MXN">{t("iglesia.monedaMxn")}</option>
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{currencyLabel(c.code, currentLang())}</option>
+                  ))}
                 </select>
               </div>
             </div>

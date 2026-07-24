@@ -1,5 +1,6 @@
 import Database from "@tauri-apps/plugin-sql";
 import i18n, { currentLang } from "./i18n";
+import { currencySymbol } from "./currencies";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
 let db: Database | null = null;
@@ -3087,10 +3088,19 @@ export async function deleteMovimientoRecurrente(id: number, churchId: number): 
 
 // ---------- Formato ----------
 
+// Símbolo activo de la app. La app usa UNA moneda por iglesia, así que basta un
+// símbolo global que se fija al cargar (o cambiar) la iglesia; fmtMoney lo lee.
+let simboloActivo = "$";
+
+/** Fija el símbolo que usará fmtMoney según el código de moneda de la iglesia. */
+export function setMonedaActiva(code: string): void {
+  simboloActivo = currencySymbol(code);
+}
+
 export function fmtMoney(n: number): string {
   const sign = n < 0 ? "−" : "";
   const abs = Math.abs(n);
-  return `${sign}$${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return `${sign}${simboloActivo}${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 export function nowLocalIso(): string {

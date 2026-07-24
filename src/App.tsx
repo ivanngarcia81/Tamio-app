@@ -28,7 +28,7 @@ import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
-import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, type Church, type Member, type Tx } from "./db";
+import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import { evaluarVigencia, rutaPermitidaPorPlan, urlCompra } from "./plan";
@@ -405,6 +405,7 @@ export default function App() {
         // Registra los gastos fijos de los meses que llegaron desde la
         // última vez que se abrió la app (nunca meses futuros).
         await materializeMovimientosRecurrentes(c.id, c.moneda);
+        setMonedaActiva(c.moneda);
         setChurch(c);
       })
       .catch((e) => setError(String(e)));
@@ -425,7 +426,13 @@ export default function App() {
 
   return (
     <HashRouter>
-      <Shell church={church} onChurchUpdated={setChurch} />
+      <Shell
+        church={church}
+        onChurchUpdated={(c) => {
+          setMonedaActiva(c.moneda);
+          setChurch(c);
+        }}
+      />
     </HashRouter>
   );
 }

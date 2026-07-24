@@ -10,6 +10,7 @@ import {
   type Church, type Member, type Tx,
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconSparkles, IconWarn } from "../icons";
+import { currencyLabel } from "../currencies";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -631,9 +632,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 </div>
                 <div className="form-group">
                   <label className="form-label">{t("recordModal.moneda")}</label>
-                  <select className="form-select" defaultValue={church.moneda} disabled>
-                    <option value="USD">{t("iglesia.monedaUsd")}</option>
-                    <option value="MXN">{t("iglesia.monedaMxn")}</option>
+                  <select className="form-select" value={church.moneda} disabled>
+                    <option value={church.moneda}>{currencyLabel(church.moneda, i18n.language)}</option>
                   </select>
                 </div>
               </div>

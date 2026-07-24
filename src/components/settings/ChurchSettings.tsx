@@ -3,6 +3,8 @@ import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import { IconBuilding, IconWarn } from "../../icons";
+import { currentLang } from "../../i18n";
+import { CURRENCIES, currencyLabel } from "../../currencies";
 
 export interface ChurchFormValues {
   nombre: string;
@@ -149,8 +151,9 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
         <div className="form-group full">
           <label className="form-label">{t("iglesia.moneda")}</label>
           <select className="form-select" value={value.moneda} onChange={(e) => onChange({ moneda: e.target.value })}>
-            <option value="USD">{t("iglesia.monedaUsd")}</option>
-            <option value="MXN">{t("iglesia.monedaMxn")}</option>
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{currencyLabel(c.code, currentLang())}</option>
+            ))}
           </select>
           <div className="form-hint">{t("iglesia.monedaHint")}</div>
         </div>
