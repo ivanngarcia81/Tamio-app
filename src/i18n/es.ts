@@ -1931,6 +1931,17 @@ export const es = {
     nubeManda: "Con sesión iniciada, el plan lo controla la nube (pago o panel del dueño): lo que cambies aquí se sobreescribe en la próxima sincronización.",
   },
 
+  perfil: {
+    titulo: "Mi perfil",
+    editar: "Editar perfil",
+    usuario: "Usuario",
+    subirFoto: "Subir foto",
+    cambiarFoto: "Cambiar foto",
+    quitarFoto: "Quitar foto",
+    seleccionarFoto: "Selecciona una foto",
+    imagen: "Imagen",
+    hint: "Tu foto se guarda en tu cuenta y aparece en cualquier equipo donde inicies sesión.",
+  },
   login: {
     sub: "Inicia sesión para continuar",
     heroTitulo: "La tesorería y secretaría de tu iglesia, en orden.",

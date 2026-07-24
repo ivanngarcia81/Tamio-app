@@ -9,6 +9,7 @@ import UpdateBanner from "./components/UpdateBanner";
 import CmdPalette from "./components/CmdPalette";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
+import PerfilModal from "./components/PerfilModal";
 import Welcome from "./components/Welcome";
 import Dashboard from "./pages/Dashboard";
 import InicioSecretaria from "./pages/InicioSecretaria";
@@ -77,7 +78,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Con login activo el rol viene del servidor; sin login, del selector manual.
-  const { estado: authEstado, salir } = useSupabaseAuth();
+  const { estado: authEstado, salir, guardarFoto } = useSupabaseAuth();
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
 
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
@@ -234,7 +236,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           onEditMember={openEditMember}
         />
       )}
-      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} onSalir={salir} />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
       <main className="main">
         <UpdateBanner />
         {authHabilitado && <SubBanner church={church} />}
@@ -373,6 +375,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           mode={modalMode}
           onClose={() => setModalMode(null)}
           onSaved={onSaved}
+        />
+      )}
+
+      {perfilAbierto && (
+        <PerfilModal
+          nombre={authEstado.nombre}
+          email={authEstado.email}
+          foto={authEstado.foto}
+          onGuardarFoto={guardarFoto}
+          onClose={() => setPerfilAbierto(false)}
         />
       )}
 

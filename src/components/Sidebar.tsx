@@ -5,11 +5,12 @@ import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import type { Role } from "../role";
 import { incluyeTesoreria, incluyeSecretaria } from "../plan";
+import { iniciales } from "../services/avatar";
 import SyncIndicator from "./SyncIndicator";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
   IconClipboardList, IconConfig, IconFileText, IconGasto, IconHelp,
-  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconTamio,
+  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconTamio, IconUser,
 } from "../icons";
 
 interface Props {
@@ -18,9 +19,12 @@ interface Props {
   pendingCount: number;
   unreadCount: number;
   role: Role;
-  /** Con login activo se muestra el correo de la sesión y el botón de salir. */
+  /** Con login activo se muestra el perfil de la sesión y el botón de salir. */
   authActivo?: boolean;
   sesionEmail?: string | null;
+  sesionNombre?: string | null;
+  sesionFoto?: string | null;
+  onEditarPerfil?: () => void;
   onSalir?: () => void;
 }
 
@@ -77,7 +81,7 @@ function Grupo({ abierto, etiqueta, onToggle, children, dataTour }: {
   );
 }
 
-export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, onSalir }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
   // Separación estricta de funciones:
@@ -188,7 +192,17 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         {authActivo && (
           <>
             <SyncIndicator />
-            {sesionEmail && <div className="sidebar-session-email" title={sesionEmail}>{sesionEmail}</div>}
+            <button type="button" className="sidebar-perfil" onClick={onEditarPerfil} title={t("perfil.editar")}>
+              <span className={`perfil-avatar${sesionFoto ? " tiene-foto" : ""}`}>
+                {sesionFoto
+                  ? <img src={sesionFoto} alt="" />
+                  : (iniciales(sesionNombre ?? null, sesionEmail ?? null) || <IconUser size={16} />)}
+              </span>
+              <span className="sidebar-perfil-textos">
+                {(sesionNombre && sesionNombre.trim()) && <span className="sidebar-perfil-nombre">{sesionNombre}</span>}
+                {sesionEmail && <span className="sidebar-perfil-email" title={sesionEmail}>{sesionEmail}</span>}
+              </span>
+            </button>
             <button type="button" className="nav-item nav-signout" onClick={onSalir}>
               <span className="icon"><IconLogout /></span>
               {t("login.salir")}

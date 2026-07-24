@@ -1924,6 +1924,17 @@ export const en: Resources = {
     nubeManda: "While signed in, the plan is controlled by the cloud (payment or the owner's panel): changes made here are overwritten on the next sync.",
   },
 
+  perfil: {
+    titulo: "My profile",
+    editar: "Edit profile",
+    usuario: "User",
+    subirFoto: "Upload photo",
+    cambiarFoto: "Change photo",
+    quitarFoto: "Remove photo",
+    seleccionarFoto: "Choose a photo",
+    imagen: "Image",
+    hint: "Your photo is saved to your account and appears on any device where you sign in.",
+  },
   login: {
     sub: "Sign in to continue",
     heroTitulo: "Your church's treasury and secretariat, in order.",

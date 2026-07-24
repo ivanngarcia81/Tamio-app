@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { authHabilitado, supabase } from "./supabase";
 import type { Role } from "./role";
 
@@ -7,6 +7,8 @@ export interface EstadoAuth {
   autenticado: boolean;
   email: string | null;
   nombre: string | null;
+  /** Foto de perfil (data URL) o null. Se guarda en perfiles.foto y sincroniza. */
+  foto: string | null;
   /** Rol tomado del perfil en Supabase; null si el usuario no tiene rol asignado. */
   role: Role | null;
   /** true cuando el usuario entró pero no tiene un perfil/rol válido. */
@@ -14,19 +16,25 @@ export interface EstadoAuth {
 }
 
 const VACIO: EstadoAuth = {
-  cargando: authHabilitado, autenticado: false, email: null, nombre: null, role: null, sinRol: false,
+  cargando: authHabilitado, autenticado: false, email: null, nombre: null, foto: null, role: null, sinRol: false,
 };
 
 /** Maneja la sesión de Supabase y deriva el rol del perfil del usuario.
  *  Si no hay credenciales configuradas, no hace nada (modo local). */
-export function useSupabaseAuth(): { estado: EstadoAuth; salir: () => Promise<void> } {
+export function useSupabaseAuth(): {
+  estado: EstadoAuth;
+  salir: () => Promise<void>;
+  guardarFoto: (foto: string | null) => Promise<void>;
+} {
   const [estado, setEstado] = useState<EstadoAuth>(VACIO);
+  const userIdRef = useRef<string | null>(null);
 
   const cargarPerfil = useCallback(async (userId: string, email: string | null) => {
     if (!supabase) return;
+    userIdRef.current = userId;
     const { data, error } = await supabase
       .from("perfiles")
-      .select("rol, nombre")
+      .select("rol, nombre, foto")
       .eq("id", userId)
       .single();
     const rol = (data as { rol?: string; nombre?: string } | null)?.rol;
@@ -36,6 +44,7 @@ export function useSupabaseAuth(): { estado: EstadoAuth; salir: () => Promise<vo
       autenticado: true,
       email,
       nombre: (data as { nombre?: string } | null)?.nombre ?? null,
+      foto: (data as { foto?: string | null } | null)?.foto ?? null,
       role: roleOk,
       sinRol: Boolean(error) || !roleOk,
     });
@@ -66,5 +75,16 @@ export function useSupabaseAuth(): { estado: EstadoAuth; salir: () => Promise<vo
   }, [cargarPerfil]);
 
   const salir = useCallback(async () => { await supabase?.auth.signOut(); }, []);
-  return { estado, salir };
+
+  const guardarFoto = useCallback(async (foto: string | null) => {
+    if (!supabase || !userIdRef.current) return;
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ foto })
+      .eq("id", userIdRef.current);
+    if (error) throw error;
+    setEstado((e) => ({ ...e, foto }));
+  }, []);
+
+  return { estado, salir, guardarFoto };
 }
