@@ -58,7 +58,7 @@ export default function PerfilModal({ nombre, email, foto, onGuardar, onClose }:
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="perfil-card">
         <button type="button" className="modal-close" onClick={onClose} aria-label={t("common.cerrar")}>
-          <IconClose size={16} />
+          <IconClose size={15} strokeWidth={2.2} />
         </button>
         <div className="perfil-title">{t("perfil.titulo")}</div>
 

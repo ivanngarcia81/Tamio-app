@@ -543,6 +543,7 @@ html.vibrancy .main { background: var(--surface); }
   flex-direction: column;
   align-items: center;
 }
+.perfil-card .modal-close { position: absolute; top: 14px; right: 14px; }
 .perfil-title {
   font-size: 15px;
   font-weight: 700;
@@ -1691,15 +1692,17 @@ html.vibrancy .main { background: var(--surface); }
 .modal-title { font-size: var(--fs-modal-title); font-weight: 700; letter-spacing: -0.01em; }
 .modal-sub { font-size: var(--fs-secondary); color: var(--text-2); margin-top: 2px; }
 .modal-close {
-  width: 32px; height: 32px;
-  border-radius: 10px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
   display: grid; place-items: center;
-  color: var(--text-2);
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: none;
   cursor: pointer;
   transition: background-color var(--dur) ease, color var(--dur) ease, transform .08s ease;
 }
-.modal-close:hover { background: var(--surface-2); color: var(--text); }
-.modal-close:active { background: var(--line); transform: scale(.92); }
+.modal-close:hover { background: var(--line); color: var(--text); }
+.modal-close:active { background: var(--line); transform: scale(.9); }
 .modal-body { padding: 22px 24px; }
 .modal-footer {
   display: flex;
