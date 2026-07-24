@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
@@ -8,7 +8,7 @@ import { incluyeTesoreria, incluyeSecretaria } from "../plan";
 import { iniciales } from "../services/avatar";
 import SyncIndicator from "./SyncIndicator";
 import {
-  IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown,
+  IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown, IconChevronRight,
   IconClipboardList, IconConfig, IconFileText, IconGasto, IconHelp,
   IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconTamio, IconUser,
 } from "../icons";
@@ -84,6 +84,7 @@ function Grupo({ abierto, etiqueta, onToggle, children, dataTour }: {
 export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   // Separación estricta de funciones:
   // - La secretaria solo ve Secretaría + el Reporte de Tesorería.
   // - El tesorero solo ve Tesorería (no el grupo de Secretaría).
@@ -148,7 +149,13 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       {/* Tarjeta de marca: logo de la iglesia (Configuración → Subir logo) o
           sus iniciales, con nombre y ciudad. Es el único bloque de identidad
           del sidebar (antes había además un logo grande duplicado arriba). */}
-      <div className="church-select" data-tour="marca">
+      <button
+        type="button"
+        className="church-select"
+        data-tour="marca"
+        onClick={() => navigate("/configuracion")}
+        title={t("iglesia.abrirAjustes")}
+      >
         <div className={`church-avatar${logoUrl ? "" : " ini"}`}>
           {logoUrl ? <img src={logoUrl} alt="" /> : (initials || <IconTamio size={26} />)}
         </div>
@@ -156,8 +163,8 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
           <div className="church-name" title={church.nombre}>{church.nombre}</div>
           {church.ciudad && <span className="church-sub">{church.ciudad}</span>}
         </div>
-        <span className="church-chevron"><IconChevronDown /></span>
-      </div>
+        <span className="church-chevron"><IconChevronRight size={16} /></span>
+      </button>
 
       <nav className="nav">
         <Item to="/" icon={<IconHome />} label={t("nav.inicio")} dataTour="inicio" />

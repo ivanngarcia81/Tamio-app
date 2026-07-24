@@ -2049,6 +2049,7 @@ export const es = {
     monedaUsd: "USD — Dólar",
     monedaMxn: "MXN — Peso mexicano",
     monedaHint: "Se usará en todos los movimientos nuevos, reportes y balances.",
+    abrirAjustes: "Ajustes de la iglesia",
   },
 
   tesorero: {

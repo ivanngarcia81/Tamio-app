@@ -311,6 +311,9 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -320,6 +323,10 @@ html.vibrancy .main { background: var(--surface); }
   transition: background-color var(--dur) ease, transform .08s ease;
 }
 .church-select:hover { background: var(--surface-2); }
+.church-select:active { transform: scale(.99); }
+/* La flecha se recorre un pelín al pasar el cursor: sugiere "abre algo". */
+.church-select .church-chevron { color: var(--text-3); transition: transform var(--dur) ease, color var(--dur) ease; }
+.church-select:hover .church-chevron { color: var(--text-2); transform: translateX(2px); }
 .church-select:active { transform: scale(.98); }
 .church-select .church-avatar {
   width: 34px; height: 34px;
