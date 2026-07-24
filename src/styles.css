@@ -311,15 +311,15 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 1px solid transparent;
   cursor: pointer;
   margin-bottom: 14px;
   transition: background-color var(--dur) ease, transform .08s ease;
 }
-.church-select:hover { background: var(--line); }
+.church-select:hover { background: var(--surface-2); }
 .church-select:active { transform: scale(.98); }
 .church-select .church-avatar {
   width: 34px; height: 34px;
@@ -486,17 +486,17 @@ html.vibrancy .main { background: var(--surface); }
   align-items: center;
   gap: 9px;
   width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 1px solid transparent;
   font-family: inherit;
   text-align: left;
-  padding: 7px 9px;
-  margin: 6px 0 4px;
-  border-radius: 11px;
+  padding: 7px 10px;
+  margin: 2px 0;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease;
 }
-.sidebar-perfil:hover { background: var(--line); border-color: var(--text-3); }
+.sidebar-perfil:hover { background: var(--surface-2); }
 .perfil-avatar {
   flex: 0 0 auto;
   width: 30px;
