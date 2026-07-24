@@ -154,7 +154,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         </div>
         <div className="church-info">
           <div className="church-name" title={church.nombre}>{church.nombre}</div>
-          <span className="church-sub">{church.ciudad || "—"}</span>
+          {church.ciudad && <span className="church-sub">{church.ciudad}</span>}
         </div>
         <span className="church-chevron"><IconChevronDown /></span>
       </div>
