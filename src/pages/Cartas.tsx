@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
@@ -107,6 +108,20 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const [trasladosSalida, setTrasladosSalida] = useState<TrasladoSalida[]>([]);
   const [trasladosEntrada, setTrasladosEntrada] = useState<TrasladoEntrada[]>([]);
   const [tsModal, setTsModal] = useState<{ open: boolean; traslado: TrasladoSalida | null }>({ open: false, traslado: null });
+  // Puente Membresía → Traslados: baja con motivo "traslado" ofrece crear el
+  // traslado de salida aquí, con el miembro (recién dado de baja) preseleccionado.
+  const [tsPreMemberId, setTsPreMemberId] = useState<number | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const deId = (location.state as { trasladoSalidaDe?: number } | null)?.trasladoSalidaDe;
+    if (!deId) return;
+    setTab("salida");
+    setTsPreMemberId(deId);
+    setTsModal({ open: true, traslado: null });
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
   const [teModal, setTeModal] = useState<{ open: boolean; traslado: TrasladoEntrada | null }>({ open: false, traslado: null });
   const [pendingDeleteTS, setPendingDeleteTS] = useState<TrasladoSalida | null>(null);
   const [pendingDeleteTE, setPendingDeleteTE] = useState<TrasladoEntrada | null>(null);
@@ -946,8 +961,9 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
         <TrasladoSalidaModal
           church={church}
           traslado={tsModal.traslado}
-          members={members.filter((m) => m.activo === 1)}
-          onClose={() => setTsModal({ open: false, traslado: null })}
+          members={members.filter((m) => m.activo === 1 || m.id === tsPreMemberId)}
+          preMemberId={tsPreMemberId}
+          onClose={() => { setTsModal({ open: false, traslado: null }); setTsPreMemberId(null); }}
           onSaved={() => { setRefrescoLocal((k) => k + 1); onChanged(); }}
           onAbrirCarta={abrirCartaPorId}
         />

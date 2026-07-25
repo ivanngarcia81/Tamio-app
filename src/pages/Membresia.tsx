@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
@@ -65,6 +66,8 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   const [query, setQuery] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("activos");
   const [pendingBaja, setPendingBaja] = useState<Member | null>(null);
+  const [ofrecerTraslado, setOfrecerTraslado] = useState<Member | null>(null);
+  const navigate = useNavigate();
   const [pendingReactivar, setPendingReactivar] = useState<Member | null>(null);
   const [ficha, setFicha] = useState<Member | null>(null);
   const [crearFicha, setCrearFicha] = useState(false);
@@ -91,6 +94,10 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   async function confirmarBaja(fecha: string, motivo: string | null) {
     if (!pendingBaja) return;
     await darDeBajaMember(pendingBaja.id, church.id, fecha, motivo);
+    // Baja por traslado sin traslado registrado: la marca de estado sola no
+    // genera documento ni cuenta en informes — se ofrece crear el traslado
+    // de salida real con el miembro ya precargado.
+    if (motivo === "traslado") setOfrecerTraslado(pendingBaja);
     setPendingBaja(null);
     playSound("eliminar");
     showToast(t("membresia.toastBaja"));
@@ -289,6 +296,20 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           member={null}
           onClose={() => setCrearFicha(false)}
           onSaved={onChanged}
+        />
+      )}
+
+      {ofrecerTraslado && (
+        <ConfirmDialog
+          title={t("membresia.trasladoOfertaTitulo")}
+          message={t("membresia.trasladoOfertaMensaje", { nombre: ofrecerTraslado.nombre })}
+          confirmLabel={t("membresia.trasladoOfertaCrear")}
+          onConfirm={() => {
+            const id = ofrecerTraslado.id;
+            setOfrecerTraslado(null);
+            navigate("/cartas", { state: { trasladoSalidaDe: id } });
+          }}
+          onCancel={() => setOfrecerTraslado(null)}
         />
       )}
 

@@ -165,7 +165,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         case "nuevos": return esNuevoEnPeriodo(m, periodo, umbrales);
         case "recibidos": return idsRecibidos.has(m.id);
         case "trasladados": return idsTrasladados.has(m.id);
-        case "frecuentes": return !!a && a.enRoster > 0 && a.pct !== null && a.pct < umbrales.ausenciasFrecuentesPct;
+        case "frecuentes": return m.activo === 1 && !!a && a.enRoster > 0 && a.pct !== null && a.pct < umbrales.ausenciasFrecuentesPct;
         case "incompletos": return camposFaltantes(m).length > 0;
         default: return true;
       }

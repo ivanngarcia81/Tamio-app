@@ -158,7 +158,9 @@ export function resumenMembresia(
     if (esNuevoEnPeriodo(m, periodo, u)) nuevos++;
     if (camposFaltantes(m).length > 0) incompletos++;
     const a = asistencia.get(m.id);
-    if (a && a.enRoster > 0 && a.pct !== null && a.pct < u.ausenciasFrecuentesPct) frecuentes++;
+    // Solo miembros de alta: contar bajas o visitantes con rosters viejos
+    // producía un número mayor que lo visible en la tabla filtrada.
+    if (m.activo === 1 && a && a.enRoster > 0 && a.pct !== null && a.pct < u.ausenciasFrecuentesPct) frecuentes++;
   }
   return {
     total: miembros.length,

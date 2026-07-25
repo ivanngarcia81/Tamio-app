@@ -849,6 +849,9 @@ export const en: Resources = {
     reactivarTitulo: "Reactivate {{nombre}}",
     reactivarMensaje: "The member will appear as active in the membership registry again.",
     toastBaja: "Member removed",
+    trasladoOfertaTitulo: "Record the outgoing transfer",
+    trasladoOfertaMensaje: "{{nombre}} has been removed from the roll. Create the outgoing transfer as well? It will be filed under Letters and transfers, can issue its letter, and will count in reports.",
+    trasladoOfertaCrear: "Create transfer",
     toastReactivado: "Member reactivated",
   },
 

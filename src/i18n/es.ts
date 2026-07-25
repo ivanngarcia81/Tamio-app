@@ -843,6 +843,9 @@ export const es = {
     reactivarTitulo: "Reactivar a {{nombre}}",
     reactivarMensaje: "El miembro volverá a aparecer como activo en el registro de membresía.",
     toastBaja: "Miembro dado de baja",
+    trasladoOfertaTitulo: "Registrar el traslado de salida",
+    trasladoOfertaMensaje: "La baja de {{nombre}} quedó registrada. ¿Crear también el traslado de salida? Así queda en el archivo de Cartas y traslados, puede emitir su carta y cuenta en los informes.",
+    trasladoOfertaCrear: "Crear traslado",
     toastReactivado: "Miembro reactivado",
   },
 

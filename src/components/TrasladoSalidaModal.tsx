@@ -27,13 +27,15 @@ interface Props {
   traslado: TrasladoSalida | null;
   /** Miembros que pueden iniciar traslado (activos del registro). */
   members: Member[];
+  /** Miembro preseleccionado (puente desde la baja por traslado en Membresía). */
+  preMemberId?: number | null;
   onClose: () => void;
   onSaved: () => void;
   /** Abre la carta vinculada en el editor. */
   onAbrirCarta: (cartaId: number) => void;
 }
 
-export default function TrasladoSalidaModal({ church, traslado, members, onClose, onSaved, onAbrirCarta }: Props) {
+export default function TrasladoSalidaModal({ church, traslado, members, preMemberId, onClose, onSaved, onAbrirCarta }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
   const [saving, setSaving] = useState(false);
@@ -41,7 +43,7 @@ export default function TrasladoSalidaModal({ church, traslado, members, onClose
   const [aviso, setAviso] = useState<string | null>(null);
   const [confirmTrasladado, setConfirmTrasladado] = useState<number | null>(null);
 
-  const [memberId, setMemberId] = useState<number | null>(traslado?.member_id ?? null);
+  const [memberId, setMemberId] = useState<number | null>(traslado?.member_id ?? preMemberId ?? null);
   const [fechaSolicitud, setFechaSolicitud] = useState(traslado?.fecha_solicitud ?? hoyLocal());
   const [motivo, setMotivo] = useState(traslado?.motivo ?? "");
   const [iglesiaDestino, setIglesiaDestino] = useState(traslado?.iglesia_destino ?? "");
