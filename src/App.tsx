@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import UpdateBanner from "./components/UpdateBanner";
@@ -224,8 +225,23 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   return (
     <div className="app">
-      {/* Franja para arrastrar la ventana con la barra de título integrada. */}
-      <div className="titlebar-drag" data-tauri-drag-region />
+      {/* Franja para arrastrar la ventana con la barra de título integrada.
+          Además del atributo data-tauri-drag-region (que en macOS con ventana
+          transparente a veces no engancha), se llama startDragging() a mano:
+          con cualquiera de los dos mecanismos la ventana se mueve. Doble clic
+          maximiza/restaura, como la barra de título nativa. */}
+      <div
+        className="titlebar-drag"
+        data-tauri-drag-region
+        onMouseDown={(e) => {
+          if (e.buttons === 1 && e.detail === 1) {
+            getCurrentWindow().startDragging().catch(() => {});
+          }
+        }}
+        onDoubleClick={() => {
+          getCurrentWindow().toggleMaximize().catch(() => {});
+        }}
+      />
       {cmdOpen && (
         <CmdPalette
           church={church}
