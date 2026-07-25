@@ -1579,14 +1579,61 @@ export async function listCartas(churchId: number): Promise<Carta[]> {
 }
 
 /** Folio CAR-AAAA-0001: MAX(seq)+1 por año (no COUNT, para que eliminar un
- *  borrador nunca repita número; los huecos son aceptados a propósito). */
+ *  borrador nunca repita número; los huecos son aceptados a propósito).
+ *
+ *  El año se toma del FOLIO ya emitido, no de fecha_emision: el folio nunca
+ *  cambia, mientras que editar la fecha de una carta a otro año la sacaba del
+ *  filtro y el siguiente folio de ese año se repetía (bug del CAR duplicado).
+ *  Además se verifica la colisión directa: si el candidato ya existe (p. ej.
+ *  por cartas llegadas por sincronización), se avanza hasta el primer libre. */
 async function nextCartaSeq(churchId: number, anio: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ m: number | null }[]>(
-    "SELECT MAX(numero_seq) AS m FROM cartas WHERE church_id = $1 AND substr(fecha_emision, 1, 4) = $2",
+    "SELECT MAX(numero_seq) AS m FROM cartas WHERE church_id = $1 AND folio LIKE 'CAR-' || $2 || '-%'",
     [churchId, anio]
   );
-  return (rows[0]?.m ?? 0) + 1;
+  let seq = (rows[0]?.m ?? 0) + 1;
+  for (;;) {
+    const folio = `CAR-${anio}-${String(seq).padStart(4, "0")}`;
+    const dup = await d.select<{ n: number }[]>(
+      "SELECT count(*) AS n FROM cartas WHERE church_id = $1 AND folio = $2",
+      [churchId, folio]
+    );
+    if ((dup[0]?.n ?? 0) === 0) return seq;
+    seq++;
+  }
+}
+
+/**
+ * Repara folios de carta duplicados: conserva el folio en la carta más antigua
+ * (menor id) y renumera las demás con la siguiente seq libre de su año. Los
+ * duplicados nacen cuando dos equipos crean cartas sin conexión y la
+ * sincronización las junta (cada uno calculó la misma seq); esto se ejecuta al
+ * terminar de bajar cartas de la nube y en la migración v35 para datos ya
+ * afectados. Devuelve cuántas cartas se renumeraron.
+ */
+export async function repararFoliosDuplicados(churchId: number): Promise<number> {
+  const d = await getDb();
+  const dups = await d.select<{ id: number; folio: string }[]>(
+    `SELECT c.id, c.folio FROM cartas c
+      WHERE c.church_id = $1
+        AND EXISTS (
+          SELECT 1 FROM cartas o
+           WHERE o.church_id = c.church_id AND o.folio = c.folio AND o.id < c.id
+        )
+      ORDER BY c.id`,
+    [churchId]
+  );
+  for (const c of dups) {
+    const anio = c.folio.slice(4, 8);
+    const seq = await nextCartaSeq(churchId, anio);
+    const nuevo = `CAR-${anio}-${String(seq).padStart(4, "0")}`;
+    await d.execute(
+      "UPDATE cartas SET numero_seq = $1, folio = $2, updated_at = datetime('now') WHERE id = $3 AND church_id = $4",
+      [seq, nuevo, c.id, churchId]
+    );
+  }
+  return dups.length;
 }
 
 function cartaParams(c: NewCarta): unknown[] {

@@ -30,7 +30,7 @@ import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
-import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, setMonedaActiva, type Church, type Member, type Tx } from "./db";
+import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import { evaluarVigencia, rutaPermitidaPorPlan, urlCompra } from "./plan";
@@ -433,6 +433,10 @@ export default function App() {
         // Registra los gastos fijos de los meses que llegaron desde la
         // última vez que se abrió la app (nunca meses futuros).
         await materializeMovimientosRecurrentes(c.id, c.moneda);
+        // Sanea folios de carta repetidos (los dejaba un bug ya corregido y
+        // los puede juntar la sincronización): conserva el más antiguo y
+        // renumera el resto. Con datos sanos no hace nada.
+        await repararFoliosDuplicados(c.id).catch(() => {});
         setMonedaActiva(c.moneda);
         setChurch(c);
       })

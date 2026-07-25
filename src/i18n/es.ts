@@ -1949,7 +1949,8 @@ export const es = {
     bloqueoTitulo: "Suscripción vencida",
     bloqueoSub: "El acceso está pausado porque la suscripción venció y terminó el periodo de gracia. Renueva para continuar; tus datos están intactos y volverán tal cual al renovar.",
     renovar: "Renovar suscripción",
-    nubeManda: "Con sesión iniciada, el plan lo controla la nube (pago o panel del dueño): lo que cambies aquí se sobreescribe en la próxima sincronización.",
+    nubeManda: "El plan lo administra el servidor (pago o panel del dueño); aquí solo se consulta. Para cambios de plan o cortesías, contacta a soporte.",
+    subNube: "Tu plan actual, administrado desde el servidor",
   },
 
   perfil: {

@@ -519,7 +519,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         </div>
 
         <div className="modal-body">
-          {!isEdit && !pestanaBloqueada && (
+          {/* El selector Ingreso/Gasto pertenece a los movimientos: en el
+              formulario de miembro no pinta nada (y saltar de "Nuevo miembro"
+              a un movimiento a mitad de captura solo confundía). */}
+          {!isEdit && !pestanaBloqueada && tab !== "miembro" && (
             <div className="tabs-segmented">
               <div className={`seg${tab === "ingreso" ? " active" : ""}`} onClick={() => setTab("ingreso")}>
                 <IconArrowUp size={14} strokeWidth={2.2} /> {t("recordModal.segIngreso")}

@@ -17,7 +17,7 @@
 // se sincronizan primero los miembros y luego las transacciones.
 // ============================================================================
 
-import { getDb, dedupPlantillasIniciales, loadCategoriasCustom } from "./db";
+import { getDb, dedupPlantillasIniciales, loadCategoriasCustom, repararFoliosDuplicados } from "./db";
 import { supabase } from "./supabase";
 
 // Columnas de datos que existen igual en local (SQLite) y en la nube (Postgres).
@@ -702,8 +702,15 @@ async function sincronizarTablaConMiembro(
   }
 }
 
-export function sincronizarCartas(churchIdLocal: number): Promise<ResultadoSync> {
-  return sincronizarTablaConMiembro(churchIdLocal, "cartas", CARTA_DATA_COLS);
+export async function sincronizarCartas(churchIdLocal: number): Promise<ResultadoSync> {
+  const r = await sincronizarTablaConMiembro(churchIdLocal, "cartas", CARTA_DATA_COLS);
+  // Dos equipos sin conexión pueden emitir el mismo folio (cada uno calculó la
+  // misma seq); al juntarse aquí, se renumeran los repetidos. Un fallo en la
+  // reparación no debe tumbar la sincronización completa.
+  if (r.ok) {
+    try { await repararFoliosDuplicados(churchIdLocal); } catch { /* noop */ }
+  }
+  return r;
 }
 export function sincronizarSolicitudes(churchIdLocal: number): Promise<ResultadoSync> {
   return sincronizarTablaConMiembro(churchIdLocal, "solicitudes", SOLICITUD_DATA_COLS);

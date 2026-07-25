@@ -12,20 +12,36 @@ interface Props {
   onSaved: (c: Church) => void;
 }
 
-/** Panel de administración de la suscripción (plan + estado + vencimiento).
- *  De momento es control manual del dueño y hace de mecanismo de "cortesía".
- *  A futuro un webhook de pago escribirá estos mismos campos. */
+/**
+ * Panel de la suscripción (plan + estado + vencimiento).
+ *
+ * Con login activo es SOLO LECTURA: la autoridad es la nube (webhook de pago o
+ * el dueño en Supabase) y el sync baja el valor. Antes los controles quedaban
+ * editables y, sin conexión, cualquiera podía autoconcederse "Completo/Activa"
+ * indefinidamente desde Ajustes — el editor local solo tiene sentido en modo
+ * local puro (sin credenciales), donde no hay licencia que administrar.
+ */
 export default function PlanSettings({ church, onSaved }: Props) {
   const { t } = useTranslation();
+  const soloLectura = authHabilitado;
   const [plan, setPlan] = useState(church.plan || "completo");
   const [estado, setEstado] = useState(church.sub_estado || "activa");
   const [vence, setVence] = useState(church.sub_vence ?? "");
   const [saving, setSaving] = useState(false);
 
-  const dirty = plan !== church.plan || estado !== church.sub_estado || (vence || null) !== (church.sub_vence ?? null);
-  const vig = evaluarVigencia(estado, vence || null);
+  // En solo lectura se muestra SIEMPRE lo que dice la iglesia (la nube),
+  // no el estado editable local.
+  const planVista = soloLectura ? (church.plan || "completo") : plan;
+  const estadoVista = soloLectura ? (church.sub_estado || "activa") : estado;
+  const venceVista = soloLectura ? (church.sub_vence ?? "") : vence;
+
+  const dirty = !soloLectura && (
+    plan !== church.plan || estado !== church.sub_estado || (vence || null) !== (church.sub_vence ?? null)
+  );
+  const vig = evaluarVigencia(estadoVista, venceVista || null);
 
   async function guardar() {
+    if (soloLectura) return;
     setSaving(true);
     try {
       const actualizada = await updateSuscripcion(church.id, plan, estado, vence || null);
@@ -40,8 +56,8 @@ export default function PlanSettings({ church, onSaved }: Props) {
   }
 
   const areas = [
-    incluyeTesoreria(plan) ? t("plan.areaTesoreria") : null,
-    incluyeSecretaria(plan) ? t("plan.areaSecretaria") : null,
+    incluyeTesoreria(planVista) ? t("plan.areaTesoreria") : null,
+    incluyeSecretaria(planVista) ? t("plan.areaSecretaria") : null,
   ].filter(Boolean).join(" · ");
 
   return (
@@ -51,43 +67,65 @@ export default function PlanSettings({ church, onSaved }: Props) {
           <div className="card-icon"><IconIdBadge size={16} /></div>
           <div className="card-head-titles">
             <div className="card-title-lg">{t("plan.titulo")}</div>
-            <div className="card-title-sub">{t("plan.sub")}</div>
+            <div className="card-title-sub">{soloLectura ? t("plan.subNube") : t("plan.sub")}</div>
           </div>
         </div>
       </div>
 
-      {/* Plan */}
-      <label className="form-label">{t("plan.plan")}</label>
-      <div className="tabs-segmented" style={{ marginBottom: 12 }}>
-        {PLANES.map((p) => (
-          <div key={p} className={`seg${plan === p ? " active" : ""}`} onClick={() => setPlan(p)}>
-            {t(`plan.nombre.${p}`)}
+      {soloLectura ? (
+        <>
+          {/* Vista informativa: qué plan tiene la iglesia hoy, sin controles. */}
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">{t("plan.plan")}</label>
+            <div style={{ fontWeight: 700 }}>{t(`plan.nombre.${planVista}`)}</div>
           </div>
-        ))}
-      </div>
-
-      {/* Estado */}
-      <label className="form-label">{t("plan.estado")}</label>
-      <div className="tabs-segmented" style={{ marginBottom: 12 }}>
-        {ESTADOS_SUB.map((s) => (
-          <div key={s} className={`seg${estado === s ? " active" : ""}`} onClick={() => setEstado(s)}>
-            {t(`plan.estadoNombre.${s}`)}
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">{t("plan.estado")}</label>
+            <div style={{ fontWeight: 700 }}>{t(`plan.estadoNombre.${estadoVista}`)}</div>
           </div>
-        ))}
-      </div>
+          {venceVista && estadoVista !== "cortesia" && (
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">{t("plan.vence")}</label>
+              <div style={{ fontWeight: 700 }}>{venceVista}</div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Plan */}
+          <label className="form-label">{t("plan.plan")}</label>
+          <div className="tabs-segmented" style={{ marginBottom: 12 }}>
+            {PLANES.map((p) => (
+              <div key={p} className={`seg${plan === p ? " active" : ""}`} onClick={() => setPlan(p)}>
+                {t(`plan.nombre.${p}`)}
+              </div>
+            ))}
+          </div>
 
-      {/* Vencimiento (no aplica a cortesía) */}
-      {estado !== "cortesia" && (
-        <div className="form-group" style={{ marginBottom: 12 }}>
-          <label className="form-label">
-            {t("plan.vence")} <span className="opt">{t("common.opcional")}</span>
-          </label>
-          <input type="date" className="form-input" value={vence} onChange={(e) => setVence(e.target.value)} />
-          <div className="form-hint">{t("plan.venceHint")}</div>
-        </div>
+          {/* Estado */}
+          <label className="form-label">{t("plan.estado")}</label>
+          <div className="tabs-segmented" style={{ marginBottom: 12 }}>
+            {ESTADOS_SUB.map((s) => (
+              <div key={s} className={`seg${estado === s ? " active" : ""}`} onClick={() => setEstado(s)}>
+                {t(`plan.estadoNombre.${s}`)}
+              </div>
+            ))}
+          </div>
+
+          {/* Vencimiento (no aplica a cortesía) */}
+          {estado !== "cortesia" && (
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">
+                {t("plan.vence")} <span className="opt">{t("common.opcional")}</span>
+              </label>
+              <input type="date" className="form-input" value={vence} onChange={(e) => setVence(e.target.value)} />
+              <div className="form-hint">{t("plan.venceHint")}</div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Resumen de lo que verá la iglesia */}
+      {/* Resumen de lo que ve la iglesia */}
       <div className="form-hint" style={{ marginBottom: 4 }}>
         {t("plan.resumenAreas")}: <b>{areas || t("plan.ninguna")}</b>
       </div>
@@ -97,20 +135,22 @@ export default function PlanSettings({ church, onSaved }: Props) {
           {vig.activa ? t("plan.vigente") : t("plan.noVigente")}
         </b>
         {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
-        {estado === "cortesia" && ` — ${t("plan.esCortesia")}`}
+        {estadoVista === "cortesia" && ` — ${t("plan.esCortesia")}`}
       </div>
 
-      {authHabilitado && (
-        <div className="form-hint" style={{ marginBottom: 12 }}>{t("plan.nubeManda")}</div>
-      )}
-
-      <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
-        {saving ? t("common.guardando") : t("common.guardarCambios")}
-      </button>
-      {!dirty && (
-        <span className="settings-saved-pill" style={{ marginLeft: 10 }}>
-          <IconCheck size={14} /> {t("common.guardado")}
-        </span>
+      {soloLectura ? (
+        <div className="form-hint">{t("plan.nubeManda")}</div>
+      ) : (
+        <>
+          <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
+            {saving ? t("common.guardando") : t("common.guardarCambios")}
+          </button>
+          {!dirty && (
+            <span className="settings-saved-pill" style={{ marginLeft: 10 }}>
+              <IconCheck size={14} /> {t("common.guardado")}
+            </span>
+          )}
+        </>
       )}
     </div>
   );

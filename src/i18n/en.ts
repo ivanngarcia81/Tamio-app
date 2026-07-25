@@ -1942,7 +1942,8 @@ export const en: Resources = {
     bloqueoTitulo: "Subscription expired",
     bloqueoSub: "Access is paused because the subscription expired and the grace period ended. Renew to continue; your data is intact and will come back as-is once renewed.",
     renovar: "Renew subscription",
-    nubeManda: "While signed in, the plan is controlled by the cloud (payment or the owner's panel): changes made here are overwritten on the next sync.",
+    nubeManda: "Your plan is managed by the server (payment or the owner's panel); this view is read-only. For plan changes or courtesies, contact support.",
+    subNube: "Your current plan, managed from the server",
   },
 
   perfil: {
