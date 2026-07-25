@@ -148,9 +148,10 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   const idsRecibidos = useMemo(() => new Set(
     trasladosEntrada.filter((te) => te.estado === "completado" && te.member_id && enPeriodo(te.fecha_recepcion ?? te.creado_en.slice(0, 10), periodo)).map((te) => te.member_id!)
   ), [trasladosEntrada, periodo]);
+  // Igual que el resumen: la fuente del badge (baja por traslado en el periodo).
   const idsTrasladados = useMemo(() => new Set(
-    trasladosSalida.filter((ts) => ts.estado === "completado" && enPeriodo(ts.fecha_entrega ?? ts.fecha_solicitud, periodo)).map((ts) => ts.member_id)
-  ), [trasladosSalida, periodo]);
+    miembros.filter((m) => m.activo === 0 && m.motivo_baja === "traslado" && enPeriodo(m.fecha_baja, periodo)).map((m) => m.id)
+  ), [miembros, periodo]);
 
   const filas = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -165,7 +166,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         case "nuevos": return esNuevoEnPeriodo(m, periodo, umbrales);
         case "recibidos": return idsRecibidos.has(m.id);
         case "trasladados": return idsTrasladados.has(m.id);
-        case "frecuentes": return m.activo === 1 && !!a && a.enRoster > 0 && a.pct !== null && a.pct < umbrales.ausenciasFrecuentesPct;
+        case "frecuentes": return estadoEfectivo(m) === "activo" && !!a && a.racha >= umbrales.rachaServicios;
         case "incompletos": return camposFaltantes(m).length > 0;
         default: return true;
       }
@@ -539,6 +540,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                   key={c.id}
                   className={`stat-card accent${tarjeta === c.id ? " is-selected" : ""}`}
                   style={accent(c.color)}
+                  title={c.id === "frecuentes" ? t("informes.cardFrecuentesRegla", { n: umbrales.rachaServicios }) : undefined}
                   aria-pressed={tarjeta === c.id}
                   onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
                 >

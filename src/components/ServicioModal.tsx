@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   buscarPosiblesDuplicados, getServicioAsistencia, insertServicio, insertVisitanteComoMiembro,
+  marcarActividadRealizada,
   listMembersAsistencia, parseVisitantes, updateServicio,
   type AsistenciaEntry, type Church, type NewServicio, type Servicio, type ServicioVisitante,
 } from "../db";
@@ -127,7 +128,7 @@ interface Props {
   /** null = servicio nuevo. */
   servicio: Servicio | null;
   /** Valores iniciales al crear (puente desde la Agenda). */
-  prefill?: { fecha?: string; tipo?: string; dirige?: string } | null;
+  prefill?: { fecha?: string; tipo?: string; dirige?: string; actividadId?: number } | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -421,7 +422,12 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
       if (servicio) {
         await updateServicio(servicio.id, church.id, payload);
       } else {
-        await insertServicio(church.id, payload);
+        const nuevoServicioId = await insertServicio(church.id, payload);
+        // Puente Agenda→Bitácora: la actividad de origen queda realizada y
+        // enlazada. Nunca frena el guardado del servicio.
+        if (prefill?.actividadId) {
+          try { await marcarActividadRealizada(prefill.actividadId, church.id, nuevoServicioId); } catch { /* noop */ }
+        }
       }
       playSound("guardado");
       showToast(t("servicios.toastGuardado"));

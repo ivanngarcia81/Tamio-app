@@ -142,7 +142,7 @@ export interface ResumenMembresia {
 export function resumenMembresia(
   miembros: Member[],
   periodo: Periodo,
-  trasladosSalida: TrasladoSalida[],
+  _trasladosSalida: TrasladoSalida[],
   trasladosEntrada: TrasladoEntrada[],
   asistencia: Map<number, AsistenciaMiembro>,
   u: Umbrales
@@ -158,9 +158,10 @@ export function resumenMembresia(
     if (esNuevoEnPeriodo(m, periodo, u)) nuevos++;
     if (camposFaltantes(m).length > 0) incompletos++;
     const a = asistencia.get(m.id);
-    // Solo miembros de alta: contar bajas o visitantes con rosters viejos
-    // producía un número mayor que lo visible en la tabla filtrada.
-    if (m.activo === 1 && a && a.enRoster > 0 && a.pct !== null && a.pct < u.ausenciasFrecuentesPct) frecuentes++;
+    // Regla única y por escrito: miembros con estado ACTIVO que llevan
+    // `rachaServicios` o más ausencias consecutivas — la misma condición del
+    // filtro "Ausencias consecutivas", así tarjeta y filtro siempre cuadran.
+    if (e === "activo" && a && a.racha >= u.rachaServicios) frecuentes++;
   }
   return {
     total: miembros.length,
@@ -172,8 +173,11 @@ export function resumenMembresia(
     recibidosPorTraslado: trasladosEntrada.filter(
       (te) => te.estado === "completado" && enPeriodo(te.fecha_recepcion ?? te.creado_en.slice(0, 10), periodo)
     ).length,
-    trasladados: trasladosSalida.filter(
-      (ts) => ts.estado === "completado" && enPeriodo(ts.fecha_entrega ?? ts.fecha_solicitud, periodo)
+    // Misma fuente que el badge TRANSFERIDO: la baja del miembro con motivo
+    // "traslado" (los traslados completados también la producen). Así el
+    // contador siempre cuadra con los badges visibles del periodo.
+    trasladados: miembros.filter(
+      (m) => m.activo === 0 && m.motivo_baja === "traslado" && enPeriodo(m.fecha_baja, periodo)
     ).length,
     ausenciasFrecuentes: frecuentes,
     incompletos,

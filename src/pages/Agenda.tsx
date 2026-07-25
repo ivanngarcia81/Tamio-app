@@ -686,6 +686,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                   fecha: detalle.fecha,
                   tipo: TIPO_SERVICIO_POR_ACTIVIDAD[detalle.tipo] ?? "otro",
                   dirige: nombreResponsable(detalle) ?? undefined,
+                  // Solo actividades únicas: en una serie recurrente no se
+                  // puede marcar "realizada" una sola fecha sin más mecánica.
+                  actividadId: detalle._esOcurrencia ? undefined : detalle._master.id,
                 },
               },
             });

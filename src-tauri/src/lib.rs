@@ -662,6 +662,16 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- cambian en nada.
             ALTER TABLE churches ADD COLUMN saldo_inicial REAL NOT NULL DEFAULT 0;
         "#,
+    }, motordb::Migracion {
+        version: 35,
+        description: "agenda: enlace local al servicio registrado desde el puente",
+        sql: r#"
+            -- Servicio de la Bitácora creado desde esta actividad (puente
+            -- Agenda→Servicios). Columna local: el sync de agenda usa lista
+            -- explícita de columnas y no la envía; el estado 'completada'
+            -- sí viaja.
+            ALTER TABLE agenda ADD COLUMN servicio_id INTEGER;
+        "#,
     }]
 }
 

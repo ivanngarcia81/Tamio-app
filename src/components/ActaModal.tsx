@@ -126,6 +126,12 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
     setError(null);
     if (!titulo.trim()) { setError(t("actas.tituloObligatorio")); return; }
     if (!fecha) { setError(t("actas.fechaObligatoria")); return; }
+    // Un acta aprobada/corregida es un documento formal: sin quién presidió y
+    // quién levantó el acta no puede pasar de borrador.
+    if (estado === "aprobada" || estado === "corregida") {
+      if (!preside.trim()) { setError(t("actas.presideObligatorio", { estado: t(`actas.estado.${estado}`) })); return; }
+      if (!secretario.trim()) { setError(t("actas.secretarioObligatorio", { estado: t(`actas.estado.${estado}`) })); return; }
+    }
     setSaving(true);
     try {
       const payload: NewActa = {

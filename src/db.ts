@@ -2619,7 +2619,7 @@ async function replaceAsistencia(churchId: number, servicioId: number, asistenci
   }
 }
 
-export async function insertServicio(churchId: number, s: NewServicio): Promise<void> {
+export async function insertServicio(churchId: number, s: NewServicio): Promise<number | null> {
   const d = await getDb();
   await d.execute(
     `INSERT INTO servicios (
@@ -2632,6 +2632,24 @@ export async function insertServicio(churchId: number, s: NewServicio): Promise<
   const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
   const servicioId = rows[0]?.id;
   if (servicioId) await replaceAsistencia(churchId, servicioId, s.asistencia);
+  return servicioId ?? null;
+}
+
+/** Cierra el círculo del puente Agenda→Bitácora: la actividad queda marcada
+ *  como realizada y enlazada (v35, columna local) al servicio registrado.
+ *  El estado 'completada' sincroniza; el enlace es de esta Mac. */
+export async function marcarActividadRealizada(
+  actividadId: number,
+  churchId: number,
+  servicioId: number | null
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE agenda SET estado = 'completada', servicio_id = $3,
+            modificado_en = datetime('now'), updated_at = datetime('now')
+      WHERE id = $1 AND church_id = $2`,
+    [actividadId, churchId, servicioId]
+  );
 }
 
 export async function updateServicio(id: number, churchId: number, s: NewServicio): Promise<void> {
