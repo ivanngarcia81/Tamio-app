@@ -193,7 +193,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         ) : (
           <>
             <div className="dash-canvas">
-            <div className="summary-4">
+            <div className="summary-4 enter">
               <div className="stat-card">
                 <div className="stat-head">
                   <span className="stat-label">{t("mov.totalDelMes")}</span>

@@ -173,7 +173,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
       <div className="content">
         {!loading && (
           <div className="dash-canvas">
-            <div className="summary-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+            <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
                 <div className="stat-value md">{resumen.total}</div>
