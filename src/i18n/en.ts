@@ -703,6 +703,20 @@ export const en: Resources = {
   inboxAvisos: {
     cambioEstado: "Notice from Secretariat: {{nombre}}'s membership status changed from {{de}} to {{a}}.",
   },
+  fusion: {
+    accion: "Merge duplicate…",
+    titulo: "Merge {{nombre}}",
+    sub: "Their entire history will move to another record and this one will disappear from the roll.",
+    resumen: "Carries {{movimientos}} contributions, {{asistencias}} attendance records and {{documentos}} documents (letters, requests and transfers).",
+    destinoLabel: "Merge into",
+    buscarPlaceholder: "Search for the record that stays…",
+    aviso: "All of \"{{origen}}\"'s history will move to \"{{destino}}\" and \"{{origen}}\" will be permanently removed. The annual certificate will show the combined total.",
+    confirmar2: "Are you sure? Press \"Confirm merge\" to move everything from \"{{origen}}\" to \"{{destino}}\". This cannot be undone.",
+    irreversible: "Cannot be undone",
+    boton: "Merge",
+    botonConfirmar: "Confirm merge",
+    toastHecha: "{{origen}} was merged into {{destino}}.",
+  },
   homeSinArea: {
     titulo: "This area is not in the current plan",
     subTesoreria: "The church's current plan does not include Treasury. Ask the administrator to review the plan in Settings.",

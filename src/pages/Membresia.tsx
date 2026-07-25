@@ -10,6 +10,7 @@ import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import BajaMemberModal from "../components/BajaMemberModal";
 import FichaMiembroModal from "../components/FichaMiembroModal";
+import FusionarMiembroModal from "../components/FusionarMiembroModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
@@ -67,6 +68,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   const [filtro, setFiltro] = useState<Filtro>("activos");
   const [pendingBaja, setPendingBaja] = useState<Member | null>(null);
   const [ofrecerTraslado, setOfrecerTraslado] = useState<Member | null>(null);
+  const [fusionando, setFusionando] = useState<Member | null>(null);
   const navigate = useNavigate();
   const [pendingReactivar, setPendingReactivar] = useState<Member | null>(null);
   const [ficha, setFicha] = useState<Member | null>(null);
@@ -272,6 +274,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                     onEdit={() => onEdit(m)}
                     onDelete={() => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))}
                     deleteLabel={m.activo === 1 ? t("membresia.darDeBaja") : t("membresia.reactivar")}
+                    extraItems={[{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
                   />
                 </div>
               </div>
@@ -280,6 +283,16 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      {fusionando && (
+        <FusionarMiembroModal
+          churchId={church.id}
+          origen={fusionando}
+          members={members}
+          onClose={() => setFusionando(null)}
+          onMerged={onChanged}
+        />
+      )}
 
       {ficha && (
         <FichaMiembroModal

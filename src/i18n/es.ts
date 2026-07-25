@@ -697,6 +697,20 @@ export const es = {
   inboxAvisos: {
     cambioEstado: "Aviso de Secretaría: el estado de membresía de {{nombre}} cambió de {{de}} a {{a}}.",
   },
+  fusion: {
+    accion: "Fusionar duplicado…",
+    titulo: "Fusionar a {{nombre}}",
+    sub: "Su historial completo pasará a otra ficha y esta desaparecerá del padrón.",
+    resumen: "Arrastra {{movimientos}} aportes, {{asistencias}} asistencias y {{documentos}} documentos (cartas, solicitudes y traslados).",
+    destinoLabel: "Fusionar dentro de",
+    buscarPlaceholder: "Busca la ficha que se queda…",
+    aviso: "Todo el historial de \"{{origen}}\" pasará a \"{{destino}}\" y \"{{origen}}\" se dará de baja definitiva. La constancia anual saldrá por el total combinado.",
+    confirmar2: "¿Seguro? Pulsa \"Confirmar fusión\" para pasar todo de \"{{origen}}\" a \"{{destino}}\". Esta acción no se puede deshacer.",
+    irreversible: "No se puede deshacer",
+    boton: "Fusionar",
+    botonConfirmar: "Confirmar fusión",
+    toastHecha: "{{origen}} se fusionó dentro de {{destino}}.",
+  },
   homeSinArea: {
     titulo: "Esta área no está en el plan actual",
     subTesoreria: "El plan contratado por la iglesia no incluye Tesorería. Pide al administrador revisar el plan en Configuración.",

@@ -2294,6 +2294,89 @@ export function normalizarTelefono(s: string): string {
   return s.replace(/\D/g, "");
 }
 
+// ---------- Fusión de miembros duplicados ----------
+
+/** Qué historial arrastra un miembro (para mostrar antes de fusionar). */
+export interface FusionResumen {
+  movimientos: number;
+  asistencias: number;
+  documentos: number;
+}
+
+export async function resumenFusion(churchId: number, deId: number): Promise<FusionResumen> {
+  const d = await getDb();
+  const uno = async (sql: string): Promise<number> => {
+    const rows = await d.select<{ n: number }[]>(sql, [churchId, deId]);
+    return rows[0]?.n ?? 0;
+  };
+  const [movs, asis, cartas, sols, ts, te] = await Promise.all([
+    uno("SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND member_id = $2 AND deleted = 0"),
+    uno("SELECT count(*) AS n FROM servicio_asistencia WHERE church_id = $1 AND member_id = $2 AND deleted = 0"),
+    uno("SELECT count(*) AS n FROM cartas WHERE church_id = $1 AND member_id = $2 AND deleted = 0"),
+    uno("SELECT count(*) AS n FROM solicitudes WHERE church_id = $1 AND member_id = $2 AND deleted = 0"),
+    uno("SELECT count(*) AS n FROM traslados_salida WHERE church_id = $1 AND member_id = $2 AND deleted = 0"),
+    uno("SELECT count(*) AS n FROM traslados_entrada WHERE church_id = $1 AND member_id = $2 AND deleted = 0"),
+  ]);
+  return { movimientos: movs, asistencias: asis, documentos: cartas + sols + ts + te };
+}
+
+/** Fusiona el miembro `deId` dentro de `aId`: todo su historial (aportes,
+ *  asistencia, cartas, solicitudes, traslados, agenda) pasa al destino y el
+ *  origen queda con borrado suave (el sync lo propaga). Resuelve el caso
+ *  "dio como visitante y luego como miembro": la constancia anual sale por
+ *  el total en una sola persona. No se puede deshacer desde la app. */
+export async function fusionarMiembros(churchId: number, deId: number, aId: number): Promise<void> {
+  if (deId === aId) return;
+  const d = await getDb();
+
+  await d.execute(
+    "UPDATE transactions SET member_id = $3, updated_at = datetime('now') WHERE church_id = $1 AND member_id = $2",
+    [churchId, deId, aId]
+  );
+
+  // Asistencia: clave primaria (servicio_id, member_id). Donde el destino ya
+  // tiene fila para el mismo servicio (viva o borrada), la del origen se
+  // borra suave; el resto se re-apunta al destino.
+  await d.execute(
+    `UPDATE servicio_asistencia SET deleted = 1, updated_at = datetime('now')
+      WHERE church_id = $1 AND member_id = $2 AND deleted = 0
+        AND servicio_id IN (SELECT servicio_id FROM servicio_asistencia WHERE church_id = $1 AND member_id = $3)`,
+    [churchId, deId, aId]
+  );
+  await d.execute(
+    `UPDATE servicio_asistencia SET member_id = $3, updated_at = datetime('now')
+      WHERE church_id = $1 AND member_id = $2 AND deleted = 0`,
+    [churchId, deId, aId]
+  );
+
+  for (const tabla of ["cartas", "solicitudes", "traslados_salida", "traslados_entrada"]) {
+    await d.execute(
+      `UPDATE ${tabla} SET member_id = $3, updated_at = datetime('now') WHERE church_id = $1 AND member_id = $2`,
+      [churchId, deId, aId]
+    );
+  }
+  await d.execute(
+    "UPDATE agenda SET responsable_member_id = $3, updated_at = datetime('now') WHERE church_id = $1 AND responsable_member_id = $2",
+    [churchId, deId, aId]
+  );
+
+  // Datos de contacto: lo que el destino no tenga se completa con el origen.
+  await d.execute(
+    `UPDATE members SET
+        email    = COALESCE(email, (SELECT email FROM members WHERE id = $2)),
+        telefono = COALESCE(telefono, (SELECT telefono FROM members WHERE id = $2)),
+        rfc      = COALESCE(rfc, (SELECT rfc FROM members WHERE id = $2)),
+        updated_at = datetime('now')
+      WHERE id = $3 AND church_id = $1`,
+    [churchId, deId, aId]
+  );
+
+  await d.execute(
+    "UPDATE members SET deleted = 1, updated_at = datetime('now') WHERE id = $2 AND church_id = $1",
+    [churchId, deId]
+  );
+}
+
 /** Posibles duplicados en members comparando nombre + teléfono + correo
  *  normalizados (members no guarda fecha de nacimiento). */
 export async function buscarPosiblesDuplicados(
