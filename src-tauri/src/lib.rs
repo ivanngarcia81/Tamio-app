@@ -1,10 +1,9 @@
-use tauri_plugin_sql::{Migration, MigrationKind};
+mod motordb;
 
-fn migrations() -> Vec<Migration> {
-    vec![Migration {
+fn migraciones() -> Vec<motordb::Migracion> {
+    vec![motordb::Migracion {
         version: 1,
         description: "esquema inicial: iglesias, miembros y movimientos",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS churches (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,18 +55,16 @@ fn migrations() -> Vec<Migration> {
             CREATE INDEX IF NOT EXISTS idx_tx_church_fecha ON transactions(church_id, fecha);
             CREATE INDEX IF NOT EXISTS idx_tx_tipo ON transactions(church_id, tipo);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 3,
         description: "moneda por defecto: dolares en vez de pesos",
-        kind: MigrationKind::Up,
         sql: r#"
             UPDATE churches SET moneda = 'USD' WHERE moneda = 'MXN';
             UPDATE transactions SET moneda = 'USD' WHERE moneda = 'MXN';
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 4,
         description: "datos del tesorero para identificar quien genera los reportes",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE churches ADD COLUMN tesorero_nombre TEXT;
             ALTER TABLE churches ADD COLUMN tesorero_cargo TEXT;
@@ -75,10 +72,9 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE churches ADD COLUMN tesorero_telefono TEXT;
             ALTER TABLE churches ADD COLUMN tesorero_firma_path TEXT;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 5,
         description: "depositos bancarios",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS depositos_bancarios (
                 id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,10 +92,9 @@ fn migrations() -> Vec<Migration> {
             CREATE INDEX IF NOT EXISTS idx_depositos_church_fecha ON depositos_bancarios(church_id, fecha);
             CREATE INDEX IF NOT EXISTS idx_depositos_periodo ON depositos_bancarios(church_id, periodo);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 6,
         description: "directorio de usuarios administrativos (sin login todavia — preparado para el backend futuro)",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS usuarios (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,10 +108,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_usuarios_church ON usuarios(church_id);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 7,
         description: "categorias personalizadas de ingreso/gasto por iglesia",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS categorias_custom (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,10 +122,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_categorias_custom_church ON categorias_custom(church_id);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 8,
         description: "gastos fijos recurrentes (se materializan como transacciones cada mes)",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS gastos_recurrentes (
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,18 +144,16 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_gastos_recurrentes_church ON gastos_recurrentes(church_id);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 9,
         description: "movimientos recurrentes (ingreso o gasto) + vinculo con la transaccion generada",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE gastos_recurrentes ADD COLUMN tipo TEXT NOT NULL DEFAULT 'gasto';
             ALTER TABLE transactions ADD COLUMN recurrente_id INTEGER REFERENCES gastos_recurrentes(id) ON DELETE SET NULL;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 10,
         description: "datos del pastor para el bloque de firmas en los reportes PDF",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE churches ADD COLUMN pastor_nombre TEXT;
             ALTER TABLE churches ADD COLUMN pastor_cargo TEXT;
@@ -170,18 +161,16 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE churches ADD COLUMN pastor_telefono TEXT;
             ALTER TABLE churches ADD COLUMN pastor_firma_path TEXT;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 11,
         description: "baja de miembros con fecha y motivo (registro de membresía)",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE members ADD COLUMN fecha_baja TEXT;
             ALTER TABLE members ADD COLUMN motivo_baja TEXT;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 12,
         description: "ficha completa del miembro: membresía, vida espiritual y servicio",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE members ADD COLUMN estado_membresia TEXT NOT NULL DEFAULT 'activo';
             ALTER TABLE members ADD COLUMN fecha_congregacion TEXT;
@@ -198,10 +187,9 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE members ADD COLUMN disponibilidad TEXT;
             ALTER TABLE members ADD COLUMN interes_servir INTEGER NOT NULL DEFAULT 0;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 13,
         description: "actas de reuniones: información básica, asistencia, mociones, acuerdos y aprobación",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS actas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -230,10 +218,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_actas_church_fecha ON actas(church_id, fecha DESC);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 14,
         description: "registro de servicios: culto, mensaje, escuela bíblica y asistencia",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS servicios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -259,10 +246,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_servicios_church_fecha ON servicios(church_id, fecha DESC);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 15,
         description: "asistencia por miembro en servicios: roster relacional con snapshot de nombre",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS servicio_asistencia (
                 servicio_id INTEGER NOT NULL REFERENCES servicios(id),
@@ -276,10 +262,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_asistencia_member ON servicio_asistencia(member_id);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 16,
         description: "cartas y traslados fase 1: tabla de cartas, datos institucionales y secretaría",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE churches ADD COLUMN direccion TEXT;
             ALTER TABLE churches ADD COLUMN region TEXT;
@@ -316,10 +301,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_cartas_church ON cartas(church_id, fecha_emision DESC);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 17,
         description: "cartas y traslados fase 2: solicitudes de cartas con vínculo bidireccional",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS solicitudes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -344,10 +328,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_solicitudes_church ON solicitudes(church_id, fecha_solicitud DESC);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 18,
         description: "cartas y traslados fase 3: traslados de salida y de entrada",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS traslados_salida (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -412,10 +395,9 @@ fn migrations() -> Vec<Migration> {
             CREATE INDEX IF NOT EXISTS idx_ts_church ON traslados_salida(church_id, fecha_solicitud DESC);
             CREATE INDEX IF NOT EXISTS idx_te_church ON traslados_entrada(church_id, fecha_recepcion DESC);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 19,
         description: "cartas y traslados fase 4: plantillas de cartas con variables",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS plantillas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -433,10 +415,9 @@ fn migrations() -> Vec<Migration> {
                 modificado_en TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
             );
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 20,
         description: "informes de membresía: cargos, historial de estados, seguimiento y umbrales",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE members ADD COLUMN cargos TEXT NOT NULL DEFAULT '[]';
             ALTER TABLE members ADD COLUMN historial_estados TEXT NOT NULL DEFAULT '[]';
@@ -444,10 +425,9 @@ fn migrations() -> Vec<Migration> {
             ALTER TABLE members ADD COLUMN seguimiento_notas TEXT NOT NULL DEFAULT '[]';
             ALTER TABLE churches ADD COLUMN umbrales_informes TEXT;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 21,
         description: "agendas y calendarios: actividades, recurrencia, recordatorios",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS agenda (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -476,10 +456,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_agenda_church_fecha ON agenda(church_id, fecha);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 22,
         description: "mensajes internos entre tesorería y secretaría",
-        kind: MigrationKind::Up,
         sql: r#"
             CREATE TABLE IF NOT EXISTS mensajes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -491,10 +470,9 @@ fn migrations() -> Vec<Migration> {
             );
             CREATE INDEX IF NOT EXISTS idx_mensajes_church ON mensajes(church_id, id);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 23,
         description: "sincronización E3: metadatos (uid/updated_at/deleted) en members",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE members ADD COLUMN uid TEXT;
             ALTER TABLE members ADD COLUMN updated_at TEXT;
@@ -503,10 +481,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE members SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_members_sync ON members(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 24,
         description: "sincronización T1: metadatos (uid/updated_at/deleted) en transactions",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE transactions ADD COLUMN uid TEXT;
             ALTER TABLE transactions ADD COLUMN updated_at TEXT;
@@ -515,10 +492,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE transactions SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_tx_sync ON transactions(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 25,
         description: "sincronización D1: metadatos (uid/updated_at/deleted) en depositos_bancarios",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE depositos_bancarios ADD COLUMN uid TEXT;
             ALTER TABLE depositos_bancarios ADD COLUMN updated_at TEXT;
@@ -527,10 +503,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE depositos_bancarios SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_depositos_sync ON depositos_bancarios(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 26,
         description: "sincronización A1: metadatos (uid/updated_at/deleted) en actas",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE actas ADD COLUMN uid TEXT;
             ALTER TABLE actas ADD COLUMN updated_at TEXT;
@@ -539,10 +514,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE actas SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_actas_sync ON actas(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 27,
         description: "sincronización C1: metadatos (uid/updated_at/deleted) en cartas y solicitudes",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE cartas ADD COLUMN uid TEXT;
             ALTER TABLE cartas ADD COLUMN updated_at TEXT;
@@ -557,10 +531,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE solicitudes SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_solicitudes_sync ON solicitudes(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 28,
         description: "sincronización TR1: metadatos (uid/updated_at/deleted) en traslados",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE traslados_salida ADD COLUMN uid TEXT;
             ALTER TABLE traslados_salida ADD COLUMN updated_at TEXT;
@@ -575,10 +548,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE traslados_entrada SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_traslados_entrada_sync ON traslados_entrada(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 29,
         description: "sincronización SV1: metadatos (uid/updated_at/deleted) en servicios",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE servicios ADD COLUMN uid TEXT;
             ALTER TABLE servicios ADD COLUMN updated_at TEXT;
@@ -587,10 +559,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE servicios SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_servicios_sync ON servicios(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 30,
         description: "sincronización AG1/MSG1: metadatos (uid/updated_at/deleted) en agenda y mensajes",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE agenda ADD COLUMN uid TEXT;
             ALTER TABLE agenda ADD COLUMN updated_at TEXT;
@@ -605,19 +576,17 @@ fn migrations() -> Vec<Migration> {
             UPDATE mensajes SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_mensajes_sync ON mensajes(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 31,
         description: "suscripción: plan/estado/vencimiento por iglesia (default completo/activa)",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE churches ADD COLUMN plan TEXT NOT NULL DEFAULT 'completo';
             ALTER TABLE churches ADD COLUMN sub_estado TEXT NOT NULL DEFAULT 'activa';
             ALTER TABLE churches ADD COLUMN sub_vence TEXT;
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 32,
         description: "sincronización P1/CAT1/SV2: metadatos en plantillas, categorias_custom y roster",
-        kind: MigrationKind::Up,
         sql: r#"
             ALTER TABLE plantillas ADD COLUMN uid TEXT;
             ALTER TABLE plantillas ADD COLUMN updated_at TEXT;
@@ -646,10 +615,9 @@ fn migrations() -> Vec<Migration> {
             UPDATE servicio_asistencia SET updated_at = datetime('now') WHERE updated_at IS NULL;
             CREATE INDEX IF NOT EXISTS idx_roster_sync ON servicio_asistencia(church_id, updated_at);
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 33,
         description: "categorías portables: referencia custom-<uid> en movimientos (en vez de id local)",
-        kind: MigrationKind::Up,
         sql: r#"
             -- Los movimientos guardaban la categoría personalizada como
             -- 'custom-<id local>', que difiere entre equipos. Se reescribe a
@@ -682,10 +650,9 @@ fn migrations() -> Vec<Migration> {
                         AND c.church_id = gastos_recurrentes.church_id
                    );
         "#,
-    }, Migration {
+    }, motordb::Migracion {
         version: 34,
         description: "saldo de apertura: dinero en caja al empezar a usar Tamio",
-        kind: MigrationKind::Up,
         sql: r#"
             -- Dinero que la tesorería ya tenía ANTES del primer movimiento
             -- registrado en Tamio. El estado financiero lo suma al acumulado
@@ -818,6 +785,82 @@ fn menu_language(app: tauri::AppHandle, lang: String) {
     }
 }
 
+/// Conexión única a la base cifrada (SQLite es rápido; el Mutex basta).
+struct DbCifrada(std::sync::Mutex<rusqlite::Connection>);
+
+#[tauri::command]
+fn db_select(
+    state: tauri::State<'_, DbCifrada>,
+    query: String,
+    params: Vec<serde_json::Value>,
+) -> Result<serde_json::Value, String> {
+    let conn = state.0.lock().map_err(|e| e.to_string())?;
+    motordb::seleccionar(&conn, &query, &params)
+}
+
+#[tauri::command]
+fn db_execute(
+    state: tauri::State<'_, DbCifrada>,
+    query: String,
+    params: Vec<serde_json::Value>,
+) -> Result<serde_json::Value, String> {
+    let conn = state.0.lock().map_err(|e| e.to_string())?;
+    motordb::ejecutar(&conn, &query, &params)
+}
+
+/// Respaldo manual: exporta una copia SIN cifrar a la ruta que eligió el
+/// usuario en el diálogo de guardar (una decisión consciente, como los CSV).
+#[tauri::command]
+fn db_backup(state: tauri::State<'_, DbCifrada>, destino: String) -> Result<(), String> {
+    let conn = state.0.lock().map_err(|e| e.to_string())?;
+    motordb::exportar_plano(&conn, std::path::Path::new(&destino))
+}
+
+/// Clave del cifrado, guardada en el Llavero de macOS (keyring). La primera
+/// vez se genera una aleatoria de 32 bytes; después siempre se reutiliza.
+fn clave_db() -> Result<String, String> {
+    let entrada = keyring::Entry::new("Tamio", "clave-base-datos").map_err(|e| e.to_string())?;
+    match entrada.get_password() {
+        Ok(c) => Ok(c),
+        Err(keyring::Error::NoEntry) => {
+            let clave = motordb::generar_clave().map_err(|e| e.to_string())?;
+            entrada.set_password(&clave).map_err(|e| e.to_string())?;
+            Ok(clave)
+        }
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Abre (migrando si hace falta) la base cifrada en app_config_dir — la misma
+/// carpeta y el mismo nombre de archivo que usaba tauri-plugin-sql, así la
+/// actualización toma los datos existentes tal cual.
+fn iniciar_db(app: &tauri::AppHandle) -> Result<rusqlite::Connection, String> {
+    use tauri::Manager;
+    let carpeta = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&carpeta).map_err(|e| e.to_string())?;
+    let ruta = carpeta.join("tesoreria.db");
+    let clave = clave_db()?;
+
+    // Base heredada del plugin viejo (sin cifrar): se cifra una sola vez y el
+    // original queda como tesoreria.db.respaldo-sin-cifrar.
+    if motordb::es_sqlite_plano(&ruta) {
+        motordb::migrar_a_cifrado(&ruta, &clave)?;
+    }
+
+    let mut conn = match motordb::abrir(&ruta, &clave) {
+        Ok(c) => c,
+        Err(_) if ruta.exists() => {
+            // Clave perdida o archivo corrupto: se aparta (nunca se borra) y
+            // se arranca vacío; con sesión en la nube, el sync repuebla.
+            motordb::apartar_ilegible(&ruta);
+            motordb::abrir(&ruta, &clave).map_err(|e| e.to_string())?
+        }
+        Err(e) => return Err(e.to_string()),
+    };
+    motordb::correr_migraciones(&mut conn, &migraciones())?;
+    Ok(conn)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{MenuBuilder, MenuItemBuilder};
@@ -828,12 +871,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(
-            tauri_plugin_sql::Builder::default()
-                .add_migrations("sqlite:tesoreria.db", migrations())
-                .build(),
-        )
         .setup(|app| {
+            // Base de datos cifrada: se abre (y migra si hace falta) antes de
+            // mostrar nada; si truena, el error detiene el arranque con causa.
+            let conn = iniciar_db(app.handle()).map_err(|e| format!("base de datos: {e}"))?;
+            app.manage(DbCifrada(std::sync::Mutex::new(conn)));
+
             // Menú nativo de macOS. Arranca en español; el frontend llama
             // menu_language con el idioma real apenas inicia i18n.
             app.set_menu(construir_menu(app.handle(), false)?)?;
@@ -881,7 +924,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance, menu_language])
+        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup])
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
             if let Some(ruta) = id.strip_prefix("nav:") {

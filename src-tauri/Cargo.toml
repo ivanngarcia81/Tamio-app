@@ -22,7 +22,11 @@ tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri-plugin-sql = { version = "2.4.0", features = ["sqlite"] }
+# Motor de base de datos cifrada (SQLCipher). Reemplaza a tauri-plugin-sql:
+# sqlx no soporta SQLCipher, así que select/execute viven en src/motordb.rs.
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"] }
+# Clave del cifrado en el Llavero de macOS.
+keyring = { version = "3", features = ["apple-native"] }
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-fs = "2.5.1"
 

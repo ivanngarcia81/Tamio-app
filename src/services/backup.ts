@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 import { save } from "@tauri-apps/plugin-dialog";
-import { readFile, writeFile } from "@tauri-apps/plugin-fs";
-import { appDataDir, join } from "@tauri-apps/api/path";
+import { writeFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 import {
   METODOS_PAGO, getCategoriasGasto, getCategoriasIngreso,
   listAllTxForExport, listMembers, nowLocalIso, type Member, type Tx,
@@ -73,17 +73,16 @@ export async function exportMiembrosCsv(churchId: number): Promise<BackupResult>
   return saveCsv(`miembros-${nowLocalIso().slice(0, 10)}.csv`, miembrosToCsv(members));
 }
 
-/** Copia el archivo SQLite completo (misma carpeta de datos que usa la app)
- *  a la ubicación que elija el usuario. */
+/** Respaldo completo de la base a la ubicación que elija el usuario. La base
+ *  en disco está cifrada (SQLCipher), así que la copia la exporta el motor en
+ *  Rust YA descifrada: un respaldo que se puede abrir/restaurar en cualquier
+ *  parte, igual de legible que los CSV que también exporta la app. */
 export async function backupDatabase(): Promise<BackupResult> {
-  const dir = await appDataDir();
-  const dbPath = await join(dir, "tesoreria.db");
-  const bytes = await readFile(dbPath);
   const path = await save({
     defaultPath: `tesoreria-respaldo-${nowLocalIso().slice(0, 10)}.db`,
     filters: [{ name: "SQLite", extensions: ["db"] }],
   });
   if (!path) return "cancelado";
-  await writeFile(path, bytes);
+  await invoke("db_backup", { destino: path });
   return "guardado";
 }

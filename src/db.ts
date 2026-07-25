@@ -1,4 +1,4 @@
-import Database from "@tauri-apps/plugin-sql";
+import Database from "./dbmotor";
 import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
