@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre, METODOS_PAGO,
-  updateMovimientoRecurrente, type MovimientoRecurrente,
+  catNombre, countTxDeSerie, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
+  metodoNombre, METODOS_PAGO, updateMontoDeSerie, updateMovimientoRecurrente,
+  type MovimientoRecurrente,
 } from "../db";
 import { IconClose, IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -38,6 +39,17 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
   const [beneficiario, setBeneficiario] = useState(recurrente.beneficiario ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Corrección retroactiva: cuántos movimientos ya generó la serie y si el
+  // nuevo monto debe aplicarse también a ellos (un monto mal capturado se
+  // arregla en un solo guardado, sin tocar fila por fila).
+  const [generados, setGenerados] = useState(0);
+  const [aplicarRetro, setAplicarRetro] = useState(false);
+
+  useEffect(() => {
+    countTxDeSerie(recurrente.id, church_id).then(setGenerados).catch(() => {});
+  }, [recurrente.id, church_id]);
+
+  const montoCambio = parseMonto(monto) !== null && parseMonto(monto) !== recurrente.monto;
 
   async function guardar() {
     setError(null);
@@ -59,6 +71,9 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
         beneficiario_rfc: recurrente.beneficiario_rfc,
         dia: d,
       });
+      if (aplicarRetro && montoCambio && generados > 0) {
+        await updateMontoDeSerie(recurrente.id, church_id, m);
+      }
       onSaved();
       onClose();
     } catch (e) {
@@ -131,6 +146,13 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
               <label className="form-label">{t("recordModal.beneficiario")}</label>
               <input className="form-input" value={beneficiario} onChange={(e) => setBeneficiario(e.target.value)} placeholder={t("recordModal.beneficiarioPlaceholder")} />
             </div>
+          )}
+
+          {montoCambio && generados > 0 && (
+            <label className="roster-followup" style={{ fontSize: 12.5, marginTop: 4 }}>
+              <input type="checkbox" checked={aplicarRetro} onChange={(e) => setAplicarRetro(e.target.checked)} />
+              {t("recurrente.aplicarRetro", { count: generados, monto: fmtMoney(parseMonto(monto) ?? 0) })}
+            </label>
           )}
 
           {error && (

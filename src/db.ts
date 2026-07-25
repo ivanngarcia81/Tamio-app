@@ -3294,6 +3294,40 @@ export async function deleteMovimientoRecurrente(id: number, churchId: number): 
   await d.execute("DELETE FROM gastos_recurrentes WHERE id = $1 AND church_id = $2", [id, churchId]);
 }
 
+/** Movimientos vivos generados por una serie recurrente. */
+export async function countTxDeSerie(recurrenteId: number, churchId: number): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    "SELECT count(*) AS n FROM transactions WHERE recurrente_id = $1 AND church_id = $2 AND deleted = 0",
+    [recurrenteId, churchId]
+  );
+  return rows[0]?.n ?? 0;
+}
+
+/** Borra (suave, para que el sync lo propague) TODOS los movimientos que
+ *  generó una serie. Se usa junto con deleteMovimientoRecurrente cuando el
+ *  usuario decide eliminar la serie completa y no solo la definición. */
+export async function deleteTxDeSerie(recurrenteId: number, churchId: number): Promise<number> {
+  const d = await getDb();
+  const res = await d.execute(
+    "UPDATE transactions SET deleted = 1, updated_at = datetime('now') WHERE recurrente_id = $1 AND church_id = $2 AND deleted = 0",
+    [recurrenteId, churchId]
+  );
+  return res.rowsAffected ?? 0;
+}
+
+/** Corrige el monto de TODOS los movimientos ya generados por la serie
+ *  (p. ej. una renta capturada mal): la definición se actualiza aparte con
+ *  updateMovimientoRecurrente. */
+export async function updateMontoDeSerie(recurrenteId: number, churchId: number, monto: number): Promise<number> {
+  const d = await getDb();
+  const res = await d.execute(
+    "UPDATE transactions SET monto = $3, updated_at = datetime('now') WHERE recurrente_id = $1 AND church_id = $2 AND deleted = 0",
+    [recurrenteId, churchId, monto]
+  );
+  return res.rowsAffected ?? 0;
+}
+
 // ---------- Formato ----------
 
 // Símbolo activo de la app. La app usa UNA moneda por iglesia, así que basta un

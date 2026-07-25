@@ -6,7 +6,8 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
   METODOS_PAGO, buscarPosiblesDuplicados, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
-  insertMovimientoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
+  currentMonth, fmtMoney, insertMovimientoRecurrente, insertMember, insertTx, listMembers,
+  mesesPendientesRecurrente, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconSparkles, IconWarn } from "../icons";
@@ -90,6 +91,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [constancia, setConstancia] = useState(false);
   const [marcarPendiente, setMarcarPendiente] = useState(false);
   const [esRecurrente, setEsRecurrente] = useState(false);
+  // Mes desde el que la serie recurrente llena el histórico. Vacío = el mes
+  // de la fecha del movimiento (por defecto NO se rellena nada hacia atrás).
+  const [recDesde, setRecDesde] = useState("");
   const [comprobantePath, setComprobantePath] = useState<string | null>(null);
   const [dropActivo, setDropActivo] = useState(false);
 
@@ -374,7 +378,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
           beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
           dia: Number(fecha.slice(8, 10)),
-          mes_inicio: `${fecha.slice(0, 4)}-01`,
+          // Desde el mes del propio movimiento (no enero): así no se llenan
+          // meses en los que la serie todavía no existía.
+          mes_inicio: recDesde || fecha.slice(0, 7),
         },
         fecha.slice(0, 7) // el mes de este movimiento ya existe — no se duplica
       );
@@ -476,7 +482,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
             beneficiario: tab === "gasto" ? beneficiario.trim() || null : null,
             beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
             dia,
-            mes_inicio: `${fecha.slice(0, 4)}-01`,
+            mes_inicio: recDesde || fecha.slice(0, 7),
           });
           showToast(
             mesesRegistrados > 0
@@ -699,6 +705,39 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   )}
                 </div>
               )}
+
+              {(tab === "gasto" || tab === "ingreso") && esRecurrente && !isEdit && (() => {
+                // Vista previa honesta de lo que va a pasar al guardar: qué
+                // meses del histórico se llenan (desde el mes elegido hasta el
+                // pasado) y por cuánto. El mes en curso se registra al cierre.
+                const desdeEf = recDesde || fecha.slice(0, 7);
+                const { meses } = mesesPendientesRecurrente(desdeEf, null, currentMonth());
+                const montoNum = parseMonto(monto);
+                return (
+                  <div className="form-subcard" style={{ marginTop: 6 }}>
+                    <div className="form-group" style={{ marginBottom: 8, maxWidth: 220 }}>
+                      <label className="form-label">{t("recurrente.desdeLabel")}</label>
+                      <input
+                        className="form-input"
+                        type="month"
+                        value={desdeEf}
+                        max={fecha.slice(0, 7)}
+                        onChange={(e) => setRecDesde(e.target.value)}
+                      />
+                    </div>
+                    <div className="form-hint">
+                      {meses.length > 0
+                        ? t("recurrente.previewMeses", {
+                            count: meses.length,
+                            rango: meses.length === 1 ? meses[0] : `${meses[0]} → ${meses[meses.length - 1]}`,
+                            monto: fmtMoney(montoNum ?? 0),
+                            total: fmtMoney((montoNum ?? 0) * meses.length),
+                          })
+                        : t("recurrente.previewSinMeses")}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="form-group full">
                 <label className="form-label">{t("recordModal.metodoPago")}</label>

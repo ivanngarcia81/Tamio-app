@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, categoriaInfo, currentMonth, deleteMovimientoRecurrente, fmtMoney,
+  catNombre, categoriaInfo, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
   getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
   listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth,
   type Church, type MovimientoRecurrente, type MonthTotals, type Tx,
@@ -39,6 +39,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [query, setQuery] = useState("");
   const [recurrentes, setRecurrentes] = useState<MovimientoRecurrente[]>([]);
   const [pendingDeleteRec, setPendingDeleteRec] = useState<MovimientoRecurrente | null>(null);
+  const [pendingDeleteSerie, setPendingDeleteSerie] = useState<{ def: MovimientoRecurrente; generados: number } | null>(null);
   const [editingRec, setEditingRec] = useState<MovimientoRecurrente | null>(null);
   const [mes, setMes] = useState(currentMonth());
   const [loading, setLoading] = useState(true);
@@ -69,11 +70,33 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
   async function confirmDeleteRecurrente() {
     if (!pendingDeleteRec) return;
+    // Si la serie ya generó movimientos, se pregunta qué hacer con ellos
+    // ANTES de borrar la definición (al borrarla pierden su recurrente_id).
+    const generados = await countTxDeSerie(pendingDeleteRec.id, church.id);
+    if (generados > 0) {
+      setPendingDeleteSerie({ def: pendingDeleteRec, generados });
+      setPendingDeleteRec(null);
+      return;
+    }
     await deleteMovimientoRecurrente(pendingDeleteRec.id, church.id);
     setPendingDeleteRec(null);
     showToast(t("recurrente.toastEliminado"));
     playSound("eliminar");
     listMovimientosRecurrentes(church.id, tipo).then(setRecurrentes).catch(console.error);
+  }
+
+  /** Segundo paso del borrado: conServie=true borra también los movimientos
+   *  generados (suave, para que el sync lo propague). */
+  async function eliminarSerie(conMovimientos: boolean) {
+    if (!pendingDeleteSerie) return;
+    const { def } = pendingDeleteSerie;
+    if (conMovimientos) await deleteTxDeSerie(def.id, church.id);
+    await deleteMovimientoRecurrente(def.id, church.id);
+    setPendingDeleteSerie(null);
+    showToast(conMovimientos ? t("recurrente.toastSerieEliminada") : t("recurrente.toastEliminado"));
+    playSound("eliminar");
+    listMovimientosRecurrentes(church.id, tipo).then(setRecurrentes).catch(console.error);
+    onChanged();
   }
 
   const esIngreso = tipo === "ingreso";
@@ -327,6 +350,17 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           danger
           onConfirm={confirmDeleteRecurrente}
           onCancel={() => setPendingDeleteRec(null)}
+        />
+      )}
+
+      {pendingDeleteSerie && (
+        <ConfirmDialog
+          title={t("recurrente.serieTitulo")}
+          message={t("recurrente.serieMensaje", { concepto: pendingDeleteSerie.def.concepto, count: pendingDeleteSerie.generados })}
+          confirmLabel={t("recurrente.serieBorrarTodo", { count: pendingDeleteSerie.generados })}
+          danger
+          onConfirm={() => void eliminarSerie(true)}
+          onCancel={() => void eliminarSerie(false)}
         />
       )}
 
