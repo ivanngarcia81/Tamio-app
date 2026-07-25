@@ -245,7 +245,16 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
       deHoy: ocurrencias.filter((a) => a.fecha === hoy && a.estado !== "cancelada").length,
       deSemana: ocurrencias.filter((a) => a.fecha >= iniSem && a.fecha <= finSem && a.estado !== "cancelada").length,
       proximas: ocurrencias.filter((a) => a.fecha >= hoy && a.estado !== "cancelada" && a.estado !== "completada").length,
-      porConfirmar: ocurrencias.filter((a) => a.fecha >= hoy && (a.estado === "programada" || a.estado === "borrador")).length,
+      // Cuenta ACTIVIDADES (maestras) por confirmar, no ocurrencias expandidas:
+      // una serie semanal sin confirmar es 1 pendiente, no 52 — antes este
+      // contador clonaba a "Próximas" y no decía nada accionable. Si alguna
+      // fecha puntual de la serie se confirmó con una excepción, la serie
+      // sigue contando mientras queden fechas sin confirmar.
+      porConfirmar: new Set(
+        ocurrencias
+          .filter((a) => a.fecha >= hoy && (a.estado === "programada" || a.estado === "borrador"))
+          .map((a) => a._master.id)
+      ).size,
     };
   }, [ocurrencias, hoy]);
 
