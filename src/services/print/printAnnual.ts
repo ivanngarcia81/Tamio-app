@@ -1,5 +1,3 @@
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import {
   catNombre, getCategoriasGasto, getCategoriasIngreso, mesLegible,
   type Church, type MonthSummary, type YearCategorias,
@@ -9,6 +7,7 @@ import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
 import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, PDF_SPACE, pct, slug,
 } from "./printUtils";
+import { entregarArchivo } from "../entrega";
 
 export interface AnnualReportData {
   church: Church;
@@ -145,8 +144,5 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
   });
 
   const fileName = `${i18n.t("anual.archivo")}-${slug(church.nombre)}-${year}.pdf`;
-  const path = await save({ defaultPath: fileName, filters: [{ name: "PDF", extensions: ["pdf"] }] });
-  if (!path) return false;
-  await writeFile(path, new Uint8Array(bytes));
-  return true;
+  return entregarArchivo(new Uint8Array(bytes), fileName);
 }

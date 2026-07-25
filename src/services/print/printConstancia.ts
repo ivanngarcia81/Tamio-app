@@ -1,11 +1,10 @@
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import { catNombre, fmtFechaCorta, metodoNombre, METODOS_PAGO, type Church, type Member, type Tx } from "../../db";
 import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
 import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint, PDF_SPACE, slug,
 } from "./printUtils";
+import { entregarArchivo } from "../entrega";
 
 export interface ConstanciaData {
   church: Church;
@@ -118,10 +117,7 @@ async function buildConstanciaPdf(data: ConstanciaData): Promise<{ bytes: ArrayB
  *  diálogo de guardar. Devuelve true si se guardó, false si se canceló. */
 export async function exportConstanciaPdf(data: ConstanciaData): Promise<boolean> {
   const { bytes, fileName } = await buildConstanciaPdf(data);
-  const path = await save({ defaultPath: fileName, filters: [{ name: "PDF", extensions: ["pdf"] }] });
-  if (!path) return false;
-  await writeFile(path, new Uint8Array(bytes));
-  return true;
+  return entregarArchivo(new Uint8Array(bytes), fileName);
 }
 
 /** "Imprimir": la misma constancia, abierta con el visor del sistema para

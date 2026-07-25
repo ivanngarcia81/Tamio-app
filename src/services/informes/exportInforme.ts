@@ -1,10 +1,9 @@
 import Papa from "papaparse";
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import type { Member } from "../../db";
 import i18n from "../../i18n";
 import type { AsistenciaMiembro } from "./membresia";
 import { estadoEfectivo } from "./membresia";
+import { entregarArchivo } from "../entrega";
 
 function lista(json: string, prefijo: string): string {
   try {
@@ -39,11 +38,8 @@ export async function exportarInformeCsv(filas: FilaInforme[]): Promise<boolean>
   }));
   const csv = Papa.unparse(rows);
   const fecha = new Date().toISOString().slice(0, 10);
-  const path = await save({
-    defaultPath: `informe-membresia-${fecha}.csv`,
-    filters: [{ name: "CSV", extensions: ["csv"] }],
-  });
-  if (!path) return false;
-  await writeFile(path, new TextEncoder().encode("﻿" + csv));
-  return true;
+  return entregarArchivo(
+    new TextEncoder().encode("﻿" + csv),
+    `informe-membresia-${fecha}.csv`
+  );
 }

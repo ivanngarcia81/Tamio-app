@@ -1,5 +1,6 @@
 export const es = {
   common: {
+    compartirNoDisponible: "No se pudo abrir la hoja de compartir en este dispositivo.",
     mas: "Más",
     cancelar: "Cancelar",
     cerrar: "Cerrar",

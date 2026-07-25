@@ -1,5 +1,3 @@
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import type { Church, Deposito } from "./db";
 import i18n from "./i18n";
 import { ReportBase, type BaseCol } from "./services/print/reportBase";
@@ -7,6 +5,7 @@ import {
   buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl, openForPrint,
   PDF_COLOR, PDF_SPACE, pct, slug,
 } from "./services/print/printUtils";
+import { entregarArchivo } from "./services/entrega";
 
 export interface ReportRow {
   nombre: string;
@@ -189,10 +188,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
 /** Devuelve true si se guardó, false si el usuario canceló el diálogo. */
 export async function exportReportPdf(data: ReportData): Promise<boolean> {
   const { bytes, fileName } = await buildMonthlyReportPdf(data);
-  const path = await save({ defaultPath: fileName, filters: [{ name: "PDF", extensions: ["pdf"] }] });
-  if (!path) return false;
-  await writeFile(path, new Uint8Array(bytes));
-  return true;
+  return entregarArchivo(new Uint8Array(bytes), fileName);
 }
 
 /** "Imprimir": genera el mismo PDF y lo abre con el visor del sistema en

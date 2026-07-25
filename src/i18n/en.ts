@@ -6,6 +6,7 @@ type Resources = typeof es;
 
 export const en: Resources = {
   common: {
+    compartirNoDisponible: "The share sheet could not be opened on this device.",
     mas: "More",
     cancelar: "Cancel",
     cerrar: "Close",

@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { open as openFileDialog, save } from "@tauri-apps/plugin-dialog";
-import { readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { autoDetectMapping, applyMapping, parseCsvFile, type CsvField, type ImportRowError } from "../services/csvImport";
 import { IconCheck, IconClose, IconDownload, IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { entregarArchivo } from "../services/entrega";
 
 export interface PreviewColumn<T> {
   label: string;
@@ -54,9 +55,7 @@ export default function GenericCsvImportModal<T>({
   async function descargarPlantilla() {
     setError(null);
     try {
-      const path = await save({ defaultPath: templateFileName, filters: [{ name: "CSV", extensions: ["csv"] }] });
-      if (!path) return;
-      await writeFile(path, new TextEncoder().encode(templateCsv));
+      await entregarArchivo(new TextEncoder().encode(templateCsv), templateFileName);
     } catch (e) {
       setError(t("importar.noSePudoGuardarPlantilla", { error: String(e) }));
     }

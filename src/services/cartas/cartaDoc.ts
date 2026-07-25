@@ -5,6 +5,7 @@ import type { Carta, CartaFirma, Church } from "../../db";
 import i18n from "../../i18n";
 import { fmtFechaLarga, loadPngDataUrl, slug } from "../print/printUtils";
 import { renderCartaHtml, type CartaRenderData } from "./renderCarta";
+import { entregarArchivo, esMovil } from "../entrega";
 
 function fechaLargaDe(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
@@ -64,6 +65,12 @@ export async function buildCartaHtml(
  *  para los reportes; window.print() del webview ya se descartó en este
  *  proyecto por calidad). */
 export async function abrirCartaParaImprimir(html: string, folio: string): Promise<void> {
+  // iPad/iPhone: sin navegador externo — el documento sale por la hoja de
+  // compartir (se abre/imprime desde Archivos o Safari).
+  if (esMovil()) {
+    await entregarArchivo(new TextEncoder().encode(html), `${slug(folio)}.html`);
+    return;
+  }
   const dir = await appDataDir();
   const path = await join(dir, `${slug(folio)}.html`);
   await writeTextFile(path, html);

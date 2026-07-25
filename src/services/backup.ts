@@ -1,11 +1,13 @@
 import Papa from "papaparse";
 import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import {
   METODOS_PAGO, getCategoriasGasto, getCategoriasIngreso,
   listAllTxForExport, listMembers, nowLocalIso, type Member, type Tx,
 } from "../db";
+import { entregarArchivo, esMovil } from "./entrega";
+import { appDataDir, join } from "@tauri-apps/api/path";
 
 export type BackupResult = "guardado" | "cancelado" | "vacio";
 
@@ -22,10 +24,8 @@ function canonicalMetodo(id: string): string {
 
 /** El BOM hace que Excel abra el archivo como UTF-8 y respete los acentos. */
 async function saveCsv(defaultName: string, csv: string): Promise<BackupResult> {
-  const path = await save({ defaultPath: defaultName, filters: [{ name: "CSV", extensions: ["csv"] }] });
-  if (!path) return "cancelado";
-  await writeFile(path, new TextEncoder().encode("\uFEFF" + csv));
-  return "guardado";
+  const ok = await entregarArchivo(new TextEncoder().encode("\uFEFF" + csv), defaultName);
+  return ok ? "guardado" : "cancelado";
 }
 
 /** Convierte movimientos al CSV que el importador de la app puede volver
@@ -78,10 +78,18 @@ export async function exportMiembrosCsv(churchId: number): Promise<BackupResult>
  *  Rust YA descifrada: un respaldo que se puede abrir/restaurar en cualquier
  *  parte, igual de legible que los CSV que también exporta la app. */
 export async function backupDatabase(): Promise<BackupResult> {
-  const path = await save({
-    defaultPath: `tesoreria-respaldo-${nowLocalIso().slice(0, 10)}.db`,
-    filters: [{ name: "SQLite", extensions: ["db"] }],
-  });
+  const fileName = `tesoreria-respaldo-${nowLocalIso().slice(0, 10)}.db`;
+  if (esMovil()) {
+    // iOS: el motor exporta la copia descifrada a la carpeta de la app y
+    // de ahí sale por la hoja de compartir (Archivos, AirDrop…).
+    const dir = await appDataDir();
+    const destino = await join(dir, fileName);
+    await invoke("db_backup", { destino });
+    const bytes = await readFile(destino);
+    const ok = await entregarArchivo(bytes, fileName);
+    return ok ? "guardado" : "cancelado";
+  }
+  const path = await save({ defaultPath: fileName, filters: [{ name: "SQLite", extensions: ["db"] }] });
   if (!path) return "cancelado";
   await invoke("db_backup", { destino: path });
   return "guardado";

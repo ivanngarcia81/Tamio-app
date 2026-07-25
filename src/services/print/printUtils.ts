@@ -4,6 +4,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { currentLang } from "../../i18n";
 import { currencySymbol } from "../../currencies";
+import { entregarArchivo, esMovil } from "../entrega";
 
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
 // No se recalcula ni se comprime según la cantidad de datos: un reporte de
@@ -189,6 +190,12 @@ export async function loadPngDataUrl(path: string): Promise<string | null> {
  * de calidad, a diferencia de window.print() sobre el HTML de la app.
  */
 export async function openForPrint(bytes: ArrayBuffer, fileName: string): Promise<void> {
+  // iPad/iPhone: no hay visor externo — la hoja de compartir incluye
+  // "Imprimir" (y Archivos, AirDrop…), que es el equivalente correcto.
+  if (esMovil()) {
+    await entregarArchivo(new Uint8Array(bytes), fileName);
+    return;
+  }
   const dir = await appDataDir();
   const path = await join(dir, fileName);
   await writeFile(path, new Uint8Array(bytes));
