@@ -30,19 +30,8 @@ export function esMovil(): boolean {
   return document.documentElement.classList.contains("movil");
 }
 
-/** Entrega el archivo al usuario. true = entregado, false = canceló. */
-export async function entregarArchivo(bytes: Uint8Array, fileName: string): Promise<boolean> {
-  if (!esMovil()) {
-    const ext = extension(fileName);
-    const path = await save({
-      defaultPath: fileName,
-      filters: [{ name: ext.toUpperCase() || "Archivo", extensions: [ext || "*"] }],
-    });
-    if (!path) return false;
-    await writeFile(path, bytes);
-    return true;
-  }
-
+/** Hoja de compartir nativa de iOS (Archivos, AirDrop, Mail, Imprimir). */
+async function compartirMovil(bytes: Uint8Array, fileName: string): Promise<boolean> {
   const file = new File([bytes as unknown as BlobPart], fileName, {
     type: MIME[extension(fileName)] ?? "application/octet-stream",
   });
@@ -58,4 +47,28 @@ export async function entregarArchivo(bytes: Uint8Array, fileName: string): Prom
     }
   }
   throw new Error(i18n.t("common.compartirNoDisponible"));
+}
+
+/** Entrega el archivo al usuario. true = entregado, false = canceló. */
+export async function entregarArchivo(bytes: Uint8Array, fileName: string): Promise<boolean> {
+  if (!esMovil()) {
+    const ext = extension(fileName);
+    const path = await save({
+      defaultPath: fileName,
+      filters: [{ name: ext.toUpperCase() || "Archivo", extensions: [ext || "*"] }],
+    });
+    if (!path) return false;
+    await writeFile(path, bytes);
+    return true;
+  }
+
+  // PDFs en iPad/iPhone: primero se VE el documento en el visor de la app
+  // (en iOS no hay Vista Previa); su botón Compartir abre la hoja nativa.
+  if (extension(fileName) === "pdf") {
+    const { mostrarPdf } = await import("./visorPdf");
+    mostrarPdf(bytes, fileName, async () => { await compartirMovil(bytes, fileName); });
+    return true;
+  }
+
+  return compartirMovil(bytes, fileName);
 }

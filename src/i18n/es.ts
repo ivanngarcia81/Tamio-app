@@ -712,6 +712,9 @@ export const es = {
     botonConfirmar: "Confirmar fusión",
     toastHecha: "{{origen}} se fusionó dentro de {{destino}}.",
   },
+  visorPdf: {
+    compartir: "Compartir",
+  },
   homeSinArea: {
     titulo: "Esta área no está en el plan actual",
     subTesoreria: "El plan contratado por la iglesia no incluye Tesorería. Pide al administrador revisar el plan en Configuración.",

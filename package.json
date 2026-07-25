@@ -25,6 +25,7 @@
     "i18next": "^26.3.6",
     "jspdf": "^4.2.1",
     "papaparse": "^5.5.4",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^17.0.9",

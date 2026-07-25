@@ -718,6 +718,9 @@ export const en: Resources = {
     botonConfirmar: "Confirm merge",
     toastHecha: "{{origen}} was merged into {{destino}}.",
   },
+  visorPdf: {
+    compartir: "Share",
+  },
   homeSinArea: {
     titulo: "This area is not in the current plan",
     subTesoreria: "The church's current plan does not include Treasury. Ask the administrator to review the plan in Settings.",
