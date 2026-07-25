@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import {
   catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
-  mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
+  listDepositosPeriodo, mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
+  saldoAcumuladoAntesDe,
   yearCategoriaTotals, yearDepositos, yearMonthlySummary,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
 } from "../db";
@@ -198,7 +199,14 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
-  function buildReportData() {
+  /** Datos del estado financiero mensual. Es async porque el saldo anterior y
+   *  el detalle de depósitos se consultan al momento de exportar/imprimir, no
+   *  en cada render de la página. */
+  async function buildReportData() {
+    const [saldoAnterior, depositosDetalle] = await Promise.all([
+      saldoAcumuladoAntesDe(church.id, mes),
+      listDepositosPeriodo(church.id, mes),
+    ]);
     return {
       church,
       mesLegibleStr: mesStr,
@@ -208,11 +216,15 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       ingresos,
       gastos,
       balance,
+      saldoAnterior,
       depositosBancarios: depositosMes,
+      depositosDetalle,
       generatedBy: church.tesorero_nombre
         ? { nombre: church.tesorero_nombre, rol: church.tesorero_cargo ?? undefined }
         : undefined,
       firmaPath: church.tesorero_firma_path,
+      firmaPastorPath: church.pastor_firma_path,
+      logoPath: church.logo_path,
     };
   }
 
@@ -220,7 +232,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     setExportError(null);
     setExporting(kind);
     try {
-      await exportReportPdf(buildReportData());
+      await exportReportPdf(await buildReportData());
     } catch (e) {
       setExportError(t("common.noSePudoExportar", { error: String(e) }));
     } finally {
@@ -250,7 +262,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     setExportError(null);
     setExporting("print");
     try {
-      await printMonthlyReportPdf(buildReportData());
+      await printMonthlyReportPdf(await buildReportData());
     } catch (e) {
       setExportError(t("common.noSePudoImprimir", { error: String(e) }));
     } finally {

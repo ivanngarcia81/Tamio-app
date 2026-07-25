@@ -43,6 +43,13 @@ export const PDF_COLOR = {
   line: [204, 204, 201] as RGB,
   cardBg: [252, 252, 251] as RGB,
   cardBorder: [190, 190, 187] as RGB,
+  // Acento de marca (verde Tamio #059669) y rojo de saldo negativo. Se usan
+  // como filete fino y color de cifra, nunca como relleno de área: el
+  // documento sigue siendo legible impreso en blanco y negro.
+  brand: [5, 150, 105] as RGB,
+  brandSoft: [167, 243, 208] as RGB,
+  danger: [185, 28, 28] as RGB,
+  rowAlt: [248, 249, 248] as RGB,
 };
 
 export function setText(doc: jsPDF, color: RGB): void {
@@ -80,6 +87,31 @@ export function fmtMoneyPdf(n: number, moneda: string): string {
   const abs = Math.abs(n);
   const formatted = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${moneda}`;
   return n < 0 ? `(${formatted})` : formatted;
+}
+
+/**
+ * Dinero sin el código de moneda y siempre con 2 decimales ("$1,720.00").
+ * El estado financiero mensual declara la moneda una sola vez en el membrete,
+ * así que repetirla en cada fila solo añade ruido. Los negativos van entre
+ * paréntesis por la misma razón que fmtMoneyPdf (Helvetica de jsPDF no mapea
+ * el signo menos Unicode).
+ */
+export function fmtMoneyPlain(n: number, moneda: string): string {
+  const abs = Math.abs(n);
+  const s = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return n < 0 ? `(${s})` : s;
+}
+
+/** Fecha corta para filas de tabla, a partir de un ISO "YYYY-MM-DD" o
+ *  "YYYY-MM-DD HH:MM". Respeta el idioma activo ("12 jul 2026" / "Jul 12, 2026")
+ *  y no depende de la zona horaria: parsea las partes a mano. */
+export function fmtFechaCortaPdf(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const [, yy, mm, dd] = m;
+  const d = new Date(Number(yy), Number(mm) - 1, Number(dd));
+  const locale = currentLang() === "en" ? "en-US" : "es-ES";
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function fmtFechaLarga(d: Date): string {

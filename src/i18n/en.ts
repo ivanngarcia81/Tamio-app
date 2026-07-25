@@ -603,12 +603,32 @@ export const en: Resources = {
     continuacion: "{{seccion}} (continued)",
     estadoFinancieroMensual: "Monthly financial statement",
     estadoFinanciero: "Financial statement",
-    colCategoria: "CATEGORY",
-    colMonto: "AMOUNT",
-    colPctTotal: "% OF TOTAL",
+    // Column headers for the monthly financial statement. Lower case here: the
+    // generator upper-cases them when drawing, so the same string also works
+    // on screen if ever reused.
+    colCategoria: "Category",
+    colMonto: "Amount",
+    colPctTotal: "% of total",
+    colPctIngreso: "% of income",
+    colFechaDep: "Date",
+    colBanco: "Bank / reference",
+    // Shared with the annual report (printAnnual.ts): do not change.
     cardTotalIngresos: "TOTAL INCOME",
     cardTotalGastos: "TOTAL EXPENSES",
     cardBalanceNeto: "NET BALANCE",
+    // Cards specific to the monthly financial statement.
+    efCardIngresos: "Total income",
+    efCardEgresos: "Total expenses",
+    efCardSaldo: "Period balance",
+    // Treasury balance block (the period's accounting equation).
+    saldoTesoreria: "Treasury balance",
+    saldoAnterior: "Opening balance",
+    menosEgresos: "Less expenses for the period",
+    saldoFinal: "Closing balance",
+    totalDepositos: "Total deposited",
+    sinDepositos: "No deposits recorded for this period.",
+    notaDepositos: "Deposits are cash transfers into the bank account, not income for the period: they are therefore not part of the treasury balance and may include money from previous months.",
+    pastorCargo: "Pastor",
     resumenFinanciero: "Financial summary",
     balanceInicial: "Opening balance (previous month)",
     balanceFinal: "Closing balance",

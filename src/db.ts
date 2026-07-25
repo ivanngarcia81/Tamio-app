@@ -839,6 +839,47 @@ export async function monthDepositos(churchId: number, yyyyMm: string): Promise<
   return rows[0]?.total ?? 0;
 }
 
+/** Depósitos bancarios del periodo, con su detalle (fecha, banco, referencia).
+ *  El estado financiero mensual los lista en su propia sección; `monthDepositos`
+ *  solo devuelve la suma. */
+export async function listDepositosPeriodo(churchId: number, yyyyMm: string): Promise<Deposito[]> {
+  const d = await getDb();
+  return d.select<Deposito[]>(
+    `SELECT * FROM depositos_bancarios
+      WHERE church_id = $1 AND periodo = $2 AND deleted = 0
+      ORDER BY fecha ASC, id ASC`,
+    [churchId, yyyyMm]
+  );
+}
+
+/**
+ * Saldo de tesorería acumulado ANTES del periodo dado: la suma de todos los
+ * ingresos menos todos los gastos aprobados con fecha anterior al primer día
+ * del mes. Es el "saldo anterior" del estado financiero, y con él el saldo
+ * final del reporte es un saldo real y no el resultado de un solo mes.
+ *
+ * LÍMITE CONOCIDO: parte de cero, así que solo es exacto si la iglesia registró
+ * en Tamio toda su historia. Una iglesia que empezó a usar la app con dinero ya
+ * en caja necesita además un saldo de apertura declarado, que hoy no existe en
+ * el esquema (ver docs/saldo-anterior.md).
+ */
+export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ tipo: string; total: number | null }[]>(
+    `SELECT tipo, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND deleted = 0
+        AND substr(fecha, 1, 7) < $2
+      GROUP BY tipo`,
+    [churchId, yyyyMm]
+  );
+  let saldo = 0;
+  for (const r of rows) {
+    saldo += r.tipo === "ingreso" ? (r.total ?? 0) : -(r.total ?? 0);
+  }
+  return saldo;
+}
+
 export async function yearDepositos(churchId: number, yyyy: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ total: number | null }[]>(

@@ -597,12 +597,32 @@ export const es = {
     continuacion: "{{seccion}} (continuación)",
     estadoFinancieroMensual: "Estado financiero mensual",
     estadoFinanciero: "Estado financiero",
-    colCategoria: "CATEGORÍA",
-    colMonto: "MONTO",
-    colPctTotal: "% DEL TOTAL",
+    // Encabezados de columna del estado financiero mensual. En minúsculas: el
+    // generador les aplica mayúsculas al dibujarlos, así la misma cadena sirve
+    // si algún día se usan en pantalla.
+    colCategoria: "Categoría",
+    colMonto: "Monto",
+    colPctTotal: "% del total",
+    colPctIngreso: "% del ingreso",
+    colFechaDep: "Fecha",
+    colBanco: "Banco / referencia",
+    // Compartidas con el reporte anual (printAnnual.ts): no cambiar.
     cardTotalIngresos: "TOTAL INGRESOS",
     cardTotalGastos: "TOTAL GASTOS",
     cardBalanceNeto: "BALANCE NETO",
+    // Tarjetas propias del estado financiero mensual.
+    efCardIngresos: "Total ingresos",
+    efCardEgresos: "Total egresos",
+    efCardSaldo: "Saldo del periodo",
+    // Bloque de saldo de tesorería (la ecuación contable del periodo).
+    saldoTesoreria: "Saldo de tesorería",
+    saldoAnterior: "Saldo anterior",
+    menosEgresos: "Menos egresos del periodo",
+    saldoFinal: "Saldo final",
+    totalDepositos: "Total depositado",
+    sinDepositos: "Sin depósitos registrados en el periodo.",
+    notaDepositos: "Los depósitos son traspasos de efectivo a la cuenta bancaria, no ingresos del periodo: por eso no forman parte del saldo de tesorería y pueden incluir dinero de meses anteriores.",
+    pastorCargo: "Pastor",
     resumenFinanciero: "Resumen financiero",
     balanceInicial: "Balance inicial (mes anterior)",
     balanceFinal: "Balance final",

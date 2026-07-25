@@ -1,11 +1,11 @@
 import jsPDF from "jspdf";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
-import type { Church } from "./db";
+import type { Church, Deposito } from "./db";
 import i18n from "./i18n";
 import {
-  buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint,
-  PDF_COLOR, PDF_FOOTER_BLOCK_H, PDF_MARGIN, PDF_SPACE, PDF_TYPE,
+  buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl, openForPrint,
+  PDF_COLOR, PDF_FOOTER_BLOCK_H, PDF_MARGIN, PDF_SPACE,
   pct, setDraw, setFill, setText, slug,
 } from "./services/print/printUtils";
 
@@ -24,8 +24,17 @@ export interface ReportData {
   ingresos: number;
   gastos: number;
   balance: number;
+  /**
+   * Saldo de tesorería acumulado al cierre del periodo anterior
+   * (db.saldoAcumuladoAntesDe). Con él el documento presenta la ecuación
+   * contable real: saldo anterior + ingresos − egresos = saldo final.
+   * Si no se provee, el bloque de saldos no se dibuja en vez de inventarlo.
+   */
+  saldoAnterior?: number;
   /** Suma de los depósitos bancarios registrados en el periodo. */
   depositosBancarios?: number;
+  /** Detalle de esos depósitos (fecha, banco, referencia) para su sección. */
+  depositosDetalle?: Deposito[];
   /**
    * Preparado para cuando exista autenticación de usuarios: si se provee,
    * el PDF muestra "Generado por". Hoy no hay sistema de cuentas (ver
@@ -35,28 +44,51 @@ export interface ReportData {
   generatedBy?: { nombre: string; rol?: string };
   /** Ruta de la firma PNG del tesorero (Configuración → Firma del tesorero). */
   firmaPath?: string | null;
+  /** Ruta de la firma PNG del pastor (Configuración → Firma del pastor). */
+  firmaPastorPath?: string | null;
+  /** Logo de la iglesia para el membrete (Configuración → Subir logo). */
+  logoPath?: string | null;
 }
 
-// ---------- Motor de reportes PDF (paginación profesional) ----------
+// ---------- Motor del estado financiero mensual ----------
 //
-// Reglas de diseño fijas — no se recalculan ni se comprimen según la
-// cantidad de datos. Un reporte de 3 filas y uno de 300 usan exactamente
-// la misma tipografía y el mismo espaciado; lo único que cambia es
-// cuántas páginas ocupa. La escala tipográfica, el espaciado y la paleta
-// viven en services/print/printUtils.ts, compartidos con el resto de los
-// PDFs de la app (Dashboard, Registro) para no duplicar estas constantes.
+// Documento contable, no una página web impresa. Reglas de diseño fijas: un
+// reporte de 3 filas y uno de 300 usan la misma tipografía y el mismo
+// espaciado; lo único que cambia es cuántas páginas ocupa.
+//
+// La escala tipográfica es LOCAL a este reporte a propósito: PDF_TYPE en
+// printUtils.ts la comparten los otros cinco PDFs (Dashboard, Anual,
+// Constancia, Acta, Registro) y cambiarla los alteraría a todos.
+const T = {
+  title: 21,     // "Estado financiero mensual"
+  church: 16,    // Nombre de la iglesia — el elemento más prominente
+  period: 10,    // Periodo y moneda
+  meta: 8,       // Notas y avisos
+  section: 12.5, // Encabezados de sección
+  colHead: 8.5,  // Encabezados de columna (mayúsculas + letter-spacing)
+  row: 10.5,     // Filas de tabla
+  total: 11,     // Filas de total
+  cardLabel: 7,
+  cardValue: 12.5,
+  sigName: 9.5,
+} as const;
 
 async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBuffer; fileName: string }> {
   const {
     church, mesLegibleStr, periodoISO, filasIngreso, filasGasto, ingresos, gastos, balance,
-    depositosBancarios, generatedBy, firmaPath,
+    saldoAnterior, depositosBancarios, depositosDetalle, firmaPath, firmaPastorPath, logoPath,
   } = data;
+
+  const moneda = church.moneda;
+  const money = (n: number) => fmtMoneyPlain(n, moneda);
 
   const now = new Date();
   const reportId = buildReportId(periodoISO);
   const fechaGeneracion = fmtFechaLarga(now);
   const horaGeneracion = fmtHora12(now);
   const firmaDataUrl = firmaPath ? await loadPngDataUrl(firmaPath) : null;
+  const firmaPastorDataUrl = firmaPastorPath ? await loadPngDataUrl(firmaPastorPath) : null;
+  const logoDataUrl = logoPath ? await loadPngDataUrl(logoPath) : null;
 
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -67,35 +99,25 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   const contentWidth = rightX - marginX;
   const footerReserve = PDF_FOOTER_BLOCK_H;
 
-  // Anchos de columna fijos: se conservan idénticos en toda tabla, toda
-  // sección y toda página — nunca se recalculan por cantidad de filas.
+  // Anchos de columna fijos: idénticos en toda tabla, sección y página.
+  // Los encabezados MONTO y % usan exactamente estas mismas X que sus
+  // valores, con align:"right", así quedan a plomo sobre su columna.
   const pctColX = rightX;
-  const amountColX = rightX - 96;
+  const amountColX = rightX - 92;
   const labelColX = marginX;
 
-  // Paleta compartida (printUtils.ts), pensada para impresión láser en
-  // blanco y negro: la jerarquía visual viene de tamaño/peso de fuente,
-  // no del color.
-  const { ink: INK, muted: MUTED, faint: FAINT, line: LINE, cardBg: CARD_BG, cardBorder: CARD_BORDER } = PDF_COLOR;
+  const {
+    ink: INK, muted: MUTED, faint: FAINT, line: LINE,
+    cardBg: CARD_BG, cardBorder: CARD_BORDER,
+    brand: BRAND, danger: DANGER, rowAlt: ROW_ALT,
+  } = PDF_COLOR;
 
   let y = PDF_MARGIN;
-  // Título de la sección/tabla en curso — si un salto de página ocurre
-  // mientras hay una tabla abierta, se repite en la página siguiente.
   let currentSection: string | null = null;
 
-  /**
-   * Pie de página profesional (componente reutilizable): folio de
-   * auditoría, fecha/hora real de generación y numeración "Página X de Y".
-   * Se dibuja en una pasada final (ver el cierre de la función) porque el
-   * total de páginas solo se conoce una vez que todo el contenido ya
-   * existe — así el número "de Y" siempre es correcto.
-   *
-   * La firma del tesorero ya se dibuja (ver el bloque justo antes de esta
-   * pasada final, después de las tarjetas). Punto de extensión futuro para
-   * auditorías: firma del pastor y sello de la iglesia, en columnas junto
-   * a la del tesorero, usando el mismo ancho de contenido (marginX/rightX)
-   * como referencia — todavía no hay datos de esos roles que dibujar.
-   */
+  /** Pie de página: folio de auditoría, fecha/hora de generación y "Página X
+   *  de Y". Se estampa en una pasada final porque el total de páginas solo se
+   *  conoce cuando todo el contenido ya existe. */
   function drawFooterBlock(pageIndex: number, totalPages: number) {
     let fy = pageHeight - PDF_MARGIN - footerReserve + PDF_SPACE.sm;
 
@@ -105,7 +127,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     fy += 10;
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(PDF_TYPE.footer);
+    doc.setFontSize(7);
     setText(doc, FAINT);
     doc.text(i18n.t("pdf.generadoAutomaticamente"), marginX, fy);
     doc.text(i18n.t("pdf.pagina", { x: pageIndex, y: totalPages }), rightX, fy, { align: "right" });
@@ -120,74 +142,99 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.line(marginX, fy, rightX, fy);
   }
 
-  /** Encabezado repetido (componente reutilizable): título, iglesia,
-   *  periodo, moneda y — cuando exista autenticación — quién lo generó. */
+  /**
+   * Membrete: logo + nombre de la iglesia (lo más prominente) + título del
+   * documento + periodo y moneda. Se repite en cada página para que una hoja
+   * suelta siga siendo identificable.
+   */
   function drawRunningHeader() {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.title);
-    setText(doc, INK);
-    doc.text(i18n.t("pdf.estadoFinancieroMensual"), marginX, y, { maxWidth: contentWidth });
-    y += 20;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.church);
-    setText(doc, INK);
-    doc.text(`${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`, marginX, y, { maxWidth: contentWidth });
-    y += 14;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(PDF_TYPE.period);
-    setText(doc, MUTED);
-    doc.text(i18n.t("pdf.periodo", { periodo: mesLegibleStr }), marginX, y);
-    y += 12;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(PDF_TYPE.meta);
-    setText(doc, FAINT);
-    doc.text(i18n.t("pdf.moneda", { moneda: church.moneda }), marginX, y);
-    y += 10;
-
-    if (generatedBy) {
-      doc.text(i18n.t("pdf.generadoPor", { quien: `${generatedBy.nombre}${generatedBy.rol ? " · " + generatedBy.rol : ""}` }), marginX, y);
-      y += 10;
+    const logoSize = 34;
+    let textX = marginX;
+    if (logoDataUrl) {
+      try {
+        doc.addImage(logoDataUrl, "PNG", marginX, y, logoSize, logoSize);
+        textX = marginX + logoSize + 12;
+      } catch {
+        textX = marginX;
+      }
     }
 
-    y += PDF_SPACE.xs;
-    setDraw(doc, LINE);
-    doc.setLineWidth(0.75);
+    const textW = rightX - textX;
+    let ty = y + 13;
+
+    // El nombre de la iglesia es un nombre propio: nunca se traduce.
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.church);
+    setText(doc, INK);
+    doc.text(church.nombre, textX, ty, { maxWidth: textW });
+    // 20pt de avance: el título que sigue es de 21pt y con menos se solapan
+    // los trazos ascendentes con los descendentes del nombre.
+    ty += 20;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.title);
+    setText(doc, INK);
+    doc.text(i18n.t("pdf.estadoFinancieroMensual"), textX, ty, { maxWidth: textW });
+    ty += 13;
+
+    // Ciudad · periodo · moneda en una sola línea. "Generado por" NO va aquí:
+    // el pie ya lleva la metadata de generación y el bloque de firmas al
+    // tesorero, así que repetirlo solo consumía altura de página.
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(T.period);
+    setText(doc, MUTED);
+    const meta = [
+      i18n.t("pdf.periodo", { periodo: mesLegibleStr }),
+      i18n.t("pdf.moneda", { moneda }),
+    ];
+    if (church.ciudad) meta.unshift(church.ciudad);
+    doc.text(meta.join("  ·  "), textX, ty, { maxWidth: textW });
+    ty += 8;
+
+    y = Math.max(ty, y + (logoDataUrl ? logoSize : 0)) + PDF_SPACE.xs;
+
+    // Filete de marca bajo el membrete: 2pt verde + hairline gris.
+    setDraw(doc, BRAND);
+    doc.setLineWidth(2);
     doc.line(marginX, y, rightX, y);
     y += PDF_SPACE.md;
   }
 
-  /** Dibuja el encabezado de columnas de la tabla — sin comprobar espacio:
-   *  solo se llama justo después de asegurar espacio para el bloque completo. */
-  function drawTableHeaderRaw() {
+  /** Encabezado de columnas: mayúsculas, letter-spacing y alineado a la
+   *  derecha exactamente sobre la columna de sus valores. */
+  function drawTableHeaderRaw(pctLabel: string) {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.body);
-    setText(doc, MUTED);
-    doc.text(i18n.t("pdf.colCategoria"), labelColX, y);
-    doc.text(i18n.t("pdf.colMonto"), amountColX, y, { align: "right" });
-    doc.text(i18n.t("pdf.colPctTotal"), pctColX, y, { align: "right" });
+    doc.setFontSize(T.colHead);
+    setText(doc, FAINT);
+    doc.text(i18n.t("pdf.colCategoria").toUpperCase(), labelColX, y, { charSpace: 0.5 });
+    doc.text(i18n.t("pdf.colMonto").toUpperCase(), amountColX, y, { align: "right", charSpace: 0.5 });
+    doc.text(pctLabel.toUpperCase(), pctColX, y, { align: "right", charSpace: 0.5 });
     y += PDF_SPACE.xs + 3;
     setDraw(doc, LINE);
     doc.setLineWidth(0.75);
     doc.line(marginX, y, rightX, y);
-    y += PDF_SPACE.sm;
+    y += PDF_SPACE.sm + 1;
   }
+
+  // Guarda el % de la sección abierta para repetir el encabezado correcto
+  // cuando una tabla cruza a la página siguiente.
+  let currentPctLabel = i18n.t("pdf.colPctTotal");
 
   function newPage() {
     doc.addPage();
     y = PDF_MARGIN;
     drawRunningHeader();
     if (currentSection) {
-      // La página ya tiene espacio de sobra recién creada: se dibuja
-      // directamente, sin volver a pasar por ensureSpace.
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(PDF_TYPE.section);
+      doc.setFontSize(T.section);
       setText(doc, INK);
       doc.text(i18n.t("pdf.continuacion", { seccion: currentSection }), marginX, y);
-      y += 14;
-      drawTableHeaderRaw();
+      y += 5;
+      setDraw(doc, BRAND);
+      doc.setLineWidth(1);
+      doc.line(marginX, y, rightX, y);
+      y += PDF_SPACE.sm + 2;
+      drawTableHeaderRaw(currentPctLabel);
     }
   }
 
@@ -197,48 +244,62 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     }
   }
 
-  /** Inicia una sección + tabla como bloque atómico: título y encabezado
-   *  de columnas siempre aparecen juntos, nunca separados por un salto. */
-  function beginSection(title: string) {
-    ensureSpace(14 + PDF_TYPE.body + PDF_SPACE.xs + 3 + PDF_SPACE.sm);
-    currentSection = title;
+  /** Título de sección con filete verde debajo (el acento fino de marca). */
+  function sectionTitle(title: string) {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.section);
+    doc.setFontSize(T.section);
     setText(doc, INK);
     doc.text(title, marginX, y);
-    y += 14;
-    drawTableHeaderRaw();
+    y += 5;
+    setDraw(doc, BRAND);
+    doc.setLineWidth(1);
+    doc.line(marginX, y, rightX, y);
+    y += PDF_SPACE.sm + 2;
+  }
+
+  /** Sección + encabezado de tabla como bloque atómico: nunca se separan. */
+  function beginSection(title: string, pctLabel: string) {
+    ensureSpace(5 + PDF_SPACE.sm + 2 + T.colHead + PDF_SPACE.xs + 3 + PDF_SPACE.sm + 1 + 3 * PDF_SPACE.md);
+    currentSection = title;
+    currentPctLabel = pctLabel;
+    sectionTitle(title);
+    drawTableHeaderRaw(pctLabel);
   }
 
   function endSection() {
     currentSection = null;
   }
 
-  // Alto de la fila de total — las filas de datos lo reservan además del
-  // suyo para que el total nunca quede huérfano en la página siguiente.
-  const TOTAL_ROW_H = PDF_TYPE.total + PDF_SPACE.xs + 4 + PDF_SPACE.md;
+  const ROW_H = PDF_SPACE.md + 2;
+  const TOTAL_ROW_H = T.total + PDF_SPACE.xs + 4 + PDF_SPACE.md;
 
-  function dataRow(label: string, amountStr: string, pctStr: string) {
-    ensureSpace(PDF_SPACE.md + TOTAL_ROW_H);
+  /** Fila de datos con cebra muy clara para guiar el ojo en tablas largas. */
+  function dataRow(label: string, amountStr: string, pctStr: string, index: number) {
+    ensureSpace(ROW_H + TOTAL_ROW_H);
+    if (index % 2 === 1) {
+      setFill(doc, ROW_ALT);
+      doc.rect(marginX, y - ROW_H + 4, contentWidth, ROW_H, "F");
+    }
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(PDF_TYPE.tableRow);
+    doc.setFontSize(T.row);
     setText(doc, INK);
     doc.text(label, labelColX, y, { maxWidth: amountColX - labelColX - PDF_SPACE.sm });
     doc.text(amountStr, amountColX, y, { align: "right" });
     setText(doc, FAINT);
     doc.text(pctStr, pctColX, y, { align: "right" });
-    y += PDF_SPACE.md;
+    y += ROW_H;
   }
 
   function emptyRow(msg: string) {
-    ensureSpace(PDF_SPACE.md + TOTAL_ROW_H);
+    ensureSpace(ROW_H + TOTAL_ROW_H);
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(PDF_TYPE.body);
+    doc.setFontSize(T.row);
     setText(doc, FAINT);
     doc.text(msg, labelColX, y);
-    y += PDF_SPACE.md;
+    y += ROW_H;
   }
 
+  /** Fila de total: sin celda de "100%" (no aporta información). */
   function totalRow(label: string, amountStr: string) {
     ensureSpace(TOTAL_ROW_H);
     setDraw(doc, INK);
@@ -246,162 +307,264 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     doc.line(marginX, y, rightX, y);
     y += PDF_SPACE.xs + 3;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.total);
+    doc.setFontSize(T.total);
     setText(doc, INK);
     doc.text(label, labelColX, y);
     doc.text(amountStr, amountColX, y, { align: "right" });
-    doc.text("100%", pctColX, y, { align: "right" });
     y += PDF_SPACE.md;
   }
 
-  // ---------- Página 1 ----------
+  // ==================== 1. Membrete ====================
   drawRunningHeader();
 
-  // ---------- Ingresos ----------
-  beginSection(i18n.t("reportes.ingresosPeriodo"));
-  if (filasIngreso.length === 0) {
-    emptyRow(i18n.t("reportes.sinIngresosRegistrados"));
-  } else {
-    for (const c of filasIngreso) {
-      dataRow(c.nombre, fmtMoneyPdf(c.total, church.moneda), pct(c.total, ingresos));
-    }
-  }
-  totalRow(i18n.t("reportes.totalIngresos"), fmtMoneyPdf(ingresos, church.moneda));
-  endSection();
-  y += PDF_SPACE.md;
-
-  // ---------- Gastos ----------
-  beginSection(i18n.t("reportes.gastosPeriodo"));
-  if (filasGasto.length === 0) {
-    emptyRow(i18n.t("reportes.sinGastosRegistrados"));
-  } else {
-    for (const c of filasGasto) {
-      dataRow(c.nombre, fmtMoneyPdf(c.total, church.moneda), pct(c.total, gastos));
-    }
-  }
-  totalRow(i18n.t("reportes.totalGastos"), fmtMoneyPdf(gastos, church.moneda));
-  endSection();
-
-  // ---------- Depósitos bancarios (solo si se provee) ----------
-  if (depositosBancarios != null) {
-    y += PDF_SPACE.md;
-    ensureSpace(PDF_SPACE.md);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.body);
-    setText(doc, INK);
-    doc.text(i18n.t("reportes.depositosBancarios"), labelColX, y);
-    doc.text(fmtMoneyPdf(depositosBancarios, church.moneda), amountColX, y, { align: "right" });
-    y += PDF_SPACE.md;
-  }
-  y += PDF_SPACE.lg;
-
-  // ---------- Tarjetas de resumen ----------
-  // Bloque atómico: si no caben completas, ensureSpace mueve las TRES
-  // tarjetas juntas a la siguiente página — nunca se dividen entre sí.
-  // Tamaño reducido a la mitad del original (92pt) a pedido del usuario.
-  const cardH = 37;
+  // ==================== 2. Tarjetas de resumen ====================
+  // Bloque atómico: las tres viajan juntas a la página siguiente si no caben.
+  const cardH = 44;
   const cardGap = PDF_SPACE.sm;
-  ensureSpace(cardH);
+  ensureSpace(cardH + PDF_SPACE.lg);
 
   const cardW = (contentWidth - 2 * cardGap) / 3;
   const cardRadius = 8;
-  const cardLabelSize = PDF_TYPE.cardLabel;
-  const cardValueSize = PDF_TYPE.cardValue;
-  // Jerarquía por tamaño/peso de fuente, nunca por color — los tres
-  // valores usan el mismo negro para verse igual de nítidos en blanco
-  // y negro; un balance negativo se distingue con paréntesis, no con rojo.
-  const cards: { label: string; value: number }[] = [
-    { label: i18n.t("pdf.cardTotalIngresos"), value: ingresos },
-    { label: i18n.t("pdf.cardTotalGastos"), value: gastos },
-    { label: i18n.t("pdf.cardBalanceNeto"), value: balance },
+  const saldoNegativo = balance < 0;
+  const cards: { label: string; value: number; color?: typeof INK }[] = [
+    { label: i18n.t("pdf.efCardIngresos"), value: ingresos },
+    { label: i18n.t("pdf.efCardEgresos"), value: gastos },
+    { label: i18n.t("pdf.efCardSaldo"), value: balance, color: saldoNegativo ? DANGER : BRAND },
   ];
 
   cards.forEach((card, i) => {
     const x = marginX + i * (cardW + cardGap);
 
-    // sombra estilo Apple: varias capas de negro a muy baja opacidad en vez
-    // de un relleno gris plano — simula un desenfoque suave sin bordes duros.
+    // Sombra suave (varias capas a baja opacidad, no un gris plano).
     doc.setGState(doc.GState({ opacity: 0.035 }));
     setFill(doc, [0, 0, 0]);
     doc.roundedRect(x + 1.1, y + 1.75, cardW, cardH, cardRadius, cardRadius, "F");
-    doc.setGState(doc.GState({ opacity: 0.05 }));
-    doc.roundedRect(x + 0.6, y + 1, cardW, cardH, cardRadius, cardRadius, "F");
     doc.setGState(doc.GState({ opacity: 1 }));
 
     setFill(doc, CARD_BG);
-    setDraw(doc, CARD_BORDER);
-    doc.setLineWidth(0.75);
+    // La tarjeta del saldo lleva borde de marca; las otras, borde neutro.
+    setDraw(doc, card.color ? card.color : CARD_BORDER);
+    doc.setLineWidth(card.color ? 1 : 0.75);
     doc.roundedRect(x, y, cardW, cardH, cardRadius, cardRadius, "FD");
 
     const cx = x + cardW / 2;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(cardLabelSize);
+    doc.setFontSize(T.cardLabel);
     setText(doc, MUTED);
-    doc.text(card.label, cx, y + PDF_SPACE.xs + 4, { align: "center", charSpace: 0.3 });
+    doc.text(card.label.toUpperCase(), cx, y + PDF_SPACE.xs + 6, { align: "center", charSpace: 0.4 });
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(cardValueSize);
-    setText(doc, INK);
-    doc.text(fmtMoneyPdf(card.value, church.moneda), cx, y + cardH - PDF_SPACE.xs, { align: "center" });
+    doc.setFontSize(T.cardValue);
+    setText(doc, card.color ?? INK);
+    doc.text(money(card.value), cx, y + cardH - PDF_SPACE.sm - 2, { align: "center" });
   });
 
-  y += cardH;
+  y += cardH + PDF_SPACE.lg;
 
-  // ---------- Firma del tesorero (solo si está configurada) ----------
-  // Bloque atómico, igual que las tarjetas: si no cabe completo se mueve
-  // entero a la siguiente página en vez de partirse. Línea, nombre y
-  // cargo comparten el mismo margen izquierdo (firma tradicional tipo
-  // carta), separados de las tarjetas de resumen por un espacio propio
-  // para que no queden pegados a ellas.
-  if (generatedBy?.nombre) {
-    const sigLineW = 160;
-    const sigImgMaxH = 26;
-    const cardsToSigGap = 75; // aire antes de la firma, a pedido del usuario
-    const lineToNameGap = PDF_SPACE.sm + 3;
-    const nameToRoleGap = 10;
-    let sigImgH = 0;
-    let sigImgW = 0;
-    if (firmaDataUrl) {
-      try {
-        const props = doc.getImageProperties(firmaDataUrl);
-        sigImgH = sigImgMaxH;
-        sigImgW = Math.min(sigLineW, (props.width / props.height) * sigImgH);
-      } catch {
-        sigImgH = 0;
+  // ==================== 3. Ingresos ====================
+  beginSection(i18n.t("reportes.ingresosPeriodo"), i18n.t("pdf.colPctTotal"));
+  if (filasIngreso.length === 0) {
+    emptyRow(i18n.t("reportes.sinIngresosRegistrados"));
+  } else {
+    filasIngreso.forEach((c, i) => dataRow(c.nombre, money(c.total), pct(c.total, ingresos), i));
+  }
+  totalRow(i18n.t("reportes.totalIngresos"), money(ingresos));
+  endSection();
+  y += PDF_SPACE.md;
+
+  // ==================== 4. Egresos ====================
+  // El % se mide contra el INGRESO del periodo, no contra el total de egresos:
+  // "los sueldos fueron el 23% de lo que entró" informa; "el 76% de lo que
+  // gastamos" no dice nada que el monto no diga ya.
+  beginSection(i18n.t("reportes.gastosPeriodo"), i18n.t("pdf.colPctIngreso"));
+  if (filasGasto.length === 0) {
+    emptyRow(i18n.t("reportes.sinGastosRegistrados"));
+  } else {
+    filasGasto.forEach((c, i) => dataRow(c.nombre, money(c.total), pct(c.total, ingresos), i));
+  }
+  totalRow(i18n.t("reportes.totalGastos"), money(gastos));
+  endSection();
+  y += PDF_SPACE.md;
+
+  // ==================== 5. Saldo de tesorería ====================
+  // La ecuación contable real. Solo se dibuja si el llamador provee el saldo
+  // anterior — nunca se inventa un valor.
+  if (saldoAnterior != null) {
+    const saldoFinal = saldoAnterior + ingresos - gastos;
+    const filas: { label: string; value: number; strong?: boolean }[] = [
+      { label: i18n.t("pdf.saldoAnterior"), value: saldoAnterior },
+      { label: i18n.t("reportes.totalIngresos"), value: ingresos },
+      { label: i18n.t("pdf.menosEgresos"), value: -gastos },
+    ];
+
+    ensureSpace(5 + PDF_SPACE.sm + 2 + filas.length * ROW_H + TOTAL_ROW_H);
+    sectionTitle(i18n.t("pdf.saldoTesoreria"));
+
+    filas.forEach((f, i) => {
+      if (i % 2 === 1) {
+        setFill(doc, ROW_ALT);
+        doc.rect(marginX, y - ROW_H + 4, contentWidth, ROW_H, "F");
       }
-    }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(T.row);
+      setText(doc, INK);
+      doc.text(f.label, labelColX, y);
+      doc.text(money(f.value), amountColX, y, { align: "right" });
+      y += ROW_H;
+    });
 
-    ensureSpace(cardsToSigGap + (sigImgH > 0 ? sigImgH + PDF_SPACE.xs : 0) + 1 + lineToNameGap + nameToRoleGap + PDF_SPACE.md);
-    y += cardsToSigGap;
-
-    if (firmaDataUrl && sigImgH > 0) {
-      doc.addImage(firmaDataUrl, "PNG", marginX, y, sigImgW, sigImgH);
-      y += sigImgH + PDF_SPACE.xs;
-    }
-
-    setDraw(doc, LINE);
+    setDraw(doc, INK);
     doc.setLineWidth(0.75);
-    doc.line(marginX, y, marginX + sigLineW, y);
-    y += lineToNameGap;
-
+    doc.line(marginX, y, rightX, y);
+    y += PDF_SPACE.xs + 3;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(PDF_TYPE.body);
+    doc.setFontSize(T.total);
     setText(doc, INK);
-    doc.text(generatedBy.nombre, marginX, y);
-    y += nameToRoleGap;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(PDF_TYPE.meta);
-    setText(doc, MUTED);
-    doc.text(generatedBy.rol ?? i18n.t("rol.tesorero"), marginX, y);
+    doc.text(i18n.t("pdf.saldoFinal"), labelColX, y);
+    // Verde si es positivo, rojo si es negativo.
+    setText(doc, saldoFinal < 0 ? DANGER : BRAND);
+    doc.text(money(saldoFinal), amountColX, y, { align: "right" });
     y += PDF_SPACE.md;
   }
 
-  // ---------- Pie de página en todas las páginas ----------
-  // El total de páginas solo se conoce ahora que ya se dibujó todo el
-  // contenido, así que "Página X de Y" se estampa en una pasada final
-  // sobre cada página ya generada.
+  // ==================== 6. Depósitos bancarios ====================
+  const totalDepositos = depositosBancarios ?? 0;
+  const hayDepositos = depositosDetalle != null && depositosDetalle.length > 0;
+  if (hayDepositos || depositosBancarios != null) {
+    y += PDF_SPACE.sm;
+    const bankColX = amountColX - 12;
+
+    ensureSpace(5 + PDF_SPACE.sm + 2 + T.colHead + 2 * ROW_H + TOTAL_ROW_H);
+    currentSection = null; // esta tabla tiene columnas propias, no se repite
+    sectionTitle(i18n.t("reportes.depositosBancarios"));
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.colHead);
+    setText(doc, FAINT);
+    doc.text(i18n.t("pdf.colFechaDep").toUpperCase(), labelColX, y, { charSpace: 0.5 });
+    doc.text(i18n.t("pdf.colBanco").toUpperCase(), labelColX + 78, y, { charSpace: 0.5 });
+    doc.text(i18n.t("pdf.colMonto").toUpperCase(), bankColX, y, { align: "right", charSpace: 0.5 });
+    y += PDF_SPACE.xs + 3;
+    setDraw(doc, LINE);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, rightX, y);
+    y += PDF_SPACE.sm + 1;
+
+    if (hayDepositos) {
+      depositosDetalle!.forEach((dep, i) => {
+        ensureSpace(ROW_H + TOTAL_ROW_H);
+        if (i % 2 === 1) {
+          setFill(doc, ROW_ALT);
+          doc.rect(marginX, y - ROW_H + 4, contentWidth, ROW_H, "F");
+        }
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(T.row);
+        setText(doc, INK);
+        doc.text(fmtFechaCortaPdf(dep.fecha), labelColX, y);
+        const banco = dep.referencia ? `${dep.cuenta_banco} · ${dep.referencia}` : dep.cuenta_banco;
+        doc.text(banco, labelColX + 78, y, { maxWidth: bankColX - labelColX - 78 - PDF_SPACE.sm });
+        doc.text(money(dep.monto), bankColX, y, { align: "right" });
+        y += ROW_H;
+      });
+    } else {
+      emptyRow(i18n.t("pdf.sinDepositos"));
+    }
+
+    ensureSpace(TOTAL_ROW_H);
+    setDraw(doc, INK);
+    doc.setLineWidth(0.75);
+    doc.line(marginX, y, rightX, y);
+    y += PDF_SPACE.xs + 3;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.total);
+    setText(doc, INK);
+    doc.text(i18n.t("pdf.totalDepositos"), labelColX, y);
+    doc.text(money(totalDepositos), bankColX, y, { align: "right" });
+    y += PDF_SPACE.sm + 2;
+
+    // Aclaración: los depósitos son un movimiento de efectivo a banco, no un
+    // ingreso, así que NO entran en el saldo. Sin esta nota, un total mayor
+    // que el ingreso del mes (dinero de meses previos) confunde al lector.
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(T.meta);
+    setText(doc, FAINT);
+    doc.text(i18n.t("pdf.notaDepositos"), labelColX, y, { maxWidth: contentWidth });
+    y += PDF_SPACE.md;
+  }
+
+  // ==================== 7. Firmas (tesorero + pastor) ====================
+  const firmantes: { nombre: string; cargo: string; img: string | null }[] = [];
+  if (church.tesorero_nombre) {
+    firmantes.push({
+      nombre: church.tesorero_nombre,
+      cargo: church.tesorero_cargo || i18n.t("rol.tesorero"),
+      img: firmaDataUrl,
+    });
+  }
+  if (church.pastor_nombre) {
+    firmantes.push({
+      nombre: church.pastor_nombre,
+      cargo: church.pastor_cargo || i18n.t("pdf.pastorCargo"),
+      img: firmaPastorDataUrl,
+    });
+  }
+
+  if (firmantes.length > 0) {
+    // El espacio para la imagen solo se reserva si al menos un firmante tiene
+    // firma escaneada; con líneas vacías ese hueco empujaba el bloque entero
+    // a una segunda página casi en blanco.
+    const hayImagen = firmantes.some((f) => f.img != null);
+    const sigImgMaxH = hayImagen ? 26 : 0;
+    const sigLineW = firmantes.length > 1 ? (contentWidth - 60) / 2 : 190;
+    const gapAntes = PDF_SPACE.lg + 6;
+    const lineToName = PDF_SPACE.sm + 3;
+
+    ensureSpace(gapAntes + sigImgMaxH + PDF_SPACE.xs + 1 + lineToName + 10 + PDF_SPACE.md);
+    y += gapAntes;
+
+    const baseY = y;
+    let maxBottom = y;
+
+    firmantes.forEach((f, i) => {
+      const x = marginX + i * (sigLineW + 60);
+      let fy = baseY;
+
+      // La firma escaneada se dibuja justo encima de la línea.
+      if (f.img) {
+        try {
+          const props = doc.getImageProperties(f.img);
+          const h = sigImgMaxH;
+          const w = Math.min(sigLineW, (props.width / props.height) * h);
+          doc.addImage(f.img, "PNG", x, fy, w, h);
+        } catch { /* firma ilegible: se deja solo la línea */ }
+      }
+      fy += sigImgMaxH + PDF_SPACE.xs;
+
+      setDraw(doc, LINE);
+      doc.setLineWidth(0.75);
+      doc.line(x, fy, x + sigLineW, fy);
+      fy += lineToName;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(T.sigName);
+      setText(doc, INK);
+      doc.text(f.nombre, x, fy, { maxWidth: sigLineW });
+      fy += 10;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(T.meta);
+      setText(doc, MUTED);
+      doc.text(f.cargo, x, fy, { maxWidth: sigLineW });
+      fy += PDF_SPACE.sm;
+
+      maxBottom = Math.max(maxBottom, fy);
+    });
+
+    y = maxBottom;
+  }
+
+  // ==================== 8. Pie en todas las páginas ====================
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
@@ -424,9 +587,14 @@ export async function exportReportPdf(data: ReportData): Promise<boolean> {
 
 /** "Imprimir": genera el mismo PDF y lo abre con el visor del sistema en
  *  vez de mostrar un diálogo de guardar — desde ahí el usuario imprime
- *  con Cmd/Ctrl+P. Reemplaza el uso de window.print() sobre el HTML de
- *  la app, que no producía un resultado utilizable. */
+ *  con Cmd/Ctrl+P. */
 export async function printMonthlyReportPdf(data: ReportData): Promise<void> {
   const { bytes, fileName } = await buildMonthlyReportPdf(data);
   await openForPrint(bytes, fileName);
+}
+
+/** Solo para la vista previa de desarrollo: devuelve los bytes sin guardar. */
+export async function buildMonthlyReportPdfBytes(data: ReportData): Promise<ArrayBuffer> {
+  const { bytes } = await buildMonthlyReportPdf(data);
+  return bytes;
 }
