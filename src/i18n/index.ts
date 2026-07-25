@@ -1,5 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { es } from "./es";
 import { en } from "./en";
 
@@ -41,5 +42,13 @@ i18n.use(initReactI18next).init({
   fallbackLng: "es",
   interpolation: { escapeValue: false },
 });
+
+// El menú nativo de macOS se arma en Rust y arranca en español: aquí se le
+// avisa el idioma real al iniciar y cada vez que cambia en Configuración.
+function syncMenuLanguage(lng: string) {
+  invoke("menu_language", { lang: lng === "en" ? "en" : "es" }).catch(() => {});
+}
+i18n.on("languageChanged", syncMenuLanguage);
+syncMenuLanguage(i18n.language);
 
 export default i18n;

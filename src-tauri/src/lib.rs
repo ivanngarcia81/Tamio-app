@@ -727,9 +727,100 @@ fn tray_balance(app: tauri::AppHandle, texto: String) {
     let _ = (app, texto);
 }
 
+/// Menú nativo de la ventana, armado según el idioma de la app.
+/// El frontend llama `menu_language` al arrancar y al cambiar el idioma en
+/// Configuración; aquí se reconstruye el menú completo con los mismos ids,
+/// así on_menu_event sigue funcionando sin cambios.
+fn construir_menu(app: &tauri::AppHandle, en: bool) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{AboutMetadata, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+    let tr = |es_txt: &'static str, en_txt: &'static str| if en { en_txt } else { es_txt };
+
+    let acerca = AboutMetadata {
+        name: Some("Tamio".into()),
+        comments: Some(tr("Tesorería y secretaría para iglesias", "Treasury and secretariat for churches").to_string()),
+        copyright: Some("© 2026 Tamio".into()),
+        ..Default::default()
+    };
+
+    let menu_app = SubmenuBuilder::new(app, "Tamio")
+        .item(&PredefinedMenuItem::about(app, Some(tr("Acerca de Tamio", "About Tamio")), Some(acerca))?)
+        .separator()
+        .item(&MenuItemBuilder::new(tr("Ajustes…", "Settings…")).id("ajustes").accelerator("CmdOrCtrl+,").build(app)?)
+        .separator()
+        .item(&PredefinedMenuItem::hide(app, Some(tr("Ocultar Tamio", "Hide Tamio")))?)
+        .item(&PredefinedMenuItem::hide_others(app, Some(tr("Ocultar otros", "Hide Others")))?)
+        .item(&PredefinedMenuItem::show_all(app, Some(tr("Mostrar todo", "Show All")))?)
+        .separator()
+        .item(&PredefinedMenuItem::quit(app, Some(tr("Salir de Tamio", "Quit Tamio")))?)
+        .build()?;
+
+    let menu_archivo = SubmenuBuilder::new(app, tr("Archivo", "File"))
+        .item(&MenuItemBuilder::new(tr("Nuevo registro…", "New record…")).id("nuevo").accelerator("CmdOrCtrl+N").build(app)?)
+        .separator()
+        .item(&MenuItemBuilder::new(tr("Sincronizar ahora", "Sync now")).id("sync").accelerator("CmdOrCtrl+R").build(app)?)
+        .separator()
+        .item(&PredefinedMenuItem::close_window(app, Some(tr("Cerrar ventana", "Close Window")))?)
+        .build()?;
+
+    let menu_edicion = SubmenuBuilder::new(app, tr("Edición", "Edit"))
+        .item(&PredefinedMenuItem::undo(app, Some(tr("Deshacer", "Undo")))?)
+        .item(&PredefinedMenuItem::redo(app, Some(tr("Rehacer", "Redo")))?)
+        .separator()
+        .item(&PredefinedMenuItem::cut(app, Some(tr("Cortar", "Cut")))?)
+        .item(&PredefinedMenuItem::copy(app, Some(tr("Copiar", "Copy")))?)
+        .item(&PredefinedMenuItem::paste(app, Some(tr("Pegar", "Paste")))?)
+        .item(&PredefinedMenuItem::select_all(app, Some(tr("Seleccionar todo", "Select All")))?)
+        .build()?;
+
+    // "Ver" como navegación completa de la app, con atajos ⌘1–⌘9.
+    // Los ids "nav:<ruta>" se emiten al frontend, que navega (y sus
+    // guardas por rol/plan redirigen si esa área no aplica).
+    let menu_ver = SubmenuBuilder::new(app, tr("Ver", "View"))
+        .item(&MenuItemBuilder::new(tr("Paleta de comandos…", "Command palette…")).id("cmdk").accelerator("CmdOrCtrl+K").build(app)?)
+        .separator()
+        .item(&MenuItemBuilder::new(tr("Inicio", "Home")).id("nav:/").accelerator("CmdOrCtrl+1").build(app)?)
+        .separator()
+        .item(&MenuItemBuilder::new(tr("Ingresos", "Income")).id("nav:/ingresos").accelerator("CmdOrCtrl+2").build(app)?)
+        .item(&MenuItemBuilder::new(tr("Gastos", "Expenses")).id("nav:/gastos").accelerator("CmdOrCtrl+3").build(app)?)
+        .item(&MenuItemBuilder::new(tr("Reportes", "Reports")).id("nav:/reportes").accelerator("CmdOrCtrl+4").build(app)?)
+        .item(&MenuItemBuilder::new(tr("Depósitos", "Deposits")).id("nav:/depositos").accelerator("CmdOrCtrl+5").build(app)?)
+        .separator()
+        .item(&MenuItemBuilder::new(tr("Membresía", "Membership")).id("nav:/membresia").accelerator("CmdOrCtrl+6").build(app)?)
+        .item(&MenuItemBuilder::new(tr("Cartas", "Letters")).id("nav:/cartas").accelerator("CmdOrCtrl+7").build(app)?)
+        .item(&MenuItemBuilder::new(tr("Agenda", "Agenda")).id("nav:/agenda").accelerator("CmdOrCtrl+8").build(app)?)
+        .separator()
+        .item(&MenuItemBuilder::new(tr("Mensajes", "Messages")).id("nav:/inbox").accelerator("CmdOrCtrl+9").build(app)?)
+        .separator()
+        .item(&PredefinedMenuItem::fullscreen(app, Some(tr("Pantalla completa", "Full Screen")))?)
+        .build()?;
+
+    let menu_ventana = SubmenuBuilder::new(app, tr("Ventana", "Window"))
+        .item(&PredefinedMenuItem::minimize(app, Some(tr("Minimizar", "Minimize")))?)
+        .item(&PredefinedMenuItem::maximize(app, Some(tr("Ampliar", "Zoom")))?)
+        .build()?;
+
+    let menu_ayuda = SubmenuBuilder::new(app, tr("Ayuda", "Help"))
+        .item(&MenuItemBuilder::new(tr("Ayuda de Tamio", "Tamio Help")).id("ayuda").build(app)?)
+        .item(&MenuItemBuilder::new(tr("Guía de bienvenida (tour)", "Welcome guide (tour)")).id("tour").build(app)?)
+        .build()?;
+
+    MenuBuilder::new(app)
+        .items(&[&menu_app, &menu_archivo, &menu_edicion, &menu_ver, &menu_ventana, &menu_ayuda])
+        .build()
+}
+
+/// Cambia el idioma del menú nativo. Lo llama el frontend con "es"/"en".
+#[tauri::command]
+fn menu_language(app: tauri::AppHandle, lang: String) {
+    let en = lang.starts_with("en");
+    if let Ok(menu) = construir_menu(&app, en) {
+        let _ = app.set_menu(menu);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    use tauri::menu::{AboutMetadata, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
+    use tauri::menu::{MenuBuilder, MenuItemBuilder};
     use tauri::Emitter;
     use tauri::Manager;
 
@@ -743,81 +834,9 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            // Menú nativo de macOS. Los ítems con id emiten un evento que el
-            // frontend escucha (menu-nuevo, menu-ayuda, menu-ajustes).
-            let acerca = AboutMetadata {
-                name: Some("Tamio".into()),
-                comments: Some("Tesorería y secretaría para iglesias".into()),
-                copyright: Some("© 2026 Tamio".into()),
-                ..Default::default()
-            };
-
-            let menu_app = SubmenuBuilder::new(app, "Tamio")
-                .item(&PredefinedMenuItem::about(app, Some("Acerca de Tamio"), Some(acerca))?)
-                .separator()
-                .item(&MenuItemBuilder::new("Ajustes…").id("ajustes").accelerator("CmdOrCtrl+,").build(app)?)
-                .separator()
-                .item(&PredefinedMenuItem::hide(app, Some("Ocultar Tamio"))?)
-                .item(&PredefinedMenuItem::hide_others(app, Some("Ocultar otros"))?)
-                .item(&PredefinedMenuItem::show_all(app, Some("Mostrar todo"))?)
-                .separator()
-                .item(&PredefinedMenuItem::quit(app, Some("Salir de Tamio"))?)
-                .build()?;
-
-            let menu_archivo = SubmenuBuilder::new(app, "Archivo")
-                .item(&MenuItemBuilder::new("Nuevo registro…").id("nuevo").accelerator("CmdOrCtrl+N").build(app)?)
-                .separator()
-                .item(&MenuItemBuilder::new("Sincronizar ahora").id("sync").accelerator("CmdOrCtrl+R").build(app)?)
-                .separator()
-                .item(&PredefinedMenuItem::close_window(app, Some("Cerrar ventana"))?)
-                .build()?;
-
-            let menu_edicion = SubmenuBuilder::new(app, "Edición")
-                .item(&PredefinedMenuItem::undo(app, Some("Deshacer"))?)
-                .item(&PredefinedMenuItem::redo(app, Some("Rehacer"))?)
-                .separator()
-                .item(&PredefinedMenuItem::cut(app, Some("Cortar"))?)
-                .item(&PredefinedMenuItem::copy(app, Some("Copiar"))?)
-                .item(&PredefinedMenuItem::paste(app, Some("Pegar"))?)
-                .item(&PredefinedMenuItem::select_all(app, Some("Seleccionar todo"))?)
-                .build()?;
-
-            // "Ver" como navegación completa de la app, con atajos ⌘1–⌘9.
-            // Los ids "nav:<ruta>" se emiten al frontend, que navega (y sus
-            // guardas por rol/plan redirigen si esa área no aplica).
-            let menu_ver = SubmenuBuilder::new(app, "Ver")
-                .item(&MenuItemBuilder::new("Paleta de comandos…").id("cmdk").accelerator("CmdOrCtrl+K").build(app)?)
-                .separator()
-                .item(&MenuItemBuilder::new("Inicio").id("nav:/").accelerator("CmdOrCtrl+1").build(app)?)
-                .separator()
-                .item(&MenuItemBuilder::new("Ingresos").id("nav:/ingresos").accelerator("CmdOrCtrl+2").build(app)?)
-                .item(&MenuItemBuilder::new("Gastos").id("nav:/gastos").accelerator("CmdOrCtrl+3").build(app)?)
-                .item(&MenuItemBuilder::new("Reportes").id("nav:/reportes").accelerator("CmdOrCtrl+4").build(app)?)
-                .item(&MenuItemBuilder::new("Depósitos").id("nav:/depositos").accelerator("CmdOrCtrl+5").build(app)?)
-                .separator()
-                .item(&MenuItemBuilder::new("Membresía").id("nav:/membresia").accelerator("CmdOrCtrl+6").build(app)?)
-                .item(&MenuItemBuilder::new("Cartas").id("nav:/cartas").accelerator("CmdOrCtrl+7").build(app)?)
-                .item(&MenuItemBuilder::new("Agenda").id("nav:/agenda").accelerator("CmdOrCtrl+8").build(app)?)
-                .separator()
-                .item(&MenuItemBuilder::new("Inbox").id("nav:/inbox").accelerator("CmdOrCtrl+9").build(app)?)
-                .separator()
-                .item(&PredefinedMenuItem::fullscreen(app, Some("Pantalla completa"))?)
-                .build()?;
-
-            let menu_ventana = SubmenuBuilder::new(app, "Ventana")
-                .item(&PredefinedMenuItem::minimize(app, Some("Minimizar"))?)
-                .item(&PredefinedMenuItem::maximize(app, Some("Ampliar"))?)
-                .build()?;
-
-            let menu_ayuda = SubmenuBuilder::new(app, "Ayuda")
-                .item(&MenuItemBuilder::new("Ayuda de Tamio").id("ayuda").build(app)?)
-                .item(&MenuItemBuilder::new("Guía de bienvenida (tour)").id("tour").build(app)?)
-                .build()?;
-
-            let menu = MenuBuilder::new(app)
-                .items(&[&menu_app, &menu_archivo, &menu_edicion, &menu_ver, &menu_ventana, &menu_ayuda])
-                .build()?;
-            app.set_menu(menu)?;
+            // Menú nativo de macOS. Arranca en español; el frontend llama
+            // menu_language con el idioma real apenas inicia i18n.
+            app.set_menu(construir_menu(app.handle(), false)?)?;
 
             // Ícono en la barra de menús (junto al reloj): muestra el balance
             // del mes y accesos rápidos aunque la ventana esté cerrada.
@@ -862,7 +881,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance])
+        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance, menu_language])
         .on_menu_event(|app, event| {
             let id = event.id().as_ref();
             if let Some(ruta) = id.strip_prefix("nav:") {
