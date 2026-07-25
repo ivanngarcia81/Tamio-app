@@ -687,6 +687,12 @@ export const en: Resources = {
     items_other: "members",
   },
 
+  homeSinArea: {
+    titulo: "This area is not in the current plan",
+    subTesoreria: "The church's current plan does not include Treasury. Ask the administrator to review the plan in Settings.",
+    subSecretaria: "The church's current plan does not include Secretariat. You can view the Treasury report, or ask the administrator to review the plan.",
+    verReportes: "View reports",
+  },
   nav: {
     inicio: "Home",
     grupoTesoreria: "Treasury",

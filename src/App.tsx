@@ -33,7 +33,7 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
-import { evaluarVigencia, rutaPermitidaPorPlan, urlCompra } from "./plan";
+import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { authHabilitado } from "./supabase";
 import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync } from "./syncManager";
@@ -61,6 +61,30 @@ function esPrimerArranque(church: Church): boolean {
     if (localStorage.getItem("tesoreria-welcomed") === "1") return false;
   } catch { /* noop */ }
   return church.nombre === "Mi Iglesia";
+}
+
+/** Inicio para la combinación rol/plan sin área propia (p. ej. un tesorero en
+ *  una iglesia con plan "solo Secretaría"): en vez de un dashboard con todo
+ *  bloqueado, explica la situación y ofrece lo que sí puede ver. */
+function HomeSinArea({ area, verReportes }: { area: "tesoreria" | "secretaria"; verReportes: boolean }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  return (
+    <div className="content">
+      <div className="card pad-lg" style={{ maxWidth: 520, margin: "60px auto", textAlign: "center" }}>
+        <div className="card-title-lg" style={{ marginBottom: 8 }}>{t("homeSinArea.titulo")}</div>
+        <div className="form-hint" style={{ marginBottom: 16 }}>
+          {area === "tesoreria" ? t("homeSinArea.subTesoreria") : t("homeSinArea.subSecretaria")}
+        </div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          {verReportes && (
+            <button className="btn primary" onClick={() => navigate("/reportes")}>{t("homeSinArea.verReportes")}</button>
+          )}
+          <button className="btn secondary" onClick={() => navigate("/configuracion")}>{t("nav.configuracion")}</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
@@ -260,15 +284,25 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           <Route
             path="/"
             element={role === "secretaria"
-              ? <InicioSecretaria church={church} refreshKey={refreshKey} />
-              : <Dashboard
-                  church={church}
-                  refreshKey={refreshKey}
-                  memberCount={memberCount}
-                  onEditTx={openEditTx}
-                  onChanged={onChanged}
-                  onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
-                />
+              ? (incluyeSecretaria(church.plan)
+                  ? <InicioSecretaria church={church} refreshKey={refreshKey} />
+                  // Secretaria en plan "solo Tesorería": su área no está
+                  // contratada; solo le queda el reporte de Tesorería.
+                  : <HomeSinArea area="secretaria" verReportes={incluyeTesoreria(church.plan)} />)
+              : incluyeTesoreria(church.plan)
+                ? <Dashboard
+                    church={church}
+                    refreshKey={refreshKey}
+                    memberCount={memberCount}
+                    onEditTx={openEditTx}
+                    onChanged={onChanged}
+                    onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
+                  />
+                // Plan "solo Secretaría": el administrador aterriza en el
+                // inicio de Secretaría; el tesorero no tiene área contratada.
+                : role === "administrador"
+                  ? <InicioSecretaria church={church} refreshKey={refreshKey} />
+                  : <HomeSinArea area="tesoreria" verReportes={false} />
             }
           />
           <Route

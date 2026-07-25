@@ -681,6 +681,12 @@ export const es = {
     items_other: "miembros",
   },
 
+  homeSinArea: {
+    titulo: "Esta área no está en el plan actual",
+    subTesoreria: "El plan contratado por la iglesia no incluye Tesorería. Pide al administrador revisar el plan en Configuración.",
+    subSecretaria: "El plan contratado por la iglesia no incluye Secretaría. Puedes consultar el reporte de Tesorería, o pedir al administrador revisar el plan.",
+    verReportes: "Ver reportes",
+  },
   nav: {
     inicio: "Inicio",
     grupoTesoreria: "Tesorería",
