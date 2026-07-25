@@ -2023,6 +2023,7 @@ export const en: Resources = {
     cargoObligatorio: "Title is required.",
     correoInvalido: "Enter a valid email address.",
     telefonoInvalido: "Enter a valid phone number.",
+    saldoInvalido: "Enter a valid amount (for example 1500 or 1,500.50).",
   },
 
   config: {
@@ -2062,6 +2063,8 @@ export const en: Resources = {
     monedaUsd: "USD — US Dollar",
     monedaMxn: "MXN — Mexican Peso",
     monedaHint: "Used for all new transactions, reports and balances.",
+    saldoInicial: "Opening balance",
+    saldoInicialHint: "Money the treasury already had when you started using Tamio, before the first recorded transaction. It is added to the history to compute the real balance in reports. Leave empty if you started from zero.",
     abrirAjustes: "Church settings",
   },
 

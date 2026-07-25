@@ -63,7 +63,11 @@ export default function Configuracion({
     ciudad: church.ciudad ?? "",
     pais: church.pais ?? "",
     moneda: church.moneda,
+    // 0 se muestra vacío: el caso común (arrancar de cero) no obliga a nadie
+    // a entender qué es un "saldo de apertura".
+    saldoInicial: church.saldo_inicial ? String(church.saldo_inicial) : "",
   });
+  const [saldoError, setSaldoError] = useState<string | null>(null);
   const [treasurerForm, setTreasurerForm] = useState<TreasurerFormValues>({
     nombre: church.tesorero_nombre ?? "",
     cargo: church.tesorero_cargo ?? "Tesorero",
@@ -151,10 +155,17 @@ export default function Configuracion({
       nextPastorErrors.telefono = t("validacion.telefonoInvalido");
     }
 
+    // Saldo de apertura: tolera "$1,234.56" y espacios; vacío = 0. Un texto
+    // no numérico se rechaza en vez de guardarse silenciosamente como 0.
+    const saldoTexto = churchForm.saldoInicial.replace(/[$,\s]/g, "");
+    const saldoNum = saldoTexto === "" ? 0 : Number(saldoTexto);
+    const nextSaldoError = Number.isFinite(saldoNum) ? null : t("validacion.saldoInvalido");
+
     setChurchError(nextChurchError);
+    setSaldoError(nextSaldoError);
     setTreasurerErrors(nextTreasurerErrors);
     setPastorErrors(nextPastorErrors);
-    if (nextChurchError || Object.keys(nextTreasurerErrors).length > 0 || Object.keys(nextPastorErrors).length > 0) return;
+    if (nextChurchError || nextSaldoError || Object.keys(nextTreasurerErrors).length > 0 || Object.keys(nextPastorErrors).length > 0) return;
 
     setSaving(true);
     try {
@@ -181,6 +192,7 @@ export default function Configuracion({
         pie_institucional: institucionForm.pie_institucional.trim() || null,
         secretaria_nombre: institucionForm.secretaria_nombre.trim() || null,
         secretaria_cargo: institucionForm.secretaria_cargo.trim() || null,
+        saldo_inicial: saldoNum,
       });
       onChurchUpdated(updated);
       setSaved(true);
@@ -219,6 +231,7 @@ export default function Configuracion({
                 value={churchForm}
                 onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
                 error={churchError}
+                saldoError={saldoError}
                 logoPath={logoPath}
                 onLogoPathChange={setLogoPath}
                 showCurrency={verTesoreria}

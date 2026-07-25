@@ -682,6 +682,19 @@ fn migrations() -> Vec<Migration> {
                         AND c.church_id = gastos_recurrentes.church_id
                    );
         "#,
+    }, Migration {
+        version: 34,
+        description: "saldo de apertura: dinero en caja al empezar a usar Tamio",
+        kind: MigrationKind::Up,
+        sql: r#"
+            -- Dinero que la tesorería ya tenía ANTES del primer movimiento
+            -- registrado en Tamio. El estado financiero lo suma al acumulado
+            -- de movimientos para que el "saldo anterior" sea el saldo real
+            -- también en iglesias que migran con caja previa. Configuración →
+            -- Iglesia. Default 0: instalaciones que arrancan de cero no
+            -- cambian en nada.
+            ALTER TABLE churches ADD COLUMN saldo_inicial REAL NOT NULL DEFAULT 0;
+        "#,
     }]
 }
 

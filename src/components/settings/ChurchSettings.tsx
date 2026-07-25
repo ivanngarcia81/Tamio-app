@@ -11,15 +11,19 @@ export interface ChurchFormValues {
   ciudad: string;
   pais: string;
   moneda: string;
+  /** Saldo de apertura como texto de formulario; se valida y parsea al guardar. */
+  saldoInicial: string;
 }
 
 interface Props {
   value: ChurchFormValues;
   onChange: (patch: Partial<ChurchFormValues>) => void;
   error?: string | null;
+  saldoError?: string | null;
   logoPath: string | null;
   onLogoPathChange: (path: string | null) => void;
-  /** La moneda es dato de tesorería; se oculta a roles que no la manejan. */
+  /** La moneda y el saldo de apertura son datos de tesorería; se ocultan a
+   *  roles que no la manejan. */
   showCurrency?: boolean;
 }
 
@@ -32,7 +36,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export default function ChurchSettings({ value, onChange, error, logoPath, onLogoPathChange, showCurrency = true }: Props) {
+export default function ChurchSettings({ value, onChange, error, saldoError, logoPath, onLogoPathChange, showCurrency = true }: Props) {
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -156,6 +160,22 @@ export default function ChurchSettings({ value, onChange, error, logoPath, onLog
             ))}
           </select>
           <div className="form-hint">{t("iglesia.monedaHint")}</div>
+        </div>
+      )}
+
+      {showCurrency && (
+        <div className="form-group full">
+          <label className="form-label">{t("iglesia.saldoInicial")}</label>
+          <input
+            className="form-input"
+            value={value.saldoInicial}
+            onChange={(e) => onChange({ saldoInicial: e.target.value })}
+            placeholder="0.00"
+            inputMode="decimal"
+          />
+          {saldoError
+            ? <div className="field-error">{saldoError}</div>
+            : <div className="form-hint">{t("iglesia.saldoInicialHint")}</div>}
         </div>
       )}
     </div>

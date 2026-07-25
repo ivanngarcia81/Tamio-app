@@ -47,6 +47,10 @@ export interface Church {
   plan: string;
   sub_estado: string;
   sub_vence: string | null;
+  /** Saldo de apertura (migración v34): dinero en caja ANTES del primer
+   *  movimiento registrado en Tamio. Se suma al acumulado de movimientos para
+   *  el "saldo anterior" del estado financiero. 0 = arrancó de cero. */
+  saldo_inicial: number;
 }
 
 export interface Member {
@@ -460,6 +464,7 @@ export interface ChurchUpdate {
   pie_institucional?: string | null;
   secretaria_nombre?: string | null;
   secretaria_cargo?: string | null;
+  saldo_inicial?: number;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -472,8 +477,9 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        pastor_nombre = $11, pastor_cargo = $12, pastor_email = $13,
        pastor_telefono = $14, pastor_firma_path = $15,
        direccion = $16, region = $17, telefono = $18, email = $19,
-       pie_institucional = $20, secretaria_nombre = $21, secretaria_cargo = $22
-     WHERE id = $23`,
+       pie_institucional = $20, secretaria_nombre = $21, secretaria_cargo = $22,
+       saldo_inicial = COALESCE($23, saldo_inicial)
+     WHERE id = $24`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
@@ -482,6 +488,9 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       c.pastor_telefono ?? null, c.pastor_firma_path ?? null,
       c.direccion ?? null, c.region ?? null, c.telefono ?? null, c.email ?? null,
       c.pie_institucional ?? null, c.secretaria_nombre ?? null, c.secretaria_cargo ?? null,
+      // null = "no tocar": COALESCE conserva el saldo de apertura ya guardado
+      // cuando el llamador (p. ej. la bienvenida) no incluye el campo.
+      c.saldo_inicial ?? null,
       id,
     ]
   );
@@ -858,10 +867,9 @@ export async function listDepositosPeriodo(churchId: number, yyyyMm: string): Pr
  * del mes. Es el "saldo anterior" del estado financiero, y con él el saldo
  * final del reporte es un saldo real y no el resultado de un solo mes.
  *
- * LÍMITE CONOCIDO: parte de cero, así que solo es exacto si la iglesia registró
- * en Tamio toda su historia. Una iglesia que empezó a usar la app con dinero ya
- * en caja necesita además un saldo de apertura declarado, que hoy no existe en
- * el esquema (ver docs/saldo-anterior.md).
+ * Cuenta SOLO los movimientos: el dinero que había en caja antes del primer
+ * registro vive en churches.saldo_inicial (migración v34). Para el saldo real
+ * usa saldoAnteriorDe(), que suma ambos.
  */
 export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): Promise<number> {
   const d = await getDb();
@@ -878,6 +886,21 @@ export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): P
     saldo += r.tipo === "ingreso" ? (r.total ?? 0) : -(r.total ?? 0);
   }
   return saldo;
+}
+
+/**
+ * Saldo REAL de la tesorería al cierre del periodo anterior:
+ *
+ *   saldo de apertura (churches.saldo_inicial, Configuración → Iglesia)
+ * + acumulado de todos los movimientos aprobados anteriores al periodo
+ *
+ * Cubre los dos casos: la iglesia que arrancó en Tamio desde cero (apertura 0)
+ * y la que migró con dinero ya en caja (apertura declarada una sola vez).
+ * Es la fuente única del "saldo anterior" del estado financiero mensual.
+ */
+export async function saldoAnteriorDe(church: Church, yyyyMm: string): Promise<number> {
+  const acumulado = await saldoAcumuladoAntesDe(church.id, yyyyMm);
+  return (church.saldo_inicial ?? 0) + acumulado;
 }
 
 export async function yearDepositos(churchId: number, yyyy: string): Promise<number> {

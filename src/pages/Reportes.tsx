@@ -4,7 +4,7 @@ import {
   catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
   listDepositosPeriodo, mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
-  saldoAcumuladoAntesDe,
+  saldoAnteriorDe,
   yearCategoriaTotals, yearDepositos, yearMonthlySummary,
   type Church, type MonthSummary, type MonthTotals, type NewTx,
 } from "../db";
@@ -204,7 +204,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
    *  en cada render de la página. */
   async function buildReportData() {
     const [saldoAnterior, depositosDetalle] = await Promise.all([
-      saldoAcumuladoAntesDe(church.id, mes),
+      // saldo de apertura (Configuración → Iglesia) + acumulado de movimientos
+      saldoAnteriorDe(church, mes),
       listDepositosPeriodo(church.id, mes),
     ]);
     return {

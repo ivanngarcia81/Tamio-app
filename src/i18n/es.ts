@@ -2030,6 +2030,7 @@ export const es = {
     cargoObligatorio: "El cargo es obligatorio.",
     correoInvalido: "Escribe un correo con formato válido.",
     telefonoInvalido: "Escribe un teléfono con formato válido.",
+    saldoInvalido: "Escribe un monto válido (por ejemplo 1500 o 1,500.50).",
   },
 
   config: {
@@ -2069,6 +2070,8 @@ export const es = {
     monedaUsd: "USD — Dólar",
     monedaMxn: "MXN — Peso mexicano",
     monedaHint: "Se usará en todos los movimientos nuevos, reportes y balances.",
+    saldoInicial: "Saldo de apertura",
+    saldoInicialHint: "Dinero que la tesorería ya tenía al empezar a usar Tamio, antes del primer movimiento registrado. Se suma al historial para calcular el saldo real en los reportes. Déjalo vacío si empezaste desde cero.",
     abrirAjustes: "Ajustes de la iglesia",
   },
 
