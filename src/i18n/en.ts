@@ -301,6 +301,7 @@ export const en: Resources = {
     periodoFuturo: "A future period cannot be selected.",
     cuentaObligatoria: "The bank account or bank name is required.",
     duplicado: "A deposit with this same date, amount and bank account already exists. Check that it is not a duplicate.",
+    excedeEfectivo: "The amount ({{monto}}) exceeds the estimated cash available on hand as of that date ({{disponible}}). Review the amount, or press Save again to record it anyway.",
     seleccionarComprobante: "Select receipt",
     guardarDeposito: "Save deposit",
   },

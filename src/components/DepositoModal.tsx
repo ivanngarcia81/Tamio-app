@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
-  findDuplicateDeposito, insertDeposito, nowLocalIso, updateDeposito,
+  efectivoDisponibleHasta, findDuplicateDeposito, fmtMoney, insertDeposito,
+  nowLocalIso, updateDeposito,
   type Church, type Deposito,
 } from "../db";
 import { IconCheck, IconClose, IconWarn } from "../icons";
@@ -46,9 +47,14 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Aviso no bloqueante: el primer Guardar advierte si el monto supera el
+  // efectivo estimado en caja; el segundo procede (mismo patrón que el aviso
+  // de miembros duplicados). Cambiar monto o fecha reinicia la confirmación.
+  const [excedeConfirmado, setExcedeConfirmado] = useState(false);
 
   function onFechaChange(v: string) {
     setFecha(v);
+    setExcedeConfirmado(false);
     if (!periodoTocado && v.length >= 7) setPeriodo(v.slice(0, 7));
   }
 
@@ -85,6 +91,19 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
         setError(t("depositos.duplicado"));
         setSaving(false);
         return;
+      }
+
+      if (!excedeConfirmado) {
+        const disponible = await efectivoDisponibleHasta(church, fecha, editing?.id);
+        if (m > disponible) {
+          setExcedeConfirmado(true);
+          setError(t("depositos.excedeEfectivo", {
+            monto: fmtMoney(m),
+            disponible: fmtMoney(Math.max(disponible, 0)),
+          }));
+          setSaving(false);
+          return;
+        }
       }
 
       const payload = {
@@ -130,7 +149,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
             </div>
             <div className="form-group">
               <label className="form-label">{t("depositos.montoDepositado")}</label>
-              <input className="form-input" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="$0.00" inputMode="decimal" />
+              <input className="form-input" value={monto} onChange={(e) => { setMonto(e.target.value); setExcedeConfirmado(false); }} placeholder="$0.00" inputMode="decimal" />
             </div>
           </div>
 

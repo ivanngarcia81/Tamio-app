@@ -295,6 +295,7 @@ export const es = {
     periodoFuturo: "No se puede elegir un período futuro.",
     cuentaObligatoria: "La cuenta bancaria o nombre del banco es obligatorio.",
     duplicado: "Ya existe un depósito registrado con esta misma fecha, monto y cuenta bancaria. Revisa que no sea un duplicado.",
+    excedeEfectivo: "El monto ({{monto}}) supera el efectivo estimado disponible en caja a esa fecha ({{disponible}}). Revisa el monto o vuelve a pulsar Guardar para registrarlo de todos modos.",
     seleccionarComprobante: "Seleccionar comprobante",
     guardarDeposito: "Guardar depósito",
   },

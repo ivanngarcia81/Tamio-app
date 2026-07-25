@@ -903,6 +903,47 @@ export async function saldoAnteriorDe(church: Church, yyyyMm: string): Promise<n
   return (church.saldo_inicial ?? 0) + acumulado;
 }
 
+/**
+ * Efectivo estimado en caja al cierre del día dado:
+ *
+ *   apertura + (ingresos − gastos aprobados con fecha ≤ día)
+ * − depósitos bancarios con fecha ≤ día
+ *
+ * Los depósitos no cambian el saldo de tesorería (solo mueven dinero de caja
+ * al banco), pero SÍ reducen el efectivo que queda por depositar. Es una
+ * estimación: gastos pagados directo del banco no se distinguen aquí.
+ */
+export async function efectivoDisponibleHasta(
+  church: Church,
+  fechaISO: string,
+  excludeDepositoId?: number
+): Promise<number> {
+  const d = await getDb();
+  const movs = await d.select<{ tipo: string; total: number | null }[]>(
+    `SELECT tipo, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND deleted = 0
+        AND substr(fecha, 1, 10) <= $2
+      GROUP BY tipo`,
+    [church.id, fechaISO]
+  );
+  let saldo = church.saldo_inicial ?? 0;
+  for (const r of movs) {
+    saldo += r.tipo === "ingreso" ? (r.total ?? 0) : -(r.total ?? 0);
+  }
+  const params: unknown[] = [church.id, fechaISO];
+  let where = "church_id = $1 AND deleted = 0 AND substr(fecha, 1, 10) <= $2";
+  if (excludeDepositoId != null) {
+    params.push(excludeDepositoId);
+    where += ` AND id != $${params.length}`;
+  }
+  const deps = await d.select<{ total: number | null }[]>(
+    `SELECT SUM(monto) AS total FROM depositos_bancarios WHERE ${where}`,
+    params
+  );
+  return saldo - (deps[0]?.total ?? 0);
+}
+
 export async function yearDepositos(churchId: number, yyyy: string): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ total: number | null }[]>(
