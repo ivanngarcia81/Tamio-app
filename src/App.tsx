@@ -33,7 +33,7 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
-import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, rutaPermitidaPorPlan, urlCompra } from "./plan";
+import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { authHabilitado } from "./supabase";
 import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync } from "./syncManager";
@@ -337,6 +337,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               <Miembros
                 church={church}
                 refreshKey={refreshKey}
+                puedeCrear={puedeCrearMiembros(role, church.plan)}
                 onEdit={openEditMember}
                 onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
                 onChanged={onChanged}

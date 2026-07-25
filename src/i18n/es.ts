@@ -195,6 +195,7 @@ export const es = {
     activos_one: "{{count}} persona registrada",
     activos_other: "{{count}} personas registradas",
     importarCsv: "Importar CSV",
+    padronSecretaria: "El padrón lo administra Secretaría: las altas e importaciones se hacen desde Membresía.",
     nuevo: "Nuevo miembro",
     nuevoMiembro: "Nuevo miembro",
     posibleDuplicado: "Puede que ya exista: {{nombres}}. Revisa antes de duplicar; si es otra persona, vuelve a pulsar Guardar.",

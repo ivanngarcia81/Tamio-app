@@ -42,6 +42,8 @@ function initials(nombre: string): string {
 interface Props {
   church: Church;
   refreshKey: number;
+  /** false = el padrón lo administra Secretaría (las altas van por Membresía). */
+  puedeCrear: boolean;
   onEdit: (member: Member) => void;
   onNew: () => void;
   onChanged: () => void;
@@ -53,7 +55,7 @@ interface PendingDelete {
   count: number;
 }
 
-export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged }: Props) {
+export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew, onChanged }: Props) {
   const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
@@ -153,12 +155,18 @@ export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged 
           <div className="page-sub">{t("miembros.activos", { count: members.length })}</div>
         </div>
         <div className="header-actions">
-          <button className="btn secondary" onClick={() => setImportOpen(true)}>
-            <IconUpload size={13} /> {t("miembros.importarCsv")}
-          </button>
-          <button className="btn primary" onClick={onNew}>
-            <IconPlus size={14} /> {t("miembros.nuevo")}
-          </button>
+          {puedeCrear ? (
+            <>
+              <button className="btn secondary" onClick={() => setImportOpen(true)}>
+                <IconUpload size={13} /> {t("miembros.importarCsv")}
+              </button>
+              <button className="btn primary" onClick={onNew}>
+                <IconPlus size={14} /> {t("miembros.nuevo")}
+              </button>
+            </>
+          ) : (
+            <span className="form-hint">{t("miembros.padronSecretaria")}</span>
+          )}
         </div>
       </div>
 
@@ -205,7 +213,7 @@ export default function Miembros({ church, refreshKey, onEdit, onNew, onChanged 
             titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
             sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
             icon={<IconPlus size={20} strokeWidth={1.8} />}
-            accion={members.length === 0
+            accion={members.length === 0 && puedeCrear
               ? { label: t("miembros.nuevo"), onClick: onNew }
               : undefined}
           />

@@ -201,6 +201,7 @@ export const en: Resources = {
     activos_one: "{{count}} person on file",
     activos_other: "{{count}} people on file",
     importarCsv: "Import CSV",
+    padronSecretaria: "The membership roll is managed by the Secretariat: new members and imports are done from Membership.",
     nuevo: "New member",
     nuevoMiembro: "New member",
     posibleDuplicado: "Possible existing match: {{nombres}}. Check before duplicating; if it's a different person, press Save again.",

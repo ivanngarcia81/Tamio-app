@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { listMembers, type Church, type Member } from "../db";
 import type { Role } from "../role";
 import { puedeVer } from "../role";
-import { rutaPermitidaPorPlan } from "../plan";
+import { rutaPermitidaPorPlan, puedeCrearMiembros } from "../plan";
 import { authHabilitado } from "../supabase";
 import { ejecutarSync } from "../syncManager";
 import { showToast } from "../toast";
@@ -81,7 +81,7 @@ export default function CmdPalette({ church, role, onClose, onNavigate, onNuevo,
     const acciones: Array<{ id: string; label: string; visible: boolean; run: () => void }> = [
       { id: "nuevo-ingreso", label: t("cmdk.nuevoIngreso"), visible: role !== "secretaria", run: () => onNuevo("ingreso") },
       { id: "nuevo-gasto", label: t("cmdk.nuevoGasto"), visible: role !== "secretaria", run: () => onNuevo("gasto") },
-      { id: "nuevo-miembro", label: t("cmdk.nuevoMiembro"), visible: true, run: () => onNuevo("miembro") },
+      { id: "nuevo-miembro", label: t("cmdk.nuevoMiembro"), visible: puedeCrearMiembros(role, church.plan), run: () => onNuevo("miembro") },
       {
         id: "sync", label: t("cmdk.sincronizar"), visible: authHabilitado,
         run: () => { void ejecutarSync(); showToast(t("cmdk.sincronizando")); },

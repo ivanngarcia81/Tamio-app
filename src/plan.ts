@@ -37,6 +37,14 @@ export function incluyeSecretaria(plan: string): boolean {
   return plan === "completo" || plan === "secretaria";
 }
 
+/** ¿Puede este rol dar de alta / importar miembros? Cuando el plan incluye
+ *  Secretaría, el padrón tiene dueño (Membresía): el tesorero consulta y
+ *  edita datos de aportación, pero las altas se hacen allá. En plan "solo
+ *  Tesorería" no hay Secretaría y el tesorero mantiene su propio padrón. */
+export function puedeCrearMiembros(role: string, plan: string): boolean {
+  return role !== "tesorero" || !incluyeSecretaria(plan);
+}
+
 /** La integración entre áreas (Tesorería consume los miembros de Secretaría y
  *  Secretaría ve el reporte de Tesorería) es exclusiva del plan Completo. */
 export function integracionActiva(plan: string): boolean {
