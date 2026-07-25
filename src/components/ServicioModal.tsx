@@ -127,7 +127,7 @@ interface Props {
   /** null = servicio nuevo. */
   servicio: Servicio | null;
   /** Valores iniciales al crear (puente desde la Agenda). */
-  prefill?: { fecha?: string; tipo?: string } | null;
+  prefill?: { fecha?: string; tipo?: string; dirige?: string } | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -141,7 +141,7 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
 
   const [fecha, setFecha] = useState(servicio?.fecha ?? prefill?.fecha ?? hoyLocal());
   const [tipo, setTipo] = useState(servicio?.tipo ?? prefill?.tipo ?? "dominical");
-  const [dirige, setDirige] = useState(servicio?.dirige ?? "");
+  const [dirige, setDirige] = useState(servicio?.dirige ?? prefill?.dirige ?? "");
   const [predica, setPredica] = useState(servicio?.predica ?? "");
   const [tituloMensaje, setTituloMensaje] = useState(servicio?.titulo_mensaje ?? "");
   const [textoBiblico, setTextoBiblico] = useState(servicio?.texto_biblico ?? "");

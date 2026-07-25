@@ -685,6 +685,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 prefillServicio: {
                   fecha: detalle.fecha,
                   tipo: TIPO_SERVICIO_POR_ACTIVIDAD[detalle.tipo] ?? "otro",
+                  dirige: nombreResponsable(detalle) ?? undefined,
                 },
               },
             });
