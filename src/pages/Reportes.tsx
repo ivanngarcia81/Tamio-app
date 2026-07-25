@@ -16,6 +16,7 @@ import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
 import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconPrinter, IconSparkles, IconUpload } from "../icons";
+import HeaderMenu from "../components/HeaderMenu";
 import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
@@ -305,15 +306,14 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <IconSparkles size={14} /> {iaGenerando ? t("cartas.ia.generando") : t("reportes.ia.boton")}
             </button>
           )}
-          <button className="btn secondary" onClick={() => setImportOpen(true)}>
-            <IconUpload size={13} /> {t("miembros.importarCsv")}
-          </button>
-          <button className="btn secondary" onClick={handleAnnual} disabled={exporting !== null}>
-            <IconFileText size={13} /> {exporting === "anual" ? t("common.generando") : t("anual.boton")}
-          </button>
-          <button className="btn secondary" onClick={handlePrint} disabled={exporting !== null}>
-            <IconPrinter size={14} /> {exporting === "print" ? t("common.preparando") : t("common.imprimir")}
-          </button>
+          <HeaderMenu
+            label={t("common.mas")}
+            items={[
+              { label: t("miembros.importarCsv"), icon: <IconUpload size={13} />, onClick: () => setImportOpen(true) },
+              { label: exporting === "anual" ? t("common.generando") : t("anual.boton"), icon: <IconFileText size={13} />, disabled: exporting !== null, onClick: handleAnnual },
+              { label: exporting === "print" ? t("common.preparando") : t("common.imprimir"), icon: <IconPrinter size={14} />, disabled: exporting !== null, onClick: handlePrint },
+            ]}
+          />
           <button className="btn primary" onClick={() => handleExport("pdf")} disabled={exporting !== null}>
             {exporting === "pdf" ? t("common.generando") : "PDF"}
           </button>

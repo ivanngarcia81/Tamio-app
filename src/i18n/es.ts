@@ -1,5 +1,6 @@
 export const es = {
   common: {
+    mas: "Más",
     cancelar: "Cancelar",
     cerrar: "Cerrar",
     guardar: "Guardar",

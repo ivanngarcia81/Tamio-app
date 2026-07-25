@@ -6,6 +6,7 @@ type Resources = typeof es;
 
 export const en: Resources = {
   common: {
+    mas: "More",
     cancelar: "Cancel",
     cerrar: "Close",
     guardar: "Save",

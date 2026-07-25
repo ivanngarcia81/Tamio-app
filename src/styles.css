@@ -932,6 +932,13 @@ html.vibrancy .main { background: var(--surface); }
 .summary-5 .stat-card { padding: 18px 18px 16px; }
 .summary-5 .stat-value { font-size: var(--fs-stat-md); }
 .summary-5 .stat-value.md { font-size: var(--fs-stat-sm); }
+/* Summary — 8 cards (Informes): filas parejas de 4 en vez de 5+3 */
+.summary-8 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.summary-8 .stat-card { padding: 18px 18px 16px; }
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1317,13 +1324,13 @@ html.vibrancy .main { background: var(--surface); }
 .tag {
   display: inline-block;
   max-width: 100%;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--text-2);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: var(--track-caps);
+  letter-spacing: .02em;
   text-transform: uppercase;
   text-align: center;
   justify-self: center;
@@ -1885,7 +1892,9 @@ html.vibrancy .main { background: var(--surface); }
 .choice { cursor: pointer; border: 1.5px solid transparent; }
 .choice.is-selected { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink) inset; }
 
-.category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+/* 4 columnas y pastillas más bajas: 11 categorías de gasto caben en 3 filas
+   sin obligar a hacer scroll dentro del modal. */
+.category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .cat-pill {
   display: flex;
@@ -1893,10 +1902,10 @@ html.vibrancy .main { background: var(--surface); }
   justify-content: center;
   width: 100%;
   box-sizing: border-box;
-  min-height: 40px;
-  padding: 8px 6px;
+  min-height: 34px;
+  padding: 6px 6px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-align: center;
   line-height: 1.25;
@@ -2290,6 +2299,8 @@ html.vibrancy .main { background: var(--surface); }
   transition: background-color var(--dur) ease;
 }
 .row-menu-item:hover { background: var(--surface-2); }
+.row-menu-item.disabled { opacity: .45; cursor: default; }
+.row-menu-item.disabled:hover { background: transparent; }
 .row-menu-item:active { background: var(--line); }
 .row-menu-item.danger { color: #dc2626; }
 .row-menu-item.danger:hover { background: #fef2f2; }
@@ -2742,13 +2753,13 @@ html.vibrancy .main { background: var(--surface); }
   .report-preview .r-summary { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 860px) {
-  .summary-4, .summary-5 { grid-template-columns: repeat(2, 1fr); }
+  .summary-4, .summary-5, .summary-8 { grid-template-columns: repeat(2, 1fr); }
   .header { padding: 22px 20px 16px; flex-wrap: wrap; gap: 12px; }
   .content { padding: 6px 20px 24px; }
   .footer { padding: 18px 20px 22px; }
 }
 @media (max-width: 600px) {
-  .summary-4, .summary-5, .summary { grid-template-columns: 1fr; }
+  .summary-4, .summary-5, .summary-8, .summary { grid-template-columns: 1fr; }
   .report-preview .r-summary { grid-template-columns: 1fr; }
 }
 

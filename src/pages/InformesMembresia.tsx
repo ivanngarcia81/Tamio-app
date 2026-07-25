@@ -533,7 +533,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           <>
             {/* Tarjetas de resumen clicables — agrupadas en el lienzo. */}
             <div className="dash-canvas">
-            <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+            <div className="summary-8 enter">
               {tarjetas.map((c) => (
                 <button
                   key={c.id}
