@@ -644,7 +644,8 @@ export const en: Resources = {
     balance: "Balance",
     registrosImpresos: "Total records printed",
     fileEstadoFinanciero: "Financial-statement",
-    fileRegistro: "register",
+    fileRegistro: "Register",
+    resumenPorCategoria: "Summary by category",
   },
 
   csvVal: {

@@ -638,7 +638,8 @@ export const es = {
     balance: "Balance",
     registrosImpresos: "Total de registros impresos",
     fileEstadoFinanciero: "Estado-financiero",
-    fileRegistro: "registro",
+    fileRegistro: "Registro",
+    resumenPorCategoria: "Resumen por categoría",
   },
 
   csvVal: {
