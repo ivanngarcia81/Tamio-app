@@ -1,31 +1,17 @@
-import { useId } from "react";
+import tamioIconPng from "./assets/tamio-icon.png";
 
 interface IconProps {
   size?: number;
   strokeWidth?: number;
 }
 
-/** Logo de marca de Tamio: la "T" sobre barras de crecimiento, en el verde de
- *  ingresos del dashboard. Es el mismo símbolo del icono de la app; se usa en
- *  login, bienvenida y como placeholder del logo en el sidebar. Trae su propio
- *  fondo (cuadrado redondeado), así que va sobre superficie transparente. */
-export const IconTamio = ({ size = 44 }: { size?: number }) => {
-  const id = useId();
-  return (
-    <svg width={size} height={size} viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#34d399" />
-          <stop offset="1" stopColor="#059669" />
-        </linearGradient>
-      </defs>
-      <rect width="180" height="180" rx="42" fill={`url(#${id})`} />
-      {/* Monograma "T" limpio y centrado: se lee nítido incluso a 44px. */}
-      <rect x="46" y="52" width="88" height="22" rx="7" fill="#fff" />
-      <rect x="79" y="52" width="22" height="80" rx="7" fill="#fff" />
-    </svg>
-  );
-};
+/** Logo de marca de Tamio: el MISMO icono de la app (libro abierto + plumilla
+ *  sobre verde), copiado de src-tauri/icons — así login, bienvenida y el
+ *  placeholder del sidebar siempre coinciden con lo que se ve en el Dock.
+ *  El PNG trae su propio fondo con esquinas redondeadas y transparencia. */
+export const IconTamio = ({ size = 44 }: { size?: number }) => (
+  <img src={tamioIconPng} alt="" width={size} height={size} style={{ display: "block" }} draggable={false} />
+);
 
 function base(size: number, strokeWidth: number) {
   return {
