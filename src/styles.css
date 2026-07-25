@@ -701,6 +701,8 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 12px;
   /* 40px superiores: el titulo de pagina nunca queda pegado al borde de
      la ventana; todas las vistas arrancan a la misma altura. */
   padding: 40px var(--content-pad-x) 22px;
@@ -758,7 +760,9 @@ html.vibrancy .main { background: var(--surface); }
   margin-top: 6px;
 }
 
-.header-actions { display: flex; align-items: center; gap: 18px; }
+/* flex-wrap: en anchos de iPad la fila de acciones de Reportes no cabe
+   completa; envolver a una segunda línea es invisible donde sí cabe. */
+.header-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: flex-end; row-gap: 10px; }
 .icon-btn {
   display: inline-grid;
   place-items: center;

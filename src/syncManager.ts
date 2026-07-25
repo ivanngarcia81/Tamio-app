@@ -69,10 +69,9 @@ export function configurarSync(cid: number | null, on: boolean): void {
 /** Ejecuta una sincronización ahora (si está habilitada y no hay otra en curso). */
 export async function ejecutarSync(): Promise<void> {
   if (!habilitado || churchId == null || corriendo) return;
-  if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    set({ estado: "offline" });
-    return;
-  }
+  // Nota iOS: navigator.onLine miente en WKWebView (reporta false con red
+  // buena), así que NO se usa como veto. Se intenta siempre; si de verdad no
+  // hay conexión, la petición falla y el resultado marca "offline" abajo.
   corriendo = true;
   set({ estado: "sincronizando" });
   try {
