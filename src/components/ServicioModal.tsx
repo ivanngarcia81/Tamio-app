@@ -1,7 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  getServicioAsistencia, insertServicio, listMembersRoster, parseVisitantes, updateServicio,
+  buscarPosiblesDuplicados, getServicioAsistencia, insertServicio, insertVisitanteComoMiembro,
+  listMembersAsistencia, parseVisitantes, updateServicio,
   type AsistenciaEntry, type Church, type NewServicio, type Servicio, type ServicioVisitante,
 } from "../db";
 import { ChipGroup, Seccion } from "./FichaMiembroModal";
@@ -28,6 +29,9 @@ interface RosterState {
   razon: string;
   razonOtra: string;
   seguimiento: boolean;
+  /** Estado en el padrón (visitante/enProceso pintan etiqueta); ausente en
+   *  servicios guardados, donde el roster es un snapshot histórico. */
+  estadoMiembro?: string;
 }
 
 type Roster = Map<number, RosterState>;
@@ -73,6 +77,11 @@ const RosterRow = memo(function RosterRow({ id, estado, onToggle, onRazon, onRaz
       <label className="roster-name" htmlFor={`roster-${id}`} title={estado.nombre}>
         {estado.nombre}
       </label>
+      {estado.estadoMiembro && estado.estadoMiembro !== "activo" && (
+        <span className="tag donacion" style={{ flex: "none" }}>
+          {t(`membresia.estado.${estado.estadoMiembro}`)}
+        </span>
+      )}
       {!estado.presente && (
         <span className="roster-controls">
           <select
@@ -180,9 +189,9 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
       } else {
         // Nuevo: todos los miembros con estado Activo entran como ausentes;
         // la secretaria solo marca a los presentes.
-        const activos = await listMembersRoster(church.id);
+        const activos = await listMembersAsistencia(church.id);
         for (const a of activos) {
-          m.set(a.id, { nombre: a.nombre, presente: false, razon: "", razonOtra: "", seguimiento: false });
+          m.set(a.id, { nombre: a.nombre, presente: false, razon: "", razonOtra: "", seguimiento: false, estadoMiembro: a.estado });
         }
       }
       if (cancelado) return;
@@ -290,19 +299,64 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
 
   async function cargarActivos() {
     // Solo para servicios guardados antes del roster (snapshot vacío).
-    const activos = await listMembersRoster(church.id);
+    const activos = await listMembersAsistencia(church.id);
     setRoster((r) => {
       const m = new Map(r);
       for (const a of activos) {
-        if (!m.has(a.id)) m.set(a.id, { nombre: a.nombre, presente: false, razon: "", razonOtra: "", seguimiento: false });
+        if (!m.has(a.id)) m.set(a.id, { nombre: a.nombre, presente: false, razon: "", razonOtra: "", seguimiento: false, estadoMiembro: a.estado });
       }
       return m;
     });
   }
 
   // ----- Visitantes -----
+  // Aviso de posible duplicado al pasar un visitante al padrón: guarda el
+  // índice ya advertido; el segundo clic procede (patrón de dos clics).
+  const [padronConfirma, setPadronConfirma] = useState<number | null>(null);
+
   function setVisitante(i: number, patch: Partial<ServicioVisitante>) {
+    if (padronConfirma === i) setPadronConfirma(null);
     setVisitantes((vs) => vs.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  }
+
+  /** Da de alta al visitante en Membresía (estado "visitante"), lo pasa al
+   *  roster como presente y quita la fila de texto libre. El alta se escribe
+   *  de inmediato; la asistencia se guarda con el servicio. */
+  async function agregarAlPadron(i: number) {
+    const v = visitantes[i];
+    if (!v || !v.nombre.trim()) { setError(t("servicios.visitanteSinNombre")); return; }
+    setError(null);
+    try {
+      if (padronConfirma !== i) {
+        const dups = await buscarPosiblesDuplicados(church.id, {
+          nombre: v.nombre, telefono: v.telefono, correo: v.correo,
+        });
+        if (dups.length > 0) {
+          setPadronConfirma(i);
+          setError(t("servicios.padronPosibleDuplicado", {
+            nombres: dups.slice(0, 3).map((d) => d.nombre).join(", "),
+          }));
+          return;
+        }
+      }
+      const nuevoId = await insertVisitanteComoMiembro(church.id, v, fecha || hoyLocal());
+      if (nuevoId != null) {
+        setRoster((r) => {
+          const m = new Map(r);
+          m.set(nuevoId, {
+            nombre: v.nombre.trim(), presente: true, razon: "", razonOtra: "",
+            seguimiento: false, estadoMiembro: "visitante",
+          });
+          return m;
+        });
+      }
+      setVisitantes((vs) => vs.filter((_, j) => j !== i));
+      setPadronConfirma(null);
+      playSound("guardado");
+      showToast(t("servicios.padronAgregado", { nombre: v.nombre.trim() }));
+    } catch (e) {
+      setError(t("common.noSePudoGuardar", { error: String(e) }));
+    }
   }
 
   async function guardar() {
@@ -556,6 +610,9 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
                     value={v.notas ?? ""}
                     onChange={(e) => setVisitante(i, { notas: e.target.value })}
                   />
+                  <button type="button" className="btn secondary sm" title={t("servicios.agregarAlPadronTooltip")} onClick={() => void agregarAlPadron(i)}>
+                    <IconPlus size={12} /> {t("servicios.agregarAlPadron")}
+                  </button>
                   <button type="button" className="modal-close" title={t("common.eliminar")} onClick={() => setVisitantes((vs) => vs.filter((_, j) => j !== i))}>
                     <IconClose size={14} />
                   </button>

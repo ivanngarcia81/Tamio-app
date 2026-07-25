@@ -2609,6 +2609,54 @@ export async function listMembersRoster(churchId: number): Promise<{ id: number;
   );
 }
 
+/** Roster de ASISTENCIA de la Bitácora: además de los activos incluye
+ *  visitantes y personas en proceso — su asistencia también se registra, y
+ *  así un visitante recurrente se marca con un clic en vez de reescribirlo
+ *  como texto libre en cada servicio. */
+export async function listMembersAsistencia(
+  churchId: number
+): Promise<{ id: number; nombre: string; estado: string }[]> {
+  const d = await getDb();
+  return d.select<{ id: number; nombre: string; estado: string }[]>(
+    `SELECT id, nombre, estado_membresia AS estado FROM members
+      WHERE church_id = $1 AND activo = 1
+        AND estado_membresia IN ('activo', 'visitante', 'enProceso')
+        AND deleted = 0
+      ORDER BY nombre`,
+    [churchId]
+  );
+}
+
+/** Alta de un visitante de la Bitácora directo al padrón, con estado
+ *  "visitante": su asistencia queda ligada a members desde el primer día y,
+ *  cuando se convierta en miembro, su historial ya es uno solo. */
+export async function insertVisitanteComoMiembro(
+  churchId: number,
+  v: ServicioVisitante,
+  fechaServicio: string
+): Promise<number | null> {
+  const d = await getDb();
+  const notas = [
+    v.invitado_por?.trim() ? i18n.t("servicios.notaInvitadoPor", { nombre: v.invitado_por.trim() }) : null,
+    v.notas?.trim() || null,
+  ].filter(Boolean).join(" · ") || null;
+  await d.execute(
+    `INSERT INTO members (church_id, nombre, email, telefono, etiquetas, fecha_ingreso, notas, estado_membresia, uid, updated_at)
+     VALUES ($1,$2,$3,$4,'[]',$5,$6,'visitante',$7,datetime('now'))`,
+    [
+      churchId,
+      v.nombre.trim(),
+      (v.correo ?? "").trim() || null,
+      (v.telefono ?? "").trim() || null,
+      fechaServicio,
+      notas,
+      crypto.randomUUID(),
+    ]
+  );
+  const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
+  return rows[0]?.id ?? null;
+}
+
 // ---------- Mensajes internos (tesorería ↔ secretaría) ----------
 
 export interface Mensaje {
