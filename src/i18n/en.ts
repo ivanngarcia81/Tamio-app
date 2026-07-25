@@ -174,7 +174,7 @@ export const en: Resources = {
   },
 
   bandeja: {
-    titulo: "Inbox",
+    titulo: "Pending review",
     sinPendientes: "Nothing pending",
     porRevisar_one: "{{count}} transaction to review",
     porRevisar_other: "{{count}} transactions to review",
@@ -194,7 +194,7 @@ export const en: Resources = {
   miembros: {
     titulo: "Contributors",
     statTotal: "Contributors",
-    statDiezmadores: "Tithers",
+    statDiezmadores: "Tagged as tither",
     statAportaronAnio: "Gave this year",
     statTotalAnio: "Year total",
     activos_one: "{{count}} person on file",
@@ -202,6 +202,7 @@ export const en: Resources = {
     importarCsv: "Import CSV",
     nuevo: "New member",
     nuevoMiembro: "New member",
+    posibleDuplicado: "Possible existing match: {{nombres}}. Check before duplicating; if it's a different person, press Save again.",
     buscarPlaceholder: "Search by name, email or tax ID…",
     aunNoHay: "No members yet",
     sinResultados: "No results",
@@ -802,7 +803,7 @@ export const en: Resources = {
     statAltas: "Additions {{anio}}",
     statBajas: "Removals {{anio}}",
     statTotal: "All-time total",
-    filtro: { activos: "Active", bajas: "Removed", todos: "All" },
+    filtro: { activos: "On roll", bajas: "Removed", todos: "All" },
     colIngreso: "Join date",
     colEstado: "Status",
     estadoActivo: "Active",
@@ -1599,7 +1600,7 @@ export const en: Resources = {
     cardInactivos: "Inactive",
     cardNuevos: "New in period",
     cardRecibidos: "Received by transfer",
-    cardTrasladados: "Transferred out",
+    cardTrasladados: "Completed transfers (period)",
     cardFrecuentes: "Frequent absences",
     cardIncompletos: "Incomplete records",
     buscar: "Search by name or email…",

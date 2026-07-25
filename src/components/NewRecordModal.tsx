@@ -5,7 +5,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
-  METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
+  METODOS_PAGO, buscarPosiblesDuplicados, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
   insertMovimientoRecurrente, insertMember, insertTx, listMembers, nowLocalIso, updateMember, updateTx,
   type Church, type Member, type Tx,
 } from "../db";
@@ -69,6 +69,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [tab, setTab] = useState<ModalTab>(initialTab);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // true tras avisar de un posible duplicado: el siguiente Guardar procede.
+  const [duplicadoConfirmado, setDuplicadoConfirmado] = useState(false);
 
   // --- estado ingreso/gasto ---
   const now = nowLocalIso();
@@ -135,6 +137,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   useEffect(() => {
     listMembers(church.id).then(setMembers).catch(() => {});
   }, [church.id]);
+
+  // Si cambian los datos de identidad, el aviso de duplicado ya no aplica y
+  // el próximo Guardar vuelve a verificar.
+  useEffect(() => { setDuplicadoConfirmado(false); }, [mNombre, mTelefono, mEmail]);
 
   // Precargar el formulario cuando se abre en modo edición
   useEffect(() => {
@@ -417,7 +423,6 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     try {
       if (tab === "miembro") {
         if (!mNombre.trim()) { setError(t("validacion.nombreObligatorio")); return; }
-        setSaving(true);
         const payload = {
           nombre: mNombre.trim(),
           email: mEmail.trim() || null,
@@ -425,6 +430,22 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           rfc: mRfc.trim() || null,
           notas: mNotas.trim() || null,
         };
+        // Aviso de posible duplicado (nombre/teléfono/correo normalizados).
+        // No bloquea: el primer intento avisa con los nombres encontrados y el
+        // segundo clic guarda de todos modos (los homónimos reales existen).
+        if (mode.kind !== "editMember" && !duplicadoConfirmado) {
+          const dups = await buscarPosiblesDuplicados(church.id, {
+            nombre: payload.nombre, telefono: payload.telefono, correo: payload.email,
+          });
+          if (dups.length > 0) {
+            setDuplicadoConfirmado(true);
+            setError(t("recordModal.posibleDuplicado", {
+              nombres: dups.slice(0, 3).map((d) => d.nombre).join(", "),
+            }));
+            return;
+          }
+        }
+        setSaving(true);
         if (mode.kind === "editMember") {
           await updateMember(mode.member.id, church.id, payload);
         } else {

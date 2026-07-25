@@ -168,7 +168,7 @@ export const es = {
   },
 
   bandeja: {
-    titulo: "Bandeja",
+    titulo: "Por revisar",
     sinPendientes: "No tienes pendientes",
     porRevisar_one: "{{count}} movimiento por revisar",
     porRevisar_other: "{{count}} movimientos por revisar",
@@ -188,7 +188,7 @@ export const es = {
   miembros: {
     titulo: "Aportantes",
     statTotal: "Aportantes",
-    statDiezmadores: "Diezmadores",
+    statDiezmadores: "Con etiqueta diezmador",
     statAportaronAnio: "Aportaron este año",
     statTotalAnio: "Total del año",
     activos_one: "{{count}} persona registrada",
@@ -196,6 +196,7 @@ export const es = {
     importarCsv: "Importar CSV",
     nuevo: "Nuevo miembro",
     nuevoMiembro: "Nuevo miembro",
+    posibleDuplicado: "Puede que ya exista: {{nombres}}. Revisa antes de duplicar; si es otra persona, vuelve a pulsar Guardar.",
     buscarPlaceholder: "Buscar por nombre, email o RFC…",
     aunNoHay: "Aún no hay miembros",
     sinResultados: "Sin resultados",
@@ -796,7 +797,7 @@ export const es = {
     statAltas: "Altas {{anio}}",
     statBajas: "Bajas {{anio}}",
     statTotal: "Total histórico",
-    filtro: { activos: "Activos", bajas: "Bajas", todos: "Todos" },
+    filtro: { activos: "De alta", bajas: "De baja", todos: "Todos" },
     colIngreso: "Fecha de alta",
     colEstado: "Estado",
     estadoActivo: "Activo",
@@ -1593,7 +1594,7 @@ export const es = {
     cardInactivos: "Inactivos",
     cardNuevos: "Nuevos en el periodo",
     cardRecibidos: "Recibidos por traslado",
-    cardTrasladados: "Trasladados a otra iglesia",
+    cardTrasladados: "Traslados completados (periodo)",
     cardFrecuentes: "Con ausencias frecuentes",
     cardIncompletos: "Expedientes incompletos",
     buscar: "Buscar por nombre o correo…",
