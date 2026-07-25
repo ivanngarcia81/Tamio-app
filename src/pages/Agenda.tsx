@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
@@ -16,6 +17,24 @@ import LoadingState from "../components/LoadingState";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
+
+/** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
+ *  puente Agenda→Servicios ("Registrar en bitácora"). */
+const TIPO_SERVICIO_POR_ACTIVIDAD: Record<string, string> = {
+  cultoRegular: "dominical",
+  escuelaBiblica: "estudio",
+  vigilia: "vigilia",
+  campana: "evangelistico",
+  actividadJuvenil: "jovenes",
+  actividadDamas: "damas",
+  actividadCaballeros: "caballeros",
+  cultoEspecial: "especial",
+  santaCena: "especial",
+  bautismo: "especial",
+  presentacionNinos: "especial",
+  boda: "especial",
+  funeral: "especial",
+};
 
 type Vista = "mes" | "semana" | "lista" | "historial";
 
@@ -125,6 +144,7 @@ interface Props {
 
 export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [miembros, setMiembros] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -659,6 +679,16 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           onDuplicar={() => { setModal({ actividad: null, duplicarDe: detalle._master, fecha: null, mostrarRecurrencia: true }); setDetalle(null); }}
           onEliminar={() => abrirEliminar(detalle)}
           onEstado={(nuevo) => cambiarEstado(detalle, nuevo)}
+          onRegistrarServicio={() => {
+            navigate("/servicios", {
+              state: {
+                prefillServicio: {
+                  fecha: detalle.fecha,
+                  tipo: TIPO_SERVICIO_POR_ACTIVIDAD[detalle.tipo] ?? "otro",
+                },
+              },
+            });
+          }}
         />
       )}
 

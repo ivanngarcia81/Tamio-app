@@ -117,19 +117,21 @@ interface Props {
   church: Church;
   /** null = servicio nuevo. */
   servicio: Servicio | null;
+  /** Valores iniciales al crear (puente desde la Agenda). */
+  prefill?: { fecha?: string; tipo?: string } | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function ServicioModal({ church, servicio, onClose, onSaved }: Props) {
+export default function ServicioModal({ church, servicio, prefill, onClose, onSaved }: Props) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmDesmarcar, setConfirmDesmarcar] = useState(false);
 
-  const [fecha, setFecha] = useState(servicio?.fecha ?? hoyLocal());
-  const [tipo, setTipo] = useState(servicio?.tipo ?? "dominical");
+  const [fecha, setFecha] = useState(servicio?.fecha ?? prefill?.fecha ?? hoyLocal());
+  const [tipo, setTipo] = useState(servicio?.tipo ?? prefill?.tipo ?? "dominical");
   const [dirige, setDirige] = useState(servicio?.dirige ?? "");
   const [predica, setPredica] = useState(servicio?.predica ?? "");
   const [tituloMensaje, setTituloMensaje] = useState(servicio?.titulo_mensaje ?? "");

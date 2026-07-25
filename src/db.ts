@@ -1322,12 +1322,14 @@ export function estadoDeBaja(motivo: string | null): string {
   return "baja";
 }
 
-/** Registra un cambio de estado en el historial del miembro (v20). */
+/** Registra un cambio de estado en el historial del miembro (v20) y deja un
+ *  aviso en el Inbox: los miembros también son los aportantes de Tesorería,
+ *  así que el tesorero se entera de bajas/traslados sin preguntar. */
 async function registrarCambioEstadoMiembro(id: number, churchId: number, de: string, a: string): Promise<void> {
   if (de === a) return;
   const d = await getDb();
-  const rows = await d.select<{ historial_estados: string }[]>(
-    "SELECT historial_estados FROM members WHERE id = $1 AND church_id = $2",
+  const rows = await d.select<{ historial_estados: string; nombre: string }[]>(
+    "SELECT historial_estados, nombre FROM members WHERE id = $1 AND church_id = $2",
     [id, churchId]
   );
   let hist: { de: string; a: string; fecha: string }[] = [];
@@ -1336,6 +1338,12 @@ async function registrarCambioEstadoMiembro(id: number, churchId: number, de: st
   await d.execute("UPDATE members SET historial_estados = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3", [
     JSON.stringify(hist), id, churchId,
   ]);
+  try {
+    const etiqueta = (x: string) => i18n.t(`membresia.estado.${x}`, { defaultValue: x });
+    await insertMensaje(churchId, "secretaria", i18n.t("inboxAvisos.cambioEstado", {
+      nombre: rows[0]?.nombre ?? "—", de: etiqueta(de), a: etiqueta(a),
+    }));
+  } catch { /* el aviso nunca debe frenar el cambio de estado */ }
 }
 
 export async function darDeBajaMember(

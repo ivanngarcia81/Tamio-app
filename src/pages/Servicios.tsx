@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { currentMonth, deleteServicio, fmtFechaCorta, listServicios, type Church, type Servicio } from "../db";
 import { EmptyState } from "../components/TxList";
@@ -30,9 +31,24 @@ interface Props {
 
 export default function Servicios({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState<{ open: boolean; servicio: Servicio | null }>({ open: false, servicio: null });
+  const [prefill, setPrefill] = useState<{ fecha?: string; tipo?: string } | null>(null);
+
+  // Puente Agenda → Bitácora: si la Agenda navegó aquí con una actividad,
+  // se abre el registro nuevo con la fecha y el tipo ya puestos. El state se
+  // limpia enseguida para que un refresh no reabra el modal.
+  useEffect(() => {
+    const pre = (location.state as { prefillServicio?: { fecha?: string; tipo?: string } } | null)?.prefillServicio;
+    if (!pre) return;
+    setPrefill(pre);
+    setModal({ open: true, servicio: null });
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
   const [pendingDelete, setPendingDelete] = useState<Servicio | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -198,7 +214,8 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
         <ServicioModal
           church={church}
           servicio={modal.servicio}
-          onClose={() => setModal({ open: false, servicio: null })}
+          prefill={modal.servicio ? null : prefill}
+          onClose={() => { setModal({ open: false, servicio: null }); setPrefill(null); }}
           onSaved={onChanged}
         />
       )}

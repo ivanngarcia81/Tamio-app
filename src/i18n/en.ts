@@ -687,6 +687,9 @@ export const en: Resources = {
     items_other: "members",
   },
 
+  inboxAvisos: {
+    cambioEstado: "Notice from Secretariat: {{nombre}}'s membership status changed from {{de}} to {{a}}.",
+  },
   homeSinArea: {
     titulo: "This area is not in the current plan",
     subTesoreria: "The church's current plan does not include Treasury. Ask the administrator to review the plan in Settings.",
@@ -1751,6 +1754,7 @@ export const en: Resources = {
     accCompletar: "Mark completed",
     accCancelar: "Cancel",
     accDuplicar: "Duplicate",
+    accRegistrarServicio: "Log in service record",
     toastEstado: "Status updated",
     recurrenteBadge: "Repeats",
     secRepeticion: "Repetition",

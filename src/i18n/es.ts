@@ -681,6 +681,9 @@ export const es = {
     items_other: "miembros",
   },
 
+  inboxAvisos: {
+    cambioEstado: "Aviso de Secretaría: el estado de membresía de {{nombre}} cambió de {{de}} a {{a}}.",
+  },
   homeSinArea: {
     titulo: "Esta área no está en el plan actual",
     subTesoreria: "El plan contratado por la iglesia no incluye Tesorería. Pide al administrador revisar el plan en Configuración.",
@@ -1748,6 +1751,7 @@ export const es = {
     accCompletar: "Marcar completada",
     accCancelar: "Cancelar",
     accDuplicar: "Duplicar",
+    accRegistrarServicio: "Registrar en bitácora",
     toastEstado: "Estado actualizado",
     recurrenteBadge: "Se repite",
     // Repetición / recurrencia

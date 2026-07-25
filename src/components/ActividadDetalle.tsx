@@ -14,6 +14,8 @@ interface Props {
   onDuplicar: () => void;
   onEliminar: () => void;
   onEstado: (nuevoEstado: string) => void;
+  /** Abre la Bitácora de servicios con fecha y tipo prellenados. */
+  onRegistrarServicio?: () => void;
 }
 
 function Kv({ label, value }: { label: string; value: string | null }) {
@@ -27,7 +29,7 @@ function Kv({ label, value }: { label: string; value: string | null }) {
 }
 
 export default function ActividadDetalle({
-  actividad: a, responsableNombre, esRecurrente, onClose, onEditar, onDuplicar, onEliminar, onEstado,
+  actividad: a, responsableNombre, esRecurrente, onClose, onEditar, onDuplicar, onEliminar, onEstado, onRegistrarServicio,
 }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
@@ -90,6 +92,11 @@ export default function ActividadDetalle({
               </button>
             )}
             <button className="btn secondary sm" onClick={onDuplicar}>{t("agenda.accDuplicar")}</button>
+            {onRegistrarServicio && (
+              <button className="btn secondary sm" onClick={onRegistrarServicio}>
+                <IconEdit size={13} /> {t("agenda.accRegistrarServicio")}
+              </button>
+            )}
           </div>
         </div>
 
