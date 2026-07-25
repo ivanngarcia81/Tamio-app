@@ -3891,3 +3891,67 @@ html.vibrancy .main { background: var(--surface); }
   /* Las acciones que hoy aparecen al pasar el mouse deben verse siempre. */
   .row-actions { opacity: 1 !important; visibility: visible !important; }
 }
+
+/* ============================================================
+   Cajón lateral (iPhone / ventanas angostas). En anchos normales
+   nada de esto aplica: la hamburguesa y el telón viven ocultos.
+   ============================================================ */
+.menu-hamburguesa { display: none; }
+.menu-telon { display: none; }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+
+  .sidebar {
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    width: min(300px, 84vw);
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.32,.72,.35,1);
+    z-index: 120;
+    box-shadow: 12px 0 40px rgba(0,0,0,.22);
+  }
+  .app.menu-abierto .sidebar { transform: none; }
+
+  .menu-telon {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 11, .38);
+    z-index: 110;
+  }
+
+  .menu-hamburguesa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top));
+    left: 12px;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    cursor: pointer;
+    z-index: 100;
+  }
+
+  /* El contenido cede espacio al botón de menú. */
+  .header { padding-top: calc(52px + env(safe-area-inset-top)); }
+  .header-actions { justify-content: flex-start; }
+
+  /* Rejillas a una columna en teléfono. */
+  .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
+
+  /* Modales a pantalla casi completa. */
+  .modal-card { width: calc(100vw - 20px) !important; max-height: calc(100vh - 24px - env(safe-area-inset-top)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
+}

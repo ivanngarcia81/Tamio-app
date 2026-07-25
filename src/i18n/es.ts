@@ -737,6 +737,7 @@ export const es = {
     inbox: "Mensajes",
     porRevisar: "Por revisar",
     configuracion: "Configuración",
+    abrirMenu: "Abrir menú",
     ayuda: "Ayuda",
   },
 

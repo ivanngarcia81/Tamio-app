@@ -743,6 +743,7 @@ export const en: Resources = {
     inbox: "Inbox",
     porRevisar: "Pending review",
     configuracion: "Settings",
+    abrirMenu: "Open menu",
     ayuda: "Help",
   },
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -105,6 +105,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // Con login activo el rol viene del servidor; sin login, del selector manual.
   const { estado: authEstado, salir, guardarPerfil } = useSupabaseAuth();
   const [perfilAbierto, setPerfilAbierto] = useState(false);
+  // Cajón lateral en pantallas angostas (iPhone): la sidebar se oculta y se
+  // abre con el botón de menú; navegar la cierra sola.
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const location = useLocation();
+  useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
 
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
@@ -248,7 +253,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   }
 
   return (
-    <div className="app">
+    <div className={`app${menuAbierto ? " menu-abierto" : ""}`}>
       {/* Franja para arrastrar la ventana con la barra de título integrada.
           Además del atributo data-tauri-drag-region (que en macOS con ventana
           transparente a veces no engancha), se llama startDragging() a mano:
@@ -276,6 +281,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           onEditMember={openEditMember}
         />
       )}
+      <button
+        type="button"
+        className="menu-hamburguesa"
+        aria-label={t("nav.abrirMenu")}
+        aria-expanded={menuAbierto}
+        onClick={() => setMenuAbierto((v) => !v)}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></svg>
+      </button>
+      {menuAbierto && <div className="menu-telon" onClick={() => setMenuAbierto(false)} />}
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
       <main className="main">
         <UpdateBanner />
