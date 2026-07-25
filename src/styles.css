@@ -3857,3 +3857,33 @@ html.vibrancy .main { background: var(--surface); }
   color: var(--text-2); background: var(--surface-2); border-radius: 999px; padding: 2px 10px;
 }
 .sesion-box .btn { margin-top: 6px; }
+
+/* ============================================================
+   Base móvil (Fase 0 · iPad/iPhone). La clase .movil la pone
+   main.tsx al detectar iOS; pointer:coarse cubre el táctil.
+   ============================================================ */
+
+/* Sin barra de título de macOS: en iOS no hay ventana que arrastrar
+   y el hueco superior lo gobierna la safe-area del notch. */
+:root.movil .titlebar-drag { display: none; }
+:root.movil { -webkit-tap-highlight-color: transparent; }
+
+/* Respeta notch/isla dinámica y el home indicator. */
+:root.movil .sidebar { padding-top: calc(14px + env(safe-area-inset-top)); }
+:root.movil .content,
+:root.movil .header { padding-top: calc(12px + env(safe-area-inset-top)); }
+:root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+
+/* Objetivos táctiles (44pt según Apple) y 16px en inputs para que
+   iOS no haga zoom automático al enfocar. */
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn.sm { min-height: 36px; }
+  .icon-btn, .modal-close, .row-icon-btn { min-width: 40px; min-height: 40px; }
+  .seg, .chip { min-height: 40px; display: inline-flex; align-items: center; }
+  .form-input, .form-select, .form-textarea { font-size: 16px; min-height: 44px; }
+  .form-textarea { min-height: 88px; }
+  input[type="checkbox"] { width: 20px; height: 20px; }
+  /* Las acciones que hoy aparecen al pasar el mouse deben verse siempre. */
+  .row-actions { opacity: 1 !important; visibility: visible !important; }
+}

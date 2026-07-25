@@ -704,6 +704,7 @@ fn tray_balance(app: tauri::AppHandle, texto: String) {
     let _ = (app, texto);
 }
 
+#[cfg(desktop)]
 /// Menú nativo de la ventana, armado según el idioma de la app.
 /// El frontend llama `menu_language` al arrancar y al cambiar el idioma en
 /// Configuración; aquí se reconstruye el menú completo con los mismos ids,
@@ -787,12 +788,18 @@ fn construir_menu(app: &tauri::AppHandle, en: bool) -> tauri::Result<tauri::menu
 }
 
 /// Cambia el idioma del menú nativo. Lo llama el frontend con "es"/"en".
+/// En iOS/Android no hay menú de ventana: el comando existe pero no hace nada.
 #[tauri::command]
 fn menu_language(app: tauri::AppHandle, lang: String) {
-    let en = lang.starts_with("en");
-    if let Ok(menu) = construir_menu(&app, en) {
-        let _ = app.set_menu(menu);
+    #[cfg(desktop)]
+    {
+        let en = lang.starts_with("en");
+        if let Ok(menu) = construir_menu(&app, en) {
+            let _ = app.set_menu(menu);
+        }
     }
+    #[cfg(not(desktop))]
+    let _ = (app, lang);
 }
 
 /// Conexión única a la base cifrada (SQLite es rápido; el Mutex basta).
@@ -873,11 +880,12 @@ fn iniciar_db(app: &tauri::AppHandle) -> Result<rusqlite::Connection, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(desktop)]
     use tauri::menu::{MenuBuilder, MenuItemBuilder};
     use tauri::Emitter;
     use tauri::Manager;
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -889,6 +897,7 @@ pub fn run() {
 
             // Menú nativo de macOS. Arranca en español; el frontend llama
             // menu_language con el idioma real apenas inicia i18n.
+            #[cfg(desktop)]
             app.set_menu(construir_menu(app.handle(), false)?)?;
 
             // Ícono en la barra de menús (junto al reloj): muestra el balance
@@ -934,8 +943,11 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup])
-        .on_menu_event(|app, event| {
+        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup]);
+
+    // El menú de ventana (y sus eventos) solo existe en escritorio.
+    #[cfg(desktop)]
+    let builder = builder.on_menu_event(|app, event| {
             let id = event.id().as_ref();
             if let Some(ruta) = id.strip_prefix("nav:") {
                 let _ = app.emit("menu-nav", ruta.to_string());
@@ -963,7 +975,9 @@ pub fn run() {
                 "tour" => { let _ = app.emit("menu-tour", ()); }
                 _ => {}
             }
-        })
+        });
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
