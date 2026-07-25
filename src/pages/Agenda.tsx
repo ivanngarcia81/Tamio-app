@@ -17,6 +17,7 @@ import LoadingState from "../components/LoadingState";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
+import CountUp from "../components/CountUp";
 
 /** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
  *  puente Agenda→Servicios ("Registrar en bitácora"). */
@@ -455,19 +456,19 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
         <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           <div className="stat-card accent" style={accent("var(--accent-3)")}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md">{stats.deHoy}</div>
+            <div className="stat-value md"><CountUp value={stats.deHoy} format={String} /></div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-4)")}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statSemana")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md">{stats.deSemana}</div>
+            <div className="stat-value md"><CountUp value={stats.deSemana} format={String} /></div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-1)")}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statProximas")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md">{stats.proximas}</div>
+            <div className="stat-value md"><CountUp value={stats.proximas} format={String} /></div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-5)")}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md">{stats.porConfirmar}</div>
+            <div className="stat-value md"><CountUp value={stats.porConfirmar} format={String} /></div>
           </div>
         </div>
         </div>

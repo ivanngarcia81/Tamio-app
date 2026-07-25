@@ -11,6 +11,7 @@ import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconBookOpen, IconMiembros, IconPlus, IconSearch } from "../icons";
+import CountUp from "../components/CountUp";
 
 const COLS = "110px 1.8fr 1fr 130px 40px";
 const PAGE_SIZE = 25;
@@ -126,21 +127,21 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
               <span className="stat-label">{t("servicios.statServiciosMes")}</span>
               <div className="stat-icon neutral"><IconBookOpen size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{statsMes.servicios}</div>
+            <div className="stat-value md"><CountUp value={statsMes.servicios} format={String} /></div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("servicios.statAsistenciaPromedio")}</span>
               <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{statsMes.promedio || "—"}</div>
+            <div className="stat-value md">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-1)")}>
             <div className="stat-head">
               <span className="stat-label">{t("servicios.statVisitantesMes")}</span>
               <div className="stat-icon neutral"><IconPlus size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{statsMes.visitantes}</div>
+            <div className="stat-value md"><CountUp value={statsMes.visitantes} format={String} /></div>
           </div>
         </div>
         </div>

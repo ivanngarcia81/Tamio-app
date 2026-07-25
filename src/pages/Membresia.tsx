@@ -16,6 +16,7 @@ import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconArrowDown, IconArrowUp, IconEdit, IconEye, IconIdBadge, IconMiembros, IconPlus, IconSearch } from "../icons";
+import CountUp from "../components/CountUp";
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 const COLS = "1.7fr 1fr 130px 190px 40px";
@@ -150,28 +151,28 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               <span className="stat-label">{t("membresia.statActivos")}</span>
               <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{stats?.activos ?? "—"}</div>
+            <div className="stat-value md">{stats ? <CountUp value={stats.activos} format={String} /> : "—"}</div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-1)")}>
             <div className="stat-head">
               <span className="stat-label">{t("membresia.statAltas", { anio })}</span>
               <div className="stat-icon neutral"><IconArrowUp size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{stats?.altasAnio ?? "—"}</div>
+            <div className="stat-value md">{stats ? <CountUp value={stats.altasAnio} format={String} /> : "—"}</div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-3)")}>
             <div className="stat-head">
               <span className="stat-label">{t("membresia.statBajas", { anio })}</span>
               <div className="stat-icon neutral"><IconArrowDown size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{stats?.bajasAnio ?? "—"}</div>
+            <div className="stat-value md">{stats ? <CountUp value={stats.bajasAnio} format={String} /> : "—"}</div>
           </div>
           <div className="stat-card accent" style={accent("var(--accent-5)")}>
             <div className="stat-head">
               <span className="stat-label">{t("membresia.statTotal")}</span>
               <div className="stat-icon neutral"><IconIdBadge size={15} strokeWidth={1.8} /></div>
             </div>
-            <div className="stat-value md">{stats?.total ?? "—"}</div>
+            <div className="stat-value md">{stats ? <CountUp value={stats.total} format={String} /> : "—"}</div>
           </div>
         </div>
         </div>

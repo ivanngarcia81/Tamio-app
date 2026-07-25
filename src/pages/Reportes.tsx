@@ -20,6 +20,7 @@ import HeaderMenu from "../components/HeaderMenu";
 import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
+import CountUp from "../components/CountUp";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -331,22 +332,22 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
-            <div className="stat-value md">{fmtMoney(ingresos)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
-            <div className="stat-value md">{fmtMoney(gastos)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
-            <div className="stat-value md">{fmtMoney(balance)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={balance} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
-            <div className="stat-value md">{fmtMoney(balanceAnt)}<span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot">{mesLegible(mesAnterior)}</div>
           </div>
         </div>

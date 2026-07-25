@@ -16,6 +16,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
 import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
+import CountUp from "../components/CountUp";
 
 const TAG_CLASS: Record<string, string> = {
   diezmador: "diezmo",
@@ -176,19 +177,19 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
-                <div className="stat-value md">{resumen.total}</div>
+                <div className="stat-value md"><CountUp value={resumen.total} format={String} /></div>
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statDiezmadores")}</span></div>
-                <div className="stat-value md">{resumen.diezmadores}</div>
+                <div className="stat-value md"><CountUp value={resumen.diezmadores} format={String} /></div>
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statAportaronAnio")}</span></div>
-                <div className="stat-value md">{resumen.aportaron}</div>
+                <div className="stat-value md"><CountUp value={resumen.aportaron} format={String} /></div>
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
-                <div className="stat-value md">{fmtMoney(resumen.totalAnio)}<span className="stat-cur">{church.moneda}</span></div>
+                <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
               </div>
             </div>
           </div>

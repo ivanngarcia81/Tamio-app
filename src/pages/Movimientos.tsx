@@ -19,6 +19,7 @@ import {
   IconPlus, IconPrinter, IconRepeat, IconSearch, IconWarn,
 } from "../icons";
 import { printRegister } from "../services/print/printRegister";
+import CountUp from "../components/CountUp";
 
 interface Props {
   church: Church;
@@ -199,7 +200,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   <span className="stat-label">{t("mov.totalDelMes")}</span>
                 </div>
                 <div className="stat-value md">
-                  {fmtMoney(totalMes)}<span className="stat-cur">{church.moneda}</span>
+                  <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
                 </div>
               </div>
               {categorias.slice(0, 3).map((c) => {
@@ -212,7 +213,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       <span className={`tag ${c.tagClass} cat-dot`} aria-hidden="true" />
                     </div>
                     <div className="stat-value md">
-                      {fmtMoney(v)}<span className="stat-cur">{church.moneda}</span>
+                      <CountUp value={v} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
                     </div>
                     <div className="stat-bar">
                       <div className="stat-bar-fill" style={{ width: `${pct}%`, background: "var(--accent-1)" }} />

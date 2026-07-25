@@ -10,6 +10,7 @@ import DepositoModal from "../components/DepositoModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { IconBank, IconPlus } from "../icons";
+import CountUp from "../components/CountUp";
 
 const PAGE_SIZE = 40;
 
@@ -88,7 +89,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
               <div className="stat-icon neutral"><IconBank size={15} strokeWidth={1.8} /></div>
             </div>
             <div className="stat-value md">
-              {fmtMoney(totalMes)}<span className="stat-cur">{church.moneda}</span>
+              <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">
               {t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}

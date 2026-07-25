@@ -26,6 +26,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services/cartas/cartaDoc";
 import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
+import CountUp from "../components/CountUp";
 
 const COLS = "130px 1.8fr 110px 150px 130px 70px";
 const COLS_SOL = "120px 1.6fr 120px 110px 140px 70px";
@@ -480,30 +481,30 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
             <div className="summary-4 enter">
               <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
-                <div className="stat-value md">{resumen.enPreparacion}</div>
+                <div className="stat-value md"><CountUp value={resumen.enPreparacion} format={String} /></div>
               </button>
               <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={() => irAArchivoFiltrado("firma")}>
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardFirma")}</span></div>
-                <div className="stat-value md">{resumen.esperandoFirma}</div>
+                <div className="stat-value md"><CountUp value={resumen.esperandoFirma} format={String} /></div>
               </button>
               <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={() => irAArchivoFiltrado("lista")}>
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
-                <div className="stat-value md">{resumen.listas}</div>
+                <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
               </button>
               <button className="stat-card accent" style={accent("var(--accent-2)")} onClick={() => irAArchivoFiltrado("entregada")}>
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardEmitidasMes")}</span></div>
-                <div className="stat-value md">{resumen.emitidasMes}</div>
+                <div className="stat-value md"><CountUp value={resumen.emitidasMes} format={String} /></div>
               </button>
               <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
                 <div className="stat-head"><span className="stat-label">{t("traslados.cardSalidaProceso")}</span></div>
                 <div className="stat-value md">
-                  {trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}
+                  <CountUp value={trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length} format={String} />
                 </div>
               </button>
               <button className="stat-card accent" style={accent("var(--accent-6, var(--accent-3))")} onClick={() => cambiarTab("entrada")}>
                 <div className="stat-head"><span className="stat-label">{t("traslados.cardEntradaRevision")}</span></div>
                 <div className="stat-value md">
-                  {trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}
+                  <CountUp value={trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length} format={String} />
                 </div>
               </button>
             </div>

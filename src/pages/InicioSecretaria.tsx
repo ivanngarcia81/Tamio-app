@@ -8,6 +8,7 @@ import {
 import { camposFaltantes } from "../services/informes/membresia";
 import { expandirTodas } from "../services/agenda/recurrencia";
 import LoadingState from "../components/LoadingState";
+import CountUp from "../components/CountUp";
 import {
   IconCalendar, IconClipboardList, IconIdBadge, IconMail, IconMiembros, IconWarn,
 } from "../icons";
@@ -97,28 +98,28 @@ export default function InicioSecretaria({ church, refreshKey }: Props) {
                   <span className="stat-label">{t("inicioSec.statActivos")}</span>
                   <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
                 </div>
-                <div className="stat-value md">{stats?.activos ?? 0}</div>
+                <div className="stat-value md"><CountUp value={stats?.activos ?? 0} format={String} /></div>
               </div>
               <div className="stat-card accent" style={accent("var(--accent-4)")}>
                 <div className="stat-head">
                   <span className="stat-label">{t("inicioSec.statAltas", { anio: currentYear() })}</span>
                   <div className="stat-icon neutral"><IconIdBadge size={15} strokeWidth={1.8} /></div>
                 </div>
-                <div className="stat-value md">{stats?.altasAnio ?? 0}</div>
+                <div className="stat-value md"><CountUp value={stats?.altasAnio ?? 0} format={String} /></div>
               </div>
               <div className="stat-card accent" style={accent("var(--accent-5)")}>
                 <div className="stat-head">
                   <span className="stat-label">{t("inicioSec.statIncompletos")}</span>
                   <div className="stat-icon neutral"><IconWarn size={15} strokeWidth={1.8} /></div>
                 </div>
-                <div className="stat-value md">{incompletos}</div>
+                <div className="stat-value md"><CountUp value={incompletos} format={String} /></div>
               </div>
               <div className="stat-card accent" style={accent("var(--accent-3)")}>
                 <div className="stat-head">
                   <span className="stat-label">{t("inicioSec.statProximas")}</span>
                   <div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div>
                 </div>
-                <div className="stat-value md">{proximas.length}</div>
+                <div className="stat-value md"><CountUp value={proximas.length} format={String} /></div>
               </div>
             </div>
 

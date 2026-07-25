@@ -23,6 +23,7 @@ import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { IconEdit, IconMiembros, IconPrinter, IconSearch } from "../icons";
+import CountUp from "../components/CountUp";
 
 const COLS = "1.5fr 150px 1.4fr 140px 44px";
 const PAGE_SIZE = 25;
@@ -545,7 +546,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                   onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
                 >
                   <div className="stat-head"><span className="stat-label">{c.label}</span></div>
-                  <div className="stat-value md">{c.valor}</div>
+                  <div className="stat-value md"><CountUp value={c.valor} format={String} /></div>
                 </button>
               ))}
             </div>
@@ -651,19 +652,19 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("informes.totalServicios")}</span></div>
-                <div className="stat-value md">{asistGeneral.totalServicios}</div>
+                <div className="stat-value md"><CountUp value={asistGeneral.totalServicios} format={String} /></div>
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("informes.asistenciaTotal")}</span></div>
-                <div className="stat-value md">{asistGeneral.asistenciaTotal}</div>
+                <div className="stat-value md"><CountUp value={asistGeneral.asistenciaTotal} format={String} /></div>
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("informes.promedioServicio")}</span></div>
-                <div className="stat-value md">{asistGeneral.promedioPorServicio}</div>
+                <div className="stat-value md"><CountUp value={asistGeneral.promedioPorServicio} format={String} /></div>
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("informes.pctGeneral")}</span></div>
-                <div className="stat-value md">{asistGeneral.pctGeneral !== null ? `${asistGeneral.pctGeneral}%` : "—"}</div>
+                <div className="stat-value md">{asistGeneral.pctGeneral !== null ? <CountUp value={asistGeneral.pctGeneral} format={(n) => `${n}%`} /> : "—"}</div>
               </div>
             </div>
 
