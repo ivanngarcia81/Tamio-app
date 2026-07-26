@@ -3584,24 +3584,33 @@ const TABLAS_DATOS = [
  *  personalizadas, las plantillas de cartas y los usuarios locales. */
 export async function borrarDatosIglesia(churchId: number): Promise<void> {
   const d = await getDb();
-  // Todo dentro de UNA transacción con defer_foreign_keys: SQLite pospone la
-  // comprobación de claves foráneas hasta el COMMIT, cuando ya no queda
-  // ninguna fila hija, así que el orden de borrado deja de importar y la
-  // operación es atómica (todo o nada). Antes fallaba con "FOREIGN KEY
-  // constraint failed" porque members se borraba antes que cartas,
-  // solicitudes y traslados, que lo referencian con RESTRICT (y cartas antes
-  // que quienes la referencian). Verificado con SQLite real reproduciendo el
-  // esquema y sus claves foráneas.
+  // Borrado SUAVE (deleted = 1), NO duro. Con la nube activa, un DELETE local
+  // no se propaga: la siguiente sincronización volvía a BAJAR los registros
+  // desde la nube (que seguían con deleted = 0) y reaparecían — por eso
+  // "decía que borró pero no borraba nada". El borrado suave, en cambio, se
+  // sube a la nube y se propaga a los demás dispositivos, y las listas
+  // locales ya excluyen deleted = 1, así que desaparecen de la vista al
+  // instante. updated_at = ahora evita que una bajada con timestamp viejo los
+  // "reviva" (gana la fila más reciente). Como es un UPDATE, no hay riesgo de
+  // clave foránea, así que ya no hace falta defer_foreign_keys.
+  //
+  // gastos_recurrentes es la única tabla de datos SIN columna deleted y que
+  // NO se sincroniza: esa sí se borra en duro (no puede reaparecer).
+  const suaves = TABLAS_DATOS.filter((t) => t !== "gastos_recurrentes");
   await d.execute("BEGIN");
   try {
-    await d.execute("PRAGMA defer_foreign_keys = ON");
+    for (const tabla of suaves) {
+      await d.execute(
+        `UPDATE ${tabla} SET deleted = 1, updated_at = datetime('now') WHERE church_id = $1 AND deleted = 0`,
+        [churchId]
+      );
+    }
+    // servicio_asistencia enlaza por servicio_id (no tiene church_id).
     await d.execute(
-      "DELETE FROM servicio_asistencia WHERE servicio_id IN (SELECT id FROM servicios WHERE church_id = $1)",
+      "UPDATE servicio_asistencia SET deleted = 1, updated_at = datetime('now') WHERE servicio_id IN (SELECT id FROM servicios WHERE church_id = $1) AND deleted = 0",
       [churchId]
     );
-    for (const tabla of TABLAS_DATOS) {
-      await d.execute(`DELETE FROM ${tabla} WHERE church_id = $1`, [churchId]);
-    }
+    await d.execute("DELETE FROM gastos_recurrentes WHERE church_id = $1", [churchId]);
     await d.execute("COMMIT");
   } catch (e) {
     await d.execute("ROLLBACK").catch(() => { /* la transacción ya se deshizo */ });
