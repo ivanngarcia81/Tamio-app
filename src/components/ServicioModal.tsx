@@ -581,6 +581,17 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
                 <input className="form-input" value={totalConteo} disabled style={{ fontWeight: 700 }} />
               </div>
             </div>
+
+            {/* El conteo de arriba y la lista de asistencia son dos registros
+                distintos: el conteo alimenta la bitácora de cultos y la lista
+                alimenta el informe por miembro. Si se llena uno y no el otro,
+                la app parece contradecirse (un culto "con 4 asistentes" y un
+                informe que no muestra a nadie), así que se avisa aquí. */}
+            {totalConteo > 0 && totalPresentes === 0 && (
+              <div className="form-warning" style={{ marginBottom: 12 }}>
+                {t("servicios.avisoConteoSinLista", { n: totalConteo })}
+              </div>
+            )}
           </Seccion>
 
           <Seccion titulo={t("servicios.visitantes")}>

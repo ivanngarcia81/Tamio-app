@@ -1160,6 +1160,7 @@ export const en: Resources = {
     jovenes: "Youth",
     adultos: "Adults",
     totalPresentes: "Total present",
+    avisoConteoSinLista: "You entered {{n}} in the headcount but marked no one as present in the attendance list. The headcount feeds the service log; the list feeds the per-member report, which will be empty for this service.",
     eventosPlaceholder: "Conversions, baptisms, child dedications, or other special events…",
     tipo: {
       dominical: "Sunday service",
@@ -1640,6 +1641,7 @@ export const en: Resources = {
     sinDatos: "No data in the period.",
     asistVacioTitulo: "No service records",
     asistVacioSub: "There aren't enough service records yet to calculate attendance.",
+    avisoSinListaAsistencia: "The {{n}} services in this period have a headcount, but none recorded the per-member attendance list. That is why per-person attendance is empty: mark it when editing each service, in the attendance section.",
     periodo: {
       mes: "Month",
       trimestre: "Quarter",

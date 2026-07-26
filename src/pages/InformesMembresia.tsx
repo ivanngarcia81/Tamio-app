@@ -647,6 +647,15 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           <EmptyState titulo={t("informes.asistVacioTitulo")} sub={t("informes.asistVacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
         ) : (
           <>
+            {/* Hay cultos en el periodo pero ninguno registró la lista de
+                asistencia por miembro. Sin este aviso la pantalla parece rota:
+                la bitácora informa asistentes y aquí sale "—" para todos. */}
+            {asistenciaRaw.length === 0 && (
+              <div className="form-warning" style={{ marginBottom: 14 }}>
+                {t("informes.avisoSinListaAsistencia", { n: servicios.length })}
+              </div>
+            )}
+
             {/* Indicadores generales + destacados: panel de resumen. */}
             <div className="dash-canvas">
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>

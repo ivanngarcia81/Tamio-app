@@ -1154,6 +1154,7 @@ export const es = {
     jovenes: "Jóvenes",
     adultos: "Adultos",
     totalPresentes: "Total presentes",
+    avisoConteoSinLista: "Anotaste {{n}} en el conteo pero no marcaste a nadie como presente en la lista de asistencia. El conteo alimenta la bitácora de cultos; la lista alimenta el informe por miembro, que quedará vacío para este culto.",
     eventosPlaceholder: "Conversiones, bautismos, presentaciones de niños u otros eventos especiales…",
     tipo: {
       dominical: "Culto dominical",
@@ -1634,6 +1635,7 @@ export const es = {
     sinDatos: "Sin datos en el periodo.",
     asistVacioTitulo: "Sin registros de cultos",
     asistVacioSub: "Todavía no hay suficientes registros de cultos para calcular la asistencia.",
+    avisoSinListaAsistencia: "Los {{n}} cultos de este periodo tienen conteo de asistentes, pero ninguno registró la lista de asistencia por miembro. Por eso la asistencia por persona aparece vacía: se marca al editar cada culto, en la sección de asistencia.",
     periodo: {
       mes: "Mes",
       trimestre: "Trimestre",
