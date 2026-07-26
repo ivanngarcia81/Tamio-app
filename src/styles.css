@@ -1677,6 +1677,7 @@ html.vibrancy .main { background: var(--surface); }
 .modal-overlay {
   position: fixed;
   inset: 0;
+  z-index: 150; /* sobre la barra móvil y el botón ☰ (90/100) */
   background: rgba(15,15,15,.45);
   backdrop-filter: blur(2px);
   display: flex;
@@ -2801,7 +2802,7 @@ html.vibrancy .main { background: var(--surface); }
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  z-index: 100;
+  z-index: 300; /* los toasts siempre visibles, incluso sobre modales/visor */
   pointer-events: none;
 }
 .toast {
@@ -2843,7 +2844,7 @@ html.vibrancy .main { background: var(--surface); }
 .welcome-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 160; /* sobre la barra móvil, el ☰ y los modales */
   display: grid;
   place-items: center;
   overflow-y: auto;
@@ -3651,6 +3652,7 @@ html.vibrancy .main { background: var(--surface); }
 .login-screen {
   position: fixed;
   inset: 0;
+  z-index: 170; /* cubre todo el shell (incluida la barra móvil) */
   display: grid;
   place-items: center;
   padding: 24px;
@@ -3902,6 +3904,21 @@ html.vibrancy .main { background: var(--surface); }
 @media (max-width: 760px) {
   .app { grid-template-columns: 1fr; }
 
+  /* Barra superior fija (estilo iOS): fondo difuminado bajo el botón ☰,
+     para que al hacer scroll el contenido pase por debajo con elegancia
+     en vez de chocar con el botón. */
+  .app::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(58px + env(safe-area-inset-top));
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+    z-index: 90;
+  }
+
   .sidebar {
     position: fixed;
     top: 0; bottom: 0; left: 0;
@@ -3939,8 +3956,12 @@ html.vibrancy .main { background: var(--surface); }
     z-index: 100;
   }
 
-  /* El contenido cede espacio al botón de menú. */
-  .header { padding-top: calc(52px + env(safe-area-inset-top)); }
+  /* El contenido arranca debajo de la barra superior fija y, al hacer
+     scroll, se desliza por debajo de su difuminado. */
+  .main { padding-top: calc(58px + env(safe-area-inset-top)); }
+  /* La safe-area ya la cubre .main; se anula también la regla de iPad
+     (:root.movil .header), que tiene más especificidad que ".header". */
+  .header, :root.movil .header { padding-top: 18px; }
   .header-actions { justify-content: flex-start; }
 
   /* Rejillas a una columna en teléfono. */
