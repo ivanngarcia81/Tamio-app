@@ -2848,7 +2848,8 @@ html.vibrancy .main { background: var(--surface); }
   display: grid;
   place-items: center;
   overflow-y: auto;
-  padding: 40px;
+  /* En teléfono el margen se reduce para que la tarjeta quepa completa. */
+  padding: clamp(14px, 5vw, 40px);
   isolation: isolate;
   color-scheme: dark;
   background-color: #04100c;
@@ -2897,6 +2898,10 @@ html.vibrancy .main { background: var(--surface); }
    versión oscura, replicando el tratamiento del login e independiente del tema
    de la app. */
 .welcome-overlay .card {
+  /* Como hijo de grid, sin esto el "min-content" interno (p. ej. el selector
+     de idioma) puede ganarle al max-width y desbordar la pantalla en iPhone. */
+  min-width: 0;
+  max-width: 100%;
   background: rgba(20, 21, 27, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
@@ -3695,6 +3700,7 @@ html.vibrancy .main { background: var(--surface); }
 .login-split {
   position: relative;
   width: 100%;
+  min-width: 0; /* mismo seguro anti-desborde que la tarjeta de bienvenida */
   max-width: 400px;
   display: flex;
   justify-content: center;
@@ -3971,6 +3977,10 @@ html.vibrancy .main { background: var(--surface); }
 
   /* Modales a pantalla casi completa. */
   .modal-card { width: calc(100vw - 20px) !important; max-height: calc(100vh - 24px - env(safe-area-inset-top)); }
+
+  /* Si un selector segmentado no cabe (p. ej. idiomas en la bienvenida),
+     que se pueda desplazar de lado en vez de desbordar la tarjeta. */
+  .tabs-segmented { max-width: 100%; overflow-x: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
