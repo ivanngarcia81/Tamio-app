@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
   insertMember, listMembers, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
@@ -200,7 +201,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
             <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
-              placeholder={t("miembros.buscarPlaceholder")}
+              placeholder={textoCorto(t("common.buscarCorto"), t("miembros.buscarPlaceholder"))}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import { deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -107,7 +108,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
             <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
-              placeholder={t("actas.buscarPlaceholder")}
+              placeholder={textoCorto(t("common.buscarCorto"), t("actas.buscarPlaceholder"))}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

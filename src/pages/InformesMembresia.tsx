@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import {
   currentMonth, currentYear, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
   listServiciosLigero, listTrasladosEntrada, listTrasladosSalida,
@@ -556,7 +557,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
               <div className="search-input-wrap" style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
                 <IconSearch size={15} strokeWidth={2} />
-                <input className="form-input" placeholder={t("informes.buscar")} value={query} onChange={(e) => setQuery(e.target.value)} />
+                <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("informes.buscar"))} value={query} onChange={(e) => setQuery(e.target.value)} />
               </div>
               <select className="form-input" style={{ width: "auto" }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label={t("membresia.colEstado")}>
                 <option value="todos">{t("informes.filtroTodosEstados")}</option>

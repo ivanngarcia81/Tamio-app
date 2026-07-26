@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import {
   catNombre, categoriaInfo, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
   getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
@@ -280,7 +281,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 <IconSearch size={15} strokeWidth={2} />
                 <input
                   className="form-input"
-                  placeholder={t("mov.buscarPlaceholder")}
+                  placeholder={textoCorto(t("common.buscarCorto"), t("mov.buscarPlaceholder"))}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />

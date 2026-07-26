@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -766,7 +767,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                         className="form-input"
                         value={aportanteQuery}
                         onChange={(e) => { setAportanteQuery(e.target.value); setAportanteId(null); }}
-                        placeholder={t("recordModal.buscarMiembro")}
+                        placeholder={textoCorto(t("common.buscarMiembroCorto"), t("recordModal.buscarMiembro"))}
                       />
                       {sugerencias.length > 0 && (
                         <div className="search-suggest">

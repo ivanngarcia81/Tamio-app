@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import {
   deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
   estadoAnteriorDeHistorial, fmtFechaCorta, insertCarta,
@@ -465,7 +466,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
-        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
           {(["resumen", "nueva", "solicitudes", "salida", "entrada", "plantillas", "archivo"] as Tab[]).map((tb) => (
             <button key={tb} className={`chip${tab === tb ? " active" : ""}`} onClick={() => cambiarTab(tb)}>
               {t(`cartas.tab.${tb}`)}
@@ -808,7 +809,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <IconSearch size={15} strokeWidth={2} />
                 <input
                   className="form-input"
-                  placeholder={t("cartas.buscarPlaceholder")}
+                  placeholder={textoCorto(t("common.buscarCorto"), t("cartas.buscarPlaceholder"))}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />

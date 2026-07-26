@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import {
   buscarPosiblesDuplicados, getServicioAsistencia, insertServicio, insertVisitanteComoMiembro,
   marcarActividadRealizada,
@@ -497,7 +498,7 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
                     <input
                       className="form-input"
                       aria-label={t("servicios.buscarMiembro")}
-                      placeholder={t("servicios.buscarMiembro")}
+                      placeholder={textoCorto(t("common.buscarMiembroCorto"), t("servicios.buscarMiembro"))}
                       value={busqueda}
                       onChange={(e) => setBusqueda(e.target.value)}
                     />

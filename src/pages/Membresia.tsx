@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
   type Church, type Member, type MembresiaStats,
@@ -182,7 +183,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
-              placeholder={t("miembros.buscarPlaceholder")}
+              placeholder={textoCorto(t("common.buscarCorto"), t("miembros.buscarPlaceholder"))}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

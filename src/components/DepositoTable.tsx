@@ -62,7 +62,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
           >
             <div className="td">
               <div style={{ fontWeight: 600 }}>{fmtFechaCorta(dep.fecha)}</div>
-              <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dep.periodo}</div>
+              <div className="solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dep.periodo}</div>
             </div>
             <div className="td">
               <div className="truncate" style={{ fontWeight: 600 }} title={dep.cuenta_banco}>{dep.cuenta_banco}</div>

@@ -1,6 +1,7 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import i18n from "../i18n";
+import { esMovil } from "../movil";
 
 /**
  * Entrega de archivos generados (PDF, CSV, respaldos) según la plataforma:
@@ -25,10 +26,9 @@ function extension(fileName: string): string {
   return fileName.split(".").pop()?.toLowerCase() ?? "";
 }
 
-/** true en iPad/iPhone (la clase la pone main.tsx al detectar iOS). */
-export function esMovil(): boolean {
-  return document.documentElement.classList.contains("movil");
-}
+/** true en iPad/iPhone. Se reexporta desde aquí porque varias rutas de
+ *  exportación ya lo importaban de este módulo. */
+export { esMovil };
 
 /** Hoja de compartir nativa de iOS (Archivos, AirDrop, Mail, Imprimir). */
 async function compartirMovil(bytes: Uint8Array, fileName: string): Promise<boolean> {

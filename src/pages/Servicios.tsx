@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import { currentMonth, deleteServicio, fmtFechaCorta, listServicios, type Church, type Servicio } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -151,7 +152,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
-              placeholder={t("servicios.buscarPlaceholder")}
+              placeholder={textoCorto(t("common.buscarCorto"), t("servicios.buscarPlaceholder"))}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

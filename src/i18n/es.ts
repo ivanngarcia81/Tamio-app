@@ -1,5 +1,7 @@
 export const es = {
   common: {
+    buscarCorto: "Buscar…",
+    buscarMiembroCorto: "Buscar miembro…",
     compartirNoDisponible: "No se pudo abrir la hoja de compartir en este dispositivo.",
     mas: "Más",
     cancelar: "Cancelar",

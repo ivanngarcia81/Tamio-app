@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { textoCorto } from "../movil";
 import type { TFunction } from "i18next";
 import {
   ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, agregarExcepcionAgenda, deleteActividad, fmtFecha, fmtFechaCorta,
@@ -492,7 +493,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           <div className="agenda-filtros">
             <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
               <IconSearch size={15} strokeWidth={2} />
-              <input className="form-input" placeholder={t("agenda.buscarPlaceholder")} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
+              <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
             </div>
             <select className="form-input sm" aria-label={t("agenda.filtrarTipo")} value={filtros.tipo} onChange={(e) => setFiltros((f) => ({ ...f, tipo: e.target.value }))}>
               <option value="">{t("agenda.filtroTodosTipos")}</option>
