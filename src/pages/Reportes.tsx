@@ -439,7 +439,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             <span></span>
             <span>{t("reportes.totalIngresos")}</span>
             <span className="r-amt" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</span>
-            <span className="r-pct" style={{ color: "var(--text)" }}>100%</span>
+            <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
           </div>
 
           <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
@@ -460,7 +460,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             <span></span>
             <span>{t("reportes.totalGastos")}</span>
             <span className="r-amt" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</span>
-            <span className="r-pct" style={{ color: "var(--text)" }}>100%</span>
+            <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
           </div>
 
           <div className="r-summary">
@@ -488,7 +488,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             <div className="tx-head">
               <div className="tx-title">{t("reportes.resumenMensual")}</div>
             </div>
-            <div className="data-table roomy">
+            <div className="data-table roomy tabla-resumen-mes">
               <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
                 <div className="th">{t("reportes.colMes")}</div>
                 <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
@@ -504,16 +504,16 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 return (
                   <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
                     <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
-                    <div className="td" style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
+                    <div className="td" data-label={t("charts.ingresos")} style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
                       {fmtMoney(h.ingresos)}
                     </div>
-                    <div className="td" style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
+                    <div className="td" data-label={t("charts.gastos")} style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
                       {fmtMoney(h.gastos)}
                     </div>
-                    <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                    <div className="td" data-label={t("pdfPreview.balance")} style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                       {fmtMoney(bal)}
                     </div>
-                    <div className="td" style={{ textAlign: "right" }}>
+                    <div className="td" data-label={t("reportes.colVariacion")} style={{ textAlign: "right" }}>
                       {variacion === null ? (
                         <span style={{ color: "var(--text-3)" }}>—</span>
                       ) : (

@@ -4051,6 +4051,52 @@ html.vibrancy .main { background: var(--surface); }
      con categorías que no tienen ni un movimiento. */
   .tx-filters .chip.vacia { display: none; }
 
+  /* ---- Resumen mensual: de tabla a lista rotulada ----
+     Cinco columnas para una sola fila obligaban a arrastrar a un lado
+     para ver el balance, y al llegar se perdía de vista a qué mes
+     pertenecía. Un reporte financiero se lee comparando cifras entre sí:
+     si no caben juntas, no cumple su función. El mes pasa a título y las
+     cuatro cifras a una cuadrícula de 2x2, cada una con su rótulo. */
+  .data-table.tabla-resumen-mes .thead { display: none; }
+  .data-table.tabla-resumen-mes .tr {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px;
+    padding: 12px;
+  }
+  .data-table.tabla-resumen-mes .tr > .td {
+    padding: 0;
+    min-width: 0;
+    text-align: left !important;
+  }
+  .data-table.tabla-resumen-mes .tr > .td:first-child {
+    grid-column: 1 / -1;
+    font-size: 15px;
+  }
+  .data-table.tabla-resumen-mes .tr > .td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--track-caps);
+    color: var(--text-2);
+  }
+
+  /* La fila de total siempre dice 100%: en un ancho escaso no aporta. */
+  .report-preview .r-row.total .r-pct.solo-escritorio { display: none; }
+  /* Cuatro cifras apiladas gastaban una pantalla entera. */
+  .report-preview .r-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 14px;
+    margin-top: 16px;
+  }
+  .report-preview .r-summary .v { font-size: 17px; }
+  /* El desglose por categoría estrecha su columna de importe. */
+  .report-preview .r-row { grid-template-columns: 12px 1fr auto 46px; gap: 8px; }
+
   /* Detalles redundantes en pantalla angosta (p. ej. el periodo "2026-07"
      debajo de una fecha que ya dice julio de 2026). */
   .solo-escritorio { display: none; }
