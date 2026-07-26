@@ -843,7 +843,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 icon={<IconMail size={20} strokeWidth={1.8} />}
               />
             ) : (
-              <div className="data-table roomy">
+              <div className="data-table roomy tabla-doc">
                 <div className="thead" style={{ gridTemplateColumns: COLS }}>
                   <div className="th">{t("actas.colFolio")}</div>
                   <div className="th">{t("cartas.colDocumento")}</div>

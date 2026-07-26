@@ -4101,6 +4101,43 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      con categorías que no tienen ni un movimiento. */
   .tx-filters .chip.vacia { display: none; }
 
+  /* ---- Archivo de cartas: de tabla de 6 columnas a tarjeta ----
+     Sus columnas suman ~590 px fijos (folio, documento, fecha, estado,
+     modificada, acciones), muy por encima de los 393 del teléfono, así que
+     la tabla pedía scroll lateral y el nombre del documento salía cortado
+     por los dos bordes. Cada fila pasa a tarjeta: el nombre del documento
+     manda, el estado va como pastilla a la derecha, el folio como riel
+     izquierdo y la fecha debajo. La columna "Modificada" se oculta: es la
+     fecha de última edición, redundante con la de emisión en un borrador y
+     justo la que quedaba fuera de la pantalla. Los anchos van en el atributo
+     style de cada fila, así que hay que ganarles con !important. */
+  .data-table.tabla-doc .thead { display: none; }
+  .data-table.tabla-doc .tr {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "principal principal estado"
+      "folio     fecha     acciones";
+    gap: 4px 10px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+  .data-table.tabla-doc .tr > .td { padding: 0; min-width: 0; }
+  /* El nombre del documento manda: ocupa toda la fila de arriba. El folio y
+     la fecha son metadatos y comparten la línea de abajo. */
+  .data-table.tabla-doc .tr > .td:nth-child(2) { grid-area: principal; }
+  .data-table.tabla-doc .tr > .td:nth-child(1) {
+    grid-area: folio;
+    font-size: 11.5px;
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .data-table.tabla-doc .tr > .td:nth-child(3) { grid-area: fecha; }
+  .data-table.tabla-doc .tr > .td:nth-child(4) { grid-area: estado; justify-self: end; }
+  .data-table.tabla-doc .tr > .td:nth-child(5) { display: none; } /* Modificada */
+  .data-table.tabla-doc .tr > .td:nth-child(6) { grid-area: acciones; justify-self: end; }
+
   /* ---- Movimientos recientes del inicio ----
      La fila pedía 524 px fijos más el hueco de la descripción, muy por
      encima de los 393 del teléfono, y como .tx-list recorta (overflow
