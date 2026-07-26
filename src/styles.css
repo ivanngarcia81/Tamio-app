@@ -3987,6 +3987,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   .app.menu-abierto .sidebar { transform: none; }
 
+  /* Barra lateral más compacta en el iPhone: el cajón no tiene el alto de
+     una ventana de Mac, y con los dos grupos de menús la lista pedía mucho
+     scroll. Se acercan las filas (sin bajar de un objetivo táctil cómodo,
+     ~40 px) y se juntan un poco los grupos y el pie. Solo iPhone: Mac e iPad
+     conservan su espaciado. */
+  .sidebar .nav-item { padding: 8px 12px; }
+  .sidebar .nav-group { margin-top: 8px; }
+  .sidebar .nav { gap: 1px; }
+  .sidebar-footer { padding-top: 8px; }
+
   .menu-telon {
     display: block;
     position: fixed;

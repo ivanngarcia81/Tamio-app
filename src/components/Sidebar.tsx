@@ -51,6 +51,15 @@ function initialOpen(): Record<GroupId, boolean> {
   return { tesoreria: true, secretaria: true };
 }
 
+/** El acordeón (un solo grupo abierto a la vez) es exclusivo del ancho
+ *  compacto del iPhone. Se mide por viewport y NO por esMovil(): en iPad
+ *  (>= 768 px) esMovil() es true pero hay sitio de sobra, y su
+ *  comportamiento no debe cambiar. El umbral coincide con el breakpoint
+ *  compacto del CSS. */
+function anchoCompacto(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
+}
+
 function Item({ to, icon, label, badge, dataTour }: { to: string; icon: ReactNode; label: string; badge?: number; dataTour?: string }) {
   return (
     <NavLink to={to} end={to === "/"} data-tour={dataTour} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
@@ -126,19 +135,33 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
   }, [church.logo_path]);
 
   // El grupo que contiene la ruta activa se abre solo: el usuario nunca
-  // "pierde" la página en la que está detrás de un menú cerrado.
+  // "pierde" la página en la que está detrás de un menú cerrado. En el
+  // iPhone, además, se cierra el otro grupo (acordeón) para que la lista
+  // quepa con menos scroll; en Mac/iPad solo se asegura de abrir el activo.
   useEffect(() => {
     const grupo: GroupId | null = RUTAS_TESORERIA.includes(location.pathname)
       ? "tesoreria"
       : RUTAS_SECRETARIA.includes(location.pathname)
         ? "secretaria"
         : null;
-    if (grupo) setOpen((o) => (o[grupo] ? o : { ...o, [grupo]: true }));
+    if (!grupo) return;
+    setOpen((o) => {
+      if (anchoCompacto()) {
+        return { tesoreria: grupo === "tesoreria", secretaria: grupo === "secretaria" };
+      }
+      return o[grupo] ? o : { ...o, [grupo]: true };
+    });
   }, [location.pathname]);
 
   function toggle(g: GroupId) {
     setOpen((o) => {
-      const next = { ...o, [g]: !o[g] };
+      // En el iPhone los grupos son un acordeón: al abrir uno se cierra el
+      // otro. En Mac/iPad cada grupo se abre y cierra por su cuenta (igual
+      // que siempre).
+      const abriendo = !o[g];
+      const next: Record<GroupId, boolean> = anchoCompacto() && abriendo
+        ? { tesoreria: g === "tesoreria", secretaria: g === "secretaria" }
+        : { ...o, [g]: !o[g] };
       try { localStorage.setItem(GROUPS_KEY, JSON.stringify(next)); } catch { /* noop */ }
       return next;
     });
