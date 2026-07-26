@@ -4004,12 +4004,15 @@ html.vibrancy .main { background: var(--surface); }
      ficha que se abre al tocar la fila. El !important es necesario porque
      la plantilla de columnas viene en el style inline de cada fila. */
   .tabla-miembros .thead, .tabla-miembros .tr {
-    grid-template-columns: minmax(0, 1fr) 130px 36px !important;
+    grid-template-columns: minmax(0, 1fr) 110px 44px !important;
     min-width: 0;
   }
   .tabla-miembros .th:nth-child(2), .tabla-miembros .td:nth-child(2),
   .tabla-miembros .th:nth-child(3), .tabla-miembros .td:nth-child(3),
   .tabla-miembros .th:nth-child(5), .tabla-miembros .td:nth-child(5) { display: none; }
+  /* El lápiz de edición rápida no cabe en la celda del menú; el menú ⋯
+     ya incluye Editar. */
+  .tabla-miembros .row-actions { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
