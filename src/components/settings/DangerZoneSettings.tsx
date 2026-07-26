@@ -76,8 +76,8 @@ export default function DangerZoneSettings({ church }: Props) {
       </div>
 
       {accion && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
-          <div className="modal-card" style={{ maxWidth: 420 }}>
+        <div className="modal-overlay hoja-abajo" onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
+          <div className="modal-card hoja-abajo" style={{ maxWidth: 420 }}>
             <div className="modal-header">
               <div><div className="modal-title">{t("reset.confirmarTitulo")}</div></div>
             </div>
