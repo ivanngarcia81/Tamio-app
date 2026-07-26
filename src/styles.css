@@ -4348,6 +4348,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .form-grid { grid-template-columns: minmax(0, 1fr); }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
 
+  /* Los modales usan position: fixed para cubrir la pantalla, pero un
+     ancestro con transform se convierte en su "bloque contenedor" y los
+     atrapa dentro de su caja. .settings-card y .content animan su entrada
+     con fill-mode: both, y una animación de transform con "both" deja
+     aplicada la MATRIZ IDENTIDAD al terminar (Chromium resuelve incluso un
+     keyframe "none" a matrix(1,0,0,1,0,0)) — un transform que sí crea bloque
+     contenedor. Por eso el modal de "Borrar registros" quedaba anclado a la
+     tarjeta (corta) y su pie con el botón rojo se salía por debajo de la
+     pantalla. Con backwards la entrada se ve idéntica pero no deja transform
+     al terminar. Solo iPhone: en Mac/iPad el centrado de modales no cambia.
+     Verificado sobre el DOM real: con esto el overlay vuelve a llenar la
+     pantalla y el pie queda dentro. */
+  .settings-card,
+  .main .header,
+  .main .content { animation-fill-mode: backwards; }
+
   /* Campos de fecha/hora en el iPhone: el control nativo de iOS conserva un
      ancho intrínseco propio e IGNORA el text-align del <input> (por eso el
      valor salía centrado y el campo se salía por la derecha). Con
