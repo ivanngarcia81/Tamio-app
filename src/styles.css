@@ -3974,6 +3974,21 @@ html.vibrancy .main { background: var(--surface); }
      número no necesita todo el ancho, y así la página respira sin tanto
      scroll para llegar a las tablas. */
   .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: 1fr 1fr; }
+
+  /* Densidad compacta: los tamaños "aireados" de la Mac desperdician
+     pantalla en un teléfono. Títulos y números más contenidos, tarjetas
+     con menos relleno y bloques más juntos = menos scroll. */
+  :root {
+    --fs-page-title: 24px;
+    --fs-stat-lg: 24px;
+    --fs-stat-md: 20px;
+    --fs-stat-sm: 18px;
+  }
+  .stat-card { padding: 13px 14px 12px; }
+  .summary, .summary-4, .summary-5, .summary-8 { gap: 10px; }
+  .dash-canvas { gap: 14px; }
+  .header { row-gap: 8px; }
+  .content { gap: 14px; padding-left: 14px; padding-right: 14px; }
   .form-grid { grid-template-columns: 1fr; }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
 
