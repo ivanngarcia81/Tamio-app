@@ -464,11 +464,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           </div>
 
           <div className="r-summary">
-            <div>
+            <div className="r-dup">
               <div className="k">{t("reportes.totalIngresos")}</div>
               <div className="v" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</div>
             </div>
-            <div>
+            <div className="r-dup">
               <div className="k">{t("reportes.totalGastos")}</div>
               <div className="v" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</div>
             </div>

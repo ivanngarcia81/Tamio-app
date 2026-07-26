@@ -4095,12 +4095,25 @@ html.vibrancy .main { background: var(--surface); }
 
   /* La fila de total siempre dice 100%: en un ancho escaso no aporta. */
   .report-preview .r-row.total .r-pct.solo-escritorio { display: none; }
-  /* Cuatro cifras apiladas gastaban una pantalla entera. */
+
+  /* ---- Consolidación del reporte ----
+     Las mismas cifras salían tres veces. En escritorio se justifica —todo
+     se ve de un golpe y cada bloque cumple su función—, pero en un
+     teléfono obliga a recorrer la pantalla para leer lo mismo.
+     El desglose por categoría es el contenido propio de la pantalla y ya
+     cierra ingresos y gastos con sus filas de total, así que arriba queda
+     una franja con lo único que no se repite: balance y depósitos. El
+     resumen mensual se queda: es la única vista histórica y en cuanto
+     haya dos meses deja de ser redundante. */
+  .report-preview { display: flex; flex-direction: column; }
+  .report-preview .r-summary { order: -1; }
+  .report-preview .r-summary .r-dup { display: none; }
   .report-preview .r-summary {
     grid-template-columns: 1fr 1fr;
     gap: 14px;
     padding: 14px;
-    margin-top: 16px;
+    margin-top: 0;
+    margin-bottom: 18px;
   }
   .report-preview .r-summary .v { font-size: 17px; }
   /* El desglose por categoría estrecha su columna de importe. */
