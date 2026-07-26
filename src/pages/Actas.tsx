@@ -133,7 +133,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
               : undefined}
           />
         ) : (
-          <div className="data-table roomy">
+          <div className="data-table roomy tabla-actas">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>
               <div className="th">{t("actas.colFolio")}</div>
               <div className="th">{t("actas.colTitulo")}</div>

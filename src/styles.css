@@ -4037,6 +4037,16 @@ html.vibrancy .main { background: var(--surface); }
   }
   .tabla-depositos .th:nth-child(3), .tabla-depositos .td:nth-child(3),
   .tabla-depositos .th:nth-child(4), .tabla-depositos .td:nth-child(4) { display: none; }
+
+  /* Actas en teléfono: título + fecha + estado + menú; el folio y quien
+     preside se ven al abrir el acta. */
+  .tabla-actas .thead, .tabla-actas .tr {
+    grid-template-columns: minmax(0, 1fr) 82px 100px 44px !important;
+    min-width: 0;
+  }
+  .tabla-actas .th:nth-child(1), .tabla-actas .td:nth-child(1),
+  .tabla-actas .th:nth-child(4), .tabla-actas .td:nth-child(4) { display: none; }
+  .tabla-actas .row-actions { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
