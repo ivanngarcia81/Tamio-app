@@ -587,7 +587,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             ) : filas.length === 0 ? (
               <EmptyState titulo={t("informes.sinResultadosTitulo")} sub={t("informes.sinResultadosSub")} icon={<IconSearch size={20} strokeWidth={1.8} />} />
             ) : (
-              <div className="data-table roomy">
+              <div className="data-table roomy tabla-informe-miembros">
                 <div className="thead" style={{ gridTemplateColumns: COLS, position: "sticky", top: 0, zIndex: 1, background: "var(--surface)" }}>
                   <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("nombre")}>{t("informes.colMiembro")}{flecha("nombre")}</button>
                   <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("ingreso")}>{t("informes.colFechas")}{flecha("ingreso")}</button>

@@ -4064,6 +4064,23 @@ html.vibrancy .main { background: var(--surface); }
   .tabla-actas .th:nth-child(4), .tabla-actas .td:nth-child(4) { display: none; }
   .tabla-actas .row-actions { display: none; }
 
+  /* Servicios en teléfono: fecha + servicio + asistencia + menú; el
+     predicador se ve al abrir el servicio. */
+  .tabla-servicios .thead, .tabla-servicios .tr {
+    grid-template-columns: 78px minmax(0, 1fr) 56px 40px !important;
+    min-width: 0;
+  }
+  .tabla-servicios .th:nth-child(3), .tabla-servicios .td:nth-child(3) { display: none; }
+
+  /* Informe de miembros en teléfono: miembro + asistencia + menú; las
+     fechas y el área de servicio se ven en la ficha. */
+  .tabla-informe-miembros .thead, .tabla-informe-miembros .tr {
+    grid-template-columns: minmax(0, 1fr) 92px 40px !important;
+    min-width: 0;
+  }
+  .tabla-informe-miembros .th:nth-child(2), .tabla-informe-miembros .td:nth-child(2),
+  .tabla-informe-miembros .th:nth-child(3), .tabla-informe-miembros .td:nth-child(3) { display: none; }
+
   /* Membresía en teléfono: miembro + estado + menú; contacto y fecha de
      ingreso se ven en la ficha (tocar la fila). */
   .tabla-membresia .thead, .tabla-membresia .tr {

@@ -170,7 +170,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
               : undefined}
           />
         ) : (
-          <div className="data-table roomy">
+          <div className="data-table roomy tabla-servicios">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>
               <div className="th">{t("tx.colFecha")}</div>
               <div className="th">{t("servicios.colServicio")}</div>
