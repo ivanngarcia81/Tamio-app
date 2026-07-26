@@ -3994,17 +3994,31 @@ html.vibrancy .main { background: var(--surface); }
   .form-grid { grid-template-columns: 1fr; }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
 
-  /* Modales a pantalla casi completa. El min-width anula tanto los anchos
-     mínimos inline como el "min-content" interno (filas de tarjetas), que
-     de otro modo estiran el modal más allá de la pantalla. */
+  /* Modales como hoja a pantalla completa (patrón iOS): nunca quedan
+     debajo de la barra superior ni descentrados con el teclado abierto.
+     El min-width anula tanto los anchos mínimos inline como el
+     "min-content" interno que estiraría el modal más allá de la pantalla. */
+  .modal-overlay { padding: 0; }
   .modal-card {
-    width: calc(100vw - 20px) !important;
+    width: 100vw !important;
     min-width: 0 !important;
-    max-width: calc(100vw - 20px) !important;
-    max-height: calc(100vh - 24px - env(safe-area-inset-top));
+    max-width: 100vw !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Mientras hay un modal abierto, la barra y el botón ☰ se esconden
+     (la hoja ocupa toda la pantalla). */
+  .app:has(.modal-overlay)::before,
+  .app:has(.modal-overlay) .menu-hamburguesa { visibility: hidden; }
   /* El pie del modal (nota + botones) se acomoda en varias líneas. */
   .modal-footer { flex-wrap: wrap; }
+
+  /* Celdas con menos relleno lateral: más espacio útil por columna. */
+  .data-table .th, .data-table .td,
+  .data-table.roomy .th, .data-table.roomy .td { padding: 11px 10px; }
 
   /* Si un selector segmentado no cabe (p. ej. idiomas en la bienvenida),
      que se pueda desplazar de lado en vez de desbordar la tarjeta. */
@@ -4043,7 +4057,7 @@ html.vibrancy .main { background: var(--surface); }
   /* Actas en teléfono: título + fecha + estado + menú; el folio y quien
      preside se ven al abrir el acta. */
   .tabla-actas .thead, .tabla-actas .tr {
-    grid-template-columns: minmax(0, 1fr) 82px 100px 44px !important;
+    grid-template-columns: minmax(0, 1fr) 76px 108px 40px !important;
     min-width: 0;
   }
   .tabla-actas .th:nth-child(1), .tabla-actas .td:nth-child(1),
