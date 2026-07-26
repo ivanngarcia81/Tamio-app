@@ -75,6 +75,8 @@ export const en: Resources = {
     transferencia: "Bank transfer",
     tarjeta: "Card",
     cheque: "Check",
+    /* Two-letter abbreviations for the colour badge. */
+    abr: { efectivo: "CS", transferencia: "TR", tarjeta: "CD", cheque: "CK" },
   },
 
   etiqueta: {

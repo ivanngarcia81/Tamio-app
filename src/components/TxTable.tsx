@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, undeleteTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
+import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, undeleteTx, metodoAbr, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconClip, IconEdit, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
@@ -55,7 +55,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
 
   return (
     <>
-      <div className="data-table roomy">
+      <div className="data-table roomy tabla-tx">
         <div className="thead" style={{ gridTemplateColumns: cols }}>
           <div className="th">{t("tx.colFecha")}</div>
           <div className="th">{esIngreso ? t("tx.colConcepto") : t("tx.colCategoria")}</div>
@@ -124,7 +124,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
               </div>
               <div className="td">
                 <span className="method" style={{ justifySelf: "start" }} title={metodo ? metodoNombre(metodo.id) : tx.metodo_pago}>
-                  {metodo && <span className={`m-badge ${metodo.id}`}>{metodo.badge}</span>}
+                  {metodo && <span className={`m-badge ${metodo.id}`}>{metodoAbr(metodo.id)}</span>}
                   <span className="truncate" style={{ display: "inline-block" }}>{metodo ? metodoNombre(metodo.id) : tx.metodo_pago}</span>
                 </span>
               </div>

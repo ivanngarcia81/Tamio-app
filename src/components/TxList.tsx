@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, undeleteTx, metodoNombre, METODOS_PAGO, type Tx } from "../db";
+import { categoriaInfo, deleteTx, fmtFecha, fmtMoney, undeleteTx, metodoAbr, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconPlus, IconReportes, IconRepeat } from "../icons";
 import RowMenu from "./RowMenu";
 import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
@@ -150,7 +150,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                       <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
                       <span className="method">
                         {metodo && (
-                          <span className={`m-badge ${metodo.id}`}>{metodo.badge}</span>
+                          <span className={`m-badge ${metodo.id}`}>{metodoAbr(metodo.id)}</span>
                         )}
                         {metodo ? metodoNombre(metodo.id) : tx.metodo_pago}
                       </span>

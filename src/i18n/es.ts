@@ -69,6 +69,8 @@ export const es = {
     transferencia: "Transferencia",
     tarjeta: "Tarjeta",
     cheque: "Cheque",
+    /* Abreviaturas de dos letras del distintivo de color. */
+    abr: { efectivo: "EF", transferencia: "TR", tarjeta: "TC", cheque: "CH" },
   },
 
   etiqueta: {

@@ -416,6 +416,13 @@ export function metodoNombre(id: string): string {
   return i18n.t(`metodo.${id}`, { defaultValue: id });
 }
 
+/** Abreviatura de dos letras del distintivo de color. Vive en el catálogo de
+ *  traducciones, no en METODOS_PAGO: el badge fijo "EF" quedaba en español
+ *  junto al nombre ya traducido ("EF Cash"). */
+export function metodoAbr(id: string): string {
+  return i18n.t(`metodo.abr.${id}`, { defaultValue: id.slice(0, 2).toUpperCase() });
+}
+
 /** Los gastos llevan su color en el catálogo; los ingresos no, así que su
  *  paleta vive aquí. Fuente única para que el punto de una tarjeta, la
  *  barra de progreso y el segmento de la dona no se contradigan. */

@@ -325,15 +325,23 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 >
                   {t("common.todos")} <span className="count">{buscados.length}</span>
                 </div>
-                {categorias.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`chip${filtroCat === c.id ? " active" : ""}`}
-                    onClick={() => setFiltroCat(filtroCat === c.id ? null : c.id)}
-                  >
-                    {catNombre(c.id)} <span className="count">{conteo(c.id)}</span>
-                  </div>
-                ))}
+                {categorias.map((c) => {
+                  // "vacia" marca las categorías sin movimientos en el mes:
+                  // en escritorio siguen visibles (sirven para confirmar que
+                  // están en cero), en teléfono el CSS las oculta para no
+                  // gastar cuatro filas de chips en nada.
+                  const n = conteo(c.id);
+                  const activa = filtroCat === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      className={`chip${activa ? " active" : ""}${n === 0 && !activa ? " vacia" : ""}`}
+                      onClick={() => setFiltroCat(activa ? null : c.id)}
+                    >
+                      {catNombre(c.id)} <span className="count">{n}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

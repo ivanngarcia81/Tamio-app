@@ -4012,6 +4012,45 @@ html.vibrancy .main { background: var(--surface); }
      recortaban a sus hijos. */
   .card:has(.data-table), .card:has(.tx-list) { overflow: hidden; }
 
+  /* ---- Movimientos: de tabla de 8 columnas a tarjeta ----
+     En 440 pt la fecha y el monto no caben a la vez, así que había que
+     arrastrar a un lado para saber cuánto costó un gasto y, al llegar,
+     ya no se veía de cuál se trataba. Cada fila pasa a ser una tarjeta
+     con el importe destacado; el resto son metadatos. Se reordena por
+     áreas, sin tocar el DOM, así que Ingresos y Gastos (que intercambian
+     las celdas 2 y 3) siguen leyéndose bien: la 2 es siempre el dato
+     principal y la 3 el secundario. */
+  .data-table.tabla-tx .thead { display: none; }
+  .data-table.tabla-tx .tr {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "principal  monto"
+      "secundaria estado"
+      "fecha      metodo"
+      "persona    acciones";
+    gap: 2px 10px;
+    align-items: center;
+    padding: 10px 12px;
+  }
+  .data-table.tabla-tx .tr > .td { padding: 0; min-width: 0; }
+  .data-table.tabla-tx .tr > .td:nth-child(1) { grid-area: fecha; }
+  .data-table.tabla-tx .tr > .td:nth-child(2) { grid-area: principal; }
+  .data-table.tabla-tx .tr > .td:nth-child(3) { grid-area: secundaria; }
+  .data-table.tabla-tx .tr > .td:nth-child(4) { grid-area: persona; }
+  .data-table.tabla-tx .tr > .td:nth-child(5) { grid-area: metodo; justify-self: end; }
+  .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; justify-self: end; }
+  .data-table.tabla-tx .tr > .td:nth-child(7) { grid-area: estado; justify-self: end; }
+  .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; justify-self: end; }
+  /* El importe manda en la tarjeta y nunca se parte del signo. */
+  .data-table.tabla-tx .tx-amount { font-size: 15px; }
+  .tx-amount { white-space: nowrap; }
+
+  /* Filtros de categoría: no tiene sentido ocupar cuatro filas de chips
+     con categorías que no tienen ni un movimiento. */
+  .tx-filters .chip.vacia { display: none; }
+
   /* Detalles redundantes en pantalla angosta (p. ej. el periodo "2026-07"
      debajo de una fecha que ya dice julio de 2026). */
   .solo-escritorio { display: none; }
