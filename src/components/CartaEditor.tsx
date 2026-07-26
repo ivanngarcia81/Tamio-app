@@ -576,8 +576,8 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
       )}
 
       {iaAbierta && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !iaGenerando) setIaAbierta(false); }}>
-          <div className="modal-card" style={{ width: 560, maxWidth: "94vw" }}>
+        <div className="modal-overlay hoja-ia" onClick={(e) => { if (e.target === e.currentTarget && !iaGenerando) setIaAbierta(false); }}>
+          <div className="modal-card hoja-ia" style={{ width: 560, maxWidth: "94vw" }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("cartas.ia.titulo")}</div>
@@ -585,7 +585,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
               </div>
               <div className="modal-close" onClick={() => { if (!iaGenerando) setIaAbierta(false); }}><IconClose /></div>
             </div>
-            <div style={{ padding: "4px 4px 0" }}>
+            <div className="ia-cuerpo">
               <textarea
                 className="form-textarea"
                 rows={6}

@@ -564,8 +564,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       )}
 
       {pregOpen && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !pregGenerando) setPregOpen(false); }}>
-          <div className="modal-card" style={{ width: 560 }}>
+        <div className="modal-overlay hoja-ia" onClick={(e) => { if (e.target === e.currentTarget && !pregGenerando) setPregOpen(false); }}>
+          <div className="modal-card hoja-ia" style={{ width: 560 }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.pregunta.titulo")}</div>
@@ -573,7 +573,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               </div>
               <div className="modal-close" onClick={() => { if (!pregGenerando) setPregOpen(false); }}><IconClose /></div>
             </div>
-            <div style={{ padding: "4px 4px 0" }}>
+            <div className="ia-cuerpo">
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   className="form-input"
@@ -604,8 +604,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       )}
 
       {iaResumen && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIaResumen(null); }}>
-          <div className="modal-card" style={{ width: 560 }}>
+        <div className="modal-overlay hoja-ia" onClick={(e) => { if (e.target === e.currentTarget) setIaResumen(null); }}>
+          <div className="modal-card hoja-ia" style={{ width: 560 }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.ia.titulo", { mes: mesStr })}</div>
@@ -613,10 +613,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               </div>
               <div className="modal-close" onClick={() => setIaResumen(null)}><IconClose /></div>
             </div>
-            <div style={{ padding: "4px 4px 0", whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5 }}>
+            <div className="ia-cuerpo" style={{ whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5 }}>
               {iaResumen}
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+            <div className="ia-acciones">
               <button className="btn secondary" onClick={() => setIaResumen(null)}>{t("common.cerrar")}</button>
               <button
                 className="btn primary"

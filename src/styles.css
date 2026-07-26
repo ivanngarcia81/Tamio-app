@@ -892,6 +892,13 @@ html.vibrancy .main { background: var(--surface); }
   background: linear-gradient(135deg, #10b981, #059669);
   box-shadow: 0 2px 10px color-mix(in srgb, #047857 40%, transparent);
 }
+/* Cuerpo y fila de acciones de las hojas de IA. Los valores son EXACTAMENTE
+   los que antes iban en línea (style={{...}}), así que en Mac e iPad no
+   cambia ni un píxel; existen como clase solo para poder ajustarlas en el
+   iPhone sin tocar el resto. */
+.ia-cuerpo { padding: 4px 4px 0; }
+.ia-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
 .btn.ia-primary:hover { filter: brightness(1.07); }
 .btn.ia-primary:active { filter: brightness(.95); }
 .btn.ia-primary .ia-ico { color: #fff; }
@@ -4314,24 +4321,71 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .modal-card > .modal-header,
   .modal-card > .modal-footer { flex: 0 0 auto; }
   /* Cubre tanto .modal-body como los contenedores propios de los modales
-     de IA, que no usan esa clase. */
-  .modal-card > *:not(.modal-header):not(.modal-footer) {
+     de IA, que no usan esa clase. .ia-acciones queda fuera: es una fila de
+     botones, no un cuerpo desplazable — si entra aquí, el flex la estira
+     hasta ocupar media pantalla. */
+  .modal-card > *:not(.modal-header):not(.modal-footer):not(.ia-acciones) {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+
+  /* La cabecera de la hoja: el bloque de título puede encogerse (min-width:0)
+     y la ✕ nunca — antes el subtítulo empujaba el botón hasta dejarlo en
+     22 px, por debajo del objetivo táctil de 44 pt. */
+  .modal-header { gap: 12px; }
+  .modal-header > *:first-child { min-width: 0; }
+  .modal-header .modal-close { flex: 0 0 auto; }
   .modal-footer {
     /* El pie respeta el indicador de inicio del iPhone. */
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
+  /* --- Hojas de IA: hoja inferior del alto del contenido ---
+     Estos tres diálogos (Pregunta a tus datos, Resumen del mes, Redactar
+     con IA) llevan tres líneas de texto y dos botones: ocupar los 852 px
+     de la pantalla dejaba media hoja en blanco. Suben desde abajo, miden
+     lo que mide su contenido y como mucho llegan al 90 % de la pantalla,
+     momento en el que el cuerpo empieza a desplazarse solo. */
+  .modal-overlay.hoja-ia { align-items: flex-end; }
+  .modal-card.hoja-ia {
+    height: auto;
+    max-height: 90dvh;
+    border-radius: 18px 18px 0 0;
+    padding-top: 0;
+  }
+  /* El contenido deja de tocar los bordes de la pantalla. */
+  .modal-card > .ia-cuerpo { padding: 12px 16px 0; }
+  /* Cuando el cuerpo es el último hijo (Pregunta a tus datos, Redactar con
+     IA: sus botones van dentro), el respiro inferior lo pone él. */
+  .modal-card.hoja-ia > .ia-cuerpo:last-child {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  .modal-card > .ia-acciones {
+    flex: 0 0 auto;
+    margin-top: 8px;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+  /* El botón de IA apagado: el 45 % de opacidad sobre el degradado verde
+     dejaba texto blanco ilegible y no se distinguía de estar activo. */
+  .btn.ia-primary:disabled {
+    opacity: 1;
+    background: var(--surface-2);
+    color: var(--text-3);
+    border-color: var(--line);
+    box-shadow: none;
+  }
+
   /* Sin scroll dentro de scroll: el roster de asistencia fluye dentro del
      cuerpo de la hoja en vez de encerrarse en 300px. */
   .roster-box { max-height: none; }
-  /* Mientras hay un modal abierto, la barra y el botón ☰ se esconden
-     (la hoja ocupa toda la pantalla). */
-  .app:has(.modal-overlay)::before,
-  .app:has(.modal-overlay) .menu-hamburguesa { visibility: hidden; }
+  /* La hoja se pone por encima de la barra superior (90) y del ☰ (100), que
+     es lo que decía el comentario de .modal-overlay pero no ocurría: un
+     "z-index: 50" duplicado tres líneas más abajo lo anulaba, y la barra se
+     dibujaba ENCIMA del modal. Se arregla solo aquí para no mover el orden
+     de capas en Mac ni en iPad. Con esto ya no hace falta esconder la barra:
+     queda detrás del velo, atenuada, como en cualquier hoja de iOS. */
+  .modal-overlay { z-index: 150; }
   /* El pie del modal (nota + botones) se acomoda en varias líneas. */
   .modal-footer { flex-wrap: wrap; }
 
