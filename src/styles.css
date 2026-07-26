@@ -3970,8 +3970,10 @@ html.vibrancy .main { background: var(--surface); }
   .header, :root.movil .header { padding-top: 18px; }
   .header-actions { justify-content: flex-start; }
 
-  /* Rejillas a una columna en teléfono. */
-  .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: 1fr; }
+  /* Tarjetas de resumen de dos en dos (estilo apps de banca): un solo
+     número no necesita todo el ancho, y así la página respira sin tanto
+     scroll para llegar a las tablas. */
+  .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: 1fr 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
 
