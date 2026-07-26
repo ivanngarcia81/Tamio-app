@@ -4348,6 +4348,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* El panel decorativo del lienzo (fondo + 18-28px de relleno) es de
      escritorio; en teléfono las tarjetas van directo sobre la página. */
   .dash-canvas { gap: 14px; padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
+
+  /* Onboarding (primer arranque): la tarjeta declara width:480 con
+     max-width:100%, pero .welcome-overlay es un grid con columna implícita
+     "auto", que se dimensiona al CONTENIDO (480px). Así el "100%" del
+     max-width se calculaba contra esa columna de 480 y no limitaba nada: la
+     tarjeta —con sus campos y botones— se salía por la derecha y el botón de
+     avanzar quedaba fuera de la pantalla. Fijando la columna a minmax(0,1fr)
+     (= ancho real disponible) el max-width:100% por fin topa a la pantalla.
+     Solo iPhone: en Mac/iPad el viewport es más ancho que la tarjeta, así
+     que nunca desbordaba y siguen con la tarjeta de 480 centrada. */
+  .welcome-overlay { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; }
+
   .header { row-gap: 8px; padding-bottom: 10px; }
   .content { gap: 14px; padding-top: 8px; padding-left: 14px; padding-right: 14px; }
   /* minmax(0, 1fr), no "1fr": un "1fr" es minmax(auto, 1fr), y ese "auto"
