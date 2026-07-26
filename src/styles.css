@@ -4027,7 +4027,16 @@ html.vibrancy .main { background: var(--surface); }
   .tabla-miembros .th:nth-child(5), .tabla-miembros .td:nth-child(5) { display: none; }
   /* El lápiz de edición rápida no cabe en la celda del menú; el menú ⋯
      ya incluye Editar. */
-  .tabla-miembros .row-actions { display: none; }
+  .tabla-miembros .row-actions, .tabla-depositos .row-actions { display: none; }
+
+  /* Depósitos en teléfono: fecha + banco + monto + menú, sin scroll
+     lateral. Referencia y notas se ven al editar el depósito. */
+  .tabla-depositos .thead, .tabla-depositos .tr {
+    grid-template-columns: 78px minmax(0, 1fr) 110px 44px !important;
+    min-width: 0;
+  }
+  .tabla-depositos .th:nth-child(3), .tabla-depositos .td:nth-child(3),
+  .tabla-depositos .th:nth-child(4), .tabla-depositos .td:nth-child(4) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

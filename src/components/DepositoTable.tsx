@@ -40,7 +40,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
 
   return (
     <>
-      <div className="data-table roomy">
+      <div className="data-table roomy tabla-depositos">
         <div className="thead" style={{ gridTemplateColumns: COLS }}>
           <div className="th">{t("tx.colFecha")}</div>
           <div className="th">{t("depositos.colCuenta")}</div>
