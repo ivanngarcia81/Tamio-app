@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Role } from "../role";
+import { esMovil } from "../movil";
 
 interface Props {
   role: Role;
@@ -32,8 +33,18 @@ export default function Ayuda({ role, onIniciarTour }: Props) {
   const verTes = esAdmin || role === "tesorero";
   const verSec = esAdmin || role === "secretaria";
 
+  // En táctil no hay atajos de teclado, ni "menú de la izquierda", ni clic:
+  // cuando existe una variante ...Movil de la respuesta, se usa esa. Las que
+  // no la tienen (la mayoría) siguen sirviendo el mismo texto en todas
+  // las plataformas, así que no hay que duplicar el catálogo entero.
   const bloque = (base: string, n: number): QA[] =>
-    Array.from({ length: n }, (_, i) => ({ p: t(`${base}.p${i + 1}`), d: t(`${base}.d${i + 1}`) }));
+    Array.from({ length: n }, (_, i) => {
+      const clave = `${base}.d${i + 1}`;
+      return {
+        p: t(`${base}.p${i + 1}`),
+        d: esMovil() ? t(`${clave}Movil`, { defaultValue: t(clave) }) : t(clave),
+      };
+    });
 
   return (
     <>

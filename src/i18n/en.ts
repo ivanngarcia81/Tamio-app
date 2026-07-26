@@ -784,15 +784,19 @@ export const en: Resources = {
     basico: {
       p1: "How do I move around the app?",
       d1: "Use the left menu: Home, and the Treasury and Secretariat groups, depending on your role.",
+      d1Movil: "Tap the ☰ button at the top left to open the menu: Home, and the Treasury and Secretariat groups, depending on your role.",
       p2: "How do I change the language or theme?",
       d2: "In Settings (at the bottom of the menu) you can choose language, light/dark theme and sounds.",
+      d2Movil: "Open the menu with ☰ and go to Settings, at the end of the list: there you can choose language, light/dark theme and sounds.",
       p3: "Where do I sign out?",
       d3: "At the bottom of the menu, with the Sign out button.",
+      d3Movil: "Open the menu with ☰ and scroll down to the Sign out button.",
     },
     tesTitulo: "Treasury",
     tes: {
       p1: "How do I record income or an expense?",
       d1: "Open Income or Expenses and press New (or Cmd/Ctrl+N). Fill in the amount, category and date.",
+      d1Movil: "Open Income or Expenses and tap New. Fill in the amount, category and date.",
       p2: "How do I generate a PDF report?",
       d2: "In Reports pick the month or year and use the export/print button.",
       p3: "What are contributors?",
@@ -804,6 +808,7 @@ export const en: Resources = {
     sec: {
       p1: "How do I open a member's full profile?",
       d1: "In Membership, click the member's row (or the eye icon) to open their profile with spiritual details, ministries and instruments.",
+      d1Movil: "In Membership, tap the member's row to open their profile with spiritual details, ministries and instruments.",
       p2: "How do I deactivate or reactivate a member?",
       d2: "In Membership, use the row menu (⋯) to deactivate or reactivate.",
       p3: "How do I make a letter or transfer?",

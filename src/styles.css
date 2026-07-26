@@ -3619,8 +3619,10 @@ html.vibrancy .main { background: var(--surface); }
 .msg-meta { display: flex; align-items: baseline; gap: 10px; margin-bottom: 3px; }
 .msg-autor { font-size: 11.5px; font-weight: 700; }
 .msg-row.propio .msg-autor { color: var(--ink-contrast); }
-.msg-fecha { font-size: 10.5px; color: var(--text-3); }
-.msg-row.propio .msg-fecha { color: rgba(255,255,255,.6); }
+/* La fecha va a 10.5px: con menos contraste que esto deja de leerse,
+   sobre todo dentro de la burbuja oscura de los mensajes propios. */
+.msg-fecha { font-size: 10.5px; color: var(--text-2); }
+.msg-row.propio .msg-fecha { color: rgba(255,255,255,.82); }
 .msg-cuerpo { font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 
 .msg-composer {
@@ -3647,6 +3649,10 @@ html.vibrancy .main { background: var(--surface); }
 }
 .msg-bubble:hover .msg-del { opacity: 0.55; }
 .msg-del:hover { opacity: 1; background: rgba(127,127,127,0.18); }
+/* Sin ratón no hay hover: el botón de borrar sería inalcanzable. */
+@media (hover: none) {
+  .msg-del { opacity: 0.55; }
+}
 
 /* ---------- Inicio de sesión (Supabase) ---------- */
 /* Pantalla de login: telón cinematográfico oscuro, independiente del tema de
@@ -3989,6 +3995,20 @@ html.vibrancy .main { background: var(--surface); }
   /* Detalles redundantes en pantalla angosta (p. ej. el periodo "2026-07"
      debajo de una fecha que ya dice julio de 2026). */
   .solo-escritorio { display: none; }
+
+  /* Mensajes como un chat de verdad: la tarjeta deja su altura fija
+     (calc(100vh - 220px), pensada para una ventana de escritorio) y llena
+     lo que queda de pantalla. El hilo desplaza por dentro y el compositor
+     se queda pegado abajo, sobre el indicador de inicio. */
+  .main:has(.msg-card) { overflow: hidden; }
+  .main:has(.msg-card) .content { flex: 1 1 auto; min-height: 0; padding-bottom: 0; }
+  .msg-card { height: auto; min-height: 0; flex: 1 1 auto; }
+  .msg-thread { padding: 14px; }
+  .msg-bubble { max-width: 86%; }
+  .msg-composer { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+  /* Enviar: un botón deshabilitado al 45% sobre gris no se distingue del
+     activo de un vistazo. */
+  .msg-composer .btn.primary:disabled { opacity: .3; }
 
   /* El disparador del menú de fila (···) alcanza el objetivo táctil de 44pt. */
   .data-table .more {

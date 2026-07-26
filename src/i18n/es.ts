@@ -778,15 +778,19 @@ export const es = {
     basico: {
       p1: "¿Cómo me muevo por la app?",
       d1: "Usa el menú de la izquierda: Inicio, y los grupos de Tesorería y Secretaría según tu rol.",
+      d1Movil: "Toca el botón ☰ de arriba a la izquierda para abrir el menú: Inicio, y los grupos de Tesorería y Secretaría según tu rol.",
       p2: "¿Cómo cambio el idioma o el tema?",
       d2: "En Configuración (abajo en el menú) eliges idioma, tema claro/oscuro y sonidos.",
+      d2Movil: "Abre el menú con ☰ y entra a Configuración, al final de la lista: ahí eliges idioma, tema claro/oscuro y sonidos.",
       p3: "¿Dónde cierro sesión?",
       d3: "En la parte inferior del menú, con el botón Cerrar sesión.",
+      d3Movil: "Abre el menú con ☰ y baja hasta el botón Cerrar sesión.",
     },
     tesTitulo: "Tesorería",
     tes: {
       p1: "¿Cómo registro un ingreso o gasto?",
       d1: "Entra a Ingresos o Gastos y pulsa Nuevo (o Cmd/Ctrl+N). Llena el monto, la categoría y la fecha.",
+      d1Movil: "Entra a Ingresos o Gastos y toca Nuevo. Llena el monto, la categoría y la fecha.",
       p2: "¿Cómo genero un reporte en PDF?",
       d2: "En Reportes elige el mes o el año y usa el botón de exportar/imprimir.",
       p3: "¿Qué son los aportantes?",
@@ -798,6 +802,7 @@ export const es = {
     sec: {
       p1: "¿Cómo veo la ficha completa de un miembro?",
       d1: "En Membresía, pulsa sobre la fila del miembro (o el icono de ojo) para abrir su ficha con datos espirituales, ministerios e instrumentos.",
+      d1Movil: "En Membresía, toca la fila del miembro para abrir su ficha con datos espirituales, ministerios e instrumentos.",
       p2: "¿Cómo doy de baja o reactivo a un miembro?",
       d2: "En Membresía, usa el menú (⋯) de la fila para dar de baja o reactivar.",
       p3: "¿Cómo hago una carta o un traslado?",
