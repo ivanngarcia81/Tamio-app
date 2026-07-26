@@ -4137,12 +4137,15 @@ html.vibrancy .main { background: var(--surface); }
      activo de un vistazo. */
   .msg-composer .btn.primary:disabled { opacity: .3; }
 
-  /* El disparador del menú de fila (···) alcanza el objetivo táctil de 44pt. */
+  /* El disparador del menú de fila (···) alcanza el objetivo táctil de 44pt
+     y se centra en su columna, sin quedar pegado al borde de la tarjeta. */
+  .data-table .tr > .td:last-child { padding-left: 0; padding-right: 0; }
   .data-table .more {
     display: inline-grid;
     place-items: center;
     min-width: 44px;
     min-height: 44px;
+    margin-right: 6px;
   }
 
   /* Densidad compacta: los tamaños "aireados" de la Mac desperdician
@@ -4228,7 +4231,7 @@ html.vibrancy .main { background: var(--surface); }
      ficha que se abre al tocar la fila. El !important es necesario porque
      la plantilla de columnas viene en el style inline de cada fila. */
   .tabla-miembros .thead, .tabla-miembros .tr {
-    grid-template-columns: minmax(0, 1fr) 110px 44px !important;
+    grid-template-columns: minmax(0, 1fr) 104px 52px !important;
     min-width: 0;
   }
   .tabla-miembros .th:nth-child(2), .tabla-miembros .td:nth-child(2),
@@ -4241,7 +4244,7 @@ html.vibrancy .main { background: var(--surface); }
   /* Depósitos en teléfono: fecha + banco + monto + menú, sin scroll
      lateral. Referencia y notas se ven al editar el depósito. */
   .tabla-depositos .thead, .tabla-depositos .tr {
-    grid-template-columns: 78px minmax(0, 1fr) 110px 44px !important;
+    grid-template-columns: 74px minmax(0, 1fr) 104px 52px !important;
     min-width: 0;
   }
   .tabla-depositos .th:nth-child(3), .tabla-depositos .td:nth-child(3),
@@ -4250,7 +4253,7 @@ html.vibrancy .main { background: var(--surface); }
   /* Actas en teléfono: título + fecha + estado + menú; el folio y quien
      preside se ven al abrir el acta. */
   .tabla-actas .thead, .tabla-actas .tr {
-    grid-template-columns: minmax(0, 1fr) 76px 108px 40px !important;
+    grid-template-columns: minmax(0, 1fr) 74px 104px 52px !important;
     min-width: 0;
   }
   .tabla-actas .th:nth-child(1), .tabla-actas .td:nth-child(1),
@@ -4260,7 +4263,7 @@ html.vibrancy .main { background: var(--surface); }
   /* Servicios en teléfono: fecha + servicio + asistencia + menú; el
      predicador se ve al abrir el servicio. */
   .tabla-servicios .thead, .tabla-servicios .tr {
-    grid-template-columns: 78px minmax(0, 1fr) 56px 40px !important;
+    grid-template-columns: 74px minmax(0, 1fr) 56px 52px !important;
     min-width: 0;
   }
   .tabla-servicios .th:nth-child(3), .tabla-servicios .td:nth-child(3) { display: none; }
@@ -4279,7 +4282,7 @@ html.vibrancy .main { background: var(--surface); }
   /* Membresía en teléfono: miembro + estado + menú; contacto y fecha de
      ingreso se ven en la ficha (tocar la fila). */
   .tabla-membresia .thead, .tabla-membresia .tr {
-    grid-template-columns: minmax(0, 1fr) 100px 44px !important;
+    grid-template-columns: minmax(0, 1fr) 96px 52px !important;
     min-width: 0;
   }
   .tabla-membresia .th:nth-child(2), .tabla-membresia .td:nth-child(2),
