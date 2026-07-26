@@ -3618,25 +3618,46 @@ export async function borrarDatosIglesia(churchId: number): Promise<void> {
   }
 }
 
-/** Opción B: reinicio de fábrica. Borra TODO, incluida la configuración de la
- *  iglesia, dejando la base como recién instalada. Tras llamarla, la app debe
- *  recargarse: getOrCreateChurch creará una iglesia nueva y saldrá la
- *  bienvenida. */
+/** Opción B: reinicio de fábrica. Deja la app como recién instalada (datos
+ *  vacíos y configuración a cero), pero de forma compatible con la nube.
+ *
+ *  El borrado de datos es SUAVE (deleted = 1), igual que borrarDatosIglesia,
+ *  para que se propague a la nube y NO reaparezca en la próxima
+ *  sincronización. IMPORTANTE: no se borra la fila de churches. Borrarla
+ *  dispararía el ON DELETE CASCADE y eliminaría en DURO todas esas filas
+ *  ANTES de que el borrado suave subiera a la nube — y la siguiente bajada
+ *  las revolvería. En su lugar, la configuración de la iglesia se reinicia in
+ *  situ: el nombre vuelve a "Mi Iglesia" (con eso, y limpiando el indicador
+ *  de bienvenida en el llamador, esPrimerArranque vuelve a mostrar el
+ *  onboarding) y el resto de campos se vacían. Se conservan id, moneda, plan
+ *  y suscripción, para no perder el vínculo con la nube ni la cortesía. */
 export async function reinicioDeFabrica(): Promise<void> {
   const d = await getDb();
-  const todas = [
-    "servicio_asistencia", ...TABLAS_DATOS,
-    "plantillas", "categorias_custom", "usuarios", "churches",
+  const suaves = [
+    ...TABLAS_DATOS.filter((t) => t !== "gastos_recurrentes"),
+    "servicio_asistencia", "plantillas", "categorias_custom",
   ];
-  // Mismo motivo que en borrarDatosIglesia: defer_foreign_keys dentro de una
-  // transacción para que el orden no importe y el reinicio sea atómico. Aquí
-  // también se borraba members antes que cartas/solicitudes/traslados.
   await d.execute("BEGIN");
   try {
-    await d.execute("PRAGMA defer_foreign_keys = ON");
-    for (const tabla of todas) {
-      await d.execute(`DELETE FROM ${tabla}`);
+    for (const tabla of suaves) {
+      await d.execute(`UPDATE ${tabla} SET deleted = 1, updated_at = datetime('now') WHERE deleted = 0`);
     }
+    // Tablas locales que NO se sincronizan: borrado duro (no reaparecen).
+    await d.execute("DELETE FROM gastos_recurrentes");
+    await d.execute("DELETE FROM usuarios");
+    // Configuración de la iglesia a estado inicial. Se conservan id, moneda,
+    // plan, sub_* y created_at; el resto vuelve a cero.
+    await d.execute(
+      `UPDATE churches SET
+         nombre = 'Mi Iglesia', ciudad = NULL, pais = NULL, logo_path = NULL,
+         tesorero_nombre = NULL, tesorero_cargo = NULL, tesorero_email = NULL,
+         tesorero_telefono = NULL, tesorero_firma_path = NULL,
+         pastor_nombre = NULL, pastor_cargo = NULL, pastor_email = NULL,
+         pastor_telefono = NULL, pastor_firma_path = NULL,
+         direccion = NULL, region = NULL, telefono = NULL, email = NULL,
+         pie_institucional = NULL, secretaria_nombre = NULL, secretaria_cargo = NULL,
+         umbrales_informes = NULL, saldo_inicial = 0`
+    );
     await d.execute("COMMIT");
   } catch (e) {
     await d.execute("ROLLBACK").catch(() => { /* la transacción ya se deshizo */ });

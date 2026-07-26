@@ -385,7 +385,7 @@ export const en: Resources = {
     nombreFamilia: "Full or family name",
     nombreFamiliaPlaceholder: "e.g. Carlos and Ana Ruiz",
     rfcMiembroHint: "(optional — needed for tax-deductible receipts)",
-    rfcMiembroPlaceholder: "13-character tax ID",
+    rfcMiembroPlaceholder: "Tax ID (optional)",
     fechaFuturaIngresos: "Income cannot be recorded with a future date.",
     fechaFuturaGastos: "Expenses cannot be recorded with a future date.",
     seleccionarComprobante: "Select receipt",
@@ -2136,9 +2136,9 @@ export const en: Resources = {
     nombreLabel: "Church name",
     nombrePlaceholder: "e.g. Central Church",
     ciudad: "City",
-    ciudadPlaceholder: "e.g. Mexico City",
+    ciudadPlaceholder: "e.g. your city",
     pais: "Country",
-    paisPlaceholder: "e.g. Mexico",
+    paisPlaceholder: "e.g. your country",
     moneda: "Currency",
     monedaUsd: "USD — US Dollar",
     monedaMxn: "MXN — Mexican Peso",
@@ -2158,7 +2158,7 @@ export const en: Resources = {
     correo: "Email",
     correoPlaceholder: "email@example.com",
     telefono: "Phone",
-    telefonoPlaceholder: "55 0000 0000",
+    telefonoPlaceholder: "Phone number",
   },
 
   firma: {
@@ -2184,7 +2184,7 @@ export const en: Resources = {
     correo: "Email",
     correoPlaceholder: "email@example.com",
     telefono: "Phone",
-    telefonoPlaceholder: "55 0000 0000",
+    telefonoPlaceholder: "Phone number",
   },
 
   firmaPastor: {
