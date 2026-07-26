@@ -3989,6 +3989,18 @@ html.vibrancy .main { background: var(--surface); }
      conservan su tamaño natural y la tabla se desliza de lado (el contenedor
      .data-table ya trae overflow-x: auto). */
   .data-table .thead, .data-table .tr { min-width: 640px; }
+
+  /* Miembros en teléfono: solo lo esencial (nombre + total del año + menú),
+     sin scroll lateral. Etiquetas, último aporte y contacto viven en la
+     ficha que se abre al tocar la fila. El !important es necesario porque
+     la plantilla de columnas viene en el style inline de cada fila. */
+  .tabla-miembros .thead, .tabla-miembros .tr {
+    grid-template-columns: minmax(0, 1fr) 130px 36px !important;
+    min-width: 0;
+  }
+  .tabla-miembros .th:nth-child(2), .tabla-miembros .td:nth-child(2),
+  .tabla-miembros .th:nth-child(3), .tabla-miembros .td:nth-child(3),
+  .tabla-miembros .th:nth-child(5), .tabla-miembros .td:nth-child(5) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

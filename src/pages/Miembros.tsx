@@ -219,7 +219,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
               : undefined}
           />
         ) : (
-          <div className="data-table roomy">
+          <div className="data-table roomy tabla-miembros">
             <div className="thead" style={{ gridTemplateColumns: MEMBER_COLS }}>
               <div className="th">{t("miembros.colMiembro")}</div>
               <div className="th">{t("miembros.colEtiquetas")}</div>
