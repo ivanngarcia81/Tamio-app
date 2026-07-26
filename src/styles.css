@@ -4009,8 +4009,31 @@ html.vibrancy .main { background: var(--surface); }
     max-height: 100dvh;
     border-radius: 0;
     padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* La hoja es una columna: cabecera arriba, pie abajo y SOLO el cuerpo
+       desplaza. Antes desplazaba la tarjeta entera, así que el pie
+       (Cancelar/Guardar) viajaba con el contenido en vez de quedarse
+       anclado, y con el teclado abierto terminaba a media pantalla. */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
+  .modal-card > .modal-header,
+  .modal-card > .modal-footer { flex: 0 0 auto; }
+  /* Cubre tanto .modal-body como los contenedores propios de los modales
+     de IA, que no usan esa clase. */
+  .modal-card > *:not(.modal-header):not(.modal-footer) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .modal-footer {
+    /* El pie respeta el indicador de inicio del iPhone. */
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  /* Sin scroll dentro de scroll: el roster de asistencia fluye dentro del
+     cuerpo de la hoja en vez de encerrarse en 300px. */
+  .roster-box { max-height: none; }
   /* Mientras hay un modal abierto, la barra y el botón ☰ se esconden
      (la hoja ocupa toda la pantalla). */
   .app:has(.modal-overlay)::before,
