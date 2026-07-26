@@ -3977,8 +3977,17 @@ html.vibrancy .main { background: var(--surface); }
   .form-grid { grid-template-columns: 1fr; }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
 
-  /* Modales a pantalla casi completa. */
-  .modal-card { width: calc(100vw - 20px) !important; max-height: calc(100vh - 24px - env(safe-area-inset-top)); }
+  /* Modales a pantalla casi completa. El min-width anula tanto los anchos
+     mínimos inline como el "min-content" interno (filas de tarjetas), que
+     de otro modo estiran el modal más allá de la pantalla. */
+  .modal-card {
+    width: calc(100vw - 20px) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100vh - 24px - env(safe-area-inset-top));
+  }
+  /* El pie del modal (nota + botones) se acomoda en varias líneas. */
+  .modal-footer { flex-wrap: wrap; }
 
   /* Si un selector segmentado no cabe (p. ej. idiomas en la bienvenida),
      que se pueda desplazar de lado en vez de desbordar la tarjeta. */

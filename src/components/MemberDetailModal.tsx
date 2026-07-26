@@ -119,7 +119,7 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
         </div>
 
         <div className="modal-body">
-          <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
             <div className="stat-card accent" style={{ flex: 1, padding: "14px 16px", "--accent-color": "var(--accent-1)" } as CSSProperties}>
               <div className="stat-label">{t("detalleMiembro.totalAnio", { anio: year })}</div>
               <div className="stat-value md">
