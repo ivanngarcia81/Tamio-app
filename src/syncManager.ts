@@ -28,6 +28,9 @@ export interface SyncSnapshot {
   subidos: number;
   bajados: number;
   motivo?: MotivoSync;
+  /** Mensaje de error real (tabla + detalle) cuando la sync falla. Solo para
+   *  diagnóstico: el panel de Ajustes lo muestra bajo el aviso genérico. */
+  error?: string;
 }
 
 let snapshot: SyncSnapshot = { estado: "desactivado", ultima: null, subidos: 0, bajados: 0 };
@@ -77,12 +80,12 @@ export async function ejecutarSync(): Promise<void> {
   try {
     const res = await sincronizarTodo(churchId);
     if (res.ok) {
-      set({ estado: "ok", ultima: Date.now(), subidos: res.subidos, bajados: res.bajados, motivo: undefined });
+      set({ estado: "ok", ultima: Date.now(), subidos: res.subidos, bajados: res.bajados, motivo: undefined, error: undefined });
     } else {
-      set({ estado: res.motivo === "sin-conexion" ? "offline" : "error", motivo: res.motivo });
+      set({ estado: res.motivo === "sin-conexion" ? "offline" : "error", motivo: res.motivo, error: res.error });
     }
-  } catch {
-    set({ estado: "error" });
+  } catch (e) {
+    set({ estado: "error", error: String(e) });
   } finally {
     corriendo = false;
   }

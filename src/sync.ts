@@ -1034,22 +1034,33 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   // El plan baja primero (nube = autoridad); si falla, no afecta a los datos.
   await sincronizarPlan(churchIdLocal).catch(() => {});
   const m = await sincronizarMiembros(churchIdLocal);
-  if (!m.ok) return m;
+  if (!m.ok) return etiquetarTabla("members", m);
   // Categorías antes que las transacciones, para que sus referencias
-  // (custom-<uid>) resuelvan al pintar los movimientos que bajen.
-  const cat = await sincronizarCategorias(churchIdLocal);
-  const t = await sincronizarTransacciones(churchIdLocal);
-  const dep = await sincronizarDepositos(churchIdLocal);
-  const act = await sincronizarActas(churchIdLocal);
-  const car = await sincronizarCartas(churchIdLocal);
-  const sol = await sincronizarSolicitudes(churchIdLocal);
-  const ts = await sincronizarTrasladosSalida(churchIdLocal);
-  const te = await sincronizarTrasladosEntrada(churchIdLocal);
-  const sv = await sincronizarServicios(churchIdLocal);
-  // El roster depende de servicios y miembros ya sincronizados (por uid).
-  const ros = await sincronizarRoster(churchIdLocal);
-  const ag = await sincronizarAgenda(churchIdLocal);
-  const msg = await sincronizarMensajes(churchIdLocal);
-  const pla = await sincronizarPlantillas(churchIdLocal);
-  return [cat, t, dep, act, car, sol, ts, te, sv, ros, ag, msg, pla].reduce(combinar, m);
+  // (custom-<uid>) resuelvan al pintar los movimientos que bajen. Cada paso
+  // lleva su etiqueta para que, si falla, el panel de Ajustes diga QUÉ tabla
+  // y con qué error (antes solo se veía un genérico "sin conexión").
+  const pasos: [string, ResultadoSync][] = [
+    ["categorias", await sincronizarCategorias(churchIdLocal)],
+    ["transactions", await sincronizarTransacciones(churchIdLocal)],
+    ["depositos_bancarios", await sincronizarDepositos(churchIdLocal)],
+    ["actas", await sincronizarActas(churchIdLocal)],
+    ["cartas", await sincronizarCartas(churchIdLocal)],
+    ["solicitudes", await sincronizarSolicitudes(churchIdLocal)],
+    ["traslados_salida", await sincronizarTrasladosSalida(churchIdLocal)],
+    ["traslados_entrada", await sincronizarTrasladosEntrada(churchIdLocal)],
+    ["servicios", await sincronizarServicios(churchIdLocal)],
+    // El roster depende de servicios y miembros ya sincronizados (por uid).
+    ["servicio_asistencia", await sincronizarRoster(churchIdLocal)],
+    ["agenda", await sincronizarAgenda(churchIdLocal)],
+    ["mensajes", await sincronizarMensajes(churchIdLocal)],
+    ["plantillas", await sincronizarPlantillas(churchIdLocal)],
+  ];
+  const fallo = pasos.find(([, r]) => !r.ok);
+  if (fallo) return etiquetarTabla(fallo[0], fallo[1]);
+  return pasos.map(([, r]) => r).reduce(combinar, m);
+}
+
+/** Añade el nombre de la tabla al error para diagnóstico ("cartas: <detalle>"). */
+function etiquetarTabla(tabla: string, r: ResultadoSync): ResultadoSync {
+  return { ...r, error: r.error ? `${tabla}: ${r.error}` : tabla };
 }

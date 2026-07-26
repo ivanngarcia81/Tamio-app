@@ -3849,7 +3849,7 @@ dependencies = [
 
 [[package]]
 name = "tesoreria"
-version = "1.0.4"
+version = "1.0.5"
 dependencies = [
  "keyring",
  "rusqlite",

@@ -50,6 +50,17 @@ export default function SyncSettings() {
           <IconWarn size={13} /> {snap.motivo === "sin-iglesia" ? t("sync.errorSinIglesia") : snap.motivo === "sin-login" ? t("sync.errorSinLogin") : t("sync.errorGeneral")}
         </div>
       )}
+
+      {/* Detalle técnico del fallo (tabla + mensaje del servidor). Solo aparece
+          cuando hay error; sirve para diagnosticar por qué no sincroniza. */}
+      {(snap.estado === "offline" || snap.estado === "error") && snap.error && (
+        <div
+          className="form-hint"
+          style={{ marginTop: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12, color: "var(--text-3)", userSelect: "text", wordBreak: "break-word" }}
+        >
+          {snap.error}
+        </div>
+      )}
     </div>
   );
 }
