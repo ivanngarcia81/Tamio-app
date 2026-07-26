@@ -3986,9 +3986,11 @@ html.vibrancy .main { background: var(--surface); }
   }
   .stat-card { padding: 13px 14px 12px; }
   .summary, .summary-4, .summary-5, .summary-8 { gap: 10px; }
-  .dash-canvas { gap: 14px; }
-  .header { row-gap: 8px; }
-  .content { gap: 14px; padding-left: 14px; padding-right: 14px; }
+  /* El panel decorativo del lienzo (fondo + 18-28px de relleno) es de
+     escritorio; en teléfono las tarjetas van directo sobre la página. */
+  .dash-canvas { gap: 14px; padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
+  .header { row-gap: 8px; padding-bottom: 10px; }
+  .content { gap: 14px; padding-top: 8px; padding-left: 14px; padding-right: 14px; }
   .form-grid { grid-template-columns: 1fr; }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
 
