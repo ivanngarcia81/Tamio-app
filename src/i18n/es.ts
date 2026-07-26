@@ -1436,6 +1436,13 @@ export const es = {
     generarCarta: "Generar carta de traslado",
     guardaPrimero: "Guarda el traslado primero",
     generarRequiereAprobado: "Disponible cuando el traslado esté aprobado",
+    entrega: {
+      mano: "Entrega en mano",
+      email: "Correo electrónico",
+      postal: "Correo postal",
+      tercero: "A través de otra persona",
+      otro: "Otro",
+    },
     metodoEntrega: "Método de entrega",
     confirmacionRecibida: "Confirmación recibida de la otra iglesia",
     fechaConfirmacion: "Fecha de confirmación",

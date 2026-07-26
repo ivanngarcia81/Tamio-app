@@ -35,6 +35,11 @@ interface Props {
   onAbrirCarta: (cartaId: number) => void;
 }
 
+/** Método de entrega de la carta. Antes era texto libre y cada persona
+ *  escribía lo suyo ("email", "Email", "correo", "en mano"), así que los
+ *  valores no eran comparables y no se podía filtrar ni reportar por él. */
+const METODOS_ENTREGA = ["mano", "email", "postal", "tercero", "otro"] as const;
+
 export default function TrasladoSalidaModal({ church, traslado, members, preMemberId, onClose, onSaved, onAbrirCarta }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
@@ -311,7 +316,19 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
               </div>
               <div className="form-group">
                 <label className="form-label">{t("traslados.metodoEntrega")}</label>
-                <input className="form-input" value={metodoEntrega} onChange={(e) => setMetodoEntrega(e.target.value)} />
+                <select className="form-select" value={metodoEntrega} onChange={(e) => setMetodoEntrega(e.target.value)}>
+                  <option value="">—</option>
+                  {METODOS_ENTREGA.map((m) => (
+                    <option key={m} value={m}>{t(`traslados.entrega.${m}`)}</option>
+                  ))}
+                  {/* Los traslados anteriores guardaban texto libre. Si el
+                      valor no es una de las claves nuevas se ofrece tal cual,
+                      para que abrir y guardar un registro viejo no lo borre.
+                      Así no hace falta migrar nada. */}
+                  {metodoEntrega && !METODOS_ENTREGA.includes(metodoEntrega as (typeof METODOS_ENTREGA)[number]) && (
+                    <option value={metodoEntrega}>{metodoEntrega}</option>
+                  )}
+                </select>
               </div>
               <div className="form-group">
                 <SwitchRow label={t("traslados.confirmacionRecibida")} value={confirmacion} onChange={setConfirmacion} />

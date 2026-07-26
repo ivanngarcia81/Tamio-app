@@ -1442,6 +1442,13 @@ export const en: Resources = {
     generarCarta: "Generate transfer letter",
     guardaPrimero: "Save the transfer first",
     generarRequiereAprobado: "Available once the transfer is approved",
+    entrega: {
+      mano: "Handed over in person",
+      email: "Email",
+      postal: "Postal mail",
+      tercero: "Through another person",
+      otro: "Other",
+    },
     metodoEntrega: "Delivery method",
     confirmacionRecibida: "Confirmation received from the other church",
     fechaConfirmacion: "Confirmation date",
