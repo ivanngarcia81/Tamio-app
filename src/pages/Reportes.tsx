@@ -103,7 +103,18 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       if (Object.keys(totales.porCategoriaGasto).length) {
         lineas.push(`Gastos por categoría: ${cats(totales.porCategoriaGasto)}`);
       }
-      if (depositosMes > 0) lineas.push(`Depositado al banco en el mes: ${fmtMoney(depositosMes)}`);
+      // El depósito NO es un subconjunto del ingreso del mes: son dos tablas
+      // sin relación (`depositos_bancarios.periodo` lo elige el tesorero a
+      // mano y el depósito puede llevar efectivo guardado de meses
+      // anteriores). Sin esta aclaración la IA ponía las dos cifras en la
+      // misma frase y el lector deducía que faltaba dinero.
+      if (depositosMes > 0) {
+        lineas.push(
+          `Depositado al banco en el mes: ${fmtMoney(depositosMes)} ` +
+            `(dinero llevado al banco durante el mes; puede incluir efectivo de meses ` +
+            `anteriores, así que NO forma parte de los ingresos del mes ni se suma con ellos)`,
+        );
+      }
       const texto = await resumirReporte({
         datos: lineas.join("\n"),
         idioma: i18n.language?.startsWith("en") ? "en" : "es",
@@ -136,7 +147,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       const lineas: string[] = [
         `Hoy: ${nowLocalIso().slice(0, 10)} · Moneda: ${church.moneda}`,
         `Año ${anio} — ingresos: ${fmtMoney(ingAnio)}, gastos: ${fmtMoney(gasAnio)}, balance: ${fmtMoney(ingAnio - gasAnio)}`,
-        `Depositado al banco en ${anio}: ${fmtMoney(depAnio)}`,
+        // Misma aclaración que en el resumen del mes: el depósito no es un
+        // subconjunto del ingreso, es dinero llevado al banco.
+        `Depositado al banco en ${anio}: ${fmtMoney(depAnio)} (dinero llevado al banco; ` +
+          `puede incluir efectivo de periodos anteriores, así que NO forma parte de los ` +
+          `ingresos ni se suma con ellos)`,
       ];
       const listaCats = (m: Record<string, number>) =>
         Object.entries(m).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${catNombre(c)}: ${fmtMoney(v)}`).join("; ");

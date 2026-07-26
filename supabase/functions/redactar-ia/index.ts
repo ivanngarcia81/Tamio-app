@@ -147,11 +147,15 @@ serve(async (req: Request) => {
           `usuario usando ÚNICAMENTE las cifras proporcionadas. Puedes comparar o sumar cifras ` +
           `dadas, pero NUNCA inventes, estimes ni extrapoles datos que no estén. Si la pregunta ` +
           `no puede responderse con estos datos, dilo con claridad y sugiere consultar los ` +
-          `reportes de la app. Responde breve y directo (un párrafo), en texto plano.`
+          `reportes de la app. Los depósitos bancarios son dinero llevado al banco, no un ` +
+          `ingreso: nunca los sumes ni los restes de los ingresos, los gastos o el balance. ` +
+          `Responde breve y directo (un párrafo), en texto plano.`
         : `You are the treasury assistant of a Christian church. Answer the user's question ` +
           `using ONLY the figures provided. You may compare or add given figures, but NEVER ` +
           `invent, estimate, or extrapolate data that is not present. If the question cannot ` +
           `be answered from this data, say so clearly and suggest checking the app's reports. ` +
+          `Bank deposits are money taken to the bank, not income: never add them to or ` +
+          `subtract them from income, expenses, or the balance. ` +
           `Answer briefly and directly (one paragraph), in plain text.`;
       usuario =
         (esES ? `Cifras disponibles (calculadas por la app):\n` : `Available figures (calculated by the app):\n`) +
@@ -165,11 +169,17 @@ serve(async (req: Request) => {
         ? `Eres el asistente de tesorería de una iglesia cristiana. Convierte cifras en un ` +
           `resumen breve en español, listo para leerse en una asamblea: claro, cálido y profesional. ` +
           `REGLA ABSOLUTA: usa ÚNICAMENTE los números que se te dan, tal cual; NUNCA inventes, ` +
-          `estimes ni redondees cifras. Máximo dos párrafos, texto plano sin HTML ni listas.`
+          `estimes ni redondees cifras. Si aparece una cifra de depósitos bancarios, menciónala ` +
+          `en frase aparte y aclara que es dinero llevado al banco, no un ingreso del mes; nunca ` +
+          `la sumes ni la restes de los ingresos, los gastos o el balance. ` +
+          `Máximo dos párrafos, texto plano sin HTML ni listas.`
         : `You are the treasury assistant of a Christian church. Turn figures into a short ` +
           `summary in English, ready to read at an assembly: clear, warm, and professional. ` +
           `ABSOLUTE RULE: use ONLY the numbers provided, exactly as given; NEVER invent, ` +
-          `estimate, or round figures. Two paragraphs max, plain text without HTML or lists.`;
+          `estimate, or round figures. If a bank-deposit figure appears, mention it in its own ` +
+          `sentence and make clear it is money taken to the bank, not income for the month; ` +
+          `never add it to or subtract it from income, expenses, or the balance. ` +
+          `Two paragraphs max, plain text without HTML or lists.`;
       usuario = (esES ? `Resume estas cifras del mes:\n` : `Summarize these monthly figures:\n`) + datos;
     } else if (modo === "acta") {
       if (!puntos) return json({ error: "Faltan los puntos a redactar." }, 400);
