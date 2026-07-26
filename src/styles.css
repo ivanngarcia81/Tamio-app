@@ -1296,7 +1296,14 @@ html.vibrancy .main { background: var(--surface); }
 .day-rows { display: flex; flex-direction: column; }
 .tx-row {
   display: grid;
-  grid-template-columns: 56px 24px 1fr 130px 130px 160px 24px;
+  /* Columnas elásticas en vez de fijas. Con anchos fijos la fila pedía
+     651 px y en un iPad vertical solo hay ~546: el importe se salía y
+     .tx-list (overflow: hidden) lo recortaba, así que tampoco allí se
+     veía completo. Con minmax cada columna cede lo que le sobra antes de
+     desbordar, y el importe conserva un mínimo para no partirse. */
+  grid-template-columns:
+    minmax(0, 56px) 24px minmax(0, 1fr)
+    minmax(0, 130px) minmax(0, 130px) minmax(96px, 160px) 24px;
   align-items: center;
   gap: 12px;
   padding: 10px 0;
