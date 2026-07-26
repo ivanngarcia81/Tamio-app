@@ -181,6 +181,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                   </span>
                   <RowMenu
                     onEdit={() => setModal({ open: true, acta: a })}
+                    extraItems={[{ label: t("common.imprimir"), onClick: () => { if (imprimiendo === null) imprimir(a); } }]}
                     onDelete={() => setPendingDelete(a)}
                   />
                 </div>

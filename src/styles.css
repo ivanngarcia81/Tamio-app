@@ -3947,8 +3947,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .form-input, .form-select, .form-textarea { font-size: 16px; min-height: 44px; }
   .form-textarea { min-height: 88px; }
   input[type="checkbox"] { width: 20px; height: 20px; }
-  /* Las acciones que hoy aparecen al pasar el mouse deben verse siempre. */
-  .row-actions { opacity: 1 !important; visibility: visible !important; }
+  /* En pantallas táctiles (iPhone y iPad) NO hay hover, así que el icono
+     rápido de acción (.row-actions: lápiz/ojo) no tiene sentido: es un
+     adorno de escritorio. Además la columna de acciones mide 40px —justo
+     para el menú "..."—, y al forzar el icono visible Y agrandarlo a 40px
+     los dos controles no caben y el icono se salía por el borde derecho.
+     El menú "..." (RowMenu) siempre está visible y contiene las mismas
+     acciones (editar, eliminar, ver), así que basta con él en táctil. En
+     Mac (puntero fino) el icono sigue apareciendo al pasar el mouse.
+     La especificidad iguala a .data-table .row-actions (línea ~1557) para
+     poder ganarle; si no, esa regla base dejaría el icono ocupando sitio. */
+  .data-table .row-actions { display: none; }
 }
 
 /* ============================================================

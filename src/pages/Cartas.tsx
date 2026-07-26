@@ -877,6 +877,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                         onEdit={() => abrirCarta(c)}
                         extraItems={(() => {
                           const extra: RowMenuItem[] = [
+                            { label: t("cartas.imprimirPdf"), onClick: () => imprimir(c) },
                             { label: t("cartas.duplicar"), onClick: () => duplicarCarta(c) },
                           ];
                           if (!["entregada", "archivada", "cancelada"].includes(c.estado)) {
