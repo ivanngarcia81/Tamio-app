@@ -4294,8 +4294,33 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .dash-canvas { gap: 14px; padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
   .header { row-gap: 8px; padding-bottom: 10px; }
   .content { gap: 14px; padding-top: 8px; padding-left: 14px; padding-right: 14px; }
-  .form-grid { grid-template-columns: 1fr; }
+  /* minmax(0, 1fr), no "1fr": un "1fr" es minmax(auto, 1fr), y ese "auto"
+     deja que la columna crezca hasta el ancho intrínseco de su contenido.
+     El control nativo de fecha de iOS tiene un ancho intrínseco enorme, así
+     que estiraba la columna y con ella el campo se salía del modal. */
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
   .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
+
+  /* Campos de fecha/hora en el iPhone: el control nativo de iOS conserva un
+     ancho intrínseco propio e IGNORA el text-align del <input> (por eso el
+     valor salía centrado y el campo se salía por la derecha). Con
+     -webkit-appearance: none el campo obedece al ancho del contenedor y a
+     nuestro estilo de caja, y el selector nativo sigue abriéndose al tocar.
+     El valor va en un pseudo-elemento aparte: se alinea y se deja encoger
+     ahí. Solo iPhone: en Mac e iPad el control nativo ya cabe. */
+  input[type="date"].form-input,
+  input[type="time"].form-input,
+  input[type="month"].form-input {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="date"].form-input::-webkit-date-and-time-value,
+  input[type="time"].form-input::-webkit-date-and-time-value,
+  input[type="month"].form-input::-webkit-date-and-time-value {
+    text-align: left;
+    min-width: 0;
+    margin: 0;
+  }
 
   /* Modales como hoja a pantalla completa (patrón iOS): nunca quedan
      debajo de la barra superior ni descentrados con el teclado abierto.
