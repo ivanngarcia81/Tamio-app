@@ -479,6 +479,9 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             <div>
               <div className="k">{t("reportes.depositosBancarios")}</div>
               <div className="v">{fmtMoney(depositosMes)}</div>
+              {depositosMes > 0 && (
+                <div className="r-nota">{t("reportes.depositosNota")}</div>
+              )}
             </div>
           </div>
         </div>

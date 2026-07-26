@@ -100,7 +100,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                     tx.member_nombre ?? tx.beneficiario ?? tx.detalle ?? tx.subcategoria ?? "";
                   return (
                     <div className="tx-row" key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
-                      <span className="tx-time">{fmtFecha(tx.fecha).hora}</span>
+                      <span className="tx-time solo-escritorio">{fmtFecha(tx.fecha).hora}</span>
                       <div className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}>
                         {tx.tipo === "ingreso" ? <IconArrowUp /> : <IconArrowDown />}
                       </div>

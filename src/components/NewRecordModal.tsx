@@ -81,7 +81,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
   const [subcategoria, setSubcategoria] = useState("");
   const [concepto, setConcepto] = useState("");
   const [fecha, setFecha] = useState(now.slice(0, 10));
-  const [hora, setHora] = useState(now.slice(11, 16));
+  // Sin prerrellenar: antes tomaba la hora del reloj y, como nadie la
+  // corrige, el registro acababa mostrando la hora de captura como si
+  // fuera la del movimiento (gastos "de las 2:29 de la madrugada").
+  const [hora, setHora] = useState("");
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState("efectivo");
   const [detalle, setDetalle] = useState("");
@@ -355,7 +358,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         subcategoria: tab === "ingreso" && categoria === "otros" ? subcategoria.trim() || null : null,
         concepto: conceptoGuardar,
         detalle: detalle.trim() || null,
-        fecha: `${fecha} ${hora}`,
+        fecha: hora ? `${fecha} ${hora}` : fecha,
         monto: m,
         metodo_pago: metodo,
         member_id: tab === "ingreso" ? aportanteId : null,
@@ -501,7 +504,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           subcategoria: categoria === "otros" ? subcategoria.trim() || null : null,
           concepto: conceptoGuardar,
           detalle: detalle.trim() || null,
-          fecha: `${fecha} ${hora}`,
+          fecha: hora ? `${fecha} ${hora}` : fecha,
           monto: m,
           metodo_pago: metodo,
           member_id: tab === "ingreso" ? aportanteId : null,

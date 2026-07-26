@@ -1656,6 +1656,15 @@ html.vibrancy .main { background: var(--surface); }
 }
 .report-preview .r-summary .k { font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: var(--track-caps); font-weight: 600; }
 .report-preview .r-summary .v { font-size: 22px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+/* Aclara que lo depositado no es un subconjunto del ingreso del periodo:
+   las dos cifras están juntas y se leen como si una contuviera a la otra. */
+.report-preview .r-summary .r-nota {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+  margin-top: 5px;
+  max-width: 30ch;
+}
 
 /* Footer */
 .footer {

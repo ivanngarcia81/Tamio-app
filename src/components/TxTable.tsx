@@ -92,7 +92,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           const celdaFecha = (
             <div className="td">
               <div style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
-              <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
+              <div className="solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
             </div>
           );
           const celdaCategoria = (
