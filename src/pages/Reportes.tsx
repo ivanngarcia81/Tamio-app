@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
+  catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
   listDepositosPeriodo, mesLegible, monthDepositos, monthlySummary, monthTotals, nextMonth, pctChange, prevMonth,
   saldoAnteriorDe,
@@ -23,13 +23,6 @@ import { showToast } from "../toast";
 import CountUp from "../components/CountUp";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
-
-const COLOR_INGRESO: Record<string, string> = {
-  ofrenda: "#22c55e",
-  diezmo: "#7c3aed",
-  donacion: "#06b6d4",
-  otros: "#64748b",
-};
 
 interface Props {
   church: Church;
@@ -194,10 +187,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const balanceAnt = (totalesAnt?.ingresos ?? 0) - (totalesAnt?.gastos ?? 0);
 
   const filasIngreso = getCategoriasIngreso()
-    .map((c) => ({ ...c, color: COLOR_INGRESO[c.id] ?? c.color ?? "#64748b", total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
+    .map((c) => ({ ...c, color: colorCategoria("ingreso", c.id), total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
     .filter((c) => c.total > 0);
   const filasGasto = getCategoriasGasto()
-    .map((c) => ({ ...c, color: c.color ?? "#64748b", total: totales?.porCategoriaGasto[c.id] ?? 0 }))
+    .map((c) => ({ ...c, color: colorCategoria("gasto", c.id), total: totales?.porCategoriaGasto[c.id] ?? 0 }))
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { textoCorto } from "../movil";
 import {
-  catNombre, categoriaInfo, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
+  catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
   getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
   listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth,
   type Church, type MovimientoRecurrente, type MonthTotals, type Tx,
@@ -109,6 +109,35 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     : totales?.porCategoriaGasto ?? {};
   const totalMes = esIngreso ? totales?.ingresos ?? 0 : totales?.gastos ?? 0;
 
+  // Las tarjetas de resumen muestran las categorías CON movimiento, de mayor
+  // a menor. Antes tomaban las tres primeras del catálogo, así que podían
+  // enseñar dos categorías en cero mientras escondían una con gasto real.
+  // Solo hay tres huecos: si hay más categorías con movimiento se muestran
+  // las dos mayores y el resto se agrupa, para que lo visible siga sumando
+  // el total del mes.
+  const tarjetasCategoria = useMemo(() => {
+    const conMovimiento = categorias
+      .map((c) => ({
+        id: c.id,
+        nombre: catNombre(c.id),
+        color: colorCategoria(tipo, c.id),
+        monto: porCategoria[c.id] ?? 0,
+      }))
+      .filter((c) => c.monto > 0)
+      .sort((a, b) => b.monto - a.monto);
+    if (conMovimiento.length <= 3) return conMovimiento;
+    const resto = conMovimiento.slice(2);
+    return [
+      ...conMovimiento.slice(0, 2),
+      {
+        id: "__otras",
+        nombre: t("mov.otrasCategorias", { count: resto.length }),
+        color: "#64748b",
+        monto: resto.reduce((s, c) => s + c.monto, 0),
+      },
+    ];
+  }, [categorias, porCategoria, tipo, t]);
+
   const q = query.trim().toLowerCase();
   const coincide = (tx: Tx) =>
     !q ||
@@ -204,20 +233,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
                 </div>
               </div>
-              {categorias.slice(0, 3).map((c) => {
-                const v = porCategoria[c.id] ?? 0;
-                const pct = totalMes > 0 ? Math.round((v / totalMes) * 1000) / 10 : 0;
+              {tarjetasCategoria.map((c) => {
+                const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
                 return (
                   <div className="stat-card" key={c.id}>
                     <div className="stat-head">
-                      <span className="stat-label">{catNombre(c.id)}</span>
-                      <span className={`tag ${c.tagClass} cat-dot`} aria-hidden="true" />
+                      <span className="stat-label">{c.nombre}</span>
+                      <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
                     </div>
                     <div className="stat-value md">
-                      <CountUp value={v} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                      <CountUp value={c.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
                     </div>
                     <div className="stat-bar">
-                      <div className="stat-bar-fill" style={{ width: `${pct}%`, background: "var(--accent-1)" }} />
+                      <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
                     </div>
                     <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
                   </div>

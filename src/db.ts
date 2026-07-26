@@ -416,6 +416,24 @@ export function metodoNombre(id: string): string {
   return i18n.t(`metodo.${id}`, { defaultValue: id });
 }
 
+/** Los gastos llevan su color en el catálogo; los ingresos no, así que su
+ *  paleta vive aquí. Fuente única para que el punto de una tarjeta, la
+ *  barra de progreso y el segmento de la dona no se contradigan. */
+const COLOR_INGRESO: Record<string, string> = {
+  ofrenda: "#22c55e",
+  diezmo: "#7c3aed",
+  donacion: "#06b6d4",
+  otros: "#64748b",
+};
+
+/** Color de una categoría. Gris neutro para las personalizadas y para los
+ *  ids retirados del catálogo. */
+export function colorCategoria(tipo: "ingreso" | "gasto", id: string): string {
+  if (tipo === "ingreso") return COLOR_INGRESO[id] ?? "#64748b";
+  const found = CATEGORIAS_GASTO.find((c) => c.id === id);
+  return found?.color ?? "#64748b";
+}
+
 export function categoriaInfo(tipo: "ingreso" | "gasto", id: string) {
   const list: readonly { id: string; nombre: string; tagClass: string }[] =
     tipo === "ingreso" ? CATEGORIAS_INGRESO : CATEGORIAS_GASTO;

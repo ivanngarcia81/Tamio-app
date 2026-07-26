@@ -145,6 +145,7 @@ export const es = {
   },
 
   mov: {
+    otrasCategorias: "Otras ({{count}})",
     registrados_one: "{{count}} movimiento registrado",
     registrados_other: "{{count}} movimientos registrados",
     mesAnterior: "Mes anterior",

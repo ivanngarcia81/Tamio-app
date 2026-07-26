@@ -151,6 +151,7 @@ export const en: Resources = {
   },
 
   mov: {
+    otrasCategorias: "Other ({{count}})",
     registrados_one: "{{count}} transaction recorded",
     registrados_other: "{{count}} transactions recorded",
     mesAnterior: "Previous month",
