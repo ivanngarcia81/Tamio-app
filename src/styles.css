@@ -4047,6 +4047,16 @@ html.vibrancy .main { background: var(--surface); }
   .tabla-actas .th:nth-child(1), .tabla-actas .td:nth-child(1),
   .tabla-actas .th:nth-child(4), .tabla-actas .td:nth-child(4) { display: none; }
   .tabla-actas .row-actions { display: none; }
+
+  /* Membresía en teléfono: miembro + estado + menú; contacto y fecha de
+     ingreso se ven en la ficha (tocar la fila). */
+  .tabla-membresia .thead, .tabla-membresia .tr {
+    grid-template-columns: minmax(0, 1fr) 100px 44px !important;
+    min-width: 0;
+  }
+  .tabla-membresia .th:nth-child(2), .tabla-membresia .td:nth-child(2),
+  .tabla-membresia .th:nth-child(3), .tabla-membresia .td:nth-child(3) { display: none; }
+  .tabla-membresia .row-actions { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -209,7 +209,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             icon={<IconIdBadge size={20} strokeWidth={1.8} />}
           />
         ) : (
-          <div className="data-table roomy">
+          <div className="data-table roomy tabla-membresia">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>
               <div className="th">{t("miembros.colMiembro")}</div>
               <div className="th">{t("miembros.colContacto")}</div>
