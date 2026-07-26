@@ -4087,6 +4087,63 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      con categorías que no tienen ni un movimiento. */
   .tx-filters .chip.vacia { display: none; }
 
+  /* ---- Movimientos recientes del inicio ----
+     La fila pedía 524 px fijos más el hueco de la descripción, muy por
+     encima de los 393 del teléfono, y como .tx-list recorta (overflow
+     hidden) el importe quedaba fuera de alcance: ni visible ni
+     alcanzable con scroll. Encima el bloque de fecha se llevaba 90 px
+     con el día en cuerpo 28.
+
+     Ahora la fecha es una línea compacta que encabeza el grupo, y cada
+     movimiento es una tarjeta de dos líneas: descripción e importe
+     arriba —los dos datos que se buscan—, y categoría, método y menú
+     debajo como metadatos. */
+  .tx-day {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .day-label {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+    padding-top: 0;
+  }
+  .day-label .day-num { font-size: 15px; }
+  .day-label .day-month { margin-top: 0; }
+
+  .tx-row {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "icono desc  desc   monto"
+      "icono tag   metodo menu";
+    gap: 5px 8px;
+    align-items: center;
+  }
+  .tx-row > .tx-icon { grid-area: icono; align-self: start; }
+  .tx-row > .tx-desc { grid-area: desc; }
+  /* Fase 2: el texto no se recortaba, se derramaba fuera de su celda y la
+     etiqueta —que va después en el marcado— se pintaba encima. No era
+     truncamiento fallido: era desbordamiento. min-width: 0 permite que la
+     celda encoja y overflow lo recorta de verdad. Esto contiene también el
+     clip de comprobante, que se escapaba por el mismo sitio. */
+  .tx-row > .tx-desc,
+  .tx-row > .tx-desc .who {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tx-row > .tag { grid-area: tag; justify-self: start; }
+  .tx-row > .method { grid-area: metodo; justify-self: start; }
+  .tx-row > .tx-amount {
+    grid-area: monto;
+    justify-self: end;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .tx-row > .more { grid-area: menu; justify-self: end; }
+
   /* ---- Selector de categoría del formulario de movimientos ----
      Fase 1: eran cuatro columnas fijas. Como cada columna es 1fr (mínimo
      auto), un nombre largo como "Mantenimiento" ensancha su columna y la
