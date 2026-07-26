@@ -3992,6 +3992,26 @@ html.vibrancy .main { background: var(--surface); }
   .danger-row { flex-direction: column; align-items: stretch; gap: 10px; }
   .danger-row .btn.danger-btn { width: 100%; justify-content: center; }
 
+  /* ---- Los tres "fantasmas" (Dashboard, Gastos, Reportes) ----
+     Contenido de una tabla con desplazamiento horizontal que se pintaba
+     fuera de su contenedor, cientos de píxeles más arriba, sobre otra
+     sección, y cuya posición seguía el scroll de la tabla.
+
+     Origen: .data-table es un contenedor de scroll (overflow-x: auto) y su
+     cabecera es position: sticky. Ahí la cabecera NUNCA puede despegarse
+     —el contenedor solo desplaza en horizontal, no en vertical—, así que
+     el sticky no aporta nada y a cambio obliga a WebKit a promoverla a su
+     propia capa de composición, gestionada por el coordinador de scroll.
+     Esa capa es la que se repinta en la posición equivocada.
+
+     Se ataca por los dos lados: se quita el sticky inútil (deja de haber
+     capa que descolocar) y se aísla el pintado del contenedor. */
+  .data-table .thead { position: static !important; }
+  .data-table, .tx-list { contain: paint; }
+  /* Las tarjetas con esquinas redondeadas que envuelven tablas no
+     recortaban a sus hijos. */
+  .card:has(.data-table), .card:has(.tx-list) { overflow: hidden; }
+
   /* Detalles redundantes en pantalla angosta (p. ej. el periodo "2026-07"
      debajo de una fecha que ya dice julio de 2026). */
   .solo-escritorio { display: none; }
