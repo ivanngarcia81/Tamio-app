@@ -366,6 +366,7 @@ export const en: Resources = {
     comprobanteAdjunto: "Receipt attached",
     ia: {
       placeholder: "E.g.: $500 offering on Sunday, cash, from John Smith",
+      placeholderGasto: "E.g.: $186 electric bill paid by transfer",
       hint: "Describe it in your words and AI fills the form. Review before saving.",
       interpretar: "✨ Interpret",
       interpretando: "Interpreting…",

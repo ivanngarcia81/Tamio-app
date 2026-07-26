@@ -360,6 +360,7 @@ export const es = {
     comprobanteAdjunto: "Comprobante adjuntado",
     ia: {
       placeholder: "Ej.: ofrenda de $500 el domingo en efectivo de Juan Pérez",
+      placeholderGasto: "Ej.: recibo de luz de $186 pagado por transferencia",
       hint: "Descríbelo en tus palabras y la IA llena el formulario. Revisa antes de guardar.",
       interpretar: "✨ Interpretar",
       interpretando: "Interpretando…",

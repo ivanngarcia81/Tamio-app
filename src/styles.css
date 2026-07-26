@@ -1799,6 +1799,14 @@ html.vibrancy .main { background: var(--surface); }
 }
 .form-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .form-label .opt { font-weight: 500; color: var(--text-3); }
+/* WebKit centra el valor de los campos de fecha y hora, así que el valor
+   no se alineaba ni con su etiqueta ni con los demás campos del formulario.
+   Una sola regla lo corrige en los tres formularios que los usan
+   (movimientos, servicio y ficha de miembro). */
+input[type="date"].form-input,
+input[type="time"].form-input,
+input[type="month"].form-input { text-align: left; }
+
 .form-input, .form-select, .form-textarea {
   width: 100%;
   padding: 10px 12px;
@@ -4059,6 +4067,38 @@ html.vibrancy .main { background: var(--surface); }
   /* Filtros de categoría: no tiene sentido ocupar cuatro filas de chips
      con categorías que no tienen ni un movimiento. */
   .tx-filters .chip.vacia { display: none; }
+
+  /* ---- Selector de categoría del formulario de movimientos ----
+     Fase 1: eran cuatro columnas fijas. Como cada columna es 1fr (mínimo
+     auto), un nombre largo como "Mantenimiento" ensancha su columna y la
+     rejilla entera se desborda: la cuarta quedaba cortada por el borde.
+     Con once categorías, cuatro columnas no caben en 440 pt de ninguna
+     manera, así que los chips fluyen y se ajustan a su contenido, igual
+     que ya hacían los cuatro de Ingreso. */
+  .category-grid, .type-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+  .category-grid .cat-pill, .type-grid .cat-pill { width: auto; }
+
+  /* Asistente de IA: con el botón al lado, al campo le quedaban unos
+     pocos centímetros y el ejemplo se cortaba a media palabra. El botón
+     baja a su propia línea y el campo se queda con todo el ancho. */
+  .ia-capture-row { flex-wrap: wrap; }
+  .ia-capture-row .form-input { flex: 1 1 100%; }
+  .ia-capture-row .btn.ia-primary { flex: 1 1 100%; justify-content: center; }
+  .ia-capture-hint { padding-left: 0; }
+
+  /* Fase 2: todos los chips llevan el color de su categoría de fondo y el
+     seleccionado solo se oscurecía un 18%, así que parecían encendidos a
+     la vez. Ahora el color pleno es exclusivo del elegido; el resto va
+     apagado pero conserva su tinte para reconocerlo de un vistazo. El
+     !important gana a los filtros de hover y :active, que si no compiten. */
+  .cat-pill { filter: saturate(.18) !important; opacity: .8; }
+  .cat-pill.is-selected {
+    filter: none !important;
+    opacity: 1;
+    font-weight: 700;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 2px var(--ink) inset;
+  }
 
   /* ---- Resumen mensual: de tabla a lista rotulada ----
      Cinco columnas para una sola fila obligaban a arrastrar a un lado

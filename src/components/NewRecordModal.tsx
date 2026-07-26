@@ -573,7 +573,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   value={iaTexto}
                   onChange={(e) => setIaTexto(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); interpretarTexto(); } }}
-                  placeholder={t("recordModal.ia.placeholder")}
+                  placeholder={t(tab === "gasto" ? "recordModal.ia.placeholderGasto" : "recordModal.ia.placeholder")}
                   disabled={iaCargando}
                 />
                 <button
@@ -654,7 +654,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                   <input className="form-input" type="date" value={fecha} max={hoy} onChange={(e) => setFecha(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t("recordModal.hora")}</label>
+                  <label className="form-label">{t("recordModal.hora")} <span className="opt">{t("common.opcional")}</span></label>
                   <input className="form-input" type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
                 </div>
               </div>
