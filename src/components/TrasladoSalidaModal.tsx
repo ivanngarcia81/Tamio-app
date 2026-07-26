@@ -6,7 +6,7 @@ import {
 } from "../db";
 import { Seccion, SwitchRow } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
-import { IconClose } from "../icons";
+import { IconClose, IconFileText } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -285,15 +285,24 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
                     {t("traslados.abrirCartaVinculada")}
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="btn secondary"
-                    disabled={!puedeGenerarCarta || !traslado || saving}
-                    title={!traslado ? t("traslados.guardaPrimero") : !puedeGenerarCarta ? t("traslados.generarRequiereAprobado") : undefined}
-                    onClick={generarCarta}
-                  >
-                    {t("traslados.generarCarta")}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      disabled={!puedeGenerarCarta || !traslado || saving}
+                      onClick={generarCarta}
+                    >
+                      <IconFileText size={14} /> {t("traslados.generarCarta")}
+                    </button>
+                    {/* El motivo vivía en un title, y en una pantalla táctil
+                        no hay puntero que lo revele: el botón se veía apagado
+                        sin ninguna explicación. Ahora se dice en pantalla. */}
+                    {(!traslado || !puedeGenerarCarta) && (
+                      <div className="form-hint" style={{ marginTop: 6 }}>
+                        {!traslado ? t("traslados.guardaPrimero") : t("traslados.generarRequiereAprobado")}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
               <div className="form-group">

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { esMovil } from "../../movil";
 import { IconMonitor, IconMoon, IconSun } from "../../icons";
 
 export type ThemePref = "light" | "dark" | "auto";
@@ -40,6 +41,13 @@ export default function AppearanceSettings({ value, onChange }: Props) {
         ))}
       </div>
       <div className="form-hint">{t("apariencia.hint")}</div>
+      {/* En iOS los menús desplegables y los selectores de fecha los dibuja
+          el sistema, no la app, y siguen la apariencia del iPhone. Si aquí
+          se fuerza un tema contrario, esos menús se verán del otro color:
+          más vale decirlo que dejar que sorprenda. */}
+      {esMovil() && value !== "auto" && (
+        <div className="form-hint">{t("apariencia.hintMenusSistema")}</div>
+      )}
     </div>
   );
 }

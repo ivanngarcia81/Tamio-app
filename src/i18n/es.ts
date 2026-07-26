@@ -2224,6 +2224,7 @@ export const es = {
   },
 
   apariencia: {
+    hintMenusSistema: "Los menús desplegables y los selectores de fecha los dibuja iOS y seguirán la apariencia del iPhone, no la elegida aquí.",
     titulo: "Apariencia",
     sub: "Elige el tema de la aplicación",
     claro: "Claro",

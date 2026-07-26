@@ -2217,6 +2217,7 @@ export const en: Resources = {
   },
 
   apariencia: {
+    hintMenusSistema: "Dropdown menus and date pickers are drawn by iOS and will follow the iPhone's appearance, not the theme chosen here.",
     titulo: "Appearance",
     sub: "Choose the application theme",
     claro: "Light",
