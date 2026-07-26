@@ -316,6 +316,7 @@ export const en: Resources = {
   },
 
   recordModal: {
+    posibleDuplicado: "A similar entry already exists ({{nombres}}). Check before saving; if it is correct, save again.",
     editarIngreso: "Edit income",
     editarGasto: "Edit expense",
     editarMiembro: "Edit member",

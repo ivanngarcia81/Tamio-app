@@ -41,6 +41,16 @@ i18n.use(initReactI18next).init({
   lng: resolveLang(initialLangPref()),
   fallbackLng: "es",
   interpolation: { escapeValue: false },
+  // Sin esto, una clave que no existe se pinta tal cual al usuario
+  // ("config.ciudad" en vez de "Ciudad") sin que nada avise. En desarrollo
+  // se grita por consola; en producción no se toca el comportamiento, que
+  // al menos deja ver algo en vez de un hueco.
+  saveMissing: import.meta.env.DEV,
+  missingKeyHandler: import.meta.env.DEV
+    ? (idiomas, _ns, clave) => {
+        console.error(`[i18n] clave sin traducir: "${clave}" (${idiomas.join(", ")})`);
+      }
+    : undefined,
 });
 
 // El menú nativo de macOS se arma en Rust y arranca en español: aquí se le

@@ -238,7 +238,7 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
                 <input className="form-input" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("config.ciudad")}</label>
+                <label className="form-label">{t("iglesia.ciudad")}</label>
                 <input className="form-input" value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
               </div>
               <div className="form-group">
@@ -246,7 +246,7 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
                 <input className="form-input" value={region} onChange={(e) => setRegion(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("config.pais")}</label>
+                <label className="form-label">{t("iglesia.pais")}</label>
                 <input className="form-input" value={pais} onChange={(e) => setPais(e.target.value)} />
               </div>
               <div className="form-group">

@@ -310,6 +310,7 @@ export const es = {
   },
 
   recordModal: {
+    posibleDuplicado: "Ya hay un movimiento parecido registrado ({{nombres}}). Revisa antes de guardar; si es correcto, guarda de nuevo.",
     editarIngreso: "Editar ingreso",
     editarGasto: "Editar gasto",
     editarMiembro: "Editar miembro",
