@@ -3963,8 +3963,10 @@ html.vibrancy .main { background: var(--surface); }
   }
 
   /* El contenido arranca debajo de la barra superior fija y, al hacer
-     scroll, se desliza por debajo de su difuminado. */
-  .main { padding-top: calc(58px + env(safe-area-inset-top)); }
+     scroll, se desliza por debajo de su difuminado. overflow-x evita que
+     cualquier elemento más ancho que la pantalla desplace la página
+     entera de lado (las tablas anchas tienen su propio scroll interno). */
+  .main { padding-top: calc(58px + env(safe-area-inset-top)); overflow-x: hidden; }
   /* La safe-area ya la cubre .main; se anula también la regla de iPad
      (:root.movil .header), que tiene más especificidad que ".header". */
   .header, :root.movil .header { padding-top: 18px; }
@@ -4072,14 +4074,16 @@ html.vibrancy .main { background: var(--surface); }
   }
   .tabla-servicios .th:nth-child(3), .tabla-servicios .td:nth-child(3) { display: none; }
 
-  /* Informe de miembros en teléfono: miembro + asistencia + menú; las
-     fechas y el área de servicio se ven en la ficha. */
+  /* Informe de miembros en teléfono: miembro + asistencia; las fechas,
+     el área de servicio y la edición se hacen desde la ficha (tocar la
+     fila). El lápiz suelto de la última columna se oculta con ella. */
   .tabla-informe-miembros .thead, .tabla-informe-miembros .tr {
-    grid-template-columns: minmax(0, 1fr) 92px 40px !important;
+    grid-template-columns: minmax(0, 1fr) 92px !important;
     min-width: 0;
   }
   .tabla-informe-miembros .th:nth-child(2), .tabla-informe-miembros .td:nth-child(2),
-  .tabla-informe-miembros .th:nth-child(3), .tabla-informe-miembros .td:nth-child(3) { display: none; }
+  .tabla-informe-miembros .th:nth-child(3), .tabla-informe-miembros .td:nth-child(3),
+  .tabla-informe-miembros .th:nth-child(5), .tabla-informe-miembros .td:nth-child(5) { display: none; }
 
   /* Membresía en teléfono: miembro + estado + menú; contacto y fecha de
      ingreso se ven en la ficha (tocar la fila). */
