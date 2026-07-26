@@ -3983,6 +3983,12 @@ html.vibrancy .main { background: var(--surface); }
   /* Si un selector segmentado no cabe (p. ej. idiomas en la bienvenida),
      que se pueda desplazar de lado en vez de desbordar la tarjeta. */
   .tabs-segmented { max-width: 100%; overflow-x: auto; }
+
+  /* Tablas anchas: sin un ancho mínimo, la rejilla de cada fila se comprime
+     al ancho del teléfono y recorta columnas sin remedio. Con él, las filas
+     conservan su tamaño natural y la tabla se desliza de lado (el contenedor
+     .data-table ya trae overflow-x: auto). */
+  .data-table .thead, .data-table .tr { min-width: 640px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
