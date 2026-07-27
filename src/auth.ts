@@ -25,6 +25,7 @@ export function useSupabaseAuth(): {
   estado: EstadoAuth;
   salir: () => Promise<void>;
   guardarPerfil: (cambios: { nombre: string; foto: string | null }) => Promise<void>;
+  borrarCuenta: () => Promise<void>;
 } {
   const [estado, setEstado] = useState<EstadoAuth>(VACIO);
   const userIdRef = useRef<string | null>(null);
@@ -76,6 +77,24 @@ export function useSupabaseAuth(): {
 
   const salir = useCallback(async () => { await supabase?.auth.signOut(); }, []);
 
+  /** Elimina la cuenta del usuario (requisito de Apple). Llama a la función de
+   *  servidor `borrar-cuenta` —que borra perfil, iglesia y cuenta de auth con
+   *  permisos de admin— y luego cierra la sesión. El llamador se encarga de
+   *  vaciar los datos locales y recargar. */
+  const borrarCuenta = useCallback(async () => {
+    if (!supabase) throw new Error("Supabase no está configurado.");
+    const { error } = await supabase.functions.invoke("borrar-cuenta", { body: {} });
+    if (error) {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx) {
+        const cuerpo = await ctx.json().catch(() => null) as { error?: string } | null;
+        if (cuerpo?.error) throw new Error(cuerpo.error);
+      }
+      throw error;
+    }
+    await supabase.auth.signOut();
+  }, []);
+
   const guardarPerfil = useCallback(async (cambios: { nombre: string; foto: string | null }) => {
     if (!supabase || !userIdRef.current) return;
     const nombre = cambios.nombre.trim() || null;
@@ -87,5 +106,5 @@ export function useSupabaseAuth(): {
     setEstado((e) => ({ ...e, nombre, foto: cambios.foto }));
   }, []);
 
-  return { estado, salir, guardarPerfil };
+  return { estado, salir, guardarPerfil, borrarCuenta };
 }

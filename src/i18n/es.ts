@@ -2043,6 +2043,9 @@ export const es = {
     seleccionarFoto: "Selecciona una foto",
     imagen: "Imagen",
     hint: "Tu foto se guarda en tu cuenta y aparece en cualquier equipo donde inicies sesión.",
+    borrarCuenta: "Borrar mi cuenta",
+    borrarCuentaAviso: "Se eliminará tu cuenta de forma permanente, junto con todos los datos de tu iglesia en la nube (movimientos, miembros, cartas, etc.). Esta acción no se puede deshacer.",
+    borrarCuentaConfirmar: "Sí, borrar mi cuenta",
   },
   login: {
     sub: "Inicia sesión para continuar",

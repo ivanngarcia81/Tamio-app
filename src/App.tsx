@@ -30,7 +30,7 @@ import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
-import { countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
+import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
 import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
@@ -103,7 +103,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Con login activo el rol viene del servidor; sin login, del selector manual.
-  const { estado: authEstado, salir, guardarPerfil } = useSupabaseAuth();
+  const { estado: authEstado, salir, guardarPerfil, borrarCuenta } = useSupabaseAuth();
   const [perfilAbierto, setPerfilAbierto] = useState(false);
   // Cajón lateral en pantallas angostas (iPhone): la sidebar se oculta y se
   // abre con el botón de menú; navegar la cierra sola.
@@ -450,6 +450,13 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           email={authEstado.email}
           foto={authEstado.foto}
           onGuardar={guardarPerfil}
+          onBorrarCuenta={authHabilitado ? async () => {
+            // Borra la cuenta en la nube, luego vacía los datos locales y
+            // recarga la app (queda como recién instalada).
+            await borrarCuenta();
+            await borrarTodoLocal().catch(() => { /* aun sin local, seguimos */ });
+            window.location.reload();
+          } : undefined}
           onClose={() => setPerfilAbierto(false)}
         />
       )}

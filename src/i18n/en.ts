@@ -2036,6 +2036,9 @@ export const en: Resources = {
     seleccionarFoto: "Choose a photo",
     imagen: "Image",
     hint: "Your photo is saved to your account and appears on any device where you sign in.",
+    borrarCuenta: "Delete my account",
+    borrarCuentaAviso: "Your account will be permanently deleted, along with all of your church's cloud data (transactions, members, letters, etc.). This action cannot be undone.",
+    borrarCuentaConfirmar: "Yes, delete my account",
   },
   login: {
     sub: "Sign in to continue",

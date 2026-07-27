@@ -585,6 +585,21 @@ html.vibrancy .main { background: var(--surface); }
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+/* Borrar cuenta: acción discreta al pie del perfil (requisito de Apple). */
+.perfil-borrar { width: 100%; margin-top: 14px; text-align: center; }
+.btn-borrar-cuenta {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.btn-borrar-cuenta:hover { background: #fef2f2; }
+:root[data-theme="dark"] .btn-borrar-cuenta:hover { background: rgba(220, 38, 38, 0.15); }
+.perfil-borrar-confirmar { width: 100%; }
 .nav-signout {
   width: 100%;
   background: none;

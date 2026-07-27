@@ -11,16 +11,33 @@ interface Props {
   email: string | null;
   foto: string | null;
   onGuardar: (cambios: { nombre: string; foto: string | null }) => Promise<void>;
+  /** Elimina la cuenta (nube + local) y recarga. Solo se pasa con login en la
+   *  nube; si es undefined, no se muestra la opción. Requisito de Apple. */
+  onBorrarCuenta?: () => Promise<void>;
   onClose: () => void;
 }
 
-export default function PerfilModal({ nombre, email, foto, onGuardar, onClose }: Props) {
+export default function PerfilModal({ nombre, email, foto, onGuardar, onBorrarCuenta, onClose }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
   const [nombreLocal, setNombreLocal] = useState<string>(nombre ?? "");
   const [fotoLocal, setFotoLocal] = useState<string | null>(foto);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  const [borrando, setBorrando] = useState(false);
+
+  async function borrarCuenta() {
+    if (!onBorrarCuenta) return;
+    setBorrando(true);
+    setError(null);
+    try {
+      await onBorrarCuenta(); // recarga la app al terminar; no vuelve de aquí
+    } catch (e) {
+      setError(String(e instanceof Error ? e.message : e));
+      setBorrando(false);
+    }
+  }
 
   const sinCambios = fotoLocal === foto && nombreLocal.trim() === (nombre ?? "").trim();
   const ini = iniciales(nombreLocal || nombre, email);
@@ -106,6 +123,31 @@ export default function PerfilModal({ nombre, email, foto, onGuardar, onClose }:
             {guardando ? t("common.guardando") : t("common.guardarCambios")}
           </button>
         </div>
+
+        {/* Borrar cuenta (requisito de Apple). Solo con login en la nube. */}
+        {onBorrarCuenta && (
+          <div className="perfil-borrar">
+            {!confirmandoBorrado ? (
+              <button type="button" className="btn-borrar-cuenta" onClick={() => { setError(null); setConfirmandoBorrado(true); }}>
+                {t("perfil.borrarCuenta")}
+              </button>
+            ) : (
+              <div className="perfil-borrar-confirmar">
+                <div className="form-warning" style={{ display: "flex", gap: 8, alignItems: "flex-start", textAlign: "left" }}>
+                  <IconWarn size={14} /> <span>{t("perfil.borrarCuentaAviso")}</span>
+                </div>
+                <div style={{ display: "flex", gap: 10, marginTop: 12, justifyContent: "center" }}>
+                  <button type="button" className="btn secondary" onClick={() => setConfirmandoBorrado(false)} disabled={borrando}>
+                    {t("common.cancelar")}
+                  </button>
+                  <button type="button" className="btn primary danger" onClick={borrarCuenta} disabled={borrando}>
+                    {borrando ? t("common.guardando") : t("perfil.borrarCuentaConfirmar")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

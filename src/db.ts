@@ -3664,3 +3664,27 @@ export async function reinicioDeFabrica(): Promise<void> {
     throw e;
   }
 }
+
+/** Borra en DURO todos los datos locales, incluida la iglesia y los usuarios.
+ *  Se usa tras eliminar la cuenta en la nube (borrar-cuenta): ahí SÍ conviene
+ *  borrado duro porque la cuenta y la iglesia remota ya no existen, así que no
+ *  hay nada que sincronizar ni que pueda reaparecer. Deja la base como recién
+ *  instalada; el llamador recarga la app. */
+export async function borrarTodoLocal(): Promise<void> {
+  const d = await getDb();
+  const todas = [
+    "servicio_asistencia", ...TABLAS_DATOS,
+    "plantillas", "categorias_custom", "usuarios", "churches",
+  ];
+  await d.execute("BEGIN");
+  try {
+    await d.execute("PRAGMA defer_foreign_keys = ON");
+    for (const tabla of todas) {
+      await d.execute(`DELETE FROM ${tabla}`);
+    }
+    await d.execute("COMMIT");
+  } catch (e) {
+    await d.execute("ROLLBACK").catch(() => { /* la transacción ya se deshizo */ });
+    throw e;
+  }
+}
