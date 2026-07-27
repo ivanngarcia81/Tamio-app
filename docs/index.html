@@ -1,203 +1,133 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Política de privacidad de Tamio</title>
+<title>Tamio — Church administration software</title>
+<meta name="description" content="Tamio is subscription software that helps churches manage treasury and secretariat in one place, on Mac, iPad and iPhone." />
 <style>
-  :root { color-scheme: light dark; }
+  :root { color-scheme: light dark; --bg:#f5f5f7; --card:#fff; --ink:#1c1c1e; --ink2:#48484a; --ink3:#8a8a8e; --line:#e5e5ea; --brand:#2f855a; --brand2:#276749; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#000; --card:#1c1c1e; --ink:#f2f2f7; --ink2:#c7c7cc; --ink3:#98989d; --line:#2c2c2e; --brand:#48bb78; --brand2:#38a169; } }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.65;
-    color: #1c1c1e;
-    background: #f5f5f7;
-  }
-  .wrap {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 40px 22px 80px;
-  }
-  .card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 40px 34px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 30px rgba(0,0,0,.04);
-  }
-  h1 { font-size: 27px; margin: 0 0 4px; letter-spacing: -.02em; }
-  h2 { font-size: 19px; margin: 34px 0 8px; letter-spacing: -.01em; }
-  .fecha { color: #8a8a8e; font-size: 14px; margin: 0 0 24px; }
-  p, li { font-size: 15.5px; }
-  a { color: #0a84ff; }
-  strong { font-weight: 600; }
-  .sep { height: 1px; background: #e5e5ea; border: 0; margin: 48px 0; }
-  .lang-switch { text-align: center; margin-bottom: 26px; font-size: 14px; }
-  .lang-switch a { text-decoration: none; font-weight: 600; }
-  footer { text-align: center; color: #8a8a8e; font-size: 13px; margin-top: 34px; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #000; color: #f2f2f7; }
-    .card { background: #1c1c1e; box-shadow: none; border: 1px solid #2c2c2e; }
-    .fecha, footer { color: #98989d; }
-    .sep { background: #2c2c2e; }
-  }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.6; color:var(--ink); background:var(--bg); }
+  a { color:var(--brand); text-decoration:none; }
+  .wrap { max-width:960px; margin:0 auto; padding:0 22px; }
+  header.nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; }
+  .logo { font-size:22px; font-weight:700; letter-spacing:-.02em; }
+  .logo span { color:var(--brand); }
+  nav.links a { margin-left:20px; font-size:14.5px; color:var(--ink2); }
+  .hero { text-align:center; padding:60px 0 40px; }
+  .hero h1 { font-size:40px; line-height:1.12; letter-spacing:-.03em; margin:0 0 16px; }
+  .hero p { font-size:19px; color:var(--ink2); max-width:640px; margin:0 auto 28px; }
+  .btn { display:inline-block; background:var(--brand); color:#fff; padding:13px 26px; border-radius:12px; font-weight:600; font-size:16px; }
+  .btn:hover { background:var(--brand2); }
+  .devices { color:var(--ink3); font-size:14px; margin-top:16px; }
+  section { padding:44px 0; }
+  h2.sec { font-size:26px; letter-spacing:-.02em; text-align:center; margin:0 0 10px; }
+  .sec-sub { text-align:center; color:var(--ink2); max-width:640px; margin:0 auto 34px; }
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+  @media (max-width:680px){ .grid{ grid-template-columns:minmax(0,1fr);} .hero h1{ font-size:32px; } }
+  .feat { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; }
+  .feat h3 { margin:0 0 8px; font-size:18px; }
+  .feat p { margin:0; color:var(--ink2); font-size:15px; }
+  .feat ul { margin:10px 0 0; padding-left:18px; color:var(--ink2); font-size:14.5px; }
+  .feat li { margin:3px 0; }
+  .price-card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:36px; max-width:520px; margin:0 auto; text-align:center; }
+  .price-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin:22px 0; }
+  .plan { flex:1; min-width:180px; border:1px solid var(--line); border-radius:14px; padding:22px; }
+  .plan .amt { font-size:34px; font-weight:700; letter-spacing:-.02em; }
+  .plan .per { color:var(--ink3); font-size:14px; }
+  .plan .tag { display:inline-block; margin-top:6px; font-size:12px; color:var(--brand); font-weight:600; }
+  .price-note { color:var(--ink3); font-size:13.5px; margin-top:6px; }
+  footer { border-top:1px solid var(--line); margin-top:30px; padding:30px 0 60px; text-align:center; color:var(--ink3); font-size:13.5px; }
+  footer a { color:var(--ink2); margin:0 10px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="card">
-    <div class="lang-switch"><a href="#es">Español</a> · <a href="#en">English</a></div>
+  <header class="nav">
+    <div class="logo">Tam<span>io</span></div>
+    <nav class="links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="privacidad.html">Privacy</a>
+    </nav>
+  </header>
 
-    <section id="es">
-      <h1>Política de privacidad de Tamio</h1>
-      <p class="fecha">Última actualización: 27 de julio de 2026</p>
+  <section class="hero">
+    <h1>The complete administrative system for your church</h1>
+    <p>Tamio brings your church's treasury and secretariat together in one simple,
+    secure app — so your team can keep clear records and reports without the
+    spreadsheets and paperwork.</p>
+    <a class="btn" href="#pricing">See pricing</a>
+    <div class="devices">Works on Mac, iPad and iPhone · Available in English and Spanish</div>
+  </section>
 
-      <p>Tamio («la app», «nosotros») es una herramienta de tesorería y secretaría
-      para iglesias. Esta política explica qué datos tratamos, cómo y con qué fin.
-      Al usar Tamio aceptas lo aquí descrito.</p>
+  <section id="features">
+    <h2 class="sec">Everything your church needs, in one place</h2>
+    <p class="sec-sub">Two areas, one app. Invite your team and let each person manage their part.</p>
+    <div class="grid">
+      <div class="feat">
+        <h3>💰 Treasury</h3>
+        <p>Keep the church's finances clear and audit-ready.</p>
+        <ul>
+          <li>Record income and expenses</li>
+          <li>Track bank deposits</li>
+          <li>Recurring income and expenses</li>
+          <li>Professional financial reports (PDF)</li>
+        </ul>
+      </div>
+      <div class="feat">
+        <h3>📋 Secretariat</h3>
+        <p>Organize members and official documents.</p>
+        <ul>
+          <li>Member directory and records</li>
+          <li>Meeting minutes</li>
+          <li>Official letters and transfers</li>
+          <li>Attendance tracking</li>
+        </ul>
+      </div>
+      <div class="feat">
+        <h3>👥 Your team, your roles</h3>
+        <p>One subscription covers your whole church. Invite your team and assign
+        roles — one person handles treasury, another handles records.</p>
+      </div>
+      <div class="feat">
+        <h3>🔒 Private and secure</h3>
+        <p>Your data is stored encrypted on your device and backed up securely in
+        the cloud, so it syncs across your church's devices — and works offline.</p>
+      </div>
+    </div>
+  </section>
 
-      <h2>Qué datos tratamos</h2>
-      <ul>
-        <li><strong>Cuenta:</strong> tu correo electrónico y contraseña para iniciar
-        sesión, y opcionalmente tu nombre y foto de perfil.</li>
-        <li><strong>Datos de tu iglesia:</strong> la información que tú registras —
-        movimientos (ingresos/gastos), depósitos, miembros (nombre, contacto,
-        identificación fiscal si la capturas), cartas, actas, asistencia, agenda y
-        configuración de la iglesia.</li>
-        <li><strong>Pago:</strong> si te suscribes, el procesador de pagos recibe tu
-        correo y los datos de la compra para activar tu plan (ver «Terceros»).</li>
-      </ul>
-      <p>No pedimos ni usamos publicidad, ni rastreamos tu ubicación, ni vendemos
-      tus datos a nadie.</p>
+  <section id="pricing">
+    <h2 class="sec">Simple pricing</h2>
+    <p class="sec-sub">One price per church. No extra charge for adding team members.</p>
+    <div class="price-card">
+      <div class="price-row">
+        <div class="plan">
+          <div class="amt">$19</div>
+          <div class="per">per month</div>
+        </div>
+        <div class="plan">
+          <div class="amt">$190</div>
+          <div class="per">per year</div>
+          <div class="tag">2 months free</div>
+        </div>
+      </div>
+      <div class="price-note">Billed per church · Cancel anytime · Prices in USD</div>
+    </div>
+  </section>
 
-      <h2>Dónde se guardan y cómo se protegen</h2>
-      <ul>
-        <li><strong>En tu dispositivo:</strong> los datos se guardan localmente en
-        una base <strong>cifrada</strong> (SQLCipher), para que funcione sin conexión.</li>
-        <li><strong>En la nube (opcional):</strong> si inicias sesión, tus datos se
-        sincronizan con nuestro proveedor <strong>Supabase</strong> para respaldarlos
-        y compartirlos entre los dispositivos de tu iglesia. El acceso está protegido
-        por reglas que solo permiten a cada iglesia ver sus propios datos.</li>
-      </ul>
-
-      <h2>Funciones de inteligencia artificial</h2>
-      <p>Algunas funciones opcionales (redactar un resumen, redactar una carta,
-      interpretar el texto o la foto de un comprobante) envían el texto —y, en el
-      caso del comprobante, la imagen— a nuestro servidor, que a su vez lo procesa
-      con el modelo de IA de <strong>Anthropic (Claude)</strong>. Las <strong>cifras
-      las calcula la app</strong>, no la IA; la IA solo redacta. Estos datos se usan
-      únicamente para generar la respuesta que ves y no se emplean para entrenar
-      modelos.</p>
-
-      <h2>Terceros que nos ayudan a operar</h2>
-      <ul>
-        <li><strong>Supabase</strong> — base de datos y autenticación en la nube.</li>
-        <li><strong>Anthropic</strong> — modelo de IA para las funciones de redacción
-        (solo cuando las usas).</li>
-        <li><strong>Paddle</strong> — procesador de pagos y facturación de las
-        suscripciones.</li>
-        <li><strong>Apple</strong> — distribución de la app.</li>
-      </ul>
-      <p>Cada uno trata los datos estrictamente para prestar su servicio.</p>
-
-      <h2>Conservación y eliminación de tus datos</h2>
-      <ul>
-        <li>Puedes <strong>borrar los registros</strong> de tu iglesia desde Ajustes
-        en cualquier momento.</li>
-        <li>Puedes <strong>eliminar tu cuenta</strong> desde la app (Mi perfil →
-        «Borrar mi cuenta»). Al hacerlo se elimina de forma permanente tu cuenta y
-        todos los datos de tu iglesia en la nube. Esta acción no se puede deshacer.</li>
-      </ul>
-
-      <h2>Menores</h2>
-      <p>Tamio es una herramienta administrativa para adultos que gestionan una
-      iglesia; no está dirigida a menores de edad.</p>
-
-      <h2>Cambios</h2>
-      <p>Si actualizamos esta política, cambiaremos la fecha de arriba y, cuando el
-      cambio sea importante, te lo notificaremos en la app o por correo.</p>
-
-      <h2>Contacto</h2>
-      <p>Para cualquier duda sobre tus datos, escríbenos a:
-      <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a>.</p>
-    </section>
-
-    <hr class="sep" />
-
-    <section id="en">
-      <h1>Tamio Privacy Policy</h1>
-      <p class="fecha">Last updated: July 27, 2026</p>
-
-      <p>Tamio («the app», «we») is a treasury and secretariat tool for churches.
-      This policy explains what data we handle, how, and why. By using Tamio you
-      agree to what is described here.</p>
-
-      <h2>What data we handle</h2>
-      <ul>
-        <li><strong>Account:</strong> your email and password to sign in, and
-        optionally your name and profile photo.</li>
-        <li><strong>Your church's data:</strong> the information you enter —
-        transactions (income and expenses), deposits, members (name, contact, tax ID
-        if you record it), letters, minutes, attendance, agenda, and church settings.</li>
-        <li><strong>Payment:</strong> if you subscribe, the payment processor receives
-        your email and purchase details to activate your plan (see «Third parties»).</li>
-      </ul>
-      <p>We do not use advertising, we do not track your location, and we do not sell
-      your data to anyone.</p>
-
-      <h2>Where it is stored and how it is protected</h2>
-      <ul>
-        <li><strong>On your device:</strong> data is stored locally in an
-        <strong>encrypted</strong> database (SQLCipher), so the app works offline.</li>
-        <li><strong>In the cloud (optional):</strong> if you sign in, your data syncs
-        with our provider <strong>Supabase</strong> to back it up and share it across
-        your church's devices. Access is protected by rules that only let each church
-        see its own data.</li>
-      </ul>
-
-      <h2>Artificial intelligence features</h2>
-      <p>Some optional features (drafting a summary, drafting a letter, interpreting
-      the text or photo of a receipt) send the text — and, for a receipt, the image —
-      to our server, which processes it with <strong>Anthropic (Claude)</strong>. The
-      <strong>numbers are computed by the app</strong>, not the AI; the AI only writes
-      the wording. This data is used solely to produce the response you see and is not
-      used to train models.</p>
-
-      <h2>Third parties that help us operate</h2>
-      <ul>
-        <li><strong>Supabase</strong> — cloud database and authentication.</li>
-        <li><strong>Anthropic</strong> — AI model for the writing features (only when
-        you use them).</li>
-        <li><strong>Paddle</strong> — payment processor and subscription
-        billing.</li>
-        <li><strong>Apple</strong> — app distribution.</li>
-      </ul>
-      <p>Each one handles data strictly to provide its service.</p>
-
-      <h2>Retention and deletion of your data</h2>
-      <ul>
-        <li>You can <strong>delete your church's records</strong> from Settings at any
-        time.</li>
-        <li>You can <strong>delete your account</strong> from within the app (My
-        profile → «Delete my account»). Doing so permanently deletes your account and
-        all of your church's cloud data. This action cannot be undone.</li>
-      </ul>
-
-      <h2>Children</h2>
-      <p>Tamio is an administrative tool for adults who manage a church; it is not
-      directed to children.</p>
-
-      <h2>Changes</h2>
-      <p>If we update this policy, we will change the date above and, for significant
-      changes, notify you in the app or by email.</p>
-
-      <h2>Contact</h2>
-      <p>For any question about your data, write to us at:
-      <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a>.</p>
-    </section>
-
-    <footer>Tamio · © 2026</footer>
-  </div>
+  <footer>
+    <div>
+      <a href="terminos.html">Terms of Service</a>
+      <a href="privacidad.html">Privacy Policy</a>
+      <a href="reembolsos.html">Refund Policy</a>
+    </div>
+    <div style="margin-top:14px;">Tamio · Contact: <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a></div>
+    <div style="margin-top:6px;">© 2026 Tamio</div>
+  </footer>
 </div>
 </body>
 </html>
