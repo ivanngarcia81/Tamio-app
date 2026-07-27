@@ -72,7 +72,7 @@ sea importante, te lo notificaremos en la app o por correo.
 
 ## Contacto
 
-Para cualquier duda sobre tus datos, escríbenos a: **[TU CORREO DE CONTACTO]**.
+Para cualquier duda sobre tus datos, escríbenos a: **ivanngarcia82@gmail.com**.
 
 ---
 
