@@ -28,18 +28,35 @@ para abrir la app.
 - **Esfuerzo:** bajo-medio. **Ideal para una app de finanzas** (capa extra de
   seguridad + comodidad).
 
+### 3. Familias / hogares en Secretaría — cimiento de Kids
+Hoy Secretaría registra **miembros individuales**. Agregar el concepto de
+**familia / hogar** que agrupa personas, y donde los niños quedan dentro de su
+familia.
+- **Sirve por sí sola:** directorio por hogar, cartas/certificados a nombre de la
+  familia, reportes por familia (no solo personas sueltas), niños registrados
+  dentro de su hogar aunque no sean miembros formales.
+- **Es el cimiento de Tamio Kids:** el plan de Kids (decisión 3) ya asume que las
+  familias vienen de Secretaría. Construir esto primero evita que Kids lo
+  reinvente. Piénsalo como la "Fase -1" de Kids.
+- **Decisión de diseño clave:** una **familia** agrupa **personas**, y cada persona
+  puede ser **miembro** (formal), **niño/dependiente** o **visitante**. Los niños
+  **no** deben contar como miembros formales en los reportes, salvo que se quiera.
+- **Tiempo sugerido:** mejora de Secretaría que puede ir en 1.1, justo antes de
+  Kids. Factible: encaja con el modelo de personas que ya existe.
+- Ver también: [`docs/tamio-kids-plan.md`](./tamio-kids-plan.md).
+
 ---
 
 ## 🚀 Expansión de plataformas
 
-### 3. Android
+### 4. Android
 La base ya es multiplataforma (Tauri) y la vista compacta de celular **ya está
 lista** (la hicimos para iPhone). Faltaría construir el `.apk`, probarlo, y abrir
 cuenta en **Google Play** ($25 una sola vez).
 - **Por qué importa:** muchas iglesias con presupuesto ajustado usan Android.
   Podría abrir un mercado grande.
 
-### 4. Windows
+### 5. Windows
 Generar el instalador `.exe` (requiere una PC con Windows o un servicio en la
 nube) y probar cosas nativas (guardar archivos, imprimir). El diseño ya es
 adaptable, así que la mayor parte funcionaría.
@@ -48,7 +65,7 @@ adaptable, así que la mayor parte funcionaría.
 
 ## 🌟 Módulo nuevo (versión 2.0)
 
-### 5. Tamio Kids — seguridad y registro infantil
+### 6. Tamio Kids — seguridad y registro infantil
 Módulo que controla la **entrada y salida de los niños** del culto y garantiza
 que cada niño se vaya con la persona correcta. No es enseñanza ni contenido: es
 **seguridad y registro**.
