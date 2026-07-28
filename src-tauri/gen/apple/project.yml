@@ -51,8 +51,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 1.0.5
-        CFBundleVersion: "1.0.5"
+        CFBundleShortVersionString: 1.0.6
+        CFBundleVersion: "1.0.6"
     entitlements:
       path: tesoreria_iOS/tesoreria_iOS.entitlements
     scheme:
