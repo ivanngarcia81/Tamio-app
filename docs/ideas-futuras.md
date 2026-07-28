@@ -112,6 +112,17 @@ sobre el plan) para iglesias con ministerio infantil grande.
 
 ---
 
+## 🔧 Pulido para la 1.1
+
+- **Reorganizar el layout de Ajustes.** El grid de 2 columnas deja huecos
+  verticales cuando una columna es más alta que la otra. Hay una propuesta
+  (primitivas `SettingsPage` / `SettingsColumns` / `SettingsStack` con columnas
+  de altura independiente) para que las tarjetas se apilen pegadas. Es cosmético,
+  toca la pantalla de Ajustes (compartida), y conviene probarlo en simulador. Se
+  dejó para la 1.1 para no arriesgar el envío de la 1.0.
+
+---
+
 ## 💡 Ideas menores / pendientes
 
 - Ocultar/limpiar el correo del menú lateral en capturas de marketing.
