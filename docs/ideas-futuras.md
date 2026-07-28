@@ -9,16 +9,22 @@ _Última actualización: 28 de julio de 2026_
 
 ## 🥇 Prioridad alta (después de lanzar)
 
-### 1. Invitar usuarios desde la app + roles reales
+### 1. Invitar usuarios desde la app + roles reales  — 🎯 objetivo: versión 1.1
 Hoy existe la pantalla **Configuración → Usuarios**, pero es solo un directorio:
-no crea la cuenta de acceso ni envía invitación. Falta conectarla al login real
-para que el comprador pueda invitar a su equipo y asignar roles (tesorero /
-secretaria / administrador) **sin tocar Supabase**.
+no crea la cuenta de acceso ni envía invitación. Al registrarse, cada usuario
+queda como **administrador de su propia iglesia** (trigger en Supabase); no hay
+forma de que una segunda persona se una a la MISMA iglesia con rol de tesorero o
+secretaria desde la app. Falta conectarlo al login real para que el comprador
+invite a su equipo y asigne roles **sin tocar Supabase**.
 - La separación de roles **ya funciona** (cada rol ve solo su área).
-- Falta: crear cuenta + asignar rol + invitar por correo (función de Supabase,
-  como la de "borrar cuenta").
+- Falta: crear/invitar cuenta + unir a la misma iglesia (church_id) + asignar rol
+  (función de Supabase, como la de "borrar cuenta") + pantalla de invitación.
 - **Por qué importa:** es la pieza que hace realidad el modelo "un producto donde
   el comprador reparte los roles en su iglesia".
+- **Decisión (28 jul 2026):** se construye en la **1.1** (opción B). Para la 1.0,
+  la descripción de la App Store y del sitio se ajustaron para NO prometer la
+  invitación todavía (solo "acceso por roles"). Para los primeros clientes, el
+  admin/rol se asigna a mano en Supabase.
 
 ### 2. Face ID / Touch ID para iniciar sesión
 Usar biometría (plugin oficial de Tauri) para desbloquear Tamio sin escribir la
