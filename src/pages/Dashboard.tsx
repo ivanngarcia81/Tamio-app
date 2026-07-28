@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
-import html2canvas from "html2canvas";
 import {
   catNombre, categoriaInfo, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
   fmtFechaCorta, fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthDepositos,
@@ -152,27 +151,11 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const [printing, setPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
 
-  async function captureChart(el: HTMLElement | null, caption: string) {
-    if (!el) return null;
-    try {
-      const canvas = await html2canvas(el, { backgroundColor: null, scale: 2 });
-      return { dataUrl: canvas.toDataURL("image/png"), caption };
-    } catch {
-      return null;
-    }
-  }
-
   async function handlePrint() {
     setPrintError(null);
     setPrinting(true);
     try {
       const depositosBancarios = await monthDepositos(church.id, mes);
-      const charts = (
-        await Promise.all([
-          captureChart(chartsRef.current, t("dashboard.chartCaptionSemanal")),
-          captureChart(categoryChartRef.current, t("dashboard.chartCaptionCategorias")),
-        ])
-      ).filter((c): c is { dataUrl: string; caption: string } => c !== null);
 
       await printDashboard({
         church,
@@ -204,11 +187,12 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             ? { nombre: ingresoMasFrecuente.info.nombre, conteo: ingresoMasFrecuente.cnt }
             : null,
           miembrosActivos: memberCount,
-          ultimaActualizacion: `${fmtRelativo(ultimaActividad)}${ultimaActividad ? " · " + fmtFechaCorta(ultimaActividad) : ""}`,
+          // En un PDF archivado no va tiempo relativo ("hace un momento"):
+          // se usa la fecha absoluta de la última actividad.
+          ultimaActualizacion: ultimaActividad ? fmtFechaCorta(ultimaActividad) : "—",
         },
         categoriasIngreso,
         categoriasGasto,
-        charts,
       });
     } catch (e) {
       setPrintError(t("common.noSePudoImprimir", { error: String(e) }));

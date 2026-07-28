@@ -36,11 +36,6 @@ export interface CategoriaRow {
   monto: number;
 }
 
-export interface DashboardChartImage {
-  dataUrl: string;
-  caption: string;
-}
-
 export interface DashboardPrintData {
   church: Church;
   mesLegibleStr: string;
@@ -52,9 +47,6 @@ export interface DashboardPrintData {
   indicadores: DashboardIndicadores;
   categoriasIngreso: CategoriaRow[];
   categoriasGasto: CategoriaRow[];
-  /** Imágenes ya capturadas (p. ej. con html2canvas) de las gráficas
-   *  visibles en pantalla — este módulo no conoce el DOM ni React. */
-  charts: DashboardChartImage[];
 }
 
 export async function printDashboard(data: DashboardPrintData): Promise<void> {
@@ -122,14 +114,6 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
     2
   );
   doc.addGap(PDF_SPACE.md);
-
-  // ---------- Gráficas ----------
-  if (data.charts.length > 0) {
-    doc.heading(i18n.t("pdf.graficas"));
-    for (const chart of data.charts) {
-      doc.image(chart.dataUrl, { maxWidth: doc.contentWidth, maxHeight: 220, caption: chart.caption });
-    }
-  }
 
   // ---------- Resumen por categorías ----------
   const totalIngresos = data.categoriasIngreso.reduce((s, c) => s + c.monto, 0);
