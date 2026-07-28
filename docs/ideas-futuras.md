@@ -53,12 +53,14 @@ Módulo que controla la **entrada y salida de los niños** del culto y garantiza
 que cada niño se vaya con la persona correcta. No es enseñanza ni contenido: es
 **seguridad y registro**.
 
-> 📄 **Plan técnico detallado + veredicto de viabilidad:** ver
+> 📄 **Plan técnico detallado por fases + veredicto de viabilidad:** ver
 > [`docs/tamio-kids-plan.md`](./tamio-kids-plan.md). Resumen: **sí se puede
-> implementar**. El v1 (una sola máquina, sin red ni QR) encaja directo con la
-> arquitectura actual y es un buen "Tamio 2.0". La parte de Mac-como-servidor +
-> iPads clientes (v1.1) es la única pieza nueva/compleja; va como hito aparte
-> (2.1). Se trabaja después del lanzamiento en la App Store.
+> implementar** — esta versión usa **un solo iPad designado** (sin servidor en la
+> Mac ni red local), y sincroniza lo operativo por Supabase mientras salud y
+> autorizados se quedan locales por no estar en la lista blanca. Encaja casi por
+> completo con lo que Tamio ya tiene. Único detalle nuevo a probar temprano:
+> excluir el archivo del respaldo de iCloud. Se construye por fases (0 a 7)
+> después del lanzamiento en la App Store.
 
 **Flujo de un domingo:**
 1. La familia escanea su código en la tablet de la puerta y elige a sus niños.
