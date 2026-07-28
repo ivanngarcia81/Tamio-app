@@ -4064,7 +4064,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      (repeat(auto-fit, minmax(200-240px, 1fr))), que en un teléfono siempre
      resuelve a una sola columna: por eso unas pantallas iban en cuadrícula
      y otras apiladas. */
-  .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: 1fr 1fr !important; }
+  .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+
+  /* En dos columnas, la fila "número + mini-gráfica" (90px fija) empujaba la
+     tarjeta más allá del borde y la columna derecha se salía de la pantalla.
+     Se apilan: número arriba, gráfica de ancho completo abajo — nada se sale. */
+  .summary-4 .stat-row, .summary-5 .stat-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .summary-4 .stat-row .spark, .summary-5 .stat-row .spark { width: 100%; }
 
   /* Zona de peligro: el botón dejaba la descripción en una columna de seis
      líneas. En teléfono se apila y el botón ocupa el ancho. */
