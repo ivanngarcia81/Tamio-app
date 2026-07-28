@@ -33,6 +33,16 @@ datos a nadie.
   dispositivos de tu iglesia. El acceso está protegido por reglas que solo
   permiten a cada iglesia ver sus propios datos.
 
+## Datos de otras personas (miembros de tu iglesia)
+
+Tamio es una herramienta para que tu iglesia administre su propia información.
+Cuando registras datos de otras personas —miembros, aportantes, contactos—
+**tú (la iglesia) eres el responsable** de esos datos: de tener una base legítima
+para guardarlos, de informar a esas personas cuando corresponda y de mantener la
+información correcta. Tamio actúa solo como el proveedor de la herramienta que los
+almacena por ti. Los datos operativos se guardan en tu dispositivo y, si inicias
+sesión, se sincronizan con Supabase; puedes exportarlos o eliminarlos desde la app.
+
 ## Funciones de inteligencia artificial
 
 Algunas funciones opcionales (redactar un resumen, redactar una carta,
