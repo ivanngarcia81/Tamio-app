@@ -22,6 +22,7 @@ import BackupSettings from "../components/settings/BackupSettings";
 import CompactSettings from "../components/settings/CompactSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import SyncSettings from "../components/settings/SyncSettings";
+import { SYNC_HABILITADO } from "../syncManager";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
 import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
@@ -239,7 +240,7 @@ export default function Configuracion({
               {/* Suscripción: la administra el dueño (admin) o, en modo local
                   sin login, quien usa la app en su propia instalación. */}
               {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
-              {authActivo && <SyncSettings />}
+              {authActivo && SYNC_HABILITADO && <SyncSettings />}
             </div>
           </section>
 

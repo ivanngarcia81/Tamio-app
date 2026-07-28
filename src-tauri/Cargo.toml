@@ -1,6 +1,6 @@
 [package]
 name = "tesoreria"
-version = "1.0.6"
+version = "1.0.7"
 description = "Tamio — tesorería para iglesias"
 authors = ["Tamio"]
 edition = "2021"

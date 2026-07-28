@@ -13,6 +13,14 @@
 import { useSyncExternalStore } from "react";
 import { sincronizarTodo, type MotivoSync } from "./sync";
 
+/** Interruptor global de la sincronización en la nube.
+ *  En 1.0 está APAGADO: el registro self-service todavía no crea ni enlaza la
+ *  iglesia en la nube, así que el sync fallaría por RLS. Se reactivará en 1.1
+ *  cuando el registro cree y vincule la iglesia automáticamente. Con esto
+ *  apagado, la app es 100% offline-first: nada de tarjeta de sync, indicador ni
+ *  auto-sync. Cambiar a true para volver a habilitarlo. */
+export const SYNC_HABILITADO = false;
+
 export type SyncEstado =
   | "desactivado"    // sin login / sin credenciales: la sync no aplica
   | "inactivo"       // activa pero aún sin sincronizar en esta sesión

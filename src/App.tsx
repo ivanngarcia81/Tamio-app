@@ -36,7 +36,7 @@ import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role
 import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { authHabilitado } from "./supabase";
-import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync } from "./syncManager";
+import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync, SYNC_HABILITADO } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
 import Login from "./components/Login";
 import "./styles.css";
@@ -165,7 +165,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // ventana). programarSync() en onSaved sube los cambios locales poco después
   // de guardar. El indicador del sidebar refleja el estado.
   useEffect(() => {
-    const on = authHabilitado && authEstado.autenticado && !authEstado.sinRol;
+    const on = SYNC_HABILITADO && authHabilitado && authEstado.autenticado && !authEstado.sinRol;
     configurarSync(on ? church.id : null, on);
     if (!on) return;
     return iniciarAutoSync();
