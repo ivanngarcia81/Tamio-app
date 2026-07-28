@@ -2135,6 +2135,7 @@ export const en: Resources = {
     logoDebeSerPng: "The logo must be a PNG image.",
     seleccionarLogo: "Select logo",
     imagenPng: "PNG image",
+    imagen: "Image",
     logoAlt: "Church logo",
     nombreLabel: "Church name",
     nombrePlaceholder: "e.g. Central Church",

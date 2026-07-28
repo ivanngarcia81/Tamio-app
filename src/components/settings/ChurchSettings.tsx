@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
-import { readFile } from "@tauri-apps/plugin-fs";
+import { readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { appDataDir, join } from "@tauri-apps/api/path";
 import { useTranslation } from "react-i18next";
 import { IconBuilding, IconWarn } from "../../icons";
 import { currentLang } from "../../i18n";
 import { CURRENCIES, currencyLabel } from "../../currencies";
+import { convertirImagenAPng } from "../../services/imagenLogo";
 
 export interface ChurchFormValues {
   nombre: string;
@@ -66,14 +68,16 @@ export default function ChurchSettings({ value, onChange, error, saldoError, log
       const selected = await openFileDialog({
         multiple: false,
         title: t("iglesia.seleccionarLogo"),
-        filters: [{ name: t("iglesia.imagenPng"), extensions: ["png"] }],
+        // Acepta cualquier imagen común; en iPhone/iPad las fotos son HEIC/JPG,
+        // no PNG. La imagen se convierte a PNG antes de guardarla.
+        filters: [{ name: t("iglesia.imagen"), extensions: ["png", "jpg", "jpeg", "heic", "heif", "webp"] }],
       });
       if (typeof selected !== "string") return;
-      if (!selected.toLowerCase().endsWith(".png")) {
-        setLogoError(t("iglesia.logoDebeSerPng"));
-        return;
-      }
-      onLogoPathChange(selected);
+      const bytes = await readFile(selected);
+      const pngBytes = await convertirImagenAPng(bytes, selected);
+      const ruta = await join(await appDataDir(), `logo-${Date.now()}.png`);
+      await writeFile(ruta, pngBytes);
+      onLogoPathChange(ruta);
     } catch (e) {
       setLogoError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }

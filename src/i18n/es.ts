@@ -2142,6 +2142,7 @@ export const es = {
     logoDebeSerPng: "El logo debe ser una imagen PNG.",
     seleccionarLogo: "Seleccionar logo",
     imagenPng: "Imagen PNG",
+    imagen: "Imagen",
     logoAlt: "Logo de la iglesia",
     nombreLabel: "Nombre de la iglesia",
     nombrePlaceholder: "p. ej. Iglesia Central",
