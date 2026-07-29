@@ -2,6 +2,11 @@
 
 Todo listo para copiar/pegar en App Store Connect cuando enviemos a revisión.
 
+> **Modelo de la 1.0:** Tamio es una app **gratis y 100% local**. No pide iniciar
+> sesión, no crea cuentas y no envía datos a ningún servidor. La sincronización en
+> la nube y la suscripción llegarán en una versión futura (1.1). Todo lo de abajo
+> refleja ese modelo.
+
 ---
 
 ## 1. App Review Information → "Notes" (pegar tal cual, en inglés)
@@ -9,56 +14,46 @@ Todo listo para copiar/pegar en App Store Connect cuando enviemos a revisión.
 ```
 Tamio is a business (B2B) administration app for churches: treasury (income,
 expenses, deposits, reports) and secretariat (member records, minutes, letters,
-attendance). It is sold to churches; a church admin manages their team.
+attendance).
 
-SIGN-IN: The app requires an account. A demo administrator account with sample
-data is provided in the Sign-In section below. With this account you can see all
-areas of the app.
+NO SIGN-IN REQUIRED: The app opens directly, with no account and no login. All
+data is stored locally on the device in an encrypted database and never leaves
+the device. There is no server and no cloud account in this version.
 
-ROLES: Access is role-based (administrator, treasurer, secretary). The
-administrator account sees all areas. If you would like to test a specific role,
-please contact us and we will provide a treasurer/secretary account.
+HOW TO REVIEW: On first launch, tap "Explore with sample data" on the welcome
+screen. This loads a fictional church with sample members and several months of
+sample records, so you can see every area of the app immediately. (You can also
+choose "Get started" to begin with an empty church.)
 
-ACCOUNT DELETION (Guideline 5.1.1): After signing in, tap the profile avatar at
-the top of the side menu ("My profile"), then tap "Delete my account". This
-permanently deletes the account and its data.
+SUBSCRIPTION: The app is free and there is no in-app purchase, no paywall, and no
+links or buttons to any external purchase. Everything in the app is fully usable
+for free in this version.
 
-SUBSCRIPTION: Tamio is free to download. The optional subscription for churches is
-a business service purchased outside the app on our website. The app does not sell
-or unlock any digital content via in-app purchase, and contains no links or
-buttons to an external purchase. The demo account is provided with full access so
-no paywall is encountered during review.
-
-The app works offline with a local encrypted database and optionally syncs to the
-cloud (Supabase). Support: https://tamio.church  ·  Privacy: https://tamio.church/privacidad.html
+Support: https://tamio.church  ·  Privacy: https://tamio.church/privacidad.html
 ```
 
-## 2. Sign-In Information (marcar "Sign-in required")
+## 2. Sign-In Information
 
-- **Username:** `[correo de la cuenta demo — la creamos juntos]`
-- **Password:** `[contraseña de la cuenta demo]`
+- **No dejes marcado "Sign-in required".** Déjalo **desmarcado**: la app no pide
+  inicio de sesión. No hay usuario ni contraseña que dar.
 
-> Debe ser una cuenta **administrador**, marcada **cortesía** en Supabase (plan
-> activo, sin muro de pago), con datos de ejemplo cargados. **Datos ficticios**,
-> no de una iglesia real.
+> Ya no hace falta la cuenta demo de Supabase: el revisor entra directo y usa
+> "Explore with sample data". (La cuenta demo la puedes conservar para la 1.1.)
 
 ---
 
-## 3. App Privacy (la etiqueta debe COINCIDIR con PrivacyInfo.xcprivacy)
+## 3. App Privacy → "Data Not Collected"
 
-Cuando llenes "App Privacy" en App Store Connect, declara exactamente esto:
+Como la app es 100% local y **ningún dato sale del dispositivo**, en "App Privacy"
+de App Store Connect responde que **NO recopilas datos**:
 
-- **Data used to track you:** ninguno. (No tracking.)
-- **Data linked to you** (App Functionality; no tracking):
-  - **Contact Info → Email Address** (correo de la cuenta)
-  - **Contact Info → Name** (nombre de perfil, opcional)
-  - **User Content → Other User Content** (datos administrativos de la iglesia:
-    miembros, movimientos, actas, cartas)
-- **Data not linked to you:** ninguno.
+- Pregunta "Do you or your third-party partners collect data from this app?" →
+  **No, we do not collect data from this app.**
 
-> Coincide con el manifiesto `PrivacyInfo.xcprivacy` (email, name, other user
-> content; NSPrivacyTracking = false). Si cambian los datos que recoge la app,
-> hay que actualizar **los dos** a la vez.
+> Esto coincide con el manifiesto `PrivacyInfo.xcprivacy`, donde
+> `NSPrivacyCollectedDataTypes` está **vacío** y `NSPrivacyTracking = false`.
+> Cuando en la 1.1 se active la nube, hay que actualizar **los dos** a la vez
+> (volver a declarar Email, Name y Other User Content como App Functionality).
 
 ### Required-reason APIs ya declaradas en el manifiesto
 - **UserDefaults** — motivo `CA92.1` (uso interno de la app / WKWebView).
