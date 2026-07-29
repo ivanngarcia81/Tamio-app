@@ -7,6 +7,32 @@ _Última actualización: 28 de julio de 2026_
 
 ---
 
+## 🚨 BLOQUEANTE antes de publicar cualquier actualización
+
+### Banner de actualizaciones: ocultarlo en iOS
+`src/components/UpdateBanner.tsx` se renderiza sin condición de plataforma en
+`src/App.tsx` (~línea 296). En iPhone/iPad eso significa que:
+
+1. La app consulta `version.json` en GitHub al arrancar (petición de red silenciosa).
+2. Si hay una versión más nueva, muestra un botón **"Descargar"** que abre un
+   **`.dmg` de Mac** — lo que **Apple prohíbe** (directrices 3.1.1 / 2.5.2: una
+   app de iOS no puede dirigir a descargar software fuera del App Store).
+
+**Por qué no bloqueó la 1.0:** `web/version.json` dice `1.0.0` y la app es
+`1.0.7`, así que `esMasNueva()` da false y el banner nunca se muestra. El
+revisor no lo vio. **Decisión (28 jul 2026, Iván): se deja para la 1.1.**
+
+> ⚠️ **PELIGRO:** el día que actualices `version.json` a una versión mayor (p. ej.
+> `1.1.0`) para avisar a los usuarios de **Mac**, los usuarios de **iPhone**
+> empezarán a ver un banner ofreciéndoles descargar un `.dmg`. **NO toques
+> `version.json` hasta haber arreglado esto.**
+
+**Arreglo:** condicionar `<UpdateBanner />` a que la plataforma no sea iOS
+(p. ej. con `platform()` de `@tauri-apps/plugin-os`, o una bandera de build).
+Toca `App.tsx`, que es código compartido con Mac/iPad.
+
+---
+
 ## 🥇 Prioridad alta (después de lanzar)
 
 ### 1. Invitar usuarios desde la app + roles reales  — 🎯 objetivo: versión 1.1

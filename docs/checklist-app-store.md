@@ -56,4 +56,19 @@ de iOS. ✔️
 ### Revisión
 - [ ] **App Review → Notes:** pegar el texto de `notas-revisor-apple.md` §1
 - [ ] **Dejar "Sign-in required" DESMARCADO** (la app no pide login)
+- [ ] **App Store Version Release:** "Manually release this version" (tú decides
+      cuándo sale a la tienda tras la aprobación)
 - [ ] **Submit for Review** 🚀
+
+---
+
+## 🚨 Después de lanzar: NO actualizar `version.json` todavía
+
+El banner de actualizaciones (`UpdateBanner`) también corre en iPhone y, si
+`web/version.json` anuncia una versión mayor, mostraría a los usuarios de iOS un
+botón para descargar un **`.dmg` de Mac** — prohibido por Apple (3.1.1 / 2.5.2).
+
+Hoy no se muestra (`version.json` = 1.0.0 < app 1.0.7), por eso no bloqueó la
+1.0. **Antes de tocar `version.json`, hay que ocultar ese banner en iOS.**
+Detalle completo en `ideas-futuras.md` → "BLOQUEANTE antes de publicar
+cualquier actualización".
