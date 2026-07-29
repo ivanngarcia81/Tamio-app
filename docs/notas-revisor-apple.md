@@ -64,7 +64,12 @@ de App Store Connect responde que **NO recopilas datos**:
 
 ## 4. Otros campos del envío
 - **ITSAppUsesNonExemptEncryption:** `false` (ya declarado en Info.plist).
-- **Age Rating:** responder todo "None" → 4+.
+- **Age Rating:** en "Features" responder **YES solo a "Messaging and Chat"**
+  (Tamio tiene la pantalla de Mensajes, donde un rol escribe a otro) y **NO** a
+  todo lo demás (parental controls, age assurance, web access sin restricción,
+  social feed, publicidad). En las pantallas de contenido (violencia, sexo,
+  drogas, apuestas, terror): **None** en todo. La clasificación resultante puede
+  ser 13+ en vez de 4+ por la función de mensajes; es correcto y no perjudica.
 - **Copyright:** `2026 Iván García`.
 - **Support URL:** `https://tamio.church`.
 - **Privacy Policy URL:** `https://tamio.church/privacidad.html`.

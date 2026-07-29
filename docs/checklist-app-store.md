@@ -48,7 +48,9 @@ de iOS. ✔️
 - [ ] **Copyright:** `2026 Iván García`
 - [ ] **Support URL:** `https://tamio.church`
 - [ ] **Privacy Policy URL:** `https://tamio.church/privacidad.html`
-- [ ] **Clasificación de edad:** responder todo "None" → 4+
+- [ ] **Clasificación de edad:** en "Features" marcar **YES en "Messaging and
+      Chat"** (existe la pantalla de Mensajes entre roles) y **NO** en el resto;
+      contenido todo "None". Puede quedar 13+ en vez de 4+ — es lo correcto
 - [ ] **Precio:** Free
 - [ ] **Privacidad de la app:** responder **"No recopilo datos"** (Data Not
       Collected) — ver `notas-revisor-apple.md` §3
