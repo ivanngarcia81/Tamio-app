@@ -53,6 +53,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         CFBundleShortVersionString: 1.0.7
         CFBundleVersion: "1.0.7"
+        ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: tesoreria_iOS/tesoreria_iOS.entitlements
     scheme:
