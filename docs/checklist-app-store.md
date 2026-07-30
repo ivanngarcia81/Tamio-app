@@ -35,11 +35,11 @@ de iOS. ✔️
 ## Resto del checklist de envío
 
 ### Build
-- [x] Versión del proyecto en **1.0.7** (ya hecho en el código)
+- [x] Versión del proyecto en **1.0.8** (ya hecho en el código)
 - [ ] Construir `.ipa` en la Mac: `npm run tauri ios build -- --export-method app-store-connect`
 - [ ] Subir con **Transporter** y esperar 10–30 min a que procese
-- [ ] En App Store Connect, campo **Version = `1.0.7`** (que coincida con el build)
-- [ ] Seleccionar el **build 1.0.7** en el "+"
+- [ ] En App Store Connect, campo **Version = `1.0.8`** (que coincida con el build)
+- [ ] Seleccionar el **build 1.0.8** en el "+"
 
 ### Ficha (metadata)
 - [x] Capturas iPhone 6.9" + iPad 13"
