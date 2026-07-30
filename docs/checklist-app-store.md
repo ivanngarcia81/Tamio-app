@@ -32,35 +32,31 @@ de iOS. ✔️
 
 ---
 
-## Resto del checklist de envío
+## ✅ ENVIADO A REVISIÓN — 29 de julio de 2026
 
-### Build
-- [x] Versión del proyecto en **1.0.8** (ya hecho en el código)
-- [ ] Construir `.ipa` en la Mac: `npm run tauri ios build -- --export-method app-store-connect`
-- [ ] Subir con **Transporter** y esperar 10–30 min a que procese
-- [ ] En App Store Connect, campo **Version = `1.0.8`** (que coincida con el build)
-- [ ] Seleccionar el **build 1.0.8** en el "+"
+Tamio **1.0.8** se envió a App Review el 29 de julio de 2026 (build 1.0.8
+adjuntado, versión de la ficha 1.0). Apple tarda normalmente 24–48 h y avisa por
+correo. La versión está en **"Manually release"**, así que tras la aprobación hay
+que publicarla a mano desde App Store Connect.
 
-### Ficha (metadata)
-- [x] Capturas iPhone 6.9" + iPad 13"
-- [ ] Descripción, keywords, promo (español + inglés) — **quitar toda mención a
-      sincronización en la nube / cuentas** (la 1.0 es local). Ver texto abajo.
-- [ ] **Copyright:** `2026 Iván García`
-- [ ] **Support URL:** `https://tamio.church`
-- [ ] **Privacy Policy URL:** `https://tamio.church/privacidad.html`
-- [ ] **Clasificación de edad:** en "Features" marcar **YES en "Messaging and
-      Chat"** (existe la pantalla de Mensajes entre roles) y **NO** en el resto;
-      contenido todo "None". Puede quedar 13+ en vez de 4+ — es lo correcto
-- [ ] **Precio:** Free
-- [ ] **Privacidad de la app:** responder **"No recopilo datos"** (Data Not
-      Collected) — ver `notas-revisor-apple.md` §3
+Todo lo que se envió:
 
-### Revisión
-- [ ] **App Review → Notes:** pegar el texto de `notas-revisor-apple.md` §1
-- [ ] **Dejar "Sign-in required" DESMARCADO** (la app no pide login)
-- [ ] **App Store Version Release:** "Manually release this version" (tú decides
-      cuándo sale a la tienda tras la aprobación)
-- [ ] **Submit for Review** 🚀
+- [x] Build **1.0.8** construido, subido con Transporter y seleccionado
+- [x] Capturas de iPhone y iPad
+- [x] Descripción, keywords, promo y subtítulo (es + en), sin prometer nube
+- [x] Copyright, Support URL y Privacy Policy URL
+- [x] Clasificación de edad → **4+** (con "Messaging and Chat" = YES)
+- [x] Precio **Free**
+- [x] App Privacy → **Data Not Collected**, coincidiendo con
+      `PrivacyInfo.xcprivacy` y con la política de `privacidad.html`
+- [x] Content Rights → sin contenido de terceros
+- [x] **"Sign-in required" DESMARCADO** + Notes explicando "Explore with sample data"
+- [x] Sin Mac App Store ni Vision Pro (menos superficie que revisar)
+- [x] **Manually release this version**
+
+### Si Apple rechaza
+Es normal y no pasa nada: en Resolution Center indican la directriz concreta.
+Se corrige, se sube un build nuevo (subiendo el número de versión) y se reenvía.
 
 ---
 
