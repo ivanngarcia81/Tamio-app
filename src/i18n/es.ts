@@ -1971,9 +1971,9 @@ export const es = {
   },
 
   rolConfig: {
-    titulo: "Rol (vista previa)",
-    sub: "Provisional hasta que exista inicio de sesión",
-    hint: "El tesorero ve todo. La secretaria ve solo Secretaría y el Reporte de Tesorería. Cuando se agregue el inicio de sesión, el rol vendrá del usuario que entra.",
+    titulo: "Rol",
+    sub: "Qué áreas se ven en este dispositivo",
+    hint: "El administrador ve Tesorería y Secretaría. El tesorero ve solo Tesorería. La secretaria ve solo Secretaría y el Reporte de Tesorería.",
     tituloSesion: "Sesión",
     subSesion: "Tu rol lo asigna el administrador",
   },

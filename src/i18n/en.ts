@@ -1964,9 +1964,9 @@ export const en: Resources = {
   },
 
   rolConfig: {
-    titulo: "Role (preview)",
-    sub: "Temporary until login is available",
-    hint: "The treasurer sees everything. The secretary only sees Secretariat and the Treasury Report. Once login is added, the role will come from the signed-in user.",
+    titulo: "Role",
+    sub: "Which areas are visible on this device",
+    hint: "The administrator sees Treasury and Secretariat. The treasurer sees only Treasury. The secretary sees only Secretariat and the Treasury Report.",
     tituloSesion: "Session",
     subSesion: "Your role is assigned by the administrator",
   },

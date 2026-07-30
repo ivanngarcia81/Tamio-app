@@ -6,12 +6,15 @@ export type Role = "tesorero" | "secretaria" | "administrador";
 
 const KEY = "tamio-rol";
 
+/** Rol inicial en modo local (sin login). Por defecto **administrador**: quien
+ *  instala Tamio es el responsable de su iglesia y debe ver Tesorería y
+ *  Secretaría desde el primer arranque. Si eligió otro rol antes, se respeta. */
 export function initialRole(): Role {
   try {
     const r = localStorage.getItem(KEY);
-    if (r === "secretaria" || r === "tesorero") return r;
+    if (r === "secretaria" || r === "tesorero" || r === "administrador") return r;
   } catch { /* noop */ }
-  return "tesorero";
+  return "administrador";
 }
 
 export function saveRole(r: Role): void {
