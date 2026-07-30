@@ -1,3 +1,9 @@
+> ⚠️ **Borrador desactualizado.** La política de privacidad vigente de Tamio es
+> **[docs/privacidad.html](privacidad.html)** (publicada en
+> https://tamio.church/privacidad.html). Este archivo describe una versión con
+> nube y cuentas que la 1.0 no tiene; se conserva solo como referencia para
+> cuando se reactive la sincronización en la 1.1.
+
 # Política de privacidad de Tamio
 
 _Última actualización: 27 de julio de 2026_
