@@ -2135,7 +2135,7 @@ export const en: Resources = {
     subirLogo: "Upload logo",
     cambiarLogo: "Change logo",
     eliminarLogo: "Remove logo",
-    logoHint: "Shown in the church circle in the sidebar and on PDF reports. PNG only.",
+    logoHint: "Shown in the church circle in the sidebar and on PDF reports. Saved as soon as you pick it.",
     logoDebeSerPng: "The logo must be a PNG image.",
     seleccionarLogo: "Select logo",
     imagenPng: "PNG image",

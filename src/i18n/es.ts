@@ -2142,7 +2142,7 @@ export const es = {
     subirLogo: "Subir logo",
     cambiarLogo: "Cambiar logo",
     eliminarLogo: "Eliminar logo",
-    logoHint: "Aparece en el círculo de la iglesia en el menú lateral y en los reportes en PDF. Solo PNG.",
+    logoHint: "Aparece en el círculo de la iglesia en el menú lateral y en los reportes en PDF. Se guarda al elegirlo.",
     logoDebeSerPng: "El logo debe ser una imagen PNG.",
     seleccionarLogo: "Seleccionar logo",
     imagenPng: "Imagen PNG",

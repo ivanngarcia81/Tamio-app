@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listUsuarios, updateChurch, type Church, type Usuario } from "../db";
 import type { LangPref } from "../i18n";
 import { IconCheck } from "../icons";
+import { showToast } from "../toast";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
 import TreasurerSettings, {
@@ -104,6 +105,22 @@ export default function Configuracion({
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // El logo se guarda en el momento de elegirlo (o quitarlo), sin esperar al
+  // botón "Guardar cambios" del final de la página: la vista previa aparece al
+  // instante y hacía creer que ya estaba guardado, así que el usuario salía de
+  // Ajustes y el logo nunca llegaba al sidebar ni a los PDF.
+  const cambiarLogo = useCallback(async (ruta: string | null) => {
+    setLogoPath(ruta);
+    try {
+      // updateChurch reescribe TODAS las columnas, así que se parte de la
+      // iglesia guardada y solo se cambia el logo. Nunca de churchForm: los
+      // demás campos siguen editándose y se guardan con "Guardar cambios".
+      onChurchUpdated(await updateChurch(church.id, { ...church, logo_path: ruta }));
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+  }, [church, onChurchUpdated, t]);
 
   const dirty =
     churchForm.nombre !== church.nombre ||
@@ -234,7 +251,7 @@ export default function Configuracion({
                 error={churchError}
                 saldoError={saldoError}
                 logoPath={logoPath}
-                onLogoPathChange={setLogoPath}
+                onLogoPathChange={cambiarLogo}
                 showCurrency={verTesoreria}
               />
               {/* Suscripción: la administra el dueño (admin) o, en modo local
