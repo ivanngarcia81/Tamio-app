@@ -1989,6 +1989,10 @@ export const en: Resources = {
   plan: {
     titulo: "Your plan",
     sub: "Which areas this church sees. Also used to gift accounts (courtesy).",
+    // Local mode (no login): the card only picks areas, with no billing wording.
+    tituloAreas: "Areas",
+    subAreas: "Which areas of Tamio you use",
+    areas: "Areas in use",
     plan: "Plan",
     nombre: {
       completo: "Complete",

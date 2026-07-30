@@ -31,6 +31,23 @@ revisor no lo vio. **Decisión (28 jul 2026, Iván): se deja para la 1.1.**
 (p. ej. con `platform()` de `@tauri-apps/plugin-os`, o una bandera de build).
 Toca `App.tsx`, que es código compartido con Mac/iPad.
 
+### Tarjeta de plan: restaurar estado y vencimiento con el login
+En la 1.0 (modo local) `PlanSettings.tsx` se reduce a elegir **áreas**: se
+quitaron el estado (Activa/Cortesía/Prueba/Vencida) y la fecha de vencimiento.
+
+**Por qué:** con el login apagado la tarjeta quedó *editable*, así que cualquiera
+—incluido el revisor de Apple— veía "Plan / Trial / Expired / Vence el…" y podía
+autoconcederse "Cortesía (no caduca)". Eso (a) usa vocabulario de suscripción
+sin que exista forma de comprarla en la app, roce con la directriz 3.1.1;
+(b) contradice las notas al revisor, que dicen que la app es gratis y sin muro de
+pago; y (c) exponía un control del vendedor ("sirve para regalar cuentas") a los
+clientes.
+
+**Para la 1.1:** al reactivar el login la tarjeta vuelve sola a su modo de
+**solo lectura** (rama `soloLectura`, ya escrita), donde la nube manda y sí tiene
+sentido mostrar estado y vencimiento. No hay que rehacer nada, solo comprobar que
+se ve bien.
+
 ---
 
 ## 🥇 Prioridad alta (después de lanzar)

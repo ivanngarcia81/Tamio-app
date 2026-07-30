@@ -1996,6 +1996,10 @@ export const es = {
   plan: {
     titulo: "Tu plan",
     sub: "Qué áreas ve esta iglesia. También sirve para regalar cuentas (cortesía).",
+    // Modo local (sin login): la tarjeta solo elige áreas, sin nada de facturación.
+    tituloAreas: "Áreas",
+    subAreas: "Qué áreas de Tamio usas",
+    areas: "Áreas en uso",
     plan: "Plan",
     nombre: {
       completo: "Completo",
