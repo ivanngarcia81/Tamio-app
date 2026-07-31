@@ -194,21 +194,65 @@ es el mismo flujo de "Pendiente de revisión".
   Conviene limitarlo al plan alto o incluir un número máximo de cuentas. Usar
   Producción sin mínimo mensual, no un contrato con mínimo (~500 USD).
 
-#### Recomendación: separar el motor de la fuente
+#### Lo que de verdad hace valiosa la función: control, no importación
 
-Lo valioso no es *traer* las transacciones, sino **conciliarlas** (un depósito de
-1.250 en el banco contra 40 ofrendas en Tamio que suman lo mismo). Ese
-emparejamiento es el trabajo real. Por eso conviene construirlo en dos capas:
+**Refinamiento de Iván (29 jul 2026), que cambia la recomendación anterior.** El
+objetivo no es "traer transacciones", es que **nada salga del banco sin
+justificación**: cada débito del banco debe emparejarse con un gasto registrado y
+su comprobante, y cada crédito con un ingreso. Eso convierte a Tamio de un
+sistema de *contabilidad* (anotar lo que pasó) en uno de **control interno**
+(demostrar que nada salió sin respaldo).
 
-| Capa | Qué | Cuándo |
-|---|---|---|
-| **1. Motor de conciliación** | Importar el estado de cuenta en **CSV/QFX/OFX** (todo banco de EE.UU. lo permite) + pantalla de emparejar | Primero. Es 100% local: sin Plaid, sin servidor, sin costo por cuenta, sin exposición nueva de privacidad, y funciona **hasta en la versión gratis**. |
-| **2. Plaid** | Que las transacciones lleguen solas, sin descargar archivos | Encima de la capa 1, reutilizando la misma pantalla. |
+En una iglesia eso es el problema real: el tesorero maneja dinero ajeno. Hoy, ante
+un "¿dónde está el dinero?", la respuesta es "según mis anotaciones…"; con esto,
+es "el banco dice esto y cada movimiento tiene su comprobante". Es **protección
+para el tesorero** y confianza para la congregación — mucho más valioso que un
+ahorro de tiempo.
 
-Construir la capa 1 primero **valida si a las tesoreras les sirve la
-conciliación** sin gastar en Plaid ni arriesgar la ficha de la App Store. Si les
-encanta, Plaid es el upgrade obvio y la UI ya está hecha; si no la usan, se
-ahorró el proyecto entero.
+**Dónde vive:** la pantalla de **Depósitos / banco** ya existe y es su hogar
+natural.
+
+#### Recomendación (corregida): desacoplar la fuente, pero lanzar con Plaid
+
+La propuesta anterior era construir primero la importación de archivo para validar
+barato. **Se descarta como plan de validación**, por dos razones:
+
+1. El CSV **no** está atado al cierre de mes (los bancos de EE.UU. dejan descargar
+   cualquier rango de fechas). La diferencia real no es mensual vs. semanal, sino
+   **manual vs. automático**: ninguna tesorera va a entrar al banco, descargar un
+   archivo e importarlo cada semana.
+2. Por eso, validar con la versión manual daría un **falso negativo**: la
+   rechazarían por tediosa y se concluiría que "la conciliación no interesa",
+   cuando lo que falla es la fricción.
+
+El plan correcto es **un motor con la fuente desacoplada**:
+
+```
+        [ Plaid ]        [ Archivo CSV/OFX ]
+              \              /
+               v            v
+        Movimientos del banco (tabla local)
+                     |
+                     v
+        MOTOR DE CONCILIACIÓN Y CONTROL
+        · emparejar banco <-> registros de Tamio
+        · marcar lo que salió sin justificar
+        · exigir comprobante en cada gasto
+```
+
+- **En desarrollo** se usa la importación de archivo: gratis, sin cuenta de Plaid,
+  sin esperar su aprobación de Producción y con datos de prueba.
+- **Se lanza con Plaid**, que es donde está el valor.
+- **El archivo se queda como respaldo permanente**: bancos que Plaid no soporte y
+  iglesias del plan gratuito.
+
+#### Advertencia de diseño: implacable, pero no bloqueante
+
+Si la app **bloquea** o regaña de más, la tesorera la abandona. Las iglesias reales
+tienen semanas desordenadas (alguien saca efectivo el domingo y trae el recibo el
+jueves). Lo que funciona es una lista visible y persistente del tipo *"3 salidas
+del banco sin justificar — $450"* que no desaparece hasta resolverse. **La
+disciplina la impone la visibilidad, no el bloqueo.**
 
 ---
 
