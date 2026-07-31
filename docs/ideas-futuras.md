@@ -155,6 +155,63 @@ sobre el plan) para iglesias con ministerio infantil grande.
 
 ---
 
+### 7. Conciliación bancaria (Plaid en solo lectura) — idea para la 2.0
+
+**Idea (Iván, 29 jul 2026):** que los depósitos y movimientos del banco aparezcan
+solos en Tamio, para que el presupuesto refleje lo que de verdad hay en la cuenta
+y la tesorera no trabaje a ciegas. **Solo lectura**: leer transacciones y saldos,
+nunca mover dinero.
+
+#### Veredicto: viable, y no rompe el local-first
+
+El banco **no es la autoridad**; el libro de la iglesia lo sigue siendo. Las
+transacciones entran como **candidatos a conciliar**, no como registros:
+
+1. Una Edge Function de Supabase habla con Plaid (el `access_token` es una
+   credencial permanente al banco y **nunca** puede vivir en el cliente).
+2. La app descarga las transacciones a una tabla local de movimientos del banco.
+3. La tesorera **concilia**: empareja cada línea con un registro de Tamio, o crea
+   uno. Nada se contabiliza automáticamente.
+
+SQLite sigue siendo la fuente de verdad, todo sigue cifrado y la app sigue
+funcionando sin conexión con lo último descargado. **Ya existe el patrón de UI:**
+es el mismo flujo de "Pendiente de revisión".
+
+#### Restricciones que condicionan el proyecto
+
+- **Depende de la 1.1.** Plaid exige cuenta y token en servidor, así que solo
+  puede existir para usuarios de nube/pago; es imposible en el modo local
+  gratuito. Va después de que login y sync estén sólidos. (Como contrapartida,
+  es una función que justifica muy bien la suscripción.)
+- **Mueve la app al terreno "Finance" con Apple.** Hoy la categoría es *Business*
+  justamente para evitar escrutinio extra. Conectar cuentas bancarias reales
+  cambia la etiqueta de privacidad (Financial Info vinculada al usuario), obliga
+  a reescribir la política otra vez y añade el proceso de aprobación de Plaid
+  para Producción. Es hacedero, pero es un envío delicado por sí solo.
+- **Costo por cuenta conectada.** El producto de transacciones se cobra por
+  cuenta y mes (del orden de 1–1.5 USD, **verificar al contratar**). Con 1–2
+  cuentas es asumible sobre 19 USD de ingreso; con 5 cuentas se come el margen.
+  Conviene limitarlo al plan alto o incluir un número máximo de cuentas. Usar
+  Producción sin mínimo mensual, no un contrato con mínimo (~500 USD).
+
+#### Recomendación: separar el motor de la fuente
+
+Lo valioso no es *traer* las transacciones, sino **conciliarlas** (un depósito de
+1.250 en el banco contra 40 ofrendas en Tamio que suman lo mismo). Ese
+emparejamiento es el trabajo real. Por eso conviene construirlo en dos capas:
+
+| Capa | Qué | Cuándo |
+|---|---|---|
+| **1. Motor de conciliación** | Importar el estado de cuenta en **CSV/QFX/OFX** (todo banco de EE.UU. lo permite) + pantalla de emparejar | Primero. Es 100% local: sin Plaid, sin servidor, sin costo por cuenta, sin exposición nueva de privacidad, y funciona **hasta en la versión gratis**. |
+| **2. Plaid** | Que las transacciones lleguen solas, sin descargar archivos | Encima de la capa 1, reutilizando la misma pantalla. |
+
+Construir la capa 1 primero **valida si a las tesoreras les sirve la
+conciliación** sin gastar en Plaid ni arriesgar la ficha de la App Store. Si les
+encanta, Plaid es el upgrade obvio y la UI ya está hecha; si no la usan, se
+ahorró el proyecto entero.
+
+---
+
 ## 🔧 Pulido para la 1.1
 
 - **Reorganizar el layout de Ajustes.** El grid de 2 columnas deja huecos
