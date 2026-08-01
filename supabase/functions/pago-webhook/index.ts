@@ -25,8 +25,10 @@
 // subscription.activated / subscription.canceled / subscription.past_due /
 // subscription.paused.
 //
-// Nota de plan: Tamio se vende como UN producto ("completo"). El plan por
-// módulo (tesoreria/secretaria) solo se aplica si lo pasas en custom_data.plan.
+// Nota de plan: Tamio se vende como UN producto, así que hoy todo pago da
+// "completo". Si algún día hay planes por módulo, se mapean por producto/precio
+// con los secretos PADDLE_PLAN_TESORERIA / _SECRETARIA / _COMPLETO (ver planDe).
+// El plan NO se toma de custom_data: eso viaja desde el navegador del comprador.
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -64,11 +66,48 @@ async function firmaValida(cuerpo: string, header: string | null, secreto: strin
   return igualSeguro(hex(mac), h1.toLowerCase());
 }
 
-// Plan según los datos del evento. Por defecto "completo" (producto único);
-// solo cambia si mandas custom_data.plan en el checkout.
+// Plan según lo COMPRADO, no según lo que diga el navegador.
+//
+// Antes esto leía `custom_data.plan`, que se envía desde el checkout en el
+// navegador del comprador y por tanto es alterable: bastaba con cambiarlo para
+// pedir un plan distinto del pagado. Hoy no había daño real porque Tamio se
+// vende como un solo producto y todos deben recibir "completo", pero en cuanto
+// exista un plan más barato sería una puerta abierta.
+//
+// Ahora el plan se deduce del producto/precio que Paddle informa en el evento,
+// que es dato del servidor de Paddle y el comprador no puede tocar. Los IDs se
+// configuran como secretos, para no tener que tocar código al crear un producto:
+//
+//   supabase secrets set PADDLE_PLAN_TESORERIA="pro_aaa,pri_bbb"
+//   supabase secrets set PADDLE_PLAN_SECRETARIA="pro_ccc"
+//   supabase secrets set PADDLE_PLAN_COMPLETO="pro_ddd"
+//
+// Mientras no se configure ninguno —el caso de hoy, con un único producto— todo
+// pago sigue dando "completo", que es lo correcto.
+function idsDelSecreto(nombre: string): string[] {
+  return (Deno.env.get(nombre) ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function planDe(data: Record<string, any>): string {
-  const p = String(data?.custom_data?.plan ?? "").toLowerCase();
-  if (p === "tesoreria" || p === "secretaria" || p === "completo") return p;
+  // Todos los identificadores de producto y de precio que trae el evento.
+  const items: any[] = Array.isArray(data?.items) ? data.items : [];
+  const ids = new Set<string>();
+  for (const it of items) {
+    const precio = it?.price ?? {};
+    for (const v of [precio.id, precio.product_id, it?.product?.id]) {
+      if (typeof v === "string" && v) ids.add(v);
+    }
+  }
+
+  for (const plan of ["tesoreria", "secretaria", "completo"] as const) {
+    const configurados = idsDelSecreto(`PADDLE_PLAN_${plan.toUpperCase()}`);
+    if (configurados.some((id) => ids.has(id))) return plan;
+  }
+
+  // Sin mapa configurado (o producto desconocido): producto único.
   return "completo";
 }
 

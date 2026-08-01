@@ -2545,15 +2545,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    apilaban todo a la izquierda y dejaban huecos). Las tarjetas fluyen por
    filas, alineadas arriba, y el hueco bajo una tarjeta corta se rellena con
    la siguiente gracias a grid-auto-flow: dense. */
+/* Columnas CSS y no grid: con `grid` cada tarjeta se queda en su celda y la
+   fila mide lo que la más alta, así que debajo de una tarjeta corta quedaba un
+   hueco de cientos de píxeles. (`grid-auto-flow: dense` no arreglaba nada: solo
+   actúa sobre elementos que ocupan varias celdas, y aquí todos ocupan una.)
+   Con columnas, las tarjetas fluyen y el navegador equilibra las alturas solo.
+   `break-inside: avoid` impide que una tarjeta se parta entre columnas; se
+   incluye la variante con prefijo por los WebKit antiguos de macOS. */
 .settings-masonry {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  align-items: start;
-  grid-auto-flow: dense;
+  columns: 2;
+  column-gap: 20px;
   margin-bottom: 20px;
 }
-.settings-masonry > * { min-width: 0; }
+.settings-masonry > * {
+  min-width: 0;
+  /* En columnas el hueco vertical lo pone el margen, no `gap`. */
+  margin-bottom: 20px;
+  -webkit-column-break-inside: avoid;
+  break-inside: avoid;
+}
 
 /* Zonas de Ajustes: jerarquía de elevación por categoría. El panel de la
    zona es plano y apenas tintado (nivel 0); las tarjetas dentro conservan
@@ -2825,7 +2835,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .dash-canvas { padding: 18px; gap: 16px; }
   .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
-  .settings-masonry { grid-template-columns: 1fr; }
+  .settings-masonry { columns: 1; }
   .report-preview .r-summary { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 860px) {

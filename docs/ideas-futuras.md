@@ -119,12 +119,21 @@ dispositivo**, con `en-US` de reserva.
 
 **B3. `"csp": null`** en `tauri.conf.json:28`.
 
-**B4. El webhook de pago decide el plan con datos del navegador.**
-`planDe()` en `supabase/functions/pago-webhook/index.ts:69-73` lee
-`custom_data.plan` y cae en `"completo"` por defecto. Hoy es **inofensivo** porque
-se vende un solo producto (todos deben recibir "completo"), pero `custom_data`
-viaja desde el navegador del comprador y es alterable. En cuanto existan planes
-más baratos, hay que mapear por `product_id`/`price_id` en el webhook.
+**B4. El webhook de pago decide el plan con datos del navegador.** — ✅ **ARREGLADO (1 ago 2026)**
+`planDe()` leía `custom_data.plan`, que viaja desde el navegador del comprador y
+es alterable. No había daño hoy (un solo producto, todos deben recibir
+"completo"), pero era una puerta abierta en cuanto existiera un plan más barato.
+Ahora el plan se deduce del **producto/precio que informa Paddle** en el evento,
+que es dato de su servidor. Los IDs se configuran como secretos, sin tocar código:
+
+```
+supabase secrets set PADDLE_PLAN_TESORERIA="pro_aaa,pri_bbb"
+supabase secrets set PADDLE_PLAN_SECRETARIA="pro_ccc"
+supabase secrets set PADDLE_PLAN_COMPLETO="pro_ddd"
+```
+
+Sin ningún secreto configurado —el caso de hoy— todo pago sigue dando "completo".
+**Pendiente:** desplegar con `supabase functions deploy pago-webhook --no-verify-jwt`.
 
 ### C. Sistema visual (se puede hacer sin tocar la app)
 
@@ -132,9 +141,14 @@ más baratos, hay que mapear por `product_id`/`price_id` en el webhook.
   `styles.css` (36 usos de `13px`, 29 de `11px`, 27 de `12px`…). Definir ~6 pasos
   como tokens.
 - **C2.** **Cero variables de espaciado.** Tokens de 4/8/12/16/24/32.
-- **C3.** Huecos en Ajustes: `.settings-masonry` es grid de 2 columnas y
-  `grid-auto-flow: dense` no hace nada con tarjetas 1×1. Arreglo real: dos
-  columnas flex independientes repartidas por altura.
+- **C3.** ✅ **ARREGLADO (1 ago 2026).** Huecos en Ajustes: `.settings-masonry`
+  era `grid` de 2 columnas, así que cada tarjeta se quedaba en su celda y la fila
+  medía lo que la más alta (`grid-auto-flow: dense` no hacía nada: solo actúa
+  sobre elementos que ocupan varias celdas). Cambiado a **columnas CSS**
+  (`columns: 2` + `break-inside: avoid`, con la variante prefijada para WebKit
+  antiguo), que reparten y equilibran las alturas solas. **Falta comprobarlo a
+  ojo en la Mac**: si algún WebKit viejo ignorara `break-inside`, una tarjeta
+  podría partirse entre columnas.
 - **C4.** Dos paletas para la misma categoría (el chip y su porción del donut no
   coinciden). Una sola paleta con variante clara y saturada del mismo tono.
 - **C5.** Falta token de aviso (`--warn` / `--warn-bg`): la insignia "Pendiente"
