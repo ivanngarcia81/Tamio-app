@@ -103,9 +103,16 @@ dividir solo al mostrar. Requiere migración.
 
 ### B. Correcciones claras
 
-**B1. `fmtMoney` fija el formato numérico en inglés.** `db.ts:3468-3472`: el
-símbolo sí es dinámico, pero `toLocaleString("en-US")` está clavado. Un tesorero
-en español ve `1,250.50` donde espera `1.250,50`. Debe seguir el idioma activo.
+**B1. `fmtMoney` fija el formato numérico en inglés.** — ✅ **ARREGLADO (1 ago 2026)**
+El símbolo ya era dinámico, pero `toLocaleString("en-US")` estaba clavado.
+
+*Ojo con la solución:* la auditoría proponía seguir **el idioma de la app**, y eso
+habría sido una regresión. El separador de miles es una convención **del país**,
+no del idioma: en México, Puerto Rico y EE. UU. se escribe `1,250.50`, y en España
+y Argentina `1.250,50` — los tres en español. Atarlo al idioma le habría cambiado
+el formato a los usuarios del mercado principal (la ficha de la App Store tiene
+Spanish (Mexico) como idioma). Se toma de la **configuración regional del
+dispositivo**, con `en-US` de reserva.
 
 **B2. `fs:scope` abarca todo `$HOME`.** `$HOME/**` en dos capabilities
 (lectura y escritura desde el webview). Acotar a la carpeta de la app y Descargas.
@@ -142,9 +149,10 @@ de captura; van con C1–C6 cuando se toque el sistema visual.)*
 
 ### D. Higiene del repositorio
 
-- **D1.** `README.md` sigue siendo la plantilla de Tauri.
-- **D2.** `PROJECT_STATUS.md` está desactualizado (14 jul, solo tesorería) y es de
-  los primeros archivos que lee cualquiera que llegue al repo.
+- **D1.** ✅ **HECHO (1 ago 2026).** `README.md` describe Tamio.
+- **D2.** ✅ **HECHO (1 ago 2026).** `PROJECT_STATUS.md` reescrito: decía v10 de
+  migraciones cuando van por la **v35**, y que la base usaba
+  `@tauri-apps/plugin-sql` cuando eso lo reemplazó SQLCipher hace tiempo.
 - **D3.** `web/` es peso muerto: el `version.json` que la app lee está en
   `Tamio-web` (ver el bloqueante de arriba).
 - **D4.** `docs/` mezcla el sitio público (`.html` + `CNAME`) con notas internas

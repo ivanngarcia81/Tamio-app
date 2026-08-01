@@ -1,56 +1,73 @@
 # Tamio — Estado del proyecto
 
-App de escritorio para macOS que lleva la tesorería de una iglesia:
-ingresos, gastos, depósitos bancarios, miembros, reportes y constancias
-en PDF. **Tauri 2 + React 19 + TypeScript**, SQLite local vía
-`@tauri-apps/plugin-sql`. Bilingüe (ES/EN) con paridad de claves
-verificada por el compilador. Antes se llamaba "Tesorería"; el
-identificador interno sigue siendo `com.tesoreria.app` a propósito
-(de él depende la carpeta de datos del usuario).
+App de administración para iglesias: **tesorería** (ingresos, gastos, depósitos,
+reportes) y **secretaría** (membresía, actas, cartas, traslados, asistencia,
+agenda). Corre en **macOS, iPad y iPhone** desde una sola base de código.
 
-Última actualización: 2026-07-14 · rama de trabajo: `claude/hello-9v3atw`
+**Tauri 2 + React 19 + TypeScript.** Base de datos local **cifrada con SQLCipher**
+(`rusqlite`), con la clave guardada en el **Llavero de macOS** (`keyring`).
+Bilingüe ES/EN con paridad de claves verificada por el compilador.
+
+> El identificador interno es `com.tesoreria.app` **a propósito**: de él depende
+> la carpeta de datos de cada instalación existente. **No cambiarlo nunca.**
+
+_Última actualización: 1 de agosto de 2026 · versión 1.0.8_
+
+---
+
+## Dónde está el proyecto ahora
+
+- **1.0.8 enviada a App Review** el 29 de julio de 2026, a la espera de respuesta.
+- La 1.0 sale **gratis y 100% local**: sin login, sin nube, sin compras.
+  Dos interruptores lo controlan:
+  - `LOGIN_HABILITADO` en `src/supabase.ts`
+  - `SYNC_HABILITADO` en `src/syncManager.ts`
+  Ambos en `false`. La 1.1 los vuelve a encender.
+- La suscripción (19 USD/mes por iglesia) llega con la 1.1. Procesador de pago sin
+  decidir: Paddle construido, Lemon Squeezy recuperable — ver `docs/planes.md`.
+
+**Qué leer antes de tocar nada:**
+- [`docs/ideas-futuras.md`](./docs/ideas-futuras.md) — hoja de ruta, **el
+  bloqueante del banner de actualizaciones**, y los hallazgos de la auditoría del
+  1 de agosto (con lo que resultó falso).
+- [`docs/checklist-app-store.md`](./docs/checklist-app-store.md) — qué se declaró
+  a Apple en el envío.
+
+---
 
 ## Mapa del código
 
-- `src/db.ts` — toda la capa de datos (SQLite). Único lugar a tocar si
-  llega un backend.
-- `src/App.tsx` — shell: rutas, sidebar, modal global, tema.
-- `src/pages/` — Dashboard, Movimientos (ingresos/gastos), Miembros,
-  Depósitos, Bandeja, Reportes, Configuración.
+- `src/db.ts` — toda la capa de datos. Único lugar a tocar para consultas.
+- `src/App.tsx` — shell: rutas, sidebar, modal global, tema, puerta de login.
+- `src/pages/` — Dashboard, Movimientos, Miembros, Depósitos, Bandeja, Reportes,
+  Membresía, Actas, Servicios, Cartas, Agenda, Mensajes, Configuración.
 - `src/components/` — tablas, modales, ajustes, skeletons, paginación.
-- `src/services/print/` — motor de PDF (jsPDF nativo). Tema centralizado
-  en `printUtils.ts` (PDF_TYPE/PDF_SPACE/PDF_MARGIN); ningún reporte
-  hardcodea tamaños.
-- `src/styles.css` — sistema de diseño completo por tokens (tipografía
-  --fs-*, espaciado, sombras, radios, --dur, layout --content-*).
-- `src/i18n/` — es.ts es la fuente; en.ts usa tipo espejo.
-- `src-tauri/src/lib.rs` — migraciones SQL (v10). Regla: NUNCA reusar un
-  número de versión; siempre agregar al final.
+- `src/services/print/` — motor de PDF (jsPDF nativo). Tema centralizado en
+  `printUtils.ts`; ningún reporte fija tamaños por su cuenta. **No se usa
+  `window.print()` a propósito.**
+- `src/styles.css` — tokens de tipografía (`--fs-*`), color, sombras y layout.
+  Punto de corte compacto (iPhone): `@media (max-width: 760px)`.
+- `src/i18n/` — `es.ts` es la fuente; `en.ts` usa tipo espejo.
+- `src-tauri/src/lib.rs` — migraciones SQL. **Van por la v35.**
+  Regla: NUNCA reusar un número; siempre agregar al final.
+- `src-tauri/src/motordb.rs` — apertura de la base y `PRAGMA key` (SQLCipher).
+- `supabase/functions/` — `pago-webhook` y `borrar-cuenta`.
 
-## Funcionalidad completa
+---
 
-Movimientos con estados (aprobado/pendiente+Bandeja), recurrentes
-mensuales de ingreso/gasto (el mes en curso se materializa al concluir),
-deshacer al eliminar, búsqueda/filtros/paginación, miembros con
-archivado no destructivo y constancia anual (firmas de tesorero y
-pastor), depósitos, reportes mensual/anual en PDF con folio de
-auditoría, importación CSV, respaldos, categorías personalizadas,
-temas claro/oscuro, sonidos opcionales, atajos de teclado.
+## Reglas de trabajo
 
-## Pendiente (siguiente etapa)
-
-1. **Fase 0 — Distribución**: LISTA en el repo (v1.0.0, bundle .dmg para
-   Apple Silicon, sin firma; guía en `docs/DISTRIBUCION.md`, comando
-   `npm run dist`). Solo falta ejecutar el build en la Mac de desarrollo.
-   Firma de Apple ($99/año) pospuesta hasta que exista el backend.
-2. **Backend + cuentas** (3 usuarias en Macs distintas): sync en la
-   nube, roles (tesoreras: todo; secretaria: miembros + solo lectura
-   financiera; pastor futuro: solo lectura). La matriz acordada está en
-   el historial de la sesión.
-3. Después: iPad/móvil o acceso web de consulta.
-
-## Convenciones
-
-- Verificar con `npx tsc --noEmit` + `npm run build` antes de commit.
-- Commits y UI en español; código con nombres en español donde ya lo es.
+- Verificar con `npx tsc --noEmit` **y** `npm run build` antes de cada commit.
+- **Mac e iPad ya funcionan bien.** Los ajustes de iPhone van detrás del
+  breakpoint compacto; si un arreglo exige tocar código compartido, consultarlo
+  antes.
+- Commits y UI en español; nombres de código en español donde ya lo están.
 - No introducir dependencias sin necesidad clara.
+- El `.env` no se sube (solo `.env.example`). El repo es público: nada de claves.
+
+## Compilar
+
+```bash
+npm run dist                                            # .dmg de macOS
+npm run tauri ios build -- --export-method app-store-connect   # .ipa
+```

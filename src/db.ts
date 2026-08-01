@@ -3465,10 +3465,30 @@ export function setMonedaActiva(code: string): void {
   simboloActivo = currencySymbol(code);
 }
 
+/** Configuración regional con la que se formatean los números.
+ *
+ *  Se toma del DISPOSITIVO, no del idioma de la app, porque cómo se separan los
+ *  miles y los decimales es una convención del país y no del idioma: en México,
+ *  Puerto Rico y Estados Unidos se escribe `1,250.50`, y en España y Argentina
+ *  `1.250,50` — y los tres hablan español. Atarlo al idioma de la app le
+ *  cambiaría el formato a una parte de los usuarios sin que lo hayan pedido.
+ *
+ *  Si el sistema no informa nada, se cae a `en-US`, que es lo que Tamio ha
+ *  usado siempre. */
+let localeNumeros: string | null = null;
+function localeDeNumeros(): string {
+  if (localeNumeros === null) {
+    let l = "";
+    try { l = navigator.language ?? ""; } catch { /* entorno sin navigator */ }
+    localeNumeros = l || "en-US";
+  }
+  return localeNumeros;
+}
+
 export function fmtMoney(n: number): string {
   const sign = n < 0 ? "−" : "";
   const abs = Math.abs(n);
-  return `${sign}${simboloActivo}${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return `${sign}${simboloActivo}${abs.toLocaleString(localeDeNumeros(), { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 export function nowLocalIso(): string {
