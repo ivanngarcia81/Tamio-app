@@ -60,13 +60,17 @@ Se corrige, se sube un build nuevo (subiendo el número de versión) y se reenv�
 
 ---
 
-## 🚨 Después de lanzar: NO actualizar `version.json` todavía
+## 🚨 Después de lanzar: NO actualizar el `version.json` de `Tamio-web`
 
-El banner de actualizaciones (`UpdateBanner`) también corre en iPhone y, si
-`web/version.json` anuncia una versión mayor, mostraría a los usuarios de iOS un
-botón para descargar un **`.dmg` de Mac** — prohibido por Apple (3.1.1 / 2.5.2).
+El banner de actualizaciones (`UpdateBanner`) también corre en iPhone y, si el
+manifiesto de versión anuncia una versión mayor, mostraría a los usuarios de iOS
+un botón para descargar un **`.dmg` de Mac** — prohibido por Apple (3.1.1 / 2.5.2).
 
-Hoy no se muestra (`version.json` = 1.0.0 < app 1.0.7), por eso no bloqueó la
-1.0. **Antes de tocar `version.json`, hay que ocultar ese banner en iOS.**
-Detalle completo en `ideas-futuras.md` → "BLOQUEANTE antes de publicar
-cualquier actualización".
+> 🔴 **Corrección (1 ago 2026):** este checklist decía antes que el archivo era
+> `web/version.json` **de este repo**. Era incorrecto. El que la app lee es el del
+> **repo `Tamio-web`** (`src/services/update.ts:16`); el `web/` de aquí no lo lee
+> nadie.
+
+Hoy no se muestra (ese `version.json` = 1.0.0 < app 1.0.8), por eso no bloqueó la
+1.0. **Antes de tocarlo, hay que ocultar el banner en iOS.** Detalle completo en
+`ideas-futuras.md` → "BLOQUEANTE antes de publicar cualquier actualización".

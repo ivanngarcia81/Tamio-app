@@ -3,7 +3,7 @@
 Notas de producto para después del lanzamiento en la App Store. No es un
 compromiso ni un orden fijo; es para no perder las buenas ideas.
 
-_Última actualización: 28 de julio de 2026_
+_Última actualización: 1 de agosto de 2026_
 
 ---
 
@@ -13,19 +13,33 @@ _Última actualización: 28 de julio de 2026_
 `src/components/UpdateBanner.tsx` se renderiza sin condición de plataforma en
 `src/App.tsx` (~línea 296). En iPhone/iPad eso significa que:
 
-1. La app consulta `version.json` en GitHub al arrancar (petición de red silenciosa).
+1. La app consulta un `version.json` en GitHub al arrancar (petición de red silenciosa).
 2. Si hay una versión más nueva, muestra un botón **"Descargar"** que abre un
    **`.dmg` de Mac** — lo que **Apple prohíbe** (directrices 3.1.1 / 2.5.2: una
    app de iOS no puede dirigir a descargar software fuera del App Store).
 
-**Por qué no bloqueó la 1.0:** `web/version.json` dice `1.0.0` y la app es
-`1.0.7`, así que `esMasNueva()` da false y el banner nunca se muestra. El
-revisor no lo vio. **Decisión (28 jul 2026, Iván): se deja para la 1.1.**
+> 🔴 **CORRECCIÓN (1 ago 2026).** Una versión anterior de esta nota decía que el
+> archivo peligroso era `web/version.json` **de este repo**. Es falso y la
+> advertencia apuntaba al archivo equivocado. El archivo que la app lee de verdad
+> es:
+>
+> ```
+> src/services/update.ts:16
+> https://ivanngarcia81.github.io/Tamio-web/version.json
+> ```
+>
+> Es decir, **el `version.json` del repo `Tamio-web`**, no el de este repositorio.
+> El `web/` de aquí no lo lee nadie. Quien hubiera seguido la nota anterior habría
+> publicado la actualización creyéndose a salvo.
 
-> ⚠️ **PELIGRO:** el día que actualices `version.json` a una versión mayor (p. ej.
-> `1.1.0`) para avisar a los usuarios de **Mac**, los usuarios de **iPhone**
-> empezarán a ver un banner ofreciéndoles descargar un `.dmg`. **NO toques
-> `version.json` hasta haber arreglado esto.**
+**Por qué no bloqueó la 1.0:** ese `version.json` sigue en `1.0.0` y la app es
+`1.0.8`, así que `esMasNueva()` da false y el banner nunca se muestra. El revisor
+de Apple no lo vio. **Decisión (28 jul 2026, Iván): se arregla en la 1.1.**
+
+> ⚠️ **PELIGRO:** el día que subas el `version.json` **del repo `Tamio-web`** a una
+> versión mayor (p. ej. `1.1.0`) para avisar a los usuarios de **Mac**, los
+> usuarios de **iPhone** empezarán a ver un banner ofreciéndoles descargar un
+> `.dmg`. **NO toques ese archivo hasta haber arreglado el banner.**
 
 **Arreglo:** condicionar `<UpdateBanner />` a que la plataforma no sea iOS
 (p. ej. con `platform()` de `@tauri-apps/plugin-os`, o una bandera de build).
@@ -47,6 +61,123 @@ clientes.
 **solo lectura** (rama `soloLectura`, ya escrita), donde la nube manda y sí tiene
 sentido mostrar estado y vencimiento. No hay que rehacer nada, solo comprobar que
 se ve bien.
+
+---
+
+## 🐞 Hallazgos de la auditoría del 1 ago 2026 (verificados en el código)
+
+Revisión externa sobre `main` @ `1c0a861` (v1.0.8), contrastada línea por línea
+antes de aceptarla. Ordenados por gravedad. **Ninguno es una regresión nueva**:
+todos venían de antes, así que no bloquean la 1.0 ya enviada; son la lista de
+trabajo de la 1.1.
+
+### A. Afectan al dinero — arreglar primero
+
+**A1. Un depósito puede no contar en ningún total.**
+`periodo` (YYYY-MM) es un campo independiente de `fecha`, y **todos los totales
+filtran por `periodo`** (`db.ts:870`, `db.ts:883`). El modal lo inicializa con el
+mes de HOY, no con el de la fecha del depósito (`DepositoModal.tsx:40`), y solo lo
+sincroniza mientras el usuario no lo toque: `if (!periodoTocado …)`
+(`DepositoModal.tsx:58`). En cuanto se toca una vez, los dos campos pueden
+discrepar para siempre **sin que nada avise**, y la lista muestra la fecha en
+grande y el periodo en gris pequeño — se suma por el que no se ve.
+*Arreglo:* avisar en el modal y en la fila cuando el mes de `fecha` ≠ `periodo`
+("Se contará en julio 2026"), y decir en la tarjeta de resumen de qué periodo está
+sumando. A considerar: derivar `periodo` siempre y que editarlo sea una excepción
+explícita, no un campo abierto.
+
+**A2. El dinero se guarda en coma flotante.**
+`monto REAL NOT NULL` en tres tablas (`lib.rs:43`, `:84`, `:136`). Con `SUM(monto)`
+los centavos derivan, y los porcentajes de los reportes dejarán de cuadrar contra
+el PDF en cuanto haya cifras reales. *Arreglo:* guardar centavos como entero y
+dividir solo al mostrar. Requiere migración.
+
+### B. Correcciones claras
+
+**B1. `fmtMoney` fija el formato numérico en inglés.** `db.ts:3468-3472`: el
+símbolo sí es dinámico, pero `toLocaleString("en-US")` está clavado. Un tesorero
+en español ve `1,250.50` donde espera `1.250,50`. Debe seguir el idioma activo.
+
+**B2. `fs:scope` abarca todo `$HOME`.** `$HOME/**` en dos capabilities
+(lectura y escritura desde el webview). Acotar a la carpeta de la app y Descargas.
+
+**B3. `"csp": null`** en `tauri.conf.json:28`.
+
+**B4. El webhook de pago decide el plan con datos del navegador.**
+`planDe()` en `supabase/functions/pago-webhook/index.ts:69-73` lee
+`custom_data.plan` y cae en `"completo"` por defecto. Hoy es **inofensivo** porque
+se vende un solo producto (todos deben recibir "completo"), pero `custom_data`
+viaja desde el navegador del comprador y es alterable. En cuanto existan planes
+más baratos, hay que mapear por `product_id`/`price_id` en el webhook.
+
+### C. Sistema visual (se puede hacer sin tocar la app)
+
+- **C1.** No hay escala tipográfica: **22 tamaños de fuente distintos** en
+  `styles.css` (36 usos de `13px`, 29 de `11px`, 27 de `12px`…). Definir ~6 pasos
+  como tokens.
+- **C2.** **Cero variables de espaciado.** Tokens de 4/8/12/16/24/32.
+- **C3.** Huecos en Ajustes: `.settings-masonry` es grid de 2 columnas y
+  `grid-auto-flow: dense` no hace nada con tarjetas 1×1. Arreglo real: dos
+  columnas flex independientes repartidas por altura.
+- **C4.** Dos paletas para la misma categoría (el chip y su porción del donut no
+  coinciden). Una sola paleta con variante clara y saturada del mismo tono.
+- **C5.** Falta token de aviso (`--warn` / `--warn-bg`): la insignia "Pendiente"
+  lleva hex a mano en `TxList.tsx` y queda como parche en modo oscuro.
+- **C6.** Accesibilidad: muchos `<div onClick>` sin rol ni foco; la app no se
+  recorre con teclado.
+
+*(La auditoría lista más detalles visuales —montos partidos en dos líneas, flechas
+que no siguen el signo, el hero sin color, modales al 86% de alto, estados vacíos
+descuadrados, Income vs Expenses desalineadas—. Todos son ciertos como observación
+de captura; van con C1–C6 cuando se toque el sistema visual.)*
+
+### D. Higiene del repositorio
+
+- **D1.** `README.md` sigue siendo la plantilla de Tauri.
+- **D2.** `PROJECT_STATUS.md` está desactualizado (14 jul, solo tesorería) y es de
+  los primeros archivos que lee cualquiera que llegue al repo.
+- **D3.** `web/` es peso muerto: el `version.json` que la app lee está en
+  `Tamio-web` (ver el bloqueante de arriba).
+- **D4.** `docs/` mezcla el sitio público (`.html` + `CNAME`) con notas internas
+  (`.md`). Separarlo es el paso previo para poder hacer privado este repo.
+- **D5.** No borrar `claude/hello-9v3atw` mientras GitHub Pages sirva desde ella.
+
+---
+
+## ✅ Afirmaciones de esa auditoría que resultaron FALSAS
+
+Se dejan escritas para que nadie las repita ni "arregle" algo que ya está bien.
+
+**1. "Sin cifrado local: la base queda en claro."** — **Falso, y es el error más
+grave de la auditoría.** La base **sí está cifrada** con SQLCipher y la clave vive
+en el **Llavero de macOS**:
+
+```
+src-tauri/Cargo.toml:27   rusqlite … features = ["bundled-sqlcipher-vendored-openssl"]
+src-tauri/Cargo.toml:29   keyring = { version = "3", features = ["apple-native"] }
+src-tauri/src/motordb.rs:45   conn.pragma_update(None, "key", clave)?;
+src-tauri/src/lib.rs:840      entrada.get_password()  // clave en el Llavero
+```
+
+Lo único cierto es que **no hay PIN ni biometría** para abrir la app — eso es la
+función de Face ID, ya en esta hoja de ruta.
+
+**2. "Tagged as tither: 0 con un diezmo registrado, el conteo está mal."** — No es
+un bug. `Miembros.tsx:133` cuenta **etiquetas del miembro**
+(`if (ets.includes("diezmador"))`), no transacciones. Un miembro con un ingreso de
+diezmo pero sin la etiqueta puesta cuenta 0, que es lo correcto. Y el rótulo **ya
+dice** "Tagged as tither" — justo el arreglo que la auditoría proponía.
+
+**3. "El modal de gasto muestra 'Save income'."** — La propia auditoría lo retiró y
+se confirma: `NewRecordModal.tsx:234-236` deriva título, subtítulo y botón de la
+misma variable `tab`, y `en.ts:330` tiene `guardarGasto: "Save expense"`. El código
+no puede producir ese texto.
+
+**4. "Falta `@media print`."** — No aplica: el botón Imprimir no usa
+`window.print()`, genera el PDF con un servicio propio (`services/print/`).
+
+**5. "El depósito fuera de mes es un problema de zona horaria."** — Retirado por la
+propia auditoría; la causa real es A1.
 
 ---
 

@@ -22,9 +22,22 @@ Por defecto la app lo busca en:
 
     https://ivanngarcia81.github.io/Tamio-web/version.json
 
-Es el archivo `web/version.json` de este repo, que se publica junto a la web en
-GitHub Pages (repo `Tamio-web`). Se puede cambiar la URL con la variable de
-entorno `VITE_UPDATE_URL` al compilar, si algún día mueves el archivo.
+Ese archivo vive en el **repo `Tamio-web`**, no en este repositorio. Se puede
+cambiar la URL con la variable de entorno `VITE_UPDATE_URL` al compilar, si algún
+día mueves el archivo.
+
+> 🔴 **Corrección (1 ago 2026).** Esta guía decía antes que era el `web/version.json`
+> **de este repo**. Es falso: `web/` aquí no lo lee nadie y editarlo no tiene ningún
+> efecto. El único archivo que la app consulta es el del repo `Tamio-web`
+> (ver `src/services/update.ts:16`).
+
+> 🚨 **ANTES DE PUBLICAR CUALQUIER ACTUALIZACIÓN.** El `<UpdateBanner />` se
+> renderiza **sin condición de plataforma** (`src/App.tsx`), así que también corre
+> en iPhone y iPad. El día que subas la versión de ese `version.json`, los usuarios
+> de **iOS** verán un botón que abre un **`.dmg` de Mac** — prohibido por Apple
+> (directrices 3.1.1 / 2.5.2). **Hay que ocultar el banner en iOS primero.**
+> Detalle en [`ideas-futuras.md`](./ideas-futuras.md) → "BLOQUEANTE antes de
+> publicar cualquier actualización".
 
 Forma del archivo:
 
@@ -72,8 +85,10 @@ var TAMIO_DMG_LISTO = false; // ← pon true cuando ya exista el primer release
 2. Firma el `.dmg` (`npm run firmar:manual`).
 3. Crea un *Release* nuevo con el `.dmg` (mismo nombre `Tamio_universal.dmg`).
    Los botones de la web ya no se tocan (el enlace "latest" se actualiza solo).
-4. Edita `web/version.json`: pon la nueva `version` (y `notas` si quieres). La
-   `url` ya apunta al "latest", así que normalmente no cambia. Publica la web.
+4. **(Bloqueado hasta arreglar el banner en iOS — ver el aviso de arriba.)**
+   Edita el `version.json` **del repo `Tamio-web`**: pon la nueva `version` (y
+   `notas` si quieres). La `url` ya apunta al "latest", así que normalmente no
+   cambia. Publica la web.
 
 Con eso, todos los que ya tienen Tamio verán el aviso la próxima vez que abran la
 app.
