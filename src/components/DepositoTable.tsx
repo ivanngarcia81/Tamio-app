@@ -65,10 +65,10 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
               {/* Los totales suman por período. Cuando coincide con el mes de la
                   fecha no hace falta decir nada; cuando NO coincide hay que
                   cantarlo, porque si no el depósito parece no contar en ningún
-                  lado. */}
+                  lado. Sin `solo-escritorio` a propósito: esa clase lo ocultaba
+                  en el iPhone por redundante, y aquí ya nunca lo es. */}
               {dep.periodo !== dep.fecha.slice(0, 7) && (
                 <div
-                  className="solo-escritorio"
                   style={{ fontSize: 11.5, color: "var(--accent-4)", fontWeight: 600 }}
                   title={t("depositos.correspondeATitulo")}
                 >
