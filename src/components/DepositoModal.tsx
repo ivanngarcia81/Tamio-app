@@ -4,7 +4,7 @@ import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
   efectivoDisponibleHasta, findDuplicateDeposito, fmtMoney, insertDeposito,
-  nowLocalIso, updateDeposito,
+  mesLegible, nowLocalIso, updateDeposito,
   type Church, type Deposito,
 } from "../db";
 import { IconCheck, IconClose, IconWarn } from "../icons";
@@ -57,6 +57,12 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
     setExcedeConfirmado(false);
     if (!periodoTocado && v.length >= 7) setPeriodo(v.slice(0, 7));
   }
+
+  // Los totales y los reportes suman por PERÍODO, no por fecha. Los dos campos
+  // pueden diferir a propósito (un depósito hecho en agosto con dinero de
+  // julio), pero cuando difieren sin querer el depósito "desaparece" de los
+  // totales del mes en que se ve la fecha. Se avisa, sin bloquear.
+  const periodoDistinto = fecha.length >= 7 && periodo.length >= 7 && fecha.slice(0, 7) !== periodo;
 
   async function pickComprobante() {
     try {
@@ -184,6 +190,21 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
               />
             </div>
           </div>
+
+          {periodoDistinto && (
+            <div
+              className="form-group full"
+              style={{ display: "flex", alignItems: "flex-start", gap: 6, color: "var(--text-2)", marginTop: -4 }}
+            >
+              <span style={{ color: "var(--accent-4)", flexShrink: 0, marginTop: 1 }}><IconWarn size={13} /></span>
+              <span style={{ fontSize: "var(--fs-caption)" }}>
+                {t("depositos.avisoPeriodoDistinto", {
+                  periodo: mesLegible(periodo),
+                  mesFecha: mesLegible(fecha.slice(0, 7)),
+                })}
+              </span>
+            </div>
+          )}
 
           <div className="form-group full">
             <label className="form-label">{t("tx.comprobante")} <span className="opt">{t("common.opcional")}</span></label>

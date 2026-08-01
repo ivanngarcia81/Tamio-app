@@ -73,7 +73,7 @@ trabajo de la 1.1.
 
 ### A. Afectan al dinero — arreglar primero
 
-**A1. Un depósito puede no contar en ningún total.**
+**A1. Un depósito puede no contar en ningún total.** — ✅ **ARREGLADO (1 ago 2026)**
 `periodo` (YYYY-MM) es un campo independiente de `fecha`, y **todos los totales
 filtran por `periodo`** (`db.ts:870`, `db.ts:883`). El modal lo inicializa con el
 mes de HOY, no con el de la fecha del depósito (`DepositoModal.tsx:40`), y solo lo
@@ -81,10 +81,19 @@ sincroniza mientras el usuario no lo toque: `if (!periodoTocado …)`
 (`DepositoModal.tsx:58`). En cuanto se toca una vez, los dos campos pueden
 discrepar para siempre **sin que nada avise**, y la lista muestra la fecha en
 grande y el periodo en gris pequeño — se suma por el que no se ve.
-*Arreglo:* avisar en el modal y en la fila cuando el mes de `fecha` ≠ `periodo`
-("Se contará en julio 2026"), y decir en la tarjeta de resumen de qué periodo está
-sumando. A considerar: derivar `periodo` siempre y que editarlo sea una excepción
-explícita, no un campo abierto.
+*Arreglo aplicado:* la discrepancia ya no es invisible.
+1. **Modal:** aviso en vivo, no bloqueante, en cuanto el mes de `fecha` ≠ `periodo`
+   ("Este depósito se sumará en julio 2026, no en agosto 2026: los totales
+   agrupan por período correspondiente").
+2. **Fila de la lista:** el `2026-07` suelto en gris se sustituye por
+   "Corresponde a Julio 2026" resaltado, y **solo aparece cuando difiere** — así
+   la excepción destaca en vez de perderse entre filas normales.
+3. **Tarjeta de resumen:** ahora dice "Período agosto 2026 · 0 depósitos", que
+   explica por sí sola por qué un depósito con fecha de agosto puede no contar.
+
+Se mantiene a propósito la posibilidad de que difieran: depositar en agosto el
+dinero de julio es un caso real y legítimo. Lo que se arregla es que ocurra **sin
+que nadie se entere**.
 
 **A2. El dinero se guarda en coma flotante.**
 `monto REAL NOT NULL` en tres tablas (`lib.rs:43`, `:84`, `:136`). Con `SUM(monto)`
