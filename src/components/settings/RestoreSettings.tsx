@@ -26,6 +26,8 @@ export default function RestoreSettings() {
   const [resumen, setResumen] = useState<ResumenRespaldo | null>(null);
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El respaldo quedó marcado y se pidió el cierre. */
+  const [cerrando, setCerrando] = useState(false);
   /** El respaldo quedó listo pero la app no llegó a cerrarse sola. */
   const [noCerro, setNoCerro] = useState(false);
 
@@ -51,24 +53,31 @@ export default function RestoreSettings() {
 
   async function confirmar() {
     setTrabajando(true);
+    // El diálogo se cierra AQUÍ, en el clic, antes de esperar a nada.
+    //
+    // Mientras seguía abierto tapaba la tarjeta entera, así que ni el aviso de
+    // "no se cerró" ni un error se veían: quedaban pintados DEBAJO del modal.
+    // Desde fuera el botón rojo parecía muerto aunque el trabajo estuviera
+    // hecho. Cerrándolo ya, lo que pase después se ve.
+    setResumen(null);
     try {
       await confirmarRestauracion();
       // La sincronización queda pausada ANTES de reiniciar, para que el
       // arranque siguiente ya la encuentre en pausa y no suba ni baje nada
       // antes de que un humano mire los datos.
       pausarSyncPorRestauracion();
+      setCerrando(true);
 
       // Si el cierre funciona, este componente deja de existir antes de que
       // salte el aviso. Si NO funciona, el `invoke` se queda esperando para
-      // siempre y sin esto el botón parece muerto — que fue exactamente lo que
-      // pasó la primera vez. El respaldo ya está preparado y con su marcador,
-      // así que cerrar a mano termina el trabajo igual: hay que decirlo.
+      // siempre. El respaldo ya está preparado y con su marcador, así que
+      // cerrar a mano termina el trabajo igual: hay que decirlo.
       setTimeout(() => setNoCerro(true), 3000);
       await reiniciarApp();
     } catch (e) {
       setError(String(e));
       setTrabajando(false);
-      setResumen(null);
+      setCerrando(false);
     }
   }
 
@@ -99,6 +108,10 @@ export default function RestoreSettings() {
         <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "var(--space-3)" }}>
           <IconWarn size={13} /> {error}
         </div>
+      )}
+
+      {cerrando && !noCerro && (
+        <div className="form-hint" style={{ marginTop: "var(--space-3)" }}>{t("restaurar.cerrando")}</div>
       )}
 
       {noCerro && (

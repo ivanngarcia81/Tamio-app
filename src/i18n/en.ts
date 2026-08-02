@@ -518,6 +518,7 @@ export const en: Resources = {
     confirmarSync: "When it finishes, cloud sync will be PAUSED until you check that the data is right.",
     confirmarReinicio: "Tamio will close and reopen by itself. If it does not, open it yourself: the backup is applied all the same.",
     confirmarBoton: "Restore and restart",
+    cerrando: "The backup is ready. Tamio is closing to apply it…",
     noCerro: "The backup is ready, but Tamio could not close by itself. Quit it (Cmd+Q) and open it again: the backup will be applied on startup.",
     syncPausadoTitulo: "Sync paused",
     syncPausadoTexto: "A backup was restored. Check the data is right before turning sync back on: once you do, what is in the cloud and what is here will merge, and there is no undo.",

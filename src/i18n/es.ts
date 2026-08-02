@@ -512,6 +512,7 @@ export const es = {
     confirmarSync: "Al terminar, la sincronización con la nube quedará EN PAUSA hasta que revises que los datos están bien.",
     confirmarReinicio: "Tamio se cerrará y se volverá a abrir solo. Si no se abriera, ábrelo tú: el respaldo se aplica igual.",
     confirmarBoton: "Restaurar y reiniciar",
+    cerrando: "El respaldo está listo. Tamio se está cerrando para aplicarlo…",
     noCerro: "El respaldo está listo, pero Tamio no consiguió cerrarse solo. Ciérralo tú (Cmd+Q) y vuelve a abrirlo: el respaldo se aplicará al arrancar.",
     syncPausadoTitulo: "Sincronización en pausa",
     syncPausadoTexto: "Se restauró un respaldo. Revisa que los datos estén bien antes de reactivar la sincronización: al reactivarla, lo que esté en la nube y aquí se mezclará y ya no hay vuelta atrás.",
