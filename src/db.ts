@@ -280,10 +280,10 @@ export const CATEGORIAS_INGRESO = [
 export const CATEGORIAS_GASTO = [
   { id: "pastores", nombre: "Compensación", tagClass: "pastores", color: "#9f1239" },
   { id: "musicos", nombre: "Suministros", tagClass: "musicos", color: "#1d4ed8" },
-  { id: "administracion", nombre: "Varios", tagClass: "administracion", color: "#374151" },
+  { id: "administracion", nombre: "Varios", tagClass: "administracion", color: "#0891b2" },
   { id: "limpieza", nombre: "Limpieza", tagClass: "limpieza", color: "#0f766e" },
   { id: "servicios", nombre: "Utilidades", tagClass: "servicios", color: "#92400e" },
-  { id: "mantenimiento", nombre: "Mantenimiento", tagClass: "mantenimiento", color: "#57534e" },
+  { id: "mantenimiento", nombre: "Mantenimiento", tagClass: "mantenimiento", color: "#4338ca" },
   { id: "eventos", nombre: "Alimentos", tagClass: "eventos", color: "#9a3412" },
   { id: "misiones", nombre: "Misiones", tagClass: "misiones", color: "#0369a1" },
   { id: "ayudas", nombre: "Ayudas", tagClass: "ayudas", color: "#9d174d" },
