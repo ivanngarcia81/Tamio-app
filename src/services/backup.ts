@@ -1,6 +1,6 @@
 import Papa from "papaparse";
 import { save } from "@tauri-apps/plugin-dialog";
-import { readFile } from "@tauri-apps/plugin-fs";
+import { readFile, remove } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
 import {
   METODOS_PAGO, getCategoriasGasto, getCategoriasIngreso,
@@ -73,24 +73,40 @@ export async function exportMiembrosCsv(churchId: number): Promise<BackupResult>
   return saveCsv(`miembros-${nowLocalIso().slice(0, 10)}.csv`, miembrosToCsv(members));
 }
 
-/** Respaldo completo de la base a la ubicación que elija el usuario. La base
- *  en disco está cifrada (SQLCipher), así que la copia la exporta el motor en
- *  Rust YA descifrada: un respaldo que se puede abrir/restaurar en cualquier
- *  parte, igual de legible que los CSV que también exporta la app. */
+/**
+ * Respaldo completo: un PAQUETE `.zip` con la base más los documentos.
+ *
+ * Antes era solo el archivo `.db`, y eso dejó de bastar cuando los
+ * comprobantes pasaron a vivir dentro de la carpeta de la app. Hasta entonces
+ * estaban en el Escritorio o en Descargas del usuario y se los llevaba su Time
+ * Machine; ahora, restaurar el `.db` solo en otra Mac dejaba la base apuntando
+ * a archivos que allí no existen y todos los comprobantes desaparecían en
+ * silencio, justo después de haberlos "protegido". Para una tesorería
+ * auditable eso es lo contrario de lo que se buscaba.
+ *
+ * Dentro del ZIP: `tamio.db` (la base, descifrada y legible en cualquier
+ * parte) y `datos/` (comprobantes, adjuntos de cartas, logo y firmas).
+ *
+ * La base en disco está cifrada con SQLCipher; la copia la exporta el motor en
+ * Rust ya descifrada, para que el respaldo se pueda abrir donde sea. Esa copia
+ * sin cifrar solo existe dentro del paquete: se genera en un temporal de la
+ * carpeta de la app y se borra al terminar.
+ */
 export async function backupDatabase(): Promise<BackupResult> {
-  const fileName = `tesoreria-respaldo-${nowLocalIso().slice(0, 10)}.db`;
+  const fileName = `tamio-respaldo-${nowLocalIso().slice(0, 10)}.zip`;
   if (esMovil()) {
-    // iOS: el motor exporta la copia descifrada a la carpeta de la app y
-    // de ahí sale por la hoja de compartir (Archivos, AirDrop…).
+    // iOS: el paquete se arma en la carpeta de la app y de ahí sale por la
+    // hoja de compartir (Archivos, AirDrop…).
     const dir = await appDataDir();
     const destino = await join(dir, fileName);
-    await invoke("db_backup", { destino });
+    await invoke("db_backup_paquete", { destino });
     const bytes = await readFile(destino);
     const ok = await entregarArchivo(bytes, fileName);
+    await remove(destino).catch(() => {});
     return ok ? "guardado" : "cancelado";
   }
-  const path = await save({ defaultPath: fileName, filters: [{ name: "SQLite", extensions: ["db"] }] });
+  const path = await save({ defaultPath: fileName, filters: [{ name: "Tamio", extensions: ["zip"] }] });
   if (!path) return "cancelado";
-  await invoke("db_backup", { destino: path });
+  await invoke("db_backup_paquete", { destino: path });
   return "guardado";
 }

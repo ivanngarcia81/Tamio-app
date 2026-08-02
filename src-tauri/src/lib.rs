@@ -1,4 +1,5 @@
 mod motordb;
+mod paquete;
 
 fn migraciones() -> Vec<motordb::Migracion> {
     vec![motordb::Migracion {
@@ -833,6 +834,82 @@ fn db_backup(state: tauri::State<'_, DbCifrada>, destino: String) -> Result<(), 
     motordb::exportar_plano(&conn, std::path::Path::new(&destino))
 }
 
+/// Archivos que NUNCA entran en el respaldo: la base viva (cifrada, ilegible
+/// sin la clave del Llavero) y sus temporales de SQLite.
+fn es_archivo_de_base(nombre: &str) -> bool {
+    nombre.starts_with("tesoreria.db")
+        || nombre == "respaldo-temporal.db"
+        || nombre.ends_with("-wal")
+        || nombre.ends_with("-shm")
+}
+
+/// Recorre una carpeta y añade al ZIP todo lo que cuelgue de ella.
+fn anadir_carpeta(zip: &mut paquete::Zip, dir: &std::path::Path, prefijo: &str) -> Result<(), String> {
+    let entradas = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return Ok(()), // carpeta que no existe: no es un error
+    };
+    for entrada in entradas.flatten() {
+        let ruta = entrada.path();
+        let nombre = entrada.file_name().to_string_lossy().to_string();
+        if ruta.is_dir() {
+            anadir_carpeta(zip, &ruta, &format!("{prefijo}{nombre}/"))?;
+        } else if !es_archivo_de_base(&nombre) {
+            zip.anadir(&ruta, &format!("{prefijo}{nombre}"))?;
+        }
+    }
+    Ok(())
+}
+
+/// Respaldo COMPLETO: un ZIP con la base descifrada más todos los documentos.
+///
+/// El respaldo era solo el `.db`, y eso dejó de bastar cuando los comprobantes
+/// pasaron a vivir dentro de la carpeta de la app. Antes al menos estaban en el
+/// Escritorio del usuario y se los llevaba su Time Machine; ahora, restaurar en
+/// otra Mac dejaba la base apuntando a archivos que allí no existen y todos los
+/// comprobantes desaparecían en silencio, justo después de haberlos
+/// "protegido". Para una tesorería auditable eso es lo contrario de lo que se
+/// buscaba.
+///
+/// Dentro del ZIP:
+///   tamio.db          — la base, descifrada y legible en cualquier parte
+///   datos/…           — comprobantes, adjuntos de cartas, logo y firmas
+#[tauri::command]
+fn db_backup_paquete(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, DbCifrada>,
+    destino: String,
+) -> Result<(), String> {
+    use tauri::Manager;
+    let datos = dir_datos(&app)?;
+    let config = app.path().app_config_dir().map_err(|e| e.to_string())?;
+
+    // La copia descifrada se hace primero en un temporal dentro de la carpeta
+    // de la app, y de ahí entra al ZIP. Nunca se deja suelta en el disco del
+    // usuario: la base sin cifrar solo debe existir dentro del paquete.
+    std::fs::create_dir_all(&datos).map_err(|e| e.to_string())?;
+    let temporal = datos.join("respaldo-temporal.db");
+    {
+        let conn = state.0.lock().map_err(|e| e.to_string())?;
+        motordb::exportar_plano(&conn, &temporal)?;
+    }
+
+    let resultado = (|| -> Result<(), String> {
+        let mut zip = paquete::Zip::crear(std::path::Path::new(&destino))?;
+        zip.anadir(&temporal, "tamio.db")?;
+        anadir_carpeta(&mut zip, &datos, "datos/")?;
+        // En Linux config y datos son carpetas distintas; en macOS son la
+        // misma y esta segunda pasada no añade nada (ya está todo).
+        if config != datos {
+            anadir_carpeta(&mut zip, &config, "datos/")?;
+        }
+        zip.cerrar()
+    })();
+
+    let _ = std::fs::remove_file(&temporal);
+    resultado
+}
+
 // ---------------------------------------------------------------------------
 // Comprobantes
 //
@@ -1024,7 +1101,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup,
-            comprobante_existe, copiar_comprobante
+            db_backup_paquete, comprobante_existe, copiar_comprobante
         ]);
 
     // El menú de ventana (y sus eventos) solo existe en escritorio.
