@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  countDepositos, currentMonth, fmtMoney, listDepositos, mesLegible, monthDepositos,
+  countDepositos, currentMonth, currentYear, fmtFechaCorta, fmtMoney, listDepositos,
+  mesLegible, monthDepositos,
   type Church, type Deposito,
 } from "../db";
 import { EmptyState } from "../components/TxList";
@@ -9,7 +10,7 @@ import DepositoTable from "../components/DepositoTable";
 import DepositoModal from "../components/DepositoModal";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
-import { IconBank, IconPlus } from "../icons";
+import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
 
 const PAGE_SIZE = 40;
@@ -52,6 +53,18 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
 
   useEffect(() => setPage(1), [refreshKey]);
 
+  // La fila tenía una sola tarjeta y tres cuartos vacíos. Estos dos derivados
+  // salen de `depositos`, que ya se carga entero: no hacen falta consultas
+  // nuevas. El año se mide por PERÍODO, igual que el resto de los totales.
+  const anio = currentYear();
+  const totalAnio = depositos
+    .filter((d) => d.periodo.startsWith(anio))
+    .reduce((acc, d) => acc + d.monto, 0);
+  const ultimo = depositos.reduce<Deposito | null>(
+    (mejor, d) => (mejor === null || d.fecha > mejor.fecha ? d : mejor),
+    null,
+  );
+
   function abrirNuevo() {
     setEditing(null);
     setModalOpen(true);
@@ -82,7 +95,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
-        <div className="enter" style={{ maxWidth: 320 }}>
+        <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
             <div className="stat-head">
               <span className="stat-label">{t("depositos.depositosDelMes")}</span>
@@ -93,6 +106,34 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             </div>
             <div className="stat-foot">
               {t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}
+            </div>
+          </div>
+
+          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+            <div className="stat-head">
+              <span className="stat-label">{t("depositos.totalAnio")}</span>
+              <div className="stat-icon neutral"><IconBank size={15} strokeWidth={1.8} /></div>
+            </div>
+            <div className="stat-value md">
+              <CountUp value={totalAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+            </div>
+            <div className="stat-foot">{anio}</div>
+          </div>
+
+          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+            <div className="stat-head">
+              <span className="stat-label">{t("depositos.ultimoDeposito")}</span>
+              <div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div>
+            </div>
+            <div className="stat-value md">
+              {ultimo
+                ? <><CountUp value={ultimo.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></>
+                : <span style={{ color: "var(--text-3)" }}>—</span>}
+            </div>
+            <div className="stat-foot">
+              {ultimo
+                ? `${fmtFechaCorta(ultimo.fecha)} · ${ultimo.cuenta_banco}`
+                : t("depositos.sinDepositos")}
             </div>
           </div>
         </div>
