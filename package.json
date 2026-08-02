@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node scripts/verificar-csp.mjs && tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "dist": "tauri build --bundles dmg",
     "dist:intel": "tauri build --bundles dmg --target x86_64-apple-darwin",
     "dist:universal": "tauri build --bundles dmg --target universal-apple-darwin",
     "firmar": "bash scripts/firmar-mac.sh",
-    "firmar:manual": "bash scripts/firmar-manual.sh"
+    "firmar:manual": "bash scripts/firmar-manual.sh",
+    "verificar-csp": "node scripts/verificar-csp.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",
