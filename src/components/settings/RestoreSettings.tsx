@@ -26,6 +26,8 @@ export default function RestoreSettings() {
   const [resumen, setResumen] = useState<ResumenRespaldo | null>(null);
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El respaldo quedó listo pero la app no llegó a cerrarse sola. */
+  const [noCerro, setNoCerro] = useState(false);
 
   async function elegir() {
     setError(null);
@@ -55,6 +57,13 @@ export default function RestoreSettings() {
       // arranque siguiente ya la encuentre en pausa y no suba ni baje nada
       // antes de que un humano mire los datos.
       pausarSyncPorRestauracion();
+
+      // Si el cierre funciona, este componente deja de existir antes de que
+      // salte el aviso. Si NO funciona, el `invoke` se queda esperando para
+      // siempre y sin esto el botón parece muerto — que fue exactamente lo que
+      // pasó la primera vez. El respaldo ya está preparado y con su marcador,
+      // así que cerrar a mano termina el trabajo igual: hay que decirlo.
+      setTimeout(() => setNoCerro(true), 3000);
       await reiniciarApp();
     } catch (e) {
       setError(String(e));
@@ -89,6 +98,12 @@ export default function RestoreSettings() {
       {error && (
         <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "var(--space-3)" }}>
           <IconWarn size={13} /> {error}
+        </div>
+      )}
+
+      {noCerro && (
+        <div className="form-warning" style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: "var(--space-3)" }}>
+          <IconWarn size={13} /> {t("restaurar.noCerro")}
         </div>
       )}
 

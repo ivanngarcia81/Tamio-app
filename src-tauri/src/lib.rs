@@ -1182,7 +1182,7 @@ fn ruta_bundle() -> Option<std::path::PathBuf> {
 
 /// Reinicia la app para que el arranque aplique el respaldo.
 ///
-/// **No se usa `AppHandle::restart()` en macOS.** Esa función vuelve a ejecutar
+/// **No se usa `AppHandle::restart()`.** Esa función vuelve a ejecutar
 /// el binario de dentro del bundle (`Contents/MacOS/tesoreria`) como si fuera
 /// un programa suelto, y el proceso resultante queda mal registrado ante el
 /// sistema de ventanas: la ventana abre pero nunca pinta nada. El síntoma es
@@ -1196,7 +1196,10 @@ fn ruta_bundle() -> Option<std::path::PathBuf> {
 /// Si algo de esto fallara, el respaldo ya está preparado y con su marcador
 /// puesto: basta con volver a abrir Tamio a mano para que se aplique.
 #[tauri::command]
-fn restaurar_reiniciar(app: tauri::AppHandle) {
+fn restaurar_reiniciar() {
+    // Se lanza un ayudante que espera un segundo y vuelve a abrir Tamio. La
+    // espera es para que este proceso haya terminado de cerrarse antes de que
+    // el nuevo toque la base.
     #[cfg(target_os = "macos")]
     if let Some(bundle) = ruta_bundle() {
         // La ruta va como argumento ($1) y no interpolada en el script, para
@@ -1207,10 +1210,22 @@ fn restaurar_reiniciar(app: tauri::AppHandle) {
             .arg("--")
             .arg(&bundle)
             .spawn();
-        app.exit(0);
-        return;
     }
-    app.restart();
+
+    // Y se sale de inmediato con `std::process::exit`.
+    //
+    // NO se usan `app.restart()` ni `app.exit()`. Los dos hacen su trabajo
+    // desde el hilo principal, y esto corre en un hilo de trabajo del runtime
+    // de comandos: la llamada se queda esperando un turno que nunca llega, el
+    // proceso no se cierra, y el `invoke` del frontend jamás se resuelve. El
+    // síntoma es el botón "Restaurar y reiniciar" que se queda pulsado para
+    // siempre — que es exactamente lo que pasaba.
+    //
+    // Salir a lo bruto es seguro aquí: el marcador ya está escrito en disco y
+    // la base todavía no se ha tocado (se sustituye en el arranque siguiente).
+    // Lo peor que puede pasar es que SQLite tenga que recuperar su diario al
+    // abrir, que es para lo que existe.
+    std::process::exit(0);
 }
 
 /// Copia el contenido de una carpeta sobre otra **fusionando**: no borra nada de
