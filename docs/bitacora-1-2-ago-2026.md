@@ -200,6 +200,32 @@ cuando se elija procesador de pagos.
 
 ---
 
+## 4-bis. El Rust se escribió a ciegas (y ya no hace falta)
+
+Los ~600 renglones de Rust de estos dos días —el ZIP, la restauración, los
+comandos de comprobantes— se escribieron **sin compilar ni una vez**. El
+contenedor donde trabaja Claude es Linux, y `cargo check` de un proyecto Tauri
+ni arranca: `gdk-sys` busca las cabeceras de GTK y no están. El primer
+compilador de verdad era la Mac de Iván, diez minutos por intento y con él
+delante haciendo de intermediario.
+
+Resultó que **se arreglaba con tres paquetes del sistema**:
+
+```bash
+bash scripts/preparar-nube.sh
+```
+
+Instala `libgtk-3-dev`, `libwebkit2gtk-4.1-dev` y `libsoup-3.0-dev`, y a partir
+de ahí `cargo check` compila el proyecto entero en dos minutos, sin avisos.
+
+El contenedor es efímero, así que hay que correrlo **una vez por sesión**. Vale
+la pena: es la diferencia entre mandar código sin verificar y verificarlo antes
+de que salga de aquí.
+
+Lo que sigue necesitando la Mac son los once bloques detrás de
+`#[cfg(target_os = "macos")]` — el relanzamiento con `open`, el menú nativo, la
+vibrancy. El resto queda comprobado en la nube.
+
 ## 5. Una nota sobre el método
 
 Lo que más valor dio en estos dos días no fue escribir código: fue **verificar
