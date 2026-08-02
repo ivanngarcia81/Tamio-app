@@ -54,6 +54,11 @@
      30 título de página · 18 título de modal · 15 título de tarjeta ·
      13.5 cuerpo · 12.5 secundario · 11.5 pie/hint · 10.5 encabezado tabla */
   --fs-page-title: 30px;
+  /* Título de sección/portada: el paso que faltaba entre el título de modal
+     (18) y el de página (30). Lo usan los encabezados del login y de la vista
+     previa del reporte, que antes iban a 21-22px a mano porque no tenían
+     dónde encajar. */
+  --fs-section-title: 22px;
   --fs-modal-title: 18px;
   --fs-card-title: 15px;
   --fs-body: 13.5px;
@@ -67,9 +72,8 @@
      · .day-label .day-num 28px y .perfil-ini 38px, .church-card-avatar 17px —
        medidas geométricas atadas a su círculo o recuadro, no tipografía.
      · .donut-center .val 20px — crecer 2px desborda el hueco del donut.
-     · .login-title 21px y .auth-title/.login-hero-word/.r-title-lg 22px — son
-       TÍTULOS, y entre --fs-modal-title (18) y --fs-page-title (30) la escala no
-       tiene un paso para ellos. Ver si conviene añadir --fs-section-title: 22px. */
+     (Los títulos de 21-22px ya no están aquí: tienen su propio paso,
+     --fs-section-title.) */
   /* Escala de espaciado del sistema — todo hueco nuevo debe salir de aquí.
      El índice es el múltiplo de 4: --space-2 son 8px. */
   /* Fuera de la escala a propósito: los gap de 1px y 2px son separaciones de
@@ -1706,7 +1710,7 @@ html.vibrancy .main { background: var(--surface); }
   padding-bottom: 20px; border-bottom: 1px solid var(--line);
   margin-bottom: 22px;
 }
-.report-preview .r-title-lg { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.report-preview .r-title-lg { font-size: var(--fs-section-title); font-weight: 700; letter-spacing: -0.01em; }
 .report-preview .r-church { color: var(--text-2); font-size: var(--fs-body); margin-top: 2px; }
 .report-preview .r-period { color: var(--text-3); font-size: var(--fs-secondary); margin-top: 2px; }
 .report-preview .r-section-title {
@@ -2345,7 +2349,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .auth-card.wide { width: 480px; }
 .auth-logo-row { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); margin-bottom: 26px; }
 .auth-logo-row .logo { margin: 0; width: 52px; height: 52px; }
-.auth-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
+.auth-title { font-size: var(--fs-section-title); font-weight: 700; letter-spacing: -0.02em; text-align: center; }
 .auth-sub { font-size: var(--fs-body); color: var(--text-2); text-align: center; margin-top: 6px; line-height: 1.5; }
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); margin-top: 24px; }
 .auth-submit { width: 100%; justify-content: center; padding: 11px; font-size: var(--fs-body); }
@@ -3959,7 +3963,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .login-hero-brand { display: flex; align-items: center; gap: var(--space-3); }
 .login-hero-word {
-  font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #fff;
+  font-size: var(--fs-section-title); font-weight: 700; letter-spacing: -0.02em; color: #fff;
 }
 .login-hero-title {
   margin: 6px 0 0;
@@ -3998,7 +4002,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 0;
   filter: drop-shadow(0 10px 22px rgba(5, 150, 105, 0.4));
 }
-.login-title { font-size: 21px; font-weight: 700; text-align: center; letter-spacing: -0.02em; color: #fff; }
+.login-title { font-size: var(--fs-section-title); font-weight: 700; text-align: center; letter-spacing: -0.02em; color: #fff; }
 .login-sub { font-size: var(--fs-body); color: rgba(255, 255, 255, 0.5); text-align: center; margin-bottom: 8px; }
 .login-btn { width: 100%; justify-content: center; margin-top: 6px; }
 .login-cargando { font-size: var(--fs-body); color: rgba(255, 255, 255, 0.6); }
