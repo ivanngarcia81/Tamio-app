@@ -2622,11 +2622,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text-3);
   margin-top: 2px;
 }
-.settings-zona.peligro { border-color: color-mix(in srgb, #dc2626 35%, var(--line)); }
+/* Un solo marco rojo. La sección conserva su RÓTULO en rojo —que es una
+   etiqueta, no un marco— y el borde rojo se queda solo en la tarjeta que de
+   verdad contiene la acción irreversible (.danger-zone). Antes había dos
+   bordes rojos anidados, y el énfasis duplicado resta énfasis. */
 .settings-zona.peligro .settings-zona-titulo { color: #c0392b; }
-@supports not (border-color: color-mix(in srgb, red 35%, blue)) {
-  .settings-zona.peligro { border-color: #e4b3b3; }
-}
 
 /* ============ Modo Asamblea (presentación para proyector) ============ */
 .asamblea {
