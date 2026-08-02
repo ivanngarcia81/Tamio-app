@@ -116,6 +116,9 @@ export const en: Resources = {
     volverAElegir: "Pick again",
     elegirTitulo: "Choose the receipt",
     recuperado: "Receipt recovered",
+    aviso_one: "{{copiados}} receipts were stored inside the app. {{count}} still needs recovering.",
+    aviso_other: "{{copiados}} receipts were stored inside the app. {{count}} still need recovering.",
+    verAviso: "See which",
   },
 
   comprobante: {

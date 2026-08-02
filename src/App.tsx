@@ -30,6 +30,7 @@ import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import { migrarComprobantesExternos } from "./services/comprobantes";
+import { showToast } from "./toast";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
@@ -480,6 +481,38 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   );
 }
 
+const AVISO_COMPROBANTES_KEY = "tamio-aviso-comprobantes";
+
+/**
+ * Avisa al tesorero de cuántos comprobantes quedaron sin recuperar y lo lleva
+ * a la pantalla donde puede arreglarlo.
+ *
+ * Un número en la consola no le sirve a nadie: el aviso existe para dirigir a
+ * alguien a la tarjeta "Comprobantes por recuperar" de Ajustes. Si no queda
+ * ninguno pendiente no se dice nada, aunque se hayan copiado cien: la
+ * migración es fontanería y no merece interrumpir a nadie cuando sale bien.
+ *
+ * Se muestra una vez por cifra: si al reiniciar siguen faltando los mismos, no
+ * vuelve a insistir (la tarjeta de Ajustes está siempre ahí). Si el número
+ * cambia —porque se recuperó alguno, o porque aparecieron nuevos— vuelve a
+ * salir, que es cuando hay algo nuevo que contar.
+ */
+function avisarComprobantes(r: { copiados: number; pendientes: number }): void {
+  if (r.pendientes === 0) return;
+  const huella = `${r.copiados}/${r.pendientes}`;
+  try {
+    if (localStorage.getItem(AVISO_COMPROBANTES_KEY) === huella) return;
+    localStorage.setItem(AVISO_COMPROBANTES_KEY, huella);
+  } catch { /* noop */ }
+  showToast(i18n.t("comprobantesPendientes.aviso", { copiados: r.copiados, count: r.pendientes }), {
+    actionLabel: i18n.t("comprobantesPendientes.verAviso"),
+    // HashRouter: cambiar el hash navega, y así este aviso no necesita el
+    // contexto del router (se dispara antes de que se monte la app).
+    onAction: () => { window.location.hash = "#/configuracion"; },
+    duration: 12000,
+  });
+}
+
 export default function App() {
   const [church, setChurch] = useState<Church | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -496,10 +529,11 @@ export default function App() {
         // renumera el resto. Con datos sanos no hace nada.
         await repararFoliosDuplicados(c.id).catch(() => {});
         // Trae adentro los comprobantes que apuntaban a carpetas del usuario
-        // (Escritorio, Descargas, iCloud). Tiene que correr ANTES de que el
-        // permiso de lectura se acote a la carpeta de la app, o no podrá leer
-        // los archivos que necesita copiar. Con datos ya migrados no hace nada.
-        await migrarComprobantesExternos(c.id).catch(() => {});
+        // (Escritorio, Descargas, iCloud) y pasa a ruta relativa los que ya
+        // estaban dentro. Con datos ya migrados no hace nada.
+        await migrarComprobantesExternos(c.id)
+          .then(avisarComprobantes)
+          .catch(() => {});
         setMonedaActiva(c.moneda);
         setChurch(c);
       })

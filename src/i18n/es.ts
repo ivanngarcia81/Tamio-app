@@ -110,6 +110,9 @@ export const es = {
     volverAElegir: "Volver a elegir",
     elegirTitulo: "Elegir el comprobante",
     recuperado: "Comprobante recuperado",
+    aviso_one: "Se guardaron {{copiados}} comprobantes dentro de la app. Queda {{count}} por recuperar.",
+    aviso_other: "Se guardaron {{copiados}} comprobantes dentro de la app. Quedan {{count}} por recuperar.",
+    verAviso: "Ver cuáles",
   },
 
   comprobante: {
