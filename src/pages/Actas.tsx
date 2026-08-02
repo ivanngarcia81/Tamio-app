@@ -13,7 +13,7 @@ import { playSound } from "../sound";
 import { printActaPdf } from "../services/print/printActa";
 import { IconFileText, IconPlus, IconPrinter, IconSearch } from "../icons";
 
-const COLS = "110px 1.8fr 110px 1fr 130px 70px";
+const COLS = "110px 1.8fr 110px 1fr 130px 72px";
 const PAGE_SIZE = 25;
 
 type FiltroEstado = "todas" | "borrador" | "pendiente" | "aprobada" | "archivada";
@@ -169,7 +169,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                 <div className="td">
                   <span className={`tag ${BADGE_ESTADO[a.estado] ?? "otros"}`}>{t(`actas.estado.${a.estado}`)}</span>
                 </div>
-                <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                   <span className="row-actions">
                     <span
                       className="row-icon-btn"

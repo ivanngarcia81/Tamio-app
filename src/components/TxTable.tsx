@@ -16,8 +16,8 @@ interface Props {
   onChanged: () => void;
 }
 
-const COLS_INGRESO = "110px 1fr 140px 170px 150px 130px 110px 40px";
-const COLS_GASTO = "110px 140px 1fr 170px 150px 130px 110px 40px";
+const COLS_INGRESO = "110px 1fr 140px 170px 150px 130px 110px 104px";
+const COLS_GASTO = "110px 140px 1fr 170px 150px 130px 110px 104px";
 
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
@@ -147,7 +147,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                   {tx.estado === "aprobado" ? t("tx.aprobado") : tx.estado === "pendiente" ? t("tx.pendiente") : t("tx.rechazado")}
                 </span>
               </div>
-              <div className="td" style={{ textAlign: "center" }}>
+              <div className="td td-acciones">
                 <span className="row-actions">
                   {tx.comprobante_path && (
                     <span className="row-icon-btn" title={t("tx.verComprobante")} onClick={() => setPreview(tx.comprobante_path!)}>

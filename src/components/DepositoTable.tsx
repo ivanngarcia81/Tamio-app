@@ -14,7 +14,7 @@ interface Props {
   onChanged: () => void;
 }
 
-const COLS = "100px 1fr 140px 1fr 150px 40px";
+const COLS = "100px 1fr 140px 1fr 150px 72px";
 
 export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
@@ -92,7 +92,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
             <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
               {fmtMoney(dep.monto)}<span className="cur" style={{ color: "var(--text-3)", fontWeight: 600, fontSize: 11, marginLeft: 3 }}>{dep.moneda}</span>
             </div>
-            <div className="td" style={{ textAlign: "center" }}>
+            <div className="td td-acciones">
               <span className="row-actions">
                 <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(dep)}>
                   <IconEdit size={13} strokeWidth={2} />

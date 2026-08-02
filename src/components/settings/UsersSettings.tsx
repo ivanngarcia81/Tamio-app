@@ -17,7 +17,7 @@ function tagClassForRol(rol: string): string {
   return ROLES_USUARIO.some((r) => r.id === rol) ? `rol-${rol}` : "rol-otro";
 }
 
-const COLS = "1fr 150px 170px 40px";
+const COLS = "1fr 150px 170px 72px";
 
 interface Props {
   church: Church;
@@ -103,7 +103,7 @@ export default function UsersSettings({ church, usuarios, onChanged }: Props) {
                 <div className="truncate">{u.email ?? t("common.sinCorreo")}</div>
                 <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{u.telefono ?? t("common.sinTelefono")}</div>
               </div>
-              <div className="td" style={{ textAlign: "center" }}>
+              <div className="td td-acciones">
                 <span className="row-actions">
                   <span className="row-icon-btn" title={t("common.editar")} onClick={() => abrirEditar(u)}>
                     <IconEdit size={13} strokeWidth={2} />

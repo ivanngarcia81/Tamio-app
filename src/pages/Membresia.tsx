@@ -20,7 +20,7 @@ import { IconArrowDown, IconArrowUp, IconEdit, IconEye, IconIdBadge, IconMiembro
 import CountUp from "../components/CountUp";
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
-const COLS = "1.7fr 1fr 130px 190px 40px";
+const COLS = "1.7fr 1fr 130px 190px 104px";
 const PAGE_SIZE = 30;
 
 type Filtro = "activos" | "bajas" | "todos";
@@ -263,7 +263,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                     );
                   })()}
                 </div>
-                <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                   <span className="row-actions">
                     <span className="row-icon-btn" title={t("common.verFicha")} onClick={() => setFicha(m)}>
                       <IconEye size={13} strokeWidth={2} />

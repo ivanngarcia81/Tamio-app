@@ -28,7 +28,7 @@ const TAG_CLASS: Record<string, string> = {
 };
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
-const MEMBER_COLS = "1.6fr 1fr 130px 150px 170px 40px";
+const MEMBER_COLS = "1.6fr 1fr 130px 150px 170px 72px";
 const PAGE_SIZE = 30;
 
 function initials(nombre: string): string {
@@ -279,7 +279,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                     <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
                     <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? t("miembros.sinRfc")}</div>
                   </div>
-                  <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                  <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                     <span className="row-actions">
                       <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(m)}>
                         <IconEdit size={13} strokeWidth={2} />

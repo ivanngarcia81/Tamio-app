@@ -29,7 +29,7 @@ import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services
 import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
 
-const COLS = "130px 1.8fr 110px 150px 130px 70px";
+const COLS = "130px 1.8fr 110px 150px 130px 72px";
 const COLS_SOL = "120px 1.6fr 120px 110px 140px 70px";
 const PAGE_SIZE = 25;
 
@@ -867,7 +867,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(c.fecha_emision)}</div>
                     <div className="td"><span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span></div>
                     <div className="td" style={{ fontSize: 12, color: "var(--text-3)" }}>{c.modificado_en.slice(0, 10)}</div>
-                    <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                       <span className="row-actions">
                         <span className="row-icon-btn" title={t("cartas.imprimirPdf")} onClick={() => imprimir(c)}>
                           <IconPrinter size={13} strokeWidth={2} />

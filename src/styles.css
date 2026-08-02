@@ -1586,6 +1586,19 @@ html.vibrancy .main { background: var(--surface); }
   transition: background-color var(--dur) ease, color var(--dur) ease;
 }
 .data-table .row-icon-btn:hover { background: var(--line); color: var(--text); }
+/* Celda de acciones (editar / menú de fila).
+   Sin regla propia heredaba los 18px de padding lateral de `.td` dentro de una
+   columna de 40px: quedaban 4px útiles para dos botones de 28px, así que se
+   desbordaban y aparecían pegados al borde de la tarjeta. Aquí lleva su propio
+   respiro y los botones se alinean a la derecha, separados del borde. */
+.data-table .td.td-acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-left: 4px;
+  padding-right: 12px;
+}
 
 /* Member avatars */
 .mini-avatar {
