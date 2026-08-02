@@ -1,13 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permisos de la ventana principal. Los ALCANCES de archivos (qué carpetas puede tocar la app) viven aparte, en fs-escritorio.json y fs-movil.json: no son iguales en Mac que en iPad.",
+  "description": "Permisos de la ventana principal. core:window:allow-start-dragging y allow-toggle-maximize hacen falta porque la barra de titulo es propia (la ventana va con titleBarStyle Overlay y hiddenTitle): sin ellos la franja de arriba no mueve la ventana y el doble clic no maximiza. core:default NO los incluye. Los alcances de archivos viven aparte, en fs-escritorio.json y fs-movil.json: no son iguales en Mac que en iPad.",
   "windows": [
     "main"
   ],
   "permissions": [
     "core:default",
     "core:path:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-toggle-maximize",
     "opener:default",
     "dialog:default",
     "fs:default",

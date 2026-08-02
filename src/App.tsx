@@ -269,11 +269,17 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         data-tauri-drag-region
         onMouseDown={(e) => {
           if (e.buttons === 1 && e.detail === 1) {
-            getCurrentWindow().startDragging().catch(() => {});
+            // El .catch NO se traga el error: si falta el permiso
+            // `core:window:allow-start-dragging` la ventana deja de moverse y
+            // sin este aviso no hay forma de saber por qué. Pasó exactamente
+            // eso, y el único rastro era un mensaje suelto en la consola.
+            getCurrentWindow().startDragging()
+              .catch((e) => console.warn("no se pudo arrastrar la ventana:", e));
           }
         }}
         onDoubleClick={() => {
-          getCurrentWindow().toggleMaximize().catch(() => {});
+          getCurrentWindow().toggleMaximize()
+            .catch((e) => console.warn("no se pudo maximizar la ventana:", e));
         }}
       />
       {cmdOpen && (
