@@ -97,10 +97,13 @@ export default function RestoreSettings() {
           danger
           title={t("restaurar.confirmarTitulo")}
           message={[
+            // Tres cantidades en una frase, y i18next solo pluraliza una por
+            // clave: se arma con tres piezas ya pluralizadas para que no salga
+            // "1 depósitos".
             t("restaurar.confirmarTrae", {
-              movimientos: resumen.movimientos,
-              miembros: resumen.miembros,
-              depositos: resumen.depositos,
+              movimientos: t("restaurar.nMovimientos", { count: resumen.movimientos }),
+              miembros: t("restaurar.nMiembros", { count: resumen.miembros }),
+              depositos: t("restaurar.nDepositos", { count: resumen.depositos }),
             }),
             resumen.hasta ? t("restaurar.confirmarHasta", { fecha: resumen.hasta }) : "",
             resumen.formato_antiguo
