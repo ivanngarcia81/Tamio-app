@@ -16,8 +16,11 @@ interface Props {
   onChanged: () => void;
 }
 
+/* Ingresos y Gastos son páginas gemelas y comparten reparto: el concepto ocupa
+   la columna elástica y la categoría una fija. Antes iban al revés en Gastos,
+   así que las dos tablas se leían distinto sin motivo. */
 const COLS_INGRESO = "110px 1fr 140px 170px 150px 168px 110px 104px";
-const COLS_GASTO = "110px 140px 1fr 170px 150px 168px 110px 104px";
+const COLS_GASTO = COLS_INGRESO;
 
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
@@ -58,8 +61,8 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
       <div className="data-table roomy tabla-tx">
         <div className="thead" style={{ gridTemplateColumns: cols }}>
           <div className="th">{t("tx.colFecha")}</div>
-          <div className="th">{esIngreso ? t("tx.colConcepto") : t("tx.colCategoria")}</div>
-          <div className="th">{esIngreso ? t("tx.colCategoria") : t("tx.colDescripcion")}</div>
+          <div className="th">{esIngreso ? t("tx.colConcepto") : t("tx.colDescripcion")}</div>
+          <div className="th">{t("tx.colCategoria")}</div>
           <div className="th">{esIngreso ? t("tx.colMiembro") : t("tx.colBeneficiario")}</div>
           <div className="th">{t("tx.colMetodo")}</div>
           <div className="th" style={{ textAlign: "right" }}>{t("tx.colMonto")}</div>
@@ -104,8 +107,8 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           return (
             <div className="tr" key={tx.id} style={{ gridTemplateColumns: cols }} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
               {celdaFecha}
-              {esIngreso ? celdaConcepto : celdaCategoria}
-              {esIngreso ? celdaCategoria : celdaConcepto}
+              {celdaConcepto}
+              {celdaCategoria}
               <div className="td">
                 {tx.member_nombre ? (
                   <div className="person" style={{ minWidth: 0 }}>

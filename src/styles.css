@@ -4244,7 +4244,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
   /* Filtros de categoría: no tiene sentido ocupar cuatro filas de chips
      con categorías que no tienen ni un movimiento. */
-  .tx-filters .chip.vacia { display: none; }
+  /* Las categorías en cero ya no se renderizan en ninguna plataforma
+     (Movimientos.tsx filtra por conteo), así que no queda nada que ocultar. */
 
   /* ---- Archivo de cartas: de tabla de 6 columnas a tarjeta ----
      Sus columnas suman ~590 px fijos (folio, documento, fecha, estado,

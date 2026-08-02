@@ -325,23 +325,27 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 >
                   {t("common.todos")} <span className="count">{buscados.length}</span>
                 </div>
-                {categorias.map((c) => {
-                  // "vacia" marca las categorías sin movimientos en el mes:
-                  // en escritorio siguen visibles (sirven para confirmar que
-                  // están en cero), en teléfono el CSS las oculta para no
-                  // gastar cuatro filas de chips en nada.
-                  const n = conteo(c.id);
-                  const activa = filtroCat === c.id;
-                  return (
-                    <div
-                      key={c.id}
-                      className={`chip${activa ? " active" : ""}${n === 0 && !activa ? " vacia" : ""}`}
-                      onClick={() => setFiltroCat(activa ? null : c.id)}
-                    >
-                      {catNombre(c.id)} <span className="count">{n}</span>
-                    </div>
-                  );
-                })}
+                {/* Solo las categorías con movimientos en el mes. Antes se
+                    pintaban las doce y nueve marcaban 0, así que la fila se
+                    comía todo el ancho y bajaba del título — de ahí que Gastos
+                    e Ingresos parecieran maquetados distinto, cuando el marcado
+                    es el mismo. La activa se conserva aunque quede en cero, para
+                    que el chip no desaparezca bajo el cursor al filtrar. */}
+                {categorias
+                  .filter((c) => conteo(c.id) > 0 || filtroCat === c.id)
+                  .map((c) => {
+                    const n = conteo(c.id);
+                    const activa = filtroCat === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`chip${activa ? " active" : ""}`}
+                        onClick={() => setFiltroCat(activa ? null : c.id)}
+                      >
+                        {catNombre(c.id)} <span className="count">{n}</span>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
 
