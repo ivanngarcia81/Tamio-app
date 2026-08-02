@@ -100,7 +100,13 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                     tx.member_nombre ?? tx.beneficiario ?? tx.detalle ?? tx.subcategoria ?? "";
                   return (
                     <div className="tx-row" key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
-                      <span className="tx-time solo-escritorio">{fmtFecha(tx.fecha).hora}</span>
+                      {/* La hora es opcional al registrar, así que hay filas
+                          guardadas solo como YYYY-MM-DD. Sin nada que pintar, la
+                          columna quedaba en blanco y la fila parecía a medio
+                          renderizar; un guion la deja como "sin hora anotada". */}
+                      <span className="tx-time solo-escritorio">
+                        {fmtFecha(tx.fecha).hora || <span style={{ color: "var(--text-3)" }}>—</span>}
+                      </span>
                       <div className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}>
                         {tx.tipo === "ingreso" ? <IconArrowUp /> : <IconArrowDown />}
                       </div>
