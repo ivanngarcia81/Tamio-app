@@ -29,6 +29,9 @@ rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"]
 keyring = { version = "3", features = ["apple-native"] }
 tauri-plugin-dialog = "2.7.1"
 tauri-plugin-fs = "2.5.1"
+# Solo para consultar el espacio libre antes de extraer un respaldo (statvfs).
+# La biblioteca estándar de Rust no expone eso.
+libc = "0.2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 window-vibrancy = "0.5"

@@ -3852,6 +3852,7 @@ name = "tesoreria"
 version = "1.0.8"
 dependencies = [
  "keyring",
+ "libc",
  "rusqlite",
  "serde",
  "serde_json",

@@ -1021,6 +1021,59 @@ fn dir_restauracion(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String
     Ok(dir_datos(app)?.join(CARPETA_RESTAURACION))
 }
 
+/// Espacio libre en el volumen donde está esa carpeta, en bytes.
+/// `None` si el sistema no lo sabe decir — en ese caso no se bloquea nada.
+#[cfg(unix)]
+fn espacio_libre(dir: &std::path::Path) -> Option<u64> {
+    use std::os::unix::ffi::OsStrExt;
+    let c = std::ffi::CString::new(dir.as_os_str().as_bytes()).ok()?;
+    // SAFETY: `stat` se rellena entero antes de leerlo, y `c` vive hasta el
+    // final de la llamada.
+    let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
+    if unsafe { libc::statvfs(c.as_ptr(), &mut stat) } != 0 {
+        return None;
+    }
+    // f_bavail: bloques disponibles para un proceso sin privilegios, que es lo
+    // que de verdad puede usar la app (f_bfree incluye la reserva de root).
+    //
+    // Los `as u64` parecen de más y clippy los marca — en Linux los dos campos
+    // YA son u64. Pero en macOS `f_bavail` es un u32 y `f_frsize` un u64, así
+    // que quitarlos deja un `u32 * u64` que no compila donde de verdad importa.
+    // Un aviso de clippy en Linux vale menos que un build roto en la Mac.
+    #[allow(clippy::unnecessary_cast)]
+    Some(stat.f_bavail as u64 * stat.f_frsize as u64)
+}
+
+#[cfg(not(unix))]
+fn espacio_libre(_dir: &std::path::Path) -> Option<u64> {
+    None
+}
+
+/// Comprueba que cabe el respaldo antes de empezar a extraerlo.
+///
+/// El pico de espacio es más del doble del paquete: se extrae entero dentro de
+/// la carpeta de la app Y la base anterior se aparta sin borrarse. Quedarse sin
+/// disco a mitad de la extracción deja un respaldo a medias y una base apartada
+/// — recuperable, pero un susto innecesario cuando se puede avisar antes.
+///
+/// Se pide 2,5 veces el tamaño del paquete: el doble por extracción + copia
+/// apartada, más medio de margen para los temporales de SQLite.
+fn comprobar_espacio(paquete: &std::path::Path, destino: &std::path::Path) -> Result<(), String> {
+    let tam = std::fs::metadata(paquete).map(|m| m.len()).unwrap_or(0);
+    let necesario = tam.saturating_mul(5) / 2;
+    let Some(libre) = espacio_libre(destino) else { return Ok(()) };
+    if libre < necesario {
+        let mb = |b: u64| b / 1_048_576;
+        return Err(format!(
+            "No hay espacio suficiente para restaurar. El respaldo ocupa {} MB y hacen falta \
+             unos {} MB libres (se extrae el paquete y además se conserva la base actual). \
+             Ahora mismo quedan {} MB. Libera espacio y vuelve a intentarlo.",
+            mb(tam), mb(necesario), mb(libre)
+        ));
+    }
+    Ok(())
+}
+
 fn contar(conn: &rusqlite::Connection, sql: &str) -> i64 {
     conn.query_row(sql, [], |r| r.get(0)).unwrap_or(0)
 }
@@ -1033,6 +1086,7 @@ fn restaurar_preparar(app: tauri::AppHandle, origen: String) -> Result<ResumenRe
     let dir = dir_restauracion(&app)?;
     let _ = std::fs::remove_dir_all(&dir); // intento anterior a medias
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    comprobar_espacio(origen, &dir)?;
 
     // El formato se reconoce por CONTENIDO, no por extensión: el usuario
     // renombra archivos, y un `.zip` puede ser cualquier cosa.
