@@ -843,6 +843,24 @@ fn es_archivo_de_base(nombre: &str) -> bool {
         || nombre.ends_with("-shm")
 }
 
+/// Carpetas cuyo contenido SÍ es del usuario y no se puede regenerar.
+const CARPETAS_DE_DOCUMENTOS: [&str; 3] = ["comprobantes", "adjuntos", "imagenes"];
+
+/// ¿Es un archivo suelto que vale la pena guardar?
+///
+/// En la carpeta de datos no solo viven los documentos del usuario: la
+/// impresión deja ahí cada PDF que se genera (printUtils los escribe para
+/// abrirlos con Vista Previa) y cada carta se escribe como .html. Eso es
+/// material DERIVADO: se vuelve a generar con un clic desde los mismos datos,
+/// y meterlo en el respaldo solo lo engorda y lo llena de ruido.
+///
+/// Se guardan las imágenes sueltas —el logo y las firmas antiguas— porque esas
+/// sí son originales que el usuario aportó y que no se pueden rehacer.
+fn es_documento_del_usuario(nombre: &str) -> bool {
+    let n = nombre.to_lowercase();
+    n.ends_with(".png") || n.ends_with(".jpg") || n.ends_with(".jpeg")
+}
+
 /// Recorre una carpeta y añade al ZIP todo lo que cuelgue de ella.
 fn anadir_carpeta(zip: &mut paquete::Zip, dir: &std::path::Path, prefijo: &str) -> Result<(), String> {
     let entradas = match std::fs::read_dir(dir) {
@@ -853,13 +871,34 @@ fn anadir_carpeta(zip: &mut paquete::Zip, dir: &std::path::Path, prefijo: &str) 
         let ruta = entrada.path();
         let nombre = entrada.file_name().to_string_lossy().to_string();
         if ruta.is_dir() {
-            // Un respaldo a medio preparar no tiene por qué viajar dentro de
-            // otro respaldo.
-            if nombre == CARPETA_RESTAURACION { continue; }
             anadir_carpeta(zip, &ruta, &format!("{prefijo}{nombre}/"))?;
-        } else if !es_archivo_de_base(&nombre) {
+        } else {
             zip.anadir(&ruta, &format!("{prefijo}{nombre}"))?;
         }
+    }
+    Ok(())
+}
+
+/// Añade al ZIP lo que es del usuario: las carpetas de documentos enteras y las
+/// imágenes sueltas de la raíz. Todo lo demás de la carpeta de datos queda
+/// fuera a propósito.
+fn anadir_documentos(zip: &mut paquete::Zip, dir: &std::path::Path, prefijo: &str) -> Result<(), String> {
+    for carpeta in CARPETAS_DE_DOCUMENTOS {
+        let sub = dir.join(carpeta);
+        if sub.is_dir() {
+            anadir_carpeta(zip, &sub, &format!("{prefijo}{carpeta}/"))?;
+        }
+    }
+    let entradas = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return Ok(()),
+    };
+    for entrada in entradas.flatten() {
+        let ruta = entrada.path();
+        if ruta.is_dir() { continue; }
+        let nombre = entrada.file_name().to_string_lossy().to_string();
+        if es_archivo_de_base(&nombre) || !es_documento_del_usuario(&nombre) { continue; }
+        zip.anadir(&ruta, &format!("{prefijo}{nombre}"))?;
     }
     Ok(())
 }
@@ -900,11 +939,11 @@ fn db_backup_paquete(
     let resultado = (|| -> Result<(), String> {
         let mut zip = paquete::Zip::crear(std::path::Path::new(&destino))?;
         zip.anadir(&temporal, "tamio.db")?;
-        anadir_carpeta(&mut zip, &datos, "datos/")?;
+        anadir_documentos(&mut zip, &datos, "datos/")?;
         // En Linux config y datos son carpetas distintas; en macOS son la
         // misma y esta segunda pasada no añade nada (ya está todo).
         if config != datos {
-            anadir_carpeta(&mut zip, &config, "datos/")?;
+            anadir_documentos(&mut zip, &config, "datos/")?;
         }
         zip.cerrar()
     })();
@@ -1156,7 +1195,7 @@ fn comprobante_existe(ruta: String) -> bool {
 /// respaldo en otro equipo ese usuario no existe y TODOS los comprobantes
 /// fallan, aunque los archivos vengan en el paquete.
 #[tauri::command]
-fn copiar_comprobante(app: tauri::AppHandle, origen: String) -> Result<String, String> {
+fn copiar_a_datos(app: tauri::AppHandle, origen: String, subcarpeta: String) -> Result<String, String> {
     let base = dir_datos(&app)?;
     let origen_path = std::path::Path::new(&origen);
 
@@ -1168,7 +1207,7 @@ fn copiar_comprobante(app: tauri::AppHandle, origen: String) -> Result<String, S
     if !origen_path.is_file() {
         return Err(format!("no existe: {origen}"));
     }
-    let carpeta = base.join("comprobantes");
+    let carpeta = base.join(&subcarpeta);
     std::fs::create_dir_all(&carpeta).map_err(|e| e.to_string())?;
 
     let nombre = origen_path
@@ -1186,7 +1225,7 @@ fn copiar_comprobante(app: tauri::AppHandle, origen: String) -> Result<String, S
     let archivo = format!("{marca}-{}.{ext}", nombre_seguro(&nombre));
 
     std::fs::copy(origen_path, carpeta.join(&archivo)).map_err(|e| e.to_string())?;
-    Ok(format!("comprobantes/{archivo}"))
+    Ok(format!("{subcarpeta}/{archivo}"))
 }
 
 /// Clave del cifrado, guardada en el Llavero de macOS (keyring). La primera
@@ -1313,7 +1352,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup,
-            db_backup_paquete, comprobante_existe, copiar_comprobante,
+            db_backup_paquete, comprobante_existe, copiar_a_datos,
             restaurar_preparar, restaurar_confirmar, restaurar_cancelar, restaurar_reiniciar,
             restauracion_aplicada
         ]);

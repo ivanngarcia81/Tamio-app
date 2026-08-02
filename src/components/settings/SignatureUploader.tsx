@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { CARPETA_IMAGENES, guardarEnDatos, rutaEnDatos } from "../../services/archivos";
 import { useTranslation } from "react-i18next";
 import { IconSignature, IconWarn } from "../../icons";
 
@@ -35,7 +36,7 @@ export default function SignatureUploader({ path, onPathChange, variant = "tesor
       setPreviewUrl(null);
       return;
     }
-    readFile(path)
+    rutaEnDatos(path).then(readFile)
       .then((bytes) => {
         if (cancelled) return;
         setPreviewUrl(`data:image/png;base64,${uint8ToBase64(bytes)}`);
@@ -61,7 +62,11 @@ export default function SignatureUploader({ path, onPathChange, variant = "tesor
         setError(t(`${ns}.debeSerPng`));
         return;
       }
-      onPathChange(selected);
+      // La firma se COPIA a la carpeta de la app, igual que los comprobantes.
+      // Antes se guardaba la ruta del archivo del usuario, así que bastaba con
+      // que moviera el PNG de su Escritorio para que todos los documentos
+      // salieran sin firmar — y sin aviso. Además no entraba en el respaldo.
+      onPathChange(await guardarEnDatos(selected, CARPETA_IMAGENES));
     } catch (e) {
       setError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }

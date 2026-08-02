@@ -1,81 +1,32 @@
-// Comprobantes de movimientos y depósitos: dónde viven los archivos.
+// Comprobantes de movimientos y depósitos.
 //
-// Hasta la 1.0.8 la app guardaba en `comprobante_path` **la ruta que el usuario
+// Hasta la 1.0.8 se guardaba en `comprobante_path` **la ruta que el usuario
 // eligió en el diálogo** — su Escritorio, Descargas, iCloud, un pendrive — y la
-// leía de ahí cada vez. Eso tiene dos problemas independientes:
+// app leía de ahí cada vez. Si movía, renombraba o borraba el archivo, el
+// comprobante del asiento se perdía sin aviso. Un comprobante existe justamente
+// para poder demostrar el movimiento tres años después.
 //
-//   1. Frágil. Si el usuario mueve, renombra o borra el archivo original (o
-//      desconecta el disco donde estaba), el comprobante del asiento se pierde
-//      sin aviso. Un comprobante existe justamente para poder demostrar el
-//      movimiento tres años después.
-//   2. Obliga a que la app tenga permiso de lectura sobre toda la carpeta del
-//      usuario, porque el archivo puede estar en cualquier sitio.
-//
-// Ahora se copia a la carpeta de datos de la app y se guarda una ruta
-// **RELATIVA** a esa carpeta (`comprobantes/1754…-recibo.pdf`).
-//
-// ¿Por qué relativa y no absoluta? Porque una ruta absoluta lleva dentro el
-// nombre de usuario del Mac donde se creó (`/Users/ivan/Library/…`). Al
-// restaurar un respaldo en otro equipo ese usuario no existe y TODOS los
-// comprobantes fallan, aunque los archivos vengan en el paquete. Con la ruta
-// relativa, el respaldo se restaura donde sea y sigue apuntando bien.
-//
-// ¿Por qué la copia la hace Rust y no el plugin `fs`? Porque `fs:scope` limita
-// al webview, no al lado Rust. La migración tiene que poder leer iCloud Drive
-// (~/Library/Mobile Documents), discos externos y carpetas que el usuario eligió
-// hace un año, todas fuera del alcance acotado. Con el plugin, `exists()` daría
-// falso sobre un archivo que SÍ está y la app acusaría al tesorero de haberlo
-// borrado.
+// Ahora se copia a la carpeta de datos y se guarda la ruta relativa. La regla
+// completa, y por qué la copia la hace Rust, están en `services/archivos.ts`.
 
-import { appDataDir, join } from "@tauri-apps/api/path";
-import { invoke } from "@tauri-apps/api/core";
+import { appDataDir } from "@tauri-apps/api/path";
 import { getDb } from "../db";
+import {
+  CARPETA_COMPROBANTES, esAbsoluta, existeArchivo, guardarEnDatos, rutaEnDatos,
+} from "./archivos";
 
-/** ¿Es una ruta absoluta? (`/Users/…`, `C:\…`). Lo que NO lo es, es relativa a
- *  la carpeta de datos de la app. Las filas viejas guardan rutas absolutas y
- *  hay que seguir entendiéndolas siempre, aunque ya no se escriban. */
-export function esAbsoluta(path: string): boolean {
-  return path.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path);
+export { esAbsoluta } from "./archivos";
+
+/** Ruta real en disco del comprobante guardado en la base. */
+export const rutaComprobante = rutaEnDatos;
+
+/** Copia el comprobante elegido y devuelve la ruta relativa a guardar. */
+export function guardarComprobante(rutaOrigen: string): Promise<string> {
+  return guardarEnDatos(rutaOrigen, CARPETA_COMPROBANTES);
 }
 
-/**
- * Ruta real en disco de lo que hay guardado en `comprobante_path`.
- * Relativa → se resuelve contra la carpeta de datos. Absoluta → tal cual
- * (fila antigua que la migración no pudo traer adentro).
- */
-export async function rutaComprobante(guardado: string): Promise<string> {
-  if (esAbsoluta(guardado)) return guardado;
-  return join(await appDataDir(), guardado);
-}
-
-/**
- * Copia el comprobante elegido a la carpeta de la app y devuelve la ruta
- * relativa, que es la que se guarda en la base.
- *
- * Si la copia falla (disco lleno, permisos, unidad desconectada) **no se
- * interrumpe el guardado**: se devuelve la ruta original y el asiento se
- * registra igual. Perder el enlace al comprobante es malo; perder el asiento
- * contable por no poder copiar un PDF sería peor. Esa fila queda como
- * "pendiente de recuperar" y aparece en Ajustes.
- */
-export async function guardarComprobante(rutaOrigen: string): Promise<string> {
-  try {
-    return await invoke<string>("copiar_comprobante", { origen: rutaOrigen });
-  } catch {
-    return rutaOrigen;
-  }
-}
-
-/** ¿Sigue existiendo el archivo? Lo pregunta Rust, no el plugin `fs`: el
- *  `exists()` del plugin da falso sobre cualquier ruta fuera del alcance del
- *  webview, y "no lo puedo leer" no es lo mismo que "ya no está". */
-export async function comprobanteDisponible(rutaAbsoluta: string): Promise<boolean> {
-  try {
-    return await invoke<boolean>("comprobante_existe", { ruta: rutaAbsoluta });
-  } catch {
-    return false;
-  }
-}
+/** ¿Sigue existiendo el archivo? */
+export const comprobanteDisponible = existeArchivo;
 
 const TABLAS = ["transactions", "depositos_bancarios"] as const;
 type Tabla = (typeof TABLAS)[number];

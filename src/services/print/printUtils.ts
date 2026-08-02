@@ -5,6 +5,7 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 import { currentLang } from "../../i18n";
 import { currencySymbol, currencyLocale } from "../../currencies";
 import { entregarArchivo, esMovil } from "../entrega";
+import { rutaEnDatos } from "../archivos";
 
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
 // No se recalcula ni se comprime según la cantidad de datos: un reporte de
@@ -194,10 +195,16 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/** Lee un PNG local y lo convierte a data URL para jsPDF.addImage(). */
+/** Lee un PNG local y lo convierte a data URL para jsPDF.addImage().
+ *
+ *  Resuelve la ruta aquí y no en cada llamada: por esta función pasan el logo y
+ *  las dos firmas de TODOS los documentos (estado financiero, constancia,
+ *  anual, actas, cartas, informes). Con la resolución centralizada, que las
+ *  rutas sean relativas a la carpeta de datos no obliga a tocar los quince
+ *  sitios que la llaman. */
 export async function loadPngDataUrl(path: string): Promise<string | null> {
   try {
-    const bytes = await readFile(path);
+    const bytes = await readFile(await rutaEnDatos(path));
     return `data:image/png;base64,${uint8ToBase64(bytes)}`;
   } catch {
     return null;

@@ -31,6 +31,7 @@ import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import { migrarComprobantesExternos } from "./services/comprobantes";
+import { migrarImagenesIglesia } from "./services/imagenesIglesia";
 import { pausarSyncPorRestauracion, restauracionAplicada } from "./services/restaurar";
 import { showToast } from "./toast";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
@@ -542,8 +543,14 @@ export default function App() {
         // localStorage limpiado no debe dejar la sincronización suelta sobre
         // datos recién restaurados.
         if (await restauracionAplicada()) pausarSyncPorRestauracion();
-        setMonedaActiva(c.moneda);
-        setChurch(c);
+        // El logo y las firmas siguen la misma regla que los comprobantes:
+        // dentro de la app y con ruta relativa. Como esto reescribe columnas de
+        // `churches`, la iglesia se vuelve a leer para no quedarnos con las
+        // rutas viejas en memoria.
+        const img = await migrarImagenesIglesia(c.id).catch(() => null);
+        const iglesia = img && (img.copiados || img.normalizados) ? await getOrCreateChurch() : c;
+        setMonedaActiva(iglesia.moneda);
+        setChurch(iglesia);
       })
       .catch((e) => setError(String(e)));
   }, []);

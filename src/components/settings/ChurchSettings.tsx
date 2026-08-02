@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
-import { readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { mkdir, readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { CARPETA_IMAGENES, rutaEnDatos } from "../../services/archivos";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { useTranslation } from "react-i18next";
 import { IconBuilding, IconWarn } from "../../icons";
@@ -49,7 +50,7 @@ export default function ChurchSettings({ value, onChange, error, saldoError, log
       setPreviewUrl(null);
       return;
     }
-    readFile(logoPath)
+    rutaEnDatos(logoPath).then(readFile)
       .then((bytes) => {
         if (cancelled) return;
         setPreviewUrl(`data:image/png;base64,${uint8ToBase64(bytes)}`);
@@ -75,9 +76,14 @@ export default function ChurchSettings({ value, onChange, error, saldoError, log
       if (typeof selected !== "string") return;
       const bytes = await readFile(selected);
       const pngBytes = await convertirImagenAPng(bytes, selected);
-      const ruta = await join(await appDataDir(), `logo-${Date.now()}.png`);
-      await writeFile(ruta, pngBytes);
-      onLogoPathChange(ruta);
+      // Se guarda la ruta RELATIVA (`imagenes/logo-….png`), no la absoluta: una
+      // absoluta lleva dentro el nombre de usuario del Mac donde se creó, y al
+      // restaurar un respaldo en otro equipo el logo desaparecía.
+      const relativa = `${CARPETA_IMAGENES}/logo-${Date.now()}.png`;
+      const carpeta = await join(await appDataDir(), CARPETA_IMAGENES);
+      await mkdir(carpeta, { recursive: true });
+      await writeFile(await join(await appDataDir(), relativa), pngBytes);
+      onLogoPathChange(relativa);
     } catch (e) {
       setLogoError(t("common.noSePudoAbrirSelector", { error: String(e) }));
     }

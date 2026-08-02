@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { rutaEnDatos } from "../services/archivos";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
 import type { Role } from "../role";
@@ -121,7 +122,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       setLogoUrl(null);
       return;
     }
-    readFile(church.logo_path)
+    rutaEnDatos(church.logo_path).then(readFile)
       .then((bytes) => {
         if (cancelled) return;
         setLogoUrl(`data:image/png;base64,${uint8ToBase64(bytes)}`);
