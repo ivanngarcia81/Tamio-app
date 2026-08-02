@@ -111,6 +111,7 @@ export const en: Resources = {
   comprobante: {
     abrirSistema: "Open externally",
     error: "The preview could not be shown. Try \"Open externally\".",
+    noDisponible: "The original file is no longer available: it was moved, renamed or deleted. Attach it again by editing the entry.",
   },
 
   dashboard: {

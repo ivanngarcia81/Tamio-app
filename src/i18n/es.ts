@@ -105,6 +105,7 @@ export const es = {
   comprobante: {
     abrirSistema: "Abrir con el sistema",
     error: "No se pudo mostrar la vista previa. Prueba \"Abrir con el sistema\".",
+    noDisponible: "El archivo original ya no está disponible: se movió, se renombró o se borró de su ubicación. Vuelve a adjuntarlo editando el movimiento.",
   },
 
   dashboard: {

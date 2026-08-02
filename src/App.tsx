@@ -29,6 +29,7 @@ import Mensajes from "./pages/Mensajes";
 import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
+import { migrarComprobantesExternos } from "./services/comprobantes";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
@@ -494,6 +495,11 @@ export default function App() {
         // los puede juntar la sincronización): conserva el más antiguo y
         // renumera el resto. Con datos sanos no hace nada.
         await repararFoliosDuplicados(c.id).catch(() => {});
+        // Trae adentro los comprobantes que apuntaban a carpetas del usuario
+        // (Escritorio, Descargas, iCloud). Tiene que correr ANTES de que el
+        // permiso de lectura se acote a la carpeta de la app, o no podrá leer
+        // los archivos que necesita copiar. Con datos ya migrados no hace nada.
+        await migrarComprobantesExternos(c.id).catch(() => {});
         setMonedaActiva(c.moneda);
         setChurch(c);
       })

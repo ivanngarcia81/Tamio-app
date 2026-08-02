@@ -16,6 +16,7 @@
 
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { copyFile, exists, mkdir } from "@tauri-apps/plugin-fs";
+import { getDb } from "../db";
 
 const CARPETA = "comprobantes";
 
@@ -84,4 +85,58 @@ export async function comprobanteDisponible(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export interface MigracionComprobantes {
+  /** Comprobantes que estaban fuera y se copiaron adentro. */
+  copiados: number;
+  /** Comprobantes que estaban fuera y ya no se pudieron recuperar. */
+  faltantes: number;
+}
+
+/**
+ * Trae adentro los comprobantes de instalaciones anteriores.
+ *
+ * Hay bases en uso con comprobantes apuntando al Escritorio, a Documentos o a
+ * iCloud. Esta migración **tiene que correr mientras la app todavía tiene
+ * permiso de lectura amplio**: en cuanto se acote el permiso a su propia
+ * carpeta, esos archivos ya no se pueden ni leer para copiarlos.
+ *
+ * Lo que no se encuentra se deja tal cual, con su ruta original: no se borra ni
+ * se inventa nada en la base. La vista previa detecta que el archivo no está y
+ * lo dice con todas las letras, en vez de quedarse en blanco.
+ *
+ * Con datos ya sanos cuesta una consulta y no hace nada, así que puede correr
+ * en cada arranque sin marcador de "ya migrado".
+ */
+export async function migrarComprobantesExternos(churchId: number): Promise<MigracionComprobantes> {
+  const d = await getDb();
+  let copiados = 0;
+  let faltantes = 0;
+
+  // Se incluyen las filas borradas: el borrado es suave y se puede deshacer,
+  // así que su comprobante también tiene que sobrevivir.
+  for (const tabla of ["transactions", "depositos_bancarios"] as const) {
+    const filas = await d.select<{ id: number; comprobante_path: string }[]>(
+      `SELECT id, comprobante_path FROM ${tabla}
+        WHERE church_id = $1 AND comprobante_path IS NOT NULL AND comprobante_path <> ''`,
+      [churchId]
+    );
+    for (const fila of filas) {
+      const original = fila.comprobante_path;
+      // El filtro se hace aquí y no en SQL a propósito: en un LIKE, los "_" y
+      // "%" que puede haber en una ruta real son comodines.
+      if (await esRutaInterna(original)) continue;
+      if (!(await comprobanteDisponible(original))) { faltantes++; continue; }
+      const nueva = await guardarComprobante(original);
+      // guardarComprobante devuelve la ruta original si la copia falló.
+      if (nueva === original) { faltantes++; continue; }
+      await d.execute(
+        `UPDATE ${tabla} SET comprobante_path = $1 WHERE id = $2 AND church_id = $3`,
+        [nueva, fila.id, churchId]
+      );
+      copiados++;
+    }
+  }
+  return { copiados, faltantes };
 }
