@@ -750,6 +750,11 @@ html.vibrancy .main { background: var(--surface); }
   font-variant-numeric: tabular-nums;
 }
 .balance .amount .cents { color: var(--text-3); font-weight: 700; }
+/* El saldo del hero se pinta según el signo, igual que las tarjetas de
+   resumen. Antes salía siempre en el color de texto normal: era la única
+   cifra de la pantalla que no decía nada por sí sola. */
+.balance .amount.pos { color: var(--pos); }
+.balance .amount.neg { color: var(--neg); }
 .balance .currency {
   font-size: 13px;
   color: var(--text-2);

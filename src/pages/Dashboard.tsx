@@ -207,7 +207,11 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         <div>
           <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>
           <div className="balance">
-            <div className="amount"><CountUp value={balance} format={fmtMoney} /></div>
+            {/* La cifra que el tesorero mira primero también comunica el signo,
+                con la misma semántica de color que las tarjetas de abajo. */}
+            <div className={`amount ${balance >= 0 ? "pos" : "neg"}`}>
+              <CountUp value={balance} format={fmtMoney} />
+            </div>
             <div className="currency">{church.moneda}</div>
           </div>
           <div className="balance-sub">{t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}</div>
