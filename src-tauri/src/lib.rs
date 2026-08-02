@@ -1,6 +1,13 @@
 mod motordb;
 mod paquete;
 
+/// Versión de esquema más alta que conoce esta compilación de Tamio. Se usa
+/// para rechazar un respaldo hecho con una versión más nueva: las migraciones
+/// solo van hacia adelante.
+fn version_esquema_conocida() -> i64 {
+    migraciones().iter().map(|m| m.version).max().unwrap_or(0)
+}
+
 fn migraciones() -> Vec<motordb::Migracion> {
     vec![motordb::Migracion {
         version: 1,
@@ -996,6 +1003,17 @@ struct ResumenRespaldo {
     documentos: usize,
 }
 
+/// Versión de esquema de una base ya extraída.
+///
+/// **No se lee `PRAGMA user_version`**: Tamio nunca lo ha usado. La versión
+/// aplicada vive en la tabla `_migraciones` (ver `motordb::correr_migraciones`),
+/// y `sqlcipher_export` copia las tablas, así que viaja dentro del respaldo.
+/// Preguntarle a `user_version` devolvería 0 siempre — un candado que no cierra.
+fn version_del_paquete(conn: &rusqlite::Connection) -> i64 {
+    conn.query_row("SELECT coalesce(max(version), 0) FROM _migraciones", [], |r| r.get(0))
+        .unwrap_or(0)
+}
+
 fn dir_restauracion(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     Ok(dir_datos(app)?.join(CARPETA_RESTAURACION))
 }
@@ -1036,6 +1054,23 @@ fn restaurar_preparar(app: tauri::AppHandle, origen: String) -> Result<ResumenRe
 
     // Viene descifrada, así que se lee sin clave.
     let conn = rusqlite::Connection::open(&base).map_err(|e| e.to_string())?;
+
+    // Un respaldo de una versión MÁS NUEVA no se puede aplicar: las migraciones
+    // solo van hacia adelante, así que la app abriría una base con columnas y
+    // tablas que no conoce. De los fallos posibles al restaurar, este es el
+    // único que acaba en datos perdidos, así que se corta aquí — antes de
+    // apartar nada y antes de enseñar la confirmación.
+    let del_paquete = version_del_paquete(&conn);
+    let conocida = version_esquema_conocida();
+    if del_paquete > conocida {
+        drop(conn);
+        let _ = std::fs::remove_dir_all(&dir);
+        return Err(format!(
+            "Este respaldo se hizo con una versión más nueva de Tamio (esquema {del_paquete}; \
+             esta versión entiende hasta el {conocida}). Actualiza Tamio y vuelve a intentarlo."
+        ));
+    }
+
     let resumen = ResumenRespaldo {
         movimientos: contar(&conn, "SELECT count(*) FROM transactions WHERE deleted = 0"),
         miembros: contar(&conn, "SELECT count(*) FROM members WHERE deleted = 0"),
