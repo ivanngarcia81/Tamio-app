@@ -104,6 +104,7 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
               <LoadingState />
             ) : mensajes.length === 0 ? (
               <EmptyState
+                pagina
                 icon={<IconMail size={20} strokeWidth={1.8} />}
                 titulo={t("mensajes.vacioTitulo")}
                 sub={t("mensajes.vacioSub")}

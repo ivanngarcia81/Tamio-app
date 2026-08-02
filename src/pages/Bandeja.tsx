@@ -81,6 +81,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
           <LoadingState />
         ) : total === 0 ? (
           <EmptyState
+            pagina
             titulo={t("bandeja.sinPendientes")}
             sub={t("bandeja.emptySub")}
           />

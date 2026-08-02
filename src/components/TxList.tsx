@@ -9,16 +9,20 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
-export function EmptyState({ titulo, sub, icon, accion }: {
+export function EmptyState({ titulo, sub, icon, accion, pagina }: {
   titulo: string;
   sub: string;
   icon?: ReactNode;
   /** Acción principal ("Registrar gasto"): solo se pasa cuando el vacío es
    *  real (aún no hay datos), no cuando es resultado de un filtro/búsqueda. */
   accion?: { label: string; onClick: () => void };
+  /** El vacío es TODO el contenido de la pantalla (Bandeja, Mensajes). Sin
+   *  esto la tarjeta queda corta y pegada arriba de una pantalla en blanco, y
+   *  parece que la página no terminó de cargar. */
+  pagina?: boolean;
 }) {
   return (
-    <div className="empty-state">
+    <div className={`empty-state${pagina ? " pagina" : ""}`}>
       <div className="empty-icon">{icon ?? <IconReportes size={22} strokeWidth={1.6} />}</div>
       <div className="empty-title">{titulo}</div>
       <div className="empty-sub">{sub}</div>
