@@ -72,7 +72,7 @@ export default function FusionarMiembroModal({ churchId, origen, members, onClos
             <div className="modal-title">{t("fusion.titulo", { nombre: origen.nombre })}</div>
             <div className="modal-sub">{t("fusion.sub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

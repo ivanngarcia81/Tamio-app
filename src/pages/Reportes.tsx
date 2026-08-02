@@ -586,7 +586,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.pregunta.titulo")}</div>
                 <div className="modal-sub">{t("reportes.pregunta.sub")}</div>
               </div>
-              <div className="modal-close" onClick={() => { if (!pregGenerando) setPregOpen(false); }}><IconClose /></div>
+              <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={() => { if (!pregGenerando) setPregOpen(false); }}><IconClose /></button>
             </div>
             <div className="ia-cuerpo">
               <div style={{ display: "flex", gap: 8 }}>
@@ -626,7 +626,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.ia.titulo", { mes: mesStr })}</div>
                 <div className="modal-sub">{t("reportes.ia.nota")}</div>
               </div>
-              <div className="modal-close" onClick={() => setIaResumen(null)}><IconClose /></div>
+              <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={() => setIaResumen(null)}><IconClose /></button>
             </div>
             <div className="ia-cuerpo" style={{ whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5 }}>
               {iaResumen}

@@ -551,7 +551,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
             <div className="modal-title">{titulo}</div>
             <div className="modal-sub">{subtitulo}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">
@@ -560,12 +560,12 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               a un movimiento a mitad de captura solo confundía). */}
           {!isEdit && !pestanaBloqueada && tab !== "miembro" && (
             <div className="tabs-segmented">
-              <div className={`seg${tab === "ingreso" ? " active" : ""}`} onClick={() => setTab("ingreso")}>
+              <button type="button" className={`seg${tab === "ingreso" ? " active" : ""}`} aria-pressed={tab === "ingreso"} onClick={() => setTab("ingreso")}>
                 <IconArrowUp size={14} strokeWidth={2.2} /> {t("recordModal.segIngreso")}
-              </div>
-              <div className={`seg${tab === "gasto" ? " active" : ""}`} onClick={() => setTab("gasto")}>
+              </button>
+              <button type="button" className={`seg${tab === "gasto" ? " active" : ""}`} aria-pressed={tab === "gasto"} onClick={() => setTab("gasto")}>
                 <IconArrowDown size={14} strokeWidth={2.2} /> {t("recordModal.segGasto")}
-              </div>
+              </button>
             </div>
           )}
 
@@ -859,10 +859,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                     </button>
                   </div>
                 ) : (
-                  <div className={`file-drop${dropActivo ? " activo" : ""}`} onClick={pickComprobante}>
+                  <button type="button" className={`file-drop${dropActivo ? " activo" : ""}`} onClick={pickComprobante}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
                     <div>{dropActivo ? t("recordModal.soltarAqui") : t("recordModal.clicElegir")}</div>
-                  </div>
+                  </button>
                 )}
                 {tab === "gasto" && !comprobantePath && (
                   <div className="form-warning">

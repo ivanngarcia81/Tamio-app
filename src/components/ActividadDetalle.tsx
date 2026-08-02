@@ -53,7 +53,7 @@ export default function ActividadDetalle({
               {a.es_fecha_importante && <span className="tag eventos" style={{ marginLeft: 8 }}>{t("agenda.fechaImportanteBadge")}</span>}
             </div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

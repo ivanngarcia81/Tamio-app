@@ -115,7 +115,7 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
               </div>
             </div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

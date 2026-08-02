@@ -190,7 +190,7 @@ export default function ActividadModal({
             <div className="modal-title">{titulo}</div>
             <div className="modal-sub">{t("secretaria.agenda.sub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

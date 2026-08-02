@@ -31,13 +31,15 @@ export default function LanguageSettings({ value, onChange }: Props) {
 
       <div className="tabs-segmented" style={{ marginBottom: 10 }}>
         {opciones.map((opt) => (
-          <div
+          <button
+            type="button"
             key={opt.id}
             className={`seg${value === opt.id ? " active" : ""}`}
+            aria-pressed={value === opt.id}
             onClick={() => onChange(opt.id)}
           >
             {opt.icon} {opt.label}
-          </div>
+          </button>
         ))}
       </div>
       <div className="form-hint">{t("idioma.hint")}</div>

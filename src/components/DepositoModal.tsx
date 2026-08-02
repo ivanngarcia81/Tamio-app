@@ -148,7 +148,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
             <div className="modal-title">{isEdit ? t("depositos.modalEditar") : t("depositos.modalNuevo")}</div>
             <div className="modal-sub">{t("depositos.sub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">
@@ -231,10 +231,10 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
                 </button>
               </div>
             ) : (
-              <div className="file-drop" onClick={pickComprobante}>
+              <button type="button" className="file-drop" onClick={pickComprobante}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
                 <div>{t("depositos.adjuntarHint")}</div>
-              </div>
+              </button>
             )}
           </div>
 

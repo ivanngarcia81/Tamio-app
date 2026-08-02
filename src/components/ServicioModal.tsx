@@ -450,7 +450,7 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
             <div className="modal-title">{servicio ? t("servicios.editarServicio") : t("servicios.nuevoServicio")}</div>
             <div className="modal-sub">{t("secretaria.servicios.sub")}</div>
           </div>
-          <div className="modal-close" onClick={pedirCerrar}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={pedirCerrar}><IconClose /></button>
         </div>
 
         <div className="modal-body">

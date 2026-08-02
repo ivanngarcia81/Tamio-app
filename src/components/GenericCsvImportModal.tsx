@@ -130,7 +130,7 @@ export default function GenericCsvImportModal<T>({
             <div className="modal-title">{titulo}</div>
             <div className="modal-sub">{subtitulo}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

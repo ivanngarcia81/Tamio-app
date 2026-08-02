@@ -22,7 +22,7 @@ export default function AlcanceDialog({ modo, onElegir, onCancel }: Props) {
       <div className="modal-card" style={{ width: 420 }}>
         <div className="modal-header">
           <div className="modal-title">{eliminar ? t("agenda.alcanceEliminarTitulo") : t("agenda.alcanceEditarTitulo")}</div>
-          <div className="modal-close" onClick={onCancel}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onCancel}><IconClose /></button>
         </div>
         <div className="modal-body">
           <div className="modal-sub" style={{ marginBottom: 12 }}>{t("agenda.alcanceSub")}</div>

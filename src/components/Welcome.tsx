@@ -112,13 +112,15 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
             {slide === 0 && (
               <div className="tabs-segmented" style={{ margin: "18px 0 0" }}>
                 {idiomas.map((opt) => (
-                  <div
+                  <button
+                    type="button"
                     key={opt.id}
                     className={`seg${langPref === opt.id ? " active" : ""}`}
+                    aria-pressed={langPref === opt.id}
                     onClick={() => onLangPrefChange(opt.id)}
                   >
                     {opt.icon} {opt.label}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -163,13 +165,15 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
               <label className="form-label">{t("idioma.titulo")}</label>
               <div className="tabs-segmented" style={{ marginBottom: 0 }}>
                 {idiomas.map((opt) => (
-                  <div
+                  <button
+                    type="button"
                     key={opt.id}
                     className={`seg${langPref === opt.id ? " active" : ""}`}
+                    aria-pressed={langPref === opt.id}
                     onClick={() => onLangPrefChange(opt.id)}
                   >
                     {opt.icon} {opt.label}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>

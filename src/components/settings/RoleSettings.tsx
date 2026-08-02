@@ -40,9 +40,9 @@ export default function RoleSettings({ value, onChange }: Props) {
         {opciones.map((opt) => {
           const Icono = ICONO_POR_ROL[opt.id];
           return (
-            <div key={opt.id} className={`seg${value === opt.id ? " active" : ""}`} onClick={() => onChange(opt.id)}>
+            <button type="button" key={opt.id} className={`seg${value === opt.id ? " active" : ""}`} aria-pressed={value === opt.id} onClick={() => onChange(opt.id)}>
               <Icono size={14} strokeWidth={2} /> {opt.label}
-            </div>
+            </button>
           );
         })}
       </div>

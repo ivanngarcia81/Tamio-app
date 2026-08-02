@@ -72,7 +72,7 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
             <div className="modal-title">{isEdit ? t("usuarios.modalEditar") : t("usuarios.modalNuevo")}</div>
             <div className="modal-sub">{t("usuarios.modalSub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

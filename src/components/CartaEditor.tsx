@@ -557,7 +557,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
                 <div className="modal-title">{t("cartas.vistaPrevia")}</div>
                 <div className="modal-sub">{t("cartas.vistaPreviaSub")}</div>
               </div>
-              <div className="modal-close" onClick={() => setPreview(null)}><IconClose /></div>
+              <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={() => setPreview(null)}><IconClose /></button>
             </div>
             <iframe title={t("cartas.vistaPrevia")} srcDoc={preview} style={{ flex: 1, border: "none", background: "#f0f0f0" }} />
           </div>
@@ -583,7 +583,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("cartas.ia.titulo")}</div>
                 <div className="modal-sub">{t("cartas.ia.sub")}</div>
               </div>
-              <div className="modal-close" onClick={() => { if (!iaGenerando) setIaAbierta(false); }}><IconClose /></div>
+              <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={() => { if (!iaGenerando) setIaAbierta(false); }}><IconClose /></button>
             </div>
             <div className="ia-cuerpo">
               <textarea

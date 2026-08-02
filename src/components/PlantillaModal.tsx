@@ -135,7 +135,7 @@ export default function PlantillaModal({ church, plantilla, base, onClose, onSav
             <div className="modal-title">{plantilla ? t("plantillas.editarPlantilla") : t("plantillas.nuevaPlantilla")}</div>
             <div className="modal-sub">{t("plantillas.sub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">
@@ -229,7 +229,7 @@ export default function PlantillaModal({ church, plantilla, base, onClose, onSav
                 <div className="modal-title">{t("cartas.vistaPrevia")}</div>
                 <div className="modal-sub">{t("plantillas.previaSub")}</div>
               </div>
-              <div className="modal-close" onClick={() => setPreview(null)}><IconClose /></div>
+              <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={() => setPreview(null)}><IconClose /></button>
             </div>
             <iframe title={t("cartas.vistaPrevia")} srcDoc={preview} style={{ flex: 1, border: "none", background: "#f0f0f0" }} />
           </div>

@@ -88,7 +88,7 @@ export default function SeguimientoModal({ church, member, alertas, onClose, onS
             <div className="modal-title">{member.nombre}</div>
             <div className="modal-sub">{t("seguimiento.sub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

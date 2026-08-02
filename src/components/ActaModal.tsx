@@ -177,7 +177,7 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
             <div className="modal-title">{acta ? `${acta.folio} — ${t("actas.editarActa")}` : t("actas.nuevaActa")}</div>
             <div className="modal-sub">{t("secretaria.actas.sub")}</div>
           </div>
-          <div className="modal-close" onClick={onClose}><IconClose /></div>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
         <div className="modal-body">

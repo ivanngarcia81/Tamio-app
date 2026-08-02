@@ -98,9 +98,9 @@ export default function PlanSettings({ church, onSaved }: Props) {
           <label className="form-label">{t("plan.areas")}</label>
           <div className="tabs-segmented" style={{ marginBottom: 12 }}>
             {PLANES.map((p) => (
-              <div key={p} className={`seg${plan === p ? " active" : ""}`} onClick={() => setPlan(p)}>
+              <button type="button" key={p} className={`seg${plan === p ? " active" : ""}`} aria-pressed={plan === p} onClick={() => setPlan(p)}>
                 {t(`plan.nombre.${p}`)}
-              </div>
+              </button>
             ))}
           </div>
         </>
