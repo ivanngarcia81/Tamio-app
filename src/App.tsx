@@ -7,6 +7,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import UpdateBanner from "./components/UpdateBanner";
+import SyncPausadoBanner from "./components/SyncPausadoBanner";
 import CmdPalette from "./components/CmdPalette";
 import ToastHost from "./components/ToastHost";
 import NewRecordModal, { type ModalMode } from "./components/NewRecordModal";
@@ -30,6 +31,7 @@ import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import { migrarComprobantesExternos } from "./services/comprobantes";
+import { pausarSyncPorRestauracion, restauracionAplicada } from "./services/restaurar";
 import { showToast } from "./toast";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
@@ -296,6 +298,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
       <main className="main">
         <UpdateBanner />
+        <SyncPausadoBanner />
         {authHabilitado && <SubBanner church={church} />}
         <Routes>
           <Route
@@ -534,6 +537,11 @@ export default function App() {
         await migrarComprobantesExternos(c.id)
           .then(avisarComprobantes)
           .catch(() => {});
+        // Cinturón y tirantes: la pausa se marca antes de reiniciar, pero si
+        // este arranque acaba de aplicar un respaldo, se vuelve a marcar. Un
+        // localStorage limpiado no debe dejar la sincronización suelta sobre
+        // datos recién restaurados.
+        if (await restauracionAplicada()) pausarSyncPorRestauracion();
         setMonedaActiva(c.moneda);
         setChurch(c);
       })

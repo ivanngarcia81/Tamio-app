@@ -21,6 +21,7 @@ import SoundSettings from "../components/settings/SoundSettings";
 import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import ComprobantesPendientes from "../components/settings/ComprobantesPendientes";
+import RestoreSettings from "../components/settings/RestoreSettings";
 import CompactSettings from "../components/settings/CompactSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import SyncSettings from "../components/settings/SyncSettings";
@@ -328,6 +329,7 @@ export default function Configuracion({
                 <BackupSettings church={church} />
                 {/* Solo se pinta si hay algo que recuperar; si no, devuelve null. */}
                 <ComprobantesPendientes church={church} />
+                <RestoreSettings />
                 <CompactSettings church={church} />
                 <DangerZoneSettings church={church} />
               </div>

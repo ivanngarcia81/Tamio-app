@@ -155,3 +155,102 @@ pub fn es_zip(ruta: &Path) -> bool {
         .map(|_| buf == [0x50, 0x4b, 0x03, 0x04])
         .unwrap_or(false)
 }
+
+// ---------------------------------------------------------------------------
+// Lectura
+// ---------------------------------------------------------------------------
+
+fn u16le(b: &[u8], i: usize) -> u16 {
+    u16::from_le_bytes([b[i], b[i + 1]])
+}
+fn u32le(b: &[u8], i: usize) -> u32 {
+    u32::from_le_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]])
+}
+
+/// Impide que un nombre dentro del ZIP escriba fuera de la carpeta de destino
+/// ("zip slip"): `../../algo`, rutas absolutas o nombres de disco de Windows.
+/// El paquete lo genera Tamio, pero un archivo que llega por correo o WhatsApp
+/// puede venir manipulado, y aquí se está escribiendo en el disco del usuario.
+fn nombre_seguro_zip(nombre: &str) -> Option<String> {
+    if nombre.is_empty() || nombre.starts_with('/') || nombre.contains(':') {
+        return None;
+    }
+    let mut partes = Vec::new();
+    for parte in nombre.split('/') {
+        match parte {
+            "" | "." => continue,
+            ".." => return None,
+            p => partes.push(p),
+        }
+    }
+    if partes.is_empty() { None } else { Some(partes.join("/")) }
+}
+
+/// Extrae el ZIP a una carpeta. Devuelve cuántos archivos escribió.
+///
+/// Solo entiende entradas SIN COMPRIMIR, que es como Tamio las escribe. Si
+/// alguien descomprime el paquete y lo vuelve a comprimir con el Finder o con
+/// WinRAR, las entradas pasan a estar en "deflate" y esto lo dice con todas las
+/// letras en vez de fallar de una forma rara.
+pub fn extraer(origen: &Path, destino: &Path) -> Result<usize, String> {
+    let datos = std::fs::read(origen).map_err(|e| e.to_string())?;
+
+    // El directorio central se localiza desde el final del archivo.
+    let eocd = (0..datos.len().saturating_sub(21))
+        .rev()
+        .find(|&i| datos[i..i + 4] == [0x50, 0x4b, 0x05, 0x06])
+        .ok_or("el archivo no es un paquete de Tamio (falta el índice del ZIP)")?;
+    let total = u16le(&datos, eocd + 10) as usize;
+    let mut pos = u32le(&datos, eocd + 16) as usize;
+
+    std::fs::create_dir_all(destino).map_err(|e| e.to_string())?;
+    let mut escritos = 0usize;
+
+    for _ in 0..total {
+        if pos + 46 > datos.len() || datos[pos..pos + 4] != [0x50, 0x4b, 0x01, 0x02] {
+            return Err("el índice del paquete está dañado".into());
+        }
+        let metodo = u16le(&datos, pos + 10);
+        let tam = u32le(&datos, pos + 24) as usize;
+        let n_nombre = u16le(&datos, pos + 28) as usize;
+        let n_extra = u16le(&datos, pos + 30) as usize;
+        let n_com = u16le(&datos, pos + 32) as usize;
+        let offset = u32le(&datos, pos + 42) as usize;
+        let nombre = String::from_utf8_lossy(&datos[pos + 46..pos + 46 + n_nombre]).to_string();
+        pos += 46 + n_nombre + n_extra + n_com;
+
+        if nombre.ends_with('/') { continue; } // carpeta
+        if metodo != 0 {
+            return Err(format!(
+                "«{nombre}» viene comprimido y Tamio solo lee sus propios paquetes sin comprimir. \
+                 Usa el archivo .zip tal como lo guardó la app, sin descomprimirlo ni volver a comprimirlo."
+            ));
+        }
+        let seguro = nombre_seguro_zip(&nombre)
+            .ok_or_else(|| format!("el paquete trae una ruta no válida: «{nombre}»"))?;
+
+        // La cabecera local repite el nombre y puede traer otro campo extra,
+        // así que el inicio de los datos se calcula desde ella, no desde el
+        // directorio central.
+        if offset + 30 > datos.len() || datos[offset..offset + 4] != [0x50, 0x4b, 0x03, 0x04] {
+            return Err(format!("«{nombre}» no se encuentra dentro del paquete"));
+        }
+        let inicio = offset + 30 + u16le(&datos, offset + 26) as usize + u16le(&datos, offset + 28) as usize;
+        let fin = inicio + tam;
+        if fin > datos.len() {
+            return Err(format!("«{nombre}» está incompleto: el paquete se cortó"));
+        }
+        let contenido = &datos[inicio..fin];
+        if crc32(contenido) != u32le(&datos, offset + 14) {
+            return Err(format!("«{nombre}» está dañado (no cuadra la suma de verificación)"));
+        }
+
+        let ruta = destino.join(&seguro);
+        if let Some(padre) = ruta.parent() {
+            std::fs::create_dir_all(padre).map_err(|e| e.to_string())?;
+        }
+        std::fs::write(&ruta, contenido).map_err(|e| format!("{}: {e}", ruta.display()))?;
+        escritos += 1;
+    }
+    Ok(escritos)
+}

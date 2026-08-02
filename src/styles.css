@@ -717,6 +717,22 @@ html.vibrancy .main { background: var(--surface); }
 }
 
 /* Aviso de versión nueva: barra verde tenue arriba del contenido. */
+/* Aviso de sincronización en pausa tras restaurar. Mismo sitio y misma forma
+   que el banner de actualización, pero en ámbar: no es una novedad simpática,
+   es algo que el usuario tiene que resolver. */
+.sync-pausado {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 18px;
+  font-size: var(--fs-body);
+  color: var(--text);
+  background: var(--warn-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--warn) 34%, var(--line));
+}
+.sync-pausado-icono { color: var(--warn); flex-shrink: 0; display: flex; }
+.sync-pausado-texto { flex: 1; min-width: 0; }
+
 .update-banner {
   display: flex;
   align-items: center;
@@ -2617,7 +2633,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: var(--shadow-modal);
 }
 .confirm-title { font-size: var(--fs-card-title); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
-.confirm-message { font-size: var(--fs-body); color: var(--text-2); line-height: 1.55; margin-bottom: 22px; }
+/* pre-line: los mensajes de una línea (la mayoría) se ven igual, pero el de
+   restaurar necesita párrafos — enumera qué trae el respaldo y qué va a pasar,
+   y todo seguido no se lee. */
+.confirm-message { font-size: var(--fs-body); color: var(--text-2); line-height: 1.55; margin-bottom: 22px; white-space: pre-line; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 .btn.primary.danger { background: #dc2626; color: #fff; }
 .btn.primary.danger:hover { opacity: .85; }

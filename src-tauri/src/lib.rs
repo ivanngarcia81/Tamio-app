@@ -853,6 +853,9 @@ fn anadir_carpeta(zip: &mut paquete::Zip, dir: &std::path::Path, prefijo: &str) 
         let ruta = entrada.path();
         let nombre = entrada.file_name().to_string_lossy().to_string();
         if ruta.is_dir() {
+            // Un respaldo a medio preparar no tiene por qué viajar dentro de
+            // otro respaldo.
+            if nombre == CARPETA_RESTAURACION { continue; }
             anadir_carpeta(zip, &ruta, &format!("{prefijo}{nombre}/"))?;
         } else if !es_archivo_de_base(&nombre) {
             zip.anadir(&ruta, &format!("{prefijo}{nombre}"))?;
@@ -921,6 +924,203 @@ fn db_backup_paquete(
 // en el frontend, `exists()` daría falso sobre un archivo que SÍ está y la app
 // acusaría al tesorero de haberlo borrado.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Restaurar un respaldo
+//
+// Tamio tenía respaldo y no tenía restauración: si la Mac se moría, el tesorero
+// tenía el archivo en la mano y no había dónde ponerlo.
+//
+// La sustitución NO se hace en caliente. `DbCifrada` mantiene un Mutex con la
+// conexión abierta desde el arranque, y el único momento en que nadie tiene la
+// base abierta es ANTES de abrirla. Así que restaurar ocurre en dos tiempos:
+// se prepara todo en `restauracion/`, se deja un marcador y la app se reinicia;
+// al arrancar, antes de abrir la base, se aplica. Ver docs/restaurar.md.
+// ---------------------------------------------------------------------------
+
+const CARPETA_RESTAURACION: &str = "restauracion";
+const MARCADOR: &str = "APLICAR";
+const BASE_DEL_PAQUETE: &str = "tamio.db";
+
+/// Lo que se le enseña al usuario ANTES de tocar nada: qué trae el paquete.
+/// Un "¿seguro?" genérico no basta para la operación más destructiva de la app.
+#[derive(serde::Serialize)]
+struct ResumenRespaldo {
+    movimientos: i64,
+    miembros: i64,
+    depositos: i64,
+    /// Fecha del movimiento más reciente que trae ("2026-05-14"), o vacío.
+    hasta: String,
+    /// true si venía como `.db` suelto (respaldo anterior a los paquetes).
+    formato_antiguo: bool,
+    /// Documentos incluidos (comprobantes, adjuntos, logo, firmas).
+    documentos: usize,
+}
+
+fn dir_restauracion(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(dir_datos(app)?.join(CARPETA_RESTAURACION))
+}
+
+fn contar(conn: &rusqlite::Connection, sql: &str) -> i64 {
+    conn.query_row(sql, [], |r| r.get(0)).unwrap_or(0)
+}
+
+/// Extrae el respaldo elegido y devuelve qué trae, SIN tocar la base actual.
+/// Si el archivo no vale, se descubre aquí y no se ha cambiado nada todavía.
+#[tauri::command]
+fn restaurar_preparar(app: tauri::AppHandle, origen: String) -> Result<ResumenRespaldo, String> {
+    let origen = std::path::Path::new(&origen);
+    let dir = dir_restauracion(&app)?;
+    let _ = std::fs::remove_dir_all(&dir); // intento anterior a medias
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    // El formato se reconoce por CONTENIDO, no por extensión: el usuario
+    // renombra archivos, y un `.zip` puede ser cualquier cosa.
+    let mut documentos = 0usize;
+    let formato_antiguo = if paquete::es_zip(origen) {
+        let escritos = paquete::extraer(origen, &dir)?;
+        documentos = escritos.saturating_sub(1); // menos la propia base
+        false
+    } else if motordb::es_sqlite_plano(origen) {
+        std::fs::copy(origen, dir.join(BASE_DEL_PAQUETE)).map_err(|e| e.to_string())?;
+        true
+    } else {
+        let _ = std::fs::remove_dir_all(&dir);
+        return Err("ese archivo no es un respaldo de Tamio".into());
+    };
+
+    let base = dir.join(BASE_DEL_PAQUETE);
+    if !motordb::es_sqlite_plano(&base) {
+        let _ = std::fs::remove_dir_all(&dir);
+        return Err("el respaldo no contiene una base de datos legible".into());
+    }
+
+    // Viene descifrada, así que se lee sin clave.
+    let conn = rusqlite::Connection::open(&base).map_err(|e| e.to_string())?;
+    let resumen = ResumenRespaldo {
+        movimientos: contar(&conn, "SELECT count(*) FROM transactions WHERE deleted = 0"),
+        miembros: contar(&conn, "SELECT count(*) FROM members WHERE deleted = 0"),
+        depositos: contar(&conn, "SELECT count(*) FROM depositos_bancarios WHERE deleted = 0"),
+        hasta: conn
+            .query_row(
+                "SELECT COALESCE(MAX(substr(fecha,1,10)), '') FROM transactions WHERE deleted = 0",
+                [],
+                |r| r.get::<_, String>(0),
+            )
+            .unwrap_or_default(),
+        formato_antiguo,
+        documentos,
+    };
+    drop(conn);
+    Ok(resumen)
+}
+
+/// Confirma: deja el marcador para que el próximo arranque aplique el respaldo.
+#[tauri::command]
+fn restaurar_confirmar(app: tauri::AppHandle) -> Result<(), String> {
+    let dir = dir_restauracion(&app)?;
+    if !dir.join(BASE_DEL_PAQUETE).is_file() {
+        return Err("no hay ningún respaldo preparado".into());
+    }
+    std::fs::write(dir.join(MARCADOR), b"1").map_err(|e| e.to_string())
+}
+
+/// El usuario se echó atrás: se tira lo preparado y no ha pasado nada.
+#[tauri::command]
+fn restaurar_cancelar(app: tauri::AppHandle) -> Result<(), String> {
+    let dir = dir_restauracion(&app)?;
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(())
+}
+
+/// Reinicia la app para que el arranque aplique el respaldo.
+#[tauri::command]
+fn restaurar_reiniciar(app: tauri::AppHandle) {
+    app.restart();
+}
+
+/// Copia el contenido de una carpeta sobre otra **fusionando**: no borra nada de
+/// lo que ya hubiera. La política y el porqué están en docs/respaldo.md.
+fn fusionar(origen: &std::path::Path, destino: &std::path::Path) -> Result<(), String> {
+    std::fs::create_dir_all(destino).map_err(|e| e.to_string())?;
+    for entrada in std::fs::read_dir(origen).map_err(|e| e.to_string())?.flatten() {
+        let ruta = entrada.path();
+        let nombre = entrada.file_name();
+        if ruta.is_dir() {
+            fusionar(&ruta, &destino.join(nombre))?;
+        } else {
+            std::fs::copy(&ruta, destino.join(nombre)).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+fn marca_de_tiempo() -> String {
+    let s = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    s.to_string()
+}
+
+/// Aplica el respaldo preparado. Se llama en el arranque, ANTES de abrir la
+/// base: es el único instante en que nadie la tiene abierta.
+///
+/// Devuelve true si aplicó algo (para avisar al usuario después).
+fn aplicar_restauracion_pendiente(
+    app: &tauri::AppHandle,
+    ruta_db: &std::path::Path,
+    clave: &str,
+) -> Result<bool, String> {
+    let dir = dir_restauracion(app)?;
+    if !dir.join(MARCADOR).is_file() {
+        return Ok(false);
+    }
+    let base_nueva = dir.join(BASE_DEL_PAQUETE);
+    if !motordb::es_sqlite_plano(&base_nueva) {
+        // Preparación a medias: se descarta y se arranca con lo de siempre.
+        let _ = std::fs::remove_dir_all(&dir);
+        return Ok(false);
+    }
+
+    // La base actual se APARTA, nunca se borra: si el paquete resultara estar
+    // dañado a medio camino, el tesorero no puede quedarse sin las dos.
+    if ruta_db.exists() {
+        let apartada = ruta_db.with_extension(format!("db.antes-de-restaurar-{}", marca_de_tiempo()));
+        std::fs::rename(ruta_db, &apartada).map_err(|e| e.to_string())?;
+        for suf in ["-wal", "-shm"] {
+            let mut p = ruta_db.as_os_str().to_owned();
+            p.push(suf);
+            let _ = std::fs::remove_file(std::path::PathBuf::from(p));
+        }
+    }
+
+    std::fs::copy(&base_nueva, ruta_db).map_err(|e| e.to_string())?;
+
+    // ESTE es el paso que hace portable un respaldo: la base del paquete viene
+    // descifrada a propósito, porque la clave del Llavero del equipo de origen
+    // no existe aquí. Se cifra al llegar, con la clave de ESTA Mac.
+    motordb::migrar_a_cifrado(ruta_db, clave)?;
+    // migrar_a_cifrado deja el original en claro como .respaldo-sin-cifrar. Ahí
+    // no puede quedarse: son los datos de la iglesia sin cifrar en el disco.
+    let _ = std::fs::remove_file(ruta_db.with_extension("db.respaldo-sin-cifrar"));
+
+    let documentos = dir.join("datos");
+    if documentos.is_dir() {
+        fusionar(&documentos, &dir_datos(app)?)?;
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+    Ok(true)
+}
+
+/// ¿El arranque de esta sesión aplicó un respaldo? Lo consulta el frontend para
+/// avisar y para dejar la sincronización en pausa.
+struct RestauroAlArrancar(bool);
+
+#[tauri::command]
+fn restauracion_aplicada(state: tauri::State<'_, RestauroAlArrancar>) -> bool {
+    state.0
+}
 
 /// Carpeta de datos de la app. Todo lo que guarda Tamio cuelga de aquí.
 fn dir_datos(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
@@ -1007,12 +1207,23 @@ fn clave_db() -> Result<String, String> {
 /// Abre (migrando si hace falta) la base cifrada en app_config_dir — la misma
 /// carpeta y el mismo nombre de archivo que usaba tauri-plugin-sql, así la
 /// actualización toma los datos existentes tal cual.
-fn iniciar_db(app: &tauri::AppHandle) -> Result<rusqlite::Connection, String> {
+fn iniciar_db(app: &tauri::AppHandle) -> Result<(rusqlite::Connection, bool), String> {
     use tauri::Manager;
     let carpeta = app.path().app_config_dir().map_err(|e| e.to_string())?;
     std::fs::create_dir_all(&carpeta).map_err(|e| e.to_string())?;
     let ruta = carpeta.join("tesoreria.db");
     let clave = clave_db()?;
+
+    // Un respaldo preparado se aplica AQUÍ, antes de abrir nada: es el único
+    // instante en que la base no está en uso. Si falla, se avisa pero se
+    // arranca igual — quedarse sin app es peor que quedarse sin restaurar.
+    let restaurado = match aplicar_restauracion_pendiente(app, &ruta, &clave) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("no se pudo aplicar el respaldo: {e}");
+            false
+        }
+    };
 
     // Base heredada del plugin viejo (sin cifrar): se cifra una sola vez y el
     // original queda como tesoreria.db.respaldo-sin-cifrar.
@@ -1031,7 +1242,7 @@ fn iniciar_db(app: &tauri::AppHandle) -> Result<rusqlite::Connection, String> {
         Err(e) => return Err(e.to_string()),
     };
     motordb::correr_migraciones(&mut conn, &migraciones())?;
-    Ok(conn)
+    Ok((conn, restaurado))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1048,8 +1259,9 @@ pub fn run() {
         .setup(|app| {
             // Base de datos cifrada: se abre (y migra si hace falta) antes de
             // mostrar nada; si truena, el error detiene el arranque con causa.
-            let conn = iniciar_db(app.handle()).map_err(|e| format!("base de datos: {e}"))?;
+            let (conn, restaurado) = iniciar_db(app.handle()).map_err(|e| format!("base de datos: {e}"))?;
             app.manage(DbCifrada(std::sync::Mutex::new(conn)));
+            app.manage(RestauroAlArrancar(restaurado));
 
             // Menú nativo de macOS. Arranca en español; el frontend llama
             // menu_language con el idioma real apenas inicia i18n.
@@ -1101,7 +1313,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup,
-            db_backup_paquete, comprobante_existe, copiar_comprobante
+            db_backup_paquete, comprobante_existe, copiar_comprobante,
+            restaurar_preparar, restaurar_confirmar, restaurar_cancelar, restaurar_reiniciar,
+            restauracion_aplicada
         ]);
 
     // El menú de ventana (y sus eventos) solo existe en escritorio.

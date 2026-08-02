@@ -12,6 +12,7 @@
 
 import { useSyncExternalStore } from "react";
 import { sincronizarTodo, type MotivoSync } from "./sync";
+import { syncPausadoPorRestauracion } from "./services/restaurar";
 
 /** Interruptor global de la sincronización en la nube.
  *  En 1.0 está APAGADO: el registro self-service todavía no crea ni enlaza la
@@ -72,8 +73,12 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 /** Enciende o apaga la sincronización y fija la iglesia local a sincronizar. */
 export function configurarSync(cid: number | null, on: boolean): void {
   churchId = cid;
-  habilitado = on;
-  if (!on) set({ estado: "desactivado" });
+  // Tras restaurar un respaldo la sincronización queda en pausa hasta que un
+  // humano revise los datos: con last-write-wins, mezclar sin mirar sale mal
+  // en los dos sentidos (la nube pisa lo restaurado, o lo restaurado resucita
+  // lo que se borró a propósito). Ver services/restaurar.ts.
+  habilitado = on && !syncPausadoPorRestauracion();
+  if (!habilitado) set({ estado: "desactivado" });
   else if (snapshot.estado === "desactivado") set({ estado: "inactivo" });
 }
 

@@ -494,6 +494,27 @@ export const en: Resources = {
     ahoraNo: "Not now",
   },
 
+  restaurar: {
+    titulo: "Restore a backup",
+    sub: "Recover everything from a backup file",
+    boton: "Choose backup file…",
+    elegirTitulo: "Choose the backup",
+    filtro: "Tamio backup",
+    hint: "Replaces ALL data on this computer with the backup's. The current database is not deleted: it is set aside with the date in its name, in case you need to go back. The app will restart to apply it.",
+    confirmarTitulo: "Restore this backup?",
+    confirmarTrae: "The backup contains {{movimientos}} transactions, {{miembros}} members and {{depositos}} deposits.",
+    confirmarHasta: "Its most recent transaction is from {{fecha}}. If that date is not what you expected, cancel: you may have picked an old backup.",
+    confirmarDocumentos_one: "It includes {{count}} document (receipts, attachments, logo and signatures).",
+    confirmarDocumentos_other: "It includes {{count}} documents (receipts, attachments, logo and signatures).",
+    confirmarSinDocumentos: "This is an old backup, from when only the database was saved: it does NOT include receipts or attachments. The ones you have now are kept.",
+    confirmarReemplaza: "Everything on this computer today will be replaced. The current database will be set aside with the date in its name, not deleted.",
+    confirmarSync: "When it finishes, cloud sync will be PAUSED until you check that the data is right.",
+    confirmarBoton: "Restore and restart",
+    syncPausadoTitulo: "Sync paused",
+    syncPausadoTexto: "A backup was restored. Check the data is right before turning sync back on: once you do, what is in the cloud and what is here will merge, and there is no undo.",
+    syncReactivar: "Checked, turn it back on",
+  },
+
   respaldo: {
     titulo: "Backup",
     sub: "Export your data or save a backup copy",

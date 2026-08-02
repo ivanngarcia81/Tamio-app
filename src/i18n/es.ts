@@ -488,6 +488,27 @@ export const es = {
     ahoraNo: "Ahora no",
   },
 
+  restaurar: {
+    titulo: "Restaurar un respaldo",
+    sub: "Recupera todo desde un archivo de respaldo",
+    boton: "Elegir archivo de respaldo…",
+    elegirTitulo: "Elegir el respaldo",
+    filtro: "Respaldo de Tamio",
+    hint: "Reemplaza TODOS los datos de esta computadora por los del respaldo. La base actual no se borra: se aparta con la fecha en el nombre, por si hiciera falta volver. La app se reiniciará para aplicarlo.",
+    confirmarTitulo: "¿Restaurar este respaldo?",
+    confirmarTrae: "El respaldo contiene {{movimientos}} movimientos, {{miembros}} miembros y {{depositos}} depósitos.",
+    confirmarHasta: "El movimiento más reciente que trae es del {{fecha}}. Si esa fecha no es la que esperabas, cancela: puede que hayas elegido un respaldo viejo.",
+    confirmarDocumentos_one: "Incluye {{count}} documento (comprobantes, adjuntos, logo y firmas).",
+    confirmarDocumentos_other: "Incluye {{count}} documentos (comprobantes, adjuntos, logo y firmas).",
+    confirmarSinDocumentos: "Es un respaldo antiguo, de los que solo guardaban la base: NO trae comprobantes ni adjuntos. Los que tengas ahora se conservan.",
+    confirmarReemplaza: "Todo lo que hay hoy en esta computadora será reemplazado. La base actual se apartará con la fecha en el nombre, no se borra.",
+    confirmarSync: "Al terminar, la sincronización con la nube quedará EN PAUSA hasta que revises que los datos están bien.",
+    confirmarBoton: "Restaurar y reiniciar",
+    syncPausadoTitulo: "Sincronización en pausa",
+    syncPausadoTexto: "Se restauró un respaldo. Revisa que los datos estén bien antes de reactivar la sincronización: al reactivarla, lo que esté en la nube y aquí se mezclará y ya no hay vuelta atrás.",
+    syncReactivar: "Revisé, reactivar",
+  },
+
   respaldo: {
     titulo: "Respaldo",
     sub: "Exporta tus datos o guarda una copia de seguridad",
