@@ -86,7 +86,8 @@ export function pct(part: number, total: number): string {
  */
 export function fmtMoneyPdf(n: number, moneda: string): string {
   const abs = Math.abs(n);
-  const formatted = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${moneda}`;
+  // Dos decimales, igual que fmtMoneyPlain y que la pantalla.
+  const formatted = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${moneda}`;
   return n < 0 ? `(${formatted})` : formatted;
 }
 

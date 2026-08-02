@@ -3485,10 +3485,15 @@ function localeDeNumeros(): string {
   return localeNumeros;
 }
 
+/** Dinero para pantalla. **Siempre dos decimales**: con `minimumFractionDigits: 0`
+ *  un importe de 10.50 salía como "$10.5", que para dinero está mal, y además
+ *  rompía la alineación de la columna al mezclar cifras con y sin decimales.
+ *  Dos decimales es también lo que ya usaba `fmtMoneyPlain` en el estado
+ *  financiero, así que pantalla y documento por fin coinciden. */
 export function fmtMoney(n: number): string {
   const sign = n < 0 ? "−" : "";
   const abs = Math.abs(n);
-  return `${sign}${simboloActivo}${abs.toLocaleString(localeDeNumeros(), { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return `${sign}${simboloActivo}${abs.toLocaleString(localeDeNumeros(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function nowLocalIso(): string {
