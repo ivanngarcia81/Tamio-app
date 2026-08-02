@@ -8,6 +8,12 @@
          altura visible y el pie de los modales queda pegado abajo. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
     <title>Tamio</title>
+    <!-- OJO: este script va en línea a propósito (fija el tema ANTES del primer
+         pintado, si no hay un destello blanco al abrir en modo oscuro), y el CSP
+         de src-tauri/tauri.conf.json lo permite por el HASH de su contenido.
+         Si tocas una sola letra de aquí abajo, hay que recalcular el hash:
+           script-src ... 'sha256-XQF2Ra/0iGM20hPQywqbt5rB6jLh3/2gdLD2wpituPU='
+         Si no, el navegador lo bloquea en silencio y vuelve el destello. -->
     <script>(function(){try{var t=localStorage.getItem("tesoreria-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
   </head>
 
