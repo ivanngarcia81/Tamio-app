@@ -72,6 +72,10 @@
        tiene un paso para ellos. Ver si conviene añadir --fs-section-title: 22px. */
   /* Escala de espaciado del sistema — todo hueco nuevo debe salir de aquí.
      El índice es el múltiplo de 4: --space-2 son 8px. */
+  /* Fuera de la escala a propósito: los gap de 1px y 2px son separaciones de
+     pelo (ítems de menú pegados, iconos junto a su texto) y llevarlas a 4px las
+     duplicaría; el gap de 56px de .login-split es la separación entre los dos
+     paneles de la portada, una medida de maqueta y no de ritmo interno. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -263,7 +267,7 @@ a { color: inherit; text-decoration: none; }
   color: var(--text-3); padding: 8px 12px 4px;
 }
 .cmdk-item {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: var(--space-3);
   padding: 9px 12px; border-radius: 9px;
   font-size: var(--fs-body); color: var(--text); cursor: pointer;
 }
@@ -335,7 +339,7 @@ html.vibrancy .main { background: var(--surface); }
 .church-select {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   width: 100%;
   font-family: inherit;
   text-align: left;
@@ -516,7 +520,7 @@ html.vibrancy .main { background: var(--surface); }
 .sidebar-perfil {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--space-2);
   width: 100%;
   background: transparent;
   border: 1px solid transparent;
@@ -712,7 +716,7 @@ html.vibrancy .main { background: var(--surface); }
 .update-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 8px 18px;
   font-size: var(--fs-body);
   color: var(--text);
@@ -766,7 +770,7 @@ html.vibrancy .main { background: var(--surface); }
   letter-spacing: 0.01em;
   margin-bottom: 5px;
 }
-.balance { display: flex; align-items: baseline; gap: 14px; }
+.balance { display: flex; align-items: baseline; gap: var(--space-4); }
 .balance .amount {
   font-size: var(--fs-display);
   font-weight: 700;
@@ -807,7 +811,7 @@ html.vibrancy .main { background: var(--surface); }
 
 /* flex-wrap: en anchos de iPad la fila de acciones de Reportes no cabe
    completa; envolver a una segunda línea es invisible donde sí cabe. */
-.header-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: flex-end; row-gap: 10px; }
+.header-actions { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; justify-content: flex-end; row-gap: var(--space-3); }
 .icon-btn {
   display: inline-grid;
   place-items: center;
@@ -845,7 +849,7 @@ html.vibrancy .main { background: var(--surface); }
   font-size: var(--fs-body);
 }
 .search:hover { color: var(--text); }
-.profile { display: flex; align-items: center; gap: 10px; }
+.profile { display: flex; align-items: center; gap: var(--space-3); }
 .profile .name { font-size: var(--fs-body); font-weight: 600; }
 .avatar {
   width: 34px; height: 34px;
@@ -871,7 +875,7 @@ html.vibrancy .main { background: var(--surface); }
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   padding: 9px 14px;
   border-radius: 10px;
   font-size: var(--fs-body);
@@ -942,7 +946,7 @@ html.vibrancy .main { background: var(--surface); }
    cambia ni un píxel; existen como clase solo para poder ajustarlas en el
    iPhone sin tocar el resto. */
 .ia-cuerpo { padding: 4px 4px 0; }
-.ia-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.ia-acciones { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: 16px; }
 
 .btn.ia-primary:hover { filter: brightness(1.07); }
 .btn.ia-primary:active { filter: brightness(.95); }
@@ -955,7 +959,7 @@ html.vibrancy .main { background: var(--surface); }
   padding: 6px var(--content-pad-x) 40px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--space-6);
   /* Mismo sistema de ancho máximo que .header (ver arriba): el
      encabezado y el contenido comparten el límite y el anclaje a la
      izquierda para quedar siempre alineados entre sí. */
@@ -971,19 +975,19 @@ html.vibrancy .main { background: var(--surface); }
 .summary {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: var(--space-4);
 }
 /* Summary — 4 cards */
 .summary-4 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px;
+  gap: var(--space-4);
 }
 /* Summary — 5 cards */
 .summary-5 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px;
+  gap: var(--space-4);
 }
 .summary-5 .stat-card { padding: 18px 18px 16px; }
 .summary-5 .stat-value { font-size: var(--fs-stat-md); }
@@ -992,7 +996,7 @@ html.vibrancy .main { background: var(--surface); }
 .summary-8 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: var(--space-4);
 }
 .summary-8 .stat-card { padding: 18px 18px 16px; }
 .stat-card {
@@ -1093,7 +1097,7 @@ html.vibrancy .main { background: var(--surface); }
 .dash-canvas {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-6);
   background: var(--canvas);
   border-radius: var(--radius);
   padding: 28px;
@@ -1106,12 +1110,12 @@ html.vibrancy .main { background: var(--surface); }
 .split-2-1 {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 18px;
+  gap: var(--space-4);
 }
 .split-1-2 {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 18px;
+  gap: var(--space-4);
 }
 
 .card {
@@ -1140,7 +1144,7 @@ html.vibrancy .main { background: var(--surface); }
   color: var(--text-2);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 /* Bar chart (dashboard) */
@@ -1156,7 +1160,7 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: var(--space-1);
   height: 100%;
   justify-content: flex-end;
   position: relative;
@@ -1176,7 +1180,7 @@ html.vibrancy .main { background: var(--surface); }
 }
 .legend {
   display: flex;
-  gap: 14px;
+  gap: var(--space-4);
   margin-top: 10px;
   font-size: var(--fs-secondary);
   color: var(--text-2);
@@ -1280,7 +1284,7 @@ html.vibrancy .main { background: var(--surface); }
   font-weight: 700;
   letter-spacing: -0.01em;
 }
-.tx-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.tx-filters { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .chip {
   padding: 6px 12px;
   border-radius: 999px;
@@ -1514,7 +1518,7 @@ html.vibrancy .main { background: var(--surface); }
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   padding: 4px 10px;
   border-radius: 999px;
   font-size: var(--fs-caption);
@@ -1668,7 +1672,7 @@ html.vibrancy .main { background: var(--surface); }
 .mini-avatar.c8 { background: linear-gradient(135deg,#facc15,#ca8a04); }
 
 .person {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: var(--space-3);
 }
 .person .p-name { font-weight: 600; font-size: var(--fs-body); }
 .person .p-mail { color: var(--text-3); font-size: var(--fs-caption); }
@@ -1736,7 +1740,7 @@ html.vibrancy .main { background: var(--surface); }
 .report-preview .r-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 22px;
+  gap: var(--space-6);
   margin-top: 26px;
   padding: 22px;
   background: var(--surface-2);
@@ -1765,7 +1769,7 @@ html.vibrancy .main { background: var(--surface); }
   font-size: var(--fs-secondary);
   margin-top: auto;
 }
-.footer-left { display: flex; align-items: center; gap: 14px; }
+.footer-left { display: flex; align-items: center; gap: var(--space-4); }
 .footer-links { display: flex; gap: var(--space-6); }
 .footer-links a { color: var(--text-2); text-decoration: none; }
 .footer-links a:hover { color: var(--text); }
@@ -1866,7 +1870,7 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 16px 24px;
   border-top: 1px solid var(--line);
   position: sticky;
@@ -1895,7 +1899,7 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2);
   transition: background-color var(--dur) ease, color var(--dur) ease, transform .08s ease;
 }
 .tabs-segmented .seg:hover:not(.active) { background: var(--line); color: var(--text); }
@@ -1904,8 +1908,8 @@ html.vibrancy .main { background: var(--surface); }
 .tabs-segmented .seg.active:hover { opacity: .88; }
 
 /* Form elements */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: 14px; }
 .form-group.full { grid-column: 1 / -1; }
 /* Sub-panel dentro de formularios modales (mociones, acuerdos, visitantes,
    cajas informativas de recurrencia/depósito): mismo borde y radio en todos
@@ -1991,7 +1995,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .roster-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 7px 12px;
   border-bottom: 1px solid var(--line-soft);
   transition: background-color var(--dur) ease;
@@ -2015,12 +2019,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
   cursor: pointer;
 }
-.roster-controls { display: flex; align-items: center; gap: 6px; flex: none; }
+.roster-controls { display: flex; align-items: center; gap: var(--space-2); flex: none; }
 .roster-controls .form-input { padding: 4px 8px; font-size: var(--fs-secondary); width: 150px; }
 .roster-followup {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   font-size: var(--fs-caption);
   color: var(--text-3);
   cursor: pointer;
@@ -2029,7 +2033,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .roster-followup input[type="checkbox"] { width: 13px; height: 13px; }
 .roster-counters {
   display: flex;
-  gap: 14px;
+  gap: var(--space-4);
   align-items: center;
   font-size: var(--fs-secondary);
   color: var(--text-2);
@@ -2060,7 +2064,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* 4 columnas y pastillas más bajas: 11 categorías de gasto caben en 3 filas
    sin obligar a hacer scroll dentro del modal. */
-.category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
 .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
 .cat-pill {
   display: flex;
@@ -2135,7 +2139,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root[data-theme="dark"] .ia-capture-spark { color: #6ee7b7; }
 
 /* Título de diálogo con acento de IA (verde de marca) + ícono alineado */
-.modal-title-ia { display: inline-flex; align-items: center; gap: 7px; }
+.modal-title-ia { display: inline-flex; align-items: center; gap: var(--space-2); }
 .modal-title-ia svg { color: #10b981; flex-shrink: 0; }
 :root[data-theme="dark"] .modal-title-ia svg { color: #6ee7b7; }
 
@@ -2156,7 +2160,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Search combo */
 .search-combo { position: relative; }
 .search-suggest { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.search-suggest .s-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; transition: background-color var(--dur) ease; }
+.search-suggest .s-item { display: flex; align-items: center; gap: var(--space-3); padding: 9px 12px; cursor: pointer; transition: background-color var(--dur) ease; }
 .search-suggest .s-item:hover { background: var(--surface-2); }
 .search-suggest .s-item:active { background: var(--line); }
 .search-suggest .s-item + .s-item { border-top: 1px solid var(--line); }
@@ -2167,7 +2171,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .check-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--space-3);
   font-size: var(--fs-body);
   color: var(--text-2);
   padding: 10px 12px;
@@ -2195,14 +2199,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .picker-brand { display: flex; align-items: center; gap: var(--space-3); }
 .picker-brand .logo { margin: 0; }
 .picker-brand .name { font-weight: 700; font-size: var(--fs-card-title); letter-spacing: -0.01em; }
-.picker-user { display: flex; align-items: center; gap: 14px; }
+.picker-user { display: flex; align-items: center; gap: var(--space-4); }
 .picker-signout {
   font-size: var(--fs-secondary);
   color: var(--text-2);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .picker-signout:hover { color: var(--text); }
 
@@ -2240,7 +2244,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   max-width: 980px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: var(--space-4);
 }
 
 .church-card {
@@ -2252,7 +2256,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   transition: box-shadow .15s, border-color .15s, transform .15s;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-4);
 }
 .church-card:hover {
   border-color: var(--text-3);
@@ -2285,12 +2289,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .role-badge.pastor { background: #dbeafe; color: #1d4ed8; }
 .role-badge.lectura { background: #f5f5f4; color: #57534e; }
 
-.church-card-stats { display: flex; gap: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.church-card-stats { display: flex; gap: var(--space-4); padding-top: 14px; border-top: 1px solid var(--line); }
 .church-card-stats .stat { display: flex; flex-direction: column; gap: 2px; }
 .church-card-stats .stat .v { font-size: var(--fs-body); font-weight: 700; }
 .church-card-stats .stat .k { font-size: var(--fs-table-head); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
 
-.church-card-foot { font-size: var(--fs-caption); color: var(--text-3); display: flex; align-items: center; gap: 5px; }
+.church-card-foot { font-size: var(--fs-caption); color: var(--text-3); display: flex; align-items: center; gap: var(--space-1); }
 
 .add-church-card {
   border: 1.5px dashed var(--line);
@@ -2300,7 +2304,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--space-3);
   cursor: pointer;
   color: var(--text-2);
   text-align: center;
@@ -2339,7 +2343,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: 0 20px 60px rgba(0,0,0,.06);
 }
 .auth-card.wide { width: 480px; }
-.auth-logo-row { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 26px; }
+.auth-logo-row { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); margin-bottom: 26px; }
 .auth-logo-row .logo { margin: 0; width: 52px; height: 52px; }
 .auth-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
 .auth-sub { font-size: var(--fs-body); color: var(--text-2); text-align: center; margin-top: 6px; line-height: 1.5; }
@@ -2356,7 +2360,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .auth-forgot { text-align: right; font-size: var(--fs-secondary); margin-top: -8px; }
 .auth-forgot a { color: var(--text-2); text-decoration: underline; }
 .auth-oauth-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
+  display: flex; align-items: center; justify-content: center; gap: var(--space-3);
   width: 100%; padding: 10px; border-radius: 10px;
   border: 1px solid var(--line); background: var(--surface);
   font-size: var(--fs-body); font-weight: 600; color: var(--text); cursor: pointer;
@@ -2368,7 +2372,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .auth-terms { font-size: var(--fs-caption); color: var(--text-3); text-align: center; margin-top: 16px; line-height: 1.5; }
 .auth-terms a { color: var(--text-2); text-decoration: underline; }
 .auth-step { text-align: center; font-size: var(--fs-caption); text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); font-weight: 600; margin-bottom: 6px; }
-.auth-back { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: var(--fs-secondary); cursor: pointer; margin-bottom: 18px; }
+.auth-back { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-2); font-size: var(--fs-secondary); cursor: pointer; margin-bottom: 18px; }
 .auth-back:hover { color: var(--text); }
 
 /* ============ BANDEJA (approval inbox) ============ */
@@ -2380,14 +2384,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-weight: 600;
   margin: 4px 0 2px;
 }
-.inbox-list { display: flex; flex-direction: column; gap: 10px; }
+.inbox-list { display: flex; flex-direction: column; gap: var(--space-3); }
 .inbox-item {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 18px 20px;
   display: flex;
-  gap: 14px;
+  gap: var(--space-4);
   align-items: flex-start;
 }
 .inbox-item.resolved { opacity: .6; }
@@ -2427,7 +2431,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--space-3);
   flex-shrink: 0;
 }
 .inbox-amount { font-size: var(--fs-card-title); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -2437,7 +2441,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .inbox-resolved-tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   font-size: var(--fs-secondary);
   color: var(--text-3);
   font-weight: 600;
@@ -2476,17 +2480,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Detalle de miembro: encabezado con avatar, estado y chips de contacto */
 .member-detail-head { align-items: flex-start; }
-.member-detail-id { display: flex; gap: 13px; align-items: center; min-width: 0; }
+.member-detail-id { display: flex; gap: var(--space-3); align-items: center; min-width: 0; }
 .member-detail-avatar {
   width: 46px; height: 46px; font-size: var(--fs-card-title); border-radius: 13px; flex-shrink: 0;
 }
 .member-detail-name {
-  display: flex; align-items: center; gap: 10px; min-width: 0;
+  display: flex; align-items: center; gap: var(--space-3); min-width: 0;
   font-size: var(--fs-modal-title); font-weight: 700; letter-spacing: -0.01em; color: var(--text);
 }
-.member-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.member-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: 7px; }
 .member-chip {
-  display: inline-flex; align-items: center; gap: 5px; max-width: 240px;
+  display: inline-flex; align-items: center; gap: var(--space-1); max-width: 240px;
   font-size: var(--fs-caption); color: var(--text-2);
   background: var(--surface-2); border: 1px solid var(--line);
   padding: 3px 9px; border-radius: 20px;
@@ -2494,14 +2498,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .member-chip svg { flex-shrink: 0; color: var(--text-3); }
 .member-chip.etq { color: var(--accent-1); background: color-mix(in srgb, var(--accent-1) 8%, var(--surface-2)); border-color: color-mix(in srgb, var(--accent-1) 22%, var(--line)); }
 .member-detail-vacio {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
   padding: 30px 0; color: var(--text-3); font-size: var(--fs-body); text-align: center;
 }
 /* Métricas de asistencia de la ficha, como mini-tarjetas. */
 .ficha-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: var(--space-3);
   margin-bottom: 12px;
 }
 
@@ -2578,7 +2582,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .confirm-title { font-size: var(--fs-card-title); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
 .confirm-message { font-size: var(--fs-body); color: var(--text-2); line-height: 1.55; margin-bottom: 22px; }
-.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 .btn.primary.danger { background: #dc2626; color: #fff; }
 .btn.primary.danger:hover { opacity: .85; }
 .btn.primary.danger:active { opacity: .7; }
@@ -2618,7 +2622,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .settings-page {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--space-8);
 }
 .settings-grid {
   display: grid;
@@ -2644,7 +2648,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    incluye la variante con prefijo por los WebKit antiguos de macOS. */
 .settings-masonry {
   columns: 2;
-  column-gap: 20px;
+  column-gap: var(--space-6);
   margin-bottom: 20px;
 }
 .settings-masonry > * {
@@ -2721,7 +2725,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .as-moneda { font-size: clamp(12px, 1.1vw, 15px); opacity: .55; margin-top: 4px; }
 .asamblea-gastos { width: min(680px, 88vw); }
 .asamblea-gastos-titulo { font-size: clamp(11px, 1vw, 14px); text-transform: uppercase; letter-spacing: 1.2px; opacity: .6; margin-bottom: 14px; text-align: center; }
-.as-barra-fila { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; font-size: clamp(13px, 1.2vw, 16px); }
+.as-barra-fila { display: flex; align-items: center; gap: var(--space-4); margin-bottom: 12px; font-size: clamp(13px, 1.2vw, 16px); }
 .as-barra-nombre { width: 34%; text-align: right; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .as-barra-pista { flex: 1; height: 12px; background: rgba(255,255,255,.12); border-radius: 99px; overflow: hidden; }
 .as-barra { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #34d399, #6ee7b7); animation: asBarra .9s cubic-bezier(.22,1,.36,1) both; transform-origin: left; }
@@ -2788,7 +2792,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  gap: var(--space-4);
   padding-top: 4px;
 }
 .settings-actions.pegada {
@@ -2819,7 +2823,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .settings-saved-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   font-size: var(--fs-body);
   font-weight: 600;
   color: var(--pos);
@@ -2830,7 +2834,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .signature-body {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: var(--space-6);
   flex-wrap: wrap;
 }
 .signature-preview, .signature-placeholder {
@@ -2862,10 +2866,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .signature-placeholder .lbl { font-size: var(--fs-caption); font-weight: 600; }
 .signature-actions { display: flex; flex-direction: column; gap: var(--space-3); min-width: 200px; }
-.signature-actions-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.signature-actions-row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 
 /* Logo de la iglesia — mismo tratamiento de la firma, en tamaño de avatar */
-.church-logo-row { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+.church-logo-row { display: flex; align-items: center; gap: var(--space-4); margin-bottom: 22px; }
 .church-logo-preview, .church-logo-placeholder {
   width: 64px;
   height: 64px;
@@ -3068,7 +3072,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .welcome-dots {
   display: flex;
   justify-content: center;
-  gap: 7px;
+  gap: var(--space-2);
   margin-top: 20px;
 }
 .welcome-dot {
@@ -3186,7 +3190,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .loading-state {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--space-6);
   padding: 4px 0 40px;
 }
 /* Skeleton loading: bloques con shimmer que imitan la pagina mientras
@@ -3220,7 +3224,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .skeleton-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  gap: var(--space-4);
 }
 .skeleton-card {
   background: var(--surface);
@@ -3229,7 +3233,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-4);
 }
 .skeleton-table {
   background: var(--surface);
@@ -3257,7 +3261,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 16px 0 4px;
 }
 .pagination-label {
@@ -3307,7 +3311,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .chip-toggle {
   display: inline-flex;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 /* Calendario mensual */
@@ -3376,13 +3380,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .agenda-cell-items {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-1);
   min-width: 0;
 }
 .agenda-evt {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: var(--space-1);
   width: 100%;
   text-align: left;
   border: none;
@@ -3535,8 +3539,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* Vista lista: próximas agrupadas */
-.agenda-grupos { display: flex; flex-direction: column; gap: 20px; }
-.agenda-grupo { display: flex; flex-direction: column; gap: 6px; }
+.agenda-grupos { display: flex; flex-direction: column; gap: var(--space-6); }
+.agenda-grupo { display: flex; flex-direction: column; gap: var(--space-2); }
 .agenda-grupo-titulo {
   font-size: var(--fs-secondary);
   font-weight: 700;
@@ -3559,7 +3563,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .agenda-fila {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--space-4);
   width: 100%;
   text-align: left;
   border: 1px solid var(--line);
@@ -3630,7 +3634,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* ---------- Agenda Fase 3: recurrencia, conflictos, alcance ---------- */
-.dias-toggle { display: flex; flex-wrap: wrap; gap: 6px; }
+.dias-toggle { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .dia-chip {
   min-width: 40px;
   padding: 6px 10px;
@@ -3655,7 +3659,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root[data-theme="dark"] .agenda-conflicto { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.4); }
 .agenda-conflicto-head {
-  display: flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; gap: var(--space-2);
   font-weight: 700; font-size: var(--fs-body); color: var(--warn);
 }
 :root[data-theme="dark"] .agenda-conflicto-head { color: #fbbf24; }
@@ -3692,7 +3696,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-left: 3px solid var(--accent-5);
 }
 .agenda-rec-head {
-  display: flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; gap: var(--space-2);
   font-size: var(--fs-secondary); font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
   color: var(--text-2); margin-bottom: 8px;
 }
@@ -3744,20 +3748,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .inicio-sec-grid {
   display: grid;
   grid-template-columns: 1.4fr 0.9fr;
-  gap: 20px;
+  gap: var(--space-6);
   margin-top: 20px;
   align-items: start;
 }
 .inicio-sec-accesos {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--space-3);
   margin-top: 12px;
 }
 .inicio-sec-acceso {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 14px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -3806,7 +3810,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-color: var(--ink);
   color: var(--ink-contrast);
 }
-.msg-meta { display: flex; align-items: baseline; gap: 10px; margin-bottom: 3px; }
+.msg-meta { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: 3px; }
 .msg-autor { font-size: var(--fs-caption); font-weight: 700; }
 .msg-row.propio .msg-autor { color: var(--ink-contrast); }
 /* La fecha va a 10.5px: con menos contraste que esto deja de leerse,
@@ -3818,7 +3822,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .msg-composer {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: var(--space-3);
   padding: 14px 18px;
   border-top: 1px solid var(--line);
   background: var(--surface);
@@ -3917,7 +3921,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   backdrop-filter: blur(20px) saturate(120%);
   display: flex;
   flex-direction: column;
-  gap: 13px;
+  gap: var(--space-3);
   color: #f4f4f6;
   animation: loginCardIn .5s cubic-bezier(.22, 1, .36, 1) both;
 }
@@ -3946,14 +3950,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .login-hero {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: var(--space-4);
     animation: loginCardIn .55s cubic-bezier(.22, 1, .36, 1) both;
   }
   /* En ancho el panel ya muestra la marca: se evita duplicarla en la tarjeta. */
   .login-forms .login-logo,
   .login-forms .login-title { display: none; }
 }
-.login-hero-brand { display: flex; align-items: center; gap: 11px; }
+.login-hero-brand { display: flex; align-items: center; gap: var(--space-3); }
 .login-hero-word {
   font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: #fff;
 }
@@ -3972,7 +3976,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: rgba(255, 255, 255, 0.56);
   max-width: 360px;
 }
-.login-hero-feats { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 15px; }
+.login-hero-feats { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
 .login-hero-feats li { display: flex; align-items: flex-start; gap: var(--space-3); }
 .login-hero-feats .lhf-ico {
   flex-shrink: 0;
@@ -4058,7 +4062,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .btn.danger-btn:hover { background: var(--neg-bg); }
 
-.sesion-box { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.sesion-box { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
 .sesion-email { font-size: var(--fs-body); color: var(--text); font-weight: 600; }
 .sesion-rol {
   font-size: var(--fs-caption); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
@@ -4204,7 +4208,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
   /* Zona de peligro: el botón dejaba la descripción en una columna de seis
      líneas. En teléfono se apila y el botón ocupa el ancho. */
-  .danger-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .danger-row { flex-direction: column; align-items: stretch; gap: var(--space-3); }
   .danger-row .btn.danger-btn { width: 100%; justify-content: center; }
 
   /* ---- Los tres "fantasmas" (Dashboard, Gastos, Reportes) ----
@@ -4250,7 +4254,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        Con 2 px de separación esa holgura no se veía y las pastillas de la
        derecha salían amontonadas. Al subir la separación se aprovecha ese
        aire y la tarjeta solo crece 15 px. */
-    gap: 7px 10px;
+    gap: var(--space-2) 10px;
     align-items: center;
     padding: 10px 12px;
   }
@@ -4328,7 +4332,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .day-label {
     flex-direction: row;
     align-items: baseline;
-    gap: 6px;
+    gap: var(--space-2);
     padding-top: 0;
   }
   .day-label .day-num { font-size: var(--fs-card-title); }
@@ -4339,7 +4343,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     grid-template-areas:
       "icono desc  desc   monto"
       "icono tag   metodo menu";
-    gap: 5px 8px;
+    gap: var(--space-1) 8px;
     align-items: center;
   }
   .tx-row > .tx-icon { grid-area: icono; align-self: start; }
@@ -4373,7 +4377,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      Con once categorías, cuatro columnas no caben en 440 pt de ninguna
      manera, así que los chips fluyen y se ajustan a su contenido, igual
      que ya hacían los cuatro de Ingreso. */
-  .category-grid, .type-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+  .category-grid, .type-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .category-grid .cat-pill, .type-grid .cat-pill { width: auto; }
 
   /* Asistente de IA: con el botón al lado, al campo le quedaban unos
@@ -4409,7 +4413,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-width: 0;
     min-height: 0;
     grid-template-columns: 1fr 1fr !important;
-    gap: 10px;
+    gap: var(--space-3);
     padding: 12px;
   }
   .data-table.tabla-resumen-mes .tr > .td {
@@ -4448,7 +4452,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .report-preview .r-summary .r-dup { display: none; }
   .report-preview .r-summary {
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    gap: var(--space-4);
     padding: 14px;
     margin-top: 0;
     margin-bottom: 18px;
@@ -4496,10 +4500,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     --fs-stat-sm: 18px;
   }
   .stat-card { padding: 13px 14px 12px; }
-  .summary, .summary-4, .summary-5, .summary-8 { gap: 10px; }
+  .summary, .summary-4, .summary-5, .summary-8 { gap: var(--space-3); }
   /* El panel decorativo del lienzo (fondo + 18-28px de relleno) es de
      escritorio; en teléfono las tarjetas van directo sobre la página. */
-  .dash-canvas { gap: 14px; padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
+  .dash-canvas { gap: var(--space-4); padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
 
   /* Onboarding (primer arranque): la tarjeta declara width:480 con
      max-width:100%, pero .welcome-overlay es un grid con columna implícita
@@ -4513,7 +4517,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .welcome-overlay { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; }
 
   .header { row-gap: var(--space-2); padding-bottom: 10px; }
-  .content { gap: 14px; padding-top: 8px; padding-left: 14px; padding-right: 14px; }
+  .content { gap: var(--space-4); padding-top: 8px; padding-left: 14px; padding-right: 14px; }
   /* minmax(0, 1fr), no "1fr": un "1fr" es minmax(auto, 1fr), y ese "auto"
      deja que la columna crezca hasta el ancho intrínseco de su contenido.
      El control nativo de fecha de iOS tiene un ancho intrínseco enorme, así
