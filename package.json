@@ -13,7 +13,8 @@
     "dist:universal": "tauri build --bundles dmg --target universal-apple-darwin",
     "firmar": "bash scripts/firmar-mac.sh",
     "firmar:manual": "bash scripts/firmar-manual.sh",
-    "verificar-csp": "node scripts/verificar-csp.mjs"
+    "verificar-csp": "node scripts/verificar-csp.mjs",
+    "verificar-traducciones": "node scripts/verificar-traducciones.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",
