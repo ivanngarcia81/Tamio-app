@@ -16,8 +16,8 @@ interface Props {
   onChanged: () => void;
 }
 
-const COLS_INGRESO = "110px 1fr 140px 170px 150px 130px 110px 104px";
-const COLS_GASTO = "110px 140px 1fr 170px 150px 130px 110px 104px";
+const COLS_INGRESO = "110px 1fr 140px 170px 150px 168px 110px 104px";
+const COLS_GASTO = "110px 140px 1fr 170px 150px 168px 110px 104px";
 
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
@@ -128,7 +128,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                   <span className="truncate" style={{ display: "inline-block" }}>{metodo ? metodoNombre(metodo.id) : tx.metodo_pago}</span>
                 </span>
               </div>
-              <div className="td" style={{ textAlign: "right" }}>
+              <div className="td td-monto" style={{ textAlign: "right" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
                   <span
                     className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}

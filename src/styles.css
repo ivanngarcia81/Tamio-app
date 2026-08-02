@@ -1596,6 +1596,15 @@ html.vibrancy .main { background: var(--surface); }
    columna de 40px: quedaban 4px útiles para dos botones de 28px, así que se
    desbordaban y aparecían pegados al borde de la tarjeta. Aquí lleva su propio
    respiro y los botones se alinean a la derecha, separados del borde. */
+/* Celda de importe. Es el dato central de la pantalla y no puede partirse en
+   dos renglones: con el signo, cinco dígitos, los centavos y el código de
+   moneda no cabía en 130px menos los 18px de padding a cada lado, así que el
+   `−` se quedaba solo arriba y `$1,000 USD` bajaba. Se le quita padding a la
+   izquierda (va alineada a la derecha, ahí no aporta) y se prohíbe el salto. */
+.data-table .td.td-monto {
+  white-space: nowrap;
+  padding-left: 6px;
+}
 .data-table .td.td-acciones {
   display: flex;
   align-items: center;
