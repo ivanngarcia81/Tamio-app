@@ -108,6 +108,16 @@ export const en: Resources = {
     comprobante: "Receipt",
   },
 
+  comprobantesPendientes: {
+    titulo: "Receipts to recover",
+    sub_one: "{{count}} receipt could not be moved into the app",
+    sub_other: "{{count}} receipts could not be moved into the app",
+    explicacion: "These receipts were saved with the original file's path and Tamio can no longer read them from there (moved, deleted, or in a folder the app no longer reaches). Pick each file again and it will be stored inside the app, safe from any reorganising.",
+    volverAElegir: "Pick again",
+    elegirTitulo: "Choose the receipt",
+    recuperado: "Receipt recovered",
+  },
+
   comprobante: {
     abrirSistema: "Open externally",
     error: "The preview could not be shown. Try \"Open externally\".",

@@ -102,6 +102,16 @@ export const es = {
     comprobante: "Comprobante",
   },
 
+  comprobantesPendientes: {
+    titulo: "Comprobantes por recuperar",
+    sub_one: "{{count}} comprobante no se pudo traer a la app",
+    sub_other: "{{count}} comprobantes no se pudieron traer a la app",
+    explicacion: "Estos comprobantes se guardaron con la ruta del archivo original y Tamio ya no puede leerlos desde ahí (se movieron, se borraron, o están en una carpeta a la que la app ya no accede). Vuelve a elegir cada archivo y quedará guardado dentro de la app, a salvo de mudanzas.",
+    volverAElegir: "Volver a elegir",
+    elegirTitulo: "Elegir el comprobante",
+    recuperado: "Comprobante recuperado",
+  },
+
   comprobante: {
     abrirSistema: "Abrir con el sistema",
     error: "No se pudo mostrar la vista previa. Prueba \"Abrir con el sistema\".",

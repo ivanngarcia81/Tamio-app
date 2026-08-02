@@ -20,6 +20,7 @@ import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
 import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
+import ComprobantesPendientes from "../components/settings/ComprobantesPendientes";
 import CompactSettings from "../components/settings/CompactSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import SyncSettings from "../components/settings/SyncSettings";
@@ -325,6 +326,8 @@ export default function Configuracion({
               </div>
               <div className="settings-masonry">
                 <BackupSettings church={church} />
+                {/* Solo se pinta si hay algo que recuperar; si no, devuelve null. */}
+                <ComprobantesPendientes church={church} />
                 <CompactSettings church={church} />
                 <DangerZoneSettings church={church} />
               </div>
