@@ -1763,8 +1763,13 @@ html.vibrancy .main { background: var(--surface); }
   background: var(--surface);
   width: 640px;
   max-width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  /* 85vh en vez de 90vh: con 90 el modal llegaba casi al borde de la ventana y
+     no se veía dónde terminaba. El desplazamiento pasa al cuerpo, para que la
+     cabecera y el pie queden siempre visibles. */
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
   animation: modalIn .28s cubic-bezier(.34,1.45,.64,1) both;
@@ -1805,7 +1810,33 @@ html.vibrancy .main { background: var(--surface); }
 }
 .modal-close:hover { background: var(--line); color: var(--text); }
 .modal-close:active { background: var(--line); transform: scale(.9); }
-.modal-body { padding: 22px 24px; }
+/* El cuerpo es lo que desplaza. La máscara desvanece el contenido contra los
+   bordes en lugar de cortarlo en seco, que parecía un fallo de render. */
+.modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  --mask-modal: linear-gradient(
+    to bottom,
+    transparent 0, #000 14px,
+    #000 calc(100% - 14px), transparent 100%
+  );
+  -webkit-mask-image: var(--mask-modal);
+  mask-image: var(--mask-modal);
+}
+/* Pista del pie del modal: el texto vive en el tooltip, no en una franja fija. */
+.modal-hint-icon {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: inline-grid; place-items: center;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  flex-shrink: 0;
+}
 .modal-footer {
   display: flex;
   align-items: center;

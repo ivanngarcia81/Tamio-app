@@ -945,7 +945,10 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         </div>
 
         <div className="modal-footer">
-          <div className="form-hint">{t("common.camposOpcionales")}</div>
+          {/* Antes esta frase ocupaba una franja fija en el pie de cada
+              modal para algo que se lee una sola vez. Ahora es un signo de
+              interrogación con el texto en el tooltip. */}
+          <span className="modal-hint-icon" title={t("common.camposOpcionales")} aria-label={t("common.camposOpcionales")}>?</span>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose} disabled={saving}>{t("common.cancelar")}</button>
             {!isEdit && (
