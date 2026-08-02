@@ -1,0 +1,26 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "fs-movil",
+  "description": "Qué carpetas puede leer y escribir la app en iPad/iPhone. Aquí SÍ se deja $HOME/** y no es lo mismo que en Mac: en iOS cada app vive en su propio contenedor y $HOME ES ese contenedor, así que ya está acotado por el sistema. Además el selector de archivos de iOS entrega los documentos en una carpeta temporal dentro del contenedor, fuera de $APPDATA; acotar más rompería adjuntar comprobantes en el iPad.",
+  "platforms": [
+    "iOS",
+    "android"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$HOME/**" }
+      ]
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "$HOME/**" }
+      ]
+    }
+  ]
+}

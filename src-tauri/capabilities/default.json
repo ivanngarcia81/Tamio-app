@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Permisos de la ventana principal. Los ALCANCES de archivos (qué carpetas puede tocar la app) viven aparte, en fs-escritorio.json y fs-movil.json: no son iguales en Mac que en iPad.",
   "windows": [
     "main"
   ],
@@ -9,17 +9,6 @@
     "core:default",
     "core:path:default",
     "opener:default",
-    {
-      "identifier": "opener:allow-open-path",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$HOME/**"
-        }
-      ]
-    },
     "dialog:default",
     "fs:default",
     "fs:allow-read-file",
@@ -28,14 +17,6 @@
     "fs:allow-mkdir",
     "fs:allow-copy-file",
     "fs:allow-remove",
-    "fs:allow-exists",
-    {
-      "identifier": "fs:scope",
-      "allow": [
-        {
-          "path": "$HOME/**"
-        }
-      ]
-    }
+    "fs:allow-exists"
   ]
 }
