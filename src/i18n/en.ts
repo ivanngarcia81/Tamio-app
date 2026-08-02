@@ -201,7 +201,7 @@ export const en: Resources = {
   miembros: {
     titulo: "Contributors",
     statTotal: "Contributors",
-    statDiezmadores: "Tagged as tither",
+    statDiezmadores: "Tithed this year",
     statAportaronAnio: "Gave this year",
     statTotalAnio: "Year total",
     activos_one: "{{count}} person on file",

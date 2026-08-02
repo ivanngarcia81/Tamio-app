@@ -1120,6 +1120,13 @@ export async function yearCategoriaTotals(churchId: number, yyyy: string): Promi
 export interface MemberStat {
   totalAnio: number;
   ultimoAporte: string | null;
+  /**
+   * Suma de ingresos de categoría "diezmo" del miembro en el año. 0 = no ha
+   * diezmado. Se calcula aparte de `totalAnio` porque la etiqueta "diezmador"
+   * de la ficha es una intención escrita a mano y puede no corresponder con
+   * lo que realmente entró: quien cuenta es el registro contable.
+   */
+  diezmoAnio: number;
 }
 
 export async function memberStats(churchId: number, yyyy: string): Promise<Record<number, MemberStat>> {
@@ -1132,6 +1139,15 @@ export async function memberStats(churchId: number, yyyy: string): Promise<Recor
       GROUP BY member_id`,
     [churchId, yyyy]
   );
+  const diezmos = await d.select<{ member_id: number; total: number }[]>(
+    `SELECT member_id, SUM(monto) AS total
+       FROM transactions
+      WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso'
+        AND categoria = 'diezmo'
+        AND member_id IS NOT NULL AND substr(fecha, 1, 4) = $2 AND deleted = 0
+      GROUP BY member_id`,
+    [churchId, yyyy]
+  );
   const ultimos = await d.select<{ member_id: number; ultimo: string }[]>(
     `SELECT member_id, MAX(fecha) AS ultimo
        FROM transactions
@@ -1140,10 +1156,11 @@ export async function memberStats(churchId: number, yyyy: string): Promise<Recor
     [churchId]
   );
   const out: Record<number, MemberStat> = {};
-  for (const r of totals) out[r.member_id] = { totalAnio: r.total, ultimoAporte: null };
-  for (const r of ultimos) {
-    out[r.member_id] = { totalAnio: out[r.member_id]?.totalAnio ?? 0, ultimoAporte: r.ultimo };
-  }
+  const fila = (id: number): MemberStat =>
+    (out[id] ??= { totalAnio: 0, ultimoAporte: null, diezmoAnio: 0 });
+  for (const r of totals) fila(r.member_id).totalAnio = r.total;
+  for (const r of diezmos) fila(r.member_id).diezmoAnio = r.total;
+  for (const r of ultimos) fila(r.member_id).ultimoAporte = r.ultimo;
   return out;
 }
 

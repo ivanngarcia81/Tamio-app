@@ -195,7 +195,7 @@ export const es = {
   miembros: {
     titulo: "Aportantes",
     statTotal: "Aportantes",
-    statDiezmadores: "Con etiqueta diezmador",
+    statDiezmadores: "Diezmaron este año",
     statAportaronAnio: "Aportaron este año",
     statTotalAnio: "Total del año",
     activos_one: "{{count}} persona registrada",

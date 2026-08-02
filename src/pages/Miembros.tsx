@@ -128,13 +128,15 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   }
 
   // Resumen calculado a partir de los datos ya cargados (sin consultas nuevas).
+  // "Diezmaron" cuenta miembros con al menos un ingreso de categoría diezmo en
+  // el año, no los que tienen la etiqueta puesta en la ficha: la etiqueta la
+  // escribe alguien a mano una vez y después nadie la mantiene, así que el
+  // número que salía era el de una intención vieja, no el del año en curso.
   const resumen = useMemo(() => {
     let diezmadores = 0, aportaron = 0, totalAnio = 0;
     for (const m of members) {
-      let ets: string[] = [];
-      try { ets = JSON.parse(m.etiquetas); } catch { /* noop */ }
-      if (ets.includes("diezmador")) diezmadores++;
       const s = stats[m.id];
+      if (s?.diezmoAnio) diezmadores++;
       if (s?.totalAnio) { aportaron++; totalAnio += s.totalAnio; }
     }
     return { total: members.length, diezmadores, aportaron, totalAnio };
