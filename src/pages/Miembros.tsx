@@ -29,6 +29,9 @@ const TAG_CLASS: Record<string, string> = {
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 const MEMBER_COLS = "1.6fr 1fr 130px 150px 170px 72px";
+/* Sin la columna de etiquetas: si ninguna iglesia las usa, reservarle un
+   quinto del ancho para pintar guiones en todas las filas es desperdicio. */
+const MEMBER_COLS_SIN_ETIQUETAS = "1.6fr 130px 150px 170px 72px";
 const PAGE_SIZE = 30;
 
 function initials(nombre: string): string {
@@ -148,6 +151,12 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
     : members;
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // Muchas iglesias no usan etiquetas: la columna quedaba entera con guiones,
+  // ocupando ancho que las demás necesitan. Se muestra solo si alguien la usa.
+  const hayEtiquetas = members.some((m) => {
+    try { return (JSON.parse(m.etiquetas) as string[]).length > 0; } catch { return false; }
+  });
+  const cols = hayEtiquetas ? MEMBER_COLS : MEMBER_COLS_SIN_ETIQUETAS;
 
   return (
     <>
@@ -221,9 +230,9 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
           />
         ) : (
           <div className="data-table roomy tabla-miembros">
-            <div className="thead" style={{ gridTemplateColumns: MEMBER_COLS }}>
+            <div className="thead" style={{ gridTemplateColumns: cols }}>
               <div className="th">{t("miembros.colMiembro")}</div>
-              <div className="th">{t("miembros.colEtiquetas")}</div>
+              {hayEtiquetas && <div className="th">{t("miembros.colEtiquetas")}</div>}
               <div className="th">{t("miembros.colUltimoAporte")}</div>
               <div className="th" style={{ textAlign: "right" }}>{t("miembros.colTotalAnio")}</div>
               <div className="th">{t("miembros.colContacto")}</div>
@@ -237,7 +246,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                 <div
                   className="tr"
                   key={m.id}
-                  style={{ gridTemplateColumns: MEMBER_COLS, cursor: "pointer" }}
+                  style={{ gridTemplateColumns: cols, cursor: "pointer" }}
                   onClick={() => setDetalle(m)}
                   onContextMenu={(e) =>
                     abrirMenu(e, [
@@ -257,18 +266,20 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                       </div>
                     </div>
                   </div>
-                  <div className="td">
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {etiquetas.length === 0 && (
-                        <span style={{ color: "var(--text-3)", fontSize: 12 }}>—</span>
-                      )}
-                      {etiquetas.map((et) => (
-                        <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} title={TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}>
-                          {TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}
-                        </span>
-                      ))}
+                  {hayEtiquetas && (
+                    <div className="td">
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {etiquetas.length === 0 && (
+                          <span style={{ color: "var(--text-3)", fontSize: 12 }}>—</span>
+                        )}
+                        {etiquetas.map((et) => (
+                          <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} title={TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}>
+                            {TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
                     {stat?.ultimoAporte ? fmtFechaCorta(stat.ultimoAporte) : "—"}
                   </div>
@@ -277,7 +288,11 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                   </div>
                   <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
                     <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
-                    <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{m.rfc ?? t("miembros.sinRfc")}</div>
+                    {/* El valor presente salía pelado ("57876") mientras el
+                        ausente sí se explicaba: justo al revés de lo útil. */}
+                    <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={m.rfc ?? undefined}>
+                      {m.rfc ? `${t("campo.rfc")}: ${m.rfc}` : t("miembros.sinRfc")}
+                    </div>
                   </div>
                   <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                     <span className="row-actions">
