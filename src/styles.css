@@ -86,6 +86,50 @@
   --space-4: 16px;
   --space-6: 24px;
   --space-8: 32px;
+
+  /* ---- Paleta de categorías: FUENTE ÚNICA ----------------------------------
+     Antes había dos paletas para lo mismo: el hex del chip vivía aquí y el de
+     los gráficos en `db.ts`. Los once gastos coincidían por casualidad, pero
+     los cuatro ingresos no, así que el chip "Ofrenda" y su porción del donut
+     eran de verdes distintos.
+
+     Ahora el color vive SOLO aquí. `--cat-x` es el tono de la categoría: lo
+     usan el texto del chip Y su porción en los gráficos (colorCategoria() lo
+     lee de estas variables). `--cat-x-bg` es la variante clara del mismo tono,
+     para el fondo del chip. Para añadir una categoría basta con añadir sus dos
+     variables. */
+  --cat-ofrenda: #15803d;
+  --cat-ofrenda-bg: #dcfce7;
+  --cat-diezmo: #6d28d9;
+  --cat-diezmo-bg: #ede9fe;
+  --cat-donacion: #0e7490;
+  --cat-donacion-bg: #cffafe;
+  --cat-otros: #475569;
+  --cat-otros-bg: #f1f5f9;
+  --cat-pastores: #9f1239;
+  --cat-pastores-bg: #ffe4e6;
+  --cat-musicos: #1d4ed8;
+  --cat-musicos-bg: #dbeafe;
+  --cat-administracion: #0891b2;
+  --cat-administracion-bg: #cffafe;
+  --cat-limpieza: #0f766e;
+  --cat-limpieza-bg: #ccfbf1;
+  --cat-servicios: #92400e;
+  --cat-servicios-bg: #fef3c7;
+  --cat-mantenimiento: #4338ca;
+  --cat-mantenimiento-bg: #e0e7ff;
+  --cat-eventos: #9a3412;
+  --cat-eventos-bg: #ffedd5;
+  --cat-misiones: #0369a1;
+  --cat-misiones-bg: #e0f2fe;
+  --cat-ayudas: #9d174d;
+  --cat-ayudas-bg: #fce7f3;
+  --cat-tecnologia: #86198f;
+  --cat-tecnologia-bg: #fae8ff;
+  --cat-transporte: #4d7c0f;
+  --cat-transporte-bg: #ecfccb;
+  --cat-materiales: #3730a3;
+  --cat-materiales-bg: #e0e7ff;
   /* Duración estándar de microinteracciones (hover); presses usan .08s. */
   --dur: .16s;
   /* Layout de escritorio por breakpoint (ver @media al final de :root):
@@ -1466,25 +1510,25 @@ html.vibrancy .main { background: var(--surface); }
   flex: none;
 }
 :root[data-theme="dark"] .tag { box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
-.tag.diezmo { background: #ede9fe; color: #6d28d9; }
-.tag.ofrenda { background: #dcfce7; color: #15803d; }
-.tag.donacion { background: #cffafe; color: #0e7490; }
-.tag.servicios { background: #fef3c7; color: #92400e; }
-.tag.pastores { background: #ffe4e6; color: #9f1239; }
-.tag.eventos { background: #ffedd5; color: #9a3412; }
-.tag.musicos { background: #dbeafe; color: #1d4ed8; }
-.tag.administracion { background: #cffafe; color: #0891b2; }
-.tag.limpieza { background: #ccfbf1; color: #0f766e; }
-.tag.misiones { background: #e0f2fe; color: #0369a1; }
-.tag.ayudas { background: #fce7f3; color: #9d174d; }
+.tag.diezmo { background: var(--cat-diezmo-bg); color: var(--cat-diezmo); }
+.tag.ofrenda { background: var(--cat-ofrenda-bg); color: var(--cat-ofrenda); }
+.tag.donacion { background: var(--cat-donacion-bg); color: var(--cat-donacion); }
+.tag.servicios { background: var(--cat-servicios-bg); color: var(--cat-servicios); }
+.tag.pastores { background: var(--cat-pastores-bg); color: var(--cat-pastores); }
+.tag.eventos { background: var(--cat-eventos-bg); color: var(--cat-eventos); }
+.tag.musicos { background: var(--cat-musicos-bg); color: var(--cat-musicos); }
+.tag.administracion { background: var(--cat-administracion-bg); color: var(--cat-administracion); }
+.tag.limpieza { background: var(--cat-limpieza-bg); color: var(--cat-limpieza); }
+.tag.misiones { background: var(--cat-misiones-bg); color: var(--cat-misiones); }
+.tag.ayudas { background: var(--cat-ayudas-bg); color: var(--cat-ayudas); }
 /* Estado del registro de membresía */
 .tag.activo { background: #dcfce7; color: #15803d; }
 .tag.baja { background: #e5e7eb; color: #374151; }
-.tag.mantenimiento { background: #e0e7ff; color: #4338ca; }
-.tag.materiales { background: #e0e7ff; color: #3730a3; }
-.tag.tecnologia { background: #fae8ff; color: #86198f; }
-.tag.transporte { background: #ecfccb; color: #4d7c0f; }
-.tag.otros { background: #f1f5f9; color: #475569; }
+.tag.mantenimiento { background: var(--cat-mantenimiento-bg); color: var(--cat-mantenimiento); }
+.tag.materiales { background: var(--cat-materiales-bg); color: var(--cat-materiales); }
+.tag.tecnologia { background: var(--cat-tecnologia-bg); color: var(--cat-tecnologia); }
+.tag.transporte { background: var(--cat-transporte-bg); color: var(--cat-transporte); }
+.tag.otros { background: var(--cat-otros-bg); color: var(--cat-otros); }
 
 /* Roles del directorio de usuarios (Configuración) */
 .tag.rol-tesorero { background: #dcfce7; color: #15803d; }

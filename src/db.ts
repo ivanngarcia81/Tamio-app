@@ -1,6 +1,7 @@
 import Database from "./dbmotor";
 import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
+import { tonoCategoria } from "./colores";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
 let db: Database | null = null;
@@ -277,18 +278,22 @@ export const CATEGORIAS_INGRESO = [
   { id: "otros", nombre: "Otros", tagClass: "otros" },
 ] as const;
 
+/** Catálogo de gastos. **Sin color**: el de cada categoría vive en las
+ *  variables `--cat-*` de styles.css, que son las mismas que pintan su chip.
+ *  Tener el hex aquí era la segunda paleta que hacía que el chip y el donut no
+ *  coincidieran. */
 export const CATEGORIAS_GASTO = [
-  { id: "pastores", nombre: "Compensación", tagClass: "pastores", color: "#9f1239" },
-  { id: "musicos", nombre: "Suministros", tagClass: "musicos", color: "#1d4ed8" },
-  { id: "administracion", nombre: "Varios", tagClass: "administracion", color: "#0891b2" },
-  { id: "limpieza", nombre: "Limpieza", tagClass: "limpieza", color: "#0f766e" },
-  { id: "servicios", nombre: "Utilidades", tagClass: "servicios", color: "#92400e" },
-  { id: "mantenimiento", nombre: "Mantenimiento", tagClass: "mantenimiento", color: "#4338ca" },
-  { id: "eventos", nombre: "Alimentos", tagClass: "eventos", color: "#9a3412" },
-  { id: "misiones", nombre: "Misiones", tagClass: "misiones", color: "#0369a1" },
-  { id: "ayudas", nombre: "Ayudas", tagClass: "ayudas", color: "#9d174d" },
-  { id: "tecnologia", nombre: "Tecnología", tagClass: "tecnologia", color: "#86198f" },
-  { id: "transporte", nombre: "Transporte", tagClass: "transporte", color: "#4d7c0f" },
+  { id: "pastores", nombre: "Compensación", tagClass: "pastores" },
+  { id: "musicos", nombre: "Suministros", tagClass: "musicos" },
+  { id: "administracion", nombre: "Varios", tagClass: "administracion" },
+  { id: "limpieza", nombre: "Limpieza", tagClass: "limpieza" },
+  { id: "servicios", nombre: "Utilidades", tagClass: "servicios" },
+  { id: "mantenimiento", nombre: "Mantenimiento", tagClass: "mantenimiento" },
+  { id: "eventos", nombre: "Alimentos", tagClass: "eventos" },
+  { id: "misiones", nombre: "Misiones", tagClass: "misiones" },
+  { id: "ayudas", nombre: "Ayudas", tagClass: "ayudas" },
+  { id: "tecnologia", nombre: "Tecnología", tagClass: "tecnologia" },
+  { id: "transporte", nombre: "Transporte", tagClass: "transporte" },
 ] as const;
 
 export const METODOS_PAGO = [
@@ -426,19 +431,17 @@ export function metodoAbr(id: string): string {
 /** Los gastos llevan su color en el catálogo; los ingresos no, así que su
  *  paleta vive aquí. Fuente única para que el punto de una tarjeta, la
  *  barra de progreso y el segmento de la dona no se contradigan. */
-const COLOR_INGRESO: Record<string, string> = {
-  ofrenda: "#22c55e",
-  diezmo: "#7c3aed",
-  donacion: "#06b6d4",
-  otros: "#64748b",
-};
-
-/** Color de una categoría. Gris neutro para las personalizadas y para los
- *  ids retirados del catálogo. */
-export function colorCategoria(tipo: "ingreso" | "gasto", id: string): string {
-  if (tipo === "ingreso") return COLOR_INGRESO[id] ?? "#64748b";
-  const found = CATEGORIAS_GASTO.find((c) => c.id === id);
-  return found?.color ?? "#64748b";
+/** Color de una categoría para gráficos.
+ *
+ *  Sale de las variables `--cat-*` del CSS, que son las MISMAS que pintan su
+ *  chip: antes había dos listas de hex para lo mismo y no coincidían. El tipo
+ *  ya no hace falta —el id es único entre ingresos y gastos— pero se conserva
+ *  en la firma para no tocar los quince sitios que llaman a esto. */
+export function colorCategoria(_tipo: "ingreso" | "gasto", id: string): string {
+  // Las personalizadas traen su color elegido por el usuario y guardado en la
+  // base; las del catálogo salen de las variables `--cat-*` del CSS.
+  const custom = categoriasCustomCache.find((c) => customCatRef(c.uid) === id);
+  return custom?.color || tonoCategoria(id);
 }
 
 export function categoriaInfo(tipo: "ingreso" | "gasto", id: string) {
