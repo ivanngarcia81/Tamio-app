@@ -56,6 +56,61 @@ Debe aparecer una línea como:
 ```
 Copia el texto entre comillas **tal cual** — es tu `APPLE_SIGNING_IDENTITY`.
 
+## Paso 2-bis · Firmar desde OTRA Mac (segunda máquina)
+
+Si ya creaste el certificado en una Mac y ahora quieres firmar desde otra,
+**no repitas el Paso 2**. Dos motivos:
+
+1. **La clave privada no se puede volver a descargar.** El certificado que ves
+   en developer.apple.com es solo la mitad pública; la privada se generó en el
+   Llavero de la Mac donde lo creaste y no sale de ahí salvo que la exportes.
+   Sin ella, el certificado no firma nada.
+2. **Apple limita los certificados "Developer ID Application"** (unos 5 por
+   cuenta) y revocarlos afecta a las versiones ya repartidas. Gastar uno por
+   máquina es tirar un recurso escaso sin necesidad.
+
+Lo correcto es **exportar el par certificado + clave** desde la Mac original.
+
+### En la Mac que YA firma
+
+1. Abre **Acceso a Llaveros** (Keychain Access).
+2. Barra lateral: **Inicio de sesión** → categoría **Mis certificados**.
+   *(Tiene que ser "Mis certificados", no "Certificados": esa categoría solo
+   muestra los que tienen la clave privada, que es lo que importa.)*
+3. Busca **Developer ID Application: Tu Nombre (TEAM_ID)**. Despliega la
+   flecha: debajo debe colgar una clave privada. Si no cuelga nada, ese
+   certificado no sirve para firmar.
+4. Clic derecho sobre él → **Exportar…** → formato **Intercambio de información
+   personal (.p12)**.
+5. Te pide una contraseña para proteger el archivo. Pon una y **anótala**: hace
+   falta al importar.
+
+### En la Mac nueva
+
+1. Pasa el `.p12` (AirDrop, pendrive — no por correo si puedes evitarlo: lleva
+   tu clave privada dentro).
+2. Doble clic en el archivo → escribe la contraseña que pusiste al exportar.
+3. Comprueba que quedó:
+   ```bash
+   security find-identity -v -p codesigning
+   ```
+   Tiene que aparecer la línea de **Developer ID Application**.
+4. **Borra el `.p12`** de las dos máquinas cuando termines. Es tu identidad de
+   firma: quien lo tenga junto con su contraseña puede publicar software en tu
+   nombre.
+
+### Y no olvides `.env.firma`
+
+Está en `.gitignore`, así que **no viene con el `git clone`**. Hay que
+recrearlo en cada máquina:
+
+```bash
+cp .env.firma.example .env.firma
+```
+
+y rellenar los cuatro valores (Paso 4). La contraseña específica de app del
+Paso 3 sirve igual en las dos Macs: es de la cuenta, no del equipo.
+
 ## Paso 3 · Contraseña específica de app (para notarizar)
 
 La notarización necesita entrar a tu cuenta, pero **no se usa tu contraseña
