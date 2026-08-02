@@ -111,6 +111,7 @@ export default function RestoreSettings() {
               : t("restaurar.confirmarDocumentos", { count: resumen.documentos }),
             t("restaurar.confirmarReemplaza"),
             t("restaurar.confirmarSync"),
+            t("restaurar.confirmarReinicio"),
           ].filter(Boolean).join("\n\n")}
           confirmLabel={t("restaurar.confirmarBoton")}
           onConfirm={confirmar}

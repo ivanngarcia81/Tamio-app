@@ -515,6 +515,7 @@ export const en: Resources = {
     confirmarSinDocumentos: "This is an old backup, from when only the database was saved: it does NOT include receipts or attachments. The ones you have now are kept.",
     confirmarReemplaza: "Everything on this computer today will be replaced. The current database will be set aside with the date in its name, not deleted.",
     confirmarSync: "When it finishes, cloud sync will be PAUSED until you check that the data is right.",
+    confirmarReinicio: "Tamio will close and reopen by itself. If it does not, open it yourself: the backup is applied all the same.",
     confirmarBoton: "Restore and restart",
     syncPausadoTitulo: "Sync paused",
     syncPausadoTexto: "A backup was restored. Check the data is right before turning sync back on: once you do, what is in the cloud and what is here will merge, and there is no undo.",

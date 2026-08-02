@@ -509,6 +509,7 @@ export const es = {
     confirmarSinDocumentos: "Es un respaldo antiguo, de los que solo guardaban la base: NO trae comprobantes ni adjuntos. Los que tengas ahora se conservan.",
     confirmarReemplaza: "Todo lo que hay hoy en esta computadora será reemplazado. La base actual se apartará con la fecha en el nombre, no se borra.",
     confirmarSync: "Al terminar, la sincronización con la nube quedará EN PAUSA hasta que revises que los datos están bien.",
+    confirmarReinicio: "Tamio se cerrará y se volverá a abrir solo. Si no se abriera, ábrelo tú: el respaldo se aplica igual.",
     confirmarBoton: "Restaurar y reiniciar",
     syncPausadoTitulo: "Sincronización en pausa",
     syncPausadoTexto: "Se restauró un respaldo. Revisa que los datos estén bien antes de reactivar la sincronización: al reactivarla, lo que esté en la nube y aquí se mezclará y ya no hay vuelta atrás.",

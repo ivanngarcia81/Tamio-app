@@ -1072,9 +1072,49 @@ fn restaurar_cancelar(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Ruta del bundle `.app` que contiene a este ejecutable, si lo hay.
+/// `/…/Tamio.app/Contents/MacOS/tesoreria` → `/…/Tamio.app`.
+#[cfg(target_os = "macos")]
+fn ruta_bundle() -> Option<std::path::PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let bundle = exe.parent()?.parent()?.parent()?; // MacOS → Contents → .app
+    if bundle.extension().is_some_and(|e| e == "app") {
+        Some(bundle.to_path_buf())
+    } else {
+        None // `tauri dev`: el binario está suelto, no dentro de un bundle
+    }
+}
+
 /// Reinicia la app para que el arranque aplique el respaldo.
+///
+/// **No se usa `AppHandle::restart()` en macOS.** Esa función vuelve a ejecutar
+/// el binario de dentro del bundle (`Contents/MacOS/tesoreria`) como si fuera
+/// un programa suelto, y el proceso resultante queda mal registrado ante el
+/// sistema de ventanas: la ventana abre pero nunca pinta nada. El síntoma es
+/// una ventana en blanco después de restaurar, con la app por lo demás
+/// perfectamente sana — cerrarla y abrirla a mano funcionaba.
+///
+/// En su lugar se lanza `open -n` sobre el propio `.app`, que es como macOS
+/// espera que se arranque una aplicación, con un segundo de espera para que
+/// este proceso haya terminado de cerrarse antes de que el nuevo abra la base.
+///
+/// Si algo de esto fallara, el respaldo ya está preparado y con su marcador
+/// puesto: basta con volver a abrir Tamio a mano para que se aplique.
 #[tauri::command]
 fn restaurar_reiniciar(app: tauri::AppHandle) {
+    #[cfg(target_os = "macos")]
+    if let Some(bundle) = ruta_bundle() {
+        // La ruta va como argumento ($1) y no interpolada en el script, para
+        // que un espacio o una comilla en el nombre no rompan nada.
+        let _ = std::process::Command::new("/bin/sh")
+            .arg("-c")
+            .arg("sleep 1; exec /usr/bin/open -n \"$1\"")
+            .arg("--")
+            .arg(&bundle)
+            .spawn();
+        app.exit(0);
+        return;
+    }
     app.restart();
 }
 
