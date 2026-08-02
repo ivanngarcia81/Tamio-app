@@ -1122,34 +1122,65 @@ fn aplicar_restauracion_pendiente(
         return Ok(false);
     }
 
+    // El marcador se quita ANTES de empezar. Si algo falla a mitad, el arranque
+    // siguiente NO vuelve a intentarlo: un fallo que se repite en cada apertura
+    // deja la app inutilizable y va apartando una base más cada vez. Se intenta
+    // una vez, y si sale mal el usuario lo vuelve a lanzar a mano sabiendo qué
+    // pasó.
+    let _ = std::fs::remove_file(dir.join(MARCADOR));
+
     // La base actual se APARTA, nunca se borra: si el paquete resultara estar
     // dañado a medio camino, el tesorero no puede quedarse sin las dos.
-    if ruta_db.exists() {
-        let apartada = ruta_db.with_extension(format!("db.antes-de-restaurar-{}", marca_de_tiempo()));
-        std::fs::rename(ruta_db, &apartada).map_err(|e| e.to_string())?;
+    let apartada = if ruta_db.exists() {
+        let destino = ruta_db.with_extension(format!("db.antes-de-restaurar-{}", marca_de_tiempo()));
+        std::fs::rename(ruta_db, &destino).map_err(|e| e.to_string())?;
         for suf in ["-wal", "-shm"] {
             let mut p = ruta_db.as_os_str().to_owned();
             p.push(suf);
             let _ = std::fs::remove_file(std::path::PathBuf::from(p));
         }
+        Some(destino)
+    } else {
+        None
+    };
+
+    // A partir de aquí la base vieja ya no está en su sitio. Si algo falla, se
+    // devuelve tal cual estaba: es preferible arrancar como si no se hubiera
+    // restaurado nada que arrancar sin base ninguna.
+    let resultado = (|| -> Result<(), String> {
+        std::fs::copy(&base_nueva, ruta_db).map_err(|e| e.to_string())?;
+        // ESTE es el paso que hace portable un respaldo: la base del paquete
+        // viene descifrada a propósito, porque la clave del Llavero del equipo
+        // de origen no existe aquí. Se cifra al llegar, con la clave de ESTA
+        // Mac.
+        motordb::migrar_a_cifrado(ruta_db, clave)?;
+        // migrar_a_cifrado deja el original en claro como .respaldo-sin-cifrar.
+        // Ahí no puede quedarse: son los datos de la iglesia sin cifrar en el
+        // disco.
+        let _ = std::fs::remove_file(ruta_db.with_extension("db.respaldo-sin-cifrar"));
+
+        let documentos = dir.join("datos");
+        if documentos.is_dir() {
+            fusionar(&documentos, &dir_datos(app)?)?;
+        }
+        Ok(())
+    })();
+
+    match resultado {
+        Ok(()) => {
+            let _ = std::fs::remove_dir_all(&dir);
+            Ok(true)
+        }
+        Err(e) => {
+            // Marcha atrás: vuelve la base de antes y se conserva `restauracion/`
+            // por si sirve para diagnosticar.
+            let _ = std::fs::remove_file(ruta_db);
+            if let Some(previa) = apartada {
+                let _ = std::fs::rename(&previa, ruta_db);
+            }
+            Err(e)
+        }
     }
-
-    std::fs::copy(&base_nueva, ruta_db).map_err(|e| e.to_string())?;
-
-    // ESTE es el paso que hace portable un respaldo: la base del paquete viene
-    // descifrada a propósito, porque la clave del Llavero del equipo de origen
-    // no existe aquí. Se cifra al llegar, con la clave de ESTA Mac.
-    motordb::migrar_a_cifrado(ruta_db, clave)?;
-    // migrar_a_cifrado deja el original en claro como .respaldo-sin-cifrar. Ahí
-    // no puede quedarse: son los datos de la iglesia sin cifrar en el disco.
-    let _ = std::fs::remove_file(ruta_db.with_extension("db.respaldo-sin-cifrar"));
-
-    let documentos = dir.join("datos");
-    if documentos.is_dir() {
-        fusionar(&documentos, &dir_datos(app)?)?;
-    }
-    let _ = std::fs::remove_dir_all(&dir);
-    Ok(true)
 }
 
 /// ¿El arranque de esta sesión aplicó un respaldo? Lo consulta el frontend para

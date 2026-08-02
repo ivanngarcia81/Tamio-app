@@ -717,6 +717,32 @@ html.vibrancy .main { background: var(--surface); }
 }
 
 /* Aviso de versión nueva: barra verde tenue arriba del contenido. */
+/* Pantalla de error de la red de seguridad (ErrorBoundary). Deliberadamente
+   sencilla: si falló el pintado, esto no puede depender de nada complicado. */
+.pantalla-error {
+  max-width: 640px;
+  margin: 60px auto;
+  padding: var(--space-6);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+}
+.pantalla-error h2 { font-size: var(--fs-section-title); margin-bottom: var(--space-3); }
+.pantalla-error p { color: var(--text-2); line-height: 1.55; margin-bottom: var(--space-4); }
+.pantalla-error pre {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: var(--space-3);
+  font-size: var(--fs-caption);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: var(--space-3);
+  max-height: 240px;
+  overflow: auto;
+}
+.pantalla-error-pila { color: var(--text-2); }
+.pantalla-error-acciones { display: flex; gap: var(--space-3); }
+
 /* Aviso de sincronización en pausa tras restaurar. Mismo sitio y misma forma
    que el banner de actualización, pero en ámbar: no es una novedad simpática,
    es algo que el usuario tiene que resolver. */
