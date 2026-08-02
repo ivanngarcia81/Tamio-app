@@ -2,18 +2,24 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { buscarActualizacion, type ActualizacionDisponible } from "../services/update";
+import { esMovil } from "../movil";
 import { IconDownload, IconClose } from "../icons";
 
 const DESCARTADA_KEY = "tamio-update-descartada";
 
 /** Aviso discreto cuando hay una versión más nueva publicada. Abre el enlace de
  *  descarga (no auto-instala). Se puede descartar por versión: no vuelve a
- *  molestar con la misma, pero sí reaparece cuando salga una posterior. */
+ *  molestar con la misma, pero sí reaparece cuando salga una posterior.
+ *
+ *  **Solo escritorio.** En iPad/iPhone actualiza la App Store; ver la nota en
+ *  `buscarActualizacion()`. La comprobación se repite aquí para no dejar ni el
+ *  temporizador corriendo en el móvil. */
 export default function UpdateBanner() {
   const { t } = useTranslation();
   const [act, setAct] = useState<ActualizacionDisponible | null>(null);
 
   useEffect(() => {
+    if (esMovil()) return;
     let cancelado = false;
     // Pequeña espera para no competir con la carga inicial de la app.
     const timer = setTimeout(() => {

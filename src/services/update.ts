@@ -8,6 +8,7 @@
 // Cada vez que lances una versión, actualizas ese número y ese enlace.
 
 import { getVersion } from "@tauri-apps/api/app";
+import { esMovil } from "../movil";
 
 /** URL del manifiesto de versión. Se puede sobreescribir con VITE_UPDATE_URL;
  *  por defecto apunta al version.json publicado junto a la web de Tamio. */
@@ -40,6 +41,12 @@ function esMasNueva(a: string, b: string): boolean {
  *  la versión instalada. Nunca lanza: ante cualquier fallo (sin internet, JSON
  *  inválido, etc.) devuelve null y la app sigue igual. */
 export async function buscarActualizacion(): Promise<ActualizacionDisponible | null> {
+  // En iPad/iPhone esto no debe existir. Las actualizaciones las entrega la
+  // App Store, y una app de la App Store no puede mandar al usuario a bajarse
+  // software por su cuenta (regla 2.5.2 de Apple): el aviso ofrecería un .dmg
+  // de Mac que en iOS ni siquiera se puede abrir. Se corta aquí, antes de la
+  // petición, para no consultar siquiera el manifiesto desde el teléfono.
+  if (esMovil()) return null;
   try {
     const actual = await getVersion();
     // Cache-buster para no quedarnos con una copia vieja del CDN.
