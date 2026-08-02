@@ -112,6 +112,7 @@ export const en: Resources = {
     abrirSistema: "Open externally",
     error: "The preview could not be shown. Try \"Open externally\".",
     noDisponible: "The original file is no longer available: it was moved, renamed or deleted. Attach it again by editing the entry.",
+    sinPermiso: "The file is still there, but Tamio no longer has permission to read it from that folder. Pick it again (Settings → Receipts to recover) and it will be stored inside the app.",
   },
 
   dashboard: {

@@ -106,6 +106,7 @@ export const es = {
     abrirSistema: "Abrir con el sistema",
     error: "No se pudo mostrar la vista previa. Prueba \"Abrir con el sistema\".",
     noDisponible: "El archivo original ya no está disponible: se movió, se renombró o se borró de su ubicación. Vuelve a adjuntarlo editando el movimiento.",
+    sinPermiso: "El archivo sigue ahí, pero Tamio ya no tiene permiso para leerlo desde esa carpeta. Vuelve a elegirlo (Ajustes → Comprobantes por recuperar) y quedará guardado dentro de la app.",
   },
 
   dashboard: {

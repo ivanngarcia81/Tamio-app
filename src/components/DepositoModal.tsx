@@ -7,7 +7,7 @@ import {
   mesLegible, nowLocalIso, updateDeposito,
   type Church, type Deposito,
 } from "../db";
-import { guardarComprobante } from "../services/comprobantes";
+import { guardarComprobante, rutaComprobante } from "../services/comprobantes";
 import { IconCheck, IconClose, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -115,14 +115,14 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
 
       // El comprobante se copia a la carpeta de la app y se guarda ESA ruta:
       // el archivo que eligió el usuario puede moverse o borrarse.
-      const rutaComprobante = comprobantePath ? await guardarComprobante(comprobantePath) : null;
+      const rutaGuardada = comprobantePath ? await guardarComprobante(comprobantePath) : null;
       const payload = {
         fecha,
         periodo,
         monto: m,
         cuenta_banco: cuentaBanco.trim(),
         referencia: referencia.trim() || null,
-        comprobante_path: rutaComprobante,
+        comprobante_path: rutaGuardada,
         notas: notas.trim() || null,
       };
       if (isEdit) {
@@ -223,7 +223,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
                 <span style={{ flex: 1, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {fileNameFromPath(comprobantePath)}
                 </span>
-                <button type="button" className="btn ghost sm" onClick={() => comprobantePath && openPath(comprobantePath)}>
+                <button type="button" className="btn ghost sm" onClick={async () => { if (comprobantePath) await openPath(await rutaComprobante(comprobantePath)); }}>
                   {t("common.ver")}
                 </button>
                 <button type="button" className="btn ghost sm" onClick={() => setComprobantePath(null)}>

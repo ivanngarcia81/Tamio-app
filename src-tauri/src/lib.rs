@@ -833,6 +833,85 @@ fn db_backup(state: tauri::State<'_, DbCifrada>, destino: String) -> Result<(), 
     motordb::exportar_plano(&conn, std::path::Path::new(&destino))
 }
 
+// ---------------------------------------------------------------------------
+// Comprobantes
+//
+// Estas tres funciones existen en Rust y no en el frontend por una razón
+// concreta: `fs:scope` limita al WEBVIEW, no al lado Rust. La migración que
+// trae adentro los comprobantes viejos tiene que poder leer iCloud Drive
+// (~/Library/Mobile Documents), discos externos en /Volumes y carpetas que el
+// usuario eligió hace un año, todas fuera del alcance acotado. Si esto viviera
+// en el frontend, `exists()` daría falso sobre un archivo que SÍ está y la app
+// acusaría al tesorero de haberlo borrado.
+// ---------------------------------------------------------------------------
+
+/// Carpeta de datos de la app. Todo lo que guarda Tamio cuelga de aquí.
+fn dir_datos(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
+    app.path().app_data_dir().map_err(|e| e.to_string())
+}
+
+/// Nombre de archivo sin caracteres problemáticos, conservando algo legible.
+fn nombre_seguro(s: &str) -> String {
+    let limpio: String = s
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+    let recortado = limpio.trim_matches('-').replace("--", "-");
+    let corto: String = recortado.chars().take(40).collect();
+    let corto = corto.trim_matches('-').to_string();
+    if corto.is_empty() { "comprobante".into() } else { corto }
+}
+
+/// ¿Existe el archivo? Lo pregunta Rust porque el `exists()` del plugin miente
+/// (da falso) sobre cualquier ruta fuera del alcance del webview, y una cosa es
+/// "no lo puedo leer" y otra muy distinta "ya no está".
+#[tauri::command]
+fn comprobante_existe(ruta: String) -> bool {
+    std::path::Path::new(&ruta).is_file()
+}
+
+/// Copia un comprobante a la carpeta de la app y devuelve su ruta **RELATIVA**
+/// a esa carpeta (`comprobantes/1754…-recibo.pdf`).
+///
+/// Relativa y no absoluta a propósito: una ruta absoluta lleva dentro el nombre
+/// de usuario del Mac donde se creó (`/Users/ivan/Library/…`). Al restaurar un
+/// respaldo en otro equipo ese usuario no existe y TODOS los comprobantes
+/// fallan, aunque los archivos vengan en el paquete.
+#[tauri::command]
+fn copiar_comprobante(app: tauri::AppHandle, origen: String) -> Result<String, String> {
+    let base = dir_datos(&app)?;
+    let origen_path = std::path::Path::new(&origen);
+
+    // Ya está dentro: solo hay que devolver su forma relativa, sin duplicarlo.
+    if let Ok(rel) = origen_path.strip_prefix(&base) {
+        return Ok(rel.to_string_lossy().replace('\\', "/"));
+    }
+
+    if !origen_path.is_file() {
+        return Err(format!("no existe: {origen}"));
+    }
+    let carpeta = base.join("comprobantes");
+    std::fs::create_dir_all(&carpeta).map_err(|e| e.to_string())?;
+
+    let nombre = origen_path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "comprobante".into());
+    let ext = origen_path
+        .extension()
+        .map(|s| s.to_string_lossy().to_lowercase())
+        .unwrap_or_else(|| "bin".into());
+    let marca = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let archivo = format!("{marca}-{}.{ext}", nombre_seguro(&nombre));
+
+    std::fs::copy(origen_path, carpeta.join(&archivo)).map_err(|e| e.to_string())?;
+    Ok(format!("comprobantes/{archivo}"))
+}
+
 /// Clave del cifrado, guardada en el Llavero de macOS (keyring). La primera
 /// vez se genera una aleatoria de 32 bytes; después siempre se reutiliza.
 fn clave_db() -> Result<String, String> {
@@ -943,7 +1022,10 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup]);
+        .invoke_handler(tauri::generate_handler![
+            vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup,
+            comprobante_existe, copiar_comprobante
+        ]);
 
     // El menú de ventana (y sus eventos) solo existe en escritorio.
     #[cfg(desktop)]
