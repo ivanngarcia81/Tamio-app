@@ -28,6 +28,9 @@
 // Nota de plan: Tamio se vende como UN producto, así que hoy todo pago da
 // "completo". Si algún día hay planes por módulo, se mapean por producto/precio
 // con los secretos PADDLE_PLAN_TESORERIA / _SECRETARIA / _COMPLETO (ver planDe).
+// En cuanto se configure aunque sea uno, el mapa manda: comprar las dos áreas
+// por separado da "completo", y un producto que no esté en el mapa NO concede
+// nada (se deja el plan como estaba y se avisa en la respuesta).
 // El plan NO se toma de custom_data: eso viaja desde el navegador del comprador.
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
@@ -91,7 +94,25 @@ function idsDelSecreto(nombre: string): string[] {
     .filter(Boolean);
 }
 
-function planDe(data: Record<string, any>): string {
+/**
+ * Plan comprado, o `null` si el producto no está en el mapa.
+ *
+ * Dos reglas que antes no estaban:
+ *
+ * - **Comprar las dos áreas por separado da "completo".** El bucle anterior
+ *   devolvía en el primer acierto, así que una suscripción con Tesorería y
+ *   Secretaría en el mismo carrito se resolvía como "tesoreria" y el cliente
+ *   se quedaba sin la mitad de lo que pagó.
+ * - **Un producto desconocido ya no da "completo".** Ese era el peor caso
+ *   posible: en cuanto exista un plan barato, cualquier producto que no
+ *   estuviera en el mapa —un error de dedo en un secreto, un producto de
+ *   prueba, un add-on— concedía la app entera. Ahora devuelve null y quien
+ *   llama deja el plan como estaba.
+ *
+ * El caso de hoy no cambia: sin ningún secreto configurado seguimos en modo
+ * producto único y todo pago da "completo".
+ */
+function planDe(data: Record<string, any>): string | null {
   // Todos los identificadores de producto y de precio que trae el evento.
   const items: any[] = Array.isArray(data?.items) ? data.items : [];
   const ids = new Set<string>();
@@ -102,13 +123,22 @@ function planDe(data: Record<string, any>): string {
     }
   }
 
-  for (const plan of ["tesoreria", "secretaria", "completo"] as const) {
-    const configurados = idsDelSecreto(`PADDLE_PLAN_${plan.toUpperCase()}`);
-    if (configurados.some((id) => ids.has(id))) return plan;
-  }
+  const mapa = {
+    tesoreria: idsDelSecreto("PADDLE_PLAN_TESORERIA"),
+    secretaria: idsDelSecreto("PADDLE_PLAN_SECRETARIA"),
+    completo: idsDelSecreto("PADDLE_PLAN_COMPLETO"),
+  };
+  const sinMapa = !mapa.tesoreria.length && !mapa.secretaria.length && !mapa.completo.length;
+  if (sinMapa) return "completo";
 
-  // Sin mapa configurado (o producto desconocido): producto único.
-  return "completo";
+  const compro = (lista: string[]) => lista.some((id) => ids.has(id));
+  if (compro(mapa.completo)) return "completo";
+  const tesoreria = compro(mapa.tesoreria);
+  const secretaria = compro(mapa.secretaria);
+  if (tesoreria && secretaria) return "completo";
+  if (tesoreria) return "tesoreria";
+  if (secretaria) return "secretaria";
+  return null;
 }
 
 // Resuelve el correo del comprador consultando la API de Paddle por customer_id.
@@ -176,13 +206,21 @@ serve(async (req: Request) => {
     }
 
     let cambios: Record<string, unknown> | null = null;
+    let productoDesconocido = false;
     if (tipo === "subscription.created" || tipo === "subscription.updated" || tipo === "subscription.activated") {
       const activa = status === "active" || status === "trialing";
       cambios = {
-        plan: planDe(data),
         sub_estado: activa ? (status === "trialing" ? "prueba" : "activa") : "vencida",
         sub_vence: vence,
       };
+      // El estado y el vencimiento sí se aplican (el cobro ocurrió de verdad);
+      // lo único que se deja intacto es QUÉ áreas tiene contratadas, porque no
+      // sabemos qué compró. Se avisa en la respuesta: Paddle guarda el cuerpo
+      // en su registro de entregas, así que el fallo queda a la vista en vez
+      // de convertirse en un plan regalado en silencio.
+      const plan = planDe(data);
+      if (plan) cambios.plan = plan;
+      else productoDesconocido = true;
     } else if (tipo === "subscription.canceled" || tipo === "subscription.past_due" || tipo === "subscription.paused") {
       cambios = { sub_estado: "vencida" };
     }
@@ -190,6 +228,13 @@ serve(async (req: Request) => {
     if (cambios) {
       const { error } = await admin.from("iglesias").update(cambios).eq("id", churchId);
       if (error) return new Response(`error al actualizar: ${error.message}`, { status: 500 });
+    }
+    if (productoDesconocido) {
+      return new Response(
+        "ok, pero el producto comprado no está en PADDLE_PLAN_TESORERIA/_SECRETARIA/_COMPLETO: " +
+        "estado y vencimiento actualizados, plan sin cambios",
+        { status: 200 },
+      );
     }
     return new Response("ok", { status: 200 });
   } catch (e) {
