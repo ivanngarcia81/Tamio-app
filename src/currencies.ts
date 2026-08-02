@@ -16,30 +16,38 @@ export interface CurrencyInfo {
   symbol: string;
   es: string;
   en: string;
+  /**
+   * Locale con el que se agrupan miles y decimales de esta moneda en los
+   * documentos (`1,250.50` vs `1.250,50`). Va aquí, y no en un catálogo de
+   * países aparte, porque la moneda ya se elige en Ajustes con un selector
+   * cerrado: el campo "País" es texto libre ("México", "mexico", "MX"…) y no
+   * sirve para deducir nada. La moneda identifica el país en la práctica.
+   */
+  locale: string;
 }
 
 export const CURRENCIES: CurrencyInfo[] = [
-  { code: "USD", symbol: "$", es: "Dólar estadounidense", en: "US Dollar" },
-  { code: "MXN", symbol: "$", es: "Peso mexicano", en: "Mexican Peso" },
-  { code: "EUR", symbol: "€", es: "Euro", en: "Euro" },
-  { code: "GTQ", symbol: "Q", es: "Quetzal guatemalteco", en: "Guatemalan Quetzal" },
-  { code: "HNL", symbol: "L", es: "Lempira hondureño", en: "Honduran Lempira" },
-  { code: "NIO", symbol: "C$", es: "Córdoba nicaragüense", en: "Nicaraguan Córdoba" },
-  { code: "CRC", symbol: "₡", es: "Colón costarricense", en: "Costa Rican Colón" },
-  { code: "PAB", symbol: "B/.", es: "Balboa panameño", en: "Panamanian Balboa" },
-  { code: "SVC", symbol: "$", es: "Dólar (El Salvador)", en: "US Dollar (El Salvador)" },
-  { code: "DOP", symbol: "RD$", es: "Peso dominicano", en: "Dominican Peso" },
-  { code: "COP", symbol: "$", es: "Peso colombiano", en: "Colombian Peso" },
-  { code: "PEN", symbol: "S/", es: "Sol peruano", en: "Peruvian Sol" },
-  { code: "CLP", symbol: "$", es: "Peso chileno", en: "Chilean Peso" },
-  { code: "ARS", symbol: "$", es: "Peso argentino", en: "Argentine Peso" },
-  { code: "BOB", symbol: "Bs", es: "Boliviano", en: "Bolivian Boliviano" },
-  { code: "PYG", symbol: "₲", es: "Guaraní paraguayo", en: "Paraguayan Guaraní" },
-  { code: "UYU", symbol: "$U", es: "Peso uruguayo", en: "Uruguayan Peso" },
-  { code: "VES", symbol: "Bs", es: "Bolívar venezolano", en: "Venezuelan Bolívar" },
-  { code: "BRL", symbol: "R$", es: "Real brasileño", en: "Brazilian Real" },
-  { code: "GBP", symbol: "£", es: "Libra esterlina", en: "Pound Sterling" },
-  { code: "CAD", symbol: "$", es: "Dólar canadiense", en: "Canadian Dollar" },
+  { code: "USD", symbol: "$", es: "Dólar estadounidense", en: "US Dollar", locale: "en-US" },
+  { code: "MXN", symbol: "$", es: "Peso mexicano", en: "Mexican Peso", locale: "es-MX" },
+  { code: "EUR", symbol: "€", es: "Euro", en: "Euro", locale: "es-ES" },
+  { code: "GTQ", symbol: "Q", es: "Quetzal guatemalteco", en: "Guatemalan Quetzal", locale: "es-GT" },
+  { code: "HNL", symbol: "L", es: "Lempira hondureño", en: "Honduran Lempira", locale: "es-HN" },
+  { code: "NIO", symbol: "C$", es: "Córdoba nicaragüense", en: "Nicaraguan Córdoba", locale: "es-NI" },
+  { code: "CRC", symbol: "₡", es: "Colón costarricense", en: "Costa Rican Colón", locale: "es-CR" },
+  { code: "PAB", symbol: "B/.", es: "Balboa panameño", en: "Panamanian Balboa", locale: "es-PA" },
+  { code: "SVC", symbol: "$", es: "Dólar (El Salvador)", en: "US Dollar (El Salvador)", locale: "es-SV" },
+  { code: "DOP", symbol: "RD$", es: "Peso dominicano", en: "Dominican Peso", locale: "es-DO" },
+  { code: "COP", symbol: "$", es: "Peso colombiano", en: "Colombian Peso", locale: "es-CO" },
+  { code: "PEN", symbol: "S/", es: "Sol peruano", en: "Peruvian Sol", locale: "es-PE" },
+  { code: "CLP", symbol: "$", es: "Peso chileno", en: "Chilean Peso", locale: "es-CL" },
+  { code: "ARS", symbol: "$", es: "Peso argentino", en: "Argentine Peso", locale: "es-AR" },
+  { code: "BOB", symbol: "Bs", es: "Boliviano", en: "Bolivian Boliviano", locale: "es-BO" },
+  { code: "PYG", symbol: "₲", es: "Guaraní paraguayo", en: "Paraguayan Guaraní", locale: "es-PY" },
+  { code: "UYU", symbol: "$U", es: "Peso uruguayo", en: "Uruguayan Peso", locale: "es-UY" },
+  { code: "VES", symbol: "Bs", es: "Bolívar venezolano", en: "Venezuelan Bolívar", locale: "es-VE" },
+  { code: "BRL", symbol: "R$", es: "Real brasileño", en: "Brazilian Real", locale: "pt-BR" },
+  { code: "GBP", symbol: "£", es: "Libra esterlina", en: "Pound Sterling", locale: "en-GB" },
+  { code: "CAD", symbol: "$", es: "Dólar canadiense", en: "Canadian Dollar", locale: "en-CA" },
 ];
 
 const PORCODE: Record<string, CurrencyInfo> = Object.fromEntries(
@@ -49,6 +57,12 @@ const PORCODE: Record<string, CurrencyInfo> = Object.fromEntries(
 /** Símbolo de una moneda; "$" si el código no está en el catálogo. */
 export function currencySymbol(code: string): string {
   return PORCODE[code]?.symbol ?? "$";
+}
+
+/** Locale de números de una moneda; "en-US" si el código no está en el
+ *  catálogo (es lo que Tamio usó siempre en los documentos). */
+export function currencyLocale(code: string): string {
+  return PORCODE[code]?.locale ?? "en-US";
 }
 
 /** Etiqueta para los selectores, p. ej. "GTQ — Quetzal guatemalteco". */

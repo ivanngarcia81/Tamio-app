@@ -563,7 +563,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             { label: t("movImport.colFecha"), render: (tx) => tx.fecha.slice(0, 10) },
             { label: t("movImport.colTipo"), render: (tx) => (tx.tipo === "ingreso" ? t("tx.ingreso") : t("tx.gasto")) },
             { label: t("movImport.colConcepto"), render: (tx) => tx.concepto, title: (tx) => tx.concepto },
-            { label: t("movImport.colMonto"), align: "right", render: (tx) => `$${tx.monto.toLocaleString("en-US")}` },
+            { label: t("movImport.colMonto"), align: "right", render: (tx) => fmtMoney(tx.monto) },
           ]}
           etiquetaItem={(n) => t("movImport.items", { count: n })}
           onConfirmar={async (items) => {

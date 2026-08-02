@@ -3,7 +3,7 @@ import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { currentLang } from "../../i18n";
-import { currencySymbol } from "../../currencies";
+import { currencySymbol, currencyLocale } from "../../currencies";
 import { entregarArchivo, esMovil } from "../entrega";
 
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
@@ -78,6 +78,29 @@ export function pct(part: number, total: number): string {
 }
 
 /**
+ * Agrupación de miles y decimales de un importe según la moneda de la iglesia.
+ *
+ * En pantalla el formato lo manda el DISPOSITIVO (ver `localeDeNumeros` en
+ * db.ts): es la app del tesorero y debe verse como él tiene configurado su
+ * Mac. Un PDF no: se imprime, se archiva y se entrega al concilio o a
+ * Hacienda, así que sigue al país de la iglesia y no al equipo desde el que
+ * se generó — el mismo estado financiero exportado desde el iPad del pastor
+ * y desde la Mac de la secretaria tiene que salir idéntico.
+ *
+ * El separador se toma de la moneda configurada en Ajustes (selector cerrado)
+ * y no del campo "País", que es texto libre.
+ */
+function agrupa(abs: number, moneda: string): string {
+  return abs
+    .toLocaleString(currencyLocale(moneda), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    // Algunos locales separan los miles con espacio duro (U+00A0) o fino
+    // (U+202F). El primero lo dibuja bien Helvetica pero se ve como un hueco
+    // raro en una columna de cifras, y el segundo ni siquiera lo mapea. Se
+    // normalizan a espacio normal.
+    .replace(/[\u00a0\u202f]/g, " ");
+}
+
+/**
  * Formato de dinero seguro para jsPDF: la fuente Helvetica integrada no
  * reconoce el signo menos Unicode (−, U+2212) que usa fmtMoney() en pantalla
  * — al no poder mapearlo, jsPDF rompe el cálculo de ancho de TODO el string.
@@ -87,7 +110,7 @@ export function pct(part: number, total: number): string {
 export function fmtMoneyPdf(n: number, moneda: string): string {
   const abs = Math.abs(n);
   // Dos decimales, igual que fmtMoneyPlain y que la pantalla.
-  const formatted = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${moneda}`;
+  const formatted = `${currencySymbol(moneda)}${agrupa(abs, moneda)} ${moneda}`;
   return n < 0 ? `(${formatted})` : formatted;
 }
 
@@ -100,7 +123,7 @@ export function fmtMoneyPdf(n: number, moneda: string): string {
  */
 export function fmtMoneyPlain(n: number, moneda: string): string {
   const abs = Math.abs(n);
-  const s = `${currencySymbol(moneda)}${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const s = `${currencySymbol(moneda)}${agrupa(abs, moneda)}`;
   return n < 0 ? `(${s})` : s;
 }
 
