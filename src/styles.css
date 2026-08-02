@@ -55,6 +55,14 @@
   --fs-secondary: 12.5px;
   --fs-caption: 11.5px;
   --fs-table-head: 10.5px;
+  /* Escala de espaciado del sistema — todo hueco nuevo debe salir de aquí.
+     El índice es el múltiplo de 4: --space-2 son 8px. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
   /* Duración estándar de microinteracciones (hover); presses usan .08s. */
   --dur: .16s;
   /* Layout de escritorio por breakpoint (ver @media al final de :root):
@@ -186,7 +194,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   padding: 22px 16px 16px;
-  gap: 8px;
+  gap: var(--space-2);
 }
 /* Barra de título integrada (macOS Overlay): los semáforos flotan sobre la
    app y esta franja superior permite arrastrar la ventana. Va por debajo de
@@ -251,7 +259,7 @@ a { color: inherit; text-decoration: none; }
 }
 .cmdk-vacio { padding: 22px; text-align: center; color: var(--text-3); font-size: 13px; }
 .cmdk-pie {
-  display: flex; gap: 16px; padding: 9px 14px;
+  display: flex; gap: var(--space-4); padding: 9px 14px;
   border-top: 1px solid var(--line);
   font-size: var(--fs-caption); color: var(--text-3);
 }
@@ -388,7 +396,7 @@ html.vibrancy .main { background: var(--surface); }
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-2);
@@ -573,12 +581,12 @@ html.vibrancy .main { background: var(--surface); }
 .perfil-ini { font-size: 38px; font-weight: 700; letter-spacing: 0.5px; }
 .perfil-nombre { margin-top: 14px; font-size: 16px; font-weight: 700; color: var(--text); text-align: center; }
 .perfil-email { font-size: var(--fs-secondary); color: var(--text-3); margin-top: 2px; text-align: center; }
-.perfil-acciones { display: flex; gap: 8px; margin: 18px 0 4px; flex-wrap: wrap; justify-content: center; }
+.perfil-acciones { display: flex; gap: var(--space-2); margin: 18px 0 4px; flex-wrap: wrap; justify-content: center; }
 .perfil-campo { width: 100%; margin-top: 12px; }
 .perfil-campo .form-label { display: block; margin-bottom: 5px; }
 .perfil-footer {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   justify-content: flex-end;
   width: 100%;
   margin-top: 18px;
@@ -611,7 +619,7 @@ html.vibrancy .main { background: var(--surface); }
 .sync-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
   background: none;
   border: none;
@@ -646,7 +654,7 @@ html.vibrancy .main { background: var(--surface); }
 .sub-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 9px 18px;
   font-size: 13px;
   font-weight: 600;
@@ -717,11 +725,11 @@ html.vibrancy .main { background: var(--surface); }
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  row-gap: 12px;
+  row-gap: var(--space-3);
   /* 40px superiores: el titulo de pagina nunca queda pegado al borde de
      la ventana; todas las vistas arrancan a la misma altura. */
   padding: 40px var(--content-pad-x) 22px;
-  gap: 24px;
+  gap: var(--space-6);
   /* Sistema de ancho máximo anclado a la izquierda: el contenido vive
      junto al sidebar (como Linear, Notion o Apple Mail) y deja de
      crecer a los 1440px; en monitores anchos el espacio sobrante queda
@@ -814,7 +822,7 @@ html.vibrancy .main { background: var(--surface); }
   font-variant-numeric: tabular-nums;
 }
 .search {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: var(--space-2);
   color: var(--text-2);
   cursor: pointer;
   font-size: var(--fs-body);
@@ -978,7 +986,7 @@ html.vibrancy .main { background: var(--surface); }
   padding: 20px 22px 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .stat-head {
   display: flex;
@@ -1005,7 +1013,7 @@ html.vibrancy .main { background: var(--surface); }
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .stat-value {
   font-size: var(--fs-stat-lg);
@@ -1027,14 +1035,14 @@ html.vibrancy .main { background: var(--surface); }
 .stat-foot {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 12px;
   color: var(--text-2);
 }
 .delta {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 3px 8px 3px 6px;
   border-radius: 999px;
   font-weight: 700;
@@ -1058,7 +1066,7 @@ html.vibrancy .main { background: var(--surface); }
 .charts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 /* Lienzo único del inicio de Tesorería: un solo panel gris muy claro que
@@ -1123,7 +1131,7 @@ html.vibrancy .main { background: var(--surface); }
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   align-items: end;
-  gap: 8px;
+  gap: var(--space-2);
   height: 170px;
   padding-top: 12px;
 }
@@ -1143,7 +1151,7 @@ html.vibrancy .main { background: var(--surface); }
 .bar-axis {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 8px;
+  gap: var(--space-2);
   margin-top: 8px;
   color: var(--text-3);
   font-size: 11px;
@@ -1167,7 +1175,7 @@ html.vibrancy .main { background: var(--surface); }
   display: grid;
   grid-template-columns: 130px 1fr 80px;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 7px 0;
 }
 .hbar-row .hbar-label { font-size: var(--fs-secondary); color: var(--text-2); font-weight: 500; }
@@ -1247,7 +1255,7 @@ html.vibrancy .main { background: var(--surface); }
   align-items: center;
   justify-content: space-between;
   padding: 4px 4px 0;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 .tx-title {
@@ -1295,7 +1303,7 @@ html.vibrancy .main { background: var(--surface); }
   padding: 14px 20px;
   border-bottom: 1px solid var(--line-soft);
   align-items: start;
-  gap: 16px;
+  gap: var(--space-4);
 }
 .tx-day:last-child { border-bottom: none; }
 .day-label {
@@ -1332,7 +1340,7 @@ html.vibrancy .main { background: var(--surface); }
     minmax(0, 56px) 24px minmax(0, 1fr)
     minmax(0, 130px) minmax(0, 130px) minmax(96px, 160px) 24px;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 10px 0;
   border-bottom: 1px dashed var(--line);
 }
@@ -1421,7 +1429,7 @@ html.vibrancy .main { background: var(--surface); }
 .method {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   justify-self: end;
   color: var(--text-2);
   font-size: var(--fs-secondary);
@@ -1460,7 +1468,7 @@ html.vibrancy .main { background: var(--surface); }
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 4px;
+  gap: var(--space-1);
   animation: fadeInUp .22s ease both;
 }
 .empty-state .empty-accion {
@@ -1649,7 +1657,7 @@ html.vibrancy .main { background: var(--surface); }
 .person .p-mail { color: var(--text-3); font-size: var(--fs-caption); }
 
 /* Report styles */
-.report-list { display: flex; flex-direction: column; gap: 4px; }
+.report-list { display: flex; flex-direction: column; gap: var(--space-1); }
 .report-item {
   padding: 12px 14px;
   border-radius: 10px;
@@ -1694,7 +1702,7 @@ html.vibrancy .main { background: var(--surface); }
   padding: 8px 0;
   border-bottom: 1px dashed var(--line);
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   font-size: 13px;
 }
 .report-preview .r-row.total {
@@ -1741,7 +1749,7 @@ html.vibrancy .main { background: var(--surface); }
   margin-top: auto;
 }
 .footer-left { display: flex; align-items: center; gap: 14px; }
-.footer-links { display: flex; gap: 24px; }
+.footer-links { display: flex; gap: var(--space-6); }
 .footer-links a { color: var(--text-2); text-decoration: none; }
 .footer-links a:hover { color: var(--text); }
 
@@ -1855,7 +1863,7 @@ html.vibrancy .main { background: var(--surface); }
   background: var(--surface-2);
   border-radius: 12px;
   padding: 4px;
-  gap: 4px;
+  gap: var(--space-1);
   margin-bottom: 22px;
 }
 .tabs-segmented .seg {
@@ -2029,14 +2037,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* Selectable pills */
-.pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill-group { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .choice { cursor: pointer; border: 1.5px solid transparent; }
 .choice.is-selected { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink) inset; }
 
 /* 4 columnas y pastillas más bajas: 11 categorías de gasto caben en 3 filas
    sin obligar a hacer scroll dentro del modal. */
 .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
-.type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
 .cat-pill {
   display: flex;
   align-items: center;
@@ -2069,11 +2077,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .cat-pill.is-selected:active { filter: brightness(0.7); }
 :root[data-theme="dark"] .cat-pill.is-selected:active { filter: brightness(1.55); }
 
-.method-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.method-group { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 .method-choice {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 9px 14px;
   border-radius: 10px;
   border: 1.5px solid var(--line);
@@ -2099,7 +2107,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: color-mix(in srgb, #059669 7%, var(--surface-2));
   border: 1px solid color-mix(in srgb, #059669 24%, var(--line));
 }
-.ia-capture-row { display: flex; align-items: center; gap: 8px; }
+.ia-capture-row { display: flex; align-items: center; gap: var(--space-2); }
 .ia-capture-row .form-input { flex: 1; min-width: 0; }
 .ia-capture-spark { flex-shrink: 0; display: inline-flex; color: #10b981; }
 .ia-capture-hint { font-size: var(--fs-caption); color: var(--text-3); margin-top: 6px; padding-left: 25px; }
@@ -2167,7 +2175,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   justify-content: space-between;
   margin-bottom: 56px;
 }
-.picker-brand { display: flex; align-items: center; gap: 12px; }
+.picker-brand { display: flex; align-items: center; gap: var(--space-3); }
 .picker-brand .logo { margin: 0; }
 .picker-brand .name { font-weight: 700; font-size: var(--fs-card-title); letter-spacing: -0.01em; }
 .picker-user { display: flex; align-items: center; gap: 14px; }
@@ -2318,10 +2326,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .auth-logo-row .logo { margin: 0; width: 52px; height: 52px; }
 .auth-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; text-align: center; }
 .auth-sub { font-size: 13px; color: var(--text-2); text-align: center; margin-top: 6px; line-height: 1.5; }
-.auth-form { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+.auth-form { display: flex; flex-direction: column; gap: var(--space-4); margin-top: 24px; }
 .auth-submit { width: 100%; justify-content: center; padding: 11px; font-size: var(--fs-body); }
 .auth-divider {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: var(--space-3);
   color: var(--text-3); font-size: var(--fs-caption);
   margin: 22px 0;
 }
@@ -2337,7 +2345,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer;
 }
 .auth-oauth-btn:hover { background: var(--surface-2); }
-.password-strength { display: flex; gap: 4px; margin-top: 6px; }
+.password-strength { display: flex; gap: var(--space-1); margin-top: 6px; }
 .password-strength .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-2); }
 .password-strength .bar.filled { background: #22c55e; }
 .auth-terms { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 16px; line-height: 1.5; }
@@ -2381,7 +2389,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   margin-bottom: 4px;
 }
 .inbox-type-tag {
@@ -2397,7 +2405,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .inbox-time { font-size: var(--fs-caption); color: var(--text-3); white-space: nowrap; }
 .inbox-desc { font-size: var(--fs-body); color: var(--text); line-height: 1.45; }
 .inbox-desc strong { font-weight: 700; }
-.inbox-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.inbox-meta { display: flex; align-items: center; gap: var(--space-2); margin-top: 8px; flex-wrap: wrap; }
 .inbox-side {
   display: flex;
   flex-direction: column;
@@ -2407,7 +2415,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .inbox-amount { font-size: var(--fs-card-title); font-weight: 700; font-variant-numeric: tabular-nums; }
 .inbox-amount .cur { color: var(--text-3); font-weight: 600; font-size: 11px; margin-left: 3px; }
-.inbox-actions { display: flex; gap: 8px; }
+.inbox-actions { display: flex; gap: var(--space-2); }
 .btn.sm { padding: 6px 12px; font-size: 12px; }
 .inbox-resolved-tag {
   display: inline-flex;
@@ -2505,7 +2513,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 10px 12px 10px 16px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
@@ -2518,7 +2526,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ql-acciones { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ql-acciones { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
 .ql-cerrar {
   border: none;
   background: transparent;
@@ -2580,9 +2588,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .search-input-wrap input.form-input { padding-left: 36px; }
 
 /* Donut chart (SVG, segmentos por categoría) */
-.donut-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.donut-legend { display: flex; flex-direction: column; gap: var(--space-2); margin-top: 4px; }
 .donut-legend-row {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: var(--space-2);
   font-size: var(--fs-secondary); color: var(--text-2);
 }
 .donut-legend-row .sw { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
@@ -2598,13 +2606,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .settings-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  gap: 24px;
+  gap: var(--space-6);
   align-items: start;
 }
 .settings-stack {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-6);
 }
 /* Rejilla de Ajustes: 2 columnas deterministas (las CSS columns de WebKit
    apilaban todo a la izquierda y dejaban huecos). Las tarjetas fluyen por
@@ -2716,7 +2724,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root[data-theme="dark"] .settings-card:hover { box-shadow: var(--shadow-hover-dark); }
 
 .settings-card .card-head { margin-bottom: 24px; }
-.card-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.card-head-left { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
 .card-icon {
   width: 34px; height: 34px;
   border-radius: 10px;
@@ -2742,7 +2750,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 .settings-card .form-group { margin-bottom: 22px; }
-.settings-card .form-grid { margin-bottom: 22px; gap: 16px; }
+.settings-card .form-grid { margin-bottom: 22px; gap: var(--space-4); }
 .settings-card .form-group:last-child,
 .settings-card .form-grid:last-child { margin-bottom: 0; }
 .settings-card .form-input,
@@ -2771,7 +2779,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   bottom: 0;
   z-index: 5;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--space-3);
   margin: 0 calc(var(--content-pad-x) * -1) calc(var(--content-pad-x) * -1);
   padding: 12px var(--content-pad-x);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -2830,13 +2838,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .signature-placeholder {
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   border: 1.5px dashed var(--line);
   background: var(--surface-2);
   color: var(--text-3);
 }
 .signature-placeholder .lbl { font-size: var(--fs-caption); font-weight: 600; }
-.signature-actions { display: flex; flex-direction: column; gap: 12px; min-width: 200px; }
+.signature-actions { display: flex; flex-direction: column; gap: var(--space-3); min-width: 200px; }
 .signature-actions-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* Logo de la iglesia — mismo tratamiento de la firma, en tamaño de avatar */
@@ -2873,7 +2881,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .pdf-preview-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
   margin-bottom: 8px;
 }
@@ -2927,7 +2935,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    evitan que las grillas se rompan al angostarse (no es un layout móvil). */
 @media (max-width: 1180px) {
   .charts { grid-template-columns: 1fr; }
-  .dash-canvas { padding: 18px; gap: 16px; }
+  .dash-canvas { padding: 18px; gap: var(--space-4); }
   .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
   .settings-masonry { columns: 1; }
@@ -2935,7 +2943,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 @media (max-width: 860px) {
   .summary-4, .summary-5, .summary-8 { grid-template-columns: repeat(2, 1fr); }
-  .header { padding: 22px 20px 16px; flex-wrap: wrap; gap: 12px; }
+  .header { padding: 22px 20px 16px; flex-wrap: wrap; gap: var(--space-3); }
   .content { padding: 6px 20px 24px; }
   .footer { padding: 18px 20px 22px; }
 }
@@ -2954,8 +2962,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 .grow { flex: 1; }
-.hstack { display: flex; align-items: center; gap: 8px; }
-.vstack { display: flex; flex-direction: column; gap: 4px; }
+.hstack { display: flex; align-items: center; gap: var(--space-2); }
+.vstack { display: flex; flex-direction: column; gap: var(--space-1); }
 
 /* Toasts de confirmación */
 .toast-host {
@@ -2966,14 +2974,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   z-index: 300; /* los toasts siempre visibles, incluso sobre modales/visor */
   pointer-events: none;
 }
 .toast {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   background: var(--ink);
   color: var(--ink-contrast);
   padding: 10px 16px;
@@ -3215,7 +3223,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .skeleton-row {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: var(--space-6);
   padding: 17px 18px;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -3247,7 +3255,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .check-inline {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 13px;
   color: var(--text);
   cursor: pointer;
@@ -3264,14 +3272,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
 .agenda-nav {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .agenda-mes-titulo {
   font-size: var(--fs-card-title);
@@ -3316,7 +3324,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 6px 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   cursor: pointer;
   transition: background 0.12s ease;
 }
@@ -3417,7 +3425,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 @media (max-width: 640px) {
@@ -3438,7 +3446,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   margin-bottom: 14px;
 }
 .agenda-filtros .search-input-wrap { margin: 0; }
@@ -3495,7 +3503,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .agenda-sem-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 6px 5px;
   flex: 1;
 }
@@ -3520,7 +3528,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text-2);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   margin-bottom: 2px;
 }
 .agenda-grupo-n {
@@ -3584,18 +3592,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Detalle de actividad */
 .detalle-kv {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 7px 0;
   border-bottom: 1px solid var(--line-soft);
   font-size: 13px;
 }
-.detalle-kv.col { flex-direction: column; gap: 4px; }
+.detalle-kv.col { flex-direction: column; gap: var(--space-1); }
 .detalle-k { color: var(--text-2); min-width: 110px; flex-shrink: 0; }
 .detalle-v { color: var(--text); font-weight: 500; }
 .detalle-acciones {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
   margin-top: 16px;
 }
 
@@ -3637,9 +3645,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .agenda-conflicto-sub { font-size: var(--fs-secondary); color: var(--text-2); margin: 4px 0 6px; }
 .agenda-conflicto-lista { margin: 0 0 10px; padding-left: 18px; font-size: var(--fs-secondary); color: var(--text); }
 .agenda-conflicto-lista li { margin: 2px 0; }
-.agenda-conflicto-acciones { display: flex; gap: 8px; justify-content: flex-end; }
+.agenda-conflicto-acciones { display: flex; gap: var(--space-2); justify-content: flex-end; }
 
-.alcance-opciones { display: flex; flex-direction: column; gap: 8px; }
+.alcance-opciones { display: flex; flex-direction: column; gap: var(--space-2); }
 .alcance-opcion {
   text-align: left;
   padding: 12px 14px;
@@ -3671,9 +3679,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
   color: var(--text-2); margin-bottom: 8px;
 }
-.agenda-rec-lista { display: flex; flex-direction: column; gap: 4px; }
+.agenda-rec-lista { display: flex; flex-direction: column; gap: var(--space-1); }
 .agenda-rec-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: var(--space-3);
   width: 100%; text-align: left; border: none; background: transparent;
   padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.12s ease;
 }
@@ -3765,7 +3773,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .msg-row { display: flex; justify-content: flex-start; }
 .msg-row.propio { justify-content: flex-end; }
@@ -3948,7 +3956,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   max-width: 360px;
 }
 .login-hero-feats { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 15px; }
-.login-hero-feats li { display: flex; align-items: flex-start; gap: 12px; }
+.login-hero-feats li { display: flex; align-items: flex-start; gap: var(--space-3); }
 .login-hero-feats .lhf-ico {
   flex-shrink: 0;
   width: 34px; height: 34px;
@@ -4006,7 +4014,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .login-card .login-link:hover { color: #fff; text-decoration: underline; }
 
 /* Página de Ayuda: encabezado con acceso al tour + listas de preguntas. */
-.ayuda-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ayuda-hero { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
 .ayuda-list { display: flex; flex-direction: column; }
 .ayuda-item { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
 .ayuda-item:first-child { padding-top: 0; }
@@ -4021,7 +4029,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .danger-zone { border-color: var(--neg); }
 .danger-row {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 14px 0; border-top: 1px solid var(--line-soft);
+  gap: var(--space-4); padding: 14px 0; border-top: 1px solid var(--line-soft);
 }
 .danger-row:first-of-type { border-top: none; padding-top: 4px; }
 .danger-row-title { font-weight: 600; font-size: var(--fs-body); margin-bottom: 2px; }
@@ -4174,7 +4182,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* En dos columnas, la fila "número + mini-gráfica" (90px fija) empujaba la
      tarjeta más allá del borde y la columna derecha se salía de la pantalla.
      Se apilan: número arriba, gráfica de ancho completo abajo — nada se sale. */
-  .summary-4 .stat-row, .summary-5 .stat-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .summary-4 .stat-row, .summary-5 .stat-row { flex-direction: column; align-items: stretch; gap: var(--space-2); }
   .summary-4 .stat-row .spark, .summary-5 .stat-row .spark { width: 100%; }
 
   /* Zona de peligro: el botón dejaba la descripción en una columna de seis
@@ -4265,7 +4273,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     grid-template-areas:
       "principal principal estado"
       "folio     fecha     acciones";
-    gap: 4px 10px;
+    gap: var(--space-1) 10px;
     align-items: center;
     padding: 12px 14px;
   }
@@ -4297,7 +4305,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      debajo como metadatos. */
   .tx-day {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--space-2);
     padding: 12px 14px;
   }
   .day-label {
@@ -4430,7 +4438,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   .report-preview .r-summary .v { font-size: 17px; }
   /* El desglose por categoría estrecha su columna de importe. */
-  .report-preview .r-row { grid-template-columns: 12px 1fr auto 46px; gap: 8px; }
+  .report-preview .r-row { grid-template-columns: 12px 1fr auto 46px; gap: var(--space-2); }
 
   /* Detalles redundantes en pantalla angosta (p. ej. el periodo "2026-07"
      debajo de una fecha que ya dice julio de 2026). */
@@ -4487,7 +4495,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      que nunca desbordaba y siguen con la tarjeta de 480 centrada. */
   .welcome-overlay { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; }
 
-  .header { row-gap: 8px; padding-bottom: 10px; }
+  .header { row-gap: var(--space-2); padding-bottom: 10px; }
   .content { gap: 14px; padding-top: 8px; padding-left: 14px; padding-right: 14px; }
   /* minmax(0, 1fr), no "1fr": un "1fr" es minmax(auto, 1fr), y ese "auto"
      deja que la columna crezca hasta el ancho intrínseco de su contenido.
@@ -4570,7 +4578,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* La cabecera de la hoja: el bloque de título puede encogerse (min-width:0)
      y la ✕ nunca — antes el subtítulo empujaba el botón hasta dejarlo en
      22 px, por debajo del objetivo táctil de 44 pt. */
-  .modal-header { gap: 12px; }
+  .modal-header { gap: var(--space-3); }
   .modal-header > *:first-child { min-width: 0; }
   .modal-header .modal-close { flex: 0 0 auto; }
   .modal-footer {
@@ -4735,7 +4743,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
@@ -4756,7 +4764,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 .visor-pdf-pagina {
   background: #fff;
