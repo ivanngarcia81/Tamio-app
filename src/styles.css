@@ -2723,12 +2723,42 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   transform: translateY(-1px);
 }
 
+/* Barra de guardado de Ajustes.
+   Antes era un botón al final de un scroll de dos pantallas, centrado y en
+   gris: quien cambiaba un campo arriba no tenía forma de saber que quedaba
+   algo pendiente. Ahora se queda pegada abajo mientras haya cambios sin
+   guardar, y desaparece cuando no los hay. */
 .settings-actions {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 14px;
   padding-top: 4px;
+}
+.settings-actions.pegada {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 0 calc(var(--content-pad-x) * -1) calc(var(--content-pad-x) * -1);
+  padding: 12px var(--content-pad-x);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-top: 1px solid var(--line);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  animation: fadeInUp .18s ease both;
+}
+.settings-actions.pegada .settings-sin-guardar {
+  margin-right: auto;
+  font-size: var(--fs-caption);
+  color: var(--text-2);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .settings-actions.pegada { background: var(--surface); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-actions.pegada { animation: none; }
 }
 .settings-saved-pill {
   display: inline-flex;

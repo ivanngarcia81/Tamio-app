@@ -2127,6 +2127,7 @@ export const es = {
   },
 
   config: {
+    cambiosSinGuardar: "Tienes cambios sin guardar",
     titulo: "Configuración",
     sub: "Datos de la iglesia y del tesorero",
     zona: {

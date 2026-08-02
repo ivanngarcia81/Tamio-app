@@ -2120,6 +2120,7 @@ export const en: Resources = {
   },
 
   config: {
+    cambiosSinGuardar: "You have unsaved changes",
     titulo: "Settings",
     sub: "Church and treasurer information",
     zona: {

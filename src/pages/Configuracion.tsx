@@ -333,7 +333,10 @@ export default function Configuracion({
 
           {generalError && <div className="form-warning">{generalError}</div>}
 
-          <div className="settings-actions">
+          {/* Con cambios pendientes la barra se pega abajo y avisa; sin ellos
+              vuelve a ser el pie discreto de siempre. */}
+          <div className={`settings-actions${dirty ? " pegada" : ""}`}>
+            {dirty && <span className="settings-sin-guardar">{t("config.cambiosSinGuardar")}</span>}
             <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
               {saving ? t("common.guardando") : t("common.guardarCambios")}
             </button>
