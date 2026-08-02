@@ -502,6 +502,7 @@ export const es = {
     nMiembros_other: "{{count}} miembros",
     nDepositos_one: "{{count}} depósito",
     nDepositos_other: "{{count}} depósitos",
+    confirmarIglesia: "El respaldo es de: {{nombre}}. Si no es tu congregación, cancela.",
     confirmarTrae: "El respaldo contiene {{movimientos}}, {{miembros}} y {{depositos}}.",
     confirmarHasta: "El movimiento más reciente que trae es del {{fecha}}. Si esa fecha no es la que esperabas, cancela: puede que hayas elegido un respaldo viejo.",
     confirmarDocumentos_one: "Incluye {{count}} documento (comprobantes, adjuntos, logo y firmas).",

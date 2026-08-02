@@ -992,6 +992,9 @@ const BASE_DEL_PAQUETE: &str = "tamio.db";
 /// Un "¿seguro?" genérico no basta para la operación más destructiva de la app.
 #[derive(serde::Serialize)]
 struct ResumenRespaldo {
+    /// De qué congregación es el paquete. Sin esto, restaurar por error el
+    /// respaldo de otra iglesia con cifras parecidas no se puede notar.
+    iglesia: String,
     movimientos: i64,
     miembros: i64,
     depositos: i64,
@@ -1072,6 +1075,9 @@ fn restaurar_preparar(app: tauri::AppHandle, origen: String) -> Result<ResumenRe
     }
 
     let resumen = ResumenRespaldo {
+        iglesia: conn
+            .query_row("SELECT nombre FROM churches ORDER BY id LIMIT 1", [], |r| r.get::<_, String>(0))
+            .unwrap_or_default(),
         movimientos: contar(&conn, "SELECT count(*) FROM transactions WHERE deleted = 0"),
         miembros: contar(&conn, "SELECT count(*) FROM members WHERE deleted = 0"),
         depositos: contar(&conn, "SELECT count(*) FROM depositos_bancarios WHERE deleted = 0"),

@@ -508,6 +508,7 @@ export const en: Resources = {
     nMiembros_other: "{{count}} members",
     nDepositos_one: "{{count}} deposit",
     nDepositos_other: "{{count}} deposits",
+    confirmarIglesia: "This backup belongs to: {{nombre}}. If that is not your congregation, cancel.",
     confirmarTrae: "The backup contains {{movimientos}}, {{miembros}} and {{depositos}}.",
     confirmarHasta: "Its most recent transaction is from {{fecha}}. If that date is not what you expected, cancel: you may have picked an old backup.",
     confirmarDocumentos_one: "It includes {{count}} document (receipts, attachments, logo and signatures).",

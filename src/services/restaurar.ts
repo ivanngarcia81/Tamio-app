@@ -11,6 +11,8 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export interface ResumenRespaldo {
+  /** De qué congregación es el paquete. */
+  iglesia: string;
   movimientos: number;
   miembros: number;
   depositos: number;

@@ -97,6 +97,10 @@ export default function RestoreSettings() {
           danger
           title={t("restaurar.confirmarTitulo")}
           message={[
+            // El nombre va primero y solo. Es lo que delata que el archivo es
+            // de otra congregación, y eso hay que verlo antes que las cifras:
+            // dos iglesias parecidas pueden tener números parecidos.
+            resumen.iglesia ? t("restaurar.confirmarIglesia", { nombre: resumen.iglesia }) : "",
             // Tres cantidades en una frase, y i18next solo pluraliza una por
             // clave: se arma con tres piezas ya pluralizadas para que no salga
             // "1 depósitos".
