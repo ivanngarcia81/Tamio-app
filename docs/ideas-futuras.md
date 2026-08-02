@@ -146,15 +146,20 @@ Sin ningún secreto configurado —el caso de hoy— todo pago sigue dando "comp
   medía lo que la más alta (`grid-auto-flow: dense` no hacía nada: solo actúa
   sobre elementos que ocupan varias celdas). Cambiado a **columnas CSS**
   (`columns: 2` + `break-inside: avoid`, con la variante prefijada para WebKit
-  antiguo), que reparten y equilibran las alturas solas. **Falta comprobarlo a
-  ojo en la Mac**: si algún WebKit viejo ignorara `break-inside`, una tarjeta
-  podría partirse entre columnas.
+  antiguo), que reparten y equilibran las alturas solas. **Verificado a ojo en la
+  Mac el 1 ago 2026**: ninguna tarjeta se parte entre columnas.
 - **C4.** Dos paletas para la misma categoría (el chip y su porción del donut no
   coinciden). Una sola paleta con variante clara y saturada del mismo tono.
 - **C5.** Falta token de aviso (`--warn` / `--warn-bg`): la insignia "Pendiente"
   lleva hex a mano en `TxList.tsx` y queda como parche en modo oscuro.
 - **C6.** Accesibilidad: muchos `<div onClick>` sin rol ni foco; la app no se
   recorre con teclado.
+- **C7.** ✅ **ARREGLADO (1 ago 2026).** Los botones de editar y menú de fila
+  quedaban pegados al borde de la tarjeta en **todas** las tablas: la celda de
+  acciones era un `.td` normal y heredaba sus 18px de padding lateral dentro de
+  una columna de 40px, así que dos botones de 28px no cabían y se desbordaban.
+  Ahora esa celda tiene clase propia (`td-acciones`) con su padding, y la columna
+  se ensancha a 72px (o 104px donde caben tres botones).
 
 *(La auditoría lista más detalles visuales —montos partidos en dos líneas, flechas
 que no siguen el signo, el hero sin color, modales al 86% de alto, estados vacíos
