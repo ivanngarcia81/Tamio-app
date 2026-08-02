@@ -517,24 +517,58 @@ function avisarComprobantes(r: { copiados: number; pendientes: number }): void {
   });
 }
 
+/**
+ * Pantalla de carga con el paso actual.
+ *
+ * Antes esto era `return null`: si cualquier paso del arranque se colgaba —una
+ * promesa que ni se resuelve ni falla— la ventana se quedaba en blanco para
+ * siempre, sin error, sin pista y sin nada que el usuario pudiera contar más
+ * allá de "se puso en blanco". Ahora, pasados unos segundos, dice EN QUÉ PASO
+ * se quedó, que es exactamente el dato que hacía falta.
+ */
+function Cargando({ paso }: { paso: string }) {
+  const [tarda, setTarda] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setTarda(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!tarda) return null; // el arranque normal es instantáneo: no parpadea
+  return (
+    <div className="pantalla-error">
+      <h2>Tamio está tardando en abrir</h2>
+      <p>
+        Se quedó en este paso. Si no avanza en un minuto, ciérrala y vuelve a
+        abrirla; si sigue igual, pasa este texto por el chat.
+      </p>
+      <pre>Paso: {paso}</pre>
+    </div>
+  );
+}
+
 export default function App() {
   const [church, setChurch] = useState<Church | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Qué se está haciendo ahora mismo. Solo se ve si el arranque se atasca.
+  const [paso, setPaso] = useState("abriendo la base de datos");
 
   useEffect(() => {
     getOrCreateChurch()
       .then(async (c) => {
+        setPaso("cargando categorías");
         await loadCategoriasCustom(c.id);
         // Registra los gastos fijos de los meses que llegaron desde la
         // última vez que se abrió la app (nunca meses futuros).
+        setPaso("registrando movimientos recurrentes");
         await materializeMovimientosRecurrentes(c.id, c.moneda);
         // Sanea folios de carta repetidos (los dejaba un bug ya corregido y
         // los puede juntar la sincronización): conserva el más antiguo y
         // renumera el resto. Con datos sanos no hace nada.
+        setPaso("revisando folios de cartas");
         await repararFoliosDuplicados(c.id).catch(() => {});
         // Trae adentro los comprobantes que apuntaban a carpetas del usuario
         // (Escritorio, Descargas, iCloud) y pasa a ruta relativa los que ya
         // estaban dentro. Con datos ya migrados no hace nada.
+        setPaso("guardando comprobantes dentro de la app");
         await migrarComprobantesExternos(c.id)
           .then(avisarComprobantes)
           .catch(() => {});
@@ -542,11 +576,13 @@ export default function App() {
         // este arranque acaba de aplicar un respaldo, se vuelve a marcar. Un
         // localStorage limpiado no debe dejar la sincronización suelta sobre
         // datos recién restaurados.
+        setPaso("comprobando si se restauró un respaldo");
         if (await restauracionAplicada()) pausarSyncPorRestauracion();
         // El logo y las firmas siguen la misma regla que los comprobantes:
         // dentro de la app y con ruta relativa. Como esto reescribe columnas de
         // `churches`, la iglesia se vuelve a leer para no quedarnos con las
         // rutas viejas en memoria.
+        setPaso("guardando logo y firmas dentro de la app");
         const img = await migrarImagenesIglesia(c.id).catch(() => null);
         const iglesia = img && (img.copiados || img.normalizados) ? await getOrCreateChurch() : c;
         setMonedaActiva(iglesia.moneda);
@@ -565,7 +601,7 @@ export default function App() {
   }
 
   if (!church) {
-    return null; // carga inicial (fracción de segundo)
+    return <Cargando paso={paso} />;
   }
 
   return (
