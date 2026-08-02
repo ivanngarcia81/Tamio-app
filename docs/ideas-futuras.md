@@ -95,11 +95,21 @@ Se mantiene a propósito la posibilidad de que difieran: depositar en agosto el
 dinero de julio es un caso real y legítimo. Lo que se arregla es que ocurra **sin
 que nadie se entere**.
 
-**A2. El dinero se guarda en coma flotante.**
-`monto REAL NOT NULL` en tres tablas (`lib.rs:43`, `:84`, `:136`). Con `SUM(monto)`
-los centavos derivan, y los porcentajes de los reportes dejarán de cuadrar contra
-el PDF en cuanto haya cifras reales. *Arreglo:* guardar centavos como entero y
-dividir solo al mostrar. Requiere migración.
+**A2. El dinero se guarda en coma flotante.** — 📋 **PLAN ESCRITO, SIN EMPEZAR**
+`monto REAL NOT NULL` en tres tablas (`lib.rs:43`, `:84`, `:136`) más
+`saldo_inicial` (`:663`). Con `SUM(monto)` los centavos derivan, y los porcentajes
+de los reportes dejarán de cuadrar contra el PDF en cuanto haya cifras reales.
+*Arreglo:* guardar centavos como entero y dividir solo al mostrar.
+
+El plan completo está en **`docs/plan-centavos.md`**: inventario, orden de los
+pasos, la trampa del `CAST` sin `ROUND`, las pruebas y la marcha atrás.
+
+**Cuándo:** después de que Apple apruebe la 1.0, y en su propia rama. El motivo
+no es que la migración ponga en riesgo datos durante la revisión — solo corre en
+un build que alguien instale, así que mientras la 1.0 está en revisión no le pasa
+nada a nadie. El motivo es que **si Apple rechaza y hay que mandar un arreglo
+urgente, `main` no puede estar a medio migrar la base**: un rechazo obliga a
+corregir algo pequeño y volver a subir el mismo día.
 
 ### B. Correcciones claras
 
@@ -114,10 +124,39 @@ el formato a los usuarios del mercado principal (la ficha de la App Store tiene
 Spanish (Mexico) como idioma). Se toma de la **configuración regional del
 dispositivo**, con `en-US` de reserva.
 
-**B2. `fs:scope` abarca todo `$HOME`.** `$HOME/**` en dos capabilities
-(lectura y escritura desde el webview). Acotar a la carpeta de la app y Descargas.
+**B2. `fs:scope` abarca todo `$HOME`.** — ✅ **ARREGLADO (2 ago 2026)**
+El permiso estaba en `$HOME/**` en dos sitios (`fs:scope` y
+`opener:allow-open-path`): la carpeta del usuario entera, incluidas `~/.ssh`,
+`~/Library` (llaveros, cookies, Correo) y los perfiles del navegador.
 
-**B3. `"csp": null`** en `tauri.conf.json:28`.
+Se hizo en tres pasos, y **el orden importaba**: acotar primero habría roto en
+silencio todos los comprobantes que apuntaban al Escritorio o a iCloud.
+
+1. El comprobante se **copia** a la carpeta de datos de la app al guardarlo, en
+   vez de guardar la ruta del archivo del usuario (que se puede mover o borrar).
+2. Una migración trae adentro los comprobantes de instalaciones anteriores,
+   aprovechando que el permiso amplio todavía estaba vigente. Lo que ya no
+   existe se deja tal cual y la vista previa lo dice con todas las letras.
+3. Recién entonces se acotó el permiso, y en **dos archivos separados**:
+   `fs-escritorio.json` (carpeta de la app + Escritorio, Documentos, Descargas e
+   Imágenes) y `fs-movil.json` (sigue en `$HOME/**`, que en iOS **es** el
+   contenedor de la app: ya lo acota el sistema, y el selector de archivos de
+   iOS entrega los documentos en una carpeta temporal fuera de `$APPDATA`).
+
+*Por qué no es "solo la carpeta de la app y Descargas":* seis flujos leen o
+escriben la ruta que el usuario elige en el diálogo — importar CSV, logo, firma,
+foto de perfil, adjuntos y guardar exportaciones — y la gente elige en Escritorio
+y Documentos tanto como en Descargas.
+
+**B3. `"csp": null`** — ✅ **ARREGLADO (2 ago 2026)**
+Política real en `tauri.conf.json`. `script-src 'self'` más el **hash** del
+script en línea de `index.html` (el que fija el tema antes del primer pintado;
+no se puede mover a un módulo sin que vuelva el destello blanco al abrir en
+oscuro). `connect-src` limitado al IPC de Tauri, al manifiesto de versión y a
+Supabase. `devCsp` aparte y permisivo para que `tauri dev` siga funcionando.
+
+⚠️ Si se edita ese script de `index.html`, hay que recalcular el hash o el
+navegador lo bloquea en silencio. Queda avisado en el propio `index.html`.
 
 **B4. El webhook de pago decide el plan con datos del navegador.** — ✅ **ARREGLADO (1 ago 2026)**
 `planDe()` leía `custom_data.plan`, que viaja desde el navegador del comprador y
