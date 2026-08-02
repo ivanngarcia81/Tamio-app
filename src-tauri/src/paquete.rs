@@ -254,3 +254,161 @@ pub fn extraer(origen: &Path, destino: &Path) -> Result<usize, String> {
     }
     Ok(escritos)
 }
+
+// ---------------------------------------------------------------------------
+// Pruebas
+//
+// El formato ZIP se escribe a mano en este archivo, así que estas pruebas son
+// lo único que impide que un cambio inocente lo rompa. Cubren las cinco cosas
+// que de verdad importan: que lo que escribimos se pueda volver a leer, que un
+// archivo manipulado no escriba fuera de su carpeta, que uno cortado no deje
+// medio respaldo aplicado, que uno comprimido lo diga con todas las letras, y
+// que se acepte un ZIP hecho por otra herramienta.
+// ---------------------------------------------------------------------------
+#[cfg(test)]
+mod pruebas {
+    use super::*;
+
+    /// ZIP sin comprimir generado por la librería `zipfile` de Python — es
+    /// decir, por una herramienta que no es esta. Contiene `tamio.db` y
+    /// `datos/comprobantes/recibo.pdf`. Sirve para comprobar que el lector no
+    /// depende de detalles que solo pone nuestro escritor.
+    const ZIP_DE_OTRA_HERRAMIENTA: &[u8] = &[
+    80, 75, 3, 4, 20, 0, 0, 0, 0, 0, 117, 184, 2, 93, 11, 224, 246, 244, 16, 0, 0, 0, 16, 0,
+    0, 0, 8, 0, 0, 0, 116, 97, 109, 105, 111, 46, 100, 98, 83, 81, 76, 105, 116, 101, 32,
+    102, 111, 114, 109, 97, 116, 32, 51, 0, 80, 75, 3, 4, 20, 0, 0, 0, 0, 0, 117, 184, 2,
+    93, 162, 186, 89, 233, 8, 0, 0, 0, 8, 0, 0, 0, 29, 0, 0, 0, 100, 97, 116, 111, 115, 47,
+    99, 111, 109, 112, 114, 111, 98, 97, 110, 116, 101, 115, 47, 114, 101, 99, 105, 98, 111,
+    46, 112, 100, 102, 37, 80, 68, 70, 45, 49, 46, 52, 80, 75, 1, 2, 20, 3, 20, 0, 0, 0, 0,
+    0, 117, 184, 2, 93, 11, 224, 246, 244, 16, 0, 0, 0, 16, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 128, 1, 0, 0, 0, 0, 116, 97, 109, 105, 111, 46, 100, 98, 80, 75, 1, 2, 20,
+    3, 20, 0, 0, 0, 0, 0, 117, 184, 2, 93, 162, 186, 89, 233, 8, 0, 0, 0, 8, 0, 0, 0, 29, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 1, 54, 0, 0, 0, 100, 97, 116, 111, 115, 47, 99, 111,
+    109, 112, 114, 111, 98, 97, 110, 116, 101, 115, 47, 114, 101, 99, 105, 98, 111, 46, 112,
+    100, 102, 80, 75, 5, 6, 0, 0, 0, 0, 2, 0, 2, 0, 129, 0, 0, 0, 121, 0, 0, 0, 0, 0
+    ];
+
+    /// El mismo, pero con las entradas comprimidas (deflate), que es lo que
+    /// deja el Finder si alguien descomprime el paquete y lo vuelve a comprimir.
+    const ZIP_COMPRIMIDO: &[u8] = &[
+    80, 75, 3, 4, 20, 0, 0, 0, 8, 0, 117, 184, 2, 93, 11, 224, 246, 244, 18, 0, 0, 0, 16, 0,
+    0, 0, 8, 0, 0, 0, 116, 97, 109, 105, 111, 46, 100, 98, 11, 14, 244, 201, 44, 73, 85, 72,
+    203, 47, 202, 77, 44, 81, 48, 102, 0, 0, 80, 75, 3, 4, 20, 0, 0, 0, 8, 0, 117, 184, 2,
+    93, 175, 138, 13, 166, 8, 0, 0, 0, 144, 1, 0, 0, 11, 0, 0, 0, 100, 97, 116, 111, 115,
+    47, 120, 46, 116, 120, 116, 75, 76, 28, 5, 131, 9, 0, 0, 80, 75, 1, 2, 20, 3, 20, 0, 0,
+    0, 8, 0, 117, 184, 2, 93, 11, 224, 246, 244, 18, 0, 0, 0, 16, 0, 0, 0, 8, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 128, 1, 0, 0, 0, 0, 116, 97, 109, 105, 111, 46, 100, 98, 80, 75, 1, 2,
+    20, 3, 20, 0, 0, 0, 8, 0, 117, 184, 2, 93, 175, 138, 13, 166, 8, 0, 0, 0, 144, 1, 0, 0,
+    11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 1, 56, 0, 0, 0, 100, 97, 116, 111, 115, 47,
+    120, 46, 116, 120, 116, 80, 75, 5, 6, 0, 0, 0, 0, 2, 0, 2, 0, 111, 0, 0, 0, 105, 0, 0,
+    0, 0, 0
+    ];
+
+    fn carpeta_temporal(nombre: &str) -> std::path::PathBuf {
+        let d = std::env::temp_dir().join(format!("tamio-prueba-{nombre}"));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn ida_y_vuelta_completa() {
+        let dir = carpeta_temporal("ida-vuelta");
+        let origen = dir.join("base.db");
+        let contenido = b"SQLite format 3\0datos de la iglesia";
+        std::fs::write(&origen, contenido).unwrap();
+
+        let zip = dir.join("respaldo.zip");
+        let mut z = Zip::crear(&zip).unwrap();
+        z.anadir(&origen, "tamio.db").unwrap();
+        z.anadir(&origen, "datos/comprobantes/recibo.pdf").unwrap();
+        z.cerrar().unwrap();
+
+        assert!(es_zip(&zip), "lo que escribimos tiene que reconocerse como ZIP");
+
+        let destino = dir.join("extraido");
+        let escritos = extraer(&zip, &destino).unwrap();
+        assert_eq!(escritos, 2);
+        assert_eq!(std::fs::read(destino.join("tamio.db")).unwrap(), contenido);
+        assert_eq!(
+            std::fs::read(destino.join("datos/comprobantes/recibo.pdf")).unwrap(),
+            contenido,
+            "el contenido tiene que llegar byte a byte"
+        );
+    }
+
+    #[test]
+    fn rechaza_rutas_que_escriben_fuera() {
+        // "zip slip": el paquete lo genera Tamio, pero llega por correo o
+        // WhatsApp y aquí se está escribiendo en el disco del usuario.
+        assert_eq!(nombre_seguro_zip("../../.ssh/id_rsa"), None);
+        assert_eq!(nombre_seguro_zip("/etc/passwd"), None);
+        assert_eq!(nombre_seguro_zip("C:\\Windows\\algo"), None);
+        assert_eq!(nombre_seguro_zip(""), None);
+        assert_eq!(nombre_seguro_zip("datos/./a/../a/b.png").as_deref(), None);
+        // Y lo normal sí pasa.
+        assert_eq!(nombre_seguro_zip("datos/comprobantes/x.pdf").as_deref(),
+                   Some("datos/comprobantes/x.pdf"));
+    }
+
+    #[test]
+    fn rechaza_un_paquete_cortado_sin_escribir_nada() {
+        let dir = carpeta_temporal("cortado");
+        let origen = dir.join("base.db");
+        std::fs::write(&origen, vec![7u8; 5000]).unwrap();
+        let zip = dir.join("respaldo.zip");
+        let mut z = Zip::crear(&zip).unwrap();
+        z.anadir(&origen, "tamio.db").unwrap();
+        z.cerrar().unwrap();
+
+        // Se corta por la mitad: el índice del final desaparece.
+        let bytes = std::fs::read(&zip).unwrap();
+        let cortado = dir.join("cortado.zip");
+        std::fs::write(&cortado, &bytes[..bytes.len() / 2]).unwrap();
+
+        let destino = dir.join("extraido");
+        assert!(extraer(&cortado, &destino).is_err());
+        assert!(
+            !destino.join("tamio.db").exists(),
+            "un paquete cortado no puede dejar medio archivo escrito"
+        );
+    }
+
+    #[test]
+    fn rechaza_comprimido_con_mensaje_claro() {
+        let dir = carpeta_temporal("comprimido");
+        let zip = dir.join("deflate.zip");
+        std::fs::write(&zip, ZIP_COMPRIMIDO).unwrap();
+        let e = extraer(&zip, &dir.join("extraido")).unwrap_err();
+        assert!(
+            e.contains("comprimido"),
+            "el mensaje tiene que decir qué pasó y qué hacer, no fallar de forma rara: {e}"
+        );
+    }
+
+    #[test]
+    fn acepta_un_zip_de_otra_herramienta() {
+        let dir = carpeta_temporal("ajeno");
+        let zip = dir.join("ajeno.zip");
+        std::fs::write(&zip, ZIP_DE_OTRA_HERRAMIENTA).unwrap();
+        let destino = dir.join("extraido");
+        let escritos = extraer(&zip, &destino).unwrap();
+        assert_eq!(escritos, 2);
+        assert_eq!(
+            std::fs::read(destino.join("tamio.db")).unwrap(),
+            b"SQLite format 3\0"
+        );
+        assert_eq!(
+            std::fs::read(destino.join("datos/comprobantes/recibo.pdf")).unwrap(),
+            b"%PDF-1.4"
+        );
+    }
+
+    #[test]
+    fn detecta_el_formato_por_la_firma_y_no_por_el_nombre() {
+        let dir = carpeta_temporal("firma");
+        let falso = dir.join("respaldo.zip"); // extensión de ZIP…
+        std::fs::write(&falso, b"SQLite format 3\0").unwrap(); // …contenido de otra cosa
+        assert!(!es_zip(&falso));
+    }
+}
