@@ -176,10 +176,14 @@ Sin ningún secreto configurado —el caso de hoy— todo pago sigue dando "comp
 
 ### C. Sistema visual (se puede hacer sin tocar la app)
 
-- **C1.** No hay escala tipográfica: **22 tamaños de fuente distintos** en
-  `styles.css` (36 usos de `13px`, 29 de `11px`, 27 de `12px`…). Definir ~6 pasos
-  como tokens.
-- **C2.** **Cero variables de espaciado.** Tokens de 4/8/12/16/24/32.
+- **C1.** ✅ **ARREGLADO (2 ago 2026).** Escala tipográfica en tokens. Quedan 7
+  tamaños en px, todos excepciones documentadas: `body` 14px (base de las
+  unidades relativas), los campos de formulario y el buscador a 16px (por debajo,
+  iOS hace zoom al enfocar) y cuatro casos puntuales de cifras grandes.
+- **C2.** ✅ **ARREGLADO (2 ago 2026).** Escala de espaciado (`--space-1..8`) y
+  migrados los 186 huecos: primero los 85 que coincidían exactos con un paso
+  (cero cambio visual), después los 101 intermedios (crecen ~2px). Revisado en la
+  Mac: sin cambios que molesten.
 - **C3.** ✅ **ARREGLADO (1 ago 2026).** Huecos en Ajustes: `.settings-masonry`
   era `grid` de 2 columnas, así que cada tarjeta se quedaba en su celda y la fila
   medía lo que la más alta (`grid-auto-flow: dense` no hacía nada: solo actúa
@@ -187,12 +191,17 @@ Sin ningún secreto configurado —el caso de hoy— todo pago sigue dando "comp
   (`columns: 2` + `break-inside: avoid`, con la variante prefijada para WebKit
   antiguo), que reparten y equilibran las alturas solas. **Verificado a ojo en la
   Mac el 1 ago 2026**: ninguna tarjeta se parte entre columnas.
-- **C4.** Dos paletas para la misma categoría (el chip y su porción del donut no
-  coinciden). Una sola paleta con variante clara y saturada del mismo tono.
-- **C5.** Falta token de aviso (`--warn` / `--warn-bg`): la insignia "Pendiente"
-  lleva hex a mano en `TxList.tsx` y queda como parche en modo oscuro.
-- **C6.** Accesibilidad: muchos `<div onClick>` sin rol ni foco; la app no se
-  recorre con teclado.
+- **C4.** ⬜ **PENDIENTE.** Dos paletas para la misma categoría (el chip y su
+  porción del donut no coinciden). Una sola paleta con variante clara y saturada
+  del mismo tono. En 2.4 solo se dio color a las dos categorías que salían en
+  gris; unificar las dos paletas sigue sin hacerse.
+- **C5.** ✅ **ARREGLADO (2 ago 2026).** Tokens `--warn` / `--warn-bg` en claro y
+  oscuro. De paso se corrigieron dos tokens que **no existían** (`--verde`,
+  `--rojo`): el color caía siempre al valor de reserva y nunca se adaptaba al
+  modo oscuro.
+- **C6.** ⬜ **PENDIENTE.** Accesibilidad: muchos `<div onClick>` sin rol ni
+  foco; la app no se recorre con teclado. Es el único punto visual que queda de
+  la auditoría, junto con C4.
 - **C7.** ✅ **ARREGLADO (1 ago 2026).** Los botones de editar y menú de fila
   quedaban pegados al borde de la tarjeta en **todas** las tablas: la celda de
   acciones era un `.td` normal y heredaba sus 18px de padding lateral dentro de
