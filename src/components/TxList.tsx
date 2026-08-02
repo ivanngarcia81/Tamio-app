@@ -123,13 +123,16 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         {tx.concepto}
                         {tx.estado === "pendiente" && (
                           <span
+                            /* Tokens y no hex: con los colores a mano esta
+                               insignia quedaba como un parche amarillo sobre el
+                               fondo oscuro. */
                             style={{
                               display: "inline-block",
                               marginLeft: 8,
                               fontSize: 10,
                               fontWeight: 700,
-                              color: "#b45309",
-                              background: "#fef3c7",
+                              color: "var(--warn)",
+                              background: "var(--warn-bg)",
                               padding: "2px 8px",
                               borderRadius: 999,
                               textTransform: "uppercase",

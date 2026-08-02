@@ -37,6 +37,11 @@
   --neg: #dc2626;
   --pos-bg: #ecfdf5;
   --neg-bg: #fef2f2;
+  /* Aviso (pendiente de revisión, cambios sin guardar). Faltaba en el sistema,
+     así que los avisos llevaban el hex a mano y en modo oscuro quedaban como
+     un parche amarillo sobre fondo negro. */
+  --warn: #b45309;
+  --warn-bg: #fef3c7;
   --radius: 14px;
   --radius-sm: 10px;
   --radius-pill: 999px;
@@ -115,6 +120,8 @@
   --neg: #f87171;
   --pos-bg: rgba(52,211,153,0.13);
   --neg-bg: rgba(248,113,113,0.13);
+  --warn: #fbbf24;
+  --warn-bg: rgba(251,191,36,0.14);
   color-scheme: dark;
 }
 
@@ -1008,7 +1015,7 @@ html.vibrancy .main { background: var(--surface); }
 .stat-icon.up { background: var(--pos-bg); color: var(--pos); }
 .stat-icon.down { background: var(--neg-bg); color: var(--neg); }
 .stat-icon.neutral { background: #f5f5f4; color: #52525b; }
-.stat-icon.warn { background: #fef3c7; color: #b45309; }
+.stat-icon.warn { background: var(--warn-bg); color: var(--warn); }
 .stat-row {
   display: flex;
   align-items: flex-end;
@@ -1512,7 +1519,7 @@ html.vibrancy .main { background: var(--surface); }
   background: currentColor;
 }
 .status-pill.aprobado { background: var(--pos-bg); color: var(--pos); box-shadow: inset 0 0 0 1px rgba(5,150,105,.15); }
-.status-pill.pendiente { background: #fef3c7; color: #b45309; box-shadow: inset 0 0 0 1px rgba(180,83,9,.15); }
+.status-pill.pendiente { background: var(--warn-bg); color: var(--warn); box-shadow: inset 0 0 0 1px rgba(180,83,9,.15); }
 .status-pill.rechazado { background: var(--neg-bg); color: var(--neg); box-shadow: inset 0 0 0 1px rgba(220,38,38,.15); }
 
 /* Micro entrance animation */
@@ -2022,8 +2029,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .form-hint { font-size: var(--fs-caption); color: var(--text-3); }
 .form-warning {
   font-size: var(--fs-caption);
-  color: #b45309;
-  background: #fef3c7;
+  color: var(--warn);
+  background: var(--warn-bg);
   padding: 8px 10px;
   border-radius: 8px;
   margin-top: 6px;
@@ -2380,7 +2387,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: grid; place-items: center;
   flex-shrink: 0;
 }
-.inbox-icon.warn { background: #fef3c7; color: #b45309; }
+.inbox-icon.warn { background: var(--warn-bg); color: var(--warn); }
 .inbox-icon.info { background: #dbeafe; color: #1d4ed8; }
 .inbox-icon.invite { background: #ede9fe; color: #6d28d9; }
 .inbox-icon.done { background: var(--surface-2); color: var(--text-3); }
@@ -2398,7 +2405,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.inbox-type-tag.warn { color: #b45309; }
+.inbox-type-tag.warn { color: var(--warn); }
 .inbox-type-tag.info { color: #1d4ed8; }
 .inbox-type-tag.invite { color: #6d28d9; }
 .inbox-type-tag.done { color: var(--text-3); }
@@ -3639,7 +3646,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root[data-theme="dark"] .agenda-conflicto { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.4); }
 .agenda-conflicto-head {
   display: flex; align-items: center; gap: 7px;
-  font-weight: 700; font-size: 13px; color: #b45309;
+  font-weight: 700; font-size: 13px; color: var(--warn);
 }
 :root[data-theme="dark"] .agenda-conflicto-head { color: #fbbf24; }
 .agenda-conflicto-sub { font-size: var(--fs-secondary); color: var(--text-2); margin: 4px 0 6px; }

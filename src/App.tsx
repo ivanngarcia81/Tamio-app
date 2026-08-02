@@ -504,7 +504,7 @@ export default function App() {
     return (
       <div style={{ padding: 40, fontFamily: "sans-serif" }}>
         <h2>Error al iniciar la base de datos</h2>
-        <pre style={{ whiteSpace: "pre-wrap", color: "#b91c1c" }}>{error}</pre>
+        <pre style={{ whiteSpace: "pre-wrap", color: "var(--neg, #b91c1c)" }}>{error}</pre>
       </div>
     );
   }

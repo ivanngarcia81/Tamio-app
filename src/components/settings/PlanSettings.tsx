@@ -115,7 +115,7 @@ export default function PlanSettings({ church, onSaved }: Props) {
         <>
           <div className="form-hint" style={{ marginBottom: 12 }}>
             {t("plan.resumenEstado")}:{" "}
-            <b style={{ color: vig.activa ? "var(--verde, #059669)" : "var(--rojo, #dc2626)" }}>
+            <b style={{ color: vig.activa ? "var(--pos)" : "var(--neg)" }}>
               {vig.activa ? t("plan.vigente") : t("plan.noVigente")}
             </b>
             {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
