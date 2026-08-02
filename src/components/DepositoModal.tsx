@@ -7,6 +7,7 @@ import {
   mesLegible, nowLocalIso, updateDeposito,
   type Church, type Deposito,
 } from "../db";
+import { guardarComprobante } from "../services/comprobantes";
 import { IconCheck, IconClose, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -112,13 +113,16 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
         }
       }
 
+      // El comprobante se copia a la carpeta de la app y se guarda ESA ruta:
+      // el archivo que eligió el usuario puede moverse o borrarse.
+      const rutaComprobante = comprobantePath ? await guardarComprobante(comprobantePath) : null;
       const payload = {
         fecha,
         periodo,
         monto: m,
         cuenta_banco: cuentaBanco.trim(),
         referencia: referencia.trim() || null,
-        comprobante_path: comprobantePath,
+        comprobante_path: rutaComprobante,
         notas: notas.trim() || null,
       };
       if (isEdit) {

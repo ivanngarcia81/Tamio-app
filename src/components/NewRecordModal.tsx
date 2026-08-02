@@ -5,6 +5,7 @@ import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { guardarComprobante } from "../services/comprobantes";
 import {
   METODOS_PAGO, buscarPosiblesDuplicados, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre,
   currentMonth, fmtMoney, insertMovimientoRecurrente, insertMember, insertTx, listMembers,
@@ -352,6 +353,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     }
     setSaving(true);
     try {
+      const rutaComprobante = comprobantePath ? await guardarComprobante(comprobantePath) : null;
       await updateTx(mode.tx.id, church.id, church.moneda, {
         tipo: tab,
         categoria,
@@ -366,7 +368,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
         beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
         emitir_constancia: tab === "ingreso" ? constancia : false,
         estado: marcarPendiente ? "pendiente" : "aprobado",
-        comprobante_path: comprobantePath,
+        comprobante_path: rutaComprobante,
       });
       const mesesRegistrados = await insertMovimientoRecurrente(
         church.id,
@@ -498,6 +500,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           if (cerrar) onClose(); else limpiarParaOtro();
           return;
         }
+        // El comprobante se copia a la carpeta de la app y se guarda ESA ruta:
+        // el archivo que eligió el usuario puede moverse o borrarse.
+        const rutaComprobante = comprobantePath ? await guardarComprobante(comprobantePath) : null;
         const payload = {
           tipo: tab,
           categoria,
@@ -512,7 +517,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
           beneficiario_rfc: tab === "gasto" ? beneficiarioRfc.trim() || null : null,
           emitir_constancia: tab === "ingreso" ? constancia : false,
           estado: marcarPendiente ? "pendiente" : "aprobado",
-          comprobante_path: comprobantePath,
+          comprobante_path: rutaComprobante,
         } as const;
         if (mode.kind === "editTx") {
           await updateTx(mode.tx.id, church.id, church.moneda, payload);
