@@ -272,7 +272,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card accent" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.balanceDelMesLabel")}</span>
-              <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.2} /></div>
+              {/* El icono sigue el signo, igual que el color de acento de la
+                  tarjeta. Antes era una flecha hacia arriba fija: con saldo
+                  negativo la tarjeta decía "sube" mientras el pie decía ↓. */}
+              <div className={`stat-icon ${balance >= 0 ? "up" : "down"}`}>
+                {balance >= 0
+                  ? <IconArrowUp size={16} strokeWidth={2.2} />
+                  : <IconArrowDown size={16} strokeWidth={2.2} />}
+              </div>
             </div>
             <div className="stat-value md">
               <CountUp value={balance} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
@@ -285,7 +292,11 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="stat-card accent" style={accentStyle(balanceAnio >= 0 ? "var(--accent-3)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.balanceDelAnio")}</span>
-              <div className="stat-icon neutral"><IconArrowUp size={16} strokeWidth={2.2} /></div>
+              <div className={`stat-icon ${balanceAnio >= 0 ? "up" : "down"}`}>
+                {balanceAnio >= 0
+                  ? <IconArrowUp size={16} strokeWidth={2.2} />
+                  : <IconArrowDown size={16} strokeWidth={2.2} />}
+              </div>
             </div>
             <div className="stat-value md">
               <CountUp value={balanceAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
