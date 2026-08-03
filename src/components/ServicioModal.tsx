@@ -489,11 +489,11 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">{t("servicios.dirige")}</label>
+                <label className="form-label">{t("servicios.dirige")} <span className="opt">{t("common.opcional")}</span></label>
                 <input className="form-input" value={dirige} onChange={(e) => setDirige(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("servicios.predica")}</label>
+                <label className="form-label">{t("servicios.predica")} <span className="opt">{t("common.opcional")}</span></label>
                 <input className="form-input" value={predica} onChange={(e) => setPredica(e.target.value)} />
               </div>
             </div>

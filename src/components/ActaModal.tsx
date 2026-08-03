@@ -200,15 +200,15 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
                 <input type="date" className="form-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("actas.lugar")}</label>
+                <label className="form-label">{t("actas.lugar")} <span className="opt">{t("common.opcional")}</span></label>
                 <input className="form-input" value={lugar} onChange={(e) => setLugar(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("actas.horaInicio")}</label>
+                <label className="form-label">{t("actas.horaInicio")} <span className="opt">{t("common.opcional")}</span></label>
                 <input type="time" className="form-input" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("actas.horaCierre")}</label>
+                <label className="form-label">{t("actas.horaCierre")} <span className="opt">{t("common.opcional")}</span></label>
                 <input type="time" className="form-input" value={horaCierre} onChange={(e) => setHoraCierre(e.target.value)} />
               </div>
               <div className="form-group">

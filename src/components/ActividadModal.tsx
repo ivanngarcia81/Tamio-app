@@ -204,26 +204,26 @@ export default function ActividadModal({
         <div className="modal-body">
           <Seccion titulo={t("agenda.secBasica")}>
             <div className="form-group full">
-              <label className="form-label">{t("agenda.nombre")} *</label>
+              <label className="form-label">{t("agenda.nombre")}</label>
               <input className="form-input" value={nombre} autoFocus placeholder={t("agenda.nombrePlaceholder")} onChange={(e) => setNombre(e.target.value)} />
             </div>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">{t("agenda.tipo")} *</label>
+                <label className="form-label">{t("agenda.tipo")}</label>
                 <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
                   {TIPOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.tipos.${k}`)}</option>)}
                 </select>
               </div>
               {tipo === "otra" && (
                 <div className="form-group">
-                  <label className="form-label">{t("agenda.tipoPersonalizado")} *</label>
+                  <label className="form-label">{t("agenda.tipoPersonalizado")}</label>
                   <input className="form-input" value={tipoPersonalizado} placeholder={t("agenda.tipoPersonalizadoPlaceholder")} onChange={(e) => setTipoPersonalizado(e.target.value)} />
                 </div>
               )}
             </div>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">{t("agenda.fecha")} *</label>
+                <label className="form-label">{t("agenda.fecha")}</label>
                 <input type="date" className="form-input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
               </div>
               <div className="form-group" style={{ justifyContent: "flex-end" }}>
@@ -236,21 +236,21 @@ export default function ActividadModal({
             {!diaCompleto && (
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">{t("agenda.horaInicio")} *</label>
+                  <label className="form-label">{t("agenda.horaInicio")}</label>
                   <input type="time" className="form-input" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">{t("agenda.horaFin")}</label>
+                  <label className="form-label">{t("agenda.horaFin")} <span className="opt">{t("common.opcional")}</span></label>
                   <input type="time" className="form-input" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
                 </div>
               </div>
             )}
             <div className="form-group full">
-              <label className="form-label">{t("agenda.lugar")}</label>
+              <label className="form-label">{t("agenda.lugar")} <span className="opt">{t("common.opcional")}</span></label>
               <input className="form-input" value={lugar} onChange={(e) => setLugar(e.target.value)} />
             </div>
             <div className="form-group full">
-              <label className="form-label">{t("agenda.descripcion")}</label>
+              <label className="form-label">{t("agenda.descripcion")} <span className="opt">{t("common.opcional")}</span></label>
               <textarea className="form-textarea" rows={2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
             </div>
           </Seccion>
@@ -274,16 +274,16 @@ export default function ActividadModal({
             </div>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">{t("agenda.ministerio")}</label>
+                <label className="form-label">{t("agenda.ministerio")} <span className="opt">{t("common.opcional")}</span></label>
                 <input className="form-input" value={responsableMinisterio} onChange={(e) => setResponsableMinisterio(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">{t("agenda.invitado")}</label>
+                <label className="form-label">{t("agenda.invitado")} <span className="opt">{t("common.opcional")}</span></label>
                 <input className="form-input" value={invitado} onChange={(e) => setInvitado(e.target.value)} />
               </div>
             </div>
             <div className="form-group full">
-              <label className="form-label">{t("agenda.contacto")}</label>
+              <label className="form-label">{t("agenda.contacto")} <span className="opt">{t("common.opcional")}</span></label>
               <input className="form-input" value={contacto} onChange={(e) => setContacto(e.target.value)} />
             </div>
           </Seccion>
