@@ -2027,8 +2027,8 @@ export const en: Resources = {
   },
 
   rolConfig: {
-    titulo: "Role",
-    sub: "Which areas are visible on this device",
+    titulo: "This device's view",
+    sub: "Which areas are shown on this computer",
     hint: "The administrator sees Treasury and Secretariat. The treasurer sees only Treasury. The secretary sees only Secretariat and the Treasury Report.",
     tituloSesion: "Session",
     subSesion: "Your role is assigned by the administrator",
@@ -2053,8 +2053,8 @@ export const en: Resources = {
     titulo: "Your plan",
     sub: "Which areas this church sees. Also used to gift accounts (courtesy).",
     // Local mode (no login): the card only picks areas, with no billing wording.
-    tituloAreas: "Areas",
-    subAreas: "Which areas of Tamio you use",
+    tituloAreas: "Church areas",
+    subAreas: "Which modules this congregation uses",
     areas: "Areas in use",
     plan: "Plan",
     nombre: {
@@ -2181,6 +2181,8 @@ export const en: Resources = {
     titulo: "Settings",
     sub: "Church and treasurer information",
     zona: {
+      acceso: "Access & areas",
+      accesoSub: "Which modules the church has and what each device shows",
       identidad: "Identity & account",
       identidadSub: "Who your church is, your plan, and sync",
       trabajo: "Working data",

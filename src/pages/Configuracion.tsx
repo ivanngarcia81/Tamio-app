@@ -327,9 +327,25 @@ export default function Configuracion({
                 showCurrency={verTesoreria}
                 estado={estados.iglesia}
               />
+            </div>
+          </section>
+
+          {/* Acceso y alcance en UNA sección: qué módulos tiene la iglesia
+              (Áreas, dato de la iglesia), qué ve este dispositivo (Vista,
+              dato local) y quién administra (Usuarios). Antes vivían en tres
+              secciones distintas con dos pantallas de distancia, siendo la
+              misma pregunta contada dos veces. */}
+          <section className="settings-zona">
+            <div className="settings-zona-head">
+              <div className="settings-zona-titulo">{t("config.zona.acceso")}</div>
+              <div className="settings-zona-sub">{t("config.zona.accesoSub")}</div>
+            </div>
+            <div className="settings-masonry">
               {/* Suscripción: la administra el dueño (admin) o, en modo local
                   sin login, quien usa la app en su propia instalación. */}
               {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
+              {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
+              {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
               {authActivo && SYNC_HABILITADO && <SyncSettings />}
             </div>
           </section>
@@ -375,7 +391,6 @@ export default function Configuracion({
                   estado={estados.institucion}
                 />
               )}
-              {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
               {verTesoreria && (
                 <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
               )}
@@ -395,7 +410,6 @@ export default function Configuracion({
               <div className="settings-zona-sub">{t("config.zona.preferenciasSub")}</div>
             </div>
             <div className="settings-masonry">
-              {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
               <SoundSettings />

@@ -2034,8 +2034,8 @@ export const es = {
   },
 
   rolConfig: {
-    titulo: "Rol",
-    sub: "Qué áreas se ven en este dispositivo",
+    titulo: "Vista de este dispositivo",
+    sub: "Qué áreas se muestran en esta computadora",
     hint: "El administrador ve Tesorería y Secretaría. El tesorero ve solo Tesorería. La secretaria ve solo Secretaría y el Reporte de Tesorería.",
     tituloSesion: "Sesión",
     subSesion: "Tu rol lo asigna el administrador",
@@ -2060,8 +2060,8 @@ export const es = {
     titulo: "Tu plan",
     sub: "Qué áreas ve esta iglesia. También sirve para regalar cuentas (cortesía).",
     // Modo local (sin login): la tarjeta solo elige áreas, sin nada de facturación.
-    tituloAreas: "Áreas",
-    subAreas: "Qué áreas de Tamio usas",
+    tituloAreas: "Áreas de la iglesia",
+    subAreas: "Qué módulos usa esta congregación",
     areas: "Áreas en uso",
     plan: "Plan",
     nombre: {
@@ -2188,6 +2188,8 @@ export const es = {
     titulo: "Configuración",
     sub: "Datos de la iglesia y del tesorero",
     zona: {
+      acceso: "Acceso y áreas",
+      accesoSub: "Qué módulos tiene la iglesia y qué ve cada dispositivo",
       identidad: "Identidad y cuenta",
       identidadSub: "Quién es tu iglesia, tu plan y la sincronización",
       trabajo: "Datos de trabajo",
