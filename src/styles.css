@@ -2842,7 +2842,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px var(--space-6);
-  align-items: start;
+  /* `stretch` iguala la altura de las dos tarjetas de cada fila: el borde de
+     abajo queda a la misma altura y la sección se lee como una rejilla, no
+     como dos columnas dentadas. El contenido sigue arriba; lo que sobra es
+     margen dentro de la tarjeta más corta. */
+  align-items: stretch;
   margin-bottom: 20px;
 }
 /* Una sección con UNA sola tarjeta no tiene con qué emparejarse: va a ancho

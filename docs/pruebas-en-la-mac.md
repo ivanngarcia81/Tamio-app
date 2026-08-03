@@ -57,15 +57,21 @@ Preferencias → Zona sensible).
       demás en dos columnas. Avisar si alguna sección deja media columna
       vacía o una tarjeta se ve desproporcionada.
 - [ ] **Documentos oficiales en pares.** Ahora las tarjetas van por filas:
-      Datos institucionales | Vista previa del PDF, Tesorero | Firma del
-      tesorero, Pastor | Firma del pastor. Cada firma al lado de su persona.
+      Datos institucionales | Vista previa del PDF, Tesorero | Pastor,
+      Firma del tesorero | Firma del pastor. Las dos tarjetas de cada fila
+      terminan a la misma altura.
 - [ ] **Color de acento** (tarjeta nueva en Preferencias). Elige verde: los
       botones oscuros, la página activa del menú y el anillo de foco deben
       cambiar de color en el acto. Prueba también en modo oscuro. "Neutro"
       devuelve el aspecto original. Cierra y vuelve a abrir Tamio: el color
       elegido debe seguir puesto.
-- [ ] **Zona sensible pareja.** Respaldo | Compactar base de datos,
-      Restaurar | Zona de peligro.
+- [ ] **Zona sensible pareja.** Respaldo | Zona de peligro, Restaurar |
+      Compactar base de datos.
+- [ ] **Juego de sonidos** (en la tarjeta de Sonido). Tres opciones:
+      Clásico, Suave y Campana. Al tocar cada una suena de muestra, aunque
+      el interruptor esté apagado. Elige una, guarda un movimiento de
+      prueba y comprueba que suena la elegida; cierra y reabre Tamio y
+      debe seguir puesta.
 
 ## 2. El recorrido con la consola (punto 5.5 de la auditoría, ~15 min)
 

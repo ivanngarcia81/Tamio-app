@@ -2324,6 +2324,13 @@ export const en: Resources = {
     activado: "On",
     desactivado: "Off",
     hint: "A different sound plays when you record an income, an expense, or delete a transaction.",
+    juego: "Sound set",
+    juegos: {
+      clasico: "Classic",
+      suave: "Soft",
+      campana: "Bell",
+    },
+    hintJuego: "Picking one plays a sample. \"Soft\" is lower and more discreet; \"Bell\" sounds like a front-desk bell.",
   },
 
   acento: {

@@ -2331,6 +2331,13 @@ export const es = {
     activado: "Activado",
     desactivado: "Desactivado",
     hint: "Se reproduce un sonido distinto al registrar un ingreso, un gasto o al eliminar un movimiento.",
+    juego: "Juego de sonidos",
+    juegos: {
+      clasico: "Clásico",
+      suave: "Suave",
+      campana: "Campana",
+    },
+    hintJuego: "Al elegir uno se oye de muestra. \"Suave\" es más grave y discreto; \"Campana\" suena a campanita de mostrador.",
   },
 
   acento: {
