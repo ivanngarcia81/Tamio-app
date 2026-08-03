@@ -610,12 +610,21 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
 
             {/* El conteo de arriba y la lista de asistencia son dos registros
                 distintos: el conteo alimenta la bitácora de cultos y la lista
-                alimenta el informe por miembro. Si se llena uno y no el otro,
-                la app parece contradecirse (un culto "con 4 asistentes" y un
-                informe que no muestra a nadie), así que se avisa aquí. */}
+                alimenta el informe por miembro. El rótulo lo dice siempre, y
+                si se llena uno y no el otro se avisa en la dirección que sea:
+                sin esto la app parece contradecirse (un culto "con 4
+                asistentes" y un informe que no muestra a nadie, o al revés).
+                Para la 1.1 quedó anotado unificar: total = lista + contadores
+                (ver docs/ideas-futuras.md). */}
+            <div className="form-hint" style={{ marginBottom: 12 }}>{t("servicios.conteoHint")}</div>
             {totalConteo > 0 && totalPresentes === 0 && (
               <div className="form-warning" style={{ marginBottom: 12 }}>
                 {t("servicios.avisoConteoSinLista", { n: totalConteo })}
+              </div>
+            )}
+            {totalPresentes > 0 && totalConteo === 0 && (
+              <div className="form-warning" style={{ marginBottom: 12 }}>
+                {t("servicios.avisoListaSinConteo", { count: totalPresentes })}
               </div>
             )}
           </Seccion>

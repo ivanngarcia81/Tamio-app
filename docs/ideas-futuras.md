@@ -473,6 +473,18 @@ disciplina la impone la visibilidad, no el bloqueo.**
 
 ## 🔧 Pulido para la 1.1
 
+- **Asistencia de cultos: total = lista + contadores.** Decisión del 3 ago
+  2026 (P1 de la tanda de Secretaría). Hoy el total visible de un culto sale
+  SOLO de los contadores Niños+Jóvenes+Adultos; la lista nominal alimenta
+  únicamente el informe por miembro, y el formulario lo rotula y avisa en las
+  dos direcciones. Para la 1.1 se acordó cambiar el modelo: la lista cuenta a
+  los miembros presentes, los contadores pasan a ser solo gente fuera del rol
+  (niños y visitantes) y "Total" se calcula como lista + contadores, de solo
+  lectura. Antes de codificarlo hay que decidir qué se hace con los cultos ya
+  guardados, donde los contadores incluían a todo el mundo (sumarles la lista
+  los contaría dos veces); la opción simple es dejar lo histórico como está y
+  aplicar la regla nueva desde la fecha del cambio.
+
 - **Reorganizar el layout de Ajustes.** El grid de 2 columnas deja huecos
   verticales cuando una columna es más alta que la otra. Hay una propuesta
   (primitivas `SettingsPage` / `SettingsColumns` / `SettingsStack` con columnas

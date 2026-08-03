@@ -1223,8 +1223,11 @@ export const es = {
     ninos: "Niños",
     jovenes: "Jóvenes",
     adultos: "Adultos",
-    totalPresentes: "Total presentes",
+    totalPresentes: "Total del conteo",
+    conteoHint: "La asistencia que muestra la bitácora sale de ESTOS contadores. La lista de arriba alimenta el informe por miembro. Son dos registros distintos: llena los dos.",
     avisoConteoSinLista: "Anotaste {{n}} en el conteo pero no marcaste a nadie como presente en la lista de asistencia. El conteo alimenta la bitácora de cultos; la lista alimenta el informe por miembro, que quedará vacío para este culto.",
+    avisoListaSinConteo_one: "Marcaste {{count}} presente en la lista pero los contadores están en cero: este culto saldrá sin asistencia en la bitácora. Llena los contadores por grupo.",
+    avisoListaSinConteo_other: "Marcaste {{count}} presentes en la lista pero los contadores están en cero: este culto saldrá sin asistencia en la bitácora. Llena los contadores por grupo.",
     eventosPlaceholder: "Conversiones, bautismos, presentaciones de niños u otros eventos especiales…",
     tipo: {
       dominical: "Culto dominical",

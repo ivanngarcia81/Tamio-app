@@ -1229,8 +1229,11 @@ export const en: Resources = {
     ninos: "Children",
     jovenes: "Youth",
     adultos: "Adults",
-    totalPresentes: "Total present",
+    totalPresentes: "Headcount total",
+    conteoHint: "The attendance shown in the service log comes from THESE counters. The list above feeds the per-member report. They are two separate records: fill in both.",
     avisoConteoSinLista: "You entered {{n}} in the headcount but marked no one as present in the attendance list. The headcount feeds the service log; the list feeds the per-member report, which will be empty for this service.",
+    avisoListaSinConteo_one: "You marked {{count}} present in the list but the counters are at zero: this service will show no attendance in the log. Fill in the group counters.",
+    avisoListaSinConteo_other: "You marked {{count}} present in the list but the counters are at zero: this service will show no attendance in the log. Fill in the group counters.",
     eventosPlaceholder: "Conversions, baptisms, child dedications, or other special events…",
     tipo: {
       dominical: "Sunday service",
