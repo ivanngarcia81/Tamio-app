@@ -2820,6 +2820,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   -webkit-column-break-inside: avoid;
   break-inside: avoid;
 }
+/* Pareja inseparable dentro del mosaico (una persona y su firma). Como el
+   bloque entero es hijo directo del mosaico, hereda el "no partir" de arriba
+   y sus dos tarjetas caen siempre en la misma columna, una debajo de otra. */
+.settings-par > * + * { margin-top: 20px; }
 
 /* Zonas de Ajustes: jerarquía de elevación por categoría. El panel de la
    zona es plano y apenas tintado (nivel 0); las tarjetas dentro conservan

@@ -370,8 +370,14 @@ export default function Configuracion({
                   estado={estados.institucion}
                 />
               )}
+              {/* Cada persona va con su firma dentro de un mismo bloque. El
+                  mosaico reparte las tarjetas por altura sin saber que son
+                  pareja, y sin esto la firma del pastor acababa arriba de una
+                  columna con sus datos abajo en la otra: una firma suelta,
+                  lejos de quien firma. El bloque no se puede partir, así que
+                  las dos caen siempre juntas y en orden. */}
               {verTesoreria && (
-                <>
+                <div className="settings-par">
                   <TreasurerSettings
                     value={treasurerForm}
                     onChange={(patch) => { setTreasurerForm((v) => ({ ...v, ...patch })); programarGuardado("tesorero"); }}
@@ -383,21 +389,23 @@ export default function Configuracion({
                     onPathChange={(p) => { setFirmaPath(p); programarGuardado("firmaTesorero", 50); }}
                     estado={estados.firmaTesorero}
                   />
-                </>
+                </div>
               )}
               {/* Pastor: compartido (firma en tesorería y secretaría). */}
-              <PastorSettings
-                value={pastorForm}
-                onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
-                errors={pastorErrors}
-                estado={estados.pastor}
-              />
-              <SignatureUploader
-                path={pastorFirmaPath}
-                onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
-                variant="pastor"
-                estado={estados.firmaPastor}
-              />
+              <div className="settings-par">
+                <PastorSettings
+                  value={pastorForm}
+                  onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
+                  errors={pastorErrors}
+                  estado={estados.pastor}
+                />
+                <SignatureUploader
+                  path={pastorFirmaPath}
+                  onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
+                  variant="pastor"
+                  estado={estados.firmaPastor}
+                />
+              </div>
               {verTesoreria && (
                 <PDFPreview
                   churchNombre={churchForm.nombre}
