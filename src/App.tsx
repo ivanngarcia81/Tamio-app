@@ -32,7 +32,7 @@ import Ayuda from "./pages/Ayuda";
 import { iniciarTour } from "./tour";
 import { migrarComprobantesExternos } from "./services/comprobantes";
 import { migrarImagenesIglesia } from "./services/imagenesIglesia";
-import { pausarSyncPorRestauracion, restauracionAplicada } from "./services/restaurar";
+import { sincronizarPausaDesdeRust } from "./services/restaurar";
 import { showToast } from "./toast";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
@@ -578,12 +578,13 @@ export default function App() {
         await migrarComprobantesExternos(c.id)
           .then(avisarComprobantes)
           .catch(() => {});
-        // Cinturón y tirantes: la pausa se marca antes de reiniciar, pero si
-        // este arranque acaba de aplicar un respaldo, se vuelve a marcar. Un
+        // La pausa la escribe Rust en el instante de aplicar el respaldo, en
+        // un archivo junto a la base; aquí solo se pone al día el espejo de
+        // localStorage ANTES de que se encienda la sincronización. Un
         // localStorage limpiado no debe dejar la sincronización suelta sobre
         // datos recién restaurados.
         setPaso("comprobando si se restauró un respaldo");
-        if (await restauracionAplicada()) pausarSyncPorRestauracion();
+        await sincronizarPausaDesdeRust();
         // El logo y las firmas siguen la misma regla que los comprobantes:
         // dentro de la app y con ruta relativa. Como esto reescribe columnas de
         // `churches`, la iglesia se vuelve a leer para no quedarnos con las

@@ -987,6 +987,12 @@ fn db_backup_paquete(
 const CARPETA_RESTAURACION: &str = "restauracion";
 const MARCADOR: &str = "APLICAR";
 const BASE_DEL_PAQUETE: &str = "tamio.db";
+/// Archivo junto a la base que deja la sincronización en pausa tras aplicar
+/// un respaldo. Lo escribe `aplicar_restauracion_pendiente`; el frontend lo
+/// consulta (`sync_pausada`) y lo borra cuando un humano decide reactivar
+/// (`sync_pausa_quitar`). Vive fuera de la base a propósito: la base es
+/// justamente lo que el respaldo reemplaza.
+const PAUSA_SYNC: &str = "sync-en-pausa-por-restauracion";
 
 /// Lo que se le enseña al usuario ANTES de tocar nada: qué trae el paquete.
 /// Un "¿seguro?" genérico no basta para la operación más destructiva de la app.
@@ -1279,6 +1285,16 @@ fn aplicar_restauracion_pendiente(
     // pasó.
     let _ = std::fs::remove_file(dir.join(MARCADOR));
 
+    // La pausa de sincronización se escribe AQUÍ, en el mismo instante en que
+    // el respaldo empieza a aplicarse — no después, desde el frontend. Antes
+    // la marcaba el frontend al arrancar, y si la app se cerraba entre aplicar
+    // y arrancar la interfaz, la pausa no se escribía nunca: la sincronización
+    // habría corrido sola sobre datos recién restaurados, exactamente lo que
+    // el diseño existe para evitar. Se escribe antes del intercambio de bases:
+    // si la restauración fallara a medias, quedarse en pausa de más es el lado
+    // seguro del error.
+    let _ = std::fs::write(ruta_db.with_file_name(PAUSA_SYNC), b"1");
+
     // La base actual se APARTA, nunca se borra: si el paquete resultara estar
     // dañado a medio camino, el tesorero no puede quedarse sin las dos.
     let apartada = if ruta_db.exists() {
@@ -1340,6 +1356,34 @@ struct RestauroAlArrancar(bool);
 #[tauri::command]
 fn restauracion_aplicada(state: tauri::State<'_, RestauroAlArrancar>) -> bool {
     state.0
+}
+
+/// Ruta del archivo de pausa (junto a la base, en app_config_dir).
+fn ruta_pausa_sync(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
+    Ok(app
+        .path()
+        .app_config_dir()
+        .map_err(|e| e.to_string())?
+        .join(PAUSA_SYNC))
+}
+
+/// ¿La sincronización está en pausa por una restauración? El frontend lo lee
+/// en el arranque, antes de encender el motor de sincronización.
+#[tauri::command]
+fn sync_pausada(app: tauri::AppHandle) -> bool {
+    ruta_pausa_sync(&app).map(|p| p.is_file()).unwrap_or(false)
+}
+
+/// Un humano revisó los datos y decidió reactivar: se quita el archivo.
+#[tauri::command]
+fn sync_pausa_quitar(app: tauri::AppHandle) -> Result<(), String> {
+    let ruta = ruta_pausa_sync(&app)?;
+    match std::fs::remove_file(&ruta) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 /// Carpeta de datos de la app. Todo lo que guarda Tamio cuelga de aquí.
@@ -1535,7 +1579,7 @@ pub fn run() {
             vibrancy_ok, tray_balance, menu_language, db_select, db_execute, db_backup,
             db_backup_paquete, comprobante_existe, copiar_a_datos,
             restaurar_preparar, restaurar_confirmar, restaurar_cancelar, restaurar_reiniciar,
-            restauracion_aplicada
+            restauracion_aplicada, sync_pausada, sync_pausa_quitar
         ]);
 
     // El menú de ventana (y sus eventos) solo existe en escritorio.

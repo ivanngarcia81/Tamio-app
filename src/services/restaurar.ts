@@ -66,6 +66,14 @@ export function restauracionAplicada(): Promise<boolean> {
 // automático es lo contrario de lo que hace falta. Así que restaurar deja la
 // sincronización PAUSADA, con un aviso visible, hasta que un humano mire los
 // datos y decida.
+//
+// La fuente de verdad es un ARCHIVO junto a la base, que escribe Rust en el
+// mismo instante en que aplica el respaldo (aplicar_restauracion_pendiente).
+// Antes la escribía este frontend en localStorage después de arrancar, y eso
+// dejaba un hueco: si la app se cerraba entre aplicar y arrancar la interfaz,
+// la pausa no se escribía nunca. localStorage queda solo como espejo síncrono
+// (syncManager y el banner necesitan leerla sin await); el arranque lo pone
+// al día desde Rust ANTES de encender el motor de sincronización.
 
 const PAUSA_KEY = "tamio-sync-pausado-por-restauracion";
 
@@ -81,6 +89,18 @@ export function pausarSyncPorRestauracion(): void {
   try { localStorage.setItem(PAUSA_KEY, "1"); } catch { /* noop */ }
 }
 
+/** Pone el espejo al día desde el archivo de Rust. Solo enciende la pausa,
+ *  nunca la apaga: si el archivo faltara pero el espejo dijera "en pausa"
+ *  (una restauración de antes de que existiera el archivo), quedarse en
+ *  pausa es el lado seguro — reactivar es siempre decisión de un humano. */
+export async function sincronizarPausaDesdeRust(): Promise<void> {
+  const pausada = await invoke<boolean>("sync_pausada").catch(() => false);
+  if (pausada) pausarSyncPorRestauracion();
+}
+
 export function reactivarSync(): void {
   try { localStorage.removeItem(PAUSA_KEY); } catch { /* noop */ }
+  // Si el borrado remoto fallara, el próximo arranque vuelve a poner la
+  // pausa desde el archivo y el banner reaparece: error del lado seguro.
+  invoke("sync_pausa_quitar").catch(() => {});
 }
