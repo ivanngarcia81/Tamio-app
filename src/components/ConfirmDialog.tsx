@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import Portal from "./Portal";
 
 interface Props {
   title: string;
@@ -20,18 +21,22 @@ export default function ConfirmDialog({
 }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onCancel);
+  // El Portal no es decorativo: dentro de un contenedor con columnas CSS
+  // (Configuración) este overlay se veía pero no recibía clics en Mac.
   return (
-    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="confirm-card">
-        <div className="confirm-title">{title}</div>
-        <div className="confirm-message">{message}</div>
-        <div className="confirm-actions">
-          <button className="btn secondary" onClick={onCancel}>{t("common.cancelar")}</button>
-          <button className={`btn primary${danger ? " danger" : ""}`} onClick={onConfirm}>
-            {confirmLabel ?? t("common.confirmar")}
-          </button>
+    <Portal>
+      <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+        <div className="confirm-card">
+          <div className="confirm-title">{title}</div>
+          <div className="confirm-message">{message}</div>
+          <div className="confirm-actions">
+            <button className="btn secondary" onClick={onCancel}>{t("common.cancelar")}</button>
+            <button className={`btn primary${danger ? " danger" : ""}`} onClick={onConfirm}>
+              {confirmLabel ?? t("common.confirmar")}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

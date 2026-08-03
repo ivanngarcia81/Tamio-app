@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { borrarDatosIglesia, reinicioDeFabrica, type Church } from "../../db";
 import { IconWarn } from "../../icons";
+import Portal from "../Portal";
 
 interface Props {
   church: Church;
@@ -76,6 +77,7 @@ export default function DangerZoneSettings({ church }: Props) {
       </div>
 
       {accion && (
+        <Portal>
         <div className="modal-overlay hoja-abajo" onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
           <div className="modal-card hoja-abajo" style={{ maxWidth: 420 }}>
             <div className="modal-header">
@@ -114,6 +116,7 @@ export default function DangerZoneSettings({ church }: Props) {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );

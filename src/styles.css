@@ -1636,7 +1636,11 @@ html.vibrancy .main { background: var(--surface); }
 /* Micro entrance animation */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* `none` y no `translateY(0)`: con fill-mode `both` el valor final se
+     RETIENE para siempre, y un transform retenido —aunque sea de cero—
+     convierte al elemento en contenedor de sus `position: fixed` hijos.
+     Visualmente son idénticos; en capas no. */
+  to { opacity: 1; transform: none; }
 }
 .enter { animation: fadeInUp .2s ease both; }
 /* Transición entre páginas: un fundido corto de todo el encabezado y el

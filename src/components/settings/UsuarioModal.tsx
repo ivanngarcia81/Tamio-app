@@ -5,6 +5,7 @@ import { IconClose, IconWarn } from "../../icons";
 import { showToast } from "../../toast";
 import { playSound } from "../../sound";
 import { useEscapeClose } from "../../hooks/useEscapeClose";
+import Portal from "../Portal";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
@@ -65,6 +66,7 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
   }
 
   return (
+    <Portal>
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-card">
         <div className="modal-header">
@@ -130,5 +132,6 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
