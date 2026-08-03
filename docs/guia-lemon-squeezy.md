@@ -35,7 +35,7 @@ un punto seguro: se puede parar y seguir otro día.
    - **Description:** breve, por ejemplo:
      *"Treasury and administration software for churches. Monthly
      subscription, full access."*
-   - **Pricing:** elige **Subscription**, `$19.00 USD`, cada `1 month`.
+   - **Pricing:** elige **Subscription**, `$23.99 USD`, cada `1 month`.
    - Imagen: el logo de Tamio si lo tienes a mano (opcional).
 5. Guarda ("Publish").
 6. Abre el producto recién creado y localiza el botón **Share** (o
@@ -45,11 +45,11 @@ un punto seguro: se puede parar y seguir otro día.
 
 ## Fase 2 — Crear el webhook en Lemon Squeezy (~5 min, en el navegador)
 
-1. Necesitas la URL de tu función. Es tu URL de Supabase (la de
-   `VITE_SUPABASE_URL` en tu archivo `.env` del proyecto) más el sufijo:
+1. La URL de tu función es esta (ya con tu proyecto de Supabase; es la misma
+   que aparece en `docs/planes.md`):
 
    ```
-   https://TU-PROYECTO.supabase.co/functions/v1/pago-webhook
+   https://hkpbkpojeierxqtbmagh.supabase.co/functions/v1/pago-webhook
    ```
 
 2. Inventa un **signing secret**: una frase larga y aleatoria (mínimo 6

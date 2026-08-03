@@ -169,11 +169,25 @@ modo test cuando llegue.
 1. **Cuenta y tienda:** <https://lemonsqueezy.com> → Sign up → crear tu
    *store* (nombre: Tamio). Se puede trabajar en **modo test** de inmediato;
    activar pagos reales pide verificación (días).
-2. **Productos:** crear 1 producto "Tamio" con **3 variantes** (o 3 productos):
-   - `Tamio Completo` · `Tamio Tesoreria` · `Tamio Secretaria`
-   - ⚠️ El nombre del variant DEBE contener "tesoreria" o "secretaria" para
-     esos planes (así el webhook los mapea); cualquier otro nombre = completo.
-   - Tipo: **suscripción** (mensual o anual, como se decida el precio).
+2. **Productos:** para la 1.1 se vende **un solo producto** "Tamio"
+   (suscripción mensual, $22 USD — ver *Precio*, más abajo).
+   - ⚠️ **Corregido el 3 ago 2026:** una versión anterior de este documento
+     decía que el webhook mapea los planes por el NOMBRE de la variante
+     (que contenga "tesoreria"/"secretaria"). **Eso no es lo que hace el
+     código.** `pago-webhook` mapea por **ID de producto o de variante**,
+     configurados como secretos:
+     ```bash
+     supabase secrets set LEMON_PLAN_TESORERIA="123456"
+     supabase secrets set LEMON_PLAN_SECRETARIA="234567"
+     supabase secrets set LEMON_PLAN_COMPLETO="345678"
+     ```
+     Se hizo así a propósito: el nombre de una variante se puede editar en
+     cualquier momento desde el panel y un cambio inocente ("Tamio
+     Tesorería 2026") regalaría o quitaría áreas sin que nadie lo note.
+   - Mientras **no** se configure ningún `LEMON_PLAN_*` —el caso de hoy, con
+     un único producto— todo pago concede plan **completo**, que es lo
+     correcto. Con el mapa configurado, un producto que no esté en él NO
+     concede nada (deja el plan como estaba y lo avisa en la respuesta).
 3. **Webhook:** Settings → Webhooks → New:
    - URL: `https://hkpbkpojeierxqtbmagh.supabase.co/functions/v1/pago-webhook`
    - Signing secret: inventa uno fuerte y guárdalo.
@@ -204,16 +218,67 @@ modo test cuando llegue.
 - **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y
   sincronizar la suscripción desde la nube como autoridad.
 
+## Precio (decidido el 3 de agosto de 2026)
+
+**$23.99 USD al mes por iglesia — UN SOLO PRECIO en todos los canales.**
+
+Dos requisitos fijaron el número:
+
+1. **Quedarse con $20 limpios** por iglesia, pase lo que pase.
+2. **Un solo precio publicado**, igual en la web y en la App Store. Dos
+   precios distintos para el mismo producto confunden al comprador y obligan
+   a explicar por qué (y "porque Apple me cobra más" no es asunto suyo).
+
+Como el precio debe ser el mismo en los dos sitios, lo manda **el canal más
+caro**: Apple. El mínimo para netear $20 con su 15 % es `20 / 0.85 = $23.53`,
+que se redondea a **$23.99**.
+
+| Precio | Neto Lemon Squeezy (5 % + $0.50) | Neto Apple (15 %) | ¿Cumple $20 en ambos? |
+|---|---|---|---|
+| $19 | $17.55 | $16.15 | no |
+| $21.58 | $20.00 | $18.34 | no |
+| $22 | $20.40 | $18.70 | no |
+| **$23.99** | **$22.29** | **$20.39** | **sí** |
+
+Con este precio, cada iglesia deja **como mínimo $20.39**, y $22.29 cuando
+compra por la web — el canal preferido. La diferencia (~$1.90) es el margen
+extra por vender directo, no un precio distinto.
+
+**En la 1.1 solo se vende por la web** (tamio.church con Lemon Squeezy),
+aunque el precio ya esté listo para la App Store:
+- Implementar compras dentro de la app es un proyecto en sí mismo y no hay
+  razón para hacerlo antes de tener clientes.
+- Por la web se controlan precios, cupones y cortesías al instante; en Apple
+  todo pasa por su sistema de niveles.
+- Es legal y común (Netflix, Spotify): la app puede pedir iniciar sesión con
+  una cuenta comprada fuera. Lo único **prohibido** por Apple es poner dentro
+  de la app un botón o mensaje que mande a comprar afuera.
+
+Cuando algún día se añada la compra dentro de la app, **el precio no cambia**:
+por eso se eligió $23.99 desde el principio. Subir el precio a clientes que ya
+pagan es mucho más caro (en confianza) que empezar $2 más arriba.
+
+**Lo que Lemon Squeezy da a cambio de su 5 %:** actúa como *Merchant of
+Record*, o sea que legalmente el vendedor son ellos y se encargan de los
+impuestos de cada estado y país. Para una persona sola, eso vale más que la
+comisión. (Las tarjetas internacionales pueden sumar ~1.5 %: aun así el neto
+se queda en ~$21.9, muy por encima de la meta.)
+
 ## Decisiones tomadas
 - Tres planes: Tesorería, Secretaría, Completo (Completo más barato que la suma).
 - La integración entre áreas es exclusiva del Completo.
 - Tesorería-solo puede crear **miembros básicos** (nombre, contacto, RFC, nota).
 - Subir de plan enriquece los miembros existentes sin perder datos.
+- **Proveedor de pago: Lemon Squeezy** (cuenta aprobada el 3 ago 2026).
+- **Precio: $23.99/mes por iglesia, el mismo en todos los canales** (ver
+  arriba). En la 1.1 se vende solo por la web.
+- Para la 1.1 se vende **un solo producto** (plan completo). Los tres planes
+  por módulo quedan diseñados y soportados por el webhook, pero no se ponen a
+  la venta todavía: primero hay que tener clientes.
 
 ## Pendientes de decidir (a futuro)
-- Precios concretos y periodicidad (mensual / anual, descuento anual).
-- Proveedor de pago definitivo (recomendado: Lemon Squeezy o Paddle por manejar
-  impuestos por país).
+- Descuento por pago anual (p. ej. 2 meses gratis).
+- Precios de los planes por módulo, si algún día se ponen a la venta.
 - Prueba gratis / periodo de evaluación.
 - Qué pasa exactamente al vencer (solo lectura vs bloqueo total).
 
