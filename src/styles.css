@@ -2801,6 +2801,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   column-gap: var(--space-6);
   margin-bottom: 20px;
 }
+/* Una sección con UNA sola tarjeta no tiene con qué equilibrar dos columnas:
+   va a ancho completo en vez de dejar media pantalla vacía al lado. */
+.settings-masonry.una-tarjeta { columns: 1; }
 .settings-masonry > * {
   min-width: 0;
   /* En columnas el hueco vertical lo pone el margen, no `gap`. */

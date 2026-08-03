@@ -313,10 +313,10 @@ export default function Configuracion({
               encima. El mosaico interno balancea las alturas por zona. */}
           <section className="settings-zona">
             <div className="settings-zona-head">
-              <div className="settings-zona-titulo">{t("config.zona.identidad")}</div>
-              <div className="settings-zona-sub">{t("config.zona.identidadSub")}</div>
+              <div className="settings-zona-titulo">{t("config.zona.iglesia")}</div>
+              <div className="settings-zona-sub">{t("config.zona.iglesiaSub")}</div>
             </div>
-            <div className="settings-masonry">
+            <div className="settings-masonry una-tarjeta">
               <ChurchSettings
                 value={churchForm}
                 onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
@@ -355,8 +355,8 @@ export default function Configuracion({
 
           <section className="settings-zona">
             <div className="settings-zona-head">
-              <div className="settings-zona-titulo">{t("config.zona.trabajo")}</div>
-              <div className="settings-zona-sub">{t("config.zona.trabajoSub")}</div>
+              <div className="settings-zona-titulo">{t("config.zona.documentos")}</div>
+              <div className="settings-zona-sub">{t("config.zona.documentosSub")}</div>
             </div>
             <div className="settings-masonry">
               {/* La vista previa del PDF es el RESULTADO de estas cuatro
@@ -405,11 +405,20 @@ export default function Configuracion({
                   tesoreroCargo={treasurerForm.cargo}
                 />
               )}
-              {verTesoreria && (
-                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-              )}
             </div>
           </section>
+
+          {verTesoreria && (
+            <section className="settings-zona">
+              <div className="settings-zona-head">
+                <div className="settings-zona-titulo">{t("config.zona.categorias")}</div>
+                <div className="settings-zona-sub">{t("config.zona.categoriasSub")}</div>
+              </div>
+              <div className="settings-masonry una-tarjeta">
+                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+              </div>
+            </section>
+          )}
 
           <section className="settings-zona">
             <div className="settings-zona-head">
