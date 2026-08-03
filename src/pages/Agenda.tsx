@@ -56,7 +56,9 @@ interface ModalState {
 }
 
 function accent(color: string): CSSProperties {
-  return { "--accent-color": color } as CSSProperties;
+  // Las tarjetas son <button> clicables (como en Cartas): heredan la
+  // tipografía y pierden los bordes por defecto del navegador.
+  return { "--accent-color": color, textAlign: "left", cursor: "pointer", font: "inherit" } as CSSProperties;
 }
 function isoLocal(dt: Date): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
@@ -440,6 +442,25 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
 
   const vacio = actividades.length === 0;
 
+  // Las tarjetas llevan a la vista donde lo contado SÍ se ve. Hacía falta
+  // porque el conteo y la cuadrícula podían discrepar sin remedio: "Esta
+  // semana" cuenta de domingo a sábado alrededor de HOY, y cuando esa semana
+  // cruza el cambio de mes (28 de julio en la semana del 26 jul–1 ago), la
+  // vista mensual de agosto no puede mostrar ese día — sus celdas de relleno
+  // son huecos, no días del mes anterior. La vista de semana centrada en hoy
+  // enseña exactamente la ventana que la tarjeta cuenta. Se limpian los
+  // filtros para que la vista muestre todo lo que el conteo vio (las
+  // estadísticas se calculan sin filtrar).
+  function irASemanaDeHoy() {
+    limpiarFiltros();
+    setCursor(hoy);
+    setVista("semana");
+  }
+  function irALista() {
+    limpiarFiltros();
+    setVista("lista");
+  }
+
   return (
     <>
       <div className="header">
@@ -455,22 +476,22 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
       <div className="content">
         <div className="dash-canvas">
         <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-          <div className="stat-card accent" style={accent("var(--accent-3)")}>
+          <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={irASemanaDeHoy}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
             <div className="stat-value md"><CountUp value={stats.deHoy} format={String} /></div>
-          </div>
-          <div className="stat-card accent" style={accent("var(--accent-4)")}>
+          </button>
+          <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={irASemanaDeHoy}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statSemana")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
             <div className="stat-value md"><CountUp value={stats.deSemana} format={String} /></div>
-          </div>
-          <div className="stat-card accent" style={accent("var(--accent-1)")}>
+          </button>
+          <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={irALista}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statProximas")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
             <div className="stat-value md"><CountUp value={stats.proximas} format={String} /></div>
-          </div>
-          <div className="stat-card accent" style={accent("var(--accent-5)")}>
+          </button>
+          <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={irALista}>
             <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
             <div className="stat-value md"><CountUp value={stats.porConfirmar} format={String} /></div>
-          </div>
+          </button>
         </div>
         </div>
 
