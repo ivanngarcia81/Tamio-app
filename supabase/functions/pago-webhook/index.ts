@@ -1,37 +1,41 @@
-// Edge Function `pago-webhook` — recibe los avisos de pago (Paddle Billing)
+// Edge Function `pago-webhook` — recibe los avisos de pago (Lemon Squeezy)
 // y actualiza el plan de la iglesia en la nube.
 //
-// Flujo: cliente paga → Paddle llama esta URL → aquí se verifica la firma,
-// se identifica la iglesia por el CORREO del comprador (perfiles → church_id)
-// y se escribe plan/sub_estado/sub_vence en `iglesias`. La app baja ese plan
-// en su siguiente sincronización.
+// Flujo: cliente paga → Lemon Squeezy llama esta URL → aquí se verifica la
+// firma, se identifica la iglesia por el CORREO del comprador (perfiles →
+// church_id) y se escribe plan/sub_estado/sub_vence en `iglesias`. La app baja
+// ese plan en su siguiente sincronización.
+//
+// (Nota histórica: esta función nació para Paddle. El 3 ago 2026 Lemon Squeezy
+// aprobó la cuenta de Tamio y se adaptó a su formato: firma HMAC del cuerpo en
+// el header `X-Signature`, evento en `meta.event_name` y datos en
+// `data.attributes`, al estilo JSON:API.)
 //
 // Cómo identificamos al comprador (en este orden):
-//   1) data.custom_data.email  → lo mejor. Pásalo en el checkout, p. ej.:
-//        Paddle.Checkout.open({ items: [...], customData: { email: correo } })
-//   2) si no viene, se consulta el cliente en la API de Paddle por customer_id
-//      (requiere PADDLE_API_KEY).
+//   1) meta.custom_data.email → lo mejor: el correo de la CUENTA de Tamio,
+//      pasado en el enlace del checkout:
+//        https://TU-TIENDA.lemonsqueezy.com/checkout/buy/VARIANT_ID
+//          ?checkout[custom][email]=correo@delcomprador.com
+//   2) data.attributes.user_email → el correo que el comprador escribió al
+//      pagar. Suele ser el mismo; sirve de respaldo sin llamar a ninguna API.
 //
 // Desplegar:
 //   supabase functions deploy pago-webhook --no-verify-jwt
-//   supabase secrets set PADDLE_WEBHOOK_SECRET=...   (el "secret key" del destino
-//                                                     de notificaciones en Paddle)
-//   supabase secrets set PADDLE_API_KEY=...          (opcional: resolver el correo
-//                                                     por customer_id)
-//   supabase secrets set PADDLE_API_URL=https://api.paddle.com
-//                                       (sandbox: https://sandbox-api.paddle.com)
-// En Paddle → Developer Tools → Notifications: crea un destino con la URL de esta
-// función y suscribe los eventos subscription.created / subscription.updated /
-// subscription.activated / subscription.canceled / subscription.past_due /
-// subscription.paused.
+//   supabase secrets set LEMON_WEBHOOK_SECRET=...   (el "Signing secret" del
+//                                                    webhook en Lemon Squeezy)
+// En Lemon Squeezy → Settings → Webhooks: crea un webhook con la URL de esta
+// función, ese signing secret, y marca los eventos subscription_created,
+// subscription_updated, subscription_resumed, subscription_paused,
+// subscription_unpaused, subscription_cancelled y subscription_expired.
 //
 // Nota de plan: Tamio se vende como UN producto, así que hoy todo pago da
-// "completo". Si algún día hay planes por módulo, se mapean por producto/precio
-// con los secretos PADDLE_PLAN_TESORERIA / _SECRETARIA / _COMPLETO (ver planDe).
-// En cuanto se configure aunque sea uno, el mapa manda: comprar las dos áreas
-// por separado da "completo", y un producto que no esté en el mapa NO concede
-// nada (se deja el plan como estaba y se avisa en la respuesta).
-// El plan NO se toma de custom_data: eso viaja desde el navegador del comprador.
+// "completo". Si algún día hay planes por módulo, se mapean por producto o
+// variante con los secretos LEMON_PLAN_TESORERIA / _SECRETARIA / _COMPLETO
+// (ver planDe). En cuanto se configure aunque sea uno, el mapa manda: comprar
+// las dos áreas por separado da "completo", y un producto que no esté en el
+// mapa NO concede nada (se deja el plan como estaba y se avisa en la
+// respuesta). El plan NO se toma de custom_data: eso viaja desde el navegador
+// del comprador.
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -50,43 +54,32 @@ function igualSeguro(a: string, b: string): boolean {
   return dif === 0;
 }
 
-// Paddle envía el header `Paddle-Signature` con el formato: "ts=...;h1=...".
-// Se firma la cadena `${ts}:${cuerpo}` con HMAC-SHA256 y el secreto del destino.
+// Lemon Squeezy firma el CUERPO CRUDO con HMAC-SHA256 (el signing secret del
+// webhook) y manda el resultado en hexadecimal en el header `X-Signature`.
+// Sin el prefijo de timestamp que usaba Paddle.
 async function firmaValida(cuerpo: string, header: string | null, secreto: string): Promise<boolean> {
   if (!header) return false;
-  const partes: Record<string, string> = {};
-  for (const kv of header.split(";")) {
-    const i = kv.indexOf("=");
-    if (i > 0) partes[kv.slice(0, i).trim()] = kv.slice(i + 1).trim();
-  }
-  const ts = partes["ts"];
-  const h1 = partes["h1"];
-  if (!ts || !h1) return false;
   const key = await crypto.subtle.importKey(
     "raw", enc(secreto), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
   );
-  const mac = await crypto.subtle.sign("HMAC", key, enc(`${ts}:${cuerpo}`));
-  return igualSeguro(hex(mac), h1.toLowerCase());
+  const mac = await crypto.subtle.sign("HMAC", key, enc(cuerpo));
+  return igualSeguro(hex(mac), header.trim().toLowerCase());
 }
 
 // Plan según lo COMPRADO, no según lo que diga el navegador.
 //
-// Antes esto leía `custom_data.plan`, que se envía desde el checkout en el
-// navegador del comprador y por tanto es alterable: bastaba con cambiarlo para
-// pedir un plan distinto del pagado. Hoy no había daño real porque Tamio se
-// vende como un solo producto y todos deben recibir "completo", pero en cuanto
-// exista un plan más barato sería una puerta abierta.
+// El plan se deduce del producto/variante que Lemon Squeezy informa en el
+// evento, que es dato de SU servidor y el comprador no puede tocar. Los IDs se
+// configuran como secretos, para no tener que tocar código al crear productos:
 //
-// Ahora el plan se deduce del producto/precio que Paddle informa en el evento,
-// que es dato del servidor de Paddle y el comprador no puede tocar. Los IDs se
-// configuran como secretos, para no tener que tocar código al crear un producto:
+//   supabase secrets set LEMON_PLAN_TESORERIA="123456"
+//   supabase secrets set LEMON_PLAN_SECRETARIA="234567"
+//   supabase secrets set LEMON_PLAN_COMPLETO="345678,456789"
 //
-//   supabase secrets set PADDLE_PLAN_TESORERIA="pro_aaa,pri_bbb"
-//   supabase secrets set PADDLE_PLAN_SECRETARIA="pro_ccc"
-//   supabase secrets set PADDLE_PLAN_COMPLETO="pro_ddd"
+// (valen tanto product_id como variant_id, separados por comas)
 //
-// Mientras no se configure ninguno —el caso de hoy, con un único producto— todo
-// pago sigue dando "completo", que es lo correcto.
+// Mientras no se configure ninguno —el caso de hoy, con un único producto—
+// todo pago da "completo", que es lo correcto.
 function idsDelSecreto(nombre: string): string[] {
   return (Deno.env.get(nombre) ?? "")
     .split(",")
@@ -97,36 +90,23 @@ function idsDelSecreto(nombre: string): string[] {
 /**
  * Plan comprado, o `null` si el producto no está en el mapa.
  *
- * Dos reglas que antes no estaban:
+ * Dos reglas heredadas de la versión Paddle, que se conservan:
  *
- * - **Comprar las dos áreas por separado da "completo".** El bucle anterior
- *   devolvía en el primer acierto, así que una suscripción con Tesorería y
- *   Secretaría en el mismo carrito se resolvía como "tesoreria" y el cliente
- *   se quedaba sin la mitad de lo que pagó.
- * - **Un producto desconocido ya no da "completo".** Ese era el peor caso
- *   posible: en cuanto exista un plan barato, cualquier producto que no
- *   estuviera en el mapa —un error de dedo en un secreto, un producto de
- *   prueba, un add-on— concedía la app entera. Ahora devuelve null y quien
- *   llama deja el plan como estaba.
- *
- * El caso de hoy no cambia: sin ningún secreto configurado seguimos en modo
- * producto único y todo pago da "completo".
+ * - **Comprar las dos áreas por separado da "completo".**
+ * - **Un producto desconocido no concede nada**: con un mapa configurado, un
+ *   producto fuera del mapa (error de dedo en un secreto, producto de prueba,
+ *   add-on) deja el plan como estaba en vez de regalar la app entera.
  */
-function planDe(data: Record<string, any>): string | null {
-  // Todos los identificadores de producto y de precio que trae el evento.
-  const items: any[] = Array.isArray(data?.items) ? data.items : [];
+function planDe(attrs: Record<string, any>): string | null {
   const ids = new Set<string>();
-  for (const it of items) {
-    const precio = it?.price ?? {};
-    for (const v of [precio.id, precio.product_id, it?.product?.id]) {
-      if (typeof v === "string" && v) ids.add(v);
-    }
+  for (const v of [attrs?.product_id, attrs?.variant_id]) {
+    if (v !== null && v !== undefined && String(v)) ids.add(String(v));
   }
 
   const mapa = {
-    tesoreria: idsDelSecreto("PADDLE_PLAN_TESORERIA"),
-    secretaria: idsDelSecreto("PADDLE_PLAN_SECRETARIA"),
-    completo: idsDelSecreto("PADDLE_PLAN_COMPLETO"),
+    tesoreria: idsDelSecreto("LEMON_PLAN_TESORERIA"),
+    secretaria: idsDelSecreto("LEMON_PLAN_SECRETARIA"),
+    completo: idsDelSecreto("LEMON_PLAN_COMPLETO"),
   };
   const sinMapa = !mapa.tesoreria.length && !mapa.secretaria.length && !mapa.completo.length;
   if (sinMapa) return "completo";
@@ -141,44 +121,43 @@ function planDe(data: Record<string, any>): string | null {
   return null;
 }
 
-// Resuelve el correo del comprador consultando la API de Paddle por customer_id.
-async function correoDeCliente(customerId: string): Promise<string> {
-  const apiKey = Deno.env.get("PADDLE_API_KEY");
-  if (!apiKey || !customerId) return "";
-  const base = Deno.env.get("PADDLE_API_URL") ?? "https://api.paddle.com";
-  try {
-    const r = await fetch(`${base}/customers/${customerId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!r.ok) return "";
-    const j = await r.json();
-    return String(j?.data?.email ?? "").trim().toLowerCase();
-  } catch {
-    return "";
-  }
+// Estado de la suscripción en Lemon Squeezy → estado de Tamio.
+// Estados de LS: on_trial, active, paused, past_due, unpaid, cancelled, expired.
+function estadoDe(status: string): "activa" | "prueba" | "vencida" {
+  if (status === "active") return "activa";
+  if (status === "on_trial") return "prueba";
+  return "vencida";
 }
 
 serve(async (req: Request) => {
   try {
-    const secreto = Deno.env.get("PADDLE_WEBHOOK_SECRET");
-    if (!secreto) return new Response("PADDLE_WEBHOOK_SECRET no configurado", { status: 500 });
+    const secreto = Deno.env.get("LEMON_WEBHOOK_SECRET");
+    if (!secreto) return new Response("LEMON_WEBHOOK_SECRET no configurado", { status: 500 });
 
     const cuerpo = await req.text();
-    const ok = await firmaValida(cuerpo, req.headers.get("Paddle-Signature"), secreto);
+    const ok = await firmaValida(cuerpo, req.headers.get("X-Signature"), secreto);
     if (!ok) return new Response("firma inválida", { status: 401 });
 
     const evento = JSON.parse(cuerpo);
-    const tipo: string = String(evento?.event_type ?? "");
-    const data: Record<string, any> = evento?.data ?? {};
+    const tipo: string = String(evento?.meta?.event_name ?? "");
+    const attrs: Record<string, any> = evento?.data?.attributes ?? {};
 
-    // Correo del comprador: primero de custom_data; si no, por la API de Paddle.
-    let email = String(data?.custom_data?.email ?? "").trim().toLowerCase();
-    if (!email && data?.customer_id) email = await correoDeCliente(String(data.customer_id));
+    // Solo eventos de suscripción; lo demás (order_created, etc.) se ignora
+    // con 200 para que Lemon Squeezy no lo reintente.
+    if (!tipo.startsWith("subscription_")) {
+      return new Response("evento ignorado", { status: 200 });
+    }
+
+    // Correo del comprador: primero el de la cuenta de Tamio (custom_data del
+    // checkout); si no vino, el que escribió al pagar.
+    let email = String(evento?.meta?.custom_data?.email ?? "").trim().toLowerCase();
+    if (!email) email = String(attrs?.user_email ?? "").trim().toLowerCase();
     if (!email) return new Response("sin correo", { status: 400 });
 
-    const status: string = String(data?.status ?? "");
-    // Fin del periodo pagado → vencimiento del plan.
-    const finPeriodo = data?.next_billed_at ?? data?.current_billing_period?.ends_at ?? null;
+    const status: string = String(attrs?.status ?? "");
+    // Fin del periodo pagado → vencimiento del plan. Si la suscripción quedó
+    // cancelada pero pagada hasta una fecha, esa fecha viene en ends_at.
+    const finPeriodo = attrs?.renews_at ?? attrs?.ends_at ?? null;
     const vence: string | null = finPeriodo ? String(finPeriodo).slice(0, 10) : null;
 
     // service_role: puede leer/escribir saltando RLS (esta función corre en el
@@ -205,33 +184,29 @@ serve(async (req: Request) => {
       return new Response("cortesia: sin cambios", { status: 200 });
     }
 
-    let cambios: Record<string, unknown> | null = null;
+    // Con Lemon Squeezy no hace falta ramificar por tipo de evento: TODOS los
+    // eventos de suscripción traen el estado vigente en attributes.status, así
+    // que el estado se deriva de ahí (created/updated/resumed/cancelled/...).
+    const cambios: Record<string, unknown> = {
+      sub_estado: estadoDe(status),
+      sub_vence: vence,
+    };
+    // El estado y el vencimiento sí se aplican (el cobro ocurrió de verdad);
+    // lo único que se deja intacto es QUÉ áreas tiene contratadas cuando el
+    // producto no está en el mapa. Se avisa en la respuesta: Lemon Squeezy
+    // guarda el cuerpo en su registro de entregas, así que el fallo queda a la
+    // vista en vez de convertirse en un plan regalado en silencio.
+    const plan = planDe(attrs);
     let productoDesconocido = false;
-    if (tipo === "subscription.created" || tipo === "subscription.updated" || tipo === "subscription.activated") {
-      const activa = status === "active" || status === "trialing";
-      cambios = {
-        sub_estado: activa ? (status === "trialing" ? "prueba" : "activa") : "vencida",
-        sub_vence: vence,
-      };
-      // El estado y el vencimiento sí se aplican (el cobro ocurrió de verdad);
-      // lo único que se deja intacto es QUÉ áreas tiene contratadas, porque no
-      // sabemos qué compró. Se avisa en la respuesta: Paddle guarda el cuerpo
-      // en su registro de entregas, así que el fallo queda a la vista en vez
-      // de convertirse en un plan regalado en silencio.
-      const plan = planDe(data);
-      if (plan) cambios.plan = plan;
-      else productoDesconocido = true;
-    } else if (tipo === "subscription.canceled" || tipo === "subscription.past_due" || tipo === "subscription.paused") {
-      cambios = { sub_estado: "vencida" };
-    }
+    if (plan) cambios.plan = plan;
+    else productoDesconocido = true;
 
-    if (cambios) {
-      const { error } = await admin.from("iglesias").update(cambios).eq("id", churchId);
-      if (error) return new Response(`error al actualizar: ${error.message}`, { status: 500 });
-    }
+    const { error } = await admin.from("iglesias").update(cambios).eq("id", churchId);
+    if (error) return new Response(`error al actualizar: ${error.message}`, { status: 500 });
+
     if (productoDesconocido) {
       return new Response(
-        "ok, pero el producto comprado no está en PADDLE_PLAN_TESORERIA/_SECRETARIA/_COMPLETO: " +
+        "ok, pero el producto comprado no está en LEMON_PLAN_TESORERIA/_SECRETARIA/_COMPLETO: " +
         "estado y vencimiento actualizados, plan sin cambios",
         { status: 200 },
       );
