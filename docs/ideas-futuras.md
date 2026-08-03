@@ -284,6 +284,48 @@ invite a su equipo y asigne roles **sin tocar Supabase**.
   invitación todavía (solo "acceso por roles"). Para los primeros clientes, el
   admin/rol se asigna a mano en Supabase.
 
+### 1-bis. Evolucionar InicioSecretaria a panel de trabajo — 🎯 versión 1.1, DESPUÉS de los roles reales
+
+Propuesta del 3 ago 2026, archivada con una **corrección de premisa
+verificada en el código**: el panel de inicio de Secretaría SÍ existe
+(`src/pages/InicioSecretaria.tsx`; lo enruta `App.tsx` cuando el rol es
+secretaria y el plan incluye Secretaría — el cartel `HomeSinArea` solo sale
+cuando el área no está contratada, y eso es correcto). Lo que se propone no
+es crear la pantalla, sino **evolucionarla de panel de indicadores a panel
+de trabajo**.
+
+**La tesis, que se conserva tal cual:** la pregunta de la secretaria al
+abrir la app no es "¿cómo vamos?" sino "¿qué tengo que hacer?". Su trabajo
+es de pendientes, no de saldos. El panel de Tesorería se mira; este se usa
+para saber por dónde empezar.
+
+**La regla de oro:** cada tarjeta lleva a la pantalla donde se resuelve —
+un número sin acción detrás no va en el panel. Y el panel **no recalcula
+nada**: lee las mismas funciones que ya usan Actas, Cartas, Agenda e
+Informes, o se queda sin la tarjeta. (Es la lección de los bugs de agosto:
+dos pantallas que calculan lo mismo por separado terminan descuadrándose.)
+
+**Qué ya tiene el panel de hoy:** fichas incompletas, próximas actividades
+(5), accesos rápidos, activos y altas del año.
+
+**Qué le falta (todos son pendientes reales):**
+- Actas en borrador y esperando aprobación (estados ya en `Actas.tsx`).
+- Cartas esperando firma y listas para entregar (contadores ya en `Cartas.tsx`).
+- Actividades sin confirmar (ya es una tarjeta de `Agenda.tsx`).
+- Miembros con ausencias consecutivas que piden seguimiento (ya en
+  `InformesMembresia.tsx`).
+- **"Falta registrar el culto del domingo pasado"** — el único cálculo
+  nuevo y probablemente la tarjeta más útil: es el error que de verdad
+  comete una secretaria.
+- Y el primer paso de todos: las cuatro tarjetas actuales son `div` sin
+  clic — deben volverse botones que llevan a su pantalla, como ya se hizo
+  en Agenda y Cartas.
+
+**Dependencia y orden:** primero los roles reales (entrada 1 de arriba),
+después este panel — sin roles, casi nadie llega a esta pantalla. No
+requiere esquema nuevo ni migraciones. No se toca durante la revisión de
+Apple: es pantalla nueva a ojos del revisor.
+
 ### 2. Face ID / Touch ID para iniciar sesión
 Usar biometría (plugin oficial de Tauri) para desbloquear Tamio sin escribir la
 contraseña cada vez, estilo apps de banco. También puede servir de "candado"
