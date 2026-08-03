@@ -36,6 +36,27 @@ cd /Users/ivangarcia/Desktop/tesoreria-mac- && git pull origin main && npm insta
       el botón "Anotar motivos" en la cabecera de Ausentes. Y al guardar con
       todo en cero debe salir la confirmación "¿Guardar sin asistencia?".
 
+## 1-bis. Ajustes reorganizada (3 ago, ~5 min)
+
+La pantalla de Configuración cambió: guardado automático y seis secciones
+nuevas (Iglesia → Acceso y áreas → Documentos oficiales → Categorías →
+Preferencias → Zona sensible).
+
+- [ ] **Guardado automático.** Cambia el nombre de la iglesia y deja de
+      escribir: al segundo debe aparecer "Guardado" en la esquina de la
+      tarjeta. Ya no hay botón "Guardar cambios" al final de la página.
+- [ ] **El error también avisa.** Borra el nombre de la iglesia y espera un
+      segundo: debe salir "Revisa los campos marcados" en la tarjeta y el
+      campo en rojo. Al escribir un nombre otra vez, se guarda y el aviso
+      se va.
+- [ ] **Áreas guarda al elegir** (ya no tiene su propio botón).
+- [ ] **La vista previa del PDF** está ahora junto a Datos institucionales,
+      Tesorero y Pastor, sin botones (solo la hoja y el cartel).
+- [ ] **Huecos:** recorre la página completa en Mac y, si puedes, en iPad
+      Pro 12.9" horizontal. Iglesia y Categorías van a ancho completo; las
+      demás en dos columnas. Avisar si alguna sección deja media columna
+      vacía o una tarjeta se ve desproporcionada.
+
 ## 2. El recorrido con la consola (punto 5.5 de la auditoría, ~15 min)
 
 Es el ejercicio que destapó los bugs de esta semana. Con calma:
