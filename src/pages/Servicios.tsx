@@ -168,6 +168,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
           <LoadingState />
         ) : visibles.length === 0 ? (
           <EmptyState
+            pagina
             titulo={servicios.length === 0 ? t("servicios.aunNoHay") : t("servicios.sinResultados")}
             sub={servicios.length === 0 ? t("servicios.agregaPrimero") : t("servicios.sinResultadosSub")}
             icon={<IconBookOpen size={20} strokeWidth={1.8} />}

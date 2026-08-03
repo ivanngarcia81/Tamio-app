@@ -126,6 +126,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
           <LoadingState />
         ) : visibles.length === 0 ? (
           <EmptyState
+            pagina
             titulo={actas.length === 0 ? t("actas.aunNoHay") : t("actas.sinResultados")}
             sub={actas.length === 0 ? t("actas.agregaPrimera") : t("actas.sinResultadosSub")}
             icon={<IconFileText size={20} strokeWidth={1.8} />}

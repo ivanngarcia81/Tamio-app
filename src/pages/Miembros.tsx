@@ -223,6 +223,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
           <LoadingState />
         ) : visibles.length === 0 ? (
           <EmptyState
+            pagina
             titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
             sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
             icon={<IconPlus size={20} strokeWidth={1.8} />}

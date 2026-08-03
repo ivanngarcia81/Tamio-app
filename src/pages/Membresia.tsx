@@ -205,6 +205,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           <LoadingState />
         ) : visibles.length === 0 ? (
           <EmptyState
+            pagina
             titulo={members.length === 0 ? t("miembros.aunNoHay") : t("membresia.sinResultados")}
             sub={members.length === 0 ? t("miembros.agregaPrimero") : t("membresia.sinResultadosSub")}
             icon={<IconIdBadge size={20} strokeWidth={1.8} />}

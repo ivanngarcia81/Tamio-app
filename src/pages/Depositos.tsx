@@ -146,6 +146,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           <LoadingState />
         ) : depositos.length === 0 ? (
           <EmptyState
+            pagina
             titulo={t("depositos.emptyTitulo")}
             sub={t("depositos.emptySub")}
             icon={<IconBank size={22} strokeWidth={1.6} />}

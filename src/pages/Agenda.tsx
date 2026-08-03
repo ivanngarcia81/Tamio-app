@@ -583,7 +583,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           <LoadingState />
         ) : vacio ? (
           <div className="agenda-vacio">
-            <EmptyState icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.vacioTitulo")} sub={t("agenda.vacioSub")} />
+            <EmptyState pagina icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.vacioTitulo")} sub={t("agenda.vacioSub")} />
             <button className="btn primary" onClick={() => abrirNueva(null)}>{t("agenda.crearPrimera")}</button>
           </div>
         ) : vista === "mes" ? (
