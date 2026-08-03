@@ -2080,7 +2080,7 @@ export const en: Resources = {
     noVigente: "Not active",
     enGracia: "in grace period ({{dias}} days)",
     esCortesia: "courtesy (never expires)",
-    guardado: "Plan updated",
+    seGuardaSolo: "Changes are saved as you choose.",
     bannerPorVencer: "Your plan expires in {{dias}} days. Renew it to keep access.",
     bannerGracia: "Your plan expired. You have {{dias}} grace days left; renew soon.",
     bannerVencida: "Your plan expired. Contact the administrator to renew it.",
@@ -2177,7 +2177,7 @@ export const en: Resources = {
   },
 
   config: {
-    cambiosSinGuardar: "You have unsaved changes",
+    revisaCampos: "Check the highlighted fields.",
     titulo: "Settings",
     sub: "Church and treasurer information",
     zona: {

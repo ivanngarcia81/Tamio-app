@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { IconUser } from "../../icons";
+import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 
 export interface PastorFormValues {
   nombre: string;
@@ -16,12 +17,14 @@ export interface PastorFormErrors {
 }
 
 interface Props {
+  /** Indicador de guardado automático de esta tarjeta. */
+  estado?: EstadoGuardado;
   value: PastorFormValues;
   onChange: (patch: Partial<PastorFormValues>) => void;
   errors: PastorFormErrors;
 }
 
-export default function PastorSettings({ value, onChange, errors }: Props) {
+export default function PastorSettings({ value, onChange, errors, estado }: Props) {
   const { t } = useTranslation();
   return (
     <div className="card pad-lg settings-card">
@@ -33,6 +36,7 @@ export default function PastorSettings({ value, onChange, errors }: Props) {
             <div className="card-title-sub">{t("pastor.sub")}</div>
           </div>
         </div>
+        {estado && <GuardadoChip estado={estado} />}
       </div>
 
       <div className="form-group full">

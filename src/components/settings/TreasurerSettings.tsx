@@ -6,6 +6,7 @@
 // por rol).
 import { useTranslation } from "react-i18next";
 import { IconUser } from "../../icons";
+import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 
 export interface TreasurerFormValues {
   nombre: string;
@@ -22,12 +23,14 @@ export interface TreasurerFormErrors {
 }
 
 interface Props {
+  /** Indicador de guardado automático de esta tarjeta. */
+  estado?: EstadoGuardado;
   value: TreasurerFormValues;
   onChange: (patch: Partial<TreasurerFormValues>) => void;
   errors: TreasurerFormErrors;
 }
 
-export default function TreasurerSettings({ value, onChange, errors }: Props) {
+export default function TreasurerSettings({ value, onChange, errors, estado }: Props) {
   const { t } = useTranslation();
   return (
     <div className="card pad-lg settings-card">
@@ -39,6 +42,7 @@ export default function TreasurerSettings({ value, onChange, errors }: Props) {
             <div className="card-title-sub">{t("tesorero.sub")}</div>
           </div>
         </div>
+        {estado && <GuardadoChip estado={estado} />}
       </div>
 
       <div className="form-group full">

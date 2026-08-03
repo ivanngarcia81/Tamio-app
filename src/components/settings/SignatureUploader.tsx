@@ -4,6 +4,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { CARPETA_IMAGENES, guardarEnDatos, rutaEnDatos } from "../../services/archivos";
 import { useTranslation } from "react-i18next";
 import { IconSignature, IconWarn } from "../../icons";
+import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 
 function uint8ToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -15,6 +16,8 @@ function uint8ToBase64(bytes: Uint8Array): string {
 }
 
 interface Props {
+  /** Indicador de guardado automático de esta tarjeta. */
+  estado?: EstadoGuardado;
   path: string | null;
   onPathChange: (path: string | null) => void;
   /** Elige el bloque de textos i18n: "firma" (tesorero) o "firmaPastor". */
@@ -24,7 +27,7 @@ interface Props {
 /** Firma del tesorero o del pastor — se usa en el bloque de firmas de los
  *  reportes en PDF (Estado financiero, Dashboard, Constancia) cuando hay
  *  una persona configurada. */
-export default function SignatureUploader({ path, onPathChange, variant = "tesorero" }: Props) {
+export default function SignatureUploader({ path, onPathChange, variant = "tesorero", estado }: Props) {
   const { t } = useTranslation();
   const ns = variant === "pastor" ? "firmaPastor" : "firma";
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -82,6 +85,7 @@ export default function SignatureUploader({ path, onPathChange, variant = "tesor
             <div className="card-title-sub">{t(`${ns}.sub`)}</div>
           </div>
         </div>
+        {estado && <GuardadoChip estado={estado} />}
       </div>
 
       <div className="signature-body">

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { IconChurch } from "../../icons";
+import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 
 export interface InstitucionFormValues {
   direccion: string;
@@ -12,13 +13,15 @@ export interface InstitucionFormValues {
 }
 
 interface Props {
+  /** Indicador de guardado automático de esta tarjeta. */
+  estado?: EstadoGuardado;
   value: InstitucionFormValues;
   onChange: (patch: Partial<InstitucionFormValues>) => void;
 }
 
 /** Datos institucionales para el membrete de cartas y documentos oficiales,
  *  más el nombre de la secretaria (firma cartas y actas). */
-export default function InstitucionSettings({ value, onChange }: Props) {
+export default function InstitucionSettings({ value, onChange, estado }: Props) {
   const { t } = useTranslation();
   return (
     <div className="card pad-lg settings-card">
@@ -30,6 +33,7 @@ export default function InstitucionSettings({ value, onChange }: Props) {
             <div className="card-title-sub">{t("institucion.sub")}</div>
           </div>
         </div>
+        {estado && <GuardadoChip estado={estado} />}
       </div>
 
       <div className="form-group full">

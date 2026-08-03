@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import { updateSuscripcion, type Church } from "../../db";
 import { authHabilitado } from "../../supabase";
 import { PLANES, evaluarVigencia, incluyeTesoreria, incluyeSecretaria } from "../../plan";
-import { IconIdBadge, IconCheck } from "../../icons";
-import { showToast } from "../../toast";
+import { IconIdBadge } from "../../icons";
 import { playSound } from "../../sound";
+import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 
 interface Props {
   church: Church;
@@ -30,7 +30,7 @@ export default function PlanSettings({ church, onSaved }: Props) {
   const { t } = useTranslation();
   const soloLectura = authHabilitado;
   const [plan, setPlan] = useState(church.plan || "completo");
-  const [saving, setSaving] = useState(false);
+  const [estado, setEstado] = useState<EstadoGuardado>({ tipo: "oculto" });
 
   // En solo lectura se muestra SIEMPRE lo que dice la iglesia (la nube), no el
   // estado editable local. El estado y el vencimiento nunca se editan aquí.
@@ -38,22 +38,24 @@ export default function PlanSettings({ church, onSaved }: Props) {
   const estadoVista = church.sub_estado || "activa";
   const venceVista = church.sub_vence ?? "";
 
-  const dirty = !soloLectura && plan !== church.plan;
   const vig = evaluarVigencia(estadoVista, venceVista || null);
 
-  async function guardar() {
-    if (soloLectura) return;
-    setSaving(true);
+  // Modelo A: elegir un área ES guardarla. El chip también avisa si falló
+  // (y en ese caso la selección local se conserva para reintentar tocando
+  // otra vez).
+  async function elegir(p: string) {
+    if (soloLectura || p === plan) return;
+    setPlan(p);
+    setEstado({ tipo: "guardando" });
     try {
       // Solo cambian las áreas; estado y vencimiento se conservan tal cual.
-      const actualizada = await updateSuscripcion(church.id, plan, estadoVista, venceVista || null);
+      const actualizada = await updateSuscripcion(church.id, p, estadoVista, venceVista || null);
       playSound("guardado");
-      showToast(t("plan.guardado"));
       onSaved(actualizada);
+      setEstado({ tipo: "guardado" });
+      setTimeout(() => setEstado((e) => (e.tipo === "guardado" ? { tipo: "oculto" } : e)), 2500);
     } catch (e) {
-      showToast(t("common.noSePudoGuardar", { error: String(e) }));
-    } finally {
-      setSaving(false);
+      setEstado({ tipo: "error", detalle: t("common.noSePudoGuardar", { error: String(e) }) });
     }
   }
 
@@ -72,6 +74,7 @@ export default function PlanSettings({ church, onSaved }: Props) {
             <div className="card-title-sub">{soloLectura ? t("plan.subNube") : t("plan.subAreas")}</div>
           </div>
         </div>
+        {!soloLectura && <GuardadoChip estado={estado} />}
       </div>
 
       {soloLectura ? (
@@ -98,7 +101,7 @@ export default function PlanSettings({ church, onSaved }: Props) {
           <label className="form-label">{t("plan.areas")}</label>
           <div className="tabs-segmented" style={{ marginBottom: 12 }}>
             {PLANES.map((p) => (
-              <button type="button" key={p} className={`seg${plan === p ? " active" : ""}`} aria-pressed={plan === p} onClick={() => setPlan(p)}>
+              <button type="button" key={p} className={`seg${plan === p ? " active" : ""}`} aria-pressed={plan === p} onClick={() => void elegir(p)}>
                 {t(`plan.nombre.${p}`)}
               </button>
             ))}
@@ -124,16 +127,7 @@ export default function PlanSettings({ church, onSaved }: Props) {
           <div className="form-hint">{t("plan.nubeManda")}</div>
         </>
       ) : (
-        <>
-          <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
-            {saving ? t("common.guardando") : t("common.guardarCambios")}
-          </button>
-          {!dirty && (
-            <span className="settings-saved-pill" style={{ marginLeft: 10 }}>
-              <IconCheck size={14} /> {t("common.guardado")}
-            </span>
-          )}
-        </>
+        <div className="form-hint">{t("plan.seGuardaSolo")}</div>
       )}
     </div>
   );

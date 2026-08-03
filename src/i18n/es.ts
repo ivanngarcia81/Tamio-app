@@ -2087,7 +2087,7 @@ export const es = {
     noVigente: "No vigente",
     enGracia: "en periodo de gracia ({{dias}} días)",
     esCortesia: "cortesía (no caduca)",
-    guardado: "Plan actualizado",
+    seGuardaSolo: "Los cambios se guardan al elegir.",
     bannerPorVencer: "Tu plan vence en {{dias}} días. Renuévalo para no perder acceso.",
     bannerGracia: "Tu plan venció. Te quedan {{dias}} días de gracia; renueva pronto.",
     bannerVencida: "Tu plan venció. Contacta al administrador para renovarlo.",
@@ -2184,7 +2184,7 @@ export const es = {
   },
 
   config: {
-    cambiosSinGuardar: "Tienes cambios sin guardar",
+    revisaCampos: "Revisa los campos marcados.",
     titulo: "Configuración",
     sub: "Datos de la iglesia y del tesorero",
     zona: {

@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { listUsuarios, updateChurch, type Church, type Usuario } from "../db";
+import { listUsuarios, updateChurch, type Church, type ChurchUpdate, type Usuario } from "../db";
 import type { LangPref } from "../i18n";
-import { IconCheck } from "../icons";
 import { showToast } from "../toast";
+import { type EstadoGuardado } from "../components/settings/GuardadoChip";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
 import TreasurerSettings, {
@@ -104,125 +104,195 @@ export default function Configuracion({
   const [churchError, setChurchError] = useState<string | null>(null);
   const [treasurerErrors, setTreasurerErrors] = useState<TreasurerFormErrors>({});
   const [pastorErrors, setPastorErrors] = useState<PastorFormErrors>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
 
-  // El logo se guarda en el momento de elegirlo (o quitarlo), sin esperar al
-  // botón "Guardar cambios" del final de la página: la vista previa aparece al
-  // instante y hacía creer que ya estaba guardado, así que el usuario salía de
-  // Ajustes y el logo nunca llegaba al sidebar ni a los PDF.
-  const cambiarLogo = useCallback(async (ruta: string | null) => {
-    setLogoPath(ruta);
-    try {
-      // updateChurch reescribe TODAS las columnas, así que se parte de la
-      // iglesia guardada y solo se cambia el logo. Nunca de churchForm: los
-      // demás campos siguen editándose y se guardan con "Guardar cambios".
-      onChurchUpdated(await updateChurch(church.id, { ...church, logo_path: ruta }));
-    } catch (e) {
-      showToast(t("common.noSePudoGuardar", { error: String(e) }));
-    }
-  }, [church, onChurchUpdated, t]);
+  // ------------------------------------------------------------------
+  // Guardado automático (modelo A, decidido el 3 ago 2026): todo se
+  // guarda al cambiar, con un indicador por tarjeta que también avisa
+  // cuando FALLA. Dos reglas acordadas:
+  //
+  //  - Los campos de texto esperan ~1 segundo de pausa antes de guardar.
+  //    Guardar en cada tecla dispararía decenas de escrituras y, cuando
+  //    vuelva el login, la sincronización subiría estados a medio escribir.
+  //  - Un error de guardado se queda visible hasta que un guardado
+  //    posterior lo resuelva. Si el guardado automático falla en silencio,
+  //    el usuario cree que quedó grabado — justo lo que este modelo evita.
+  //
+  // Mecánica: cada tarjeta es una "rebanada" con su temporizador. Al
+  // dispararse, se valida solo esa rebanada y se encola UNA escritura
+  // (updateChurch reescribe todas las columnas, así que las escrituras van
+  // en fila sobre la última iglesia guardada para que dos rebanadas no se
+  // pisen). Al salir de Ajustes, lo pendiente se guarda de inmediato.
+  // ------------------------------------------------------------------
+  type Tarjeta = "iglesia" | "tesorero" | "firmaTesorero" | "pastor" | "firmaPastor" | "institucion";
 
-  const dirty =
-    churchForm.nombre !== church.nombre ||
-    churchForm.ciudad !== (church.ciudad ?? "") ||
-    churchForm.pais !== (church.pais ?? "") ||
-    churchForm.moneda !== church.moneda ||
-    treasurerForm.nombre !== (church.tesorero_nombre ?? "") ||
-    treasurerForm.cargo !== (church.tesorero_cargo ?? "Tesorero") ||
-    treasurerForm.email !== (church.tesorero_email ?? "") ||
-    treasurerForm.telefono !== (church.tesorero_telefono ?? "") ||
-    firmaPath !== (church.tesorero_firma_path ?? null) ||
-    pastorForm.nombre !== (church.pastor_nombre ?? "") ||
-    pastorForm.cargo !== (church.pastor_cargo ?? "Pastor") ||
-    pastorForm.email !== (church.pastor_email ?? "") ||
-    pastorForm.telefono !== (church.pastor_telefono ?? "") ||
-    pastorFirmaPath !== (church.pastor_firma_path ?? null) ||
-    logoPath !== (church.logo_path ?? null) ||
-    institucionForm.direccion !== (church.direccion ?? "") ||
-    institucionForm.region !== (church.region ?? "") ||
-    institucionForm.telefono !== (church.telefono ?? "") ||
-    institucionForm.email !== (church.email ?? "") ||
-    institucionForm.pie_institucional !== (church.pie_institucional ?? "") ||
-    institucionForm.secretaria_nombre !== (church.secretaria_nombre ?? "") ||
-    institucionForm.secretaria_cargo !== (church.secretaria_cargo ?? "");
+  const ESTADO_OCULTO: EstadoGuardado = { tipo: "oculto" };
+  const [estados, setEstados] = useState<Record<Tarjeta, EstadoGuardado>>({
+    iglesia: ESTADO_OCULTO, tesorero: ESTADO_OCULTO, firmaTesorero: ESTADO_OCULTO,
+    pastor: ESTADO_OCULTO, firmaPastor: ESTADO_OCULTO, institucion: ESTADO_OCULTO,
+  });
 
-  async function guardar() {
-    setGeneralError(null);
+  const montadoRef = useRef(true);
+  /** La última iglesia GUARDADA. Base de cada escritura; nunca los formularios. */
+  const churchRef = useRef(church);
+  useEffect(() => { churchRef.current = church; }, [church]);
+  /** Espejo de los formularios para que el temporizador lea lo más reciente. */
+  const formsRef = useRef({ churchForm, treasurerForm, pastorForm, institucionForm, firmaPath, pastorFirmaPath });
+  formsRef.current = { churchForm, treasurerForm, pastorForm, institucionForm, firmaPath, pastorFirmaPath };
 
-    const nextChurchError = churchForm.nombre.trim() ? null : t("config.nombreIglesiaObligatorio");
-    // La sección del tesorero solo se valida cuando el rol la ve (si no, sus
-    // campos ni se muestran y no deben bloquear el guardado de la secretaria).
-    const nextTreasurerErrors: TreasurerFormErrors = {};
-    if (verTesoreria) {
-      if (!treasurerForm.nombre.trim()) nextTreasurerErrors.nombre = t("validacion.nombreObligatorio");
-      if (!treasurerForm.cargo.trim()) nextTreasurerErrors.cargo = t("validacion.cargoObligatorio");
-      if (treasurerForm.email.trim() && !EMAIL_RE.test(treasurerForm.email.trim())) {
-        nextTreasurerErrors.email = t("validacion.correoInvalido");
-      }
-      if (treasurerForm.telefono.trim() && !PHONE_RE.test(treasurerForm.telefono.trim())) {
-        nextTreasurerErrors.telefono = t("validacion.telefonoInvalido");
-      }
-    }
+  const timersRef = useRef<Partial<Record<Tarjeta, ReturnType<typeof setTimeout>>>>({});
+  const pendientesRef = useRef<Set<Tarjeta>>(new Set());
+  /** Fila de escrituras: una a la vez, cada una sobre la anterior. */
+  const colaRef = useRef<Promise<void>>(Promise.resolve());
 
-    // El pastor es opcional: solo se valida el formato si se llenó algo.
-    const nextPastorErrors: PastorFormErrors = {};
-    if (pastorForm.email.trim() && !EMAIL_RE.test(pastorForm.email.trim())) {
-      nextPastorErrors.email = t("validacion.correoInvalido");
-    }
-    if (pastorForm.telefono.trim() && !PHONE_RE.test(pastorForm.telefono.trim())) {
-      nextPastorErrors.telefono = t("validacion.telefonoInvalido");
-    }
-
-    // Saldo de apertura: tolera "$1,234.56" y espacios; vacío = 0. Un texto
-    // no numérico se rechaza en vez de guardarse silenciosamente como 0.
-    const saldoTexto = churchForm.saldoInicial.replace(/[$,\s]/g, "");
-    const saldoNum = saldoTexto === "" ? 0 : Number(saldoTexto);
-    const nextSaldoError = Number.isFinite(saldoNum) ? null : t("validacion.saldoInvalido");
-
-    setChurchError(nextChurchError);
-    setSaldoError(nextSaldoError);
-    setTreasurerErrors(nextTreasurerErrors);
-    setPastorErrors(nextPastorErrors);
-    if (nextChurchError || nextSaldoError || Object.keys(nextTreasurerErrors).length > 0 || Object.keys(nextPastorErrors).length > 0) return;
-
-    setSaving(true);
-    try {
-      const updated = await updateChurch(church.id, {
-        nombre: churchForm.nombre.trim(),
-        ciudad: churchForm.ciudad.trim() || null,
-        pais: churchForm.pais.trim() || null,
-        moneda: churchForm.moneda,
-        logo_path: logoPath,
-        tesorero_nombre: treasurerForm.nombre.trim() || null,
-        tesorero_cargo: treasurerForm.cargo.trim() || null,
-        tesorero_email: treasurerForm.email.trim() || null,
-        tesorero_telefono: treasurerForm.telefono.trim() || null,
-        tesorero_firma_path: firmaPath,
-        pastor_nombre: pastorForm.nombre.trim() || null,
-        pastor_cargo: pastorForm.cargo.trim() || null,
-        pastor_email: pastorForm.email.trim() || null,
-        pastor_telefono: pastorForm.telefono.trim() || null,
-        pastor_firma_path: pastorFirmaPath,
-        direccion: institucionForm.direccion.trim() || null,
-        region: institucionForm.region.trim() || null,
-        telefono: institucionForm.telefono.trim() || null,
-        email: institucionForm.email.trim() || null,
-        pie_institucional: institucionForm.pie_institucional.trim() || null,
-        secretaria_nombre: institucionForm.secretaria_nombre.trim() || null,
-        secretaria_cargo: institucionForm.secretaria_cargo.trim() || null,
-        saldo_inicial: saldoNum,
-      });
-      onChurchUpdated(updated);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch (e) {
-      setGeneralError(t("common.noSePudoGuardar", { error: String(e) }));
-    } finally {
-      setSaving(false);
-    }
+  function setEstado(tj: Tarjeta, e: EstadoGuardado) {
+    if (montadoRef.current) setEstados((s) => ({ ...s, [tj]: e }));
   }
+
+  /** Valida la rebanada y arma su parche de columnas. Inválida = no se escribe. */
+  function prepararParche(tj: Tarjeta): { patch: Partial<ChurchUpdate>; valido: boolean } {
+    const f = formsRef.current;
+    if (tj === "iglesia") {
+      const nombreErr = f.churchForm.nombre.trim() ? null : t("config.nombreIglesiaObligatorio");
+      const saldoTexto = f.churchForm.saldoInicial.replace(/[$,\s]/g, "");
+      const saldoNum = saldoTexto === "" ? 0 : Number(saldoTexto);
+      const saldoErr = Number.isFinite(saldoNum) ? null : t("validacion.saldoInvalido");
+      if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); }
+      if (nombreErr || saldoErr) return { patch: {}, valido: false };
+      return {
+        valido: true,
+        patch: {
+          nombre: f.churchForm.nombre.trim(),
+          ciudad: f.churchForm.ciudad.trim() || null,
+          pais: f.churchForm.pais.trim() || null,
+          moneda: f.churchForm.moneda,
+          saldo_inicial: saldoNum,
+        },
+      };
+    }
+    if (tj === "tesorero") {
+      const errs: TreasurerFormErrors = {};
+      if (!f.treasurerForm.nombre.trim()) errs.nombre = t("validacion.nombreObligatorio");
+      if (!f.treasurerForm.cargo.trim()) errs.cargo = t("validacion.cargoObligatorio");
+      if (f.treasurerForm.email.trim() && !EMAIL_RE.test(f.treasurerForm.email.trim())) {
+        errs.email = t("validacion.correoInvalido");
+      }
+      if (f.treasurerForm.telefono.trim() && !PHONE_RE.test(f.treasurerForm.telefono.trim())) {
+        errs.telefono = t("validacion.telefonoInvalido");
+      }
+      if (montadoRef.current) setTreasurerErrors(errs);
+      if (Object.keys(errs).length > 0) return { patch: {}, valido: false };
+      return {
+        valido: true,
+        patch: {
+          tesorero_nombre: f.treasurerForm.nombre.trim() || null,
+          tesorero_cargo: f.treasurerForm.cargo.trim() || null,
+          tesorero_email: f.treasurerForm.email.trim() || null,
+          tesorero_telefono: f.treasurerForm.telefono.trim() || null,
+        },
+      };
+    }
+    if (tj === "firmaTesorero") return { valido: true, patch: { tesorero_firma_path: f.firmaPath } };
+    if (tj === "firmaPastor") return { valido: true, patch: { pastor_firma_path: f.pastorFirmaPath } };
+    if (tj === "pastor") {
+      // El pastor es opcional: solo se valida el formato si se llenó algo.
+      const errs: PastorFormErrors = {};
+      if (f.pastorForm.email.trim() && !EMAIL_RE.test(f.pastorForm.email.trim())) {
+        errs.email = t("validacion.correoInvalido");
+      }
+      if (f.pastorForm.telefono.trim() && !PHONE_RE.test(f.pastorForm.telefono.trim())) {
+        errs.telefono = t("validacion.telefonoInvalido");
+      }
+      if (montadoRef.current) setPastorErrors(errs);
+      if (Object.keys(errs).length > 0) return { patch: {}, valido: false };
+      return {
+        valido: true,
+        patch: {
+          pastor_nombre: f.pastorForm.nombre.trim() || null,
+          pastor_cargo: f.pastorForm.cargo.trim() || null,
+          pastor_email: f.pastorForm.email.trim() || null,
+          pastor_telefono: f.pastorForm.telefono.trim() || null,
+        },
+      };
+    }
+    // institucion: texto libre, sin validación.
+    return {
+      valido: true,
+      patch: {
+        direccion: f.institucionForm.direccion.trim() || null,
+        region: f.institucionForm.region.trim() || null,
+        telefono: f.institucionForm.telefono.trim() || null,
+        email: f.institucionForm.email.trim() || null,
+        pie_institucional: f.institucionForm.pie_institucional.trim() || null,
+        secretaria_nombre: f.institucionForm.secretaria_nombre.trim() || null,
+        secretaria_cargo: f.institucionForm.secretaria_cargo.trim() || null,
+      },
+    };
+  }
+
+  function guardarTarjeta(tj: Tarjeta) {
+    pendientesRef.current.delete(tj);
+    const { patch, valido } = prepararParche(tj);
+    if (!valido) {
+      setEstado(tj, { tipo: "error", detalle: t("config.revisaCampos") });
+      return;
+    }
+    setEstado(tj, { tipo: "guardando" });
+    colaRef.current = colaRef.current
+      .then(async () => {
+        const actualizada = await updateChurch(church.id, { ...churchRef.current, ...patch });
+        churchRef.current = actualizada;
+        onChurchUpdated(actualizada);
+        setEstado(tj, { tipo: "guardado" });
+        // El "Guardado" se apaga solo; un error NO (ver GuardadoChip).
+        setTimeout(() => {
+          if (montadoRef.current) {
+            setEstados((s) => (s[tj].tipo === "guardado" ? { ...s, [tj]: ESTADO_OCULTO } : s));
+          }
+        }, 2500);
+      })
+      .catch((e) => {
+        setEstado(tj, { tipo: "error", detalle: t("common.noSePudoGuardar", { error: String(e) }) });
+      });
+  }
+
+  const guardarRef = useRef(guardarTarjeta);
+  guardarRef.current = guardarTarjeta;
+
+  /** Texto: ~1 s de pausa. Elegir un archivo o una opción: casi inmediato. */
+  function programarGuardado(tj: Tarjeta, retraso = 1000) {
+    pendientesRef.current.add(tj);
+    clearTimeout(timersRef.current[tj]);
+    timersRef.current[tj] = setTimeout(() => guardarRef.current(tj), retraso);
+  }
+
+  // Al salir de Ajustes, lo que estaba esperando su pausa se guarda ya:
+  // navegar no puede costar el último cambio.
+  useEffect(() => {
+    montadoRef.current = true;
+    return () => {
+      montadoRef.current = false;
+      for (const tj of pendientesRef.current) {
+        clearTimeout(timersRef.current[tj]);
+        guardarRef.current(tj);
+      }
+    };
+  }, []);
+
+  // El logo se guarda en el momento de elegirlo (o quitarlo): la vista previa
+  // aparece al instante y hacía creer que ya estaba guardado. Entra por la
+  // misma fila de escrituras que las demás tarjetas para no pisarse con ellas.
+  const cambiarLogo = useCallback((ruta: string | null) => {
+    setLogoPath(ruta);
+    colaRef.current = colaRef.current
+      .then(async () => {
+        const actualizada = await updateChurch(church.id, { ...churchRef.current, logo_path: ruta });
+        churchRef.current = actualizada;
+        onChurchUpdated(actualizada);
+      })
+      .catch((e) => {
+        showToast(t("common.noSePudoGuardar", { error: String(e) }));
+      });
+  }, [church.id, onChurchUpdated, t]);
 
   return (
     <>
@@ -249,12 +319,13 @@ export default function Configuracion({
             <div className="settings-masonry">
               <ChurchSettings
                 value={churchForm}
-                onChange={(patch) => setChurchForm((v) => ({ ...v, ...patch }))}
+                onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
                 error={churchError}
                 saldoError={saldoError}
                 logoPath={logoPath}
                 onLogoPathChange={cambiarLogo}
                 showCurrency={verTesoreria}
+                estado={estados.iglesia}
               />
               {/* Suscripción: la administra el dueño (admin) o, en modo local
                   sin login, quien usa la app en su propia instalación. */}
@@ -273,23 +344,35 @@ export default function Configuracion({
                 <>
                   <TreasurerSettings
                     value={treasurerForm}
-                    onChange={(patch) => setTreasurerForm((v) => ({ ...v, ...patch }))}
+                    onChange={(patch) => { setTreasurerForm((v) => ({ ...v, ...patch })); programarGuardado("tesorero"); }}
                     errors={treasurerErrors}
+                    estado={estados.tesorero}
                   />
-                  <SignatureUploader path={firmaPath} onPathChange={setFirmaPath} />
+                  <SignatureUploader
+                    path={firmaPath}
+                    onPathChange={(p) => { setFirmaPath(p); programarGuardado("firmaTesorero", 50); }}
+                    estado={estados.firmaTesorero}
+                  />
                 </>
               )}
               {/* Pastor: compartido (firma en tesorería y secretaría). */}
               <PastorSettings
                 value={pastorForm}
-                onChange={(patch) => setPastorForm((v) => ({ ...v, ...patch }))}
+                onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
                 errors={pastorErrors}
+                estado={estados.pastor}
               />
-              <SignatureUploader path={pastorFirmaPath} onPathChange={setPastorFirmaPath} variant="pastor" />
+              <SignatureUploader
+                path={pastorFirmaPath}
+                onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
+                variant="pastor"
+                estado={estados.firmaPastor}
+              />
               {verSecretaria && (
                 <InstitucionSettings
                   value={institucionForm}
-                  onChange={(patch) => setInstitucionForm((v) => ({ ...v, ...patch }))}
+                  onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
+                  estado={estados.institucion}
                 />
               )}
               {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
@@ -336,21 +419,8 @@ export default function Configuracion({
             </section>
           )}
 
-          {generalError && <div className="form-warning">{generalError}</div>}
-
-          {/* Con cambios pendientes la barra se pega abajo y avisa; sin ellos
-              vuelve a ser el pie discreto de siempre. */}
-          <div className={`settings-actions${dirty ? " pegada" : ""}`}>
-            {dirty && <span className="settings-sin-guardar">{t("config.cambiosSinGuardar")}</span>}
-            <button className="btn primary" onClick={guardar} disabled={saving || !dirty}>
-              {saving ? t("common.guardando") : t("common.guardarCambios")}
-            </button>
-            {saved && (
-              <span className="settings-saved-pill">
-                <IconCheck size={14} /> {t("common.guardado")}
-              </span>
-            )}
-          </div>
+          {/* Ya no hay botón global: cada tarjeta guarda sola al cambiar y
+              lleva su propio indicador, incluido el de error (modelo A). */}
         </div>
       </div>
     </>

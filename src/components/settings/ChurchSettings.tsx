@@ -8,6 +8,7 @@ import { IconBuilding, IconWarn } from "../../icons";
 import { currentLang } from "../../i18n";
 import { CURRENCIES, currencyLabel } from "../../currencies";
 import { convertirImagenAPng } from "../../services/imagenLogo";
+import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 
 export interface ChurchFormValues {
   nombre: string;
@@ -20,6 +21,8 @@ export interface ChurchFormValues {
 
 interface Props {
   value: ChurchFormValues;
+  /** Indicador de guardado automático de esta tarjeta. */
+  estado?: EstadoGuardado;
   onChange: (patch: Partial<ChurchFormValues>) => void;
   error?: string | null;
   saldoError?: string | null;
@@ -39,7 +42,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export default function ChurchSettings({ value, onChange, error, saldoError, logoPath, onLogoPathChange, showCurrency = true }: Props) {
+export default function ChurchSettings({ value, onChange, error, saldoError, logoPath, onLogoPathChange, showCurrency = true, estado }: Props) {
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -99,6 +102,7 @@ export default function ChurchSettings({ value, onChange, error, saldoError, log
             <div className="card-title-sub">{t("iglesia.sub")}</div>
           </div>
         </div>
+        {estado && <GuardadoChip estado={estado} />}
       </div>
 
       <div className="church-logo-row">
