@@ -147,7 +147,12 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
         </div>
         </div>
 
+        {/* Las tarjetas de arriba cuentan SOLO el mes en curso; esta tabla es
+            la bitácora entera y su buscador busca en todo lo registrado. Sin
+            el rótulo parecían contradecirse: "Servicios este mes: 0" encima
+            de una tabla con cultos de meses anteriores. */}
         <div className="tx-head">
+          <span className="card-title">{t("servicios.historialCompleto")}</span>
           <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
             <IconSearch size={15} strokeWidth={2} />
             <input

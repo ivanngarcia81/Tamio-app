@@ -1154,6 +1154,7 @@ export const en: Resources = {
     statServiciosMes: "Services this month",
     statAsistenciaPromedio: "Average attendance this month",
     statVisitantesMes: "Visitors this month",
+    historialCompleto: "Full history",
     aunNoHay: "No services recorded yet",
     agregaPrimero: "Record the first service with the New service button.",
     sinResultados: "No results",

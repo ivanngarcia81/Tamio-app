@@ -1148,6 +1148,7 @@ export const es = {
     statServiciosMes: "Servicios este mes",
     statAsistenciaPromedio: "Asistencia promedio del mes",
     statVisitantesMes: "Visitantes este mes",
+    historialCompleto: "Historial completo",
     aunNoHay: "Aún no hay servicios registrados",
     agregaPrimero: "Registra el primer culto con el botón Nuevo servicio.",
     sinResultados: "Sin resultados",
