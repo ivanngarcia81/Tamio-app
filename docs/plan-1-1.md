@@ -110,30 +110,31 @@ modales) pasan a `console.warn` con contexto.
 
 ## Trámites del humano (no dependen de código ni de nadie)
 
-### Inscribirse en el App Store Small Business Program
+### ✅ App Store Small Business Program — HECHO el 3 ago 2026
 
-Baja la comisión de Apple del **30 % al 15 %**. Gratis, ~5 minutos.
+Baja la comisión de Apple del **30 % al 15 %**. Se completaron los dos pasos
+el mismo día:
 
-- **Dónde:** <https://developer.apple.com/app-store/small-business-program/>
-  → botón *Enroll*, con la cuenta de Apple Developer de siempre.
-- **Requisitos (ya cumplidos):** membresía activa del Apple Developer
-  Program y menos de $1 000 000 USD facturados el año calendario anterior
-  (los desarrolladores nuevos entran directo).
-- **Paso previo que puede faltar:** tener firmado el *Paid Applications
-  Agreement* en App Store Connect → Business → *Agreements, Tax, and
-  Banking*. Si solo se han publicado apps gratis, nunca se firmó; ahí piden
-  además datos bancarios y fiscales.
-- **Cuándo empieza a valer:** desde el **primer día del mes siguiente** a la
-  aprobación. Por eso se hace con tiempo, no cuando ya haya ventas.
+1. **Paid Applications Agreement** firmado en App Store Connect → Business →
+   *Agreements, Tax, and Banking*, con sus datos bancarios y el formulario
+   fiscal de EE. UU. (persona física / *sole proprietor*, *non-exempt
+   payee* — lo normal para un desarrollador individual).
+2. **Inscripción enviada** en
+   <https://developer.apple.com/app-store/small-business-program/>, con las
+   cuatro preguntas de *Associated Developer Accounts* en "No" (una sola
+   cuenta, sin socios ni cuentas relacionadas).
 
-**Por qué está anotado aunque hoy no haga falta:** el 15 % solo se cobra
+**Queda pendiente de Apple:** la tarifa del 15 % entra en vigor el **primer
+día del mes siguiente** a la aprobación.
+
+**Por qué se hizo ahora aunque todavía no sirva:** el 15 % solo se cobra
 sobre compras DENTRO de la app, y Tamio se vende por la web (Apple no cobra
-nada por una app gratis). Así que esto no sirve hasta el día que se añada la
-compra dentro de la app — que la 1.1 descarta a propósito. Pero como tarda
-un mes en activarse y no cuesta nada, conviene tenerlo hecho por adelantado.
+nada por una app gratis). Empieza a importar el día que se añada la compra
+dentro de la app — que la 1.1 descarta a propósito. Pero tarda un mes en
+activarse y no cuesta nada: mejor hecho por adelantado que con prisa.
 
-Verificar los requisitos en esa página al inscribirse: la política de Apple
-cambia de vez en cuando.
+De paso, el Paid Applications Agreement deja la cuenta lista para cobrar por
+Apple el día que haga falta, sin volver a tocar papeleo.
 
 ## Higiene del repositorio (independiente, en cuanto Apple apruebe)
 
