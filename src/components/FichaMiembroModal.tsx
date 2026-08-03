@@ -4,7 +4,7 @@ import {
   fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, updateMemberFicha,
   type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha, type NewMember,
 } from "../db";
-import { IconCalendar, IconClose, IconMail, IconPrinter } from "../icons";
+import { IconCalendar, IconChevronDown, IconClose, IconMail, IconPrinter } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { printInformeIndividual } from "../services/informes/printInforme";
@@ -117,24 +117,69 @@ export function ChipGroup({ catalogo, prefijo, valores, onChange, placeholder }:
   );
 }
 
-export function Seccion({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+const ESTILO_CABECERA_SECCION: React.CSSProperties = {
+  fontSize: "var(--fs-table-head)",
+  fontWeight: 700,
+  letterSpacing: "var(--track-caps)",
+  textTransform: "uppercase",
+  color: "var(--text-3)",
+  paddingBottom: 8,
+  borderBottom: "1px solid var(--line)",
+  marginBottom: 14,
+};
+
+export function Seccion({ titulo, children, plegable = false, abiertaInicial = true, resumen }: {
+  titulo: string;
+  children: React.ReactNode;
+  /** La sección se puede plegar; la cabecera se vuelve botón. */
+  plegable?: boolean;
+  abiertaInicial?: boolean;
+  /** Texto corto que se muestra junto al título cuando está plegada, para
+   *  que lo guardado dentro no quede escondido en silencio ("5 marcados"). */
+  resumen?: string;
+}) {
+  const [abierta, setAbierta] = useState(abiertaInicial);
+  if (!plegable) {
+    return (
+      <div style={{ marginBottom: 22 }}>
+        <div style={ESTILO_CABECERA_SECCION}>{titulo}</div>
+        {children}
+      </div>
+    );
+  }
   return (
     <div style={{ marginBottom: 22 }}>
-      <div
+      <button
+        type="button"
+        aria-expanded={abierta}
+        onClick={() => setAbierta((v) => !v)}
         style={{
+          ...ESTILO_CABECERA_SECCION,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          width: "100%",
+          background: "none",
+          border: "none",
+          borderBottom: "1px solid var(--line)",
+          padding: "0 0 8px",
+          cursor: "pointer",
+          font: "inherit",
           fontSize: "var(--fs-table-head)",
           fontWeight: 700,
-          letterSpacing: "var(--track-caps)",
-          textTransform: "uppercase",
-          color: "var(--text-3)",
-          paddingBottom: 8,
-          borderBottom: "1px solid var(--line)",
-          marginBottom: 14,
+          textAlign: "left",
         }}
       >
-        {titulo}
-      </div>
-      {children}
+        <span>{titulo}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "none", letterSpacing: 0, fontWeight: 500 }}>
+          {!abierta && resumen && <span>{resumen}</span>}
+          <span style={{ display: "inline-flex", transform: abierta ? "rotate(180deg)" : "none", transition: "transform .15s ease" }}>
+            <IconChevronDown size={14} />
+          </span>
+        </span>
+      </button>
+      {abierta && children}
     </div>
   );
 }
@@ -416,7 +461,20 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
             </div>
           </Seccion>
 
-          <Seccion titulo={t("ficha.secServicio")}>
+          {/* 3.6: la sección más pesada del formulario (≈50 chips) va plegada
+              en el ALTA — para registrar a alguien casi nada de esto es
+              urgente. Al editar se abre, y plegada enseña cuántas cosas hay
+              marcadas dentro para no esconder datos en silencio. */}
+          <Seccion
+            titulo={t("ficha.secServicio")}
+            plegable
+            abiertaInicial={!crear}
+            resumen={(() => {
+              const n = ministerios.length + cargos.length + ministeriosInteres.length
+                + instrumentos.length + habilidades.length;
+              return n > 0 ? t("ficha.plegableResumen", { count: n }) : undefined;
+            })()}
+          >
             <div className="form-group full">
               <label className="form-label">{t("ficha.ministerios")}</label>
               <ChipGroup

@@ -961,6 +961,8 @@ export const en: Resources = {
     fechaCongregacion: "Started attending",
     fechaIngreso: "Received as a member",
     avisoFechasInvertidas: "“Received as a member” is earlier than “Started attending”. People usually attend before being received: check both dates. You can still save.",
+    plegableResumen_one: "{{count}} selected",
+    plegableResumen_other: "{{count}} selected",
     iglesiaAnterior: "Previous church",
     siAplica: "(if applicable)",
     estadoBajaNota: "Removed — use Reactivate to return to the registry",
