@@ -16,7 +16,12 @@ import { IconFileText, IconPlus, IconPrinter, IconSearch } from "../icons";
 const COLS = "110px 1.8fr 110px 1fr 130px 72px";
 const PAGE_SIZE = 25;
 
-type FiltroEstado = "todas" | "borrador" | "pendiente" | "aprobada" | "archivada";
+/** El orden del ciclo de vida del acta; los chips lo respetan. Incluye
+ *  "corregida" (Enmendada), que la lista fija anterior omitía: un acta
+ *  enmendada solo se encontraba con el chip Todas. */
+const ESTADOS_FILTRO = ["borrador", "pendiente", "aprobada", "corregida", "archivada"] as const;
+
+type FiltroEstado = "todas" | (typeof ESTADOS_FILTRO)[number];
 
 const BADGE_ESTADO: Record<string, string> = {
   borrador: "baja",
@@ -114,7 +119,11 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
             />
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {(["todas", "borrador", "pendiente", "aprobada", "archivada"] as FiltroEstado[]).map((f) => (
+            {/* Mismo criterio que en Movimientos: solo los estados que tienen
+                documentos, más el activo aunque se haya quedado en cero (para
+                poder salir de él). Con dos actas, cinco chips en cero eran
+                ruido. */}
+            {(["todas", ...ESTADOS_FILTRO.filter((f) => f === filtro || actas.some((a) => a.estado === f))] as FiltroEstado[]).map((f) => (
               <button key={f} className={`chip${filtro === f ? " active" : ""}`} onClick={() => setFiltro(f)}>
                 {f === "todas" ? t("actas.filtroTodas") : t(`actas.estado.${f}`)}
               </button>
