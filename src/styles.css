@@ -468,6 +468,15 @@ html.vibrancy .main { background: var(--surface); }
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* `overflow-y: auto` hace que el navegador recorte también en horizontal,
+     y el anillo de foco de .nav-item se dibuja 4 px por fuera del botón
+     (outline 2 px + offset 2 px): sus lados quedaban cortados al navegar con
+     Tab. Estos 5 px de relleno le dan sitio dentro del área visible —los 4
+     del anillo y 1 de holgura, para que un redondeo de subpíxeles no se coma
+     el borde— y el margen negativo los devuelve, así ningún elemento se
+     mueve de donde estaba. */
+  padding-inline: 5px;
+  margin-inline: -5px;
 }
 .nav-item {
   display: flex;
