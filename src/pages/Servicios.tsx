@@ -14,7 +14,7 @@ import { playSound } from "../sound";
 import { IconBookOpen, IconMiembros, IconPlus, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
 
-const COLS = "110px 1.8fr 1fr 130px 40px";
+const COLS = "110px 1.8fr 1fr 130px 72px";
 const PAGE_SIZE = 25;
 
 function accent(color: string): CSSProperties {
@@ -204,7 +204,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                 <div className="td" style={{ textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                   {totalPresentes(s) || "—"}
                 </div>
-                <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                   <RowMenu
                     onEdit={() => setModal({ open: true, servicio: s })}
                     onDelete={() => setPendingDelete(s)}

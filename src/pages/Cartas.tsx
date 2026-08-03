@@ -30,7 +30,7 @@ import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
 
 const COLS = "130px 1.8fr 110px 150px 130px 72px";
-const COLS_SOL = "120px 1.6fr 120px 110px 140px 70px";
+const COLS_SOL = "120px 1.6fr 120px 110px 140px 72px";
 const PAGE_SIZE = 25;
 
 type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
@@ -623,7 +623,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                       <div className="td">
                         <span className={`tag ${BADGE_SOLICITUD[s.estado] ?? "otros"}`}>{t(`solicitudes.estado.${s.estado}`)}</span>
                       </div>
-                      <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                      <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                         <RowMenu
                           onEdit={() => setSolicitudModal({ open: true, solicitud: s })}
                           extraItems={extra}
@@ -682,7 +682,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                         : t("common.no")}
                     </div>
                     <div className="td"><span className={`tag ${BADGE_TS[s.estado] ?? "otros"}`}>{t(`traslados.estadoTS.${s.estado}`)}</span></div>
-                    <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                       <RowMenu
                         onEdit={() => setTsModal({ open: true, traslado: s })}
                         onDelete={() => setPendingDeleteTS(s)}
@@ -739,7 +739,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                       {s.adjunto_nombre ? <span className="truncate" title={s.adjunto_nombre}>📎 {s.adjunto_nombre}</span> : "—"}
                     </div>
                     <div className="td"><span className={`tag ${BADGE_TE[s.estado] ?? "otros"}`}>{t(`traslados.estadoTE.${s.estado}`)}</span></div>
-                    <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                       <RowMenu
                         onEdit={() => setTeModal({ open: true, traslado: s })}
                         onDelete={() => setPendingDeleteTE(s)}
@@ -762,7 +762,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </button>
             </div>
             <div className="data-table roomy">
-              <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 70px" }}>
+              <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px" }}>
                 <div className="th">{t("plantillas.colPlantilla")}</div>
                 <div className="th">{t("cartas.tipoCarta")}</div>
                 <div className="th">{t("membresia.colEstado")}</div>
@@ -772,7 +772,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <div
                   className="tr"
                   key={p.id}
-                  style={{ gridTemplateColumns: "1.6fr 1fr 220px 70px", cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
+                  style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px", cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
                   onClick={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
                 >
                   <div className="td" style={{ minWidth: 0 }}>
@@ -787,7 +787,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     </span>
                     {p.predeterminada === 1 && <span className="tag diezmo">{t("plantillas.predeterminadaBadge")}</span>}
                   </div>
-                  <div className="td" style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+                  <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                     <RowMenu
                       onEdit={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
                       extraItems={[

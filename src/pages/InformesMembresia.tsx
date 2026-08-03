@@ -26,7 +26,7 @@ import { showToast } from "../toast";
 import { IconEdit, IconMiembros, IconPrinter, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
 
-const COLS = "1.5fr 150px 1.4fr 140px 44px";
+const COLS = "1.5fr 150px 1.4fr 140px 72px";
 const PAGE_SIZE = 25;
 
 type PeriodoTipo = "mes" | "trimestre" | "anio" | "rango" | "todo";
@@ -632,7 +632,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                           </>
                         ) : <span style={{ color: "var(--text-3)" }}>—</span>}
                       </div>
-                      <div className="td" style={{ textAlign: "center" }} onClick={(ev) => ev.stopPropagation()}>
+                      <div className="td td-acciones" onClick={(ev) => ev.stopPropagation()}>
                         <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(m)}>
                           <IconEdit size={13} strokeWidth={2} />
                         </span>
