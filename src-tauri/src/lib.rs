@@ -1618,3 +1618,94 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+// ---------------------------------------------------------------------------
+// Pruebas de la cadena de migraciones (punto 5.3 de la auditoría).
+//
+// Una instalación vieja de Tamio se actualiza corriendo las migraciones que le
+// falten, y hasta ahora nadie había comprobado que la cadena entera funcione:
+// ni desde una base vacía (instalación nueva) ni desde un punto intermedio
+// (instalación vieja que se salta varias versiones de golpe). Van en memoria:
+// rusqlite con SQLCipher abre bases en memoria sin clave.
+// ---------------------------------------------------------------------------
+#[cfg(test)]
+mod pruebas_migraciones {
+    use super::*;
+
+    fn base_vacia() -> rusqlite::Connection {
+        rusqlite::Connection::open_in_memory().expect("base en memoria")
+    }
+
+    fn tiene_tabla(conn: &rusqlite::Connection, nombre: &str) -> bool {
+        conn.query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = ?1",
+            [nombre],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+            == 1
+    }
+
+    #[test]
+    fn las_versiones_van_en_orden_y_sin_repetirse() {
+        // correr_migraciones aplica "todo lo mayor que la versión actual" en
+        // el orden del vector: un vector desordenado o con versiones repetidas
+        // aplicaría de más o de menos sin avisar.
+        let migs = migraciones();
+        assert_eq!(migs.first().map(|m| m.version), Some(1), "la cadena empieza en 1");
+        for par in migs.windows(2) {
+            assert!(
+                par[0].version < par[1].version,
+                "la v{} no puede ir después de la v{}",
+                par[1].version,
+                par[0].version
+            );
+        }
+    }
+
+    #[test]
+    fn una_base_vacia_llega_a_la_ultima_version() {
+        let mut conn = base_vacia();
+        motordb::correr_migraciones(&mut conn, &migraciones())
+            .expect("la cadena completa debe aplicar sin error");
+        assert_eq!(version_del_paquete(&conn), version_esquema_conocida());
+        // Y el esquema resultante trae de verdad las dos secciones de la app.
+        for tabla in [
+            "churches", "members", "transactions", "depositos_bancarios",
+            "servicios", "servicio_asistencia", "actas", "cartas", "agenda",
+        ] {
+            assert!(tiene_tabla(&conn, tabla), "falta la tabla {tabla}");
+        }
+    }
+
+    #[test]
+    fn una_base_a_media_cadena_se_completa_desde_cualquier_punto() {
+        // Simula todas las instalaciones viejas posibles: la que se quedó en
+        // la v1, la que se quedó en la v2… y comprueba que cada una llega a
+        // la última. Si una migración dependiera de algo que una anterior ya
+        // no deja como ella espera, esto lo delata con el corte exacto.
+        let migs = migraciones();
+        for corte in 1..migs.len() {
+            let mut conn = base_vacia();
+            motordb::correr_migraciones(&mut conn, &migs[..corte])
+                .unwrap_or_else(|e| panic!("aplicando hasta la v{}: {e}", migs[corte - 1].version));
+            motordb::correr_migraciones(&mut conn, &migs)
+                .unwrap_or_else(|e| panic!("completando desde la v{}: {e}", migs[corte - 1].version));
+            assert_eq!(version_del_paquete(&conn), version_esquema_conocida());
+        }
+    }
+
+    #[test]
+    fn correr_dos_veces_no_hace_nada_la_segunda() {
+        let mut conn = base_vacia();
+        motordb::correr_migraciones(&mut conn, &migraciones()).expect("primera pasada");
+        let filas: i64 = conn
+            .query_row("SELECT count(*) FROM _migraciones", [], |r| r.get(0))
+            .unwrap();
+        motordb::correr_migraciones(&mut conn, &migraciones()).expect("segunda pasada");
+        let despues: i64 = conn
+            .query_row("SELECT count(*) FROM _migraciones", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(filas, despues, "la segunda pasada no debe registrar nada nuevo");
+    }
+}
