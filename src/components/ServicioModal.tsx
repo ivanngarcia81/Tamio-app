@@ -140,6 +140,7 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
   const [error, setError] = useState<string | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmDesmarcar, setConfirmDesmarcar] = useState(false);
+  const [confirmVacio, setConfirmVacio] = useState(false);
 
   const [fecha, setFecha] = useState(servicio?.fecha ?? prefill?.fecha ?? hoyLocal());
   const [tipo, setTipo] = useState(servicio?.tipo ?? prefill?.tipo ?? "dominical");
@@ -224,7 +225,7 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
     if (saving) return;
     // Con un diálogo de confirmación abierto, Escape lo cierra a él (su
     // propio hook), no al modal completo.
-    if (confirmClose || confirmDesmarcar) return;
+    if (confirmClose || confirmDesmarcar || confirmVacio) return;
     if (hayCambios()) setConfirmClose(true);
     else onClose();
   }
@@ -361,9 +362,19 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
     }
   }
 
-  async function guardar() {
+  async function guardar(aceptaVacio = false) {
     setError(null);
     if (!fecha) { setError(t("servicios.fechaObligatoria")); return; }
+
+    // Con nadie marcado y los contadores en cero, la app no puede distinguir
+    // "nadie vino" de "no se tomó la asistencia": guardado así, el culto queda
+    // con asistencia cero REAL y todos los miembros entran como ausentes en
+    // Ausencias frecuentes y en el seguimiento pastoral. Se confirma, no se
+    // bloquea: un culto legítimamente vacío existe.
+    if (!aceptaVacio && totalPresentes === 0 && ninos + jovenes + adultos === 0) {
+      setConfirmVacio(true);
+      return;
+    }
 
     // Visitante con datos pero sin nombre → error; filas totalmente vacías se descartan.
     const visitantesLimpios: ServicioVisitante[] = [];
@@ -691,12 +702,22 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
           <span />
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={pedirCerrar}>{t("common.cancelar")}</button>
-            <button className="btn primary" onClick={guardar} disabled={saving || rosterLoading}>
+            <button className="btn primary" onClick={() => void guardar()} disabled={saving || rosterLoading}>
               {saving ? t("common.guardando") : servicio ? t("common.guardarCambios") : t("servicios.guardarServicio")}
             </button>
           </div>
         </div>
       </div>
+
+      {confirmVacio && (
+        <ConfirmDialog
+          title={t("servicios.confirmarVacioTitulo")}
+          message={t("servicios.confirmarVacioMensaje")}
+          confirmLabel={t("servicios.confirmarVacioBoton")}
+          onConfirm={() => { setConfirmVacio(false); void guardar(true); }}
+          onCancel={() => setConfirmVacio(false)}
+        />
+      )}
 
       {confirmDesmarcar && (
         <ConfirmDialog
