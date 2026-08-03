@@ -422,13 +422,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   }
 
   // ----- Datos derivados para Resumen y Archivo -----
-  const mesActual = new Date().toISOString().slice(0, 7);
   const resumen = useMemo(() => ({
     enPreparacion: cartas.filter((c) => ["borrador", "preparacion", "revision"].includes(c.estado)).length,
     esperandoFirma: cartas.filter((c) => c.estado === "firma").length,
     listas: cartas.filter((c) => ["aprobada", "lista"].includes(c.estado)).length,
-    emitidasMes: cartas.filter((c) => c.estado === "entregada" && c.fecha_emision.startsWith(mesActual)).length,
-  }), [cartas, mesActual]);
+  }), [cartas]);
 
   const q = query.trim().toLowerCase();
   const visibles = cartas
@@ -492,20 +490,21 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
                 <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
               </button>
-              <button className="stat-card accent" style={accent("var(--accent-2)")} onClick={() => irAArchivoFiltrado("entregada")}>
-                <div className="stat-head"><span className="stat-label">{t("cartas.cardEmitidasMes")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.emitidasMes} format={String} /></div>
-              </button>
+              {/* Cuatro tarjetas que cuentan una sola historia, y todas son
+                  colas de trabajo: en preparación → esperando firma → listas
+                  para entregar, más los traslados en curso. Antes eran seis
+                  (con "Emitidas este mes", puro dato, y los traslados
+                  separados en dos) y la sexta rompía la fila sola. */}
               <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
-                <div className="stat-head"><span className="stat-label">{t("traslados.cardSalidaProceso")}</span></div>
+                <div className="stat-head"><span className="stat-label">{t("traslados.cardEnProceso")}</span></div>
                 <div className="stat-value md">
-                  <CountUp value={trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length} format={String} />
-                </div>
-              </button>
-              <button className="stat-card accent" style={accent("var(--accent-6, var(--accent-3))")} onClick={() => cambiarTab("entrada")}>
-                <div className="stat-head"><span className="stat-label">{t("traslados.cardEntradaRevision")}</span></div>
-                <div className="stat-value md">
-                  <CountUp value={trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length} format={String} />
+                  <CountUp
+                    value={
+                      trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
+                      trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
+                    }
+                    format={String}
+                  />
                 </div>
               </button>
             </div>
