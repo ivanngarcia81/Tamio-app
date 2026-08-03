@@ -1241,6 +1241,7 @@ export const en: Resources = {
       otro: "Other",
     },
     fechaObligatoria: "Choose the service date.",
+    anotarMotivos: "Add reasons",
     confirmarVacioTitulo: "Save without attendance?",
     confirmarVacioMensaje: "No one is marked present and the counters are at zero. Saved like this, the service records a real zero attendance: every member will count as absent in reports and in pastoral follow-up.\n\nIf you have not taken attendance yet, cancel and mark it before saving.",
     confirmarVacioBoton: "Save anyway",

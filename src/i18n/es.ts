@@ -1235,6 +1235,7 @@ export const es = {
       otro: "Otro",
     },
     fechaObligatoria: "Elige la fecha del servicio.",
+    anotarMotivos: "Anotar motivos",
     confirmarVacioTitulo: "¿Guardar sin asistencia?",
     confirmarVacioMensaje: "No hay nadie marcado como presente y los contadores están en cero. Guardado así, el culto queda con asistencia cero de verdad: todos los miembros contarán como ausentes en los informes y en el seguimiento pastoral.\n\nSi todavía no tomas la asistencia, cancela y márcala antes de guardar.",
     confirmarVacioBoton: "Guardar así",

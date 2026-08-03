@@ -58,9 +58,13 @@ function numeroSano(v: string): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-const RosterRow = memo(function RosterRow({ id, estado, onToggle, onRazon, onRazonOtra, onSeguimiento }: {
+const RosterRow = memo(function RosterRow({ id, estado, conMotivo, onToggle, onRazon, onRazonOtra, onSeguimiento }: {
   id: number;
   estado: RosterState;
+  /** Mostrar el desplegable de motivo y la casilla de seguimiento. Durante la
+   *  captura van ocultos: todos arrancan ausentes y quince filas de controles
+   *  estorban justo cuando la tarea es marcar presentes rápido. */
+  conMotivo: boolean;
   onToggle: (id: number) => void;
   onRazon: (id: number, v: string) => void;
   onRazonOtra: (id: number, v: string) => void;
@@ -84,7 +88,7 @@ const RosterRow = memo(function RosterRow({ id, estado, onToggle, onRazon, onRaz
           {t(`membresia.estado.${estado.estadoMiembro}`)}
         </span>
       )}
-      {!estado.presente && (
+      {!estado.presente && conMotivo && (
         <span className="roster-controls">
           <select
             className="form-input"
@@ -141,6 +145,11 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmDesmarcar, setConfirmDesmarcar] = useState(false);
   const [confirmVacio, setConfirmVacio] = useState(false);
+  // En un culto nuevo los motivos de ausencia se anotan DESPUÉS de contar:
+  // mientras todos arrancan ausentes, esos controles son una pared que no
+  // sirve. Al editar un culto guardado las ausencias ya son reales y los
+  // controles aparecen desde el principio.
+  const [anotarAusencias, setAnotarAusencias] = useState(servicio !== null);
 
   const [fecha, setFecha] = useState(servicio?.fecha ?? prefill?.fecha ?? hoyLocal());
   const [tipo, setTipo] = useState(servicio?.tipo ?? prefill?.tipo ?? "dominical");
@@ -559,16 +568,21 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
                       {t("servicios.presentes")} ({presentesVisibles.length})
                     </div>
                     {presentesVisibles.map(([id, e]) => (
-                      <RosterRow key={id} id={id} estado={e} onToggle={toggle} onRazon={setRazon} onRazonOtra={setRazonOtra} onSeguimiento={setSeguimiento} />
+                      <RosterRow key={id} id={id} estado={e} conMotivo={anotarAusencias} onToggle={toggle} onRazon={setRazon} onRazonOtra={setRazonOtra} onSeguimiento={setSeguimiento} />
                     ))}
                     {presentesVisibles.length === 0 && (
                       <div style={{ padding: "8px 12px", fontSize: 12.5, color: "var(--text-3)" }}>{t("servicios.nadieMarcado")}</div>
                     )}
-                    <div className="roster-section-head">
-                      {t("servicios.ausentesLabel")} ({ausentesVisibles.length})
+                    <div className="roster-section-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <span>{t("servicios.ausentesLabel")} ({ausentesVisibles.length})</span>
+                      {!anotarAusencias && ausentesVisibles.length > 0 && (
+                        <button type="button" className="btn ghost sm" onClick={() => setAnotarAusencias(true)}>
+                          {t("servicios.anotarMotivos")}
+                        </button>
+                      )}
                     </div>
                     {ausentesVisibles.map(([id, e]) => (
-                      <RosterRow key={id} id={id} estado={e} onToggle={toggle} onRazon={setRazon} onRazonOtra={setRazonOtra} onSeguimiento={setSeguimiento} />
+                      <RosterRow key={id} id={id} estado={e} conMotivo={anotarAusencias} onToggle={toggle} onRazon={setRazon} onRazonOtra={setRazonOtra} onSeguimiento={setSeguimiento} />
                     ))}
                   </div>
                 )}
