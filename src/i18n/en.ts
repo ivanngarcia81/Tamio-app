@@ -2326,6 +2326,19 @@ export const en: Resources = {
     hint: "A different sound plays when you record an income, an expense, or delete a transaction.",
   },
 
+  acento: {
+    titulo: "Accent color",
+    sub: "The color of buttons and of the active page in the menu",
+    hint: "This is a preference for this device, like the theme and the language: it is not included in the backup and does not change what others see.",
+    nombre: {
+      neutro: "Neutral (original)",
+      verde: "Green",
+      azul: "Blue",
+      morado: "Purple",
+      ambar: "Amber",
+    },
+  },
+
   pdfPreview: {
     titulo: "PDF preview",
     sub: "This is how your report header will look",

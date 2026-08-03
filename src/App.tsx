@@ -35,6 +35,7 @@ import { migrarImagenesIglesia } from "./services/imagenesIglesia";
 import { sincronizarPausaDesdeRust } from "./services/restaurar";
 import { showToast } from "./toast";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
+import { ACENTOS, type Acento } from "./components/settings/AccentSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
@@ -52,6 +53,15 @@ function initialThemePref(): ThemePref {
     if (saved === "dark" || saved === "light" || saved === "auto") return saved;
   } catch { /* noop */ }
   return "auto";
+}
+
+/** Color de acento. Preferencia de este dispositivo, igual que el tema. */
+function initialAcento(): Acento {
+  try {
+    const saved = localStorage.getItem("tamio-acento");
+    if (saved && (ACENTOS as readonly string[]).includes(saved)) return saved as Acento;
+  } catch { /* noop */ }
+  return "neutro";
 }
 
 function systemPrefersDark(): boolean {
@@ -96,6 +106,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [themePref, setThemePref] = useState<ThemePref>(initialThemePref);
+  const [acento, setAcento] = useState<Acento>(initialAcento);
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
@@ -144,6 +155,14 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   useEffect(() => {
     try { localStorage.setItem("tesoreria-theme", themePref); } catch { /* noop */ }
   }, [themePref]);
+
+  // "neutro" no escribe atributo: sin `data-acento` quedan los valores de
+  // siempre de styles.css, que es el aspecto original de Tamio.
+  useEffect(() => {
+    if (acento === "neutro") document.documentElement.removeAttribute("data-acento");
+    else document.documentElement.setAttribute("data-acento", acento);
+    try { localStorage.setItem("tamio-acento", acento); } catch { /* noop */ }
+  }, [acento]);
 
   // El idioma sigue el mismo patrón que el tema: preferencia explícita o
   // "auto", que sigue el idioma del sistema operativo en vivo.
@@ -436,6 +455,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onChurchUpdated={onChurchUpdated}
                 themePref={themePref}
                 onThemePrefChange={setThemePref}
+                acento={acento}
+                onAcentoChange={setAcento}
                 langPref={langPref}
                 onLangPrefChange={setLangPref}
                 role={role}

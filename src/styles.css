@@ -193,6 +193,31 @@
   color-scheme: dark;
 }
 
+/* ---------- Color de acento (Ajustes → Preferencias) ----------
+   `--ink` es el color fuerte de la app: botones principales, elemento activo
+   del menú, chips y pestañas seleccionadas, anillo de foco y casillas. Con
+   cambiarlo (y su color de texto encima) se recolorea Tamio entero, sin
+   tocar ni un componente.
+
+   Cada acento necesita DOS versiones: en claro el color va de fondo con
+   texto blanco encima; en oscuro tiene que aclararse para que se lea sobre
+   un fondo casi negro, y el texto de encima pasa a ser oscuro. Sin acento
+   elegido no hay regla que aplicar y quedan los valores neutros de siempre.
+
+   Van después del bloque de tema oscuro a propósito: al combinar dos
+   atributos ganan en especificidad y no dependen del orden. */
+:root[data-acento="verde"] { --ink: #047857; --ink-contrast: #ffffff; }
+:root[data-theme="dark"][data-acento="verde"] { --ink: #34d399; --ink-contrast: #052e22; }
+
+:root[data-acento="azul"] { --ink: #1d4ed8; --ink-contrast: #ffffff; }
+:root[data-theme="dark"][data-acento="azul"] { --ink: #60a5fa; --ink-contrast: #0a1e3d; }
+
+:root[data-acento="morado"] { --ink: #6d28d9; --ink-contrast: #ffffff; }
+:root[data-theme="dark"][data-acento="morado"] { --ink: #a78bfa; --ink-contrast: #241046; }
+
+:root[data-acento="ambar"] { --ink: #b45309; --ink-contrast: #ffffff; }
+:root[data-theme="dark"][data-acento="ambar"] { --ink: #fbbf24; --ink-contrast: #3a2606; }
+
 @media (min-width: 1728px) {
   :root { --content-pad-x: 40px; }
 }
@@ -2805,25 +2830,50 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Con columnas, las tarjetas fluyen y el navegador equilibra las alturas solo.
    `break-inside: avoid` impide que una tarjeta se parta entre columnas; se
    incluye la variante con prefijo por los WebKit antiguos de macOS. */
+/* Rejilla de dos columnas, no columnas CSS.
+   Con `columns: 2` el navegador repartía las tarjetas por ALTURA para
+   equilibrar, y el orden real quedaba fuera de nuestro control: la firma del
+   pastor acababa arriba de una columna con sus datos abajo en la otra, y
+   sobraban huecos donde una columna era más larga que la otra. Con rejilla
+   manda el orden del código: primera tarjeta a la izquierda, segunda a la
+   derecha, tercera abajo a la izquierda… `align-items: start` evita que una
+   tarjeta corta se estire hasta la altura de su vecina. */
 .settings-masonry {
-  columns: 2;
-  column-gap: var(--space-6);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px var(--space-6);
+  align-items: start;
   margin-bottom: 20px;
 }
-/* Una sección con UNA sola tarjeta no tiene con qué equilibrar dos columnas:
-   va a ancho completo en vez de dejar media pantalla vacía al lado. */
-.settings-masonry.una-tarjeta { columns: 1; }
-.settings-masonry > * {
-  min-width: 0;
-  /* En columnas el hueco vertical lo pone el margen, no `gap`. */
-  margin-bottom: 20px;
-  -webkit-column-break-inside: avoid;
-  break-inside: avoid;
+/* Una sección con UNA sola tarjeta no tiene con qué emparejarse: va a ancho
+   completo en vez de dejar media pantalla vacía al lado. */
+.settings-masonry.una-tarjeta { grid-template-columns: minmax(0, 1fr); }
+.settings-masonry > * { min-width: 0; }
+
+/* Selector de color de acento: pastillas redondas, una por color. */
+.acento-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
 }
-/* Pareja inseparable dentro del mosaico (una persona y su firma). Como el
-   bloque entero es hijo directo del mosaico, hereda el "no partir" de arriba
-   y sus dos tarjetas caen siempre en la misma columna, una debajo de otra. */
-.settings-par > * + * { margin-top: 20px; }
+.acento-punto {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.acento-punto:hover { transform: scale(1.08); }
+.acento-punto.active {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink);
+}
 
 /* Zonas de Ajustes: jerarquía de elevación por categoría. El panel de la
    zona es plano y apenas tintado (nivel 0); las tarjetas dentro conservan
@@ -3125,7 +3175,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .dash-canvas { padding: 18px; gap: var(--space-4); }
   .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
-  .settings-masonry { columns: 1; }
+  .settings-masonry { grid-template-columns: minmax(0, 1fr); }
   .report-preview .r-summary { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 860px) {

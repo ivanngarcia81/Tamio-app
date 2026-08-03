@@ -2333,6 +2333,19 @@ export const es = {
     hint: "Se reproduce un sonido distinto al registrar un ingreso, un gasto o al eliminar un movimiento.",
   },
 
+  acento: {
+    titulo: "Color de acento",
+    sub: "El color de los botones y de la página activa del menú",
+    hint: "Es una preferencia de este dispositivo, como el tema y el idioma: no viaja en el respaldo ni cambia lo que ven los demás.",
+    nombre: {
+      neutro: "Neutro (original)",
+      verde: "Verde",
+      azul: "Azul",
+      morado: "Morado",
+      ambar: "Ámbar",
+    },
+  },
+
   pdfPreview: {
     titulo: "Vista previa del PDF",
     sub: "Así se verá el encabezado de tus reportes",

@@ -16,6 +16,7 @@ import SignatureUploader from "../components/settings/SignatureUploader";
 import UsersSettings from "../components/settings/UsersSettings";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
+import AccentSettings, { type Acento } from "../components/settings/AccentSettings";
 import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
 import RoleSettings from "../components/settings/RoleSettings";
@@ -35,6 +36,8 @@ interface Props {
   onChurchUpdated: (c: Church) => void;
   themePref: ThemePref;
   onThemePrefChange: (pref: ThemePref) => void;
+  acento: Acento;
+  onAcentoChange: (a: Acento) => void;
   langPref: LangPref;
   onLangPrefChange: (pref: LangPref) => void;
   role: Role;
@@ -48,7 +51,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
 export default function Configuracion({
-  church, onChurchUpdated, themePref, onThemePrefChange, langPref, onLangPrefChange, role, onRoleChange,
+  church, onChurchUpdated, themePref, onThemePrefChange, acento, onAcentoChange,
+  langPref, onLangPrefChange, role, onRoleChange,
   authActivo,
 }: Props) {
   const { t } = useTranslation();
@@ -359,10 +363,13 @@ export default function Configuracion({
               <div className="settings-zona-sub">{t("config.zona.documentosSub")}</div>
             </div>
             <div className="settings-masonry">
-              {/* La vista previa del PDF es el RESULTADO de estas cuatro
-                  tarjetas (encabezado institucional, logo, tesorero y pastor):
-                  van juntas y la vista previa pegada al final, para cambiar
-                  un dato y ver el efecto sin mover los ojos de sitio. */}
+              {/* Orden de la rejilla, por filas:
+                     datos institucionales │ vista previa del PDF
+                     tesorero              │ su firma
+                     pastor                │ su firma
+                  La vista previa es el RESULTADO de las demás, así que va
+                  arriba a la derecha: se cambia un dato y se ve el efecto sin
+                  mover los ojos de sitio. */}
               {verSecretaria && (
                 <InstitucionSettings
                   value={institucionForm}
@@ -370,14 +377,18 @@ export default function Configuracion({
                   estado={estados.institucion}
                 />
               )}
-              {/* Cada persona va con su firma dentro de un mismo bloque. El
-                  mosaico reparte las tarjetas por altura sin saber que son
-                  pareja, y sin esto la firma del pastor acababa arriba de una
-                  columna con sus datos abajo en la otra: una firma suelta,
-                  lejos de quien firma. El bloque no se puede partir, así que
-                  las dos caen siempre juntas y en orden. */}
               {verTesoreria && (
-                <div className="settings-par">
+                <PDFPreview
+                  churchNombre={churchForm.nombre}
+                  tesoreroNombre={treasurerForm.nombre}
+                  tesoreroCargo={treasurerForm.cargo}
+                />
+              )}
+              {/* A partir de aquí, cada persona a la izquierda y su firma a la
+                  derecha, en la misma fila. La rejilla coloca por orden, así
+                  que basta con escribirlas por parejas. */}
+              {verTesoreria && (
+                <>
                   <TreasurerSettings
                     value={treasurerForm}
                     onChange={(patch) => { setTreasurerForm((v) => ({ ...v, ...patch })); programarGuardado("tesorero"); }}
@@ -389,30 +400,21 @@ export default function Configuracion({
                     onPathChange={(p) => { setFirmaPath(p); programarGuardado("firmaTesorero", 50); }}
                     estado={estados.firmaTesorero}
                   />
-                </div>
+                </>
               )}
               {/* Pastor: compartido (firma en tesorería y secretaría). */}
-              <div className="settings-par">
-                <PastorSettings
-                  value={pastorForm}
-                  onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
-                  errors={pastorErrors}
-                  estado={estados.pastor}
-                />
-                <SignatureUploader
-                  path={pastorFirmaPath}
-                  onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
-                  variant="pastor"
-                  estado={estados.firmaPastor}
-                />
-              </div>
-              {verTesoreria && (
-                <PDFPreview
-                  churchNombre={churchForm.nombre}
-                  tesoreroNombre={treasurerForm.nombre}
-                  tesoreroCargo={treasurerForm.cargo}
-                />
-              )}
+              <PastorSettings
+                value={pastorForm}
+                onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
+                errors={pastorErrors}
+                estado={estados.pastor}
+              />
+              <SignatureUploader
+                path={pastorFirmaPath}
+                onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
+                variant="pastor"
+                estado={estados.firmaPastor}
+              />
             </div>
           </section>
 
@@ -433,8 +435,10 @@ export default function Configuracion({
               <div className="settings-zona-titulo">{t("config.zona.preferencias")}</div>
               <div className="settings-zona-sub">{t("config.zona.preferenciasSub")}</div>
             </div>
+            {/* Dos filas parejas: Apariencia | Acento, Idioma | Sonido. */}
             <div className="settings-masonry">
               <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
+              <AccentSettings value={acento} onChange={onAcentoChange} />
               <LanguageSettings value={langPref} onChange={onLangPrefChange} />
               <SoundSettings />
             </div>
@@ -447,12 +451,17 @@ export default function Configuracion({
                 <div className="settings-zona-sub">{t("config.zona.delicadaSub")}</div>
               </div>
               <div className="settings-masonry">
+                {/* Por filas: respaldo │ compactar, restaurar │ zona de
+                    peligro. Así las cuatro quedan emparejadas en vez de dejar
+                    una columna larga y otra corta. */}
                 <BackupSettings church={church} />
-                {/* Solo se pinta si hay algo que recuperar; si no, devuelve null. */}
-                <ComprobantesPendientes church={church} />
-                <RestoreSettings />
                 <CompactSettings church={church} />
+                <RestoreSettings />
                 <DangerZoneSettings church={church} />
+                {/* Solo se pinta si hay algo que recuperar; si no, devuelve
+                    null y no ocupa celda. Va al final para no descolocar las
+                    parejas de arriba. */}
+                <ComprobantesPendientes church={church} />
               </div>
             </section>
           )}

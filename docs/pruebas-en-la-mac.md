@@ -56,6 +56,16 @@ Preferencias → Zona sensible).
       Pro 12.9" horizontal. Iglesia y Categorías van a ancho completo; las
       demás en dos columnas. Avisar si alguna sección deja media columna
       vacía o una tarjeta se ve desproporcionada.
+- [ ] **Documentos oficiales en pares.** Ahora las tarjetas van por filas:
+      Datos institucionales | Vista previa del PDF, Tesorero | Firma del
+      tesorero, Pastor | Firma del pastor. Cada firma al lado de su persona.
+- [ ] **Color de acento** (tarjeta nueva en Preferencias). Elige verde: los
+      botones oscuros, la página activa del menú y el anillo de foco deben
+      cambiar de color en el acto. Prueba también en modo oscuro. "Neutro"
+      devuelve el aspecto original. Cierra y vuelve a abrir Tamio: el color
+      elegido debe seguir puesto.
+- [ ] **Zona sensible pareja.** Respaldo | Compactar base de datos,
+      Restaurar | Zona de peligro.
 
 ## 2. El recorrido con la consola (punto 5.5 de la auditoría, ~15 min)
 
