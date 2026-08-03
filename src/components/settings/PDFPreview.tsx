@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { currentMonth, fmtFechaCorta, mesLegible, nowLocalIso } from "../../db";
-import { IconDownload, IconExternalLink, IconFileText, IconPrinter, IconRefreshCw } from "../../icons";
+import { IconFileText } from "../../icons";
 
 function previewPeriodo(): string {
   return mesLegible(currentMonth());
@@ -41,20 +41,10 @@ export default function PDFPreview({ churchNombre, tesoreroNombre, tesoreroCargo
         </div>
       </div>
 
-      <div className="pdf-preview-toolbar">
-        <button type="button" className="btn secondary sm" disabled title={t("pdfPreview.disponibleDesdeReportes")}>
-          <IconExternalLink size={13} /> {t("pdfPreview.abrirPdf")}
-        </button>
-        <button type="button" className="btn secondary sm" disabled title={t("pdfPreview.disponibleDesdeReportes")}>
-          <IconPrinter size={13} /> {t("pdfPreview.imprimir")}
-        </button>
-        <button type="button" className="btn secondary sm" disabled title={t("pdfPreview.disponibleDesdeReportes")}>
-          <IconDownload size={13} /> {t("pdfPreview.exportarPdf")}
-        </button>
-        <button type="button" className="btn ghost sm" disabled title={t("pdfPreview.yaSeActualiza")}>
-          <IconRefreshCw size={13} /> {t("pdfPreview.actualizar")}
-        </button>
-      </div>
+      {/* Sin botones: eran cuatro controles deshabilitados que duplicaban
+          la pantalla de Reportes, con un cartel que te mandaba a Reportes.
+          Una vista previa es una vista previa; se actualiza sola al escribir
+          y las acciones reales viven donde el cartel dice. */}
       <div className="pdf-preview-hint">
         {t("pdfPreview.hint")}
       </div>

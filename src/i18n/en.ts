@@ -2327,12 +2327,6 @@ export const en: Resources = {
   pdfPreview: {
     titulo: "PDF preview",
     sub: "This is how your report header will look",
-    abrirPdf: "Open PDF",
-    imprimir: "Print",
-    exportarPdf: "Export PDF",
-    actualizar: "Refresh",
-    disponibleDesdeReportes: "Available from Reports",
-    yaSeActualiza: "The preview already updates as you type",
     hint: "Real report actions are available on the Reports screen.",
     tituloHoja: "Monthly financial statement",
     miIglesia: "My Church",

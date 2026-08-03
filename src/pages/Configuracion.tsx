@@ -345,7 +345,10 @@ export default function Configuracion({
                   sin login, quien usa la app en su propia instalación. */}
               {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
               {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
-              {esAdmin && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
+              {/* El directorio de usuarios hoy no controla el acceso (el login
+                  está desactivado en la 1.0): una tarjeta que no hace nada no
+                  merece sitio. Vuelve sola cuando el login regrese en la 1.1. */}
+              {esAdmin && authActivo && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
               {authActivo && SYNC_HABILITADO && <SyncSettings />}
             </div>
           </section>

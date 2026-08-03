@@ -2334,12 +2334,6 @@ export const es = {
   pdfPreview: {
     titulo: "Vista previa del PDF",
     sub: "Así se verá el encabezado de tus reportes",
-    abrirPdf: "Abrir PDF",
-    imprimir: "Imprimir",
-    exportarPdf: "Exportar PDF",
-    actualizar: "Actualizar",
-    disponibleDesdeReportes: "Disponible desde Reportes",
-    yaSeActualiza: "La vista previa ya se actualiza mientras escribes",
     hint: "Las acciones de reporte real están disponibles en la pantalla Reportes.",
     tituloHoja: "Estado financiero mensual",
     miIglesia: "Mi Iglesia",
