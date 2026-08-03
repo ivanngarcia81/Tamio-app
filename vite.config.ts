@@ -8,6 +8,16 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  // Sello de compilación visible en Configuración → Restaurar. Existe para
+  // una sola cosa: saber por una captura de pantalla QUÉ compilación está
+  // corriendo el usuario. Un arreglo se probó tres veces contra una app vieja
+  // sin que nadie pudiera notarlo; con el sello, eso se ve a simple vista.
+  define: {
+    __FECHA_BUILD__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"
+    ),
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

@@ -103,6 +103,11 @@ export default function RestoreSettings() {
       </button>
 
       <div className="form-hint" style={{ marginTop: "var(--space-3)" }}>{t("restaurar.hint")}</div>
+      {/* Sello de compilación: una captura de esta tarjeta basta para saber
+          qué versión del código está corriendo. Ver vite.config.ts. */}
+      <div className="form-hint" style={{ marginTop: "var(--space-2)", color: "var(--text-3)" }}>
+        {t("restaurar.compilacion", { fecha: __FECHA_BUILD__ })}
+      </div>
 
       {error && (
         <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "var(--space-3)" }}>
