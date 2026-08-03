@@ -108,6 +108,33 @@ modales) pasan a `console.warn` con contexto.
   notificación real del sistema. La pregunta quedó abierta el 3 ago.
 - **Layout de Ajustes:** los huecos que salgan de las pruebas en Mac e iPad.
 
+## Trámites del humano (no dependen de código ni de nadie)
+
+### Inscribirse en el App Store Small Business Program
+
+Baja la comisión de Apple del **30 % al 15 %**. Gratis, ~5 minutos.
+
+- **Dónde:** <https://developer.apple.com/app-store/small-business-program/>
+  → botón *Enroll*, con la cuenta de Apple Developer de siempre.
+- **Requisitos (ya cumplidos):** membresía activa del Apple Developer
+  Program y menos de $1 000 000 USD facturados el año calendario anterior
+  (los desarrolladores nuevos entran directo).
+- **Paso previo que puede faltar:** tener firmado el *Paid Applications
+  Agreement* en App Store Connect → Business → *Agreements, Tax, and
+  Banking*. Si solo se han publicado apps gratis, nunca se firmó; ahí piden
+  además datos bancarios y fiscales.
+- **Cuándo empieza a valer:** desde el **primer día del mes siguiente** a la
+  aprobación. Por eso se hace con tiempo, no cuando ya haya ventas.
+
+**Por qué está anotado aunque hoy no haga falta:** el 15 % solo se cobra
+sobre compras DENTRO de la app, y Tamio se vende por la web (Apple no cobra
+nada por una app gratis). Así que esto no sirve hasta el día que se añada la
+compra dentro de la app — que la 1.1 descarta a propósito. Pero como tarda
+un mes en activarse y no cuesta nada, conviene tenerlo hecho por adelantado.
+
+Verificar los requisitos en esa página al inscribirse: la política de Apple
+cambia de vez en cuando.
+
 ## Higiene del repositorio (independiente, en cuanto Apple apruebe)
 
 Anotado desde julio, sin relación con el código de la app:
@@ -123,7 +150,9 @@ Anotado desde julio, sin relación con el código de la app:
 
 - **Compras dentro de la app (App Store).** El precio ya está listo para
   cuando toque ($23.99 en ambos canales), pero implementarlo es un proyecto
-  en sí mismo y no hay razón para hacerlo antes de tener clientes.
+  en sí mismo y no hay razón para hacerlo antes de tener clientes. (La
+  inscripción al Small Business Program sí conviene hacerla ya — ver
+  *Trámites del humano*.)
 - **Planes por módulo a la venta.** Están diseñados y el webhook los soporta;
   se ponen a la venta cuando haya demanda que lo pida.
 - **Tamio Kids, conciliación bancaria, Android/Windows.** Versión 2.0 —
