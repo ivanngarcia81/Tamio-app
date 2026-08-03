@@ -953,6 +953,7 @@ export const es = {
     secServicio: "Servicio y habilidades",
     fechaCongregacion: "Comenzó a congregarse",
     fechaIngreso: "Recibido como miembro",
+    avisoFechasInvertidas: "«Recibido como miembro» es anterior a «Comenzó a congregarse». Normalmente alguien se congrega antes de ser recibido: revisa las dos fechas. Se puede guardar igual.",
     iglesiaAnterior: "Iglesia anterior",
     siAplica: "(si aplica)",
     estadoBajaNota: "Dado de baja — usa Reactivar para volver al registro",

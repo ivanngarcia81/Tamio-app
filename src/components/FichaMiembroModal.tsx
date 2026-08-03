@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, nowLocalIso, updateMemberFicha,
+  fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, updateMemberFicha,
   type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha, type NewMember,
 } from "../db";
 import { IconCalendar, IconClose, IconMail, IconPrinter } from "../icons";
@@ -171,7 +171,6 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
   const { t } = useTranslation();
   useEscapeClose(onClose);
   const crear = member === null;
-  const hoy = nowLocalIso().slice(0, 10);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,7 +187,10 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
       : "activo"
   );
   const [fechaCongregacion, setFechaCongregacion] = useState(member?.fecha_congregacion ?? "");
-  const [fechaIngreso, setFechaIngreso] = useState(member?.fecha_ingreso ?? (crear ? hoy : ""));
+  // Ninguna de las dos fechas se prellena: "Recibido como miembro" casi nunca
+  // es hoy (se recibe a gente que ya venía congregándose), y un prellenado
+  // que casi siempre está mal se guarda sin que nadie lo mire.
+  const [fechaIngreso, setFechaIngreso] = useState(member?.fecha_ingreso ?? "");
   const [iglesiaAnterior, setIglesiaAnterior] = useState(member?.iglesia_anterior ?? "");
   const [bautizadoAgua, setBautizadoAgua] = useState(member?.bautizado_agua === 1);
   const [fechaBautismoAgua, setFechaBautismoAgua] = useState(member?.fecha_bautismo_agua ?? "");
@@ -225,7 +227,7 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
   function limpiarParaOtro() {
     setNombre(""); setEmail(""); setTelefono(""); setRfc(""); setNotas("");
     setEstado("activo");
-    setFechaCongregacion(""); setFechaIngreso(hoy); setIglesiaAnterior("");
+    setFechaCongregacion(""); setFechaIngreso(""); setIglesiaAnterior("");
     setBautizadoAgua(false); setFechaBautismoAgua("");
     setBautizadoEspiritu(false); setFechaBautismoEspiritu("");
     setCursoMembresia(false);
@@ -263,7 +265,7 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
           telefono: telefono.trim() || null,
           rfc: rfc.trim() || null,
           notas: notas.trim() || null,
-          fecha_ingreso: fechaIngreso || hoy,
+          fecha_ingreso: fechaIngreso || null,
         };
         await insertMemberConFicha(church.id, nuevo, ficha);
       } else {
@@ -370,6 +372,11 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
                 <input className="form-input" value={iglesiaAnterior} onChange={(e) => setIglesiaAnterior(e.target.value)} />
               </div>
             </div>
+            {/* Aviso, no bloqueo: normalmente alguien se congrega ANTES de ser
+                recibido como miembro. Al revés suele ser un dedo equivocado. */}
+            {fechaIngreso && fechaCongregacion && fechaIngreso < fechaCongregacion && (
+              <div className="form-warning">{t("ficha.avisoFechasInvertidas")}</div>
+            )}
           </Seccion>
 
           <Seccion titulo={t("ficha.secEspiritual")}>

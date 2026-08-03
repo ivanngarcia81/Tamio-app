@@ -959,6 +959,7 @@ export const en: Resources = {
     secServicio: "Service and skills",
     fechaCongregacion: "Started attending",
     fechaIngreso: "Received as a member",
+    avisoFechasInvertidas: "“Received as a member” is earlier than “Started attending”. People usually attend before being received: check both dates. You can still save.",
     iglesiaAnterior: "Previous church",
     siAplica: "(if applicable)",
     estadoBajaNota: "Removed — use Reactivate to return to the registry",
