@@ -356,6 +356,17 @@ export default function Configuracion({
               <div className="settings-zona-sub">{t("config.zona.trabajoSub")}</div>
             </div>
             <div className="settings-masonry">
+              {/* La vista previa del PDF es el RESULTADO de estas cuatro
+                  tarjetas (encabezado institucional, logo, tesorero y pastor):
+                  van juntas y la vista previa pegada al final, para cambiar
+                  un dato y ver el efecto sin mover los ojos de sitio. */}
+              {verSecretaria && (
+                <InstitucionSettings
+                  value={institucionForm}
+                  onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
+                  estado={estados.institucion}
+                />
+              )}
               {verTesoreria && (
                 <>
                   <TreasurerSettings
@@ -384,22 +395,15 @@ export default function Configuracion({
                 variant="pastor"
                 estado={estados.firmaPastor}
               />
-              {verSecretaria && (
-                <InstitucionSettings
-                  value={institucionForm}
-                  onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
-                  estado={estados.institucion}
-                />
-              )}
-              {verTesoreria && (
-                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-              )}
               {verTesoreria && (
                 <PDFPreview
                   churchNombre={churchForm.nombre}
                   tesoreroNombre={treasurerForm.nombre}
                   tesoreroCargo={treasurerForm.cargo}
                 />
+              )}
+              {verTesoreria && (
+                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
               )}
             </div>
           </section>
