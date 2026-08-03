@@ -67,8 +67,15 @@ export default function ActividadModal({
   const [horaFin, setHoraFin] = useState(base?.hora_fin ?? "");
   const [lugar, setLugar] = useState(base?.lugar ?? "");
   const [descripcion, setDescripcion] = useState(base?.descripcion ?? "");
+  // "" = sin asignar (el valor por omisión); "externa" = persona de fuera con
+  // nombre libre. Antes el vacío ERA "otra persona (externa)": el caso raro
+  // como valor por defecto, con su campo de nombre abierto desde el inicio.
   const [responsableMemberId, setResponsableMemberId] = useState<string>(
-    base?.responsable_member_id != null ? String(base.responsable_member_id) : ""
+    base?.responsable_member_id != null
+      ? String(base.responsable_member_id)
+      : base?.responsable_persona
+        ? "externa"
+        : ""
   );
   const [responsablePersona, setResponsablePersona] = useState(base?.responsable_persona ?? "");
   const [responsableMinisterio, setResponsableMinisterio] = useState(base?.responsable_ministerio ?? "");
@@ -138,13 +145,14 @@ export default function ActividadModal({
   }
 
   function armarPayload(): NewActividad {
-    const memberId = responsableMemberId ? Number(responsableMemberId) : null;
+    const memberId = responsableMemberId && responsableMemberId !== "externa"
+      ? Number(responsableMemberId) : null;
     return {
       nombre, tipo, tipo_personalizado: tipoPersonalizado, fecha,
       hora_inicio: horaInicio, hora_fin: horaFin, dia_completo: diaCompleto,
       lugar, descripcion,
       responsable_member_id: memberId,
-      responsable_persona: memberId ? "" : responsablePersona,
+      responsable_persona: responsableMemberId === "externa" ? responsablePersona : "",
       responsable_ministerio: responsableMinisterio,
       invitado, contacto, estado, es_fecha_importante: esFechaImportante,
       recurrencia: construirRecurrencia(),
@@ -252,11 +260,12 @@ export default function ActividadModal({
               <div className="form-group">
                 <label className="form-label">{t("agenda.responsable")}</label>
                 <select className="form-input" value={responsableMemberId} onChange={(e) => setResponsableMemberId(e.target.value)}>
-                  <option value="">{t("agenda.responsableExterno")}</option>
+                  <option value="">{t("agenda.responsableSinAsignar")}</option>
                   {miembros.map((m) => <option key={m.id} value={String(m.id)}>{m.nombre}</option>)}
+                  <option value="externa">{t("agenda.responsableExterno")}</option>
                 </select>
               </div>
-              {!responsableMemberId && (
+              {responsableMemberId === "externa" && (
                 <div className="form-group">
                   <label className="form-label">{t("agenda.responsablePersona")}</label>
                   <input className="form-input" value={responsablePersona} placeholder={t("agenda.responsablePersonaPlaceholder")} onChange={(e) => setResponsablePersona(e.target.value)} />

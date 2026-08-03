@@ -1960,6 +1960,7 @@ export const es = {
     lugar: "Lugar",
     descripcion: "Descripción / notas",
     responsable: "Persona responsable",
+    responsableSinAsignar: "— Sin asignar —",
     responsableExterno: "— Otra persona (externa) —",
     responsablePersona: "Nombre (externo)",
     responsablePersonaPlaceholder: "Persona que no es miembro",

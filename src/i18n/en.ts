@@ -1956,6 +1956,7 @@ export const en: Resources = {
     lugar: "Location",
     descripcion: "Description / notes",
     responsable: "Person in charge",
+    responsableSinAsignar: "— Unassigned —",
     responsableExterno: "— Other person (external) —",
     responsablePersona: "Name (external)",
     responsablePersonaPlaceholder: "Someone who is not a member",
