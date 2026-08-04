@@ -21,9 +21,11 @@ export const ESTADOS_SUB: EstadoSub[] = ["activa", "cortesia", "prueba", "vencid
  *  nadie fuera en una asamblea sin internet). */
 export const DIAS_GRACIA = 10;
 
-/** URL de la tienda/checkout (Paddle) donde se compra o renueva la
+/** URL del checkout de Lemon Squeezy donde se compra o renueva la
  *  suscripción. Viene de VITE_URL_COMPRA en el .env; si no está configurada,
- *  los botones de "Renovar/Comprar" simplemente no se muestran. */
+ *  los botones de "Renovar/Comprar" simplemente no se muestran (que es el
+ *  caso de hoy: la tienda todavía no existe). Es de compilación, no de
+ *  ejecución: cambiarla obliga a recompilar. Ver docs/guia-lemon-squeezy.md. */
 export const urlCompra: string | null =
   (import.meta.env.VITE_URL_COMPRA as string | undefined)?.trim() || null;
 

@@ -42,16 +42,23 @@ se una a la MISMA iglesia con otro rol sin tocar Supabase a mano.
   oculta a propósito, porque sin login no hace nada) y que la tarjeta de plan
   muestre estado y vencimiento reales.
 
-### 3. Encender la tienda
+### 3. Encender la tienda — *no depende de Apple; se puede empezar hoy*
 
-El webhook ya está escrito y adaptado a Lemon Squeezy; la guía paso a paso
-está en `docs/guia-lemon-squeezy.md`.
+El webhook ya está escrito y adaptado a Lemon Squeezy, **pero escrito no es
+desplegado**: el código vive en `supabase/functions/pago-webhook/` y nada en
+el repositorio demuestra que esté corriendo. La guía paso a paso está en
+`docs/guia-lemon-squeezy.md`, con las Fases 1–4 en modo de prueba.
 
 - Producto único "Tamio", **$23.99/mes** (ver `docs/planes.md` → Precio).
-- Fases 1–4 de la guía en modo de prueba; Fase 5 en producción.
-- Enlace de compra en tamio.church, con el correo de la cuenta en el checkout.
-- **Prueba de fuego:** una compra falsa activa el plan de esa iglesia sola,
-  sin que nadie toque Supabase.
+- Lo hace Iván a mano: crear producto y webhook en Lemon Squeezy, desplegar
+  la función y guardar el secreto `LEMON_WEBHOOK_SECRET` con la CLI de
+  Supabase, y poner `VITE_URL_COMPRA` en el `.env`.
+- **Prueba de fuego:** una compra falsa (tarjeta `4242…`) deja un
+  `subscription_created` con respuesta 200 en el registro de entregas de
+  Lemon Squeezy. Sin login todavía, el 404 "usuario no encontrado" también
+  vale: prueba la firma y el formato, que es lo que se puede probar hoy.
+- **Lo único que espera a Apple** es que los botones de compra aparezcan en
+  la app: `VITE_URL_COMPRA` se lee al compilar, y no se sube build nuevo.
 
 ### 4. Las exportaciones que faltan
 
@@ -100,12 +107,110 @@ modales) pasan a `console.warn` con contexto.
 
 ---
 
+## Preguntas contestadas, decisiones pendientes
+
+Dos puntos de la tanda de Secretaría pedían una respuesta, no código, y se
+quedaron sin contestar. Investigados el 4 ago; la decisión sigue siendo de
+Iván.
+
+### P2 — Los recordatorios de Agenda: qué hacen hoy
+
+**Se leen, pero solo dentro de la app, y solo en la pantalla de Agenda.**
+No hay entrega de ninguna clase: ni correo, ni notificación del sistema, ni
+tarea programada. Comprobado: no hay `tauri-plugin-notification` en
+`src-tauri/Cargo.toml` (solo opener, dialog y fs), no hay `pg_cron` ni
+trabajo agendado en `supabase/`, y las tres Edge Functions que existen
+(`borrar-cuenta`, `pago-webhook`, `redactar-ia`) no tienen que ver.
+
+El único consumidor es `Agenda.tsx:312-323`: arma una franja "Recordatorios"
+arriba de la página con las actividades cuya fecha cae dentro del margen
+elegido, saltando las canceladas, las completadas y las pasadas. La franja
+se pinta en `Agenda.tsx:498`. `grep` de `recordatorios` no da resultados en
+`Dashboard.tsx` ni en `InicioSecretaria.tsx`.
+
+**Consecuencia:** el aviso solo existe si alguien abre Agenda ese día. Quien
+marque "un día antes" y no entre, no ve nada. El rótulo dice "Recordatorios"
+sin ninguna nota que lo acote.
+
+**Tres salidas, en orden de coste:**
+
+1. **Renombrar y explicar** (una tarde). El campo pasa a llamarse algo como
+   "Avisar en Agenda" y gana una línea de ayuda: *"aparece en la lista de
+   Agenda los días indicados; Tamio no envía correos ni notificaciones"*.
+   Honesto y barato.
+2. **Notificación real del sistema** (1.1 o después). `tauri-plugin-notification`
+   es oficial y funciona en macOS e iOS. Pero una notificación programada
+   necesita que algo la programe: con la app cerrada no hay quien dispare
+   nada, así que lo realista es avisar al ABRIR la app, no a una hora fija.
+3. **Correo** (2.0). Necesita servidor y que la iglesia esté sincronizada.
+   Fuera de alcance por ahora.
+
+**Recomendación: la 1.** El daño de hoy no es que falte la notificación, es
+que la palabra promete algo que no ocurre. Un pastor que confía en un aviso
+que no llega y se entera el día que se le pasa la junta está peor que si la
+opción no existiera.
+
+### 3.8 — Acta y Carta tienen escalas de estado distintas
+
+Son cinco vocabularios distintos, no dos:
+
+| Acta (5) | Carta (9) | Solicitud (7) | Traslado (11) | Actividad (5) |
+|---|---|---|---|---|
+| borrador | borrador | nueva | borrador | borrador |
+| pendiente | preparacion | revision | solicitud | programada |
+| aprobada | revision | preparacion | revision | confirmada |
+| corregida | firma | firma | aprobacion | completada |
+| archivada | aprobada | lista | aprobado | cancelada |
+| | lista | entregada | cartaPreparacion | |
+| | entregada | cancelada | cartaEmitida | |
+| | archivada | | cartaEntregada | |
+| | cancelada | | confirmacion | |
+| | | | completado | |
+| | | | cancelado | |
+
+Definidos en `ActaModal.tsx:19`, `CartaEditor.tsx:25`, `db.ts:2112`,
+`db.ts:1856` y `db.ts:2876`.
+
+**Lectura: la divergencia es real en su mayor parte, pero no toda.**
+
+Lo que SÍ responde al dominio y debe quedarse:
+
+- El acta tiene **`corregida`** (un acta aprobada que después se enmienda) y
+  no tiene `entregada`: un acta no se entrega a nadie, se aprueba y se
+  archiva.
+- La carta tiene **`preparacion → firma → lista → entregada`**, que es el
+  camino físico de un papel que alguien firma y otro recibe. Un acta no lo
+  recorre.
+- Carta y Solicitud comparten cuatro estados porque se diseñaron juntas en
+  la Fase 2 y son las dos caras del mismo trámite. Eso es coherencia, no
+  duplicación.
+
+Lo que parece histórico:
+
+- **La carta tiene `aprobada` Y `lista` y la propia app las trata igual**:
+  `Cartas.tsx:428` cuenta `["aprobada", "lista"]` en el mismo grupo. Dos
+  estados que la interfaz no distingue son un estado con dos nombres.
+- **El acta no tiene `cancelada`** y las otras cuatro escalas sí. Un acta
+  que se convoca y no se celebra no tiene dónde ir salvo quedarse en
+  borrador o borrarse.
+- **`historial_estados` es desigual:** carta, solicitud, traslado y miembro
+  lo llevan; el acta no. Es el módulo donde una traza de quién aprobó y
+  cuándo tendría más valor, siendo el documento legal de la iglesia.
+- **Ninguna escala impone transiciones.** Todas son un `<select>` con la
+  lista entera (`CartaEditor.tsx:516`), así que una carta puede saltar de
+  borrador a entregada de un clic. Es intencional para no estorbar, pero
+  conviene saberlo antes de llamarlas "flujos".
+
+**Recomendación: no unificar.** Renombrar estados cambia datos ya guardados
+y el beneficio es cosmético. Lo que sí propongo, en la 1.1 y en este orden:
+añadir `cancelada` al acta, darle `historial_estados`, y fundir `aprobada` y
+`lista` de la carta en uno solo. **No se toca nada hasta que lo digas.**
+
+---
+
 ## Candidatos si el tiempo alcanza
 
 - **Face ID / Touch ID** para abrir la app (plugin oficial de Tauri).
-- **Recordatorios de Agenda:** decidir si se rotulan como aviso interno —hoy
-  solo pintan una franja dentro de la propia Agenda— o se vuelven
-  notificación real del sistema. La pregunta quedó abierta el 3 ago.
 - **Layout de Ajustes:** los huecos que salgan de las pruebas en Mac e iPad.
 
 ## Trámites del humano (no dependen de código ni de nadie)

@@ -43,6 +43,27 @@ un punto seguro: se puede parar y seguir otro día.
    `https://TU-TIENDA.lemonsqueezy.com/checkout/buy/XXXXXXXX`.
    **Guárdalo en tus notas** — es el enlace de venta.
 
+### 1-bis. Meter ese enlace en la app
+
+Este paso faltaba en la guía y es el que conecta la tienda con Tamio. La app
+ya tiene los botones "Comprar" y "Renovar" escritos (pantalla de acceso y
+aviso de plan vencido), pero **no se pintan si no hay enlace configurado** —
+por eso hoy no se ven por ningún lado.
+
+1. En `/Users/ivangarcia/Desktop/tesoreria-mac-`, abre el archivo `.env`
+   (si no existe, cópialo de `.env.example`).
+2. Añade la línea con TU enlace del paso anterior:
+
+   ```
+   VITE_URL_COMPRA=https://TU-TIENDA.lemonsqueezy.com/checkout/buy/XXXXXXXX
+   ```
+
+3. **Se lee al compilar, no al arrancar**: hasta que no recompiles, la app
+   sigue sin los botones. Y como no se puede subir un build nuevo mientras
+   Apple revisa, esto queda puesto en el `.env` y entra en el envío
+   siguiente. En modo de prueba (Fase 4) da igual: ahí el checkout se abre
+   a mano en el navegador, sin pasar por la app.
+
 ## Fase 2 — Crear el webhook en Lemon Squeezy (~5 min, en el navegador)
 
 1. La URL de tu función es esta (ya con tu proyecto de Supabase; es la misma
@@ -144,7 +165,22 @@ un punto seguro: se puede parar y seguir otro día.
 ## Lista de cotejo
 
 - [ ] Fase 1 — Producto "Tamio" creado en test mode y enlace guardado
+- [ ] Fase 1-bis — `VITE_URL_COMPRA` puesto en el `.env`
 - [ ] Fase 2 — Webhook creado con URL + secreto + 7 eventos
 - [ ] Fase 3 — Secreto guardado y función desplegada
 - [ ] Fase 4 — Compra falsa con 200 `ok` (o el 404 esperado sin login)
 - [ ] Fase 5 — (esperar a Apple + 1.1)
+
+## Cómo saber si la función ya está desplegada
+
+Desde el repositorio no se puede saber: el código estar en `supabase/functions/`
+no significa que esté corriendo. Dos formas de comprobarlo en un minuto:
+
+- **En el navegador:** <https://app.supabase.com> → tu proyecto → **Edge
+  Functions**. Si `pago-webhook` aparece en la lista, está desplegada, y la
+  columna de la derecha dice cuándo fue la última vez.
+- **En la Terminal:** `supabase functions list --project-ref TU-REF`.
+
+Y para los secretos: **Project Settings → Edge Functions → Secrets**, o
+`supabase secrets list --project-ref TU-REF` (muestra los nombres y un
+resumen, nunca el valor).
