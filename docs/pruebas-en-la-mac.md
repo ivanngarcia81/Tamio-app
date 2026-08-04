@@ -101,7 +101,7 @@ npm run tauri dev
    (el binario no vive dentro de un .app). Eso es normal ahí, no es un bug.
 6. Para salir: Ctrl+C en la Terminal.
 
-## 3. Opcional: renovar la copia de /Applications
+## 3. Renovar la copia de /Applications — ✅ HECHO el 3 ago
 
 La copia vieja de /Applications fue la que nos hizo perder tres intentos.
 Para que el Tamio del Dock traiga todos los arreglos:
@@ -112,5 +112,21 @@ Para que el Tamio del Dock traiga todos los arreglos:
 
 ---
 
-Con esto queda cerrada la lista de pruebas de ojo de la 1.0. Lo que salga
-del recorrido 5.5 se reporta y se decide; lo demás espera a Apple.
+## ✅ Lista cerrada — 3 de agosto de 2026
+
+Las trece comprobaciones hechas. Lo que salió y se arregló en el camino:
+
+- El anillo de foco del sidebar salía cortado con Tab.
+- La firma del pastor caía separada de los datos del pastor (era la
+  rejilla de Ajustes, que repartía por altura y no por orden).
+- Las tarjetas de Ajustes dejaban huecos y filas desparejas.
+- Preferencias tenía tres tarjetas y media columna vacía; ahí entró la de
+  color de acento.
+
+El recorrido 5.5 salió limpio (detalle en `docs/auditoria-5-4-5-6.md`).
+
+**Ojo con lo que está en `main`:** todo esto es POSTERIOR al build 1.0.8
+que Apple tiene en revisión. Va en el siguiente envío, que no se hace
+hasta que Apple responda.
+
+Esta lista se repite entera antes de cada envío a la App Store.
