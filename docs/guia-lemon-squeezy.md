@@ -64,6 +64,33 @@ por eso hoy no se ven por ningún lado.
    siguiente. En modo de prueba (Fase 4) da igual: ahí el checkout se abre
    a mano en el navegador, sin pasar por la app.
 
+### 1-ter. ⚠️ Dos canales, dos builds — regla 3.1.1 de Apple
+
+**Esto es motivo de rechazo si se hace mal, así que va antes que nada más.**
+
+Tamio se vende por dos canales: directo (Lemon Squeezy) y Mac App Store. La
+regla **3.1.1** de Apple prohíbe que una app de la App Store lleve al
+usuario a comprar por fuera — botón, enlace o llamada a la acción. Si el
+build que se sube a la App Store se compila con `VITE_URL_COMPRA` puesta, la
+app le enseña al revisor un botón "Renovar plan" que abre un checkout
+externo. Rechazo.
+
+La solución sale de la propiedad de arriba: **la variable se lee al
+compilar**, así que basta con compilar dos veces el mismo código:
+
+| Canal | `VITE_URL_COMPRA` | Resultado |
+|---|---|---|
+| **Descarga directa** (.dmg) | puesta | Botones "Comprar" y "Renovar" visibles |
+| **Mac App Store** | **quitada o comentada** | No se pinta ningún botón de compra |
+
+Sin condicionales ni banderas en tiempo de ejecución: dos builds del mismo
+código. `src/plan.ts:29` devuelve `null` si la variable falta, y los dos
+sitios que la usan están detrás de ese `null`.
+
+**Antes de firmar el build de la App Store**, comprueba en la app compilada
+que no aparece ningún botón de compra. La lista completa de comprobación
+está en `docs/checklist-app-store.md`.
+
 ## Fase 2 — Crear el webhook en Lemon Squeezy (~5 min, en el navegador)
 
 1. La URL de tu función es esta (ya con tu proyecto de Supabase; es la misma

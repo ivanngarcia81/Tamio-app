@@ -19,16 +19,69 @@ Esto elimina de raíz los riesgos con Apple (login innecesario 5.1.1(v), pago
 externo / anti-steering) y hace que el revisor pueda usar la app de inmediato. La
 suscripción (Paddle) y la nube se activarán en la **1.1**.
 
-### Por qué no hay botón de compra en iOS
-Los botones que abren el pago externo (`src/components/SubBanner.tsx` y
-`src/App.tsx`) solo aparecen si `VITE_URL_COMPRA` tiene valor **y** hay login
-activo. Con el login apagado y esa variable vacía, **nunca aparecen** en el build
-de iOS. ✔️
+### Por qué no hay botón de compra hoy
+Los botones que abren el pago externo (`src/components/SubBanner.tsx:30` y
+`src/App.tsx:267`) solo aparecen si `VITE_URL_COMPRA` tiene valor. Esa
+variable no está puesta, así que **hoy no aparecen en ningún build**. ✔️
 
-> ⚠️ **Para la 1.1:** cuando se reactive el login y el pago, antes de enviar a iOS
-> hay que ocultar el botón de compra en iOS aunque `urlCompra` tenga valor
-> (detección de plataforma), para que el pago externo pueda vivir en Mac/web sin
-> arriesgar la app de iOS.
+---
+
+## ⚠️ Regla 3.1.1 — dos canales, dos builds
+
+_Corregido el 4 ago 2026._ La nota anterior decía que el pago externo "podía
+vivir en Mac" y **eso era falso**: la **Mac App Store es App Store**, y la
+regla 3.1.1 (no llevar al usuario a comprar por fuera) rige allí igual que
+en iOS. El corte no es iOS contra Mac — es **App Store contra descarga
+directa**.
+
+| Canal | `VITE_URL_COMPRA` | Botones de compra |
+|---|---|---|
+| Descarga directa (.dmg desde tamio.church) | puesta | Visibles |
+| **Mac App Store** | **quitada** | **No se pintan** |
+| **iOS / iPadOS** | **quitada** | **No se pintan** |
+
+No hace falta detectar la plataforma en tiempo de ejecución: la variable se
+lee al COMPILAR (`src/plan.ts:29` devuelve `null` si falta), así que son dos
+builds del mismo código. La guía de la tienda lo explica en
+`docs/guia-lemon-squeezy.md` → Fase 1-ter.
+
+**Verificación obligatoria antes de firmar un build de App Store:**
+
+- [ ] `VITE_URL_COMPRA` NO está en el `.env` (ni con valor, ni descomentada)
+- [ ] En la app compilada, con un plan vencido de prueba, el aviso de
+      vencimiento **no** trae botón "Renovar plan"
+- [ ] La pantalla de "Plan vencido" **no** trae botón de compra
+
+### ⚠️ El otro enlace externo: el aviso de versión nueva
+
+**Hallado el 4 ago 2026. Hoy no dispara, pero hay que arreglarlo antes de
+publicar en la Mac App Store con la tienda encendida.**
+
+`src/components/UpdateBanner.tsx:53` abre `act.url`, que viene del
+`version.json` publicado y apunta a **descargar un .dmg de GitHub
+Releases**. Una app de la App Store no puede mandar al usuario a bajarse
+software por su cuenta.
+
+`src/services/update.ts:49` ya corta esto en iPhone y iPad (`if (esMovil())
+return null`, con la regla 2.5.2 citada en el comentario), **pero en macOS
+`esMovil()` es false**, así que un build de la Mac App Store sí consultaría
+el manifiesto y sí mostraría el aviso.
+
+**Por qué no bloquea la 1.0.8 que está en revisión:** el manifiesto sigue en
+`1.0.0` y la app es `1.0.8`, así que `esMasNueva()` da false y el aviso
+nunca se pinta. Es una barrera de DATOS, no de build: el día que se suba el
+manifiesto a `1.1.0` para avisar a los clientes de descarga directa, las
+copias de la Mac App Store empezarían a ofrecer el .dmg.
+
+**Ojo con cuál es el archivo:** la app lee el `version.json` del repositorio
+**`Tamio-web`** (`update.ts:17`), no el `web/version.json` de este repo, que
+no lo lee nadie.
+
+**Arreglo (1.1, mismo patrón de canal):** que `VITE_UPDATE_URL` admita un
+valor de apagado, o una bandera de build, y que el build de App Store se
+compile con el buscador de actualizaciones desactivado. Hoy un
+`VITE_UPDATE_URL` vacío NO apaga nada: el `||` de `update.ts:16` cae al
+valor por defecto.
 
 ---
 

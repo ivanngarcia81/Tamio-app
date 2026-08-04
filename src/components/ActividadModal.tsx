@@ -367,6 +367,11 @@ export default function ActividadModal({
                   </button>
                 ))}
               </div>
+              {/* Decir qué es y qué NO es. El aviso solo se pinta en la lista
+                  de Agenda: no hay correo ni notificación del sistema. Sin
+                  esta línea, quien marca "un día antes" espera algo que no
+                  llega y se entera el día que se le pasa la reunión. */}
+              <div className="form-hint">{t("agenda.recordatoriosHint")}</div>
             </div>
           </Seccion>
 

@@ -1916,7 +1916,8 @@ export const en: Resources = {
     conflictoSub: "There is already an activity at the same place and time:",
     conflictoEditar: "Back to edit",
     conflictoGuardar: "Save anyway",
-    recordatorios: "Reminders",
+    recordatorios: "Notice in Agenda",
+    recordatoriosHint: "The notice appears on the Agenda screen on the days you choose. Tamio does not send emails or system notifications.",
     recordatorio: {
       mismoDia: "Same day",
       unDiaAntes: "One day before",

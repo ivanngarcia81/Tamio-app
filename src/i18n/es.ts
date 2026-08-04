@@ -1916,8 +1916,10 @@ export const es = {
     conflictoSub: "Ya hay actividad en el mismo lugar y horario:",
     conflictoEditar: "Volver a editar",
     conflictoGuardar: "Guardar de todas formas",
-    // Recordatorios (Fase 4)
-    recordatorios: "Recordatorios",
+    // Avisos en Agenda (Fase 4). El nombre dice lo que hace: se pintan en la
+    // lista de Agenda y en ningún otro sitio. No hay entrega de ninguna clase.
+    recordatorios: "Avisar en Agenda",
+    recordatoriosHint: "El aviso aparece en la pantalla de Agenda durante los días que elijas. Tamio no envía correos ni notificaciones del sistema.",
     recordatorio: {
       mismoDia: "El mismo día",
       unDiaAntes: "Un día antes",

@@ -78,10 +78,20 @@ Decidido contigo el 3 ago (P1). Hoy el total sale solo de los contadores; la
 
 - La lista nominal cuenta a los miembros presentes; los contadores pasan a
   ser solo gente fuera del rol (niños, visitantes); "Total" se calcula.
-- **Decidir antes de codificar:** qué se hace con los cultos ya guardados,
-  donde los contadores incluían a todo el mundo (sumarles la lista los
-  contaría dos veces). La opción simple: dejar lo histórico como está y
-  aplicar la regla nueva desde la fecha del cambio.
+
+**Cómo se separa lo histórico — decidido el 4 ago 2026 (Iván):**
+
+Una columna nueva **`modelo_asistencia`** en cada culto, que guarda con qué
+regla se registró. Los cultos existentes se marcan como antiguos en la
+migración; los nuevos nacen con el modelo nuevo. Cada informe lee cada
+culto con su propia regla, así que **ningún número histórico cambia por
+detrás**.
+
+**Por qué no se hace por fecha**, que era la salida obvia: la fecha del
+culto no sirve de frontera porque un culto se puede registrar tarde. La
+secretaria anota el domingo pasado el miércoles siguiente, ya después del
+cambio, y ese registro usaría la regla nueva con una fecha vieja. Editar un
+culto antiguo lo rompe igual. Un campo no puede equivocarse; una fecha sí.
 
 ### 6. Panel de trabajo de Secretaría — *después de los roles*
 
@@ -96,7 +106,39 @@ existe y funciona; se evoluciona de panel de indicadores a panel de pendientes.
   Cartas, Agenda e Informes.
 - Primer paso: las cuatro tarjetas actuales son `div` sin clic.
 
-### 7. Higiene: que los errores dejen rastro
+### 7. Integridad de los documentos oficiales — *el 3.8, decidido el 4 ago*
+
+Detalle y razonamiento completos abajo, en *Preguntas contestadas*. En orden:
+
+1. **Transiciones de estado con freno.** Bloquear los saltos hacia atrás
+   desde `aprobada` (acta) y `entregada` (carta), o exigir confirmación
+   explícita; y registrar en `historial_estados` todo cambio posterior a la
+   aprobación, con quién y cuándo. Hoy las escalas son un `<select>` con la
+   lista entera y un acta puede pasar de borrador a aprobada de un clic.
+2. **`historial_estados` en el acta** (requisito del punto 1: hoy el acta es
+   el único módulo sin traza).
+3. **`cancelada` en el acta.**
+
+No se fusionan `aprobada` y `lista` de la carta: riesgo real sobre filas
+guardadas a cambio de un beneficio estético.
+
+### 8. Avisos de Agenda también en Inicio
+
+El dato ya existe y ya está calculado (`Agenda.tsx:312`); solo se muestra en
+Agenda. Enseñarlo en Inicio es lo que convierte el letrero en algo útil, sin
+plugin de notificaciones ni servidor. Va con el punto 6 (panel de Secretaría).
+
+### 9. Apagar el buscador de actualizaciones en los builds de App Store
+
+Ver `docs/checklist-app-store.md` → *El otro enlace externo*.
+`UpdateBanner.tsx:53` manda a descargar un `.dmg` de GitHub; `update.ts:49`
+ya lo corta en iOS pero **no en macOS**, así que un build de la Mac App
+Store lo mostraría. Hoy no dispara porque el manifiesto está en `1.0.0`, que
+es una barrera de datos, no de build. Mismo patrón de canal que
+`VITE_URL_COMPRA`: que `VITE_UPDATE_URL` admita un valor de apagado (hoy un
+valor vacío cae al por defecto por el `||`).
+
+### 10. Higiene: que los errores dejen rastro
 
 De la auditoría 5.4. Los 11 `catch` silenciados de `App.tsx` (y los de los
 modales) pasan a `console.warn` con contexto.
@@ -145,10 +187,26 @@ sin ninguna nota que lo acote.
 3. **Correo** (2.0). Necesita servidor y que la iglesia esté sincronizada.
    Fuera de alcance por ahora.
 
-**Recomendación: la 1.** El daño de hoy no es que falte la notificación, es
-que la palabra promete algo que no ocurre. Un pastor que confía en un aviso
-que no llega y se entera el día que se le pasa la junta está peor que si la
-opción no existiera.
+**Decidido el 4 ago 2026 (Iván): la 1, y hecho el mismo día.** El argumento
+que cerró el caso: con la app cerrada no hay quien dispare nada, así que un
+aviso "un día antes" que solo puede aparecer cuando alguien abre la app no
+es un recordatorio, es un letrero. Construir notificaciones reales no
+cumpliría la promesa, la haría más confusa.
+
+- Etiqueta: **"Avisar en Agenda" / "Notice in Agenda"**.
+- Línea de ayuda bajo el campo diciendo que el aviso aparece en la pantalla
+  de Agenda durante los días elegidos y que Tamio no envía correos ni
+  notificaciones del sistema.
+- La lógica de `Agenda.tsx:312-323` **no se tocó**: funcionaba, el problema
+  era la palabra.
+
+**Y una idea que sale de esto, para la 1.1 — mejor que las notificaciones.**
+El aviso solo se pinta en Agenda; `recordatorios` no aparece ni en
+`Dashboard.tsx` ni en `InicioSecretaria.tsx`. **Mostrarlos también en
+Inicio**, que es donde la gente entra a diario, resuelve el problema real
+sin plugin ni servidor: el dato ya existe, ya está calculado y solo falta
+enseñarlo donde se ve. Encaja exactamente con el panel de trabajo de
+Secretaría (punto 6): es una tarde, no un proyecto.
 
 ### 3.8 — Acta y Carta tienen escalas de estado distintas
 
@@ -201,10 +259,30 @@ Lo que parece histórico:
   borrador a entregada de un clic. Es intencional para no estorbar, pero
   conviene saberlo antes de llamarlas "flujos".
 
-**Recomendación: no unificar.** Renombrar estados cambia datos ya guardados
-y el beneficio es cosmético. Lo que sí propongo, en la 1.1 y en este orden:
-añadir `cancelada` al acta, darle `historial_estados`, y fundir `aprobada` y
-`lista` de la carta en uno solo. **No se toca nada hasta que lo digas.**
+**Decidido el 4 ago 2026 (Iván):**
+
+1. **Antes que nada, las transiciones.** Que ninguna escala imponga orden
+   pesa más que cualquier estado que falte: un acta puede pasar de borrador
+   a aprobada sin haber estado pendiente, y una carta de borrador a
+   entregada de un clic. En documentos que se firman y se archivan como
+   respaldo legal eso importa más que el vocabulario. No hace falta un flujo
+   rígido, bastan dos cosas:
+   - **Bloquear los saltos hacia atrás** desde `aprobada` y desde
+     `entregada`, o exigir confirmación explícita para deshacerlos.
+   - **Registrar en `historial_estados` cualquier cambio posterior a la
+     aprobación**, con quién y cuándo.
+2. **`cancelada` en el acta.** Una reunión que se convoca y no se celebra
+   hoy no tiene dónde ir. Hueco real.
+3. **`historial_estados` en el acta.** El acta es el documento legal de la
+   iglesia y saber quién aprobó y cuándo es literalmente su función. Que sea
+   el único módulo sin traza es lo contrario de lo que debería ser.
+4. **NO fundir `aprobada` y `lista` en la carta.** La interfaz ya las trata
+   igual (`Cartas.tsx:428`), así que el beneficio visible es cero y a cambio
+   toca filas guardadas: riesgo real, ganancia estética. Quedan documentadas
+   como sinónimos y ya.
+
+Los puntos 1 y 3 se solapan: `historial_estados` en el acta es requisito del
+1, así que se hacen juntos.
 
 ---
 
