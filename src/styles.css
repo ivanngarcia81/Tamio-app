@@ -493,15 +493,22 @@ html.vibrancy .main { background: var(--surface); }
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  /* `overflow-y: auto` hace que el navegador recorte también en horizontal,
-     y el anillo de foco de .nav-item se dibuja 4 px por fuera del botón
-     (outline 2 px + offset 2 px): sus lados quedaban cortados al navegar con
-     Tab. Estos 5 px de relleno le dan sitio dentro del área visible —los 4
-     del anillo y 1 de holgura, para que un redondeo de subpíxeles no se coma
-     el borde— y el margen negativo los devuelve, así ningún elemento se
-     mueve de donde estaba. */
+  /* El anillo de foco de .nav-item se dibuja 4 px por fuera del botón
+     (outline 2 px + offset 2 px) y `overflow-y: auto` recorta en los cuatro
+     lados, así que hace falta sitio por los cuatro. Estos 5 px de relleno se
+     lo dan —los 4 del anillo y 1 de holgura, para que un redondeo de
+     subpíxeles no se coma el borde— y el margen negativo los devuelve, así
+     ningún elemento se mueve de donde estaba.
+
+     `scroll-padding-block` es la otra mitad del arreglo vertical: al llegar
+     con Tab a un elemento que está fuera de vista, el navegador lo arrima al
+     filo del área visible y le cortaba el anillo. Con estos 5 px lo deja
+     colocado un poco más adentro, y el anillo cabe entero. */
   padding-inline: 5px;
   margin-inline: -5px;
+  padding-block: 5px;
+  margin-block: -5px;
+  scroll-padding-block: 5px;
 }
 .nav-item {
   display: flex;
@@ -590,12 +597,26 @@ html.vibrancy .main { background: var(--surface); }
 }
 .nav-group.closed .nav-group-body { grid-template-rows: 0fr; }
 .nav-group-items {
+  /* `overflow: hidden` es lo que hace posible el plegado (la fila del grid
+     pasa de 1fr a 0fr y este recorta lo que sobra). El precio es que también
+     recorta el anillo de foco de los ítems, que se dibuja 4 px por fuera:
+     mismo remedio que en .nav, 5 px de sitio devueltos con margen negativo
+     para que nada se mueva.
+
+     El relleno VERTICAL se quita al plegar y vuelve al desplegar, con la
+     misma duración que la fila. Si se quedara puesto, el grupo cerrado no
+     mediría cero: su caja de relleno seguiría teniendo 10 px de alto y
+     asomaría una franja del primer ítem. */
   overflow: hidden;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 5px;
+  margin: -5px;
+  transition: padding-block var(--dur-slow) ease, margin-block var(--dur-slow) ease;
 }
+.nav-group.closed .nav-group-items { padding-block: 0; margin-block: 0; }
 .sidebar-footer {
   margin-top: auto;
   display: flex;
