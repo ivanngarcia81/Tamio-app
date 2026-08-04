@@ -1,8 +1,31 @@
-# Auditoría 5.4 y 5.6 — inventarios (3 de agosto de 2026)
+# Auditoría 5.4, 5.5 y 5.6 (3 de agosto de 2026)
 
-Cierre de los dos puntos de la auditoría que se podían hacer leyendo el
-código. El 5.5 (recorrer todas las pantallas con la consola abierta) sigue
-pendiente y **solo puede hacerse en la Mac**, con `npm run tauri dev`.
+Cierre de los dos puntos que se podían hacer leyendo el código (5.4 y 5.6)
+más el recorrido con la consola (5.5), que solo podía hacerse en la Mac.
+
+---
+
+## 5.5 — Recorrido con la consola: **limpio**
+
+Hecho en la Mac con `npm run tauri dev` y el inspector filtrado a `Errors`.
+Se recorrieron las 16 pantallas del menú (Inicio, Ingresos, Gastos,
+Miembros, Reportes, Depósitos, Membresía, Actas, Cultos, Cartas, Informes,
+Agenda, Bandeja de entrada, Por revisar, Ayuda y Configuración), abriendo y
+cerrando un modal en cada una.
+
+**Cero errores.** Importa porque el bug del botón de restaurar se
+manifestaba exactamente así —"no hace nada"— y ese es el modo de fallo que
+este recorrido está diseñado para cazar.
+
+Único mensaje rojo, y sale en el arranque, no al navegar:
+
+- `Viewport argument key "interactive-widget" not recognized and ignored.`
+  — `index.html:16`. **Se queda como está.** `interactive-widget=resizes-content`
+  le dice a iOS que encoja el viewport al abrir el teclado, para que el pie
+  de los modales no quede debajo. El WebKit del Mac no conoce la clave
+  (el Mac no tiene teclado en pantalla) y la ignora, que es lo que manda la
+  especificación. Quitarla cambiaría el comportamiento del teclado en el
+  iPad a cambio de nada.
 
 ---
 

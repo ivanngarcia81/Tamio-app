@@ -73,7 +73,12 @@ Preferencias → Zona sensible).
       prueba y comprueba que suena la elegida; cierra y reabre Tamio y
       debe seguir puesta.
 
-## 2. El recorrido con la consola (punto 5.5 de la auditoría, ~15 min)
+## 2. El recorrido con la consola — ✅ HECHO el 3 ago, sin errores
+
+Resultado completo en `docs/auditoria-5-4-5-6.md` → 5.5. Las instrucciones
+se quedan aquí porque conviene repetirlo antes de cada envío a Apple.
+
+### Cómo se hace (punto 5.5 de la auditoría, ~15 min)
 
 Es el ejercicio que destapó los bugs de esta semana. Con calma:
 
