@@ -83,6 +83,28 @@ compile con el buscador de actualizaciones desactivado. Hoy un
 `VITE_UPDATE_URL` vacío NO apaga nada: el `||` de `update.ts:16` cae al
 valor por defecto.
 
+### 🔒 CANDADO: no subir el manifiesto de `Tamio-web`
+
+**Vale para el día de la aprobación y para todos los días hasta que el
+arreglo de arriba esté publicado.**
+
+El manifiesto que la app consulta vive en el repositorio **`Tamio-web`**, no
+en este. Subirlo a una versión mayor que la instalada es lo que enciende el
+aviso — y mientras los builds de App Store no lleven la guarda de canal, ese
+aviso aparecería también en las copias de la Mac App Store, ofreciendo un
+`.dmg` de GitHub.
+
+- [ ] **NO tocar `version.json` de `Tamio-web`** hasta que un build con la
+      guarda de canal esté publicado en las dos tiendas.
+- [ ] Antes de tocarlo, confirmar a mano en qué versión está: la nota de
+      `docs/ideas-futuras.md` (28 jul) dice `1.0.0`, pero **eso no se ha
+      verificado desde entonces**.
+- [ ] Si el manifiesto apunta a *GitHub Releases de este repositorio*,
+      resolverlo ANTES de hacer el repo privado: un repo privado deja sus
+      archivos de Releases sin descargar.
+
+El orden completo de ese día está en `docs/dia-de-la-aprobacion.md`.
+
 ---
 
 ## ✅ ENVIADO A REVISIÓN — 29 de julio de 2026
