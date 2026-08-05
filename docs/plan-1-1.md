@@ -13,11 +13,40 @@ lo justifique.
 
 ---
 
+## Alcance — decidido el 4 de agosto de 2026
+
+Los diez puntos de abajo eran demasiado para una sola versión. **La 1.1 lleva
+cuatro; los otros seis pasan a la 1.2.** El criterio: la 1.1 es lo que hace que
+Tamio se pueda comprar, y nada más.
+
+| En la 1.1 | A la 1.2 |
+|---|---|
+| 1. Centavos enteros | 4. Exportaciones que faltan |
+| 2. Login + roles reales | 5. Asistencia = lista + contadores |
+| 3. Encender la tienda | 6. Panel de trabajo de Secretaría |
+| 9. Guarda de canal del actualizador | 7. Integridad de documentos oficiales |
+| | 8. Avisos de Agenda en Inicio |
+| | 10. Higiene: errores con rastro |
+
+Los seis de la derecha se quedan documentados aquí hasta que la 1.1 cierre;
+entonces se mueven a un `docs/plan-1-2.md` propio.
+
+**Procesador de pago: Lemon Squeezy.** Paddle también aprobó (3–4 ago) y queda
+como respaldo. Son la misma empresa desde 2024 y las comisiones son
+equivalentes; el desempate fue que el webhook y la guía ya están escritos para
+Lemon Squeezy. Las páginas legales publicadas decían Paddle y se corrigieron el
+4 ago.
+
+---
+
 ## Orden de ejecución
 
 El orden importa y no es negociable en sus dos primeros puntos: los centavos
 tocan toda la base de dinero (mejor antes de que haya usuarios reales con
 datos), y el login es el cimiento de la venta, la tienda y el panel.
+
+**La migración de los centavos es la número 36** — la última existente en
+`src-tauri/src/lib.rs` es la 35.
 
 ### 1. Dinero en centavos enteros — *rama propia, primero de todo*
 
