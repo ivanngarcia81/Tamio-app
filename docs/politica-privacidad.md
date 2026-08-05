@@ -74,10 +74,10 @@ Anthropic). Cómo cuidamos la privacidad ahí:
 
 ## 6. Pagos
 
-Cuando exista la suscripción de pago, el cobro lo procesará un proveedor
-especializado (p. ej. Lemon Squeezy/Paddle). **Tamio nunca ve ni guarda tu
-número de tarjeta**; recibimos solo la confirmación del pago (correo del
-comprador, plan y vigencia) para activar tu cuenta.
+Cuando exista la suscripción de pago, el cobro lo procesará **Lemon Squeezy**,
+que actúa como comerciante registrado (*merchant of record*). **Tamio nunca ve
+ni guarda tu número de tarjeta**; recibimos solo la confirmación del pago
+(correo del comprador, plan y vigencia) para activar tu cuenta.
 
 ## 7. Qué NO hacemos
 
@@ -156,8 +156,8 @@ feature, nothing is sent. Calls go through our server; the AI key is never in
 your computer.
 
 ## 5. Payments
-When paid subscriptions exist, payment is processed by a specialized provider
-(e.g. Lemon Squeezy/Paddle). **Tamio never sees or stores your card number**;
+When paid subscriptions exist, payment is processed by **Lemon Squeezy**, acting
+as the merchant of record. **Tamio never sees or stores your card number**;
 we only receive the payment confirmation (buyer email, plan, term) to activate
 your account.
 

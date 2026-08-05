@@ -74,7 +74,8 @@ Encaja casi 1:1 con lo que la app ya tiene (roles + datos compartidos):
 
 1. Cada iglesia lleva en la nube un campo **`plan`** = `tesoreria` | `secretaria`
    | `completo` (y su estado de suscripción / fecha de vencimiento).
-2. El pago (Lemon Squeezy / Paddle / Stripe) actualiza ese campo por **webhook**.
+2. El pago (**Lemon Squeezy**, decidido el 4 ago 2026) actualiza ese campo por
+   **webhook**.
 3. Al iniciar sesión, Tamio lee el `plan` y **muestra solo los módulos pagados**
    — la app ya oculta secciones por rol; se le suma "según el plan".
 4. **Offline:** la app guarda el último estado de suscripción válido y da un
@@ -215,7 +216,7 @@ modo test cuando llegue.
 > pide el correo; conviene decirlo en la página de venta.
 - **Integración** exclusiva del Completo (que Tesorería consuma miembros de
   Secretaría) — gate con `integracionActiva()`.
-- **Pago real** (webhook de Lemon Squeezy/Paddle) que escriba estos campos, y
+- **Pago real** (webhook de Lemon Squeezy) que escriba estos campos, y
   sincronizar la suscripción desde la nube como autoridad.
 
 ## Precio (decidido el 3 de agosto de 2026)

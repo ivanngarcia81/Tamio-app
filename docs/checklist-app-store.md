@@ -17,7 +17,7 @@ nube**. Todo se guarda cifrado en el propio dispositivo y **nada sale de él**.
 
 Esto elimina de raíz los riesgos con Apple (login innecesario 5.1.1(v), pago
 externo / anti-steering) y hace que el revisor pueda usar la app de inmediato. La
-suscripción (Paddle) y la nube se activarán en la **1.1**.
+suscripción (Lemon Squeezy) y la nube se activarán en la **1.1**.
 
 ### Por qué no hay botón de compra hoy
 Los botones que abren el pago externo (`src/components/SubBanner.tsx:30` y

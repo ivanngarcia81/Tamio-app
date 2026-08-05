@@ -162,13 +162,15 @@ navegador lo bloquea en silencio. Queda avisado en el propio `index.html`.
 `planDe()` leía `custom_data.plan`, que viaja desde el navegador del comprador y
 es alterable. No había daño hoy (un solo producto, todos deben recibir
 "completo"), pero era una puerta abierta en cuanto existiera un plan más barato.
-Ahora el plan se deduce del **producto/precio que informa Paddle** en el evento,
-que es dato de su servidor. Los IDs se configuran como secretos, sin tocar código:
+Ahora el plan se deduce del **producto/variante que informa el procesador** en
+el evento, que es dato de su servidor. Los IDs se configuran como secretos, sin
+tocar código. _(Nombres actualizados el 4 ago 2026: la función se reescribió de
+Paddle a Lemon Squeezy el 3 ago, y con ella los secretos.)_
 
 ```
-supabase secrets set PADDLE_PLAN_TESORERIA="pro_aaa,pri_bbb"
-supabase secrets set PADDLE_PLAN_SECRETARIA="pro_ccc"
-supabase secrets set PADDLE_PLAN_COMPLETO="pro_ddd"
+supabase secrets set LEMON_PLAN_TESORERIA="123456,234567"
+supabase secrets set LEMON_PLAN_SECRETARIA="345678"
+supabase secrets set LEMON_PLAN_COMPLETO="456789"
 ```
 
 Sin ningún secreto configurado —el caso de hoy— todo pago sigue dando "completo".
@@ -554,5 +556,5 @@ disciplina la impone la visibilidad, no el bloqueo.**
 - Sincronización en la nube (Supabase), datos locales cifrados (SQLCipher).
 - Funciones de IA para redactar.
 - Borrar cuenta dentro de la app + política de privacidad.
-- Pagos con Paddle (en proceso de aprobación).
+- Pagos con Lemon Squeezy (aprobado el 3 ago 2026; Paddle también, como respaldo).
 - Sitio web tamio.church.

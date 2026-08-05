@@ -63,7 +63,7 @@ que ves y no se emplean para entrenar modelos.
 - **Supabase** — base de datos y autenticación en la nube.
 - **Anthropic** — modelo de IA para las funciones de redacción (solo cuando las
   usas).
-- **Paddle** — procesador de pagos y facturación de las suscripciones.
+- **Lemon Squeezy** — procesador de pagos y facturación de las suscripciones.
 - **Apple** — distribución de la app.
 
 Cada uno trata los datos estrictamente para prestar su servicio.
@@ -137,7 +137,7 @@ used solely to produce the response you see and is not used to train models.
 
 - **Supabase** — cloud database and authentication.
 - **Anthropic** — AI model for the writing features (only when you use them).
-- **Paddle** — payment processor and subscription billing.
+- **Lemon Squeezy** — payment processor and subscription billing.
 - **Apple** — app distribution.
 
 Each one handles data strictly to provide its service.
