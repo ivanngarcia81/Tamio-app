@@ -90,6 +90,17 @@ export function restar(a: Centavos, b: Centavos): Centavos {
 }
 
 /**
+ * Un importe repetido N veces: la renta mensual por los meses que quedan, por
+ * ejemplo. `veces` es una cuenta, no dinero.
+ *
+ * Lleva `Math.round` porque `veces` podría no ser entero en el futuro y medio
+ * centavo no existe; con enteros el redondeo no cambia nada.
+ */
+export function multiplicar(c: Centavos, veces: number): Centavos {
+  return Math.round(c * veces) as Centavos;
+}
+
+/**
  * Qué porcentaje de `total` representa `parte`. Devuelve un número corriente
  * (no es dinero), y 0 cuando el total es 0 en vez de `NaN`.
  */

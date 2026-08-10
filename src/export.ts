@@ -1,5 +1,6 @@
 import type { Church, Deposito } from "./db";
 import i18n from "./i18n";
+import type { Centavos } from "./dinero";
 import { ReportBase, type BaseCol } from "./services/print/reportBase";
 import {
   buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl, openForPrint,
@@ -57,7 +58,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   } = data;
 
   const moneda = church.moneda;
-  const money = (n: number) => fmtMoneyPlain(n, moneda);
+  const money = (c: Centavos) => fmtMoneyPlain(c, moneda);
 
   const firmaDataUrl = firmaPath ? await loadPngDataUrl(firmaPath) : null;
   const firmaPastorDataUrl = firmaPastorPath ? await loadPngDataUrl(firmaPastorPath) : null;

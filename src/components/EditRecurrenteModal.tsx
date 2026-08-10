@@ -33,7 +33,7 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
 
   const [categoria, setCategoria] = useState(recurrente.categoria);
   const [concepto, setConcepto] = useState(recurrente.concepto);
-  const [monto, setMonto] = useState(String(recurrente.monto));
+  const [monto, setMonto] = useState(aTextoEditable(recurrente.monto));
   const [dia, setDia] = useState(String(recurrente.dia));
   const [metodo, setMetodo] = useState(recurrente.metodo_pago);
   const [beneficiario, setBeneficiario] = useState(recurrente.beneficiario ?? "");

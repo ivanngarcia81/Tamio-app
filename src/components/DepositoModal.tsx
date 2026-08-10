@@ -39,7 +39,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
 
   const [fecha, setFecha] = useState(editing?.fecha.slice(0, 10) ?? hoy);
   const [periodo, setPeriodo] = useState(editing?.periodo ?? hoy.slice(0, 7));
-  const [monto, setMonto] = useState(editing ? String(editing.monto) : "");
+  const [monto, setMonto] = useState(editing ? aTextoEditable(editing.monto) : "");
   const [cuentaBanco, setCuentaBanco] = useState(editing?.cuenta_banco ?? "");
   const [referencia, setReferencia] = useState(editing?.referencia ?? "");
   const [notas, setNotas] = useState(editing?.notas ?? "");

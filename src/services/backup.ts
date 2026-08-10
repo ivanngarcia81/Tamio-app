@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { aTextoCsv } from "../dinero";
 import { save } from "@tauri-apps/plugin-dialog";
 import { readFile, remove } from "@tauri-apps/plugin-fs";
 import { invoke } from "@tauri-apps/api/core";
@@ -37,7 +38,10 @@ export function movimientosToCsv(txs: Tx[]): string {
     tipo: tx.tipo,
     categoria: canonicalCat(tx.tipo, tx.categoria),
     concepto: tx.concepto,
-    monto: tx.monto,
+    // DECIMALES a propósito, no centavos: este CSV lo abre Excel y lo lee
+    // gente, y el importador lo vuelve a leer con deTexto(). Es la única
+    // salida donde el formato viejo se conserva (plan-centavos.md §3).
+    monto: aTextoCsv(tx.monto),
     metodo_pago: canonicalMetodo(tx.metodo_pago),
     beneficiario: tx.beneficiario ?? "",
     notas: tx.detalle ?? "",
