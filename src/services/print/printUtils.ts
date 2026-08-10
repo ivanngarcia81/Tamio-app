@@ -4,6 +4,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { currentLang } from "../../i18n";
 import { currencySymbol, currencyLocale } from "../../currencies";
+import { aDecimal, type Centavos } from "../../dinero";
 import { entregarArchivo, esMovil } from "../entrega";
 import { rutaEnDatos } from "../archivos";
 
@@ -108,7 +109,8 @@ function agrupa(abs: number, moneda: string): string {
  * Los negativos se muestran entre paréntesis, convención estándar de
  * estados financieros que evita el problema sin depender de un caracter especial.
  */
-export function fmtMoneyPdf(n: number, moneda: string): string {
+export function fmtMoneyPdf(c: Centavos, moneda: string): string {
+  const n = aDecimal(c);
   const abs = Math.abs(n);
   // Dos decimales, igual que fmtMoneyPlain y que la pantalla.
   const formatted = `${currencySymbol(moneda)}${agrupa(abs, moneda)} ${moneda}`;
@@ -122,7 +124,8 @@ export function fmtMoneyPdf(n: number, moneda: string): string {
  * paréntesis por la misma razón que fmtMoneyPdf (Helvetica de jsPDF no mapea
  * el signo menos Unicode).
  */
-export function fmtMoneyPlain(n: number, moneda: string): string {
+export function fmtMoneyPlain(c: Centavos, moneda: string): string {
+  const n = aDecimal(c);
   const abs = Math.abs(n);
   const s = `${currencySymbol(moneda)}${agrupa(abs, moneda)}`;
   return n < 0 ? `(${s})` : s;

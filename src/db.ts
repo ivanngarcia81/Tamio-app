@@ -1,6 +1,7 @@
 import Database from "./dbmotor";
 import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
+import { aDecimal, type Centavos } from "./dinero";
 import { tonoCategoria } from "./colores";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
@@ -51,7 +52,7 @@ export interface Church {
   /** Saldo de apertura (migración v34): dinero en caja ANTES del primer
    *  movimiento registrado en Tamio. Se suma al acumulado de movimientos para
    *  el "saldo anterior" del estado financiero. 0 = arrancó de cero. */
-  saldo_inicial: number;
+  saldo_inicial: Centavos;
 }
 
 export interface Member {
@@ -253,7 +254,7 @@ export interface Tx {
   concepto: string;
   detalle: string | null;
   fecha: string; // "YYYY-MM-DD HH:MM"
-  monto: number;
+  monto: Centavos;
   moneda: string;
   metodo_pago: string;
   member_id: number | null;
@@ -492,7 +493,7 @@ export interface ChurchUpdate {
   pie_institucional?: string | null;
   secretaria_nombre?: string | null;
   secretaria_cargo?: string | null;
-  saldo_inicial?: number;
+  saldo_inicial?: Centavos;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -553,7 +554,7 @@ export interface NewTx {
   concepto: string;
   detalle?: string | null;
   fecha: string;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   member_id?: number | null;
   beneficiario?: string | null;
@@ -756,7 +757,7 @@ export interface Deposito {
   church_id: number;
   fecha: string; // "YYYY-MM-DD"
   periodo: string; // "YYYY-MM"
-  monto: number;
+  monto: Centavos;
   moneda: string;
   cuenta_banco: string;
   referencia: string | null;
@@ -767,7 +768,7 @@ export interface Deposito {
 export interface NewDeposito {
   fecha: string;
   periodo: string;
-  monto: number;
+  monto: Centavos;
   cuenta_banco: string;
   referencia?: string | null;
   comprobante_path?: string | null;
@@ -788,7 +789,7 @@ export async function listDepositos(churchId: number, opts: { limit?: number } =
 export async function findDuplicateDeposito(
   churchId: number,
   fecha: string,
-  monto: number,
+  monto: Centavos,
   cuentaBanco: string,
   excludeId?: number
 ): Promise<boolean> {
@@ -3239,7 +3240,7 @@ export interface MovimientoRecurrente {
   subcategoria: string | null;
   concepto: string;
   detalle: string | null;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   beneficiario: string | null;
   beneficiario_rfc: string | null;
@@ -3257,7 +3258,7 @@ export interface NewMovimientoRecurrente {
   subcategoria?: string | null;
   concepto: string;
   detalle?: string | null;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   beneficiario?: string | null;
   beneficiario_rfc?: string | null;
@@ -3273,7 +3274,7 @@ export interface MovimientoRecurrenteUpdate {
   subcategoria?: string | null;
   concepto: string;
   detalle?: string | null;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   beneficiario?: string | null;
   beneficiario_rfc?: string | null;
@@ -3465,7 +3466,7 @@ export async function deleteTxDeSerie(recurrenteId: number, churchId: number): P
 /** Corrige el monto de TODOS los movimientos ya generados por la serie
  *  (p. ej. una renta capturada mal): la definición se actualiza aparte con
  *  updateMovimientoRecurrente. */
-export async function updateMontoDeSerie(recurrenteId: number, churchId: number, monto: number): Promise<number> {
+export async function updateMontoDeSerie(recurrenteId: number, churchId: number, monto: Centavos): Promise<number> {
   const d = await getDb();
   const res = await d.execute(
     "UPDATE transactions SET monto = $3, updated_at = datetime('now') WHERE recurrente_id = $1 AND church_id = $2 AND deleted = 0",
@@ -3510,7 +3511,8 @@ function localeDeNumeros(): string {
  *  rompía la alineación de la columna al mezclar cifras con y sin decimales.
  *  Dos decimales es también lo que ya usaba `fmtMoneyPlain` en el estado
  *  financiero, así que pantalla y documento por fin coinciden. */
-export function fmtMoney(n: number): string {
+export function fmtMoney(c: Centavos): string {
+  const n = aDecimal(c);
   const sign = n < 0 ? "−" : "";
   const abs = Math.abs(n);
   return `${sign}${simboloActivo}${abs.toLocaleString(localeDeNumeros(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
