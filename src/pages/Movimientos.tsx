@@ -230,7 +230,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   <span className="stat-label">{t("mov.totalDelMes")}</span>
                 </div>
                 <div className="stat-value md">
-                  <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                  <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
                 </div>
               </div>
               {tarjetasCategoria.map((c) => {
@@ -242,7 +242,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
                     </div>
                     <div className="stat-value md">
-                      <CountUp value={c.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                      <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
                     </div>
                     <div className="stat-bar">
                       <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />

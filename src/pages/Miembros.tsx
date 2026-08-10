@@ -201,7 +201,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
+                <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
               </div>
             </div>
           </div>

@@ -21,6 +21,7 @@ import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
 import CountUp from "../components/CountUp";
+import { CERO, restar, sumar, type Centavos } from "../dinero";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -84,14 +85,14 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         `Moneda: ${church.moneda}`,
         `Ingresos del mes: ${fmtMoney(totales.ingresos)}`,
         `Gastos del mes: ${fmtMoney(totales.gastos)}`,
-        `Balance del mes: ${fmtMoney(totales.ingresos - totales.gastos)}`,
+        `Balance del mes: ${fmtMoney(restar(totales.ingresos, totales.gastos))}`,
       ];
       if (totalesAnt) {
         lineas.push(
           `Mes anterior (${mesLegible(mesAnterior)}): ingresos ${fmtMoney(totalesAnt.ingresos)}, gastos ${fmtMoney(totalesAnt.gastos)}`,
         );
       }
-      const cats = (m: Record<string, number>) =>
+      const cats = (m: Record<string, Centavos>) =>
         Object.entries(m)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 4)
@@ -142,11 +143,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         yearCategoriaTotals(church.id, anio),
         yearDepositos(church.id, anio),
       ]);
-      const ingAnio = meses.reduce((s, m) => s + m.ingresos, 0);
-      const gasAnio = meses.reduce((s, m) => s + m.gastos, 0);
+      const ingAnio = sumar(...meses.map((m) => m.ingresos));
+      const gasAnio = sumar(...meses.map((m) => m.gastos));
       const lineas: string[] = [
         `Hoy: ${nowLocalIso().slice(0, 10)} · Moneda: ${church.moneda}`,
-        `Año ${anio} — ingresos: ${fmtMoney(ingAnio)}, gastos: ${fmtMoney(gasAnio)}, balance: ${fmtMoney(ingAnio - gasAnio)}`,
+        `Año ${anio} — ingresos: ${fmtMoney(ingAnio)}, gastos: ${fmtMoney(gasAnio)}, balance: ${fmtMoney(restar(ingAnio, gasAnio))}`,
         // Misma aclaración que en el resumen del mes: el depósito no es un
         // subconjunto del ingreso, es dinero llevado al banco.
         `Depositado al banco en ${anio}: ${fmtMoney(depAnio)} (dinero llevado al banco; ` +
@@ -179,7 +180,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           lineas.push(
             st
               ? `Aportes de ${m.nombre} en ${anio}: ${fmtMoney(st.totalAnio)} (último: ${st.ultimoAporte ?? "—"})`
-              : `Aportes de ${m.nombre} en ${anio}: ${fmtMoney(0)}`,
+              : `Aportes de ${m.nombre} en ${anio}: ${fmtMoney(CERO)}`,
           );
         }
       }
@@ -196,10 +197,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     }
   }
 
-  const ingresos = totales?.ingresos ?? 0;
-  const gastos = totales?.gastos ?? 0;
-  const balance = ingresos - gastos;
-  const balanceAnt = (totalesAnt?.ingresos ?? 0) - (totalesAnt?.gastos ?? 0);
+  const ingresos = totales?.ingresos ?? CERO;
+  const gastos = totales?.gastos ?? CERO;
+  const balance = restar(ingresos, gastos);
+  const balanceAnt = restar(totalesAnt?.ingresos ?? CERO, totalesAnt?.gastos ?? CERO);
 
   const filasIngreso = getCategoriasIngreso()
     .map((c) => ({ ...c, color: colorCategoria("ingreso", c.id), total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
@@ -340,22 +341,22 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
-            <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
-            <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
-            <div className="stat-value md"><CountUp value={balance} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
           </div>
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
             <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
-            <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
+            <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
             <div className="stat-foot">{mesLegible(mesAnterior)}</div>
           </div>
         </div>
@@ -515,7 +516,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 <div className="th" style={{ textAlign: "right" }}>{t("reportes.colVariacion")}</div>
               </div>
               {historial.map((h, i) => {
-                const bal = h.ingresos - h.gastos;
+                const bal = restar(h.ingresos, h.gastos);
                 const anterior = historial[i - 1];
                 const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
                 const variacion = balAnt === null ? null : pctChange(bal, balAnt);

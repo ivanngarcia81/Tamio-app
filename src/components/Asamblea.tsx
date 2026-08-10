@@ -39,16 +39,16 @@ export default function Asamblea({ church, mesStr, totales, onClose }: Props) {
       <div className="asamblea-stats">
         <div className="asamblea-stat">
           <div className="as-label">{t("tx.ingreso")}s</div>
-          <div className="as-valor pos"><CountUp value={totales.ingresos} format={fmtMoney} duracion={900} /></div>
+          <div className="as-valor pos"><CountUp value={totales.ingresos} format={fmtMoney} duracion={900} paso={100} /></div>
         </div>
         <div className="asamblea-stat grande">
           <div className="as-label">{t("reportes.balanceNeto")}</div>
-          <div className="as-valor"><CountUp value={balance} format={fmtMoney} duracion={1200} /></div>
+          <div className="as-valor"><CountUp value={balance} format={fmtMoney} duracion={1200} paso={100} /></div>
           <div className="as-moneda">{church.moneda}</div>
         </div>
         <div className="asamblea-stat">
           <div className="as-label">{t("tx.gasto")}s</div>
-          <div className="as-valor neg"><CountUp value={totales.gastos} format={fmtMoney} duracion={900} /></div>
+          <div className="as-valor neg"><CountUp value={totales.gastos} format={fmtMoney} duracion={900} paso={100} /></div>
         </div>
       </div>
 

@@ -102,7 +102,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
               <div className="stat-icon neutral"><IconBank size={15} strokeWidth={1.8} /></div>
             </div>
             <div className="stat-value md">
-              <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+              <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">
               {t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}
@@ -115,7 +115,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
               <div className="stat-icon neutral"><IconBank size={15} strokeWidth={1.8} /></div>
             </div>
             <div className="stat-value md">
-              <CountUp value={totalAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+              <CountUp value={totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">{anio}</div>
           </div>
@@ -127,7 +127,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             </div>
             <div className="stat-value md">
               {ultimo
-                ? <><CountUp value={ultimo.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></>
+                ? <><CountUp value={ultimo.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></>
                 : <span style={{ color: "var(--text-3)" }}>—</span>}
             </div>
             <div className="stat-foot">

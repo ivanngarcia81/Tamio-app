@@ -123,7 +123,7 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
             <div className="stat-card accent" style={{ flex: 1, padding: "14px 16px", "--accent-color": "var(--accent-1)" } as CSSProperties}>
               <div className="stat-label">{t("detalleMiembro.totalAnio", { anio: year })}</div>
               <div className="stat-value md">
-                <CountUp value={total} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                <CountUp value={total} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
               </div>
             </div>
             <div className="stat-card" style={{ flex: 1, padding: "14px 16px" }}>
