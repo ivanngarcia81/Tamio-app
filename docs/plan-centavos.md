@@ -1,7 +1,20 @@
 # Plan de 4.2 — pasar el dinero a centavos enteros
 
-**Estado: escrito, NO empezado.** Este documento existe para poder decidir con
-datos antes de tocar una línea. Nada de lo que hay aquí está implementado.
+**Estado (10 ago 2026): EN CURSO, en la rama `centavos`. `main` sin tocar.**
+
+| Paso | Estado |
+|---|---|
+| 0. Rama propia | ✅ `centavos` |
+| 1. `src/dinero.ts` y el tipo `Centavos` | ✅ 38 comprobaciones (`npm run verificar-dinero`) |
+| 2. Las funciones de formato reciben `Centavos` | ✅ 112 errores = la lista de tareas del paso 4 |
+| 3. La migración de la base | ✅ migración **36** (`npm run verificar-migracion-36`) |
+| 4. Las fronteras | ⏳ pendiente — teclado, CSV que entra, CSV que sale, PDF |
+| 5. Pruebas antes de fundir | ⏳ pendiente — necesitan la Mac |
+| 6. Respaldo automático antes de migrar | ⏳ **pendiente y bloqueante** |
+
+⚠️ **La rama no compila entre el paso 2 y el 4**, a propósito: los errores del
+compilador SON la lista de tareas. No se funde nada hasta que el paso 5 esté en
+verde, y **no se publica ningún build con la migración 36 sin el paso 6**.
 
 ---
 

@@ -15,7 +15,8 @@
     "firmar:manual": "bash scripts/firmar-manual.sh",
     "verificar-csp": "node scripts/verificar-csp.mjs",
     "verificar-traducciones": "node scripts/verificar-traducciones.mjs",
-    "verificar-dinero": "node --experimental-strip-types scripts/verificar-dinero.ts"
+    "verificar-dinero": "node --experimental-strip-types scripts/verificar-dinero.ts",
+    "verificar-migracion-36": "node --no-warnings scripts/verificar-migracion-36.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",
