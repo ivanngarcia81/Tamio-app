@@ -8,6 +8,7 @@ import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, PDF_SPACE, pct, slug,
 } from "./printUtils";
 import { entregarArchivo } from "../entrega";
+import type { Centavos } from "../../dinero";
 
 export interface AnnualReportData {
   church: Church;
@@ -16,7 +17,7 @@ export interface AnnualReportData {
   /** Meses con movimientos (yearMonthlySummary) — este módulo no toca la BD. */
   meses: MonthSummary[];
   categorias: YearCategorias;
-  depositosBancarios: number;
+  depositosBancarios: Centavos;
 }
 
 /** Genera el reporte anual en PDF y abre el diálogo de guardar.

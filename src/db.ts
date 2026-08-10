@@ -1057,8 +1057,8 @@ export async function dailyTotals(churchId: number, days: number): Promise<Daily
 
 export interface MonthSummary {
   mes: string;
-  ingresos: number;
-  gastos: number;
+  ingresos: Centavos;
+  gastos: Centavos;
 }
 
 export async function monthlySummary(churchId: number, months: number): Promise<MonthSummary[]> {
@@ -1102,8 +1102,8 @@ export async function yearMonthlySummary(churchId: number, yyyy: string): Promis
 }
 
 export interface YearCategorias {
-  porCategoriaIngreso: Record<string, number>;
-  porCategoriaGasto: Record<string, number>;
+  porCategoriaIngreso: Record<string, Centavos>;
+  porCategoriaGasto: Record<string, Centavos>;
 }
 
 /** Totales del año agrupados por categoría, para el reporte anual. */
