@@ -14,7 +14,8 @@
     "firmar": "bash scripts/firmar-mac.sh",
     "firmar:manual": "bash scripts/firmar-manual.sh",
     "verificar-csp": "node scripts/verificar-csp.mjs",
-    "verificar-traducciones": "node scripts/verificar-traducciones.mjs"
+    "verificar-traducciones": "node scripts/verificar-traducciones.mjs",
+    "verificar-dinero": "node --experimental-strip-types scripts/verificar-dinero.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",
