@@ -7,6 +7,8 @@ import {
 } from "../db";
 import { IconClose, IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { CERO, deTexto, type Centavos } from "../dinero";
+import { aTextoEditable } from "../dinero";
 
 interface Props {
   church_id: number;
@@ -15,11 +17,11 @@ interface Props {
   onSaved: () => void;
 }
 
-function parseMonto(s: string): number | null {
-  const clean = s.replace(/[$,\s]/g, "");
-  if (!clean) return null;
-  const n = Number(clean);
-  return Number.isFinite(n) && n > 0 ? n : null;
+/** Igual que en Nuevo movimiento: `deTexto` parsea, y aquí solo queda
+ *  la regla de la pantalla (un importe mayor que cero). */
+function parseMonto(s: string): Centavos | null {
+  const c = deTexto(s);
+  return c !== null && c > 0 ? c : null;
 }
 
 /** Edita monto, categoría, día, método y demás datos de un movimiento
@@ -151,7 +153,7 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
           {montoCambio && generados > 0 && (
             <label className="roster-followup" style={{ fontSize: 12.5, marginTop: 4 }}>
               <input type="checkbox" checked={aplicarRetro} onChange={(e) => setAplicarRetro(e.target.checked)} />
-              {t("recurrente.aplicarRetro", { count: generados, monto: fmtMoney(parseMonto(monto) ?? 0) })}
+              {t("recurrente.aplicarRetro", { count: generados, monto: fmtMoney(parseMonto(monto) ?? CERO) })}
             </label>
           )}
 

@@ -12,16 +12,18 @@ import { IconCheck, IconClose, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { CERO, deTexto, maximo, type Centavos } from "../dinero";
+import { aTextoEditable } from "../dinero";
 
 function fileNameFromPath(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
-function parseMonto(s: string): number | null {
-  const clean = s.replace(/[$,\s]/g, "");
-  if (!clean) return null;
-  const n = Number(clean);
-  return Number.isFinite(n) && n > 0 ? n : null;
+/** Igual que en Nuevo movimiento: el parseo vive en `dinero.ts` y aquí
+ *  solo queda la regla de la pantalla (mayor que cero). */
+function parseMonto(s: string): Centavos | null {
+  const c = deTexto(s);
+  return c !== null && c > 0 ? c : null;
 }
 
 interface Props {
@@ -106,7 +108,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
           setExcedeConfirmado(true);
           setError(t("depositos.excedeEfectivo", {
             monto: fmtMoney(m),
-            disponible: fmtMoney(Math.max(disponible, 0)),
+            disponible: fmtMoney(maximo(disponible, CERO)),
           }));
           setSaving(false);
           return;

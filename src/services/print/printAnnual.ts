@@ -8,7 +8,7 @@ import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, PDF_SPACE, pct, slug,
 } from "./printUtils";
 import { entregarArchivo } from "../entrega";
-import type { Centavos } from "../../dinero";
+import { restar, sumar, type Centavos } from "../../dinero";
 
 export interface AnnualReportData {
   church: Church;
@@ -43,9 +43,9 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
     logoDataUrl,
   });
 
-  const totalIngresos = meses.reduce((s, m) => s + m.ingresos, 0);
-  const totalGastos = meses.reduce((s, m) => s + m.gastos, 0);
-  const balance = totalIngresos - totalGastos;
+  const totalIngresos = sumar(...meses.map((m) => m.ingresos));
+  const totalGastos = sumar(...meses.map((m) => m.gastos));
+  const balance = restar(totalIngresos, totalGastos);
 
   // ---------- Resumen por mes ----------
   const mesCols: PdfColumn[] = [
@@ -64,7 +64,7 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
           mesLegible(m.mes),
           fmtMoneyPdf(m.ingresos, moneda),
           fmtMoneyPdf(m.gastos, moneda),
-          fmtMoneyPdf(m.ingresos - m.gastos, moneda),
+          fmtMoneyPdf(restar(m.ingresos, m.gastos), moneda),
         ],
         mesCols
       );

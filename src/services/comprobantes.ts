@@ -11,6 +11,7 @@
 
 import { appDataDir } from "@tauri-apps/api/path";
 import { getDb } from "../db";
+import type { Centavos } from "../dinero";
 import {
   CARPETA_COMPROBANTES, esAbsoluta, existeArchivo, guardarEnDatos, rutaEnDatos,
 } from "./archivos";
@@ -89,7 +90,7 @@ export interface ComprobantePendiente {
   id: number;
   fecha: string;
   descripcion: string;
-  monto: number;
+  monto: Centavos;
   /** Dónde estaba el archivo, para que el usuario sepa qué buscar. */
   rutaOriginal: string;
 }
@@ -107,7 +108,7 @@ export async function listarComprobantesPendientes(churchId: number): Promise<Co
   const d = await getDb();
   const out: ComprobantePendiente[] = [];
 
-  const filas = await d.select<{ id: number; fecha: string; concepto: string; monto: number; comprobante_path: string }[]>(
+  const filas = await d.select<{ id: number; fecha: string; concepto: string; monto: Centavos; comprobante_path: string }[]>(
     `SELECT id, fecha, concepto, monto, comprobante_path FROM transactions
       WHERE church_id = $1 AND comprobante_path IS NOT NULL AND comprobante_path <> '' AND deleted = 0
       ORDER BY fecha DESC`,
@@ -121,7 +122,7 @@ export async function listarComprobantesPendientes(churchId: number): Promise<Co
     });
   }
 
-  const deps = await d.select<{ id: number; fecha: string; cuenta_banco: string; monto: number; comprobante_path: string }[]>(
+  const deps = await d.select<{ id: number; fecha: string; cuenta_banco: string; monto: Centavos; comprobante_path: string }[]>(
     `SELECT id, fecha, cuenta_banco, monto, comprobante_path FROM depositos_bancarios
       WHERE church_id = $1 AND comprobante_path IS NOT NULL AND comprobante_path <> '' AND deleted = 0
       ORDER BY fecha DESC`,

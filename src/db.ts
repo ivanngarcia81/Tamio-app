@@ -902,7 +902,7 @@ export async function listDepositosPeriodo(churchId: number, yyyyMm: string): Pr
  * registro vive en churches.saldo_inicial (migración v34). Para el saldo real
  * usa saldoAnteriorDe(), que suma ambos.
  */
-export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): Promise<number> {
+export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): Promise<Centavos> {
   const d = await getDb();
   const rows = await d.select<{ tipo: string; total: Centavos | null }[]>(
     `SELECT tipo, SUM(monto) AS total
@@ -912,9 +912,10 @@ export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): P
       GROUP BY tipo`,
     [churchId, yyyyMm]
   );
-  let saldo = 0;
+  let saldo = CERO;
   for (const r of rows) {
-    saldo += r.tipo === "ingreso" ? (r.total ?? 0) : -(r.total ?? 0);
+    const t = r.total ?? CERO;
+    saldo = r.tipo === "ingreso" ? sumar(saldo, t) : restar(saldo, t);
   }
   return saldo;
 }
@@ -929,9 +930,9 @@ export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): P
  * y la que migró con dinero ya en caja (apertura declarada una sola vez).
  * Es la fuente única del "saldo anterior" del estado financiero mensual.
  */
-export async function saldoAnteriorDe(church: Church, yyyyMm: string): Promise<number> {
+export async function saldoAnteriorDe(church: Church, yyyyMm: string): Promise<Centavos> {
   const acumulado = await saldoAcumuladoAntesDe(church.id, yyyyMm);
-  return (church.saldo_inicial ?? 0) + acumulado;
+  return sumar(church.saldo_inicial ?? CERO, acumulado);
 }
 
 /**
@@ -948,7 +949,7 @@ export async function efectivoDisponibleHasta(
   church: Church,
   fechaISO: string,
   excludeDepositoId?: number
-): Promise<number> {
+): Promise<Centavos> {
   const d = await getDb();
   const movs = await d.select<{ tipo: string; total: Centavos | null }[]>(
     `SELECT tipo, SUM(monto) AS total
@@ -1078,7 +1079,7 @@ export async function monthlySummary(churchId: number, months: number): Promise<
     map.set(r.mes, entry);
   }
   const meses = [...map.keys()].sort().slice(-months);
-  return meses.map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
+  return meses.map((mes) => ({ mes, ...(map.get(mes) as { ingresos: Centavos; gastos: Centavos }) }));
 }
 
 /** Resumen mensual de un año completo (solo meses con movimientos). */
@@ -1098,7 +1099,7 @@ export async function yearMonthlySummary(churchId: number, yyyy: string): Promis
     else entry.gastos += r.total;
     map.set(r.mes, entry);
   }
-  return [...map.keys()].sort().map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
+  return [...map.keys()].sort().map((mes) => ({ mes, ...(map.get(mes) as { ingresos: Centavos; gastos: Centavos }) }));
 }
 
 export interface YearCategorias {

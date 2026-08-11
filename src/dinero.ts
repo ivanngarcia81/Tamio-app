@@ -84,6 +84,18 @@ export function sumar(...importes: Centavos[]): Centavos {
   return total as Centavos;
 }
 
+/** El mismo importe con el signo cambiado. El estado financiero lista los
+ *  egresos en negativo bajo el saldo anterior, y `-c` perdería el tipo. */
+export function negar(c: Centavos): Centavos {
+  return -c as Centavos;
+}
+
+/** El mayor de dos importes, conservando el tipo. Se usa para no enseñar
+ *  disponibles negativos. */
+export function maximo(a: Centavos, b: Centavos): Centavos {
+  return (a > b ? a : b) as Centavos;
+}
+
 /** Resta, con el tipo puesto. */
 export function restar(a: Centavos, b: Centavos): Centavos {
   return (a - b) as Centavos;

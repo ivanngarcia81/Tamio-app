@@ -8,13 +8,22 @@
 | 1. `src/dinero.ts` y el tipo `Centavos` | ✅ 38 comprobaciones (`npm run verificar-dinero`) |
 | 2. Las funciones de formato reciben `Centavos` | ✅ 112 errores = la lista de tareas del paso 4 |
 | 3. La migración de la base | ✅ migración **36** (`npm run verificar-migracion-36`) |
-| 4. Las fronteras | ⏳ pendiente — teclado, CSV que entra, CSV que sale, PDF |
-| 5. Pruebas antes de fundir | ⏳ pendiente — necesitan la Mac |
+| 4. Las fronteras y la aritmética | ✅ 112 → 0 errores; compila, `cargo check` y build en verde |
+| 5. Pruebas antes de fundir | ⏳ 2 de 5 hechas — las otras 3 necesitan la Mac |
 | 6. Respaldo automático antes de migrar | ⏳ **pendiente y bloqueante** |
 
-⚠️ **La rama no compila entre el paso 2 y el 4**, a propósito: los errores del
-compilador SON la lista de tareas. No se funde nada hasta que el paso 5 esté en
-verde, y **no se publica ningún build con la migración 36 sin el paso 6**.
+**Comprobado al cerrar el paso 4:** no queda ni una división entre 100 fuera de
+`src/dinero.ts` en todo `src/`. Esa es la invariante de la que depende todo lo
+demás.
+
+De las cinco pruebas del paso 5, **las dos que no necesitan la Mac ya están
+automatizadas**: el viaje redondo del CSV (`npm run verificar-csv-centavos`) y
+los importes trampa (`npm run verificar-dinero`). Faltan las tres que sí la
+necesitan: el respaldo viejo restaurado sobre la base nueva, el total del
+estado financiero con cientos de movimientos, y que PDF y pantalla coincidan.
+
+⚠️ No se funde nada hasta que el paso 5 esté completo, y **no se publica ningún
+build con la migración 36 sin el paso 6**.
 
 ---
 

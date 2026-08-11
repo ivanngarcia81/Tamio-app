@@ -3,6 +3,7 @@
 // nube. Se eliminan desde Ajustes → Zona delicada → borrar datos.
 
 import { insertMember, insertTx, listMembers, type NewTx } from "./db";
+import { deDecimalHeredado as dinero } from "./dinero";
 
 const MIEMBROS = [
   { nombre: "Ana Martínez", telefono: "555 123 4567", etiquetas: ["diezmador"] },
@@ -45,18 +46,18 @@ export async function cargarDatosDemo(churchId: number, moneda: string): Promise
     for (const semana of [0, 1, 2, 3]) {
       const fecha = hace(base + semana * 7 + 2);
       txs.push(
-        { tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo", fecha, monto: 250, metodo_pago: "efectivo", member_id: idDe("Ana Martínez"), estado: "aprobado" },
-        { tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo", fecha, monto: 300, metodo_pago: "transferencia", member_id: idDe("Juan Pérez"), estado: "aprobado" },
-        { tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo", fecha, monto: 180, metodo_pago: "efectivo", member_id: idDe("Carmen Torres"), estado: "aprobado" },
-        { tipo: "ingreso", categoria: "ofrenda", concepto: "Ofrenda del culto dominical", fecha, monto: 420, metodo_pago: "efectivo", estado: "aprobado" },
+        { tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo", fecha, monto: dinero(250), metodo_pago: "efectivo", member_id: idDe("Ana Martínez"), estado: "aprobado" },
+        { tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo", fecha, monto: dinero(300), metodo_pago: "transferencia", member_id: idDe("Juan Pérez"), estado: "aprobado" },
+        { tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo", fecha, monto: dinero(180), metodo_pago: "efectivo", member_id: idDe("Carmen Torres"), estado: "aprobado" },
+        { tipo: "ingreso", categoria: "ofrenda", concepto: "Ofrenda del culto dominical", fecha, monto: dinero(420), metodo_pago: "efectivo", estado: "aprobado" },
       );
     }
     txs.push(
-      { tipo: "ingreso", categoria: "donacion", concepto: "Donación para el ministerio de jóvenes", fecha: hace(base + 12), monto: 500, metodo_pago: "transferencia", member_id: idDe("Rosa Sánchez"), estado: "aprobado" },
-      { tipo: "gasto", categoria: "pastores", concepto: "Compensación pastoral", fecha: hace(base + 3), monto: 1200, metodo_pago: "transferencia", beneficiario: "Pr. Roberto Díaz", estado: "aprobado" },
-      { tipo: "gasto", categoria: "servicios", concepto: "Luz y agua del templo", fecha: hace(base + 8), monto: 310, metodo_pago: "transferencia", beneficiario: "CFE / Agua municipal", estado: "aprobado" },
-      { tipo: "gasto", categoria: "mantenimiento", concepto: "Limpieza y jardinería", fecha: hace(base + 15), monto: 220, metodo_pago: "efectivo", beneficiario: "Servicios García", estado: "aprobado" },
-      { tipo: "gasto", categoria: "musicos", concepto: "Cuerdas y accesorios de alabanza", fecha: hace(base + 20), monto: 145, metodo_pago: "tarjeta", beneficiario: "Casa de Música", estado: "aprobado" },
+      { tipo: "ingreso", categoria: "donacion", concepto: "Donación para el ministerio de jóvenes", fecha: hace(base + 12), monto: dinero(500), metodo_pago: "transferencia", member_id: idDe("Rosa Sánchez"), estado: "aprobado" },
+      { tipo: "gasto", categoria: "pastores", concepto: "Compensación pastoral", fecha: hace(base + 3), monto: dinero(1200), metodo_pago: "transferencia", beneficiario: "Pr. Roberto Díaz", estado: "aprobado" },
+      { tipo: "gasto", categoria: "servicios", concepto: "Luz y agua del templo", fecha: hace(base + 8), monto: dinero(310), metodo_pago: "transferencia", beneficiario: "CFE / Agua municipal", estado: "aprobado" },
+      { tipo: "gasto", categoria: "mantenimiento", concepto: "Limpieza y jardinería", fecha: hace(base + 15), monto: dinero(220), metodo_pago: "efectivo", beneficiario: "Servicios García", estado: "aprobado" },
+      { tipo: "gasto", categoria: "musicos", concepto: "Cuerdas y accesorios de alabanza", fecha: hace(base + 20), monto: dinero(145), metodo_pago: "tarjeta", beneficiario: "Casa de Música", estado: "aprobado" },
     );
   }
   for (const tx of txs) await insertTx(churchId, moneda, tx);

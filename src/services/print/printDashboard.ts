@@ -1,7 +1,7 @@
 import type { Church } from "../../db";
 import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
-import type { Centavos } from "../../dinero";
+import { sumar, type Centavos } from "../../dinero";
 import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl,
   openForPrint, PDF_SPACE, pct, slug,
@@ -117,7 +117,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   doc.addGap(PDF_SPACE.md);
 
   // ---------- Resumen por categorías ----------
-  const totalIngresos = data.categoriasIngreso.reduce((s, c) => s + c.monto, 0);
+  const totalIngresos = sumar(...data.categoriasIngreso.map((c) => c.monto));
   doc.beginTable(i18n.t("pdf.ingresosPorCategoria"), cols);
   if (data.categoriasIngreso.length === 0) {
     doc.emptyRow(i18n.t("reportes.sinIngresosRegistrados"));
@@ -130,7 +130,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   doc.endTable();
   doc.addGap(PDF_SPACE.md);
 
-  const totalGastos = data.categoriasGasto.reduce((s, c) => s + c.monto, 0);
+  const totalGastos = sumar(...data.categoriasGasto.map((c) => c.monto));
   doc.beginTable(i18n.t("pdf.gastosPorCategoria"), cols);
   if (data.categoriasGasto.length === 0) {
     doc.emptyRow(i18n.t("reportes.sinGastosRegistrados"));

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listUsuarios, updateChurch, type Church, type ChurchUpdate, type Usuario } from "../db";
 import type { LangPref } from "../i18n";
-import { aTextoEditable, deTexto } from "../dinero";
+import { CERO, aTextoEditable, deTexto } from "../dinero";
 import { showToast } from "../toast";
 import { type EstadoGuardado } from "../components/settings/GuardadoChip";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
@@ -159,8 +159,10 @@ export default function Configuracion({
     if (tj === "iglesia") {
       const nombreErr = f.churchForm.nombre.trim() ? null : t("config.nombreIglesiaObligatorio");
       const saldoTexto = f.churchForm.saldoInicial.replace(/[$,\s]/g, "");
-      const saldoNum = saldoTexto === "" ? 0 : Number(saldoTexto);
-      const saldoErr = Number.isFinite(saldoNum) ? null : t("validacion.saldoInvalido");
+      // El saldo de apertura es lo único de esta pantalla que es dinero:
+      // se parsea con deTexto igual que cualquier otro importe tecleado.
+      const saldoNum = saldoTexto === "" ? CERO : deTexto(saldoTexto);
+      const saldoErr = saldoNum !== null ? null : t("validacion.saldoInvalido");
       if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); }
       if (nombreErr || saldoErr) return { patch: {}, valido: false };
       return {
@@ -170,7 +172,7 @@ export default function Configuracion({
           ciudad: f.churchForm.ciudad.trim() || null,
           pais: f.churchForm.pais.trim() || null,
           moneda: f.churchForm.moneda,
-          saldo_inicial: saldoNum,
+          saldo_inicial: saldoNum ?? CERO,
         },
       };
     }

@@ -37,7 +37,10 @@ export default function CountUp<T extends number>({ value, format, duracion = 65
       const ease = 1 - Math.pow(1 - t, 3); // ease-out cúbico
       // Durante la cuenta se muestran enteros (sin centavos parpadeando);
       // al terminar aterriza en el valor exacto.
-      setMostrado(t < 1 ? (Math.round((desde + (value - desde) * ease) / paso) * paso) as T : value);
+      const objetivo = Number(value);
+      const paso1 = Number(paso);
+      const intermedio = Math.round((desde + (objetivo - desde) * ease) / paso1) * paso1;
+      setMostrado(t < 1 ? (intermedio as T) : value);
       if (t < 1) rafRef.current = requestAnimationFrame(paso);
       else desdeRef.current = value;
     };

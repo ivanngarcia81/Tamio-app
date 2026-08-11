@@ -12,6 +12,7 @@ import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
+import { CERO, sumar, type Centavos } from "../dinero";
 
 const PAGE_SIZE = 40;
 
@@ -24,7 +25,7 @@ interface Props {
 export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
   const [depositos, setDepositos] = useState<Deposito[]>([]);
-  const [totalMes, setTotalMes] = useState(0);
+  const [totalMes, setTotalMes] = useState<Centavos>(CERO);
   const [conteoMes, setConteoMes] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Deposito | null>(null);
@@ -57,9 +58,9 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   // salen de `depositos`, que ya se carga entero: no hacen falta consultas
   // nuevas. El año se mide por PERÍODO, igual que el resto de los totales.
   const anio = currentYear();
-  const totalAnio = depositos
-    .filter((d) => d.periodo.startsWith(anio))
-    .reduce((acc, d) => acc + d.monto, 0);
+  const totalAnio = sumar(
+    ...depositos.filter((d) => d.periodo.startsWith(anio)).map((d) => d.monto),
+  );
   const ultimo = depositos.reduce<Deposito | null>(
     (mejor, d) => (mejor === null || d.fecha > mejor.fecha ? d : mejor),
     null,

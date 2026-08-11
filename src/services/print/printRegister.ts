@@ -1,6 +1,7 @@
 import { categoriaInfo, metodoNombre, METODOS_PAGO, type Church, type Tx } from "../../db";
 import i18n from "../../i18n";
 import { ReportBase, type BaseCol } from "./reportBase";
+import { CERO, sumar, type Centavos } from "../../dinero";
 import {
   buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl,
   openForPrint, PDF_SPACE, pct, slug,
@@ -30,7 +31,7 @@ function capitalizar(s: string): string {
 export async function buildRegisterPdf(opts: RegisterPrintOptions): Promise<{ bytes: ArrayBuffer; fileName: string }> {
   const { church, movimientos } = opts;
   const moneda = church.moneda;
-  const money = (n: number) => fmtMoneyPlain(n, moneda);
+  const money = (c: Centavos) => fmtMoneyPlain(c, moneda);
   const logoDataUrl = church.logo_path ? await loadPngDataUrl(church.logo_path) : null;
   const firmaDataUrl = church.tesorero_firma_path ? await loadPngDataUrl(church.tesorero_firma_path) : null;
   const firmaPastorDataUrl = church.pastor_firma_path ? await loadPngDataUrl(church.pastor_firma_path) : null;
@@ -69,9 +70,9 @@ export async function buildRegisterPdf(opts: RegisterPrintOptions): Promise<{ by
   // Los montos van SIN signo: el tipo del registro ya lo dice el título, y el
   // signo "−" (U+2212) no existe en la Helvetica de jsPDF — era el origen del
   // artefacto de comilla y del espaciado roto en la columna de montos.
-  let totalIngresos = 0;
-  let totalGastos = 0;
-  const porCategoria = new Map<string, number>();
+  let totalIngresos = CERO;
+  let totalGastos = CERO;
+  const porCategoria = new Map<string, Centavos>();
 
   movimientos.forEach((tx, i) => {
     const cat = categoriaInfo(tx.tipo, tx.categoria);
@@ -81,9 +82,9 @@ export async function buildRegisterPdf(opts: RegisterPrintOptions): Promise<{ by
 
     doc.row([fmtFechaCortaPdf(tx.fecha), cat.nombre, descripcion, metodo, money(tx.monto)], cols, i);
 
-    if (tx.tipo === "ingreso") totalIngresos += tx.monto;
-    else totalGastos += tx.monto;
-    porCategoria.set(cat.nombre, (porCategoria.get(cat.nombre) ?? 0) + tx.monto);
+    if (tx.tipo === "ingreso") totalIngresos = sumar(totalIngresos, tx.monto);
+    else totalGastos = sumar(totalGastos, tx.monto);
+    porCategoria.set(cat.nombre, sumar(porCategoria.get(cat.nombre) ?? CERO, tx.monto));
   });
 
   // Fila de total al cierre de la tabla. Las páginas de movimientos son de un
@@ -91,7 +92,7 @@ export async function buildRegisterPdf(opts: RegisterPrintOptions): Promise<{ by
   // en el resumen y aquí la suma bruta no se dibuja para no engañar.
   const esMixto = totalIngresos > 0 && totalGastos > 0;
   if (!esMixto) {
-    doc.totalRow(["", "", i18n.t("pdf.totales"), "", money(totalIngresos + totalGastos)], cols);
+    doc.totalRow(["", "", i18n.t("pdf.totales"), "", money(sumar(totalIngresos, totalGastos))], cols);
   }
   doc.endTable();
   doc.addGap(PDF_SPACE.md);
@@ -99,7 +100,7 @@ export async function buildRegisterPdf(opts: RegisterPrintOptions): Promise<{ by
   // ---------- Resumen por categoría ----------
   // Sin "Total ingresos $0.00" ni "Balance" negativo: en un registro filtrado
   // por tipo esos campos eran artefactos del filtro, no información.
-  const totalDelTipo = esMixto ? totalIngresos + totalGastos : (totalIngresos || totalGastos);
+  const totalDelTipo = esMixto ? sumar(totalIngresos, totalGastos) : (totalIngresos || totalGastos);
   const resCols: BaseCol[] = [
     { label: i18n.t("pdf.colCategoria"), width: cw - 92 - 92, align: "left" },
     { label: i18n.t("pdf.colMonto"), width: 92, align: "right" },

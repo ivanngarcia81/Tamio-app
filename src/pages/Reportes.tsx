@@ -21,7 +21,7 @@ import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
 import CountUp from "../components/CountUp";
-import { CERO, restar, sumar, type Centavos } from "../dinero";
+import { CERO, porcentaje, restar, sumar, type Centavos } from "../dinero";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -36,7 +36,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
-  const [depositosMes, setDepositosMes] = useState(0);
+  const [depositosMes, setDepositosMes] = useState<Centavos>(CERO);
   const [exporting, setExporting] = useState<"pdf" | "print" | "anual" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -155,7 +155,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           `ingresos ni se suma con ellos)`,
       ];
       const listaCats = (m: Record<string, number>) =>
-        Object.entries(m).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${catNombre(c)}: ${fmtMoney(v)}`).join("; ");
+        Object.entries(m as Record<string, Centavos>).sort((a, b) => b[1] - a[1]).map(([c, v]) => `${catNombre(c)}: ${fmtMoney(v)}`).join("; ");
       if (Object.keys(catsAnio.porCategoriaIngreso).length) {
         lineas.push(`Ingresos ${anio} por categoría: ${listaCats(catsAnio.porCategoriaIngreso)}`);
       }
@@ -203,10 +203,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const balanceAnt = restar(totalesAnt?.ingresos ?? CERO, totalesAnt?.gastos ?? CERO);
 
   const filasIngreso = getCategoriasIngreso()
-    .map((c) => ({ ...c, color: colorCategoria("ingreso", c.id), total: totales?.porCategoriaIngreso[c.id] ?? 0 }))
+    .map((c) => ({ ...c, color: colorCategoria("ingreso", c.id), total: totales?.porCategoriaIngreso[c.id] ?? CERO }))
     .filter((c) => c.total > 0);
   const filasGasto = getCategoriasGasto()
-    .map((c) => ({ ...c, color: colorCategoria("gasto", c.id), total: totales?.porCategoriaGasto[c.id] ?? 0 }))
+    .map((c) => ({ ...c, color: colorCategoria("gasto", c.id), total: totales?.porCategoriaGasto[c.id] ?? CERO }))
     .filter((c) => c.total > 0)
     .sort((a, b) => b.total - a.total);
 
@@ -373,7 +373,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
                   <Donut
-                    segments={filasGasto.map((c) => ({ color: c.color, pct: gastos > 0 ? (c.total / gastos) * 100 : 0 }))}
+                    segments={filasGasto.map((c) => ({ color: c.color, pct: porcentaje(c.total, gastos) }))}
                     delayMs={0}
                   />
                   <div className="donut-center">
@@ -405,7 +405,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div className="donut-wrap" style={{ flexShrink: 0 }}>
                   <Donut
-                    segments={filasIngreso.map((c) => ({ color: c.color, pct: ingresos > 0 ? (c.total / ingresos) * 100 : 0 }))}
+                    segments={filasIngreso.map((c) => ({ color: c.color, pct: porcentaje(c.total, ingresos) }))}
                     delayMs={150}
                   />
                   <div className="donut-center">
