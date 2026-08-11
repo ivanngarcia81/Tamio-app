@@ -17,7 +17,10 @@
     "verificar-traducciones": "node scripts/verificar-traducciones.mjs",
     "verificar-dinero": "node --experimental-strip-types scripts/verificar-dinero.ts",
     "verificar-migracion-36": "node --no-warnings scripts/verificar-migracion-36.mjs",
-    "verificar-csv-centavos": "node --experimental-strip-types scripts/verificar-csv-centavos.ts"
+    "verificar-csv-centavos": "node --experimental-strip-types scripts/verificar-csv-centavos.ts",
+    "verificar-respaldo": "node --no-warnings scripts/verificar-respaldo.mjs",
+    "verificar-estado-financiero": "node --experimental-strip-types --no-warnings scripts/verificar-estado-financiero.ts",
+    "verificar-centavos": "npm run verificar-dinero && npm run verificar-migracion-36 && npm run verificar-csv-centavos && npm run verificar-respaldo && npm run verificar-estado-financiero"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",

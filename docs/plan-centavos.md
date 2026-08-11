@@ -1,6 +1,6 @@
 # Plan de 4.2 — pasar el dinero a centavos enteros
 
-**Estado (10 ago 2026): EN CURSO, en la rama `centavos`. `main` sin tocar.**
+**Estado (11 ago 2026): EN CURSO, en la rama `centavos`. `main` sin tocar.**
 
 | Paso | Estado |
 |---|---|
@@ -9,21 +9,49 @@
 | 2. Las funciones de formato reciben `Centavos` | ✅ 112 errores = la lista de tareas del paso 4 |
 | 3. La migración de la base | ✅ migración **36** (`npm run verificar-migracion-36`) |
 | 4. Las fronteras y la aritmética | ✅ 112 → 0 errores; compila, `cargo check` y build en verde |
-| 5. Pruebas antes de fundir | ⏳ 2 de 5 hechas — las otras 3 necesitan la Mac |
+| 5. Pruebas antes de fundir | ✅ las cinco automatizadas · ⏳ falta la vuelta en la Mac |
 | 6. Respaldo automático antes de migrar | ⏳ **pendiente y bloqueante** |
 
 **Comprobado al cerrar el paso 4:** no queda ni una división entre 100 fuera de
 `src/dinero.ts` en todo `src/`. Esa es la invariante de la que depende todo lo
-demás.
+demás, y desde el paso 5 hay una prueba que se pone roja si alguien la rompe.
 
-De las cinco pruebas del paso 5, **las dos que no necesitan la Mac ya están
-automatizadas**: el viaje redondo del CSV (`npm run verificar-csv-centavos`) y
-los importes trampa (`npm run verificar-dinero`). Faltan las tres que sí la
-necesitan: el respaldo viejo restaurado sobre la base nueva, el total del
-estado financiero con cientos de movimientos, y que PDF y pantalla coincidan.
+### Las pruebas — `npm run verificar-centavos`
+
+Ese comando ejecuta las cinco de una vez. **No dependen de `node_modules`:**
+solo usan `node:sqlite` y `src/dinero.ts`, así que corren en un clon recién
+hecho sin instalar nada.
+
+| Prueba del paso 5 | Dónde vive |
+|---|---|
+| 1. Respaldo de antes, restaurado después | `scripts/verificar-respaldo.mjs` |
+| 2. CSV de la versión vieja | `scripts/verificar-csv-centavos.ts` |
+| 3. `0.01`, `1.15` y `999999.99` | `scripts/verificar-estado-financiero.ts` |
+| 4. El total cuadra con la suma de sus líneas | `scripts/verificar-estado-financiero.ts` |
+| 5. Pantalla y PDF, la misma cifra | `scripts/verificar-estado-financiero.ts` |
+| — la migración en sí | `scripts/verificar-migracion-36.mjs` |
+| — `dinero.ts`, operación por operación | `scripts/verificar-dinero.ts` |
+
+Las tres pruebas que leen SQL o código **lo extraen del archivo de verdad**
+(`lib.rs`, `db.ts`) en vez de copiarlo. Una copia se habría desviado en
+silencio el día que alguien edite el original, que es la peor forma de tener una
+prueba: verde y sin mirar nada.
+
+**Lo que las pruebas automáticas NO cubren, y por qué.** El respaldo real es un
+ZIP con la base cifrada con SQLCipher más la carpeta de documentos, y el
+recorrido entero —hacer el ZIP, restaurarlo, reiniciar, fusionar los
+documentos— solo existe dentro de la app. Lo automatizado es la parte por donde
+se pierde dinero: que la migración conserve el total, que restaurar una base sin
+migrar dé la misma cifra que la que nunca se restauró, y que la 36 **no pueda
+aplicarse dos veces** (aplicarla dos veces no daría ningún error: multiplicaría
+el libro entero por 100). La vuelta con la app abierta hay que darla en la Mac.
 
 ⚠️ No se funde nada hasta que el paso 5 esté completo, y **no se publica ningún
 build con la migración 36 sin el paso 6**.
+
+> 🔴 **Y antes de abrir un build de esta rama en la Mac:** la migración corre
+> sola al abrir la app y no tiene vuelta atrás. O se hace primero el paso 6, o
+> se hace un respaldo a mano y se guarda fuera de la carpeta de la app.
 
 ---
 
@@ -131,6 +159,30 @@ convierte una migración en una pérdida de un centavo por fila.
 4. El total del estado financiero coincide con la suma de sus líneas al
    centavo, con al menos unos cientos de movimientos.
 5. El PDF y la pantalla muestran la misma cifra.
+
+**Las cinco están automatizadas** (`npm run verificar-centavos`; la tabla de
+arriba dice qué script cubre cuál). Lo que sigue es la vuelta que hay que dar en
+la Mac, que no sustituye a las pruebas sino que comprueba lo único que ellas no
+pueden tocar: la app entera funcionando.
+
+**La vuelta en la Mac — en este orden, y no antes del paso 6:**
+
+1. **Respaldo a mano primero**, guardado fuera de la carpeta de la app.
+   Ajustes → Respaldo completo. Este archivo es la marcha atrás de todo lo
+   demás.
+2. Apuntar en un papel el **total de ingresos, el de gastos y el balance** del
+   mes con más movimientos, tal y como los muestra la 1.0.8.
+3. Abrir el build de la rama. La migración corre sola al arrancar.
+4. Volver a ese mes: los tres números tienen que ser **idénticos** a los del
+   papel. Si alguno cambia, parar ahí y restaurar el respaldo del punto 1.
+5. Exportar el estado financiero de ese mes en PDF y comparar el total del PDF
+   con el de la pantalla (prueba 5, la mitad que se ve con los ojos).
+6. Registrar un movimiento de **1.15**, otro de **0.01** y otro de
+   **999999.99**; comprobar que se ven bien en la lista, en el total y en el
+   PDF.
+7. Restaurar el respaldo del punto 1 —el que se hizo **antes** de migrar— y
+   comprobar que los totales vuelven a salir iguales (prueba 1, con el ZIP
+   cifrado de verdad y los documentos).
 
 **Paso 6 — Marcha atrás.** La migración no se puede deshacer sola. Antes de
 publicar la versión que la lleve, la app tiene que **hacerse un respaldo
