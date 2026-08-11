@@ -511,6 +511,70 @@ no lo sabía, esa pantalla puede valer más que todo el resto de la app.
 (una pantalla informativa), no toca dinero ni esquema, y previene el único
 daño de esta lista que es irreversible.
 
+#### Y si resulta que SÍ hay que presentar: qué puede hacer Tamio
+
+Lo primero, el límite: **Tamio no puede presentar**. El IRS exige que el 990 y
+el 990-EZ se envíen electrónicamente a través de un *Authorized e-File
+Provider*, y serlo es un trámite regulado con auditoría de por medio. El envío
+lo hace el contador o un portal aprobado (el 990-N se envía gratis en irs.gov).
+Todo lo de abajo es preparar las cifras, no enviarlas.
+
+**a) Decir cuál de los tres formularios toca.** Depende de una sola cifra que
+Tamio ya calcula, los ingresos brutos del año:
+
+| Ingresos brutos | Formulario | Qué pide |
+|---|---|---|
+| ≤ $50,000 | **990-N** (e-Postcard) | 8 datos, ninguno financiero. Gratis en irs.gov, 5 minutos |
+| < $200,000 y activos < $500,000 | **990-EZ** | 4 páginas con cifras |
+| Por encima | **990** completo | Contador |
+
+La mayoría de iglesias pequeñas caen en el 990-N, donde Tamio solo tiene que
+dar el número y decir "te toca este, aquí se envía". Eso ya resuelve el caso
+más común, y es la parte más barata de todas.
+
+**b) La hoja de trabajo del 990-EZ.** El formulario pide las cifras agrupadas en
+sus líneas numeradas, y las categorías de Tamio no son esas líneas. Pero se
+mapean (catálogos en `src/db.ts:274` y `:285`):
+
+| Categoría de Tamio | Línea del 990-EZ |
+|---|---|
+| Diezmo, Ofrenda, Donación | **1** — Contributions, gifts, grants |
+| Otros | **8** — Other revenue |
+| Compensación | **12** — Salaries, other compensation |
+| Utilidades, Mantenimiento, Limpieza | **14** — Occupancy, rent, utilities |
+| Misiones, Ayudas | **10** — Grants and similar amounts paid |
+| Suministros, Varios, Alimentos, Tecnología, Transporte | **16** — Other expenses |
+
+**El mapa tiene que ser configurable, no fijo.** Se elige una vez en Ajustes
+—cada categoría escoge su línea— y a partir de ahí el reporte sale solo todos
+los años. Sin ese paso no funciona: las categorías personalizadas
+(`categorias_custom`) Tamio no las puede adivinar, y dos iglesias pueden
+clasificar "Misiones" distinto con igual razón.
+
+**c) El anexo de donantes (Schedule B).** Contribuyentes de $5,000 o más en el
+año. Tamio ya tiene el total anual por miembro — es la misma consulta que
+alimenta las estadísticas de miembros. A mano es la parte que más duele; aquí
+es un filtro.
+
+**d) Lo que Tamio NO sabe, y hay que escribir a mano.** Esto define el diseño,
+así que va escrito y no descubierto a mitad de la implementación: la **Parte II
+es un balance**, y Tamio lleva caja, no contabilidad patrimonial. Sabe el
+efectivo y el saldo bancario; **no** sabe el valor del templo, del terreno, ni
+las deudas o hipotecas. Esas líneas salen en blanco con una nota. Igual la
+Parte IV (directivos y su compensación): Secretaría tiene los nombres, pero
+enlazarlos con lo que cobran es trabajo aparte.
+
+**El límite legal, que es lo que hace esto seguro:** se llama **"hoja de
+trabajo"**, no "declaración". No pre-rellena nada que requiera criterio, no dice
+si la iglesia está exenta, no firma. Es la información de la propia iglesia con
+los números de línea encima, para llevársela al contador o copiarla al portal.
+Eso no es asesoría fiscal y no crea responsabilidad.
+
+**Esfuerzo:** el mapa en Ajustes más un PDF con la estructura del 990-EZ, que
+reutiliza `printAnnual.ts` casi entero. Es una versión menor, no un proyecto.
+**Va después de la pantalla de clasificación de la subsección anterior**, que es
+la que previene el daño irreversible; esta solo ahorra trabajo.
+
 #### Dos advertencias antes de que esto entre en ninguna lista
 
 - **Ata el producto a EE. UU.** Hoy país y moneda son configurables; todo lo de
@@ -521,8 +585,10 @@ daño de esta lista que es irreversible.
   en año. Si Tamio emite un documento que una iglesia entrega al IRS, esa
   revisión no es opcional.
 
-**Dónde va:** el punto 1 (la frase de "no goods or services") cabe en la 1.2 sin
-discusión. Los puntos 2 y 3 son de la 2.0. El 4 no se hace.
+**Dónde va:** la pantalla de clasificación del IRS va primero de todo — es una
+pantalla informativa y previene lo irreversible. El punto 1 (la frase de "no
+goods or services") cabe en la 1.2 sin discusión. Los puntos 2 y 3, y la hoja de
+trabajo del 990-EZ, son de la 2.0. El 4 no se hace.
 
 ### 7. Conciliación bancaria (Plaid en solo lectura) — idea para la 2.0
 
