@@ -472,6 +472,45 @@ de lucro: la función que parece más obvia no se necesita. _(Excepciones: el
 990-T si hay ingresos de un negocio no relacionado, y las organizaciones
 afiliadas que no son iglesias — una escuela, una fundación aparte.)_
 
+#### ⚠️ La trampa: exenta está la que el IRS TIENE CLASIFICADA como iglesia
+
+_Aportado por Iván el 11 ago 2026; corrige la frase de arriba, que estaba
+incompleta._
+
+La exención no depende de que la organización se considere iglesia, sino de
+**cómo aparece clasificada en el registro del IRS**. Si al presentar el
+Formulario 1023 quedó registrada como *religious organization* o
+*charitable organization* en vez de *church*, **sí tiene obligación de
+presentar el 990** — aunque celebre culto todos los domingos.
+
+Y el castigo es severo: **tres años consecutivos sin presentar y la exención
+se revoca automáticamente**, sin aviso previo. La organización se entera
+cuando aparece en la lista pública de revocaciones, y para entonces sus
+donantes ya perdieron la deducción.
+
+Es un fallo silencioso: nadie se equivoca activamente, simplemente nadie
+presenta nada porque todos creen que no hace falta.
+
+**Riesgo mayor en iglesias independientes.** Una iglesia de concilio suele
+estar cubierta por la exención de grupo de su denominación, que clasificó bien
+porque lo hace mil veces. Una independiente depende de cómo se llenó su propio
+1023, a veces hace veinte años y por alguien que ya no está.
+
+**Cómo se comprueba, gratis y en dos minutos:** *IRS Tax Exempt Organization
+Search* (irs.gov). Se busca por EIN y dice cómo está clasificada la
+organización y si aparece en la lista de revocaciones automáticas.
+
+**Y esto SÍ es una función, de las buenas.** Tamio no puede presentar nada,
+pero sí puede **preguntar**: una pantalla en la configuración inicial —*"¿cómo
+aparece tu organización en el registro del IRS?"*— con el enlace al buscador y
+la explicación de por qué importa. Cero responsabilidad legal, porque no es
+asesoría fiscal: es información pública y una advertencia. Para una iglesia que
+no lo sabía, esa pantalla puede valer más que todo el resto de la app.
+
+**Prioridad: alta, y por encima del resto de esta entrada.** Es barata
+(una pantalla informativa), no toca dinero ni esquema, y previene el único
+daño de esta lista que es irreversible.
+
 #### Dos advertencias antes de que esto entre en ninguna lista
 
 - **Ata el producto a EE. UU.** Hoy país y moneda son configurables; todo lo de
