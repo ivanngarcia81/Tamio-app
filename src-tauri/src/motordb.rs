@@ -98,6 +98,172 @@ pub fn migrar_a_cifrado(path: &Path, clave: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Segundos desde el epoch, para nombrar archivos apartados.
+pub fn marca_de_tiempo() -> String {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+        .to_string()
+}
+
+/// Versión de esquema ya aplicada en esta base. Cuenta también el registro del
+/// plugin viejo (`_sqlx_migrations`), igual que `correr_migraciones`. Si aún no
+/// existe ninguna de las dos tablas, es una base nueva: 0.
+pub fn version_aplicada(conn: &Connection) -> i64 {
+    let propia: i64 = conn
+        .query_row("SELECT coalesce(max(version), 0) FROM _migraciones", [], |r| r.get(0))
+        .unwrap_or(0);
+    let de_sqlx: i64 = conn
+        .query_row(
+            "SELECT coalesce(max(version), 0) FROM _sqlx_migrations WHERE success = 1",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    propia.max(de_sqlx)
+}
+
+/// ¿Hay alguna tabla de la app? Se descartan las internas de SQLite y las de
+/// contabilidad de migraciones, que no son datos de nadie.
+fn tiene_tablas(conn: &Connection) -> bool {
+    conn.query_row(
+        "SELECT count(*) FROM sqlite_master
+          WHERE type = 'table'
+            AND name NOT LIKE 'sqlite_%'
+            AND name NOT IN ('_migraciones', '_sqlx_migrations')",
+        [],
+        |r| r.get::<_, i64>(0),
+    )
+    .unwrap_or(0)
+        > 0
+}
+
+/// Marca de los respaldos que se hacen solos antes de migrar.
+pub const MARCA_ANTES_DE_MIGRAR: &str = "db.antes-de-migrar-";
+
+/// Cuántos se conservan. Solo se crea uno por actualización que traiga esquema
+/// nuevo, así que tres cubre tres versiones hacia atrás; más allá de eso el
+/// respaldo que sirve es el que el tesorero se guarda él.
+const RESPALDOS_QUE_SE_GUARDAN: usize = 3;
+
+/// **Copia de seguridad automática antes de aplicar migraciones pendientes.**
+///
+/// Existe por una razón concreta: una migración no se puede deshacer. La 36
+/// (dinero a centavos) reescribe las cuatro columnas de importes, y si algo
+/// saliera mal en la Mac de alguien no habría forma de volver — salvo que
+/// exista este archivo. Ver `docs/plan-centavos.md`, paso 6.
+///
+/// Tres decisiones que no son obvias:
+///
+/// - **Solo copia si hay algo pendiente.** En el 99 % de los arranques no hay
+///   migraciones nuevas y esta función no toca el disco. El coste se paga una
+///   vez por actualización con esquema nuevo, que es exactamente cuando importa.
+/// - **Consolida el diario (WAL) antes de copiar.** El archivo `.db` por sí
+///   solo puede no tener los últimos movimientos: están en el `-wal`. Copiarlo
+///   sin absorberlo daría un respaldo al que le faltan justo los registros más
+///   recientes. Si el checkpoint no termina, se copian también `-wal` y `-shm`,
+///   para que el respaldo esté completo pase lo que pase.
+/// - **Si no cabe, NO se migra.** Es la decisión incómoda: la app no abre y
+///   dice por qué. La alternativa —migrar igual, sin red— cambia un fallo
+///   molesto y reversible (liberar disco y volver a abrir) por uno irreversible.
+///
+/// Devuelve la ruta del respaldo, o `None` si no había nada pendiente.
+pub fn respaldo_antes_de_migrar(
+    conn: &Connection,
+    ruta: &Path,
+    migraciones: &[Migracion],
+    espacio_libre: Option<u64>,
+) -> Result<Option<PathBuf>, String> {
+    let aplicada = version_aplicada(conn);
+    let Some(hasta) = migraciones.iter().map(|m| m.version).filter(|v| *v > aplicada).max() else {
+        return Ok(None); // nada pendiente: ni copia ni coste
+    };
+    // Instalación nueva: no hay datos que proteger. Se comprueban las DOS
+    // cosas —que no se haya migrado nunca y que no haya ni una tabla— porque el
+    // archivo existe y ya pesa desde que se abre: poner WAL le escribe una
+    // cabecera. Mirar solo el tamaño hacía una copia inútil en cada instalación
+    // nueva; mirar solo la versión dejaría sin red a una base con datos y sin
+    // registro de migraciones, que es justo la que más falta le hace.
+    let Ok(meta) = std::fs::metadata(ruta) else { return Ok(None) };
+    let tamano = meta.len();
+    if tamano == 0 || (aplicada == 0 && !tiene_tablas(conn)) {
+        return Ok(None);
+    }
+
+    // Mismo criterio que al restaurar: la copia más el margen que SQLite
+    // necesita para reescribir tablas durante la propia migración.
+    if let Some(libre) = espacio_libre {
+        let necesario = tamano.saturating_mul(5) / 2;
+        if libre < necesario {
+            let mb = |b: u64| b / 1_048_576;
+            return Err(format!(
+                "No hay espacio para el respaldo automático que Tamio hace antes de \
+                 actualizar la base de datos. Hacen falta unos {} MB libres y quedan {} MB. \
+                 Libera espacio y vuelve a abrir Tamio. La base de datos NO se ha tocado.",
+                mb(necesario), mb(libre)
+            ));
+        }
+    }
+
+    let _ = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| r.get::<_, i64>(0));
+
+    let destino = ruta.with_extension(format!("{MARCA_ANTES_DE_MIGRAR}{}-v{hasta}", marca_de_tiempo()));
+    std::fs::copy(ruta, &destino).map_err(|e| {
+        let _ = std::fs::remove_file(&destino); // nunca dejar una copia a medias
+        format!("no se pudo respaldar la base antes de actualizarla: {e}")
+    })?;
+    // Por si el checkpoint no vació el diario: el respaldo tiene que poder
+    // abrirse solo, sin depender de archivos que la app va a seguir usando.
+    for suf in ["-wal", "-shm"] {
+        let mut origen = ruta.as_os_str().to_owned();
+        origen.push(suf);
+        let origen = PathBuf::from(origen);
+        if origen.metadata().map(|m| m.len() > 0).unwrap_or(false) {
+            let mut d = destino.as_os_str().to_owned();
+            d.push(suf);
+            let _ = std::fs::copy(&origen, PathBuf::from(d));
+        }
+    }
+
+    limpiar_respaldos_viejos(ruta);
+    Ok(Some(destino))
+}
+
+/// Deja solo los `RESPALDOS_QUE_SE_GUARDAN` más recientes. Se ordenan por
+/// nombre y no por fecha del archivo: el nombre lleva la marca de tiempo de
+/// cuando se hizo, que es el dato de verdad — copiar o mover la carpeta cambia
+/// las fechas del sistema de archivos y dejaría el orden al azar.
+fn limpiar_respaldos_viejos(ruta: &Path) {
+    let (Some(dir), Some(base)) = (ruta.parent(), ruta.file_stem().and_then(|s| s.to_str())) else {
+        return;
+    };
+    let prefijo = format!("{base}.{MARCA_ANTES_DE_MIGRAR}");
+    let Ok(entradas) = std::fs::read_dir(dir) else { return };
+    let mut copias: Vec<PathBuf> = entradas
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                // Los -wal/-shm de cada copia se van con ella, no cuentan aparte.
+                .is_some_and(|n| n.starts_with(&prefijo) && !n.ends_with("-wal") && !n.ends_with("-shm"))
+        })
+        .collect();
+    if copias.len() <= RESPALDOS_QUE_SE_GUARDAN {
+        return;
+    }
+    copias.sort();
+    for vieja in &copias[..copias.len() - RESPALDOS_QUE_SE_GUARDAN] {
+        let _ = std::fs::remove_file(vieja);
+        for suf in ["-wal", "-shm"] {
+            let mut p = vieja.as_os_str().to_owned();
+            p.push(suf);
+            let _ = std::fs::remove_file(PathBuf::from(p));
+        }
+    }
+}
+
 /// Corre las migraciones pendientes. Continúa donde se quedó sqlx: si existe
 /// `_sqlx_migrations` (el registro del plugin viejo) se toma su última
 /// versión como punto de partida; de ahí en adelante el registro vive en
@@ -113,17 +279,7 @@ pub fn correr_migraciones(conn: &mut Connection, migraciones: &[Migracion]) -> R
     )
     .map_err(|e| e.to_string())?;
 
-    let propia: i64 = conn
-        .query_row("SELECT coalesce(max(version), 0) FROM _migraciones", [], |r| r.get(0))
-        .map_err(|e| e.to_string())?;
-    let de_sqlx: i64 = conn
-        .query_row(
-            "SELECT coalesce(max(version), 0) FROM _sqlx_migrations WHERE success = 1",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap_or(0); // la tabla no existe en instalaciones nuevas
-    let aplicada = propia.max(de_sqlx);
+    let aplicada = version_aplicada(conn);
 
     for m in migraciones {
         if m.version <= aplicada {
@@ -229,11 +385,7 @@ pub fn exportar_plano(conn: &Connection, destino: &Path) -> Result<(), String> {
 /// se aparta con marca de tiempo — la app arranca vacía y el usuario
 /// resincroniza desde la nube. Nunca se borra el archivo ilegible.
 pub fn apartar_ilegible(path: &Path) -> Option<PathBuf> {
-    let ts = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    let destino = path.with_extension(format!("db.ilegible-{ts}"));
+    let destino = path.with_extension(format!("db.ilegible-{}", marca_de_tiempo()));
     match std::fs::rename(path, &destino) {
         Ok(()) => {
             for suf in ["-wal", "-shm"] {

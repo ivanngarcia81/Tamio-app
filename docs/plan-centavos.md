@@ -10,7 +10,7 @@
 | 3. La migración de la base | ✅ migración **36** (`npm run verificar-migracion-36`) |
 | 4. Las fronteras y la aritmética | ✅ 112 → 0 errores; compila, `cargo check` y build en verde |
 | 5. Pruebas antes de fundir | ✅ las cinco automatizadas · ⏳ falta la vuelta en la Mac |
-| 6. Respaldo automático antes de migrar | ⏳ **pendiente y bloqueante** |
+| 6. Respaldo automático antes de migrar | ✅ `motordb::respaldo_antes_de_migrar` (`cd harness-db && cargo run`) |
 
 **Comprobado al cerrar el paso 4:** no queda ni una división entre 100 fuera de
 `src/dinero.ts` en todo `src/`. Esa es la invariante de la que depende todo lo
@@ -46,12 +46,14 @@ migrar dé la misma cifra que la que nunca se restauró, y que la 36 **no pueda
 aplicarse dos veces** (aplicarla dos veces no daría ningún error: multiplicaría
 el libro entero por 100). La vuelta con la app abierta hay que darla en la Mac.
 
-⚠️ No se funde nada hasta que el paso 5 esté completo, y **no se publica ningún
-build con la migración 36 sin el paso 6**.
+**Lo que queda para fundir en `main`:** la vuelta en la Mac del paso 5, y que
+Apple apruebe la 1.0.
 
-> 🔴 **Y antes de abrir un build de esta rama en la Mac:** la migración corre
-> sola al abrir la app y no tiene vuelta atrás. O se hace primero el paso 6, o
-> se hace un respaldo a mano y se guarda fuera de la carpeta de la app.
+> 🔴 **Antes de abrir un build de esta rama en la Mac:** la migración corre sola
+> al arrancar. Desde el paso 6 la app se hace una copia sola justo antes, pero
+> ese archivo vive en la misma carpeta y está cifrado con la clave de esa Mac.
+> Hazte además el respaldo de Ajustes y guárdalo fuera: es el único que se puede
+> abrir en otro equipo.
 
 ---
 
@@ -184,10 +186,46 @@ pueden tocar: la app entera funcionando.
    comprobar que los totales vuelven a salir iguales (prueba 1, con el ZIP
    cifrado de verdad y los documentos).
 
-**Paso 6 — Marcha atrás.** La migración no se puede deshacer sola. Antes de
-publicar la versión que la lleve, la app tiene que **hacerse un respaldo
-automático** de la base en su carpeta de datos. Si algo sale mal en un equipo
-real, se restaura ese archivo.
+**Paso 6 — Marcha atrás.** ✅ **Hecho.** La migración no se puede deshacer sola,
+así que la app **se copia la base antes de tocarla**:
+`motordb::respaldo_antes_de_migrar()`, llamada desde `iniciar_db()` justo antes
+de `correr_migraciones()`. El archivo queda al lado de la base, como
+`tesoreria.db.antes-de-migrar-<marca>-v36`.
+
+No vale para la 36 sola: **toda migración futura hereda la red gratis.**
+
+Cuatro decisiones que no son obvias:
+
+- **Solo copia si de verdad hay algo pendiente.** En un arranque normal la
+  función no toca el disco. El coste se paga una vez por actualización con
+  esquema nuevo, que es justo cuando importa. Tampoco copia en una instalación
+  nueva: se comprueba que no se haya migrado nunca **y** que no exista ni una
+  tabla, porque el archivo ya pesa desde que se abre —activar WAL le escribe una
+  cabecera— y mirar solo el tamaño hacía una copia inútil en cada instalación.
+- **Consolida el diario (WAL) antes de copiar.** El `.db` por sí solo puede no
+  tener los últimos movimientos: están en el `-wal`. Copiarlo sin absorberlo
+  daría un respaldo al que le faltan justo los registros más recientes. Si el
+  checkpoint no termina, se copian también el `-wal` y el `-shm`.
+- **Si no cabe en el disco, NO se migra.** La app no abre y dice por qué, con la
+  frase "la base de datos NO se ha tocado". Es la decisión incómoda: cambia un
+  fallo molesto y reversible —liberar espacio y volver a abrir— por evitar uno
+  irreversible.
+- **Se guardan las tres más recientes.** Solo se crea una por actualización con
+  esquema nuevo, así que tres cubre tres versiones hacia atrás. Se ordenan por
+  la marca del nombre y no por la fecha del archivo: copiar la carpeta cambia
+  las fechas del sistema y dejaría el orden al azar.
+
+**Cómo se prueba:** `cd harness-db && cargo run`. `motordb.rs` no depende de
+Tauri a propósito, pero hasta ahora no había forma de ejecutarlo sin compilar la
+app entera —y la app entera no compila fuera de una Mac, porque arrastra WebKit
+y GTK. `harness-db/` incluye el módulo con `#[path]`, sin duplicarlo, y lo
+ejerce con SQLite de verdad. Fue el harness el que encontró que la primera
+versión respaldaba también en instalaciones nuevas.
+
+**Lo que este respaldo NO es:** no sustituye al respaldo del tesorero. Es una
+copia del archivo cifrado, con la clave del Llavero de **esa** Mac, así que
+sirve para volver atrás en el mismo equipo y no para llevársela a otro. El
+respaldo portátil sigue siendo el ZIP de Ajustes.
 
 ## 5. Riesgos
 

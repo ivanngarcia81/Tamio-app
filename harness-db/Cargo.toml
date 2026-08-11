@@ -1,0 +1,25 @@
+# Harness independiente para probar src-tauri/src/motordb.rs.
+#
+# `motordb.rs` no depende de Tauri a propósito (ver su comentario de cabecera),
+# pero hasta ahora no había forma de ejecutarlo sin compilar la app entera —y la
+# app entera no compila fuera de una Mac, porque arrastra WebKit y GTK. Este
+# crate incluye el módulo con `#[path]` y lo ejerce con SQLite de verdad.
+#
+#     cd harness-db && cargo run
+#
+# Se prueba lo que puede perder datos: el respaldo automático previo a las
+# migraciones (docs/plan-centavos.md, paso 6).
+#
+# `rusqlite` va con `bundled` a secas y no con SQLCipher: lo que se prueba aquí
+# es la lógica de archivos y de versiones de esquema, no el cifrado. Compila en
+# cualquier máquina y en segundos.
+
+[package]
+name = "harness-db"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde_json = "1"

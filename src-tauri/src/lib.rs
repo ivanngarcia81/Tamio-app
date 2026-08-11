@@ -1299,11 +1299,7 @@ fn fusionar(origen: &std::path::Path, destino: &std::path::Path) -> Result<(), S
 }
 
 fn marca_de_tiempo() -> String {
-    let s = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    s.to_string()
+    motordb::marca_de_tiempo()
 }
 
 /// Aplica el respaldo preparado. Se llama en el arranque, ANTES de abrir la
@@ -1553,6 +1549,18 @@ fn iniciar_db(app: &tauri::AppHandle) -> Result<(rusqlite::Connection, bool), St
         }
         Err(e) => return Err(e.to_string()),
     };
+    // Red de seguridad ANTES de migrar: una migración no se deshace sola. Solo
+    // copia si de verdad hay algo pendiente, así que en un arranque normal no
+    // cuesta nada. Si devuelve error, NO se migra — ver la explicación larga en
+    // motordb::respaldo_antes_de_migrar.
+    if let Some(copia) = motordb::respaldo_antes_de_migrar(
+        &conn,
+        &ruta,
+        &migraciones(),
+        espacio_libre(&carpeta),
+    )? {
+        eprintln!("respaldo previo a la migración: {}", copia.display());
+    }
     motordb::correr_migraciones(&mut conn, &migraciones())?;
     Ok((conn, restaurado))
 }
