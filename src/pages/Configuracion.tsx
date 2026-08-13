@@ -14,6 +14,7 @@ import PastorSettings, {
 } from "../components/settings/PastorSettings";
 import SignatureUploader from "../components/settings/SignatureUploader";
 import UsersSettings from "../components/settings/UsersSettings";
+import InvitarUsuario from "../components/settings/InvitarUsuario";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
 import AccentSettings, { type Acento } from "../components/settings/AccentSettings";
@@ -353,6 +354,10 @@ export default function Configuracion({
                   está desactivado en la 1.0): una tarjeta que no hace nada no
                   merece sitio. Vuelve sola cuando el login regrese en la 1.1. */}
               {esAdmin && authActivo && <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />}
+              {/* Invitar crea CUENTAS; la tarjeta de arriba administra el
+                  directorio local de personas. Van juntas porque se buscan en
+                  el mismo sitio, pero no son lo mismo y no se mezclan. */}
+              {esAdmin && authActivo && <InvitarUsuario />}
               {authActivo && SYNC_HABILITADO && <SyncSettings />}
             </div>
           </section>

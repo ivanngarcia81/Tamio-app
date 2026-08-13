@@ -59,6 +59,9 @@ const CORS = {
 const ROLES = ["tesorero", "secretaria", "administrador"] as const;
 type Rol = (typeof ROLES)[number];
 
+// Cada error lleva un `codigo` estable además del texto. La app es bilingüe y
+// no puede enseñar en inglés un mensaje que el servidor escribió en español;
+// traduce por el código y usa el texto solo si le llega uno que no conoce.
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -82,20 +85,20 @@ serve(async (req: Request) => {
 
     // ---- 1) Quién invita -------------------------------------------------
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "sin sesión" }, 401);
+    if (!authHeader) return json({ error: "sin sesión", codigo: "sin-sesion" }, 401);
     const comoUsuario = createClient(url, anon, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userErr } = await comoUsuario.auth.getUser();
     const invitador = userData?.user;
-    if (userErr || !invitador) return json({ error: "sesión inválida" }, 401);
+    if (userErr || !invitador) return json({ error: "sesión inválida", codigo: "sin-sesion" }, 401);
 
     // ---- 2) Qué se pide --------------------------------------------------
     let cuerpo: { email?: unknown; rol?: unknown; nombre?: unknown };
     try {
       cuerpo = await req.json();
     } catch {
-      return json({ error: "cuerpo inválido" }, 400);
+      return json({ error: "cuerpo inválido", codigo: "cuerpo" }, 400);
     }
 
     const email = String(cuerpo.email ?? "").trim().toLowerCase();
@@ -107,9 +110,9 @@ serve(async (req: Request) => {
     // rechazan direcciones válidas y raras, y quien se equivoque de correo lo
     // va a notar enseguida porque la invitación no llega.
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return json({ error: "correo inválido" }, 400);
+      return json({ error: "correo inválido", codigo: "correo" }, 400);
     }
-    if (!ROLES.includes(rol)) return json({ error: "rol inválido" }, 400);
+    if (!ROLES.includes(rol)) return json({ error: "rol inválido", codigo: "rol" }, 400);
 
     // ---- 3) El que invita tiene que ser administrador CON iglesia ---------
     const admin = createClient(url, service);
@@ -119,17 +122,17 @@ serve(async (req: Request) => {
     const yo = miPerfil as Perfil | null;
 
     if (!yo || yo.rol !== "administrador") {
-      return json({ error: "solo un administrador puede invitar" }, 403);
+      return json({ error: "solo un administrador puede invitar", codigo: "solo-admin" }, 403);
     }
     if (!yo.church_id) {
-      return json({ error: "tu cuenta no tiene iglesia asignada" }, 409);
+      return json({ error: "tu cuenta no tiene iglesia asignada", codigo: "sin-iglesia" }, 409);
     }
     // A partir de aquí, LA iglesia es esta y ninguna otra.
     const iglesia = yo.church_id;
 
     // Invitarse a uno mismo no hace nada y confunde el resultado.
     if (email === (invitador.email ?? "").toLowerCase()) {
-      return json({ error: "esa es tu propia cuenta" }, 409);
+      return json({ error: "esa es tu propia cuenta", codigo: "eres-tu" }, 409);
     }
 
     // ---- 4) ¿Ya existe esa cuenta? ---------------------------------------
@@ -151,7 +154,7 @@ serve(async (req: Request) => {
 
       // Regla 3: no se le roba a nadie de su congregación.
       if (perfil?.church_id && perfil.church_id !== iglesia) {
-        return json({ error: "ese correo ya pertenece a otra iglesia" }, 409);
+        return json({ error: "ese correo ya pertenece a otra iglesia", codigo: "otra-iglesia" }, 409);
       }
 
       // Ya es de esta iglesia: la "invitación" es un cambio de rol.

@@ -4,6 +4,15 @@
 
 export type Role = "tesorero" | "secretaria" | "administrador";
 
+/** Los tres roles de ACCESO, para recorrerlos en un selector.
+ *
+ *  No confundir con `ROLES_USUARIO` de `db.ts` (pastor, auditor, consejo…),
+ *  que son cargos del directorio local y **no dan acceso a nada**. Ofrecer uno
+ *  de aquellos al invitar le daría permisos de verdad a quien solo figura en
+ *  una lista; la Edge Function `invitar-usuario` rechaza los que no estén
+ *  aquí. */
+export const ROLES_ACCESO: Role[] = ["tesorero", "secretaria", "administrador"];
+
 const KEY = "tamio-rol";
 
 /** Rol inicial en modo local (sin login). Por defecto **administrador**: quien
