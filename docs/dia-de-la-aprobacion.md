@@ -2,6 +2,28 @@
 
 _Escrito el 4 de agosto de 2026, con la 1.0.8 esperando en la cola de Apple._
 
+> # ✅ PUBLICADA — 13 de agosto de 2026
+>
+> Apple aprobó la 1.0 (build 1.0.8) el 13 de agosto, quince días después del
+> envío, sin ningún rechazo. Iván le dio a **Release This Version** el mismo
+> día y **Tamio está viva en la App Store**.
+>
+> **Lo que se desbloquea hoy:** `main` deja de estar congelada. La razón del
+> congelamiento era que un rechazo obliga a corregir y volver a subir el mismo
+> día, y eso ya no puede pasar. La rama `centavos` se puede fundir en cuanto
+> pasen las cinco pruebas del paso 5 en la Mac.
+>
+> **Lo que NO se desbloquea, y ahora importa de verdad:** el candado del
+> `version.json` de `Tamio-web` sigue puesto. Antes era una precaución; ahora
+> hay iglesias instalando la 1.0.8, que **no lleva la guarda de canal**. El día
+> que ese manifiesto suba de versión, esas copias empezarían a ofrecerles
+> descargar un `.dmg`. Se levanta cuando un build CON la guarda esté publicado
+> —o sea, con la 1.1—, no antes.
+>
+> **Y una regla nueva que empieza hoy:** a partir de ahora los errores de
+> `main` le pasan a gente de verdad. Lo que entre a `main` se prueba antes,
+> aunque parezca pequeño.
+
 ## Por qué existe este documento
 
 El día que Apple apruebe la 1.0.8 van a querer hacerse cuatro o cinco cosas a

@@ -7,9 +7,14 @@ alguien la compra en tamio.church, invita a su tesorero y a su secretaria, y
 cada quien entra con su rol. Todo lo demás de esta lista existe para sostener
 eso.
 
-**Nada de esto se empieza hasta que Apple responda.** Un cambio grande en
+> **✅ Apple aprobó y Tamio se publicó el 13 de agosto de 2026.** La frase de
+> abajo era la regla mientras había un build en la cola; ya no aplica. `main`
+> está libre y la 1.1 puede empezar en cuanto la rama `centavos` pase su vuelta
+> en la Mac.
+
+~~**Nada de esto se empieza hasta que Apple responda.** Un cambio grande en
 `main` mientras hay un build en revisión es un riesgo sin ninguna prisa que
-lo justifique.
+lo justifique.~~
 
 ---
 
