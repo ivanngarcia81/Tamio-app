@@ -17,6 +17,7 @@
     "dist:appstore": "VITE_CANAL=appstore npx tauri build --bundles app --target universal-apple-darwin",
     "verificar-csp": "node scripts/verificar-csp.mjs",
     "verificar-canal": "node scripts/verificar-canal.mjs",
+    "verificar-invitacion": "node scripts/verificar-invitacion.mjs",
     "verificar-navegacion": "npx esbuild scripts/verificar-navegacion.ts --bundle --platform=node --format=esm --log-level=warning | node --input-type=module",
     "verificar-traducciones": "node scripts/verificar-traducciones.mjs"
   },

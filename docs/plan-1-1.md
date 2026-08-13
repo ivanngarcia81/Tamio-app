@@ -616,3 +616,63 @@ Anotado desde julio, sin relación con el código de la app:
   se ponen a la venta cuando haya demanda que lo pida.
 - **Tamio Kids, conciliación bancaria, Android/Windows.** Versión 2.0 —
   siguen en `docs/ideas-futuras.md`.
+
+---
+
+## Punto 2, primera pieza: la Edge Function `invitar-usuario` (13 ago 2026)
+
+Escrita y comprobada. **No toca la base local**, así que se pudo adelantar sin
+esperar a que se funda la rama `centavos`: trabaja contra la tabla `perfiles`
+de Supabase (Postgres, en el servidor), no contra el SQLite que migra la 36.
+Cero solape.
+
+**Falta desplegarla y probarla**, y eso lo hace Iván:
+
+```
+supabase functions deploy invitar-usuario
+```
+
+No necesita secretos: usa `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
+`SUPABASE_SERVICE_ROLE_KEY`, que ya existen en el proyecto.
+
+### Lo que apareció leyendo el SQL, y no se veía de otra forma
+
+**El disparador que trabaja en contra.** `sync-e1.sql:63` tiene
+`al_crear_usuario`, que al insertar en `auth.users` **le crea una iglesia nueva
+a cada cuenta**, con rol `administrador`. Está bien para el que se registra
+solo; para una invitación es exactamente lo contrario de lo que se quiere. No
+se puede evitar —es de la base— así que la función lo corrige después:
+sobrescribe el perfil con la iglesia de verdad y **borra la iglesia huérfana**
+que acaba de nacer. Sin ese barrido, cada invitación dejaría una iglesia vacía
+en la tabla para siempre.
+
+**Dos listas de roles que se parecen y no son lo mismo.** Los roles de acceso
+son tres (`tesorero | secretaria | administrador`, `src/role.ts`). El
+directorio local de personas tiene otros seis (`ROLES_USUARIO` en `db.ts`:
+pastor, auditor, consejo…), que son **descriptivos y no dan acceso a nada**.
+Aceptar uno de esos en la invitación le daría permisos a quien solo figura en
+una lista. La función solo admite los tres de acceso, y hay una prueba que lo
+vigila.
+
+### Las tres reglas, y `npm run verificar-invitacion`
+
+1. **La iglesia no viaja en la petición.** Se lee del perfil de quien invita,
+   nunca del cuerpo. Si el cliente pudiera mandarla, cualquiera con una cuenta
+   entraría en la congregación que quisiera escribiendo su identificador.
+2. **Solo un administrador invita**, comprobado contra el perfil guardado.
+3. **A nadie se le roba de su iglesia:** un correo que ya pertenece a otra se
+   rechaza en vez de mudarlo en silencio.
+
+La prueba es estática —la función corre en Deno contra Supabase y aquí no se
+puede ejecutar— pero vigila justo lo que al romperse **no da ningún error**:
+la app seguiría funcionando y solo se notaría el día que alguien entre donde no
+debe.
+
+### Lo que queda del punto 2
+
+- La pantalla de invitación en `UsersSettings`. **Ojo:** esa tarjeta hoy
+  administra el directorio LOCAL de personas (`insertUsuario`/`deleteUsuario`
+  de `db.ts`), que no son cuentas. Invitar es otra cosa y convive con eso; no
+  se mezclan.
+- Encender `LOGIN_HABILITADO` y `SYNC_HABILITADO`. Eso sí espera a que
+  `centavos` esté fundida.
