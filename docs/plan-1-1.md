@@ -27,7 +27,8 @@ Tamio se pueda comprar, y nada más.
 | 9. Guarda de canal del actualizador ✅ | 7. Integridad de documentos oficiales |
 | | 8. Avisos de Agenda en Inicio |
 | | 10. Higiene: errores con rastro |
-| | 11. Deslizar la fila en el móvil |
+| | 11. Deslizar la fila en el móvil ✅ |
+| | 12. Ideas de "Proyecto B" |
 
 Los seis de la derecha se quedan documentados aquí hasta que la 1.1 cierre;
 entonces se mueven a un `docs/plan-1-2.md` propio.
@@ -218,6 +219,103 @@ a las cinco que faltan, no por el gesto.
 *No hay conflicto con el gesto de "atrás" de iOS: ese es un arrastre hacia la
 derecha desde el borde izquierdo, y este es hacia la izquierda desde el centro
 de la fila.*
+
+### 12. Ideas traídas de "Proyecto B" (13 ago 2026)
+
+Iván tiene otro prototipo de app de iglesia y mandó capturas de su versión de
+Mac y de móvil. **Es una maqueta: no tiene backend ni motor de datos** —lo dice
+su propia pantalla de ajustes, "los cambios se guardan solamente en este
+navegador", y sus saldos dicen "de demostración"—. Él mismo lo recordó, y ese
+recordatorio es la clave para leerlo bien:
+
+> **En una maqueta, una función difícil y una fácil cuestan lo mismo: una línea
+> de texto.**
+
+Así que lo de abajo está ordenado por lo que Tamio puede **calcular de verdad**,
+no por lo bonito que se ve.
+
+#### La mejor: la campana no es un buzón, es "qué me falta por hacer"
+
+En Proyecto B, el icono de campana abre cuatro avisos que **salen de sus propios
+datos**, no de mensajes que alguien manda: dos entradas pendientes de depositar,
+una diferencia de $10 en un depósito, un acta sin firmar y dos fichas
+incompletas.
+
+Tamio tiene algo parecido pero **mucho más estrecho**: `Bandeja` son solo los
+movimientos con estado pendiente (`db.ts:665`). Los otros avisos no existen.
+
+| Aviso | ¿Tamio puede calcularlo? |
+|---|---|
+| Entradas pendientes de depositar, con su importe | **Sí, hoy.** Los datos están; es una consulta |
+| Acta pendiente de firma | **Sí.** Las actas ya tienen estados |
+| Fichas incompletas | **Sí**, en cuanto se defina qué es "incompleto" |
+| Diferencia entre lo contado y lo depositado | **No.** Ver más abajo: es una función entera |
+
+**Ensanchar la Bandeja a "todo lo que está a medias" es barato, sale de lo que ya
+hay, y es de lo poco de esa maqueta que hace a Tamio más útil y no solo más
+bonito.** Es lo primero que haría de esta lista.
+
+#### Ajustes con índice, en vez de una página larga
+
+Proyecto B pone una columna de secciones a la izquierda y muestra **una a la
+vez**. Tamio tiene las mismas seis zonas —Iglesia, Acceso, Documentos,
+Categorías, Preferencias, Zona delicada— pero apiladas en una página con veinte
+tarjetas, así que **hay que hacer scroll para saber qué existe**. Es el mismo
+problema del menú escondido: lo que no se ve, no existe, y en Ajustes duele más
+porque ahí viven cosas que se configuran una vez (el logo, la firma del pastor,
+el respaldo).
+
+Barato, porque el contenido ya está organizado: las zonas existen con su título
+y subtítulo, y las tarjetas ya son componentes sueltos en
+`src/components/settings/`. Cambia el contenedor, no el contenido. Y arregla
+Mac, iPad **y** teléfono a la vez: hoy Ajustes en el iPhone es la peor pantalla
+de la app.
+
+**Lo que NO se copia:** su botón azul de "Guardar información". Tamio guarda
+solo. Un botón de guardar es una cosa más que se puede olvidar, y en Ajustes
+olvidarlo significa que el nombre de la iglesia no sale en el estado financiero
+y no te enteras hasta que lo imprimes.
+
+#### Lo cosmético y barato
+
+- **Chips de estado sistemáticos** (Completado / Borrador / Verificado). Tamio
+  los tiene a medias —la insignia de "pendiente", los de actas—, pero no como
+  sistema.
+- **Miembros con pestañas de estado y barra de asistencia.** La tabla ya existe;
+  esto es adorno útil.
+
+#### Lo caro, y por qué se ve barato en la maqueta
+
+- **Conciliación de depósitos.** Ese "Diferencia de $10 · DEP-072" es, en Tamio,
+  una columna nueva, una migración y una pantalla: hoy se guarda **un solo
+  `monto` por depósito**, así que no sabe qué se contó y qué recibió el banco.
+  En una maqueta es una cadena de texto. Va a la 2.0, y es de las funciones que
+  de verdad piden los concilios.
+- **Cuentas y fondos designados.** En Tamio `cuenta_banco` es texto libre en cada
+  depósito y hay un solo `saldo_inicial`. Fondos para misiones o construcción no
+  se pueden llevar. También 2.0, también toca la base.
+- **Selector de periodo global** ("Año fiscal 2026 · Agosto" en la barra
+  superior). Idea buena y de las más invasivas: **todas** las consultas pasarían
+  a depender de ese periodo. En una maqueta es un desplegable que no filtra nada.
+
+#### Lo que Tamio ya tiene
+
+Conviene dejarlo escrito para no "arreglar" lo que no está roto:
+
+- **La hoja de "¿Qué desea crear?" en escritorio** sale con ⌘K desde cualquier
+  pantalla. Tamio ya tiene `CmdPalette` con ⌘K, aunque la suya es de búsqueda +
+  acciones y la de Proyecto B es solo de crear. Conviene compararlas antes de
+  tocar nada; puede que solo falte añadirle las creaciones que no estén.
+- **El calendario en rejilla, con Mes / Semana / Lista.** `Agenda.tsx` ya tiene
+  exactamente esas tres vistas —`type Vista = "mes" | "semana" | "lista" |
+  "historial"`, con su `matrizMes()`— y encima una cuarta que Proyecto B no
+  tiene, el historial. Aquí Tamio va por delante.
+
+  Lo único distinto: Proyecto B enseña el detalle del evento en un **panel
+  lateral fijo** y Tamio lo abre en un **modal** (`ActividadDetalle`). En una
+  pantalla ancha el panel gana, porque se puede saltar de un evento a otro sin
+  abrir y cerrar; en el teléfono el modal es mejor. O sea que sería un cambio
+  solo para Mac e iPad, y de los baratos.
 
 ### 10. Higiene: que los errores dejen rastro
 
