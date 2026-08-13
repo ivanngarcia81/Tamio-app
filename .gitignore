@@ -28,3 +28,9 @@ dist-ssr
 .env.local
 # Credenciales de firma de Apple — NUNCA versionar
 .env.firma
+
+# Compilado del harness de la base (harness-db/). La regla va AQUÍ y no solo
+# en harness-db/.gitignore: ese archivo vive en la rama del harness, así que al
+# cambiar de rama desaparece y sus 130 MB de artefactos quedan a la vista como
+# archivos sin seguimiento.
+harness-db/target
