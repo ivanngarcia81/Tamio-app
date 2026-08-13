@@ -234,6 +234,15 @@ recordatorio es la clave para leerlo bien:
 Así que lo de abajo está ordenado por lo que Tamio puede **calcular de verdad**,
 no por lo bonito que se ve.
 
+**Y una cosa que dijo Iván y que manda sobre todo esto:** *"si sale la versión
+2.0 en un futuro, la app no puede verse igual que la 1.0"*. Tiene razón, y ya
+está medio pagado — el gesto de deslizar, la barra inferior del teléfono, el
+híbrido del iPad y el botón de crear ya cambiaron la cara. Lo que falta de
+aspecto son las tres de abajo (Bandeja, Ajustes con índice, catálogo de
+informes). **La 2.0 no necesita otra capa de pintura: necesita las funciones
+que aquí se marcan como caras.** Una app que se ve distinta y hace lo mismo no
+justifica un número nuevo.
+
 #### La mejor: la campana no es un buzón, es "qué me falta por hacer"
 
 En Proyecto B, el icono de campana abre cuatro avisos que **salen de sus propios
@@ -314,6 +323,47 @@ Ajustes con índice.
 - **Miembros con pestañas de estado y barra de asistencia.** La tabla ya existe;
   esto es adorno útil.
 
+#### 🏆 Presupuesto — lo mejor de todo lo que mandó, y no es cáscara
+
+De las capturas del 13 ago. Proyecto B tiene una pantalla de Presupuesto con
+vista mensual y anual: barras de presupuestado contra gasto real, un resumen
+(presupuestado / gastado / disponible, "78 % del presupuesto mensual
+utilizado"), y una fila por categoría con su etiqueta —*Dentro del
+presupuesto* / *Cerca del límite*—, lo gastado, lo presupuestado, una barra y
+lo que queda. Con un botón **"Copiar año anterior"**, que es el detalle que
+lo hace usable de verdad.
+
+**Tamio no tiene nada de esto.** Cero: `presupuesto` no aparece ni una vez en
+`src-tauri/src/lib.rs`.
+
+Y es la función que más pide una iglesia después de la contabilidad básica,
+porque el ciclo es real: la asamblea aprueba un presupuesto en enero y el
+tesorero rinde cuentas contra él todo el año. Hoy en Tamio ese informe se hace
+a mano, en papel o en Excel.
+
+**Por qué la pongo por encima de la conciliación aunque las dos sean grandes:**
+el presupuesto es **aditivo**. Una tabla nueva de presupuestos por categoría y
+periodo, y nada más — no toca ni una columna de las que ya guardan dinero, así
+que no puede corromper lo que ya existe. La conciliación sí toca los depósitos.
+A igual valor, primero lo que no puede romper nada.
+
+**Dónde va:** es la candidata natural a ser **la función bandera de la 1.2**, o
+el arranque de la 2.0 si la 1.2 se queda en pulido. Lo que no es, es cáscara.
+
+#### Cierre mensual — auditabilidad, y sale barato
+
+En su barra lateral hay una sección **"Cierre mensual"** que Tamio no tiene y
+que no habíamos considerado: cerrar el periodo para que nada cambie después de
+haber emitido el estado financiero.
+
+Para una tesorería que rinde cuentas es exactamente el control que falta. Hoy
+en Tamio se puede editar un movimiento de marzo en agosto, después de que el
+estado financiero de marzo se imprimió y se entregó, **y nada avisa**. Con el
+periodo cerrado, esa edición pide desbloquear a propósito y queda registrada.
+
+Cuesta poco en comparación con lo que da: una marca de cierre por periodo y un
+freno en las escrituras. Va a la 1.2.
+
 #### Lo caro, y por qué se ve barato en la maqueta
 
 - **Conciliación de depósitos.** Ese "Diferencia de $10 · DEP-072" es, en Tamio,
@@ -324,6 +374,17 @@ Ajustes con índice.
 - **Cuentas y fondos designados.** En Tamio `cuenta_banco` es texto libre en cada
   depósito y hay un solo `saldo_inicial`. Fondos para misiones o construcción no
   se pueden llevar. También 2.0, también toca la base.
+- **El ciclo de vida de la entrada.** En sus capturas, cada entrada tiene estado
+  *Pendiente → Preparada → Incluida*, y los depósitos *Pendiente de verificación
+  → Verificado / Con diferencia → Depositado*. Tamio tiene un `estado` en los
+  movimientos, pero es de **revisión** (`pendiente | aprobado | rechazado`,
+  `db.ts:264`), no de depósito: son dos ejes distintos y hoy solo existe uno.
+
+**Estas tres son UNA sola función, no tres.** La conciliación no significa nada
+sin saber qué entradas entraron en cada depósito, y los fondos designados no
+significan nada sin que cada entrada diga a qué fondo va. Intentar una sola
+deja media función. Van juntas a la **2.0**, y son el bloque de trabajo más
+grande de toda esta lista.
 - **Selector de periodo global** ("Año fiscal 2026 · Agosto" en la barra
   superior). Idea buena y de las más invasivas: **todas** las consultas pasarían
   a depender de ese periodo. En una maqueta es un desplegable que no filtra nada.
