@@ -8,6 +8,7 @@ import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import UpdateBanner from "./components/UpdateBanner";
 import BarraInferior from "./components/BarraInferior";
+import BotonCrear from "./components/BotonCrear";
 import CarruselSecciones from "./components/CarruselSecciones";
 import HojaCrear from "./components/HojaCrear";
 import SyncPausadoBanner from "./components/SyncPausadoBanner";
@@ -478,8 +479,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         memberCount={memberCount}
         pendingCount={pendingCount}
         unreadCount={unreadCount}
-        onCrear={() => setHojaCrear(true)}
       />
+      <BotonCrear onCrear={() => setHojaCrear(true)} />
 
       {hojaCrear && (
         <HojaCrear

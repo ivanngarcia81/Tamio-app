@@ -4351,13 +4351,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* ============================================================
-   Cajón lateral (iPhone / ventanas angostas). En anchos normales
-   nada de esto aplica: la hamburguesa y el telón viven ocultos.
+   Cajón lateral: iPad VERTICAL y ventanas angostas de Mac.
+   Ya no es del iPhone —ahí manda la barra inferior— sino de la
+   franja intermedia, donde la barra lateral fija se comería un
+   tercio del ancho pero una barra de pestañas estirada sería peor.
    ============================================================ */
 .menu-hamburguesa { display: none; }
 .menu-telon { display: none; }
 
-@media (max-width: 760px) {
+@media (min-width: 601px) and (max-width: 1023px) {
   .app { grid-template-columns: 1fr; }
 
   /* Barra superior fija (estilo iOS): fondo difuminado bajo el botón ☰,
@@ -5102,7 +5104,35 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 .barra-inferior, .btn-crear, .carrusel-secciones { display: none; }
 
-@media (max-width: 760px) {
+/* El botón de crear es de TODO lo táctil, iPad incluido: crear un movimiento
+   en una tablet cuesta los mismos toques que en un teléfono. Vive fuera del
+   corte de la barra inferior justo por eso —el iPad tiene botón pero no
+   barra—. En el Mac no sale: ahí están Cmd+N y el botón de cada pantalla. */
+:root.movil .btn-crear {
+  display: inline-flex; align-items: center; justify-content: center;
+  position: fixed;
+  right: 16px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 56px; height: 56px;
+  border: none; border-radius: 50%;
+  background: var(--brand, #059669); color: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .24);
+  z-index: 101;
+  transition: transform var(--dur) ease, opacity var(--dur) ease;
+}
+:root.movil .btn-crear:active { transform: scale(.92); }
+/* Se aparta cuando hay una fila deslizada: sus botones de Editar y Eliminar
+   salen por este mismo borde, y es el único sitio de la app donde un toque
+   equivocado borra algo. */
+:root.movil .btn-crear.oculto { opacity: 0; transform: scale(.6); pointer-events: none; }
+
+/* El iPad conserva la barra lateral, así que necesita el mismo aire abajo que
+   el teléfono para que el botón no se siente encima de la última fila. */
+@media (min-width: 601px) {
+  :root.movil .content { padding-bottom: calc(56px + 32px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 600px) {
   /* La barra lateral y su cajón desaparecen del todo. No se adaptan: la
      navegación entera pasa a la barra de abajo y al carrusel. */
   .sidebar, .menu-hamburguesa, .menu-telon { display: none !important; }
@@ -5159,26 +5189,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
   }
 
-  /* Flotando SOBRE la barra y pegado al borde derecho, sin quedar centrado
-     sobre ninguna pestaña: centrado sobre una se leería como parte de esa
-     pestaña. Al borde se lee como lo que es, algo que flota sobre la página.
-     Y es la esquina que el pulgar alcanza sin recolocar el teléfono. */
-  .btn-crear {
-    display: inline-flex; align-items: center; justify-content: center;
-    position: fixed;
-    right: 16px;
-    bottom: calc(58px + 16px + env(safe-area-inset-bottom));
-    width: 56px; height: 56px;
-    border: none; border-radius: 50%;
-    background: var(--brand, #059669); color: #fff;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, .24);
-    z-index: 101;
-    transition: transform var(--dur) ease, opacity var(--dur) ease;
-  }
-  .btn-crear:active { transform: scale(.92); }
-  /* Se aparta cuando hay una fila deslizada: sus botones de Editar y Eliminar
-     salen por este mismo borde, y un toque equivocado ahí borra algo. */
-  .btn-crear.oculto { opacity: 0; transform: scale(.6); pointer-events: none; }
+  /* En el teléfono el botón sube por encima de la barra, pegado al borde
+     derecho y sin quedar centrado sobre ninguna pestaña: centrado sobre una
+     se leería como parte de esa pestaña. Al borde se lee como lo que es, algo
+     que flota sobre la página. Todo lo demás del botón está fuera de este
+     bloque, porque el iPad también lo lleva. */
+  :root.movil .btn-crear { bottom: calc(58px + 16px + env(safe-area-inset-bottom)); }
 
   .carrusel-secciones {
     display: flex;

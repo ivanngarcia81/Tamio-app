@@ -10,11 +10,16 @@ import { MemoryRouter } from "react-router-dom";
 import { es } from "../src/i18n/es";
 import BarraInferior from "../src/components/BarraInferior";
 import CarruselSecciones from "../src/components/CarruselSecciones";
+import BotonCrear from "../src/components/BotonCrear";
 import HojaCrear from "../src/components/HojaCrear";
 import type { Role } from "../src/role";
 import "../src/styles.css";
 
-document.documentElement.classList.add("movil");
+// La clase la pone main.tsx al detectar iOS. Aquí se puede quitar con `?mac`
+// para comprobar que el Mac NO recibe el botón flotante de crear.
+if (!new URLSearchParams(location.search).has("mac")) {
+  document.documentElement.classList.add("movil");
+}
 void i18n.use(initReactI18next).init({
   resources: { es: { translation: es } }, lng: "es", interpolation: { escapeValue: false },
 });
@@ -27,6 +32,12 @@ function Pantalla() {
   const [hoja, setHoja] = useState(HOJA);
   return (
     <div className="app">
+      {/* Sustitutos del sidebar y su hamburguesa: aquí no se monta el Sidebar
+          de verdad (necesita la iglesia y la sesión), pero las reglas de CSS
+          que deciden CUÁNDO se ven son las mismas, y es lo que se comprueba. */}
+      <aside className="sidebar" style={{ background: "var(--surface-2)" }} />
+      <button type="button" className="menu-hamburguesa">☰</button>
+      <div className="menu-telon" style={{ display: "none" }} />
       <main className="main">
         <div className="content">
           <div className="header" style={{ paddingLeft: 0, paddingRight: 0 }}>
@@ -61,8 +72,8 @@ function Pantalla() {
           </div>
         </div>
       </main>
-      <BarraInferior role={ROL} memberCount={104} pendingCount={3} unreadCount={2}
-                     onCrear={() => setHoja(true)} />
+      <BarraInferior role={ROL} memberCount={104} pendingCount={3} unreadCount={2} />
+      <BotonCrear onCrear={() => setHoja(true)} />
       {hoja && <HojaCrear role={ROL} onCerrar={() => setHoja(false)} onElegir={() => setHoja(false)} />}
     </div>
   );
