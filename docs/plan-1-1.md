@@ -27,6 +27,7 @@ Tamio se pueda comprar, y nada más.
 | 9. Guarda de canal del actualizador ✅ | 7. Integridad de documentos oficiales |
 | | 8. Avisos de Agenda en Inicio |
 | | 10. Higiene: errores con rastro |
+| | 11. Deslizar la fila en el móvil |
 
 Los seis de la derecha se quedan documentados aquí hasta que la 1.1 cierre;
 entonces se mueven a un `docs/plan-1-2.md` propio.
@@ -178,6 +179,45 @@ externo*. Resumen de lo que quedó:
 Lo que **no** cambia: el candado del manifiesto de `Tamio-web` sigue puesto
 hasta que un build con esta guarda esté **publicado** en las dos tiendas. Una
 app ya instalada no se arregla desde el servidor.
+
+### 11. Deslizar la fila para editar y borrar — en el móvil
+
+**Idea (Iván, 11 ago 2026),** traída de otra app suya: en el iPhone, deslizar
+una fila hacia la izquierda descubre **Editar** y **Eliminar**. Es más limpio
+que los tres puntitos, que son un objetivo pequeño y un patrón de ratón: en un
+teléfono hay que apuntar a un `···` de 20 px y luego a un menú que se abre
+encima del contenido.
+
+**Es más barato de lo que parece.** Los trece sitios que hoy tienen acciones de
+fila pasan **todos** por un único componente, `src/components/RowMenu.tsx`, con
+el mismo contrato: `onEdit`, `onDelete`, `deleteLabel`, `extraItems`. Envolver
+ese contrato en una fila deslizable lo arregla en los nueve archivos de golpe:
+
+`TxList`, `TxTable`, `DepositoTable`, `UsersSettings`, `Miembros`, `Membresía`,
+`Actas`, `Cartas`, `Servicios`.
+
+Los tres puntitos **se quedan en el escritorio**, donde además ya hay clic
+derecho (`onContextMenu` en `TxList.tsx:106`). Y el CSS ya tiene la separación
+por tamaño de pantalla lista (`.solo-escritorio`, `styles.css:4707`).
+
+**La decisión que hay que tomar antes de programar: el deslizamiento completo.**
+En la app de la que viene la idea, deslizar del todo borra. Aquí eso depende de
+si hay marcha atrás, y **solo tres de las nueve listas la tienen**:
+
+| Con "Deshacer" hoy | Sin marcha atrás |
+|---|---|
+| Movimientos (`TxList`), Miembros, Depósitos | Actas, Cartas, Membresía, Servicios, Usuarios |
+
+Borrar un acta de una asamblea con un dedo que resbala, y sin deshacer, no es
+un patrón bonito: es una pérdida. **Propuesta:** el deslizamiento descubre los
+botones en las nueve; el deslizamiento completo borra **solo donde ya existe el
+"Deshacer"**, y en el resto se queda a medio camino esperando el toque. Y si se
+quiere el gesto en todas, entonces el trabajo empieza por añadir el "Deshacer"
+a las cinco que faltan, no por el gesto.
+
+*No hay conflicto con el gesto de "atrás" de iOS: ese es un arrastre hacia la
+derecha desde el borde izquierdo, y este es hacia la izquierda desde el centro
+de la fila.*
 
 ### 10. Higiene: que los errores dejen rastro
 
