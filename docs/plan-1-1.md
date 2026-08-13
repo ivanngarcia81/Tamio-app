@@ -276,6 +276,36 @@ solo. Un botón de guardar es una cosa más que se puede olvidar, y en Ajustes
 olvidarlo significa que el nombre de la iglesia no sale en el estado financiero
 y no te enteras hasta que lo imprimes.
 
+#### Un catálogo de informes, con vista previa antes de imprimir
+
+Proyecto B tiene una pantalla "Informes de Tesorería" con dos columnas: a la
+izquierda, **la lista de los once informes que existen**; a la derecha, la
+vista previa del elegido con sus filtros (periodo, fondo, agrupar por) y los
+botones de Exportar CSV e Imprimir.
+
+En Tamio esos documentos **ya existen todos** —el motor de PDF está hecho y
+probado— pero están **repartidos por cinco sitios distintos**:
+
+```
+src/pages/Reportes.tsx              src/pages/Movimientos.tsx
+src/pages/Dashboard.tsx             src/components/MemberDetailModal.tsx
+src/pages/Actas.tsx
+```
+
+Es otra vez el mismo problema, y en el peor sitio posible: **la constancia
+anual de contribuciones vive dentro del modal de un miembro**. Un tesorero que
+no abra la ficha de alguien no sabrá nunca que Tamio la genera — y esa
+constancia es justo el papel que la iglesia entrega en enero a quien va a
+deducir sus donaciones (IRC §170(f)(8), ver `ideas-futuras.md` 6-bis).
+
+Barato en proporción a lo que da: los generadores están escritos; lo que falta
+es **una pantalla que los liste y los enseñe antes de imprimir**. Ahora mismo
+imprimir es un acto de fe: se genera el PDF y se abre en Vista Previa, y si el
+periodo estaba mal se descubre ahí.
+
+De esta lista, es lo tercero que haría, después de la Bandeja ensanchada y de
+Ajustes con índice.
+
 #### Lo cosmético y barato
 
 - **Chips de estado sistemáticos** (Completado / Borrador / Verificado). Tamio
