@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/verificar-csp.mjs && tsc && vite build",
+    "build": "node scripts/verificar-csp.mjs && tsc && vite build && node scripts/verificar-canal.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "dist": "tauri build --bundles dmg",
@@ -13,7 +13,10 @@
     "dist:universal": "tauri build --bundles dmg --target universal-apple-darwin",
     "firmar": "bash scripts/firmar-mac.sh",
     "firmar:manual": "bash scripts/firmar-manual.sh",
+    "build:appstore": "VITE_CANAL=appstore npm run build",
+    "dist:appstore": "VITE_CANAL=appstore npx tauri build --bundles app --target universal-apple-darwin",
     "verificar-csp": "node scripts/verificar-csp.mjs",
+    "verificar-canal": "node scripts/verificar-canal.mjs",
     "verificar-traducciones": "node scripts/verificar-traducciones.mjs"
   },
   "dependencies": {

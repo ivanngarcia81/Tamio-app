@@ -10,6 +10,7 @@
 // mismos campos y la nube será la autoridad.
 
 import { RUTAS_TESORERIA, RUTAS_SECRETARIA } from "./role";
+import { esAppStore } from "./canal";
 
 export type Plan = "completo" | "tesoreria" | "secretaria";
 export type EstadoSub = "activa" | "cortesia" | "vencida" | "prueba";
@@ -25,9 +26,15 @@ export const DIAS_GRACIA = 10;
  *  suscripción. Viene de VITE_URL_COMPRA en el .env; si no está configurada,
  *  los botones de "Renovar/Comprar" simplemente no se muestran (que es el
  *  caso de hoy: la tienda todavía no existe). Es de compilación, no de
- *  ejecución: cambiarla obliga a recompilar. Ver docs/guia-lemon-squeezy.md. */
-export const urlCompra: string | null =
-  (import.meta.env.VITE_URL_COMPRA as string | undefined)?.trim() || null;
+ *  ejecución: cambiarla obliga a recompilar. Ver docs/guia-lemon-squeezy.md.
+ *
+ *  En un build de tienda de Apple es `null` pase lo que pase: la regla 3.1.1
+ *  prohíbe mandar al usuario a pagar fuera. El canal manda por encima del .env
+ *  para que dejarse la variable puesta no acabe en un rechazo — ver
+ *  src/canal.ts. */
+export const urlCompra: string | null = esAppStore
+  ? null
+  : (import.meta.env.VITE_URL_COMPRA as string | undefined)?.trim() || null;
 
 /** ¿El plan incluye el área de Tesorería (finanzas)? */
 export function incluyeTesoreria(plan: string): boolean {

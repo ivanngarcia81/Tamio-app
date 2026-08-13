@@ -77,11 +77,39 @@ copias de la Mac App Store empezarían a ofrecer el .dmg.
 **`Tamio-web`** (`update.ts:17`), no el `web/version.json` de este repo, que
 no lo lee nadie.
 
-**Arreglo (1.1, mismo patrón de canal):** que `VITE_UPDATE_URL` admita un
-valor de apagado, o una bandera de build, y que el build de App Store se
-compile con el buscador de actualizaciones desactivado. Hoy un
-`VITE_UPDATE_URL` vacío NO apaga nada: el `||` de `update.ts:16` cae al
-valor por defecto.
+**✅ ARREGLADO (11 ago 2026) — `src/canal.ts`.** Hay una sola variable de
+compilación, `VITE_CANAL`, que decide las dos reglas a la vez:
+
+| Canal | Cómo se construye | Enlace de compra | Aviso de versión |
+|---|---|---|---|
+| Descarga directa (.dmg) | `npm run firmar:manual` | según `VITE_URL_COMPRA` | sí |
+| Mac App Store / iOS | `VITE_CANAL=appstore` delante | **nunca**, aunque la variable esté puesta | **no** |
+
+Una sola variable, y no un interruptor por regla, a propósito: con dos
+banderas tarde o temprano se quedan en desacuerdo y ese build llega a
+revisión.
+
+**Y lo que de verdad cierra el agujero: `npm run verificar-canal`,** que corre
+solo al final de cada `npm run build`. No mira la variable —mira el bundle ya
+construido— y falla si la dirección del manifiesto o un enlace de pago siguen
+dentro de un build de tienda. La variable dice lo que se quería construir; el
+bundle dice lo que se construyó, y es lo único que el revisor va a ver.
+
+Comprobado construyendo los dos canales de verdad, no de vista:
+
+- Canal `appstore` **con `VITE_URL_COMPRA` puesta a propósito** (el olvido
+  típico): la dirección no llega al bundle.
+- Canal `descarga`: el manifiesto sí está — un `VITE_CANAL` de más dejaría a
+  los usuarios de .dmg sin enterarse de las versiones nuevas, y eso también
+  falla la comprobación.
+- `VITE_CANAL` mal escrito (`app-store`): se para en seco. Antes un valor con
+  una errata caía en `descarga` sin avisar.
+
+*El primer intento de este arreglo dejaba la dirección del manifiesto dentro
+del build de App Store: el empaquetador no podía resolver la condición porque
+llevaba un `?.trim()` en medio, y conservaba las dos ramas. Lo cazó el
+verificador mirando el bundle. Está explicado en el comentario de `canal.ts`
+para que nadie vuelva a "limpiar" esa línea.*
 
 ### 🔒 CANDADO: no subir el manifiesto de `Tamio-web`
 
@@ -95,7 +123,9 @@ aviso aparecería también en las copias de la Mac App Store, ofreciendo un
 `.dmg` de GitHub.
 
 - [ ] **NO tocar `version.json` de `Tamio-web`** hasta que un build con la
-      guarda de canal esté publicado en las dos tiendas.
+      guarda de canal esté **publicado** en las dos tiendas. El código ya está
+      (11 ago 2026); el candado no se levanta hasta que las copias instaladas
+      lo lleven, porque una app ya instalada no se arregla desde el servidor.
 - [ ] Antes de tocarlo, confirmar a mano en qué versión está: la nota de
       `docs/ideas-futuras.md` (28 jul) dice `1.0.0`, pero **eso no se ha
       verificado desde entonces**.

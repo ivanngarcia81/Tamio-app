@@ -24,7 +24,7 @@ Tamio se pueda comprar, y nada más.
 | 1. Centavos enteros | 4. Exportaciones que faltan |
 | 2. Login + roles reales | 5. Asistencia = lista + contadores |
 | 3. Encender la tienda | 6. Panel de trabajo de Secretaría |
-| 9. Guarda de canal del actualizador | 7. Integridad de documentos oficiales |
+| 9. Guarda de canal del actualizador ✅ | 7. Integridad de documentos oficiales |
 | | 8. Avisos de Agenda en Inicio |
 | | 10. Higiene: errores con rastro |
 
@@ -157,15 +157,27 @@ El dato ya existe y ya está calculado (`Agenda.tsx:312`); solo se muestra en
 Agenda. Enseñarlo en Inicio es lo que convierte el letrero en algo útil, sin
 plugin de notificaciones ni servidor. Va con el punto 6 (panel de Secretaría).
 
-### 9. Apagar el buscador de actualizaciones en los builds de App Store
+### 9. Apagar el buscador de actualizaciones en los builds de App Store — ✅ HECHO (11 ago 2026)
 
-Ver `docs/checklist-app-store.md` → *El otro enlace externo*.
-`UpdateBanner.tsx:53` manda a descargar un `.dmg` de GitHub; `update.ts:49`
-ya lo corta en iOS pero **no en macOS**, así que un build de la Mac App
-Store lo mostraría. Hoy no dispara porque el manifiesto está en `1.0.0`, que
-es una barrera de datos, no de build. Mismo patrón de canal que
-`VITE_URL_COMPRA`: que `VITE_UPDATE_URL` admita un valor de apagado (hoy un
-valor vacío cae al por defecto por el `||`).
+El detalle completo está en `docs/checklist-app-store.md` → *El otro enlace
+externo*. Resumen de lo que quedó:
+
+- **`src/canal.ts` (nuevo).** Una sola variable de compilación, `VITE_CANAL`,
+  decide las dos reglas de Apple a la vez: el enlace de compra (3.1.1) y el
+  aviso de versión nueva (2.5.2). Una variable y no un interruptor por regla,
+  porque con dos banderas tarde o temprano se quedan en desacuerdo y ese build
+  llega a revisión.
+- **`npm run verificar-canal`,** que corre solo al final de cada
+  `npm run build`. Mira el **bundle ya construido**, no la variable: la
+  variable dice lo que se quería construir, el bundle dice lo que se
+  construyó, y es lo único que el revisor va a ver.
+- Comprobado construyendo los dos canales de verdad, incluido el caso del
+  olvido típico —canal `appstore` con `VITE_URL_COMPRA` puesta— y el de la
+  errata en el nombre del canal.
+
+Lo que **no** cambia: el candado del manifiesto de `Tamio-web` sigue puesto
+hasta que un build con esta guarda esté **publicado** en las dos tiendas. Una
+app ya instalada no se arregla desde el servidor.
 
 ### 10. Higiene: que los errores dejen rastro
 

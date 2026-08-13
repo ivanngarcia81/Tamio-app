@@ -9,12 +9,7 @@
 
 import { getVersion } from "@tauri-apps/api/app";
 import { esMovil } from "../movil";
-
-/** URL del manifiesto de versión. Se puede sobreescribir con VITE_UPDATE_URL;
- *  por defecto apunta al version.json publicado junto a la web de Tamio. */
-const UPDATE_URL =
-  import.meta.env.VITE_UPDATE_URL ||
-  "https://ivanngarcia81.github.io/Tamio-web/version.json";
+import { URL_ACTUALIZACION } from "../canal";
 
 export interface ActualizacionDisponible {
   /** Versión nueva publicada (p. ej. "1.1.0"). */
@@ -47,10 +42,14 @@ export async function buscarActualizacion(): Promise<ActualizacionDisponible | n
   // de Mac que en iOS ni siquiera se puede abrir. Se corta aquí, antes de la
   // petición, para no consultar siquiera el manifiesto desde el teléfono.
   if (esMovil()) return null;
+  // Y en la MAC App Store `esMovil()` es false, así que la línea de arriba no
+  // protegía nada: ese build se compila con el canal `appstore` y aquí no hay
+  // manifiesto que consultar. Ver src/canal.ts.
+  if (URL_ACTUALIZACION === null) return null;
   try {
     const actual = await getVersion();
     // Cache-buster para no quedarnos con una copia vieja del CDN.
-    const resp = await fetch(`${UPDATE_URL}?t=${Date.now()}`, { cache: "no-store" });
+    const resp = await fetch(`${URL_ACTUALIZACION}?t=${Date.now()}`, { cache: "no-store" });
     if (!resp.ok) return null;
     const data = (await resp.json()) as Partial<ActualizacionDisponible>;
     if (!data.version || !data.url) return null;
