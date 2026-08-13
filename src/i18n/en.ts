@@ -809,6 +809,7 @@ export const en: Resources = {
     eventoSub: "Agenda and calendar",
   },
   nav: {
+    ajustes: "Settings",
     inicio: "Home",
     grupoTesoreria: "Treasury",
     grupoSecretaria: "Secretary",

@@ -803,6 +803,7 @@ export const es = {
     eventoSub: "Agenda y calendario",
   },
   nav: {
+    ajustes: "Ajustes",
     inicio: "Inicio",
     grupoTesoreria: "Tesorería",
     grupoSecretaria: "Secretaría",

@@ -24,6 +24,10 @@ export interface Destino {
   ruta: string;
   /** Clave de i18n de su nombre. */
   clave: string;
+  /** Nombre alternativo para la barra inferior, donde cada pestaña tiene un
+   *  quinto de la pantalla. "Configuración" salía como "Configuraci…"; una
+   *  palabra cortada a la mitad es peor que una palabra más corta. */
+  claveCorta?: string;
   contador?: Contador;
 }
 
@@ -70,7 +74,7 @@ export const AREAS: Area[] = [
 export const INICIO: Destino = { ruta: "/", clave: "nav.inicio" };
 export const MENSAJES: Destino = { ruta: "/inbox", clave: "nav.inbox", contador: "noLeidos" };
 export const AYUDA: Destino = { ruta: "/ayuda", clave: "nav.ayuda" };
-export const AJUSTES: Destino = { ruta: "/configuracion", clave: "nav.configuracion" };
+export const AJUSTES: Destino = { ruta: "/configuracion", clave: "nav.configuracion", claveCorta: "nav.ajustes" };
 
 /** Las secciones de un área que este rol puede ver. Vacío = el área entera se
  *  le oculta. */

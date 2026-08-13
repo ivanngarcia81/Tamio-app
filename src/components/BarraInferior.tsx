@@ -62,8 +62,13 @@ export default function BarraInferior({
   return (
     <>
       <nav className="barra-inferior" aria-label={t("nav.abrirMenu")}>
-        {ranuras.map(({ destino }) => {
-          const areaDelDestino = areaDeRuta(destino.ruta);
+        {ranuras.map(({ destino, atajo }) => {
+          // Una pestaña de ÁREA se enciende en todas sus secciones. Un ATAJO
+          // no: apunta a una pantalla concreta, y como esa pantalla pertenece
+          // a un área, heredar la regla del área lo dejaba encendido a la vez
+          // que la pestaña del área —dos pestañas verdes al mismo tiempo, y
+          // ninguna de las dos diciendo dónde estás—.
+          const areaDelDestino = atajo ? null : areaDeRuta(destino.ruta);
           const activo =
             pathname === destino.ruta ||
             (areaDelDestino !== null && areaDelDestino.id === areaActual?.id);
@@ -75,7 +80,7 @@ export default function BarraInferior({
               className={`barra-item${activo ? " activo" : ""}`}
             >
               <span className="barra-punto" aria-hidden />
-              <span className="barra-label">{t(destino.clave)}</span>
+              <span className="barra-label">{t(destino.claveCorta ?? destino.clave)}</span>
               {n > 0 && <span className="barra-badge">{n > 99 ? "99+" : n}</span>}
             </NavLink>
           );
