@@ -42,6 +42,25 @@ const ZONA_MUERTA = 10;
  *  nueve listas distintas que no tienen ningún ancestro en común. */
 let cerrarLaAbierta: (() => void) | null = null;
 
+/** Aviso de que alguna fila se abrió o se cerró. Lo escucha la barra inferior
+ *  para apartar el botón de crear: ese botón vive en la esquina inferior
+ *  derecha y los botones de Editar y Eliminar salen por ese mismo borde. De
+ *  todos los sitios de la app donde se puede tocar sin querer, este es el
+ *  único en el que el toque equivocado borra algo. */
+export const EVENTO_FILA = "tamio:fila-deslizada";
+
+/** ¿Hay alguna fila abierta o arrastrándose ahora mismo? Se pregunta en vez de
+ *  mandarlo en el evento: al abrir una fila se cierra la anterior, así que
+ *  llegan dos avisos seguidos y el orden en que se procesan no está
+ *  garantizado. Preguntando, la respuesta siempre es la de este instante. */
+export function hayFilaAbierta(): boolean {
+  return cerrarLaAbierta !== null;
+}
+
+function avisar(): void {
+  try { window.dispatchEvent(new Event(EVENTO_FILA)); } catch { /* SSR o pruebas */ }
+}
+
 export interface EstadoDeslizable {
   /** Cuánto está corrida la fila hacia la izquierda, en píxeles. */
   x: number;
@@ -89,12 +108,15 @@ export function useFilaDeslizable(
     setX(0);
     setArrastrando(false);
     if (cerrarLaAbierta === cerrar) cerrarLaAbierta = null;
+    avisar();
   }, []);
 
   // Al desmontarse la fila (borrada, filtrada, cambio de mes) no puede quedar
   // apuntada como "la abierta": la siguiente que se abriera llamaría a una
   // función de un componente que ya no existe.
-  useEffect(() => () => { if (cerrarLaAbierta === cerrar) cerrarLaAbierta = null; }, [cerrar]);
+  useEffect(() => () => {
+    if (cerrarLaAbierta === cerrar) { cerrarLaAbierta = null; avisar(); }
+  }, [cerrar]);
 
   const ref = useCallback((el: HTMLElement | null) => {
     fila.current = el;
@@ -126,6 +148,7 @@ export function useFilaDeslizable(
         if (decidido.current === "gesto") {
           if (cerrarLaAbierta && cerrarLaAbierta !== cerrar) cerrarLaAbierta();
           cerrarLaAbierta = cerrar;
+          avisar();
           setArrastrando(true);
         }
       }

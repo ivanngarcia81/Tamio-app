@@ -5093,3 +5093,185 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Hueco de los tres puntitos cuando el gesto los sustituye: la columna de la
    rejilla sigue existiendo, así que la fila no recoloca nada. */
 .more.sin-puntos { pointer-events: none; }
+
+/* ============================================================
+   Cáscara móvil: barra inferior, carrusel de secciones y el
+   botón de crear. En el teléfono SUSTITUYEN a la barra lateral;
+   no conviven con ella.
+   ============================================================ */
+
+.barra-inferior, .btn-crear, .carrusel-secciones { display: none; }
+
+@media (max-width: 760px) {
+  /* La barra lateral y su cajón desaparecen del todo. No se adaptan: la
+     navegación entera pasa a la barra de abajo y al carrusel. */
+  .sidebar, .menu-hamburguesa, .menu-telon { display: none !important; }
+  .app::before { display: none; }
+  .app { grid-template-columns: 1fr; }
+
+  /* Sitio para la barra (58px) más la franja del home indicator. */
+  .content { padding-bottom: calc(58px + 26px + env(safe-area-inset-bottom)); }
+
+  .barra-inferior {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+  }
+  .barra-item {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+    min-height: 58px;
+    padding: 6px 2px;
+    text-decoration: none;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    /* Cabe "Reporte de miembros" en un quinto de 390px solo si se corta. */
+    overflow: hidden;
+  }
+  .barra-item .barra-label {
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .barra-punto {
+    width: 20px; height: 3px; border-radius: 999px;
+    background: transparent;
+    transition: background-color var(--dur) ease;
+  }
+  .barra-item.activo { color: var(--brand, #059669); }
+  .barra-item.activo .barra-punto { background: currentColor; }
+  .barra-item:active { opacity: .6; }
+  .barra-badge {
+    position: absolute;
+    top: 4px; left: 50%; margin-left: 6px;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 999px;
+    background: var(--neg, #b91c1c); color: #fff;
+    font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+  }
+
+  /* Flotando SOBRE la barra y pegado al borde derecho, sin quedar centrado
+     sobre ninguna pestaña: centrado sobre una se leería como parte de esa
+     pestaña. Al borde se lee como lo que es, algo que flota sobre la página.
+     Y es la esquina que el pulgar alcanza sin recolocar el teléfono. */
+  .btn-crear {
+    display: inline-flex; align-items: center; justify-content: center;
+    position: fixed;
+    right: 16px;
+    bottom: calc(58px + 16px + env(safe-area-inset-bottom));
+    width: 56px; height: 56px;
+    border: none; border-radius: 50%;
+    background: var(--brand, #059669); color: #fff;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .24);
+    z-index: 101;
+    transition: transform var(--dur) ease, opacity var(--dur) ease;
+  }
+  .btn-crear:active { transform: scale(.92); }
+  /* Se aparta cuando hay una fila deslizada: sus botones de Editar y Eliminar
+     salen por este mismo borde, y un toque equivocado ahí borra algo. */
+  .btn-crear.oculto { opacity: 0; transform: scale(.6); pointer-events: none; }
+
+  .carrusel-secciones {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 10px 20px;
+    margin: 0 -20px 4px;
+    scroll-padding-inline: 20px;
+  }
+  .carrusel-secciones::-webkit-scrollbar { display: none; }
+  .carrusel-item {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: 38px;
+    padding: 0 16px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: var(--fs-body); font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .carrusel-item.activo {
+    background: var(--brand, #059669);
+    border-color: var(--brand, #059669);
+    color: #fff;
+  }
+  .carrusel-badge {
+    min-width: 18px; padding: 0 5px;
+    border-radius: 999px;
+    background: var(--surface-2); color: var(--text-2);
+    font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+  }
+  .carrusel-item.activo .carrusel-badge {
+    background: rgba(255, 255, 255, .22); color: #fff;
+  }
+}
+
+/* La hoja de "¿Qué desea crear?" */
+.hoja-telon {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(10, 12, 11, .42);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.hoja-crear {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, .26);
+}
+.hoja-agarre {
+  display: block; width: 40px; height: 4px; margin: 4px auto 14px;
+  border-radius: 999px; background: var(--line);
+}
+.hoja-kicker {
+  font-size: var(--fs-caption); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--brand, #059669);
+}
+.hoja-titulo { font-size: var(--fs-section-title); margin: 4px 0 16px; }
+.hoja-rejilla {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+}
+.hoja-tarjeta {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 14px;
+  min-height: 104px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+  font-family: inherit; text-align: left; cursor: pointer;
+}
+.hoja-tarjeta:active { background: var(--line-soft); }
+.hoja-icono {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; margin-bottom: 8px;
+  border-radius: 11px;
+  background: var(--surface); color: var(--brand, #059669);
+}
+.hoja-tarjeta-titulo { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
+.hoja-tarjeta-sub { font-size: var(--fs-caption); color: var(--text-3); line-height: 1.35; }
+.hoja-cerrar {
+  position: absolute; top: 14px; right: 16px;
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--surface); color: var(--text-2); cursor: pointer;
+}

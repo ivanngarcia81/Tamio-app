@@ -7,6 +7,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import UpdateBanner from "./components/UpdateBanner";
+import BarraInferior from "./components/BarraInferior";
+import CarruselSecciones from "./components/CarruselSecciones";
+import HojaCrear from "./components/HojaCrear";
 import SyncPausadoBanner from "./components/SyncPausadoBanner";
 import CmdPalette from "./components/CmdPalette";
 import ToastHost from "./components/ToastHost";
@@ -110,6 +113,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [hojaCrear, setHojaCrear] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [rolManual, setRolManual] = useState<Role>(initialRole);
   const [showWelcome, setShowWelcome] = useState(() => esPrimerArranque(church));
@@ -326,6 +330,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         <UpdateBanner />
         <SyncPausadoBanner />
         {authHabilitado && <SubBanner church={church} />}
+        <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} />
         <Routes>
           <Route
             path="/"
@@ -467,6 +472,38 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           />
         </Routes>
       </main>
+
+      <BarraInferior
+        role={role}
+        memberCount={memberCount}
+        pendingCount={pendingCount}
+        unreadCount={unreadCount}
+        onCrear={() => setHojaCrear(true)}
+      />
+
+      {hojaCrear && (
+        <HojaCrear
+          role={role}
+          onCerrar={() => setHojaCrear(false)}
+          onElegir={(id) => {
+            setHojaCrear(false);
+            // Ingresos y gastos abren su modal desde aquí: son los dos que se
+            // registran cada semana y merecen los dos toques prometidos. Los
+            // demás llevan a su pantalla, donde está su propio botón de crear
+            // -un primer paso honesto, y sin tocar seis páginas-.
+            if (id === "ingreso" || id === "gasto") {
+              setModalMode({ kind: "create", tab: id });
+              return;
+            }
+            const rutas: Record<string, string> = {
+              deposito: "/depositos", miembro: "/membresia", servicio: "/servicios",
+              acta: "/actas", carta: "/cartas", evento: "/agenda",
+            };
+            const r = rutas[id];
+            if (r) navigate(r);
+          }}
+        />
+      )}
 
       {modalMode && (
         <NewRecordModal
