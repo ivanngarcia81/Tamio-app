@@ -247,7 +247,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
               const stat = stats[m.id];
               return (
                 <div
-                  className="tr"
+                  className="tr" data-fila
                   key={m.id}
                   style={{ gridTemplateColumns: cols, cursor: "pointer" }}
                   onClick={() => setDetalle(m)}

@@ -58,9 +58,15 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
     return items;
   }
 
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    const borrado = pendingDelete;
+  /** El diálogo confirma; el borrado real lo hace borrarConDeshacer. */
+  function confirmDelete() {
+    if (pendingDelete) void borrarConDeshacer(pendingDelete);
+  }
+
+  /** Borra ya, con "Deshacer". Lo llaman el diálogo y el deslizamiento
+   *  completo de la fila en el móvil; el gesto no pasa por el diálogo a
+   *  propósito (ver `onBorrarDirecto` en RowMenu). */
+  async function borrarConDeshacer(borrado: Tx) {
     await deleteTx(borrado.id, borrado.church_id);
     setPendingDelete(null);
     onChanged();
@@ -103,7 +109,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                   const quien =
                     tx.member_nombre ?? tx.beneficiario ?? tx.detalle ?? tx.subcategoria ?? "";
                   return (
-                    <div className="tx-row" key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
+                    <div className="tx-row" data-fila key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
                       {/* La hora es opcional al registrar, así que hay filas
                           guardadas solo como YYYY-MM-DD. Sin nada que pintar, la
                           columna quedaba en blanco y la fila parecía a medio
@@ -173,6 +179,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         <span className="cur">{tx.moneda}</span>
                       </span>
                       <RowMenu
+                        onBorrarDirecto={() => void borrarConDeshacer(tx)}
                         onEdit={() => onEdit(tx)}
                         onDelete={() => setPendingDelete(tx)}
                         extraItems={tx.comprobante_path

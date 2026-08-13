@@ -155,7 +155,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
             </div>
             {pagina.map((a) => (
               <div
-                className="tr"
+                className="tr" data-fila
                 key={a.id}
                 style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
                 onClick={() => setModal({ open: true, acta: a })}

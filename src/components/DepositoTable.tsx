@@ -21,9 +21,13 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
   const [pendingDelete, setPendingDelete] = useState<Deposito | null>(null);
   const { abrirMenu, menu } = useContextMenu();
 
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    const borrado = pendingDelete;
+  function confirmDelete() {
+    if (pendingDelete) void borrarConDeshacer(pendingDelete);
+  }
+
+  /** Borra ya, con "Deshacer". Lo llaman el diálogo y el deslizamiento completo
+   *  de la fila en el móvil (ver `onBorrarDirecto` en RowMenu). */
+  async function borrarConDeshacer(borrado: Deposito) {
     await deleteDeposito(borrado.id, borrado.church_id);
     setPendingDelete(null);
     onChanged();
@@ -51,7 +55,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
         </div>
         {depositos.map((dep) => (
           <div
-            className="tr"
+            className="tr" data-fila
             key={dep.id}
             style={{ gridTemplateColumns: COLS }}
             onContextMenu={(e) =>
@@ -98,7 +102,11 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
                   <IconEdit size={13} strokeWidth={2} />
                 </span>
               </span>
-              <RowMenu onEdit={() => onEdit(dep)} onDelete={() => setPendingDelete(dep)} />
+              <RowMenu
+                onEdit={() => onEdit(dep)}
+                onDelete={() => setPendingDelete(dep)}
+                onBorrarDirecto={() => void borrarConDeshacer(dep)}
+              />
             </div>
           </div>
         ))}

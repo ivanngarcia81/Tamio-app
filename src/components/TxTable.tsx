@@ -105,7 +105,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           );
 
           return (
-            <div className="tr" key={tx.id} style={{ gridTemplateColumns: cols }} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
+            <div className="tr" data-fila key={tx.id} style={{ gridTemplateColumns: cols }} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
               {celdaFecha}
               {celdaConcepto}
               {celdaCategoria}

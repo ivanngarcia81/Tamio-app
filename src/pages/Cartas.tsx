@@ -595,7 +595,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   }
                   return (
                     <div
-                      className="tr"
+                      className="tr" data-fila
                       key={s.id}
                       style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
                       onClick={() => setSolicitudModal({ open: true, solicitud: s })}
@@ -664,7 +664,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 </div>
                 {trasladosSalida.map((s) => (
                   <div
-                    className="tr"
+                    className="tr" data-fila
                     key={s.id}
                     style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
                     onClick={() => setTsModal({ open: true, traslado: s })}
@@ -721,7 +721,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 </div>
                 {trasladosEntrada.map((s) => (
                   <div
-                    className="tr"
+                    className="tr" data-fila
                     key={s.id}
                     style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
                     onClick={() => setTeModal({ open: true, traslado: s })}
@@ -769,7 +769,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </div>
               {plantillas.map((p) => (
                 <div
-                  className="tr"
+                  className="tr" data-fila
                   key={p.id}
                   style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px", cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
                   onClick={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
@@ -853,7 +853,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 </div>
                 {pagina.map((c) => (
                   <div
-                    className="tr"
+                    className="tr" data-fila
                     key={c.id}
                     style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
                     onClick={() => abrirCarta(c)}

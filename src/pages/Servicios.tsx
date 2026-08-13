@@ -187,7 +187,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             </div>
             {pagina.map((s) => (
               <div
-                className="tr"
+                className="tr" data-fila
                 key={s.id}
                 style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
                 onClick={() => setModal({ open: true, servicio: s })}

@@ -221,7 +221,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             </div>
             {pagina.map((m, i) => (
               <div
-                className="tr"
+                className="tr" data-fila
                 key={m.id}
                 style={{ gridTemplateColumns: COLS, cursor: "pointer", opacity: m.activo === 1 ? 1 : 0.72 }}
                 onClick={() => setFicha(m)}

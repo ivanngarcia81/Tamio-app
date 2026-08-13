@@ -92,7 +92,7 @@ export default function UsersSettings({ church, usuarios, onChanged }: Props) {
             <div className="th"></div>
           </div>
           {usuarios.map((u) => (
-            <div className="tr" key={u.id} style={{ gridTemplateColumns: COLS }}>
+            <div className="tr" data-fila key={u.id} style={{ gridTemplateColumns: COLS }}>
               <div className="td">
                 <div className="truncate" style={{ fontWeight: 600 }} title={u.nombre}>{u.nombre}</div>
               </div>
