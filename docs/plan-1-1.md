@@ -80,9 +80,15 @@ se una a la MISMA iglesia con otro rol sin tocar Supabase a mano.
 
 ### 3. Encender la tienda — *no depende de Apple; se puede empezar hoy*
 
-El webhook ya está escrito y adaptado a Lemon Squeezy, **pero escrito no es
+> **✅ Corrección (13 ago 2026): el webhook SÍ está desplegado.** Se comprobó
+> contra el proyecto `hkpbkpojeierxqtbmagh`: `pago-webhook` está **activo, en su
+> versión 7**, con `verify_jwt: false`, que es lo correcto para un webhook
+> —quien llama es Lemon Squeezy, no un usuario con sesión—. El párrafo de abajo
+> decía lo contrario porque desde el repositorio no había forma de saberlo.
+
+~~El webhook ya está escrito y adaptado a Lemon Squeezy, **pero escrito no es
 desplegado**: el código vive en `supabase/functions/pago-webhook/` y nada en
-el repositorio demuestra que esté corriendo. La guía paso a paso está en
+el repositorio demuestra que esté corriendo.~~ La guía paso a paso está en
 `docs/guia-lemon-squeezy.md`, con las Fases 1–4 en modo de prueba.
 
 - Producto único "Tamio", **$23.99/mes** (ver `docs/planes.md` → Precio).
@@ -702,17 +708,46 @@ un solo uso no necesita otra dependencia.
 - **El token se borra de la barra de direcciones** en cuanto se lee. No tiene
   por qué quedarse en el historial del navegador de nadie.
 
-**Para publicarla hacen falta tres cosas a mano:**
+**Las claves ya están puestas** (13 ago): proyecto `hkpbkpojeierxqtbmagh`. El
+anon key es **público por diseño** —lo que protege los datos es la política RLS
+de cada tabla, no el secreto de la clave, y esta misma clave ya viaja dentro del
+binario que está en la App Store—. La `service_role` no se pone ahí nunca.
 
-1. Rellenar `SUPABASE_URL` y `SUPABASE_ANON` arriba del `<script>`. El anon key
-   es público y seguro en el cliente —es el mismo que ya viaja dentro de la
-   app—; la `service_role` no se pone ahí nunca.
-2. **Copiarla a la rama que sirve Pages.** tamio.church se sirve desde
+**Quedan dos cosas a mano:**
+
+1. **Copiarla a la rama que sirve Pages.** tamio.church se sirve desde
    `claude/hello-9v3atw`, no desde `main`, así que el archivo en `main` no la
    pone en línea por sí solo.
-3. En Supabase → Authentication → URL Configuration, la **Site URL** tiene que
+2. En Supabase → Authentication → URL Configuration, la **Site URL** tiene que
    apuntar a `https://tamio.church/invitacion.html`.
 
 Comprobada con Playwright: sin token enseña "este enlace no es válido"; con
 token deja escribir y valida largo y coincidencia; el token desaparece de la
 dirección; y en un navegador en inglés sale en inglés.
+
+---
+
+## Estado real del proyecto de Supabase (comprobado el 13 ago 2026)
+
+Se leyó el proyecto directamente, en vez de deducirlo del repositorio. Proyecto
+de Tamio: **`hkpbkpojeierxqtbmagh`** (`https://hkpbkpojeierxqtbmagh.supabase.co`).
+Hay una segunda cuenta, "Jubileo app", que **no es esta** — conviene tenerlo
+escrito para no desplegar en la equivocada.
+
+**El esquema ya está aplicado.** Las dieciséis tablas existen —`perfiles`,
+`iglesias`, `transactions`, `actas`, `cartas`, `servicios`, `agenda`…— y
+**todas con RLS activado**. Todas a cero filas, que es lo esperado con la
+sincronización apagada.
+
+**Funciones desplegadas y activas:**
+
+| Función | Versión | `verify_jwt` |
+|---|---|---|
+| `redactar-ia` | 13 | sí |
+| `pago-webhook` | 7 | **no** — correcto: quien llama es Lemon Squeezy |
+| `borrar-cuenta` | 1 | sí |
+| `invitar-usuario` | **1 (13 ago)** | sí |
+
+O sea que de los pasos que quedaban en Supabase, **el SQL ya estaba hecho y la
+función ya está desplegada**. Lo único que sigue pendiente allí es la *Site
+URL*, que es un ajuste del panel.

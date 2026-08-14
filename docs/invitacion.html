@@ -18,9 +18,11 @@
   contraseña, y decirle que abra Tamio. No guarda nada ni conoce ningún dato de
   la iglesia.
 
-  ── ANTES DE PUBLICARLA hay que rellenar las dos constantes de abajo ──
-  El `anon key` es público y seguro en el cliente: es el mismo que ya viaja
-  dentro de la app. La `service_role` NO se pone aquí nunca.
+  Las dos constantes de abajo ya están puestas (proyecto hkpbkpoje…, 13 ago).
+  El `anon key` es PÚBLICO por diseño: protege los datos la política RLS de
+  cada tabla, no el secreto de la clave, y esta misma clave ya viaja dentro
+  del binario de la app que está en la App Store. La `service_role` NO se
+  pone aquí nunca.
 
   Y ojo con dónde vive: GitHub Pages sirve tamio.church desde la rama
   `claude/hello-9v3atw`, no desde `main`. Copiar este archivo allí es lo que la
@@ -89,9 +91,9 @@
 </div>
 
 <script>
-// ─── RELLENAR ANTES DE PUBLICAR ──────────────────────────────────────────────
-const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-const SUPABASE_ANON = "eyJ...tu-anon-key...";
+// ─── Proyecto de Tamio (puestas el 13 ago 2026) ──────────────────────────────
+const SUPABASE_URL = "https://hkpbkpojeierxqtbmagh.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcGJrcG9qZWllcnhxdGJtYWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNjE0NzUsImV4cCI6MjA5OTYzNzQ3NX0.z0SGP_XB16wYNFVygqZ8WY2Xev4bfd2J5hR1-2edcso";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Traducción mínima. La app es bilingüe y el invitado puede no hablar español;
