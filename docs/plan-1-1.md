@@ -676,3 +676,43 @@ debe.
   se mezclan.
 - Encender `LOGIN_HABILITADO` y `SYNC_HABILITADO`. Eso sí espera a que
   `centavos` esté fundida.
+
+### La página de aterrizaje de la invitación (13 ago 2026)
+
+`docs/invitacion.html`. Existe porque al preparar el despliegue apareció que
+**la invitación manda un correo con un enlace, y ese enlace no iba a ninguna
+parte**: Supabase manda al invitado a la *Site URL* del proyecto, y en
+tamio.church solo había cuatro páginas —inicio, privacidad, términos y
+reembolsos—. La función habría funcionado, el correo habría salido, y el
+invitado habría pinchado y aterrizado en la nada, sin que nada pareciera roto
+por nuestro lado.
+
+Recibe el token, deja poner una contraseña y le dice que abra Tamio. **No
+guarda nada** ni conoce ningún dato de la iglesia, y usa la API de auth
+directamente en vez de cargar `supabase-js` de un CDN: una página estática de
+un solo uso no necesita otra dependencia.
+
+**Dos detalles que no se ven y hacen falta:**
+
+- **Admite las dos formas del enlace.** Supabase manda la invitación en el
+  fragmento (`#access_token=…`) o en la consulta (`?token_hash=…`, que hay que
+  canjear en `/auth/v1/verify`) según cómo esté configurado el proyecto, y no
+  se puede saber cuál de antemano. Soportar solo una habría funcionado en
+  pruebas y fallado en producción —o al revés— sin ninguna pista de por qué.
+- **El token se borra de la barra de direcciones** en cuanto se lee. No tiene
+  por qué quedarse en el historial del navegador de nadie.
+
+**Para publicarla hacen falta tres cosas a mano:**
+
+1. Rellenar `SUPABASE_URL` y `SUPABASE_ANON` arriba del `<script>`. El anon key
+   es público y seguro en el cliente —es el mismo que ya viaja dentro de la
+   app—; la `service_role` no se pone ahí nunca.
+2. **Copiarla a la rama que sirve Pages.** tamio.church se sirve desde
+   `claude/hello-9v3atw`, no desde `main`, así que el archivo en `main` no la
+   pone en línea por sí solo.
+3. En Supabase → Authentication → URL Configuration, la **Site URL** tiene que
+   apuntar a `https://tamio.church/invitacion.html`.
+
+Comprobada con Playwright: sin token enseña "este enlace no es válido"; con
+token deja escribir y valida largo y coincidencia; el token desaparece de la
+dirección; y en un navegador en inglés sale en inglés.
