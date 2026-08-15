@@ -5221,7 +5221,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      correctas y las largas no, que fue justo el síntoma.
      `.header` pasa a un valor fijo para no sumar el hueco dos veces. */
   .app { padding-top: env(safe-area-inset-top); }
+  /* `.header` y `.content` traen el hueco de la muesca desde la base móvil
+     (:root.movil, para el iPad); aquí ya lo pone `.app`, así que sumarlo otra
+     vez dejaría el doble de aire arriba. */
   .header, :root.movil .header { padding-top: 12px; }
+  :root.movil .content { padding-top: 12px; }
 
   /* Sitio para la barra (58px) más la franja del home indicator. */
   .content { padding-bottom: calc(58px + 26px + env(safe-area-inset-bottom)); }
@@ -5280,6 +5284,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      bloque, porque el iPad también lo lleva. */
   :root.movil .btn-crear { bottom: calc(58px + 16px + env(safe-area-inset-bottom)); }
 
+  /* Fijo arriba, con fondo propio. Dos motivos, y el segundo es el que
+     importa: (1) las secciones del área siguen a mano sin volver arriba del
+     todo, y (2) el carrusel vive DENTRO de `.main`, que es quien hace scroll,
+     así que sin `sticky` se desplazaba hacia arriba y acababa pintándose bajo
+     el reloj y la muesca. El fondo opaco es parte del arreglo: aunque el
+     hueco de safe-area fallara, aquí no se transparenta nada. */
   .carrusel-secciones {
     display: flex;
     gap: 8px;
@@ -5288,6 +5298,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 10px 20px;
     margin: 0 -20px 4px;
     scroll-padding-inline: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
   }
   .carrusel-secciones::-webkit-scrollbar { display: none; }
   .carrusel-item {
