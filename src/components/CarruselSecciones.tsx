@@ -44,12 +44,21 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   // La sección activa se trae al centro. Cubre tanto la navegación externa
   // (entrar a Agenda desde la barra inferior, por ejemplo) como la respuesta
   // visual a un toque directo sobre una sección.
+  //
+  // `behavior: "instant"`, no "smooth": con `scroll-snap-type` activo, una
+  // animación suave programática compite con el encaje nativo del propio
+  // WebKit (el motor de iOS) por quién manda en la posición final, y a veces
+  // gana el snap a mitad de camino — el resultado es que la sección se queda
+  // centrada en el sitio equivocado. Pasa a veces sí y a veces no (es una
+  // carrera, no un cálculo incorrecto), que es justo el síntoma que se vio.
+  // El deslizamiento con el dedo, que es la interacción principal, no pasa
+  // por aquí y sigue tan fluido como siempre.
   useEffect(() => {
     const el = items.current.get(pathname);
     if (!el) return;
     propio.current = true;
-    el.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-    const t = setTimeout(() => { propio.current = false; }, 400);
+    el.scrollIntoView({ block: "nearest", inline: "center", behavior: "instant" });
+    const t = setTimeout(() => { propio.current = false; }, 100);
     return () => clearTimeout(t);
   }, [pathname]);
 
