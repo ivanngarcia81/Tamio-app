@@ -32,6 +32,10 @@ import { SYNC_HABILITADO } from "../syncManager";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
 import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
+import {
+  IconChurch, IconIdBadge, IconFileText, IconTag, IconMonitor, IconWarn,
+  IconChevronLeft, IconChevronRight,
+} from "../icons";
 
 interface Props {
   church: Church;
@@ -68,6 +72,29 @@ export default function Configuracion({
   const esAdmin = role === "administrador";
   const verTesoreria = esAdmin || role === "tesorero";
   const verSecretaria = esAdmin || role === "secretaria";
+
+  // Ajustes con índice (13 ago 2026, idea de "Proyecto B" en plan-1-1.md):
+  // una columna de zonas a la izquierda, una a la vez a la derecha, en vez de
+  // una página larga con las seis zonas apiladas. Cambia el CONTENEDOR, no el
+  // contenido — cada <section> sigue siendo exactamente la misma de antes,
+  // solo se oculta con CSS cuando no es la zona activa. Así el guardado
+  // automático y sus temporizadores (más abajo) no se enteran del cambio.
+  const ZONAS = [
+    { key: "iglesia", icono: <IconChurch size={16} />, titulo: t("config.zona.iglesia"), visible: true },
+    { key: "acceso", icono: <IconIdBadge size={16} />, titulo: t("config.zona.acceso"), visible: true },
+    { key: "documentos", icono: <IconFileText size={16} />, titulo: t("config.zona.documentos"), visible: true },
+    { key: "categorias", icono: <IconTag size={16} />, titulo: t("config.zona.categorias"), visible: verTesoreria },
+    { key: "preferencias", icono: <IconMonitor size={16} />, titulo: t("config.zona.preferencias"), visible: true },
+    { key: "delicada", icono: <IconWarn size={16} />, titulo: t("config.zona.delicada"), visible: esAdmin },
+  ] as const;
+  // En una pantalla angosta (teléfono) arranca sin zona elegida, mostrando
+  // solo el índice — hay que tocar una para ver su contenido. En Mac/iPad,
+  // que sí tienen sitio para las dos columnas, arranca en "Iglesia" para no
+  // dejar la mitad de la pantalla vacía al entrar.
+  const [zonaActiva, setZonaActiva] = useState<string | null>(() => (
+    typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? null : "iglesia"
+  ));
+  const claseZona = (key: string) => `settings-zona${zonaActiva === key ? "" : " settings-zona-inactiva"}`;
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
@@ -312,14 +339,34 @@ export default function Configuracion({
       </div>
 
       <div className="content">
-        <div className="settings-page">
+        <div className={`settings-shell${zonaActiva ? " zona-abierta" : ""}`}>
+          <nav className="settings-nav">
+            {ZONAS.filter((z) => z.visible).map((z) => (
+              <button
+                key={z.key}
+                type="button"
+                className={`settings-nav-item${zonaActiva === z.key ? " activo" : ""}`}
+                onClick={() => setZonaActiva(z.key)}
+              >
+                <span className="settings-nav-icono">{z.icono}</span>
+                <span className="settings-nav-nombre">{z.titulo}</span>
+                <span className="settings-nav-flecha"><IconChevronRight size={13} /></span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="settings-detail">
+            <button type="button" className="settings-detail-volver" onClick={() => setZonaActiva(null)}>
+              <IconChevronLeft size={14} /> {t("common.volver")}
+            </button>
+
           {/* Mosaico de 2 columnas balanceadas: las tarjetas fluyen y el CSS
               reparte las alturas, así no queda una columna larga y otra vacía
               cuando el rol/plan oculta tarjetas. */}
           {/* Zonas con jerarquía visual: cada categoría vive en su propio
               contenedor (panel plano) con título, y las tarjetas se elevan
               encima. El mosaico interno balancea las alturas por zona. */}
-          <section className="settings-zona">
+          <section className={claseZona("iglesia")}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.iglesia")}</div>
               <div className="settings-zona-sub">{t("config.zona.iglesiaSub")}</div>
@@ -343,7 +390,7 @@ export default function Configuracion({
               dato local) y quién administra (Usuarios). Antes vivían en tres
               secciones distintas con dos pantallas de distancia, siendo la
               misma pregunta contada dos veces. */}
-          <section className="settings-zona">
+          <section className={claseZona("acceso")}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.acceso")}</div>
               <div className="settings-zona-sub">{t("config.zona.accesoSub")}</div>
@@ -365,7 +412,7 @@ export default function Configuracion({
             </div>
           </section>
 
-          <section className="settings-zona">
+          <section className={claseZona("documentos")}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.documentos")}</div>
               <div className="settings-zona-sub">{t("config.zona.documentosSub")}</div>
@@ -428,7 +475,7 @@ export default function Configuracion({
           </section>
 
           {verTesoreria && (
-            <section className="settings-zona">
+            <section className={claseZona("categorias")}>
               <div className="settings-zona-head">
                 <div className="settings-zona-titulo">{t("config.zona.categorias")}</div>
                 <div className="settings-zona-sub">{t("config.zona.categoriasSub")}</div>
@@ -439,7 +486,7 @@ export default function Configuracion({
             </section>
           )}
 
-          <section className="settings-zona">
+          <section className={claseZona("preferencias")}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.preferencias")}</div>
               <div className="settings-zona-sub">{t("config.zona.preferenciasSub")}</div>
@@ -456,7 +503,7 @@ export default function Configuracion({
           </section>
 
           {esAdmin && (
-            <section className="settings-zona peligro">
+            <section className={`${claseZona("delicada")} peligro`}>
               <div className="settings-zona-head">
                 <div className="settings-zona-titulo">{t("config.zona.delicada")}</div>
                 <div className="settings-zona-sub">{t("config.zona.delicadaSub")}</div>
@@ -479,6 +526,7 @@ export default function Configuracion({
 
           {/* Ya no hay botón global: cada tarjeta guarda sola al cambiar y
               lleva su propio indicador, incluido el de error (modelo A). */}
+          </div>
         </div>
       </div>
     </>

@@ -6,6 +6,7 @@ export const es = {
     mas: "Más",
     cancelar: "Cancelar",
     cerrar: "Cerrar",
+    volver: "Volver",
     guardar: "Guardar",
     confirmar: "Confirmar",
     guardando: "Guardando…",

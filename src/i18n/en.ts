@@ -12,6 +12,7 @@ export const en: Resources = {
     mas: "More",
     cancelar: "Cancel",
     cerrar: "Close",
+    volver: "Back",
     guardar: "Save",
     confirmar: "Confirm",
     guardando: "Saving…",
