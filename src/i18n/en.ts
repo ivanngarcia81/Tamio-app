@@ -644,7 +644,7 @@ export const en: Resources = {
     serieBorrarTodo_other: "Also delete {{count}} transactions",
     toastSerieEliminada: "Series and transactions deleted",
     titulo: "Recurring fixed expenses",
-    sub: "Recorded automatically at each month's close",
+    sub: "Not counted in this month's total yet — recorded automatically when the month closes",
     porMes: "{{monto}} / month",
     diaDeCadaMes: "Day {{dia}} of each month",
     diaLabel: "Day of month",

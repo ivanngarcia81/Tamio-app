@@ -638,7 +638,7 @@ export const es = {
     serieBorrarTodo_other: "Eliminar también {{count}} movimientos",
     toastSerieEliminada: "Serie y movimientos eliminados",
     titulo: "Gastos fijos recurrentes",
-    sub: "Se registran automáticamente al cierre de cada mes",
+    sub: "Aún no cuentan en el total de este mes — se registran automáticamente cuando el mes cierra",
     porMes: "{{monto}} / mes",
     diaDeCadaMes: "Día {{dia}} de cada mes",
     diaLabel: "Día del mes",
