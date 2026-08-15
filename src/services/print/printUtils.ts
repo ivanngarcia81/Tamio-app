@@ -7,6 +7,7 @@ import { currencySymbol, currencyLocale } from "../../currencies";
 import { aDecimal, type Centavos } from "../../dinero";
 import { entregarArchivo, esMovil } from "../entrega";
 import { rutaEnDatos } from "../archivos";
+import type { Church } from "../../db";
 
 // ---------- Sistema de diseño fijo compartido por todos los PDFs ----------
 // No se recalcula ni se comprime según la cantidad de datos: un reporte de
@@ -63,6 +64,20 @@ export function setDraw(doc: jsPDF, color: RGB): void {
 }
 export function setFill(doc: jsPDF, color: RGB): void {
   doc.setFillColor(color[0], color[1], color[2]);
+}
+
+/** Ciudad, estado/provincia y código postal de la iglesia en una sola línea
+ *  ("Miami, FL 33101"), solo con las partes que existan — para el membrete
+ *  de los reportes financieros. */
+export function direccionCompacta(church: Church): string {
+  const cityState = [church.ciudad, church.estado_provincia].filter(Boolean).join(", ");
+  return [cityState, church.codigo_postal].filter(Boolean).join(" ").trim();
+}
+
+/** Línea "EIN 12-3456789" para el membrete, o cadena vacía si la iglesia no
+ *  tiene identificación fiscal registrada (Configuración → Iglesia). */
+export function einLinea(church: Church): string {
+  return church.ein ? `EIN ${church.ein}` : "";
 }
 
 export function slug(s: string): string {

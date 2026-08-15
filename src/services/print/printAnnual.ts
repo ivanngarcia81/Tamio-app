@@ -5,7 +5,8 @@ import {
 import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
 import {
-  buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, PDF_SPACE, pct, slug,
+  buildReportId, direccionCompacta, einLinea, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl,
+  PDF_SPACE, pct, slug,
 } from "./printUtils";
 import { entregarArchivo } from "../entrega";
 import { restar, sumar, type Centavos } from "../../dinero";
@@ -32,9 +33,13 @@ export async function exportAnnualReportPdf(data: AnnualReportData): Promise<boo
     church.pastor_firma_path ? loadPngDataUrl(church.pastor_firma_path) : Promise.resolve(null),
   ]);
 
+  const direccion = direccionCompacta(church);
+  const ein = einLinea(church);
+  const churchLine = [church.nombre, direccion, ein].filter(Boolean).join(" · ");
+
   const doc = new ReportDocBuilder({
     title: i18n.t("anual.titulo"),
-    churchLine: `${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`,
+    churchLine,
     period: year,
     moneda,
     generatedBy: church.tesorero_nombre

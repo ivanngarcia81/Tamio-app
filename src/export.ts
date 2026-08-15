@@ -3,8 +3,8 @@ import i18n from "./i18n";
 import { CERO, negar, restar, sumar, type Centavos } from "./dinero";
 import { ReportBase, type BaseCol } from "./services/print/reportBase";
 import {
-  buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl, openForPrint,
-  PDF_COLOR, PDF_SPACE, pct, slug,
+  buildReportId, direccionCompacta, einLinea, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain,
+  loadPngDataUrl, openForPrint, PDF_COLOR, PDF_SPACE, pct, slug,
 } from "./services/print/printUtils";
 import { entregarArchivo } from "./services/entrega";
 
@@ -68,7 +68,10 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     i18n.t("pdf.periodo", { periodo: mesLegibleStr }),
     i18n.t("pdf.moneda", { moneda }),
   ];
-  if (church.ciudad) meta.unshift(church.ciudad);
+  const ein = einLinea(church);
+  if (ein) meta.unshift(ein);
+  const direccion = direccionCompacta(church);
+  if (direccion) meta.unshift(direccion);
 
   const doc = new ReportBase({
     churchNombre: church.nombre,

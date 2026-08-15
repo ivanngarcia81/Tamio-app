@@ -3,8 +3,8 @@ import i18n from "../../i18n";
 import { ReportBase, type BaseCol } from "./reportBase";
 import { CERO, sumar, type Centavos } from "../../dinero";
 import {
-  buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl,
-  openForPrint, PDF_SPACE, pct, slug,
+  buildReportId, direccionCompacta, einLinea, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain,
+  loadPngDataUrl, openForPrint, PDF_SPACE, pct, slug,
 } from "./printUtils";
 
 export interface RegisterPrintOptions {
@@ -43,7 +43,10 @@ export async function buildRegisterPdf(opts: RegisterPrintOptions): Promise<{ by
   const titulo = tituloCrudo.charAt(0).toUpperCase() + tituloCrudo.slice(1);
 
   const meta = [opts.filtroDescripcion, i18n.t("pdf.moneda", { moneda })];
-  if (church.ciudad) meta.unshift(church.ciudad);
+  const ein = einLinea(church);
+  if (ein) meta.unshift(ein);
+  const direccion = direccionCompacta(church);
+  if (direccion) meta.unshift(direccion);
 
   const doc = new ReportBase({
     churchNombre: church.nombre,

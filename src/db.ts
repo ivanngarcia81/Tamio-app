@@ -20,7 +20,12 @@ export interface Church {
   id: number;
   nombre: string;
   ciudad: string | null;
+  estado_provincia: string | null;
+  codigo_postal: string | null;
   pais: string;
+  /** Identificación fiscal (EIN en EE. UU., o su equivalente en otros
+   *  países). Se muestra junto al nombre de la iglesia en los PDF. */
+  ein: string | null;
   moneda: string;
   /** Se sube desde Configuración → Información de la iglesia; se muestra
    *  en el círculo del sidebar y el PDF del Dashboard ya la usa si existe. */
@@ -473,7 +478,10 @@ export async function getOrCreateChurch(): Promise<Church> {
 export interface ChurchUpdate {
   nombre: string;
   ciudad?: string | null;
+  estado_provincia?: string | null;
+  codigo_postal?: string | null;
   pais?: string | null;
+  ein?: string | null;
   moneda: string;
   logo_path?: string | null;
   tesorero_nombre?: string | null;
@@ -507,8 +515,9 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        pastor_telefono = $14, pastor_firma_path = $15,
        direccion = $16, region = $17, telefono = $18, email = $19,
        pie_institucional = $20, secretaria_nombre = $21, secretaria_cargo = $22,
-       saldo_inicial = COALESCE($23, saldo_inicial)
-     WHERE id = $24`,
+       saldo_inicial = COALESCE($23, saldo_inicial),
+       ein = $24, estado_provincia = $25, codigo_postal = $26
+     WHERE id = $27`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
@@ -520,6 +529,7 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       // null = "no tocar": COALESCE conserva el saldo de apertura ya guardado
       // cuando el llamador (p. ej. la bienvenida) no incluye el campo.
       c.saldo_inicial ?? null,
+      c.ein ?? null, c.estado_provincia ?? null, c.codigo_postal ?? null,
       id,
     ]
   );
@@ -3707,7 +3717,8 @@ export async function reinicioDeFabrica(): Promise<void> {
          pastor_telefono = NULL, pastor_firma_path = NULL,
          direccion = NULL, region = NULL, telefono = NULL, email = NULL,
          pie_institucional = NULL, secretaria_nombre = NULL, secretaria_cargo = NULL,
-         umbrales_informes = NULL, saldo_inicial = 0`
+         umbrales_informes = NULL, saldo_inicial = 0,
+         ein = NULL, estado_provincia = NULL, codigo_postal = NULL`
     );
     await d.execute("COMMIT");
   } catch (e) {

@@ -13,7 +13,12 @@ import GuardadoChip, { type EstadoGuardado } from "./GuardadoChip";
 export interface ChurchFormValues {
   nombre: string;
   ciudad: string;
+  estadoProvincia: string;
+  codigoPostal: string;
   pais: string;
+  /** Identificación fiscal (EIN en EE. UU., o su equivalente en otros
+   *  países). Se muestra junto al nombre de la iglesia en los PDF. */
+  ein: string;
   moneda: string;
   /** Saldo de apertura como texto de formulario; se valida y parsea al guardar. */
   saldoInicial: string;
@@ -163,6 +168,38 @@ export default function ChurchSettings({ value, onChange, error, saldoError, log
             placeholder={t("iglesia.paisPlaceholder")}
           />
         </div>
+      </div>
+
+      <div className="form-grid">
+        <div className="form-group">
+          <label className="form-label">{t("iglesia.estadoProvincia")} <span className="opt">{t("common.opcional")}</span></label>
+          <input
+            className="form-input"
+            value={value.estadoProvincia}
+            onChange={(e) => onChange({ estadoProvincia: e.target.value })}
+            placeholder={t("iglesia.estadoProvinciaPlaceholder")}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">{t("iglesia.codigoPostal")} <span className="opt">{t("common.opcional")}</span></label>
+          <input
+            className="form-input"
+            value={value.codigoPostal}
+            onChange={(e) => onChange({ codigoPostal: e.target.value })}
+            placeholder={t("iglesia.codigoPostalPlaceholder")}
+          />
+        </div>
+      </div>
+
+      <div className="form-group full">
+        <label className="form-label">{t("iglesia.ein")} <span className="opt">{t("common.opcional")}</span></label>
+        <input
+          className="form-input"
+          value={value.ein}
+          onChange={(e) => onChange({ ein: e.target.value })}
+          placeholder={t("iglesia.einPlaceholder")}
+        />
+        <div className="form-hint">{t("iglesia.einHint")}</div>
       </div>
 
       {showCurrency && (

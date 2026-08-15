@@ -99,7 +99,10 @@ export default function Configuracion({
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
+    estadoProvincia: church.estado_provincia ?? "",
+    codigoPostal: church.codigo_postal ?? "",
     pais: church.pais ?? "",
+    ein: church.ein ?? "",
     moneda: church.moneda,
     // 0 se muestra vacío: el caso común (arrancar de cero) no obliga a nadie
     // a entender qué es un "saldo de apertura".
@@ -199,7 +202,10 @@ export default function Configuracion({
         patch: {
           nombre: f.churchForm.nombre.trim(),
           ciudad: f.churchForm.ciudad.trim() || null,
+          estado_provincia: f.churchForm.estadoProvincia.trim() || null,
+          codigo_postal: f.churchForm.codigoPostal.trim() || null,
           pais: f.churchForm.pais.trim() || null,
+          ein: f.churchForm.ein.trim() || null,
           moneda: f.churchForm.moneda,
           saldo_inicial: saldoNum ?? CERO,
         },

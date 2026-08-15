@@ -728,6 +728,19 @@ fn migraciones() -> Vec<motordb::Migracion> {
             ALTER TABLE churches DROP COLUMN saldo_inicial;
             ALTER TABLE churches RENAME COLUMN saldo_inicial_centavos TO saldo_inicial;
         "#,
+    }, motordb::Migracion {
+        version: 37,
+        description: "identificación fiscal (EIN), estado y código postal de la iglesia",
+        sql: r#"
+            -- Número de identificación fiscal de la iglesia (EIN en EE. UU.,
+            -- o su equivalente en otros países), más estado/provincia y
+            -- código postal — junto a ciudad y país, para completar la
+            -- dirección. Los tres se muestran junto al nombre de la iglesia
+            -- en los PDF.
+            ALTER TABLE churches ADD COLUMN ein TEXT;
+            ALTER TABLE churches ADD COLUMN estado_provincia TEXT;
+            ALTER TABLE churches ADD COLUMN codigo_postal TEXT;
+        "#,
     }]
 }
 
