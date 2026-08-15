@@ -2,7 +2,8 @@ import { catNombre, fmtFechaCorta, metodoNombre, METODOS_PAGO, type Church, type
 import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
 import {
-  buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint, PDF_SPACE, slug,
+  buildReportId, direccionCompacta, einLinea, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl,
+  openForPrint, PDF_SPACE, slug,
 } from "./printUtils";
 import { entregarArchivo } from "../entrega";
 import { sumar } from "../../dinero";
@@ -26,9 +27,13 @@ async function buildConstanciaPdf(data: ConstanciaData): Promise<{ bytes: ArrayB
     church.pastor_firma_path ? loadPngDataUrl(church.pastor_firma_path) : Promise.resolve(null),
   ]);
 
+  const direccion = direccionCompacta(church);
+  const ein = einLinea(church);
+  const churchLine = [church.nombre, direccion, ein].filter(Boolean).join(" · ");
+
   const doc = new ReportDocBuilder({
     title: i18n.t("constancia.titulo"),
-    churchLine: `${church.nombre}${church.ciudad ? " · " + church.ciudad : ""}`,
+    churchLine,
     period: year,
     moneda,
     generatedBy: church.tesorero_nombre
