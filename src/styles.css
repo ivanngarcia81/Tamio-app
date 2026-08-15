@@ -5448,6 +5448,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      bloque, porque el iPad también lo lleva. */
   :root.movil .btn-crear { bottom: calc(58px + 16px + env(safe-area-inset-bottom)); }
 
+  /* Los toasts de confirmación ("Miembro agregado", "Deshacer"…) traían un
+     `bottom: 24px` fijo pensado para el escritorio, donde no hay nada abajo.
+     En el teléfono esos 24px caen DENTRO de la barra inferior (58px de alto)
+     y del botón "+" flotante: el aviso salía tapado justo en el momento que
+     confirma que algo se acaba de crear. Se sube por encima de los dos. */
+  .toast-host { bottom: calc(58px + 16px + 56px + 14px + env(safe-area-inset-bottom)); }
+
   /* Fijo arriba, con fondo propio. Dos motivos, y el segundo es el que
      importa: (1) las secciones del área siguen a mano sin volver arriba del
      todo, y (2) el carrusel vive DENTRO de `.main`, que es quien hace scroll,
@@ -5558,8 +5565,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--surface-2); color: var(--text-2);
     font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
   }
+  /* Herencia del diseño anterior (pastilla sólida de marca): blanco al 22%
+     de opacidad se leía bien sobre un fondo verde sólido, pero el selector
+     ahora es una píldora de VIDRIO translúcida (línea ~5497) sobre un fondo
+     ya claro — texto blanco casi transparente sobre casi-blanco se volvía
+     invisible. Ahora el "1" usa el color de marca sólido, que sí contrasta
+     tanto con el vidrio verde claro de la píldora como con el texto verde
+     del nombre de la sección. */
   .carrusel-item.activo .carrusel-badge {
-    background: rgba(255, 255, 255, .22); color: #fff;
+    background: var(--brand, #059669); color: #fff;
   }
 
   /* ---- Migrado del rango de iPad (línea ~4436) ----
