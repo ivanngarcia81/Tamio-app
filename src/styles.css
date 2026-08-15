@@ -5235,6 +5235,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .header, :root.movil .header { padding-top: 12px; }
   :root.movil .content { padding-top: 12px; }
 
+  /* Mismo motivo que en el rango de iPad (línea ~4505): `.main` solo declara
+     `overflow-y: auto`, y por especificación eso hace que el otro eje deje
+     de ser `visible` y pase a `auto` también — así que cualquier elemento
+     más ancho que la pantalla (una tabla sin su propio scroll interno, por
+     ejemplo) dejaba deslizar la página ENTERA de lado. Comprobado con
+     Playwright: sin esto, .main medía 920px con la pantalla en 393px. */
+  .main { overflow-x: hidden; }
+
   /* Sitio para la barra (58px) más la franja del home indicator. */
   .content { padding-bottom: calc(58px + 26px + env(safe-area-inset-bottom)); }
 
