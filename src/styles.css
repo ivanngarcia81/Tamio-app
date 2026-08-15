@@ -2265,12 +2265,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .method-choice {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 9px 14px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9px;
   border: 1.5px solid var(--line);
   cursor: pointer;
-  font-size: var(--fs-body);
+  font-size: var(--fs-secondary);
   font-weight: 600;
   color: var(--text-2);
   background: var(--surface);

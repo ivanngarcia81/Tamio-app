@@ -684,19 +684,20 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               </div>
 
               {(tab === "gasto" || tab === "ingreso") && (
+                // Una sola línea (antes traía además el texto explicativo
+                // debajo, en dos líneas): la explicación completa sigue
+                // disponible al pasar el mouse, en el `title` de la tarjeta.
                 <div
                   className="form-subcard"
                   style={{
-                    display: "flex", alignItems: "center", gap: 12, marginTop: 6,
+                    display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", marginTop: 6,
                     background: esRecurrente ? "var(--surface-2)" : "transparent",
                   }}
+                  title={t("recurrente.hintForm")}
                 >
                   <span style={{ color: "var(--text-2)", flexShrink: 0 }}><IconRepeat size={16} strokeWidth={2} /></span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>
-                      {t("recurrente.pregunta", { tipo: tab === "ingreso" ? t("tx.ingreso").toLowerCase() : t("tx.gasto").toLowerCase() })}
-                    </div>
-                    <div className="form-hint" style={{ marginTop: 2 }}>{t("recurrente.hintForm")}</div>
+                  <div style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 13 }}>
+                    {t("recurrente.pregunta", { tipo: tab === "ingreso" ? t("tx.ingreso").toLowerCase() : t("tx.gasto").toLowerCase() })}
                   </div>
                   {isEdit ? (
                     <button
