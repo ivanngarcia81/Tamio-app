@@ -5306,38 +5306,57 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      así que sin `sticky` se desplazaba hacia arriba y acababa pintándose bajo
      el reloj y la muesca. El fondo opaco es parte del arreglo: aunque el
      hueco de safe-area fallara, aquí no se transparenta nada. */
+  /* El "selector de vidrio" (Proyecto B, Copilot): el círculo/píldora activa
+     NUNCA se mueve del centro. Lo que se desliza es la TIRA de secciones por
+     debajo; la que quede bajo el centro al soltar es la que se abre —lo
+     resuelve CarruselSecciones.tsx calculando qué sección cae más cerca del
+     centro cuando el scroll se asienta. Aquí la parte visual: cada sección
+     "encaja" (scroll-snap) en el centro al pasar, y hay relleno a los lados
+     para que la primera y la última también puedan llegar ahí. */
   .carrusel-secciones {
-    display: flex;
-    /* Centrado como grupo cuando caben todas (el caso de la mayoría de las
-       áreas); en las que no caben (Tesorería y Secretaría, con hasta seis),
-       el navegador cede solo al scroll horizontal y no rompe nada. */
-    justify-content: center;
-    gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 10px 20px;
-    margin: 0 -20px 4px;
-    scroll-padding-inline: 20px;
+    /* Reactiva lo que la regla base (línea ~5179) apaga por defecto — antes
+       lo hacía el propio `display: flex` de esta clase; al pasar el flex a
+       `.carrusel-pista` (para poder meter el relleno como hermano, no como
+       contenido dentro del flex) esta clase se quedó sin ningún `display`
+       propio y volvía a `none`. Comprobado con Playwright: sin esto, el
+       carrusel entero medía 0×0. */
+    display: block;
     position: sticky;
     top: 0;
     z-index: 30;
+    padding: 10px 0;
+    margin: 0 -20px 4px;
     /* `.main` es un flex en columna. Un hijo con `overflow` distinto de
-       `visible` (aquí, el `overflow-x: auto` de arriba) pierde su alto
-       mínimo automático por especificación y puede terminar comprimido por
-       el resto del contenido — comprobado con Playwright: sin esto, la
-       altura calculada bajaba a 20px en vez de los ~58px que necesitan sus
+       `visible` (más abajo, en `.carrusel-pista`) pierde su alto mínimo
+       automático por especificación y puede terminar comprimido por el
+       resto del contenido — comprobado con Playwright: sin esto, la altura
+       calculada bajaba a 20px en vez de los ~58px que necesitan sus
        pastillas (`min-height: 38px` cada una, más el relleno). */
     flex-shrink: 0;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
-  .carrusel-secciones::-webkit-scrollbar { display: none; }
+  .carrusel-pista {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+  }
+  .carrusel-pista::-webkit-scrollbar { display: none; }
+  /* Relleno a cada lado: sin esto, la primera y la última sección no pueden
+     desplazarse hasta el centro (se topan con el borde de la tira antes de
+     llegar). El ancho es aproximado (no depende de cuánto mida cada
+     pastilla) y le sobra de margen a propósito. */
+  .carrusel-relleno { flex: 0 0 auto; width: 42vw; }
   /* Sin borde ni fondo propio salvo la activa: como un selector de vidrio,
      no una fila de chips sueltos — la que manda es la píldora sólida de la
-     pestaña activa, el resto es solo texto sobre la pista. */
+     sección activa, el resto es solo texto sobre la pista. */
   .carrusel-item {
     flex: 0 0 auto;
+    scroll-snap-align: center;
     display: inline-flex; align-items: center; gap: 6px;
     min-height: 38px;
     padding: 0 16px;

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { areaDeRuta, seccionesVisibles, type Contador } from "../navegacion";
 import type { Role } from "../role";
 
@@ -12,8 +12,12 @@ interface Props {
 }
 
 /**
- * Segundo nivel de navegación en el teléfono: las secciones del área en la que
- * se está, en una tira que se desliza a lo ancho.
+ * Segundo nivel de navegación en el teléfono: las secciones del área en la
+ * que se está, en un selector de "desliza para elegir" — como una rueda de
+ * picker. El círculo de vidrio se queda fijo en el centro; lo que se mueve
+ * es la tira de secciones por debajo, y la que quede bajo el selector al
+ * soltar es la que se abre. Tocar una sección funciona igual, deslizándola
+ * al centro.
  *
  * **Siempre están todas las del área, en el mismo orden.** Aunque alguna tenga
  * además su atajo en la barra de abajo, aquí no falta ninguna: una lista que
@@ -25,18 +29,55 @@ interface Props {
 export default function CarruselSecciones({ role, memberCount, pendingCount, unreadCount }: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const tira = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const pista = useRef<HTMLDivElement>(null);
+  const items = useRef(new Map<string, HTMLElement>());
+  // Mientras la ruta cambia por fuera (barra inferior, atrás del navegador…)
+  // el efecto de abajo desliza la sección nueva al centro — y ese propio
+  // deslizamiento no debe leerse como "el usuario eligió otra sección" y
+  // disparar una segunda navegación. Esta bandera corta ese eco.
+  const propio = useRef(false);
 
   const area = areaDeRuta(pathname);
   const secciones = area ? seccionesVisibles(area, role) : [];
 
-  // La pestaña activa se trae a la vista. Sin esto, entrar en Agenda —la
-  // última de Secretaría— deja la tira mostrando las tres primeras y parece
-  // que no hay ninguna seleccionada.
+  // La sección activa se trae al centro. Cubre tanto la navegación externa
+  // (entrar a Agenda desde la barra inferior, por ejemplo) como la respuesta
+  // visual a un toque directo sobre una sección.
   useEffect(() => {
-    const activa = tira.current?.querySelector<HTMLElement>(".carrusel-item.activo");
-    activa?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    const el = items.current.get(pathname);
+    if (!el) return;
+    propio.current = true;
+    el.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+    const t = setTimeout(() => { propio.current = false; }, 400);
+    return () => clearTimeout(t);
   }, [pathname]);
+
+  // Al soltar el dedo, qué sección quedó bajo el selector fijo del centro —
+  // esa es la que se abre. Se calcula al ASENTARSE el scroll (con una espera
+  // corta sin eventos nuevos), no en cada fotograma del gesto.
+  useEffect(() => {
+    const el = pista.current;
+    if (!el) return;
+    let temporizador: ReturnType<typeof setTimeout>;
+    function alAsentar() {
+      if (propio.current) return;
+      const centro = el!.getBoundingClientRect().left + el!.clientWidth / 2;
+      let mejor: { ruta: string; distancia: number } | null = null;
+      for (const [ruta, nodo] of items.current) {
+        const r = nodo.getBoundingClientRect();
+        const distancia = Math.abs(r.left + r.width / 2 - centro);
+        if (!mejor || distancia < mejor.distancia) mejor = { ruta, distancia };
+      }
+      if (mejor && mejor.ruta !== pathname) navigate(mejor.ruta);
+    }
+    function alDeslizar() {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(alAsentar, 120);
+    }
+    el.addEventListener("scroll", alDeslizar, { passive: true });
+    return () => { el.removeEventListener("scroll", alDeslizar); clearTimeout(temporizador); };
+  }, [pathname, navigate]);
 
   if (secciones.length < 2) return null;
 
@@ -48,20 +89,29 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   };
 
   return (
-    <div className="carrusel-secciones" ref={tira}>
-      {secciones.map((s) => {
-        const n = numero(s.contador);
-        return (
-          <NavLink
-            key={s.ruta}
-            to={s.ruta}
-            className={`carrusel-item${pathname === s.ruta ? " activo" : ""}`}
-          >
-            {t(s.clave)}
-            {n > 0 && <span className="carrusel-badge">{n > 99 ? "99+" : n}</span>}
-          </NavLink>
-        );
-      })}
+    <div className="carrusel-secciones">
+      <div className="carrusel-pista" ref={pista}>
+        <span className="carrusel-relleno" aria-hidden="true" />
+        {secciones.map((s) => {
+          const n = numero(s.contador);
+          return (
+            <button
+              key={s.ruta}
+              ref={(nodo) => {
+                if (nodo) items.current.set(s.ruta, nodo);
+                else items.current.delete(s.ruta);
+              }}
+              type="button"
+              className={`carrusel-item${pathname === s.ruta ? " activo" : ""}`}
+              onClick={() => navigate(s.ruta)}
+            >
+              {t(s.clave)}
+              {n > 0 && <span className="carrusel-badge">{n > 99 ? "99+" : n}</span>}
+            </button>
+          );
+        })}
+        <span className="carrusel-relleno" aria-hidden="true" />
+      </div>
     </div>
   );
 }
