@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Tamio — Activa tu cuenta</title>
+<!--
+  Página de aterrizaje de las invitaciones.
+
+  Cuando un administrador invita a alguien desde Tamio (Ajustes → Invitar), la
+  Edge Function `invitar-usuario` le manda un correo con un enlace. Ese enlace
+  lo genera Supabase y apunta a la **Site URL** del proyecto: aquí. Sin esta
+  página, el invitado pincha y aterriza en la nada — que es exactamente lo que
+  pasaba antes de escribirla.
+
+  Lo único que hace: recibir el token de la invitación, dejar poner una
+  contraseña, y decirle que abra Tamio. No guarda nada ni conoce ningún dato de
+  la iglesia.
+
+  Las dos constantes de abajo ya están puestas (proyecto hkpbkpoje…, 13 ago).
+  El `anon key` es PÚBLICO por diseño: protege los datos la política RLS de
+  cada tabla, no el secreto de la clave, y esta misma clave ya viaja dentro
+  del binario de la app que está en la App Store. La `service_role` NO se
+  pone aquí nunca.
+
+  Y ojo con dónde vive: GitHub Pages sirve tamio.church desde la rama
+  `claude/hello-9v3atw`, no desde `main`. Copiar este archivo allí es lo que la
+  pone en línea.
+-->
+<style>
+  :root { color-scheme: light dark; --bg:#f5f5f7; --card:#fff; --ink:#1c1c1e; --ink2:#48484a; --ink3:#8a8a8e; --line:#e5e5ea; --brand:#2f855a; --brand2:#276749; --mal:#c53030; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#000; --card:#1c1c1e; --ink:#f2f2f7; --ink2:#c7c7cc; --ink3:#98989d; --line:#2c2c2e; --brand:#48bb78; --brand2:#38a169; --mal:#fc8181; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         line-height:1.6; color:var(--ink); background:var(--bg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:36px; width:100%; max-width:440px; }
+  .logo { font-size:22px; font-weight:700; letter-spacing:-.02em; margin-bottom:22px; }
+  .logo span { color:var(--brand); }
+  h1 { font-size:24px; letter-spacing:-.02em; margin:0 0 8px; }
+  p.sub { color:var(--ink2); margin:0 0 24px; font-size:15.5px; }
+  label { display:block; font-size:13.5px; font-weight:600; color:var(--ink2); margin:16px 0 6px; }
+  input { width:100%; padding:12px 14px; font-size:16px; font-family:inherit; color:var(--ink);
+          background:var(--bg); border:1px solid var(--line); border-radius:12px; }
+  input:focus { outline:2px solid var(--brand); outline-offset:1px; }
+  button { width:100%; margin-top:22px; padding:14px; font-size:16px; font-weight:600; font-family:inherit;
+           color:#fff; background:var(--brand); border:none; border-radius:12px; cursor:pointer; }
+  button:hover:not(:disabled) { background:var(--brand2); }
+  button:disabled { opacity:.5; cursor:default; }
+  .aviso { margin-top:16px; font-size:14.5px; color:var(--mal); }
+  .pista { margin-top:10px; font-size:13.5px; color:var(--ink3); }
+  .ok { text-align:center; }
+  .ok .tic { font-size:42px; line-height:1; margin-bottom:12px; }
+  .oculto { display:none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Tam<span>io</span></div>
+
+  <!-- Estado 1: poner la contraseña -->
+  <div id="form">
+    <h1 id="t-titulo">Activa tu cuenta</h1>
+    <p class="sub" id="t-sub">Elige una contraseña y ya podrás entrar en Tamio.</p>
+
+    <label for="pw" id="t-pw">Contraseña</label>
+    <input id="pw" type="password" autocomplete="new-password" minlength="8" />
+
+    <label for="pw2" id="t-pw2">Repite la contraseña</label>
+    <input id="pw2" type="password" autocomplete="new-password" minlength="8" />
+
+    <div class="pista" id="t-pista">Mínimo 8 caracteres.</div>
+    <div class="aviso oculto" id="aviso"></div>
+
+    <button id="guardar" disabled>Guardar contraseña</button>
+  </div>
+
+  <!-- Estado 2: listo -->
+  <div id="listo" class="ok oculto">
+    <div class="tic">✓</div>
+    <h1 id="t-listo">Cuenta activada</h1>
+    <p class="sub" id="t-listoSub">Abre Tamio en tu Mac, iPad o iPhone y entra con tu correo y esta contraseña.</p>
+  </div>
+
+  <!-- Estado 3: el enlace no sirve -->
+  <div id="malo" class="oculto">
+    <h1 id="t-malo">Este enlace no es válido</h1>
+    <p class="sub" id="t-maloSub">Puede que haya caducado o que ya lo hayas usado. Pídele a quien te invitó que te mande la invitación otra vez.</p>
+  </div>
+</div>
+
+<script>
+// ─── Proyecto de Tamio (puestas el 13 ago 2026) ──────────────────────────────
+const SUPABASE_URL = "https://hkpbkpojeierxqtbmagh.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcGJrcG9qZWllcnhxdGJtYWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNjE0NzUsImV4cCI6MjA5OTYzNzQ3NX0.z0SGP_XB16wYNFVygqZ8WY2Xev4bfd2J5hR1-2edcso";
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Traducción mínima. La app es bilingüe y el invitado puede no hablar español;
+// se decide por el idioma del navegador, sin selector: una página de un solo
+// uso no merece un menú.
+const EN = (navigator.language || "es").toLowerCase().startsWith("en");
+if (EN) {
+  document.documentElement.lang = "en";
+  const txt = {
+    "t-titulo": "Activate your account",
+    "t-sub": "Choose a password and you'll be able to sign in to Tamio.",
+    "t-pw": "Password", "t-pw2": "Repeat the password",
+    "t-pista": "At least 8 characters.",
+    "guardar": "Save password",
+    "t-listo": "Account activated",
+    "t-listoSub": "Open Tamio on your Mac, iPad or iPhone and sign in with your email and this password.",
+    "t-malo": "This link is not valid",
+    "t-maloSub": "It may have expired, or you may have used it already. Ask whoever invited you to send the invitation again.",
+  };
+  for (const [id, s] of Object.entries(txt)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = s;
+  }
+  document.title = "Tamio — Activate your account";
+}
+const T = EN
+  ? { corta: "The password must be at least 8 characters.",
+      distintas: "The two passwords are not the same.",
+      fallo: "The password could not be saved. Try the link again.",
+      guardando: "Saving…" }
+  : { corta: "La contraseña tiene que tener al menos 8 caracteres.",
+      distintas: "Las dos contraseñas no son iguales.",
+      fallo: "No se pudo guardar la contraseña. Prueba el enlace otra vez.",
+      guardando: "Guardando…" };
+
+const $ = (id) => document.getElementById(id);
+const mostrar = (cual) => {
+  for (const id of ["form", "listo", "malo"]) $(id).classList.toggle("oculto", id !== cual);
+};
+
+// ─── Sacar el token del enlace ───────────────────────────────────────────────
+// Supabase manda la invitación de dos formas según cómo esté configurado el
+// proyecto, y no se puede saber cuál de antemano, así que se admiten las dos:
+//
+//   1. En el fragmento: #access_token=…&type=invite  (flujo clásico)
+//   2. En la consulta:  ?token_hash=…&type=invite    (flujo nuevo, hay que
+//      canjearlo primero en /auth/v1/verify)
+//
+// Soportar solo una habría funcionado en pruebas y fallado en producción, o al
+// revés, sin ninguna pista de por qué.
+const hash = new URLSearchParams(location.hash.slice(1));
+const query = new URLSearchParams(location.search);
+let token = hash.get("access_token");
+const tokenHash = query.get("token_hash");
+
+// El token no tiene por qué quedarse en la barra de direcciones ni en el
+// historial una vez leído.
+if (location.hash || location.search) {
+  history.replaceState(null, "", location.pathname);
+}
+
+async function canjear() {
+  if (token) return true;
+  if (!tokenHash) return false;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON },
+      body: JSON.stringify({ type: query.get("type") || "invite", token_hash: tokenHash }),
+    });
+    if (!r.ok) return false;
+    const d = await r.json();
+    token = d.access_token || null;
+    return Boolean(token);
+  } catch { return false; }
+}
+
+canjear().then((ok) => { if (!ok) mostrar("malo"); });
+
+// ─── Validación y guardado ───────────────────────────────────────────────────
+const pw = $("pw"), pw2 = $("pw2"), boton = $("guardar"), aviso = $("aviso");
+
+function revisar() {
+  const a = pw.value, b = pw2.value;
+  let error = "";
+  if (a && a.length < 8) error = T.corta;
+  else if (a && b && a !== b) error = T.distintas;
+  aviso.textContent = error;
+  aviso.classList.toggle("oculto", !error);
+  boton.disabled = !(a.length >= 8 && a === b);
+}
+pw.addEventListener("input", revisar);
+pw2.addEventListener("input", revisar);
+
+boton.addEventListener("click", async () => {
+  boton.disabled = true;
+  boton.textContent = T.guardando;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON,
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ password: pw.value }),
+    });
+    if (!r.ok) throw new Error(String(r.status));
+    mostrar("listo");
+  } catch {
+    aviso.textContent = T.fallo;
+    aviso.classList.remove("oculto");
+    boton.disabled = false;
+    boton.textContent = EN ? "Save password" : "Guardar contraseña";
+  }
+});
+</script>
+</body>
+</html>
