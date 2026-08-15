@@ -30,6 +30,7 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const contenedor = useRef<HTMLDivElement>(null);
   const pista = useRef<HTMLDivElement>(null);
   const items = useRef(new Map<string, HTMLElement>());
   // Mientras la ruta cambia por fuera (barra inferior, atrás del navegador…)
@@ -58,6 +59,11 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
     if (!el) return;
     propio.current = true;
     el.scrollIntoView({ block: "nearest", inline: "center", behavior: "instant" });
+    // La píldora de vidrio no se mueve, pero sí se ajusta de ancho a la
+    // sección que le toca ("Ingresos" y "Por revisar" no miden igual). El
+    // ancho se publica como variable CSS para que la anime el propio CSS.
+    const caja = el.getBoundingClientRect();
+    contenedor.current?.style.setProperty("--ancho-selector", `${Math.round(caja.width)}px`);
     const t = setTimeout(() => { propio.current = false; }, 100);
     return () => clearTimeout(t);
   }, [pathname]);
@@ -98,7 +104,13 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   };
 
   return (
-    <div className="carrusel-secciones">
+    <div className="carrusel-secciones" ref={contenedor}>
+      {/* La píldora de vidrio: un elemento APARTE, clavado en el centro, que
+          no se mueve nunca. Los nombres se deslizan por debajo. Antes el
+          resalte iba pegado al nombre activo, así que se paseaba con él —
+          que es justo lo que no hace ni Copilot ni Proyecto B. Su ancho lo
+          fija el efecto de arriba, copiando el de la sección activa. */}
+      <span className="carrusel-selector" aria-hidden="true" />
       <div className="carrusel-pista" ref={pista}>
         <span className="carrusel-relleno" aria-hidden="true" />
         {secciones.map((s) => {

@@ -5325,6 +5325,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     top: 0;
     z-index: 30;
     padding: 10px 0;
+    /* Ancla de la píldora de vidrio, que va posicionada contra este bloque. */
+    --ancho-selector: 120px;
     margin: 0 -20px 4px;
     /* `.main` es un flex en columna. Un hijo con `overflow` distinto de
        `visible` (más abajo, en `.carrusel-pista`) pierde su alto mínimo
@@ -5337,6 +5339,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
   }
+  /* La píldora de vidrio, clavada en el centro y SIN moverse jamás: los
+     nombres pasan por debajo y el que quede dentro es el seleccionado. Es
+     el patrón de Copilot y Proyecto B, y la diferencia con lo que había
+     antes (el resalte pegado al nombre activo, que se paseaba con él).
+     Solo cambia de ANCHO, para ajustarse a la sección que toca. */
+  .carrusel-selector {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: var(--ancho-selector);
+    height: 38px;
+    border-radius: 999px;
+    /* Vidrio, no un bloque de color sólido: durante el deslizamiento pasan
+       nombres NO activos por debajo, y sobre un relleno sólido de marca se
+       leían gris sobre verde — ilegibles. Translúcido con borde deja que
+       cualquier texto se siga leyendo mientras cruza. */
+    background: color-mix(in srgb, var(--brand, #059669) 14%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--brand, #059669) 55%, transparent);
+    pointer-events: none;
+    z-index: 0;
+    transition: width var(--dur) ease;
+  }
   .carrusel-pista {
     display: flex;
     gap: 8px;
@@ -5344,6 +5369,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     scrollbar-width: none;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
+    /* Sobre la píldora, para que el texto se lea encima de ella. */
+    position: relative;
+    z-index: 1;
   }
   .carrusel-pista::-webkit-scrollbar { display: none; }
   /* Relleno a cada lado: sin esto, la primera y la última sección no pueden
@@ -5369,9 +5397,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     white-space: nowrap;
     transition: background-color var(--dur) ease, color var(--dur) ease;
   }
+  /* Sin fondo propio: el resalte lo pone la píldora fija de detrás. Solo
+     cambia el color del texto, que es lo que la píldora hace legible. */
   .carrusel-item.activo {
-    background: var(--brand, #059669);
-    color: #fff;
+    background: transparent;
+    color: var(--brand, #059669);
+    font-weight: 700;
   }
   .carrusel-badge {
     min-width: 18px; padding: 0 5px;
