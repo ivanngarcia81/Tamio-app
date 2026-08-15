@@ -4858,27 +4858,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .main .header,
   .main .content { animation-fill-mode: backwards; }
 
-  /* Campos de fecha/hora en el iPhone: el control nativo de iOS conserva un
-     ancho intrínseco propio e IGNORA el text-align del <input> (por eso el
-     valor salía centrado y el campo se salía por la derecha). Con
-     -webkit-appearance: none el campo obedece al ancho del contenedor y a
-     nuestro estilo de caja, y el selector nativo sigue abriéndose al tocar.
-     El valor va en un pseudo-elemento aparte: se alinea y se deja encoger
-     ahí. Solo iPhone: en Mac e iPad el control nativo ya cabe. */
-  input[type="date"].form-input,
-  input[type="time"].form-input,
-  input[type="month"].form-input {
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  input[type="date"].form-input::-webkit-date-and-time-value,
-  input[type="time"].form-input::-webkit-date-and-time-value,
-  input[type="month"].form-input::-webkit-date-and-time-value {
-    text-align: left;
-    min-width: 0;
-    margin: 0;
-  }
-
   /* Modales como hoja a pantalla completa (patrón iOS): nunca quedan
      debajo de la barra superior ni descentrados con el teclado abierto.
      El min-width anula tanto los anchos mínimos inline como el
@@ -5219,6 +5198,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      Miembros en /miembros— se quedan. */
   .btn-nuevo-cabecera, .empty-accion.duplica-crear { display: none; }
 
+  /* Campos de fecha/hora en el iPhone: el control nativo de iOS conserva un
+     ancho intrínseco propio e IGNORA el text-align del <input> (por eso el
+     valor salía centrado y el campo se salía por la derecha, invadiendo la
+     columna vecina del formulario — se vio en "Nueva acta", en la fila
+     Fecha/Lugar). Con -webkit-appearance: none el campo obedece al ancho
+     del contenedor y a nuestro estilo de caja, y el selector nativo sigue
+     abriéndose al tocar. El valor va en un pseudo-elemento aparte: se
+     alinea y se deja encoger ahí.
+     Otra vez el mismo patrón de hoy: esta regla ya estaba ESCRITA —con un
+     comentario que decía "Solo iPhone"— pero vivía en el rango de iPad, así
+     que nunca llegó a ningún iPhone de verdad. Se traslada aquí entera; en
+     Mac e iPad el control nativo ya cabe y no la necesita. */
+  input[type="date"].form-input,
+  input[type="time"].form-input,
+  input[type="month"].form-input {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="date"].form-input::-webkit-date-and-time-value,
+  input[type="time"].form-input::-webkit-date-and-time-value,
+  input[type="month"].form-input::-webkit-date-and-time-value {
+    text-align: left;
+    min-width: 0;
+    margin: 0;
+  }
+
   /* Modales como hoja a pantalla completa (patrón iOS): nunca quedan
      debajo de la barra superior ni descentrados con el teclado abierto.
      El min-width anula tanto los anchos mínimos inline como el
@@ -5549,6 +5554,360 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .carrusel-item.activo .carrusel-badge {
     background: rgba(255, 255, 255, .22); color: #fff;
   }
+
+  /* ---- Migrado del rango de iPad (línea ~4436) ----
+     Todo lo que sigue estaba escrito y comentado pensando en el teléfono
+     ("Solo iPhone", "en un teléfono", "440 pt", "393 del teléfono"...) pero
+     vivía dentro de `@media (min-width: 601px) and (max-width: 1023px)`
+     —el rango EXCLUSIVO de iPad— así que nunca llegó a un iPhone real. Se
+     duplica aquí (no se mueve, para no arriesgar el iPad que sí funciona)
+     dejando fuera solo lo que es propio de la navegación de iPad (cajón
+     lateral, ☰, barra superior con blur): el teléfono ya tiene su propia
+     barra inferior + carrusel y no los necesita. */
+  .header-actions { justify-content: flex-start; }
+
+  /* Tarjetas de resumen de dos en dos (estilo apps de banca): un solo
+     número no necesita todo el ancho, y así la página respira sin tanto
+     scroll para llegar a las tablas. !important porque varias páginas fijan
+     la plantilla en el style inline (repeat(auto-fit, minmax(200-240px,
+     1fr))), que en un teléfono siempre resuelve a una sola columna. */
+  .summary, .summary-4, .summary-5, .summary-8 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+  /* En dos columnas, la fila "número + mini-gráfica" (90px fija) empujaba la
+     tarjeta más allá del borde. Se apilan: número arriba, gráfica abajo. */
+  .summary-4 .stat-row, .summary-5 .stat-row { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+  .summary-4 .stat-row .spark, .summary-5 .stat-row .spark { width: 100%; }
+
+  /* Zona de peligro: el botón dejaba la descripción en una columna de seis
+     líneas. En teléfono se apila y el botón ocupa el ancho. */
+  .danger-row { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+  .danger-row .btn.danger-btn { width: 100%; justify-content: center; }
+
+  /* ---- Los tres "fantasmas" (Dashboard, Gastos, Reportes) ----
+     Contenido de tabla con scroll horizontal que se pintaba fuera de su
+     contenedor por culpa de un `sticky` inútil (la cabecera nunca puede
+     despegarse porque el contenedor solo desplaza en horizontal). */
+  .data-table .thead { position: static !important; }
+  .data-table, .tx-list { contain: paint; }
+  .card:has(.data-table), .card:has(.tx-list) { overflow: hidden; }
+
+  /* ---- Movimientos: de tabla de 8 columnas a tarjeta ----
+     En 440 pt la fecha y el monto no caben a la vez. Cada fila pasa a ser
+     una tarjeta con el importe destacado; el resto son metadatos. */
+  .data-table.tabla-tx .thead { display: none; }
+  .data-table.tabla-tx .tr {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "principal  monto"
+      "secundaria estado"
+      "fecha      metodo"
+      "persona    acciones";
+    gap: var(--space-2) 10px;
+    align-items: center;
+    padding: 10px 12px;
+  }
+  .data-table.tabla-tx .tr > .td { padding: 0; min-width: 0; }
+  .data-table.tabla-tx .tr > .td:nth-child(1) { grid-area: fecha; }
+  .data-table.tabla-tx .tr > .td:nth-child(2) { grid-area: principal; }
+  .data-table.tabla-tx .tr > .td:nth-child(3) { grid-area: secundaria; }
+  .data-table.tabla-tx .tr > .td:nth-child(4) { grid-area: persona; }
+  .data-table.tabla-tx .tr > .td:nth-child(5) { grid-area: metodo; justify-self: end; }
+  .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; justify-self: end; }
+  .data-table.tabla-tx .tr > .td:nth-child(7) { grid-area: estado; justify-self: end; }
+  .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; justify-self: end; }
+  .data-table.tabla-tx .tx-amount { font-size: var(--fs-card-title); }
+  .tx-amount { white-space: nowrap; }
+
+  /* ---- Archivo de cartas: de tabla de 6 columnas a tarjeta ----
+     Sus columnas suman ~590 px fijos, muy por encima de los 393 del
+     teléfono. El nombre del documento manda, el estado va como pastilla a
+     la derecha, el folio como riel izquierdo y la fecha debajo. */
+  .data-table.tabla-doc .thead { display: none; }
+  .data-table.tabla-doc .tr {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas:
+      "principal principal estado"
+      "folio     fecha     acciones";
+    gap: var(--space-1) 10px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+  .data-table.tabla-doc .tr > .td { padding: 0; min-width: 0; }
+  .data-table.tabla-doc .tr > .td:nth-child(2) { grid-area: principal; }
+  .data-table.tabla-doc .tr > .td:nth-child(1) {
+    grid-area: folio;
+    font-size: var(--fs-caption);
+    color: var(--text-3);
+    white-space: nowrap;
+  }
+  .data-table.tabla-doc .tr > .td:nth-child(3) { grid-area: fecha; }
+  .data-table.tabla-doc .tr > .td:nth-child(4) { grid-area: estado; justify-self: end; }
+  .data-table.tabla-doc .tr > .td:nth-child(5) { display: none; } /* Modificada */
+  .data-table.tabla-doc .tr > .td:nth-child(6) { grid-area: acciones; justify-self: end; }
+
+  /* ---- Movimientos recientes del inicio ----
+     La fecha es una línea compacta que encabeza el grupo, y cada movimiento
+     es una tarjeta de dos líneas: descripción e importe arriba, categoría,
+     método y menú debajo como metadatos. */
+  .tx-day {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    padding: 12px 14px;
+  }
+  .day-label {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding-top: 0;
+  }
+  .day-label .day-num { font-size: var(--fs-card-title); }
+  .day-label .day-month { margin-top: 0; }
+
+  .tx-row {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "icono desc  desc   monto"
+      "icono tag   metodo menu";
+    gap: var(--space-1) 8px;
+    align-items: center;
+  }
+  .tx-row > .tx-icon { grid-area: icono; align-self: start; }
+  .tx-row > .tx-desc { grid-area: desc; }
+  .tx-row > .tx-desc,
+  .tx-row > .tx-desc .who {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tx-row > .tag { grid-area: tag; justify-self: start; }
+  .tx-row > .method { grid-area: metodo; justify-self: start; }
+  .tx-row > .tx-amount {
+    grid-area: monto;
+    justify-self: end;
+    font-size: var(--fs-card-title);
+    white-space: nowrap;
+  }
+  .tx-row > .more { grid-area: menu; justify-self: end; }
+
+  /* ---- Selector de categoría del formulario de movimientos ----
+     Con once categorías, cuatro columnas fijas no caben en 440 pt: los
+     chips fluyen y se ajustan a su contenido. */
+  .category-grid, .type-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .category-grid .cat-pill, .type-grid .cat-pill { width: auto; }
+
+  /* Asistente de IA: el botón baja a su propia línea y el campo se queda
+     con todo el ancho. */
+  .ia-capture-row { flex-wrap: wrap; }
+  .ia-capture-row .form-input { flex: 1 1 100%; }
+  .ia-capture-row .btn.ia-primary { flex: 1 1 100%; justify-content: center; }
+  .ia-capture-hint { padding-left: 0; }
+
+  /* El color pleno es exclusivo del chip elegido; el resto va apagado pero
+     conserva su tinte para reconocerlo de un vistazo. */
+  .cat-pill { filter: saturate(.18) !important; opacity: .8; }
+  .cat-pill.is-selected {
+    filter: none !important;
+    opacity: 1;
+    font-weight: 700;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 2px var(--ink) inset;
+  }
+
+  /* ---- Resumen mensual: de tabla a lista rotulada ----
+     El mes pasa a título y las cuatro cifras a una cuadrícula de 2x2, cada
+     una con su rótulo. */
+  .data-table.tabla-resumen-mes .thead { display: none; }
+  .data-table.tabla-resumen-mes .tr {
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--space-3);
+    padding: 12px;
+  }
+  .data-table.tabla-resumen-mes .tr > .td {
+    padding: 0;
+    min-width: 0;
+    text-align: left !important;
+  }
+  .data-table.tabla-resumen-mes .tr > .td:first-child {
+    grid-column: 1 / -1;
+    font-size: var(--fs-card-title);
+  }
+  .data-table.tabla-resumen-mes .tr > .td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--fs-table-head);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--track-caps);
+    color: var(--text-2);
+  }
+
+  /* La fila de total siempre dice 100%: en un ancho escaso no aporta. */
+  .report-preview .r-row.total .r-pct.solo-escritorio { display: none; }
+
+  /* ---- Consolidación del reporte ----
+     El desglose por categoría es el contenido propio de la pantalla; arriba
+     queda una franja con lo único que no se repite: balance y depósitos. */
+  .report-preview { display: flex; flex-direction: column; }
+  .report-preview .r-summary { order: -1; }
+  .report-preview .r-summary .r-dup { display: none; }
+  .report-preview .r-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    padding: 14px;
+    margin-top: 0;
+    margin-bottom: 18px;
+  }
+  .report-preview .r-summary .v { font-size: var(--fs-modal-title); }
+  .report-preview .r-row { grid-template-columns: 12px 1fr auto 46px; gap: var(--space-2); }
+
+  /* Detalles redundantes en pantalla angosta. */
+  .solo-escritorio { display: none; }
+
+  /* Mensajes como un chat de verdad: la tarjeta llena lo que queda de
+     pantalla, el hilo desplaza por dentro y el compositor se queda pegado
+     abajo. */
+  .main:has(.msg-card) { overflow: hidden; }
+  .main:has(.msg-card) .content { flex: 1 1 auto; min-height: 0; padding-bottom: 0; }
+  .msg-card { height: auto; min-height: 0; flex: 1 1 auto; }
+  .msg-thread { padding: 14px; }
+  .msg-bubble { max-width: 86%; }
+  .msg-composer { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+  .msg-composer .btn.primary:disabled { opacity: .3; }
+
+  /* El disparador del menú de fila (···) alcanza el objetivo táctil de
+     44pt. */
+  .data-table .tr > .td:last-child { padding-left: 0; padding-right: 0; }
+  .data-table .more {
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-right: 6px;
+  }
+
+  /* Densidad compacta: los tamaños "aireados" de la Mac desperdician
+     pantalla en un teléfono. */
+  :root {
+    --fs-page-title: 24px;
+    --fs-stat-lg: 24px;
+    --fs-stat-md: 20px;
+    --fs-stat-sm: 18px;
+  }
+  .stat-card { padding: 13px 14px 12px; }
+  .summary, .summary-4, .summary-5, .summary-8 { gap: var(--space-3); }
+  .dash-canvas { gap: var(--space-4); padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
+
+  /* Onboarding (primer arranque): .welcome-overlay es un grid con columna
+     implícita "auto" dimensionada al CONTENIDO (480px), así que el
+     max-width:100% de la tarjeta no topaba contra nada real y se salía por
+     la derecha. minmax(0,1fr) hace que el 100% tope contra la pantalla. */
+  .welcome-overlay { grid-template-columns: minmax(0, 1fr); overflow-x: hidden; }
+
+  .header { row-gap: var(--space-2); padding-bottom: 10px; }
+  .content { gap: var(--space-4); padding-top: 8px; padding-left: 14px; padding-right: 14px; }
+  /* minmax(0, 1fr), no "1fr": un "1fr" es minmax(auto, 1fr), y ese "auto"
+     deja que la columna crezca hasta el ancho intrínseco de su contenido.
+     El control nativo de fecha de iOS tiene un ancho intrínseco enorme, así
+     que estiraba la columna y el campo se salía del modal (se vio en "Nueva
+     acta", la fila Fecha/Lugar). */
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .charts, .split-2-1, .split-1-2 { grid-template-columns: 1fr; }
+
+  /* Los modales usan position: fixed, pero un ancestro con transform se
+     convierte en su "bloque contenedor" y los atrapa dentro de su caja.
+     .settings-card y .content animan su entrada con fill-mode: both (o
+     heredan `routeIn`, línea ~311), y una animación de transform con "both"
+     deja aplicada la MATRIZ IDENTIDAD al terminar — un transform que sí crea
+     bloque contenedor. Con "backwards" la entrada se ve idéntica pero no
+     deja transform al terminar: es la misma familia de bug que ya se
+     resolvió para el carrusel (más arriba, con las animaciones
+     entradaDer/entradaIzq), pero esta cubre las páginas SIN carrusel (o el
+     primer tramo antes de que exista `data-dir-nav`), donde `.main .header`
+     y `.main .content` seguían heredando el `routeIn` global de línea 311. */
+  .settings-card,
+  .main .header,
+  .main .content { animation-fill-mode: backwards; }
+
+  /* Celdas con menos relleno lateral: más espacio útil por columna. */
+  .data-table .th, .data-table .td,
+  .data-table.roomy .th, .data-table.roomy .td { padding: 11px 10px; }
+
+  /* Si un selector segmentado no cabe, que se pueda desplazar de lado en
+     vez de desbordar la tarjeta. */
+  .tabs-segmented { max-width: 100%; overflow-x: auto; }
+
+  /* Tablas anchas: sin un ancho mínimo, la rejilla de cada fila se comprime
+     al ancho del teléfono y recorta columnas sin remedio. Con él, las filas
+     conservan su tamaño natural y la tabla se desliza de lado (el
+     contenedor .data-table ya trae overflow-x: auto). Las tablas
+     convertidas en tarjeta (arriba) y las seis de abajo ganan por
+     especificidad (tres clases contra dos) y quedan con min-width: 0. */
+  .data-table .thead, .data-table .tr { min-width: 640px; }
+
+  /* Miembros en teléfono: solo lo esencial (nombre + total del año + menú),
+     sin scroll lateral. Etiquetas, último aporte y contacto viven en la
+     ficha que se abre al tocar la fila. */
+  .tabla-miembros .thead, .tabla-miembros .tr {
+    grid-template-columns: minmax(0, 1fr) 104px 52px !important;
+    min-width: 0;
+  }
+  .tabla-miembros .th:nth-child(2), .tabla-miembros .td:nth-child(2),
+  .tabla-miembros .th:nth-child(3), .tabla-miembros .td:nth-child(3),
+  .tabla-miembros .th:nth-child(5), .tabla-miembros .td:nth-child(5) { display: none; }
+  .tabla-miembros .row-actions, .tabla-depositos .row-actions { display: none; }
+
+  /* Depósitos en teléfono: fecha + banco + monto + menú, sin scroll
+     lateral. */
+  .tabla-depositos .thead, .tabla-depositos .tr {
+    grid-template-columns: 74px minmax(0, 1fr) 104px 52px !important;
+    min-width: 0;
+  }
+  .tabla-depositos .th:nth-child(3), .tabla-depositos .td:nth-child(3),
+  .tabla-depositos .th:nth-child(4), .tabla-depositos .td:nth-child(4) { display: none; }
+
+  /* Actas en teléfono: título + fecha + estado + menú; el folio y quien
+     preside se ven al abrir el acta. */
+  .tabla-actas .thead, .tabla-actas .tr {
+    grid-template-columns: minmax(0, 1fr) 74px 104px 52px !important;
+    min-width: 0;
+  }
+  .tabla-actas .th:nth-child(1), .tabla-actas .td:nth-child(1),
+  .tabla-actas .th:nth-child(4), .tabla-actas .td:nth-child(4) { display: none; }
+  .tabla-actas .row-actions { display: none; }
+
+  /* Servicios en teléfono: fecha + servicio + asistencia + menú; el
+     predicador se ve al abrir el servicio. */
+  .tabla-servicios .thead, .tabla-servicios .tr {
+    grid-template-columns: 74px minmax(0, 1fr) 56px 52px !important;
+    min-width: 0;
+  }
+  .tabla-servicios .th:nth-child(3), .tabla-servicios .td:nth-child(3) { display: none; }
+
+  /* Informe de miembros en teléfono: miembro + asistencia; las fechas, el
+     área de servicio y la edición se hacen desde la ficha (tocar la fila). */
+  .tabla-informe-miembros .thead, .tabla-informe-miembros .tr {
+    grid-template-columns: minmax(0, 1fr) 92px !important;
+    min-width: 0;
+  }
+  .tabla-informe-miembros .th:nth-child(2), .tabla-informe-miembros .td:nth-child(2),
+  .tabla-informe-miembros .th:nth-child(3), .tabla-informe-miembros .td:nth-child(3),
+  .tabla-informe-miembros .th:nth-child(5), .tabla-informe-miembros .td:nth-child(5) { display: none; }
+
+  /* Membresía en teléfono: miembro + estado + menú; contacto y fecha de
+     ingreso se ven en la ficha (tocar la fila). */
+  .tabla-membresia .thead, .tabla-membresia .tr {
+    grid-template-columns: minmax(0, 1fr) 96px 52px !important;
+    min-width: 0;
+  }
+  .tabla-membresia .th:nth-child(2), .tabla-membresia .td:nth-child(2),
+  .tabla-membresia .th:nth-child(3), .tabla-membresia .td:nth-child(3) { display: none; }
+  .tabla-membresia .row-actions { display: none; }
 }
 
 /* La hoja de "¿Qué desea crear?" */
