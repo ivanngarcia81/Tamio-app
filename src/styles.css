@@ -5220,6 +5220,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      debajo de la barra de estado. Pantallas cortas (sin scroll) parecían
      correctas y las largas no, que fue justo el síntoma.
      `.header` pasa a un valor fijo para no sumar el hueco dos veces. */
+  /* Sin la transición de entrada de página en el teléfono. No es un capricho
+     estético: `routeIn` anima `transform` y `opacity` con `fill-mode: both`,
+     así que en WebKit —el motor de iOS— el elemento se queda con contexto de
+     apilamiento propio para siempre, y el contenido acababa pintándose ENCIMA
+     del carrusel por mucho z-index que este llevara. En la Mac y el iPad la
+     animación se queda. */
+  .main .header, .main .content { animation: none; }
+
   .app { padding-top: env(safe-area-inset-top); }
   /* `.header` y `.content` traen el hueco de la muesca desde la base móvil
      (:root.movil, para el iPad); aquí ya lo pone `.app`, así que sumarlo otra
@@ -5300,7 +5308,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     scroll-padding-inline: 20px;
     position: sticky;
     top: 0;
-    z-index: 20;
+    z-index: 30;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
