@@ -1,7 +1,59 @@
 # Plan de 4.2 — pasar el dinero a centavos enteros
 
-**Estado: escrito, NO empezado.** Este documento existe para poder decidir con
-datos antes de tocar una línea. Nada de lo que hay aquí está implementado.
+**Estado (11 ago 2026): EN CURSO, en la rama `centavos`. `main` sin tocar.**
+
+| Paso | Estado |
+|---|---|
+| 0. Rama propia | ✅ `centavos` |
+| 1. `src/dinero.ts` y el tipo `Centavos` | ✅ 38 comprobaciones (`npm run verificar-dinero`) |
+| 2. Las funciones de formato reciben `Centavos` | ✅ 112 errores = la lista de tareas del paso 4 |
+| 3. La migración de la base | ✅ migración **36** (`npm run verificar-migracion-36`) |
+| 4. Las fronteras y la aritmética | ✅ 112 → 0 errores; compila, `cargo check` y build en verde |
+| 5. Pruebas antes de fundir | ✅ las cinco automatizadas · ⏳ falta la vuelta en la Mac |
+| 6. Respaldo automático antes de migrar | ✅ `motordb::respaldo_antes_de_migrar` (`cd harness-db && cargo run`) |
+
+**Comprobado al cerrar el paso 4:** no queda ni una división entre 100 fuera de
+`src/dinero.ts` en todo `src/`. Esa es la invariante de la que depende todo lo
+demás, y desde el paso 5 hay una prueba que se pone roja si alguien la rompe.
+
+### Las pruebas — `npm run verificar-centavos`
+
+Ese comando ejecuta las cinco de una vez. **No dependen de `node_modules`:**
+solo usan `node:sqlite` y `src/dinero.ts`, así que corren en un clon recién
+hecho sin instalar nada.
+
+| Prueba del paso 5 | Dónde vive |
+|---|---|
+| 1. Respaldo de antes, restaurado después | `scripts/verificar-respaldo.mjs` |
+| 2. CSV de la versión vieja | `scripts/verificar-csv-centavos.ts` |
+| 3. `0.01`, `1.15` y `999999.99` | `scripts/verificar-estado-financiero.ts` |
+| 4. El total cuadra con la suma de sus líneas | `scripts/verificar-estado-financiero.ts` |
+| 5. Pantalla y PDF, la misma cifra | `scripts/verificar-estado-financiero.ts` |
+| — la migración en sí | `scripts/verificar-migracion-36.mjs` |
+| — `dinero.ts`, operación por operación | `scripts/verificar-dinero.ts` |
+
+Las tres pruebas que leen SQL o código **lo extraen del archivo de verdad**
+(`lib.rs`, `db.ts`) en vez de copiarlo. Una copia se habría desviado en
+silencio el día que alguien edite el original, que es la peor forma de tener una
+prueba: verde y sin mirar nada.
+
+**Lo que las pruebas automáticas NO cubren, y por qué.** El respaldo real es un
+ZIP con la base cifrada con SQLCipher más la carpeta de documentos, y el
+recorrido entero —hacer el ZIP, restaurarlo, reiniciar, fusionar los
+documentos— solo existe dentro de la app. Lo automatizado es la parte por donde
+se pierde dinero: que la migración conserve el total, que restaurar una base sin
+migrar dé la misma cifra que la que nunca se restauró, y que la 36 **no pueda
+aplicarse dos veces** (aplicarla dos veces no daría ningún error: multiplicaría
+el libro entero por 100). La vuelta con la app abierta hay que darla en la Mac.
+
+**Lo que queda para fundir en `main`:** la vuelta en la Mac del paso 5, y que
+Apple apruebe la 1.0.
+
+> 🔴 **Antes de abrir un build de esta rama en la Mac:** la migración corre sola
+> al arrancar. Desde el paso 6 la app se hace una copia sola justo antes, pero
+> ese archivo vive en la misma carpeta y está cifrado con la clave de esa Mac.
+> Hazte además el respaldo de Ajustes y guárdalo fuera: es el único que se puede
+> abrir en otro equipo.
 
 ---
 
@@ -110,10 +162,70 @@ convierte una migración en una pérdida de un centavo por fila.
    centavo, con al menos unos cientos de movimientos.
 5. El PDF y la pantalla muestran la misma cifra.
 
-**Paso 6 — Marcha atrás.** La migración no se puede deshacer sola. Antes de
-publicar la versión que la lleve, la app tiene que **hacerse un respaldo
-automático** de la base en su carpeta de datos. Si algo sale mal en un equipo
-real, se restaura ese archivo.
+**Las cinco están automatizadas** (`npm run verificar-centavos`; la tabla de
+arriba dice qué script cubre cuál). Lo que sigue es la vuelta que hay que dar en
+la Mac, que no sustituye a las pruebas sino que comprueba lo único que ellas no
+pueden tocar: la app entera funcionando.
+
+**La vuelta en la Mac — en este orden, y no antes del paso 6:**
+
+1. **Respaldo a mano primero**, guardado fuera de la carpeta de la app.
+   Ajustes → Respaldo completo. Este archivo es la marcha atrás de todo lo
+   demás.
+2. Apuntar en un papel el **total de ingresos, el de gastos y el balance** del
+   mes con más movimientos, tal y como los muestra la 1.0.8.
+3. Abrir el build de la rama. La migración corre sola al arrancar.
+4. Volver a ese mes: los tres números tienen que ser **idénticos** a los del
+   papel. Si alguno cambia, parar ahí y restaurar el respaldo del punto 1.
+5. Exportar el estado financiero de ese mes en PDF y comparar el total del PDF
+   con el de la pantalla (prueba 5, la mitad que se ve con los ojos).
+6. Registrar un movimiento de **1.15**, otro de **0.01** y otro de
+   **999999.99**; comprobar que se ven bien en la lista, en el total y en el
+   PDF.
+7. Restaurar el respaldo del punto 1 —el que se hizo **antes** de migrar— y
+   comprobar que los totales vuelven a salir iguales (prueba 1, con el ZIP
+   cifrado de verdad y los documentos).
+
+**Paso 6 — Marcha atrás.** ✅ **Hecho.** La migración no se puede deshacer sola,
+así que la app **se copia la base antes de tocarla**:
+`motordb::respaldo_antes_de_migrar()`, llamada desde `iniciar_db()` justo antes
+de `correr_migraciones()`. El archivo queda al lado de la base, como
+`tesoreria.db.antes-de-migrar-<marca>-v36`.
+
+No vale para la 36 sola: **toda migración futura hereda la red gratis.**
+
+Cuatro decisiones que no son obvias:
+
+- **Solo copia si de verdad hay algo pendiente.** En un arranque normal la
+  función no toca el disco. El coste se paga una vez por actualización con
+  esquema nuevo, que es justo cuando importa. Tampoco copia en una instalación
+  nueva: se comprueba que no se haya migrado nunca **y** que no exista ni una
+  tabla, porque el archivo ya pesa desde que se abre —activar WAL le escribe una
+  cabecera— y mirar solo el tamaño hacía una copia inútil en cada instalación.
+- **Consolida el diario (WAL) antes de copiar.** El `.db` por sí solo puede no
+  tener los últimos movimientos: están en el `-wal`. Copiarlo sin absorberlo
+  daría un respaldo al que le faltan justo los registros más recientes. Si el
+  checkpoint no termina, se copian también el `-wal` y el `-shm`.
+- **Si no cabe en el disco, NO se migra.** La app no abre y dice por qué, con la
+  frase "la base de datos NO se ha tocado". Es la decisión incómoda: cambia un
+  fallo molesto y reversible —liberar espacio y volver a abrir— por evitar uno
+  irreversible.
+- **Se guardan las tres más recientes.** Solo se crea una por actualización con
+  esquema nuevo, así que tres cubre tres versiones hacia atrás. Se ordenan por
+  la marca del nombre y no por la fecha del archivo: copiar la carpeta cambia
+  las fechas del sistema y dejaría el orden al azar.
+
+**Cómo se prueba:** `cd harness-db && cargo run`. `motordb.rs` no depende de
+Tauri a propósito, pero hasta ahora no había forma de ejecutarlo sin compilar la
+app entera —y la app entera no compila fuera de una Mac, porque arrastra WebKit
+y GTK. `harness-db/` incluye el módulo con `#[path]`, sin duplicarlo, y lo
+ejerce con SQLite de verdad. Fue el harness el que encontró que la primera
+versión respaldaba también en instalaciones nuevas.
+
+**Lo que este respaldo NO es:** no sustituye al respaldo del tesorero. Es una
+copia del archivo cifrado, con la clave del Llavero de **esa** Mac, así que
+sirve para volver atrás en el mismo equipo y no para llevársela a otro. El
+respaldo portátil sigue siendo el ZIP de Ajustes.
 
 ## 5. Riesgos
 

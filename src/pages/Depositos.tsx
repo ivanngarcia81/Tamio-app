@@ -12,6 +12,7 @@ import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
+import { CERO, sumar, type Centavos } from "../dinero";
 
 const PAGE_SIZE = 40;
 
@@ -24,7 +25,7 @@ interface Props {
 export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
   const [depositos, setDepositos] = useState<Deposito[]>([]);
-  const [totalMes, setTotalMes] = useState(0);
+  const [totalMes, setTotalMes] = useState<Centavos>(CERO);
   const [conteoMes, setConteoMes] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Deposito | null>(null);
@@ -57,9 +58,9 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   // salen de `depositos`, que ya se carga entero: no hacen falta consultas
   // nuevas. El año se mide por PERÍODO, igual que el resto de los totales.
   const anio = currentYear();
-  const totalAnio = depositos
-    .filter((d) => d.periodo.startsWith(anio))
-    .reduce((acc, d) => acc + d.monto, 0);
+  const totalAnio = sumar(
+    ...depositos.filter((d) => d.periodo.startsWith(anio)).map((d) => d.monto),
+  );
   const ultimo = depositos.reduce<Deposito | null>(
     (mejor, d) => (mejor === null || d.fecha > mejor.fecha ? d : mejor),
     null,
@@ -102,7 +103,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
               <div className="stat-icon neutral"><IconBank size={15} strokeWidth={1.8} /></div>
             </div>
             <div className="stat-value md">
-              <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+              <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">
               {t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}
@@ -115,7 +116,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
               <div className="stat-icon neutral"><IconBank size={15} strokeWidth={1.8} /></div>
             </div>
             <div className="stat-value md">
-              <CountUp value={totalAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+              <CountUp value={totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">{anio}</div>
           </div>
@@ -127,7 +128,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             </div>
             <div className="stat-value md">
               {ultimo
-                ? <><CountUp value={ultimo.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></>
+                ? <><CountUp value={ultimo.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></>
                 : <span style={{ color: "var(--text-3)" }}>—</span>}
             </div>
             <div className="stat-foot">

@@ -15,6 +15,7 @@ import CountUp from "../components/CountUp";
 import DashboardCharts from "../components/DashboardCharts";
 import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
+import { CERO, restar } from "../dinero";
 
 interface Props {
   church: Church;
@@ -82,9 +83,9 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     lastActivityAt(church.id).then(setUltimaActividad).catch(console.error);
   }, [church.id, refreshKey, mes, mesAnterior]);
 
-  const ingresos = totales?.ingresos ?? 0;
-  const gastos = totales?.gastos ?? 0;
-  const balance = ingresos - gastos;
+  const ingresos = totales?.ingresos ?? CERO;
+  const gastos = totales?.gastos ?? CERO;
+  const balance = restar(ingresos, gastos);
 
   // Refleja el balance del mes en el menú de la barra de menús de macOS,
   // para verlo de un vistazo sin abrir la ventana.
@@ -94,10 +95,10 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
       texto: `${t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}: ${fmtMoney(balance)} ${church.moneda}`,
     }).catch(() => {});
   }, [totales, balance, church.moneda, mes, t]);
-  const ingresosAnt = totalesAnt?.ingresos ?? 0;
-  const gastosAnt = totalesAnt?.gastos ?? 0;
-  const balanceAnt = ingresosAnt - gastosAnt;
-  const balanceAnio = (anio?.ingresos ?? 0) - (anio?.gastos ?? 0);
+  const ingresosAnt = totalesAnt?.ingresos ?? CERO;
+  const gastosAnt = totalesAnt?.gastos ?? CERO;
+  const balanceAnt = restar(ingresosAnt, gastosAnt);
+  const balanceAnio = restar(anio?.ingresos ?? CERO, anio?.gastos ?? CERO);
 
   const categoriaTopGasto = useMemo(() => {
     const entries = Object.entries(totales?.porCategoriaGasto ?? {});
@@ -133,14 +134,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const categoriasIngreso = useMemo(
     () =>
       getCategoriasIngreso()
-        .map((c) => ({ nombre: catNombre(c.id), monto: totales?.porCategoriaIngreso[c.id] ?? 0 }))
+        .map((c) => ({ nombre: catNombre(c.id), monto: totales?.porCategoriaIngreso[c.id] ?? CERO }))
         .filter((c) => c.monto > 0),
     [totales]
   );
   const categoriasGasto = useMemo(
     () =>
       getCategoriasGasto()
-        .map((c) => ({ nombre: catNombre(c.id), monto: totales?.porCategoriaGasto[c.id] ?? 0 }))
+        .map((c) => ({ nombre: catNombre(c.id), monto: totales?.porCategoriaGasto[c.id] ?? CERO }))
         .filter((c) => c.monto > 0)
         .sort((a, b) => b.monto - a.monto),
     [totales]
@@ -172,8 +173,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           gastos,
           balanceFinal: balance,
           depositosBancarios,
-          diezmos: totales?.porCategoriaIngreso["diezmo"] ?? 0,
-          ofrendas: totales?.porCategoriaIngreso["ofrenda"] ?? 0,
+          diezmos: totales?.porCategoriaIngreso["diezmo"] ?? CERO,
+          ofrendas: totales?.porCategoriaIngreso["ofrenda"] ?? CERO,
         },
         indicadores: {
           ingresosDelMes: ingresos,
@@ -210,7 +211,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             {/* La cifra que el tesorero mira primero también comunica el signo,
                 con la misma semántica de color que las tarjetas de abajo. */}
             <div className={`amount ${balance >= 0 ? "pos" : "neg"}`}>
-              <CountUp value={balance} format={fmtMoney} />
+              <CountUp value={balance} format={fmtMoney} paso={100} />
             </div>
             <div className="currency">{church.moneda}</div>
           </div>
@@ -248,7 +249,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             <div className="stat-row">
               <div className="stat-value md">
-                <CountUp value={ingresos} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
               </div>
               <Sparkline data={dias.map((d) => d.ingresos)} color="var(--accent-1)" />
             </div>
@@ -264,7 +265,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             <div className="stat-row">
               <div className="stat-value md">
-                <CountUp value={gastos} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
               </div>
               <Sparkline data={dias.map((d) => d.gastos)} color="var(--accent-2)" />
             </div>
@@ -286,7 +287,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               </div>
             </div>
             <div className="stat-value md">
-              <CountUp value={balance} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+              <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">
               <Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}
@@ -303,10 +304,10 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               </div>
             </div>
             <div className="stat-value md">
-              <CountUp value={balanceAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+              <CountUp value={balanceAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
             <div className="stat-foot">
-              {t("dashboard.anioResumen", { anio: currentYear(), ingresos: fmtMoney(anio?.ingresos ?? 0), gastos: fmtMoney(anio?.gastos ?? 0) })}
+              {t("dashboard.anioResumen", { anio: currentYear(), ingresos: fmtMoney(anio?.ingresos ?? CERO), gastos: fmtMoney(anio?.gastos ?? CERO) })}
             </div>
           </div>
         </div>
@@ -322,7 +323,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                   {categoriaTopGasto.info.nombre}
                 </span>
                 <div className="stat-value md">
-                  <CountUp value={categoriaTopGasto.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                  <CountUp value={categoriaTopGasto.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
                 </div>
                 <div className="stat-bar">
                   <div className="stat-bar-fill" style={{ width: `${categoriaTopGasto.pct}%`, background: "var(--accent-2)" }} />

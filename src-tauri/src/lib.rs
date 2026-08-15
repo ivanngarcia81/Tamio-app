@@ -680,6 +680,54 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- sí viaja.
             ALTER TABLE agenda ADD COLUMN servicio_id INTEGER;
         "#,
+    }, motordb::Migracion {
+        version: 36,
+        description: "dinero en centavos enteros (plan-centavos.md)",
+        sql: r#"
+            -- Los cuatro importes de la app pasan de REAL (coma flotante) a
+            -- INTEGER de centavos: $125.50 se guarda como 12550. En coma
+            -- flotante hay decimales corrientes que no se representan exactos,
+            -- y sumados con SUM() en cientos de movimientos la deriva produce
+            -- un estado financiero cuyo total no cuadra con sus líneas.
+            --
+            -- ROUND ANTES DEL CAST, y no es opcional: CAST trunca, y
+            -- 1.15 * 100 en coma flotante da 114.99999999999999, así que
+            -- CAST(1.15 * 100 AS INTEGER) devuelve 114. Sin ROUND esta
+            -- migración pierde un centavo en una de cada tantas filas, en
+            -- silencio y sin vuelta atrás.
+            --
+            -- Se hace con ADD/UPDATE/DROP/RENAME en vez de reconstruir la
+            -- tabla: reconstruir obligaría a reproducir a mano el esquema
+            -- acumulado por 35 migraciones de ALTER TABLE, y equivocarse ahí
+            -- se lleva datos por delante. Comprobado antes de escribir esto:
+            -- ninguna de las cuatro columnas está en un índice, en un UNIQUE,
+            -- ni hay triggers o vistas en todo el esquema, que son los casos
+            -- en los que DROP COLUMN falla.
+            --
+            -- El orden de las columnas cambia (la nueva queda al final). No
+            -- afecta a nadie: los SELECT * se mapean por NOMBRE a objetos
+            -- tipados, y el sync usa listas explícitas de columnas.
+
+            ALTER TABLE transactions ADD COLUMN monto_centavos INTEGER NOT NULL DEFAULT 0;
+            UPDATE transactions SET monto_centavos = CAST(ROUND(monto * 100) AS INTEGER);
+            ALTER TABLE transactions DROP COLUMN monto;
+            ALTER TABLE transactions RENAME COLUMN monto_centavos TO monto;
+
+            ALTER TABLE depositos_bancarios ADD COLUMN monto_centavos INTEGER NOT NULL DEFAULT 0;
+            UPDATE depositos_bancarios SET monto_centavos = CAST(ROUND(monto * 100) AS INTEGER);
+            ALTER TABLE depositos_bancarios DROP COLUMN monto;
+            ALTER TABLE depositos_bancarios RENAME COLUMN monto_centavos TO monto;
+
+            ALTER TABLE gastos_recurrentes ADD COLUMN monto_centavos INTEGER NOT NULL DEFAULT 0;
+            UPDATE gastos_recurrentes SET monto_centavos = CAST(ROUND(monto * 100) AS INTEGER);
+            ALTER TABLE gastos_recurrentes DROP COLUMN monto;
+            ALTER TABLE gastos_recurrentes RENAME COLUMN monto_centavos TO monto;
+
+            ALTER TABLE churches ADD COLUMN saldo_inicial_centavos INTEGER NOT NULL DEFAULT 0;
+            UPDATE churches SET saldo_inicial_centavos = CAST(ROUND(saldo_inicial * 100) AS INTEGER);
+            ALTER TABLE churches DROP COLUMN saldo_inicial;
+            ALTER TABLE churches RENAME COLUMN saldo_inicial_centavos TO saldo_inicial;
+        "#,
     }]
 }
 
@@ -1251,11 +1299,7 @@ fn fusionar(origen: &std::path::Path, destino: &std::path::Path) -> Result<(), S
 }
 
 fn marca_de_tiempo() -> String {
-    let s = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    s.to_string()
+    motordb::marca_de_tiempo()
 }
 
 /// Aplica el respaldo preparado. Se llama en el arranque, ANTES de abrir la
@@ -1505,6 +1549,18 @@ fn iniciar_db(app: &tauri::AppHandle) -> Result<(rusqlite::Connection, bool), St
         }
         Err(e) => return Err(e.to_string()),
     };
+    // Red de seguridad ANTES de migrar: una migración no se deshace sola. Solo
+    // copia si de verdad hay algo pendiente, así que en un arranque normal no
+    // cuesta nada. Si devuelve error, NO se migra — ver la explicación larga en
+    // motordb::respaldo_antes_de_migrar.
+    if let Some(copia) = motordb::respaldo_antes_de_migrar(
+        &conn,
+        &ruta,
+        &migraciones(),
+        espacio_libre(&carpeta),
+    )? {
+        eprintln!("respaldo previo a la migración: {}", copia.display());
+    }
     motordb::correr_migraciones(&mut conn, &migraciones())?;
     Ok((conn, restaurado))
 }

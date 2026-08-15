@@ -18,6 +18,7 @@ import { playSound } from "../sound";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
 import { IconEdit, IconPlus, IconSearch, IconUpload } from "../icons";
 import CountUp from "../components/CountUp";
+import { CERO, sumar } from "../dinero";
 
 const TAG_CLASS: Record<string, string> = {
   diezmador: "diezmo",
@@ -133,11 +134,11 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   // escribe alguien a mano una vez y después nadie la mantiene, así que el
   // número que salía era el de una intención vieja, no el del año en curso.
   const resumen = useMemo(() => {
-    let diezmadores = 0, aportaron = 0, totalAnio = 0;
+    let diezmadores = 0, aportaron = 0, totalAnio = CERO;
     for (const m of members) {
       const s = stats[m.id];
       if (s?.diezmoAnio) diezmadores++;
-      if (s?.totalAnio) { aportaron++; totalAnio += s.totalAnio; }
+      if (s?.totalAnio) { aportaron++; totalAnio = sumar(totalAnio, s.totalAnio); }
     }
     return { total: members.length, diezmadores, aportaron, totalAnio };
   }, [members, stats]);
@@ -201,7 +202,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
               </div>
               <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
                 <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span></div>
+                <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
               </div>
             </div>
           </div>

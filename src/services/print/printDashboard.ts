@@ -1,6 +1,7 @@
 import type { Church } from "../../db";
 import i18n from "../../i18n";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
+import { sumar, type Centavos } from "../../dinero";
 import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl,
   openForPrint, PDF_SPACE, pct, slug,
@@ -10,22 +11,22 @@ export interface DashboardResumenFinanciero {
   /** Balance del mes anterior — no existe un saldo bancario acumulado
    *  persistido en la base de datos, así que se usa el resultado del
    *  periodo previo como "balance inicial" del mes actual. */
-  balanceInicial: number;
-  ingresos: number;
-  gastos: number;
-  balanceFinal: number;
+  balanceInicial: Centavos;
+  ingresos: Centavos;
+  gastos: Centavos;
+  balanceFinal: Centavos;
   /** Suma de los depósitos bancarios registrados en el periodo. */
-  depositosBancarios: number;
-  diezmos: number;
-  ofrendas: number;
+  depositosBancarios: Centavos;
+  diezmos: Centavos;
+  ofrendas: Centavos;
 }
 
 export interface DashboardIndicadores {
-  ingresosDelMes: number;
-  gastosDelMes: number;
-  balanceDelMes: number;
-  balanceDelAnio: number;
-  mayorGasto: { nombre: string; monto: number } | null;
+  ingresosDelMes: Centavos;
+  gastosDelMes: Centavos;
+  balanceDelMes: Centavos;
+  balanceDelAnio: Centavos;
+  mayorGasto: { nombre: string; monto: Centavos } | null;
   ingresoMasFrecuente: { nombre: string; conteo: number } | null;
   miembrosActivos: number;
   ultimaActualizacion: string;
@@ -33,7 +34,7 @@ export interface DashboardIndicadores {
 
 export interface CategoriaRow {
   nombre: string;
-  monto: number;
+  monto: Centavos;
 }
 
 export interface DashboardPrintData {
@@ -116,7 +117,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   doc.addGap(PDF_SPACE.md);
 
   // ---------- Resumen por categorías ----------
-  const totalIngresos = data.categoriasIngreso.reduce((s, c) => s + c.monto, 0);
+  const totalIngresos = sumar(...data.categoriasIngreso.map((c) => c.monto));
   doc.beginTable(i18n.t("pdf.ingresosPorCategoria"), cols);
   if (data.categoriasIngreso.length === 0) {
     doc.emptyRow(i18n.t("reportes.sinIngresosRegistrados"));
@@ -129,7 +130,7 @@ export async function printDashboard(data: DashboardPrintData): Promise<void> {
   doc.endTable();
   doc.addGap(PDF_SPACE.md);
 
-  const totalGastos = data.categoriasGasto.reduce((s, c) => s + c.monto, 0);
+  const totalGastos = sumar(...data.categoriasGasto.map((c) => c.monto));
   doc.beginTable(i18n.t("pdf.gastosPorCategoria"), cols);
   if (data.categoriasGasto.length === 0) {
     doc.emptyRow(i18n.t("reportes.sinGastosRegistrados"));

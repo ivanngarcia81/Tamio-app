@@ -1,6 +1,7 @@
 import Database from "./dbmotor";
 import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
+import { CERO, aDecimal, restar, sumar, type Centavos } from "./dinero";
 import { tonoCategoria } from "./colores";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
@@ -51,7 +52,7 @@ export interface Church {
   /** Saldo de apertura (migración v34): dinero en caja ANTES del primer
    *  movimiento registrado en Tamio. Se suma al acumulado de movimientos para
    *  el "saldo anterior" del estado financiero. 0 = arrancó de cero. */
-  saldo_inicial: number;
+  saldo_inicial: Centavos;
 }
 
 export interface Member {
@@ -253,7 +254,7 @@ export interface Tx {
   concepto: string;
   detalle: string | null;
   fecha: string; // "YYYY-MM-DD HH:MM"
-  monto: number;
+  monto: Centavos;
   moneda: string;
   metodo_pago: string;
   member_id: number | null;
@@ -492,7 +493,7 @@ export interface ChurchUpdate {
   pie_institucional?: string | null;
   secretaria_nombre?: string | null;
   secretaria_cargo?: string | null;
-  saldo_inicial?: number;
+  saldo_inicial?: Centavos;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -553,7 +554,7 @@ export interface NewTx {
   concepto: string;
   detalle?: string | null;
   fecha: string;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   member_id?: number | null;
   beneficiario?: string | null;
@@ -713,17 +714,19 @@ export async function listTx(
 }
 
 export interface MonthTotals {
-  ingresos: number;
-  gastos: number;
-  porCategoriaIngreso: Record<string, number>;
-  porCategoriaGasto: Record<string, number>;
+  ingresos: Centavos;
+  gastos: Centavos;
+  porCategoriaIngreso: Record<string, Centavos>;
+  porCategoriaGasto: Record<string, Centavos>;
+  /** Cuántos movimientos, no cuánto dinero: esto NO son centavos. */
   conteoCategoriaIngreso: Record<string, number>;
   conteoCategoriaGasto: Record<string, number>;
 }
 
 export async function monthTotals(churchId: number, yyyyMm: string): Promise<MonthTotals> {
   const d = await getDb();
-  const rows = await d.select<{ tipo: string; categoria: string; total: number; cnt: number }[]>(
+  // `total` es SUM de una columna INTEGER de centavos: ya viene en centavos.
+  const rows = await d.select<{ tipo: string; categoria: string; total: Centavos; cnt: number }[]>(
     `SELECT tipo, categoria, SUM(monto) AS total, COUNT(*) AS cnt
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 7) = $2 AND deleted = 0
@@ -731,18 +734,18 @@ export async function monthTotals(churchId: number, yyyyMm: string): Promise<Mon
     [churchId, yyyyMm]
   );
   const out: MonthTotals = {
-    ingresos: 0, gastos: 0,
+    ingresos: CERO, gastos: CERO,
     porCategoriaIngreso: {}, porCategoriaGasto: {},
     conteoCategoriaIngreso: {}, conteoCategoriaGasto: {},
   };
   for (const r of rows) {
     if (r.tipo === "ingreso") {
-      out.ingresos += r.total;
-      out.porCategoriaIngreso[r.categoria] = (out.porCategoriaIngreso[r.categoria] ?? 0) + r.total;
+      out.ingresos = sumar(out.ingresos, r.total);
+      out.porCategoriaIngreso[r.categoria] = sumar(out.porCategoriaIngreso[r.categoria] ?? CERO, r.total);
       out.conteoCategoriaIngreso[r.categoria] = (out.conteoCategoriaIngreso[r.categoria] ?? 0) + r.cnt;
     } else {
-      out.gastos += r.total;
-      out.porCategoriaGasto[r.categoria] = (out.porCategoriaGasto[r.categoria] ?? 0) + r.total;
+      out.gastos = sumar(out.gastos, r.total);
+      out.porCategoriaGasto[r.categoria] = sumar(out.porCategoriaGasto[r.categoria] ?? CERO, r.total);
       out.conteoCategoriaGasto[r.categoria] = (out.conteoCategoriaGasto[r.categoria] ?? 0) + r.cnt;
     }
   }
@@ -756,7 +759,7 @@ export interface Deposito {
   church_id: number;
   fecha: string; // "YYYY-MM-DD"
   periodo: string; // "YYYY-MM"
-  monto: number;
+  monto: Centavos;
   moneda: string;
   cuenta_banco: string;
   referencia: string | null;
@@ -767,7 +770,7 @@ export interface Deposito {
 export interface NewDeposito {
   fecha: string;
   periodo: string;
-  monto: number;
+  monto: Centavos;
   cuenta_banco: string;
   referencia?: string | null;
   comprobante_path?: string | null;
@@ -788,7 +791,7 @@ export async function listDepositos(churchId: number, opts: { limit?: number } =
 export async function findDuplicateDeposito(
   churchId: number,
   fecha: string,
-  monto: number,
+  monto: Centavos,
   cuentaBanco: string,
   excludeId?: number
 ): Promise<boolean> {
@@ -867,13 +870,13 @@ export async function undeleteDeposito(id: number, churchId: number): Promise<vo
   );
 }
 
-export async function monthDepositos(churchId: number, yyyyMm: string): Promise<number> {
+export async function monthDepositos(churchId: number, yyyyMm: string): Promise<Centavos> {
   const d = await getDb();
-  const rows = await d.select<{ total: number | null }[]>(
+  const rows = await d.select<{ total: Centavos | null }[]>(
     "SELECT SUM(monto) AS total FROM depositos_bancarios WHERE church_id = $1 AND periodo = $2 AND deleted = 0",
     [churchId, yyyyMm]
   );
-  return rows[0]?.total ?? 0;
+  return rows[0]?.total ?? CERO;
 }
 
 /** Depósitos bancarios del periodo, con su detalle (fecha, banco, referencia).
@@ -899,9 +902,9 @@ export async function listDepositosPeriodo(churchId: number, yyyyMm: string): Pr
  * registro vive en churches.saldo_inicial (migración v34). Para el saldo real
  * usa saldoAnteriorDe(), que suma ambos.
  */
-export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): Promise<number> {
+export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): Promise<Centavos> {
   const d = await getDb();
-  const rows = await d.select<{ tipo: string; total: number | null }[]>(
+  const rows = await d.select<{ tipo: string; total: Centavos | null }[]>(
     `SELECT tipo, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND deleted = 0
@@ -909,9 +912,10 @@ export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): P
       GROUP BY tipo`,
     [churchId, yyyyMm]
   );
-  let saldo = 0;
+  let saldo = CERO;
   for (const r of rows) {
-    saldo += r.tipo === "ingreso" ? (r.total ?? 0) : -(r.total ?? 0);
+    const t = r.total ?? CERO;
+    saldo = r.tipo === "ingreso" ? sumar(saldo, t) : restar(saldo, t);
   }
   return saldo;
 }
@@ -926,9 +930,9 @@ export async function saldoAcumuladoAntesDe(churchId: number, yyyyMm: string): P
  * y la que migró con dinero ya en caja (apertura declarada una sola vez).
  * Es la fuente única del "saldo anterior" del estado financiero mensual.
  */
-export async function saldoAnteriorDe(church: Church, yyyyMm: string): Promise<number> {
+export async function saldoAnteriorDe(church: Church, yyyyMm: string): Promise<Centavos> {
   const acumulado = await saldoAcumuladoAntesDe(church.id, yyyyMm);
-  return (church.saldo_inicial ?? 0) + acumulado;
+  return sumar(church.saldo_inicial ?? CERO, acumulado);
 }
 
 /**
@@ -945,9 +949,9 @@ export async function efectivoDisponibleHasta(
   church: Church,
   fechaISO: string,
   excludeDepositoId?: number
-): Promise<number> {
+): Promise<Centavos> {
   const d = await getDb();
-  const movs = await d.select<{ tipo: string; total: number | null }[]>(
+  const movs = await d.select<{ tipo: string; total: Centavos | null }[]>(
     `SELECT tipo, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND deleted = 0
@@ -955,9 +959,10 @@ export async function efectivoDisponibleHasta(
       GROUP BY tipo`,
     [church.id, fechaISO]
   );
-  let saldo = church.saldo_inicial ?? 0;
+  let saldo = church.saldo_inicial ?? CERO;
   for (const r of movs) {
-    saldo += r.tipo === "ingreso" ? (r.total ?? 0) : -(r.total ?? 0);
+    const t = r.total ?? CERO;
+    saldo = r.tipo === "ingreso" ? sumar(saldo, t) : restar(saldo, t);
   }
   const params: unknown[] = [church.id, fechaISO];
   let where = "church_id = $1 AND deleted = 0 AND substr(fecha, 1, 10) <= $2";
@@ -965,20 +970,20 @@ export async function efectivoDisponibleHasta(
     params.push(excludeDepositoId);
     where += ` AND id != $${params.length}`;
   }
-  const deps = await d.select<{ total: number | null }[]>(
+  const deps = await d.select<{ total: Centavos | null }[]>(
     `SELECT SUM(monto) AS total FROM depositos_bancarios WHERE ${where}`,
     params
   );
-  return saldo - (deps[0]?.total ?? 0);
+  return restar(saldo, deps[0]?.total ?? CERO);
 }
 
-export async function yearDepositos(churchId: number, yyyy: string): Promise<number> {
+export async function yearDepositos(churchId: number, yyyy: string): Promise<Centavos> {
   const d = await getDb();
-  const rows = await d.select<{ total: number | null }[]>(
+  const rows = await d.select<{ total: Centavos | null }[]>(
     "SELECT SUM(monto) AS total FROM depositos_bancarios WHERE church_id = $1 AND substr(periodo, 1, 4) = $2 AND deleted = 0",
     [churchId, yyyy]
   );
-  return rows[0]?.total ?? 0;
+  return rows[0]?.total ?? CERO;
 }
 
 export async function countDepositos(churchId: number, yyyyMm: string): Promise<number> {
@@ -991,20 +996,20 @@ export async function countDepositos(churchId: number, yyyyMm: string): Promise<
 }
 
 export interface YearTotals {
-  ingresos: number;
-  gastos: number;
+  ingresos: Centavos;
+  gastos: Centavos;
 }
 
 export async function yearTotals(churchId: number, yyyy: string): Promise<YearTotals> {
   const d = await getDb();
-  const rows = await d.select<{ tipo: string; total: number }[]>(
+  const rows = await d.select<{ tipo: string; total: Centavos }[]>(
     `SELECT tipo, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2 AND deleted = 0
       GROUP BY tipo`,
     [churchId, yyyy]
   );
-  const out: YearTotals = { ingresos: 0, gastos: 0 };
+  const out: YearTotals = { ingresos: CERO, gastos: CERO };
   for (const r of rows) {
     if (r.tipo === "ingreso") out.ingresos = r.total;
     else out.gastos = r.total;
@@ -1014,8 +1019,8 @@ export async function yearTotals(churchId: number, yyyy: string): Promise<YearTo
 
 export interface DailyPoint {
   fecha: string;
-  ingresos: number;
-  gastos: number;
+  ingresos: Centavos;
+  gastos: Centavos;
 }
 
 export async function dailyTotals(churchId: number, days: number): Promise<DailyPoint[]> {
@@ -1027,18 +1032,18 @@ export async function dailyTotals(churchId: number, days: number): Promise<Daily
   start.setDate(start.getDate() - (days - 1));
   const startStr = fmt(start);
 
-  const rows = await d.select<{ fecha: string; tipo: string; total: number }[]>(
+  const rows = await d.select<{ fecha: string; tipo: string; total: Centavos }[]>(
     `SELECT substr(fecha, 1, 10) AS fecha, tipo, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 10) >= $2 AND deleted = 0
       GROUP BY fecha, tipo`,
     [churchId, startStr]
   );
-  const map = new Map<string, { ingresos: number; gastos: number }>();
+  const map = new Map<string, { ingresos: Centavos; gastos: Centavos }>();
   for (const r of rows) {
-    const entry = map.get(r.fecha) ?? { ingresos: 0, gastos: 0 };
-    if (r.tipo === "ingreso") entry.ingresos += r.total;
-    else entry.gastos += r.total;
+    const entry = map.get(r.fecha) ?? { ingresos: CERO, gastos: CERO };
+    if (r.tipo === "ingreso") entry.ingresos = sumar(entry.ingresos, r.total);
+    else entry.gastos = sumar(entry.gastos, r.total);
     map.set(r.fecha, entry);
   }
   const out: DailyPoint[] = [];
@@ -1046,20 +1051,20 @@ export async function dailyTotals(churchId: number, days: number): Promise<Daily
     const dt = new Date(start);
     dt.setDate(dt.getDate() + i);
     const key = fmt(dt);
-    out.push({ fecha: key, ...(map.get(key) ?? { ingresos: 0, gastos: 0 }) });
+    out.push({ fecha: key, ...(map.get(key) ?? { ingresos: CERO, gastos: CERO }) });
   }
   return out;
 }
 
 export interface MonthSummary {
   mes: string;
-  ingresos: number;
-  gastos: number;
+  ingresos: Centavos;
+  gastos: Centavos;
 }
 
 export async function monthlySummary(churchId: number, months: number): Promise<MonthSummary[]> {
   const d = await getDb();
-  const rows = await d.select<{ mes: string; tipo: string; total: number }[]>(
+  const rows = await d.select<{ mes: string; tipo: string; total: Centavos }[]>(
     `SELECT substr(fecha, 1, 7) AS mes, tipo, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND deleted = 0
@@ -1074,13 +1079,13 @@ export async function monthlySummary(churchId: number, months: number): Promise<
     map.set(r.mes, entry);
   }
   const meses = [...map.keys()].sort().slice(-months);
-  return meses.map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
+  return meses.map((mes) => ({ mes, ...(map.get(mes) as { ingresos: Centavos; gastos: Centavos }) }));
 }
 
 /** Resumen mensual de un año completo (solo meses con movimientos). */
 export async function yearMonthlySummary(churchId: number, yyyy: string): Promise<MonthSummary[]> {
   const d = await getDb();
-  const rows = await d.select<{ mes: string; tipo: string; total: number }[]>(
+  const rows = await d.select<{ mes: string; tipo: string; total: Centavos }[]>(
     `SELECT substr(fecha, 1, 7) AS mes, tipo, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2 AND deleted = 0
@@ -1094,18 +1099,18 @@ export async function yearMonthlySummary(churchId: number, yyyy: string): Promis
     else entry.gastos += r.total;
     map.set(r.mes, entry);
   }
-  return [...map.keys()].sort().map((mes) => ({ mes, ...(map.get(mes) as { ingresos: number; gastos: number }) }));
+  return [...map.keys()].sort().map((mes) => ({ mes, ...(map.get(mes) as { ingresos: Centavos; gastos: Centavos }) }));
 }
 
 export interface YearCategorias {
-  porCategoriaIngreso: Record<string, number>;
-  porCategoriaGasto: Record<string, number>;
+  porCategoriaIngreso: Record<string, Centavos>;
+  porCategoriaGasto: Record<string, Centavos>;
 }
 
 /** Totales del año agrupados por categoría, para el reporte anual. */
 export async function yearCategoriaTotals(churchId: number, yyyy: string): Promise<YearCategorias> {
   const d = await getDb();
-  const rows = await d.select<{ tipo: string; categoria: string; total: number }[]>(
+  const rows = await d.select<{ tipo: string; categoria: string; total: Centavos }[]>(
     `SELECT tipo, categoria, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND substr(fecha, 1, 4) = $2 AND deleted = 0
@@ -1121,7 +1126,7 @@ export async function yearCategoriaTotals(churchId: number, yyyy: string): Promi
 }
 
 export interface MemberStat {
-  totalAnio: number;
+  totalAnio: Centavos;
   ultimoAporte: string | null;
   /**
    * Suma de ingresos de categoría "diezmo" del miembro en el año. 0 = no ha
@@ -1129,12 +1134,12 @@ export interface MemberStat {
    * de la ficha es una intención escrita a mano y puede no corresponder con
    * lo que realmente entró: quien cuenta es el registro contable.
    */
-  diezmoAnio: number;
+  diezmoAnio: Centavos;
 }
 
 export async function memberStats(churchId: number, yyyy: string): Promise<Record<number, MemberStat>> {
   const d = await getDb();
-  const totals = await d.select<{ member_id: number; total: number }[]>(
+  const totals = await d.select<{ member_id: number; total: Centavos }[]>(
     `SELECT member_id, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso'
@@ -1142,7 +1147,7 @@ export async function memberStats(churchId: number, yyyy: string): Promise<Recor
       GROUP BY member_id`,
     [churchId, yyyy]
   );
-  const diezmos = await d.select<{ member_id: number; total: number }[]>(
+  const diezmos = await d.select<{ member_id: number; total: Centavos }[]>(
     `SELECT member_id, SUM(monto) AS total
        FROM transactions
       WHERE church_id = $1 AND estado = 'aprobado' AND tipo = 'ingreso'
@@ -1160,7 +1165,7 @@ export async function memberStats(churchId: number, yyyy: string): Promise<Recor
   );
   const out: Record<number, MemberStat> = {};
   const fila = (id: number): MemberStat =>
-    (out[id] ??= { totalAnio: 0, ultimoAporte: null, diezmoAnio: 0 });
+    (out[id] ??= { totalAnio: CERO, ultimoAporte: null, diezmoAnio: CERO });
   for (const r of totals) fila(r.member_id).totalAnio = r.total;
   for (const r of diezmos) fila(r.member_id).diezmoAnio = r.total;
   for (const r of ultimos) fila(r.member_id).ultimoAporte = r.ultimo;
@@ -3239,7 +3244,7 @@ export interface MovimientoRecurrente {
   subcategoria: string | null;
   concepto: string;
   detalle: string | null;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   beneficiario: string | null;
   beneficiario_rfc: string | null;
@@ -3257,7 +3262,7 @@ export interface NewMovimientoRecurrente {
   subcategoria?: string | null;
   concepto: string;
   detalle?: string | null;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   beneficiario?: string | null;
   beneficiario_rfc?: string | null;
@@ -3273,7 +3278,7 @@ export interface MovimientoRecurrenteUpdate {
   subcategoria?: string | null;
   concepto: string;
   detalle?: string | null;
-  monto: number;
+  monto: Centavos;
   metodo_pago: string;
   beneficiario?: string | null;
   beneficiario_rfc?: string | null;
@@ -3465,7 +3470,7 @@ export async function deleteTxDeSerie(recurrenteId: number, churchId: number): P
 /** Corrige el monto de TODOS los movimientos ya generados por la serie
  *  (p. ej. una renta capturada mal): la definición se actualiza aparte con
  *  updateMovimientoRecurrente. */
-export async function updateMontoDeSerie(recurrenteId: number, churchId: number, monto: number): Promise<number> {
+export async function updateMontoDeSerie(recurrenteId: number, churchId: number, monto: Centavos): Promise<number> {
   const d = await getDb();
   const res = await d.execute(
     "UPDATE transactions SET monto = $3, updated_at = datetime('now') WHERE recurrente_id = $1 AND church_id = $2 AND deleted = 0",
@@ -3510,7 +3515,8 @@ function localeDeNumeros(): string {
  *  rompía la alineación de la columna al mezclar cifras con y sin decimales.
  *  Dos decimales es también lo que ya usaba `fmtMoneyPlain` en el estado
  *  financiero, así que pantalla y documento por fin coinciden. */
-export function fmtMoney(n: number): string {
+export function fmtMoney(c: Centavos): string {
+  const n = aDecimal(c);
   const sign = n < 0 ? "−" : "";
   const abs = Math.abs(n);
   return `${sign}${simboloActivo}${abs.toLocaleString(localeDeNumeros(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

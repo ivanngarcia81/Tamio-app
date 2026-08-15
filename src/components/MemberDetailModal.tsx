@@ -8,6 +8,7 @@ import { exportConstanciaPdf, printConstanciaPdf } from "../services/print/print
 import { IconClose, IconFileText, IconMail, IconPrinter, IconIdBadge, IconWarn, IconIngreso } from "../icons";
 import CountUp from "./CountUp";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { sumar } from "../dinero";
 
 const COLS = "104px 130px 1fr 120px 120px";
 
@@ -54,7 +55,7 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
     listMemberAportes(member.id, church.id, year).then(setAportes).catch(console.error);
   }, [member.id, church.id, year]);
 
-  const total = aportes.reduce((s, a) => s + a.monto, 0);
+  const total = sumar(...aportes.map((a) => a.monto));
   const ultimo = aportes[0]?.fecha ?? null;
   const iniciales = inicialesDe(member.nombre);
   const avatarColor = AVATAR_COLORS[member.id % AVATAR_COLORS.length];
@@ -123,7 +124,7 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
             <div className="stat-card accent" style={{ flex: 1, padding: "14px 16px", "--accent-color": "var(--accent-1)" } as CSSProperties}>
               <div className="stat-label">{t("detalleMiembro.totalAnio", { anio: year })}</div>
               <div className="stat-value md">
-                <CountUp value={total} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                <CountUp value={total} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
               </div>
             </div>
             <div className="stat-card" style={{ flex: 1, padding: "14px 16px" }}>

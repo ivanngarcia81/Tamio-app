@@ -5,6 +5,7 @@ import {
   buildReportId, fmtFechaLarga, fmtHora12, fmtMoneyPdf, loadPngDataUrl, openForPrint, PDF_SPACE, slug,
 } from "./printUtils";
 import { entregarArchivo } from "../entrega";
+import { sumar } from "../../dinero";
 
 export interface ConstanciaData {
   church: Church;
@@ -60,7 +61,7 @@ async function buildConstanciaPdf(data: ConstanciaData): Promise<{ bytes: ArrayB
   const fixedW = fixedCols.filter((c) => c.width > 0).reduce((s, c) => s + c.width, 0);
   const cols = fixedCols.map((c) => (c.width === 0 ? { ...c, width: doc.contentWidth - fixedW } : c));
 
-  const total = aportes.reduce((s, a) => s + a.monto, 0);
+  const total = sumar(...aportes.map((a) => a.monto));
 
   doc.beginTable(i18n.t("constancia.aportesRegistrados"), cols);
   if (aportes.length === 0) {

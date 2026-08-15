@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { textoCorto } from "../movil";
+import { CERO, aTextoEditable, deTexto, multiplicar, type Centavos } from "../dinero";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -52,11 +53,13 @@ interface Props {
   onSaved: () => void;
 }
 
-function parseMonto(s: string): number | null {
-  const clean = s.replace(/[$,\s]/g, "");
-  if (!clean) return null;
-  const n = Number(clean);
-  return Number.isFinite(n) && n > 0 ? n : null;
+/** Lo que teclea el tesorero → centavos, o null si no sirve.
+ *
+ *  El parseo vive en `dinero.ts`; aquí solo queda la regla de esta pantalla:
+ *  un movimiento tiene que ser mayor que cero. */
+function parseMonto(s: string): Centavos | null {
+  const c = deTexto(s);
+  return c !== null && c > 0 ? c : null;
 }
 
 export default function NewRecordModal({ church, mode, onClose, onSaved }: Props) {
@@ -160,7 +163,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       setConcepto(tx.concepto);
       setFecha(tx.fecha.slice(0, 10));
       setHora(tx.fecha.slice(11, 16));
-      setMonto(String(tx.monto));
+      setMonto(aTextoEditable(tx.monto));
       setMetodo(tx.metodo_pago);
       setDetalle(tx.detalle ?? "");
       setAportanteId(tx.member_id ?? null);
@@ -255,6 +258,9 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       algo = true;
     }
     if (it.concepto) { setConcepto(it.concepto); algo = true; }
+    // OJO: lo que devuelve la IA es un DECIMAL (lee "125.50" del comprobante),
+    // no centavos. Va al campo de texto tal cual y parseMonto lo convierte.
+    // No cambiar por aTextoEditable: multiplicaría el importe por cien.
     if (typeof it.monto === "number" && it.monto > 0) { setMonto(String(it.monto)); algo = true; }
     if (it.fecha && /^\d{4}-\d{2}-\d{2}$/.test(it.fecha) && it.fecha <= hoy) { setFecha(it.fecha); algo = true; }
     if (it.metodo && METODOS_PAGO.some((m) => m.id === it.metodo)) { setMetodo(it.metodo); algo = true; }
@@ -739,8 +745,8 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                         ? t("recurrente.previewMeses", {
                             count: meses.length,
                             rango: meses.length === 1 ? meses[0] : `${meses[0]} → ${meses[meses.length - 1]}`,
-                            monto: fmtMoney(montoNum ?? 0),
-                            total: fmtMoney((montoNum ?? 0) * meses.length),
+                            monto: fmtMoney(montoNum ?? CERO),
+                            total: fmtMoney(multiplicar(montoNum ?? CERO, meses.length)),
                           })
                         : t("recurrente.previewSinMeses")}
                     </div>

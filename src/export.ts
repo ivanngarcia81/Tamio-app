@@ -1,5 +1,6 @@
 import type { Church, Deposito } from "./db";
 import i18n from "./i18n";
+import { CERO, negar, restar, sumar, type Centavos } from "./dinero";
 import { ReportBase, type BaseCol } from "./services/print/reportBase";
 import {
   buildReportId, fmtFechaCortaPdf, fmtFechaLarga, fmtHora12, fmtMoneyPlain, loadPngDataUrl, openForPrint,
@@ -9,7 +10,7 @@ import { entregarArchivo } from "./services/entrega";
 
 export interface ReportRow {
   nombre: string;
-  total: number;
+  total: Centavos;
 }
 
 export interface ReportData {
@@ -19,18 +20,18 @@ export interface ReportData {
   periodoISO: string;
   filasIngreso: ReportRow[];
   filasGasto: ReportRow[];
-  ingresos: number;
-  gastos: number;
-  balance: number;
+  ingresos: Centavos;
+  gastos: Centavos;
+  balance: Centavos;
   /**
    * Saldo de tesorería al cierre del periodo anterior (db.saldoAnteriorDe:
    * saldo de apertura + acumulado de movimientos). Con él el documento
    * presenta la ecuación contable real: saldo anterior + ingresos − egresos
    * = saldo final. Si no se provee, el bloque no se dibuja — nunca se inventa.
    */
-  saldoAnterior?: number;
+  saldoAnterior?: Centavos;
   /** Suma de los depósitos bancarios registrados en el periodo. */
-  depositosBancarios?: number;
+  depositosBancarios?: Centavos;
   /** Detalle de esos depósitos (fecha, banco, referencia) para su sección. */
   depositosDetalle?: Deposito[];
   /** Reservado para cuando el PDF deba decir quién lo generó (hoy el pie y
@@ -57,7 +58,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   } = data;
 
   const moneda = church.moneda;
-  const money = (n: number) => fmtMoneyPlain(n, moneda);
+  const money = (c: Centavos) => fmtMoneyPlain(c, moneda);
 
   const firmaDataUrl = firmaPath ? await loadPngDataUrl(firmaPath) : null;
   const firmaPastorDataUrl = firmaPastorPath ? await loadPngDataUrl(firmaPastorPath) : null;
@@ -124,13 +125,13 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
   // ---------- Saldo de tesorería ----------
   // La ecuación contable real. Solo si el llamador provee el saldo anterior.
   if (saldoAnterior != null) {
-    const saldoFinal = saldoAnterior + ingresos - gastos;
+    const saldoFinal = restar(sumar(saldoAnterior, ingresos), gastos);
     const saldoCols: BaseCol[] = [catCols[0], catCols[1], { label: "", width: 92, align: "right" }];
     doc.sectionTitle(i18n.t("pdf.saldoTesoreria"));
-    const filas: [string, number][] = [
+    const filas: [string, Centavos][] = [
       [i18n.t("pdf.saldoAnterior"), saldoAnterior],
       [i18n.t("reportes.totalIngresos"), ingresos],
-      [i18n.t("pdf.menosEgresos"), -gastos],
+      [i18n.t("pdf.menosEgresos"), negar(gastos)],
     ];
     filas.forEach(([label, v], i) => doc.row([label, money(v), ""], saldoCols, i));
     doc.totalRow(
@@ -158,7 +159,7 @@ async function buildMonthlyReportPdf(data: ReportData): Promise<{ bytes: ArrayBu
     } else {
       doc.emptyRow(i18n.t("pdf.sinDepositos"));
     }
-    doc.totalRow([i18n.t("pdf.totalDepositos"), "", money(depositosBancarios ?? 0)], depCols);
+    doc.totalRow([i18n.t("pdf.totalDepositos"), "", money(depositosBancarios ?? CERO)], depCols);
     doc.endTable();
     // Aclaración: los depósitos son traspasos de efectivo a banco, no ingresos,
     // así que NO entran en el saldo (pueden superar el ingreso del mes).

@@ -1,5 +1,6 @@
 import { METODOS_PAGO, catNombre, getCategoriasGasto, getCategoriasIngreso, metodoNombre, type NewTx } from "../db";
 import i18n from "../i18n";
+import { deTexto, type Centavos } from "../dinero";
 import type { CsvField } from "./csvImport";
 
 export const MOVIMIENTOS_FIELDS: CsvField[] = [
@@ -18,11 +19,13 @@ export const CSV_TEMPLATE =
   "2026-03-02,ingreso,Ofrenda,Ofrenda servicio dominical,1500,efectivo,,\n" +
   "2026-03-05,gasto,Servicios,CFE - Energia electrica,850,transferencia,Comision Federal de Electricidad,\n";
 
-function parseMontoCsv(s: string): number | null {
-  const clean = s.replace(/[$,\s]/g, "");
-  if (!clean) return null;
-  const n = Number(clean);
-  return Number.isFinite(n) && n > 0 ? n : null;
+/** Importe de una fila de CSV → centavos. El CSV lleva DECIMALES ("125.50"),
+ *  tanto el que exporta Tamio como los de versiones anteriores, así que lo
+ *  parsea `deTexto` igual que el teclado. Aquí solo queda la regla del
+ *  importador: una fila con importe cero o negativo se rechaza. */
+function parseMontoCsv(s: string): Centavos | null {
+  const c = deTexto(s);
+  return c !== null && c > 0 ? c : null;
 }
 
 function esFechaValida(fecha: string): boolean {

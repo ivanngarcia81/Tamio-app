@@ -21,6 +21,7 @@ import {
 } from "../icons";
 import { printRegister } from "../services/print/printRegister";
 import CountUp from "../components/CountUp";
+import { CERO, sumar } from "../dinero";
 
 interface Props {
   church: Church;
@@ -107,7 +108,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const porCategoria = esIngreso
     ? totales?.porCategoriaIngreso ?? {}
     : totales?.porCategoriaGasto ?? {};
-  const totalMes = esIngreso ? totales?.ingresos ?? 0 : totales?.gastos ?? 0;
+  const totalMes = esIngreso ? totales?.ingresos ?? CERO : totales?.gastos ?? CERO;
 
   // Las tarjetas de resumen muestran las categorías CON movimiento, de mayor
   // a menor. Antes tomaban las tres primeras del catálogo, así que podían
@@ -121,7 +122,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         id: c.id,
         nombre: catNombre(c.id),
         color: colorCategoria(tipo, c.id),
-        monto: porCategoria[c.id] ?? 0,
+        monto: porCategoria[c.id] ?? CERO,
       }))
       .filter((c) => c.monto > 0)
       .sort((a, b) => b.monto - a.monto);
@@ -133,7 +134,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         id: "__otras",
         nombre: t("mov.otrasCategorias", { count: resto.length }),
         color: "#64748b",
-        monto: resto.reduce((s, c) => s + c.monto, 0),
+        monto: sumar(...resto.map((c) => c.monto)),
       },
     ];
   }, [categorias, porCategoria, tipo, t]);
@@ -230,7 +231,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   <span className="stat-label">{t("mov.totalDelMes")}</span>
                 </div>
                 <div className="stat-value md">
-                  <CountUp value={totalMes} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                  <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
                 </div>
               </div>
               {tarjetasCategoria.map((c) => {
@@ -242,7 +243,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
                     </div>
                     <div className="stat-value md">
-                      <CountUp value={c.monto} format={fmtMoney} /><span className="stat-cur">{church.moneda}</span>
+                      <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
                     </div>
                     <div className="stat-bar">
                       <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
