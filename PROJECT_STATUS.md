@@ -17,14 +17,15 @@ _Última actualización: 1 de agosto de 2026 · versión 1.0.8_
 
 ## Dónde está el proyecto ahora
 
-- **1.0.8 enviada a App Review** el 29 de julio de 2026, a la espera de respuesta.
-- La 1.0 sale **gratis y 100% local**: sin login, sin nube, sin compras.
-  Dos interruptores lo controlan:
+- **Tamio 1.0 publicada** en la App Store el 13 de agosto de 2026.
+- La 1.0 salió **gratis y 100% local**: sin login, sin nube, sin compras.
+  Dos interruptores lo controlaban:
   - `LOGIN_HABILITADO` en `src/supabase.ts`
   - `SYNC_HABILITADO` en `src/syncManager.ts`
-  Ambos en `false`. La 1.1 los vuelve a encender.
-- La suscripción (19 USD/mes por iglesia) llega con la 1.1. Procesador de pago sin
-  decidir: Paddle construido, Lemon Squeezy recuperable — ver `docs/planes.md`.
+  La 1.1 los encendió (rama `centavos` fundida en `main`). Sin credenciales
+  de Supabase en el `.env`, la app sigue funcionando 100% local igual.
+- La suscripción ($23.99/mes por iglesia) llega con la 1.1, vía Lemon Squeezy
+  — ver `docs/planes.md` y `docs/guia-lemon-squeezy.md`.
 
 **Qué leer antes de tocar nada:**
 - [`docs/ideas-futuras.md`](./docs/ideas-futuras.md) — hoja de ruta, **el

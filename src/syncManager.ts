@@ -14,13 +14,13 @@ import { useSyncExternalStore } from "react";
 import { sincronizarTodo, type MotivoSync } from "./sync";
 import { syncPausadoPorRestauracion } from "./services/restaurar";
 
-/** Interruptor global de la sincronización en la nube.
- *  En 1.0 está APAGADO: el registro self-service todavía no crea ni enlaza la
- *  iglesia en la nube, así que el sync fallaría por RLS. Se reactivará en 1.1
- *  cuando el registro cree y vincule la iglesia automáticamente. Con esto
- *  apagado, la app es 100% offline-first: nada de tarjeta de sync, indicador ni
- *  auto-sync. Cambiar a true para volver a habilitarlo. */
-export const SYNC_HABILITADO = false;
+/** Interruptor global de la sincronización en la nube. Encendido en 1.1: el
+ *  disparador `al_crear_usuario` (supabase/sync-e1.sql) ya crea Y enlaza la
+ *  iglesia al registrarse, así que el sync ya no falla por RLS — ver
+ *  docs/plan-1-1.md, "Estado real del proyecto de Supabase". Sin
+ *  LOGIN_HABILITADO o sin credenciales en el .env, sigue sin aplicar (ver
+ *  authHabilitado en supabase.ts): la app queda 100% offline-first igual. */
+export const SYNC_HABILITADO = true;
 
 export type SyncEstado =
   | "desactivado"    // sin login / sin credenciales: la sync no aplica

@@ -674,14 +674,20 @@ puede ejecutar— pero vigila justo lo que al romperse **no da ningún error**:
 la app seguiría funcionando y solo se notaría el día que alguien entre donde no
 debe.
 
-### Lo que queda del punto 2
+### Punto 2: cerrado (15 ago 2026)
 
-- La pantalla de invitación en `UsersSettings`. **Ojo:** esa tarjeta hoy
-  administra el directorio LOCAL de personas (`insertUsuario`/`deleteUsuario`
-  de `db.ts`), que no son cuentas. Invitar es otra cosa y convive con eso; no
-  se mezclan.
-- Encender `LOGIN_HABILITADO` y `SYNC_HABILITADO`. Eso sí espera a que
-  `centavos` esté fundida.
+- La pantalla de invitación ya estaba escrita, en `InvitarUsuario.tsx`, junto
+  a `UsersSettings` en Ajustes sin mezclarse con ella (esa sigue siendo el
+  directorio LOCAL de personas, `insertUsuario`/`deleteUsuario` de `db.ts`,
+  que no son cuentas).
+- `centavos` se fundió en `main`, y con eso se encendieron
+  `LOGIN_HABILITADO` (`src/supabase.ts`) y `SYNC_HABILITADO`
+  (`src/syncManager.ts`). Sin credenciales de Supabase en el `.env`,
+  `authHabilitado` sigue en `false` y la app queda 100% local igual — el
+  interruptor solo importa en builds configurados para la nube.
+- Pendiente de probar de punta a punta con una cuenta real: registro, entra
+  como administrador con iglesia propia, invita a un segundo rol, y ambos
+  entran a la MISMA iglesia con su rol correcto.
 
 ### La página de aterrizaje de la invitación (13 ago 2026)
 

@@ -5,10 +5,12 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-/** Interruptor global del inicio de sesión en la nube. En 1.0 está APAGADO:
- *  Tamio funciona 100% local, sin login obligatorio. La sincronización y la
- *  suscripción llegan en 1.1. Cambiar a true para reactivar el login. */
-export const LOGIN_HABILITADO = false;
+/** Interruptor global del inicio de sesión en la nube. Encendido en 1.1: la
+ *  puerta de entrada (`invitar-usuario`, disparador de iglesia en el
+ *  registro) ya está desplegada y comprobada — ver docs/plan-1-1.md, punto 2.
+ *  Sigue en modo local si no hay credenciales en el .env (ver authHabilitado
+ *  abajo), así que una instalación sin configurar no se rompe. */
+export const LOGIN_HABILITADO = true;
 
 /** true solo cuando el login está habilitado Y hay credenciales configuradas.
  *  Si es false, Tamio funciona en modo local sin inicio de sesión. */
