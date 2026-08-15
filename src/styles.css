@@ -5213,12 +5213,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .app::before { display: none; }
   .app { grid-template-columns: 1fr; }
 
-  /* Sin barra fija arriba (a diferencia del iPad, aquí no hay botón ☰ que
-     cubrir), así que basta con la propia muesca/reloj. Antes solo `.header`
-     y `.content` tenían este relleno, y el carrusel de secciones —que vive
-     ANTES de los dos en `.main`— quedaba pegado detrás de la barra de
-     estado. `.header` pasa a un valor fijo para no sumar el hueco dos veces. */
-  .main { padding-top: env(safe-area-inset-top); }
+  /* El hueco de la muesca/reloj va en `.app`, que NO hace scroll
+     (height:100vh, overflow:hidden), y no en `.main`, que sí lo hace: un
+     padding dentro de un contenedor con scroll es contenido desplazable y se
+     va hacia arriba al primer scroll, dejando el carrusel de secciones
+     debajo de la barra de estado. Pantallas cortas (sin scroll) parecían
+     correctas y las largas no, que fue justo el síntoma.
+     `.header` pasa a un valor fijo para no sumar el hueco dos veces. */
+  .app { padding-top: env(safe-area-inset-top); }
   .header, :root.movil .header { padding-top: 12px; }
 
   /* Sitio para la barra (58px) más la franja del home indicator. */
