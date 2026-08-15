@@ -469,7 +469,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("secretaria.agenda.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
         </div>
       </div>
 

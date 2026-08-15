@@ -9,7 +9,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
-export function EmptyState({ titulo, sub, icon, accion, pagina }: {
+export function EmptyState({ titulo, sub, icon, accion, pagina, duplicaCrear }: {
   titulo: string;
   sub: string;
   icon?: ReactNode;
@@ -20,6 +20,14 @@ export function EmptyState({ titulo, sub, icon, accion, pagina }: {
    *  esto la tarjeta queda corta y pegada arriba de una pantalla en blanco, y
    *  parece que la página no terminó de cargar. */
   pagina?: boolean;
+  /** true cuando `accion` crea algo que TAMBIÉN está en la hoja de "¿Qué
+   *  desea crear?" del botón flotante (ingreso, gasto, depósito, acta,
+   *  servicio…) — en el teléfono ese botón ya está siempre a mano, así que
+   *  el de aquí sobra y se oculta. En Mac/iPad no hay botón flotante, así
+   *  que ahí se queda igual. Ojo: no todo lo que crea EmptyState tiene
+   *  atajo — Miembros en /miembros, por ejemplo, no lo tiene, y no debe
+   *  llevar esta marca. */
+  duplicaCrear?: boolean;
 }) {
   return (
     <div className={`empty-state${pagina ? " pagina" : ""}`}>
@@ -27,7 +35,10 @@ export function EmptyState({ titulo, sub, icon, accion, pagina }: {
       <div className="empty-title">{titulo}</div>
       <div className="empty-sub">{sub}</div>
       {accion && (
-        <button className="btn primary empty-accion" onClick={accion.onClick}>
+        <button
+          className={`btn primary empty-accion${duplicaCrear ? " duplica-crear" : ""}`}
+          onClick={accion.onClick}
+        >
           <IconPlus size={14} /> {accion.label}
         </button>
       )}

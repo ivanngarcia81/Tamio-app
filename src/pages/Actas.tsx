@@ -101,7 +101,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("secretaria.actas.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={() => setModal({ open: true, acta: null })}>
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => setModal({ open: true, acta: null })}>
             <IconPlus size={14} /> {t("actas.nuevaActa")}
           </button>
         </div>
@@ -142,6 +142,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
             accion={actas.length === 0
               ? { label: t("actas.nuevaActa"), onClick: () => setModal({ open: true, acta: null }) }
               : undefined}
+            duplicaCrear
           />
         ) : (
           <div className="data-table roomy tabla-actas">

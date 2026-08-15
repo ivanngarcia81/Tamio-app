@@ -89,7 +89,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("depositos.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={abrirNuevo}>
+          <button className="btn primary btn-nuevo-cabecera" onClick={abrirNuevo}>
             <IconPlus size={14} /> {t("depositos.nuevoDeposito")}
           </button>
         </div>
@@ -152,6 +152,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             sub={t("depositos.emptySub")}
             icon={<IconBank size={22} strokeWidth={1.6} />}
             accion={{ label: t("depositos.nuevoDeposito"), onClick: abrirNuevo }}
+            duplicaCrear
           />
         ) : (
           <>

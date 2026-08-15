@@ -406,6 +406,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             titulo={t("dashboard.emptyTitulo")}
             sub={t("dashboard.emptySub")}
             accion={{ label: t("dashboard.nuevoRegistro"), onClick: onNew }}
+            duplicaCrear
           />
         ) : (
           <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} />

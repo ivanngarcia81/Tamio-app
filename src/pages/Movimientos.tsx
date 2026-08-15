@@ -205,7 +205,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           <button className="btn secondary" onClick={handlePrint} disabled={printing}>
             <IconPrinter size={14} /> {printing ? t("common.preparando") : t("common.imprimir")}
           </button>
-          <button className="btn primary" onClick={onNew}>
+          <button className="btn primary btn-nuevo-cabecera" onClick={onNew}>
             <IconPlus size={14} /> {esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto")}
           </button>
         </div>
@@ -374,6 +374,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 accion={txs.length === 0 && esMesActual
                   ? { label: esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto"), onClick: onNew }
                   : undefined}
+                duplicaCrear
               />
             ) : (
               <>

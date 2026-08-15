@@ -114,7 +114,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("secretaria.servicios.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={() => setModal({ open: true, servicio: null })}>
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => setModal({ open: true, servicio: null })}>
             <IconPlus size={14} /> {t("servicios.nuevoServicio")}
           </button>
         </div>
@@ -175,6 +175,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             accion={servicios.length === 0
               ? { label: t("servicios.nuevoServicio"), onClick: () => setModal({ open: true, servicio: null }) }
               : undefined}
+            duplicaCrear
           />
         ) : (
           <div className="data-table roomy tabla-servicios">

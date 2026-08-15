@@ -138,7 +138,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           <div className="page-sub">{t("secretaria.membresia.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={() => setCrearFicha(true)}>
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => setCrearFicha(true)}>
             <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
           </button>
         </div>

@@ -457,7 +457,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("secretaria.cartas.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary" onClick={() => { cambiarTab("nueva"); }}>
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => { cambiarTab("nueva"); }}>
             <IconPlus size={14} /> {t("cartas.nuevaCarta")}
           </button>
         </div>
