@@ -39,11 +39,11 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
     return items;
   }
 
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    const borrado = pendingDelete;
+  /** Borra ya, con "Deshacer". Lo llaman el diálogo de confirmación y el
+   *  deslizamiento completo de la fila en el móvil (ver `onBorrarDirecto`
+   *  en RowMenu): ese gesto no pasa por diálogo a propósito. */
+  async function borrarConDeshacer(borrado: Tx) {
     await deleteTx(borrado.id, borrado.church_id);
-    setPendingDelete(null);
     onChanged();
     playSound("eliminar");
     showToast(t("deshacer.movimientoEliminado"), {
@@ -54,6 +54,13 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
         onChanged();
       },
     });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const borrado = pendingDelete;
+    setPendingDelete(null);
+    await borrarConDeshacer(borrado);
   }
 
   return (
@@ -164,6 +171,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 <RowMenu
                   onEdit={() => onEdit(tx)}
                   onDelete={() => setPendingDelete(tx)}
+                  onBorrarDirecto={() => void borrarConDeshacer(tx)}
                   extraItems={tx.comprobante_path
                     ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
                     : undefined}

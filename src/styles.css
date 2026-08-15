@@ -5384,8 +5384,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      Playwright: sin esto, .main medía 920px con la pantalla en 393px. */
   .main { overflow-x: hidden; }
 
-  /* Sitio para la barra (58px) más la franja del home indicator. */
-  .content { padding-bottom: calc(58px + 26px + env(safe-area-inset-bottom)); }
+  /* Sitio para la barra (58px) más la franja del home indicator, y sobre
+     todo la altura completa del botón flotante "+" (74px de hueco sobre la
+     barra + 56px de alto = 130px desde el borde de la pantalla). Antes solo
+     se reservaban 26px extra sobre la barra, así que el "+" —que flota más
+     arriba, a 130px— tapaba los últimos ~46px de contenido real, y como ya
+     se había llegado al final del scroll no había forma de destaparlos. Se
+     vio en "Contributors": la tarjeta vacía y su botón "New member" quedaban
+     medio cubiertos por el "+". */
+  .content { padding-bottom: calc(58px + 16px + 56px + 14px + env(safe-area-inset-bottom)); }
 
   .barra-inferior {
     display: grid;
