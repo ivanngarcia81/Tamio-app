@@ -674,7 +674,7 @@ puede ejecutar— pero vigila justo lo que al romperse **no da ningún error**:
 la app seguiría funcionando y solo se notaría el día que alguien entre donde no
 debe.
 
-### Punto 2: cerrado (15 ago 2026)
+### Punto 2: cerrado y probado de punta a punta (15 ago 2026)
 
 - La pantalla de invitación ya estaba escrita, en `InvitarUsuario.tsx`, junto
   a `UsersSettings` en Ajustes sin mezclarse con ella (esa sigue siendo el
@@ -685,9 +685,29 @@ debe.
   (`src/syncManager.ts`). Sin credenciales de Supabase en el `.env`,
   `authHabilitado` sigue en `false` y la app queda 100% local igual — el
   interruptor solo importa en builds configurados para la nube.
-- Pendiente de probar de punta a punta con una cuenta real: registro, entra
-  como administrador con iglesia propia, invita a un segundo rol, y ambos
-  entran a la MISMA iglesia con su rol correcto.
+
+**Probado en una Mac real, con el proyecto de Supabase de producción:**
+
+1. Con `.env` configurado, la app pide iniciar sesión en vez de entrar
+   directo — los datos locales (SQLCipher) siguen intactos, el login solo
+   decide rol y sincronización.
+2. Registro de la primera cuenta: crea iglesia propia y queda como
+   `administrador` (disparador `al_crear_usuario`). La tarjeta de invitar
+   solo aparece para administradores — confirma el rol sin necesidad de
+   una etiqueta explícita en pantalla.
+3. Invitar a un correo con rol `tesorero` (probado con un alias `+` de Gmail,
+   sin necesitar una segunda cuenta de correo real): llega el correo de
+   Supabase, el enlace cae en `tamio.church/invitacion.html` (no en una
+   página genérica — la *Site URL* del proyecto está bien apuntada), pide
+   contraseña y activa la cuenta.
+4. Esa cuenta entra a Tamio con rol Tesorero: ve solo Tesorería (sin
+   Secretaría ni Usuarios) y los MISMOS movimientos locales que la cuenta
+   de administrador — confirma que quedó en la misma iglesia y que la nube
+   no separa los datos del dispositivo, solo el rol de quien entra.
+
+Quedan en el proyecto de producción una iglesia y una cuenta de prueba
+(`+tesorero`); no estorban, se pueden borrar cuando convenga antes de tener
+clientes reales.
 
 ### La página de aterrizaje de la invitación (13 ago 2026)
 
