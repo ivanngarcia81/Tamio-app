@@ -5308,6 +5308,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      hueco de safe-area fallara, aquí no se transparenta nada. */
   .carrusel-secciones {
     display: flex;
+    /* Centrado como grupo cuando caben todas (el caso de la mayoría de las
+       áreas); en las que no caben (Tesorería y Secretaría, con hasta seis),
+       el navegador cede solo al scroll horizontal y no rompe nada. */
+    justify-content: center;
     gap: 8px;
     overflow-x: auto;
     scrollbar-width: none;
@@ -5329,22 +5333,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     backdrop-filter: blur(12px);
   }
   .carrusel-secciones::-webkit-scrollbar { display: none; }
+  /* Sin borde ni fondo propio salvo la activa: como un selector de vidrio,
+     no una fila de chips sueltos — la que manda es la píldora sólida de la
+     pestaña activa, el resto es solo texto sobre la pista. */
   .carrusel-item {
     flex: 0 0 auto;
     display: inline-flex; align-items: center; gap: 6px;
     min-height: 38px;
     padding: 0 16px;
-    border: 1px solid var(--line);
+    border: none;
     border-radius: 999px;
-    background: var(--surface);
+    background: transparent;
     color: var(--text-2);
     font-size: var(--fs-body); font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
+    transition: background-color var(--dur) ease, color var(--dur) ease;
   }
   .carrusel-item.activo {
     background: var(--brand, #059669);
-    border-color: var(--brand, #059669);
     color: #fff;
   }
   .carrusel-badge {
