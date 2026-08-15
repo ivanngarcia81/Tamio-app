@@ -33,7 +33,7 @@ import CategoriesSettings from "../components/settings/CategoriesSettings";
 import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 import {
-  IconChurch, IconIdBadge, IconFileText, IconTag, IconMonitor, IconWarn,
+  IconChurch, IconIdBadge, IconFileText, IconUser, IconTag, IconMonitor, IconWarn,
   IconChevronLeft, IconChevronRight,
 } from "../icons";
 
@@ -82,7 +82,8 @@ export default function Configuracion({
   const ZONAS = [
     { key: "iglesia", icono: <IconChurch size={16} />, titulo: t("config.zona.iglesia"), visible: true },
     { key: "acceso", icono: <IconIdBadge size={16} />, titulo: t("config.zona.acceso"), visible: true },
-    { key: "documentos", icono: <IconFileText size={16} />, titulo: t("config.zona.documentos"), visible: true },
+    { key: "institucion", icono: <IconFileText size={16} />, titulo: t("config.zona.institucion"), visible: true },
+    { key: "personas", icono: <IconUser size={16} />, titulo: t("config.zona.personas"), visible: true },
     { key: "categorias", icono: <IconTag size={16} />, titulo: t("config.zona.categorias"), visible: verTesoreria },
     { key: "preferencias", icono: <IconMonitor size={16} />, titulo: t("config.zona.preferencias"), visible: true },
     { key: "delicada", icono: <IconWarn size={16} />, titulo: t("config.zona.delicada"), visible: esAdmin },
@@ -412,21 +413,19 @@ export default function Configuracion({
             </div>
           </section>
 
-          <section className={claseZona("documentos")}>
+          {/* Antes "Documentos oficiales" era una sola zona con seis tarjetas
+              (tres filas) — la que más scroll pedía de las seis. Se parte en
+              dos zonas más cortas, cada una con lo suyo: el membrete/vista
+              previa por un lado, las dos personas y sus firmas por el otro. */}
+          <section className={claseZona("institucion")}>
             <div className="settings-zona-head">
-              <div className="settings-zona-titulo">{t("config.zona.documentos")}</div>
-              <div className="settings-zona-sub">{t("config.zona.documentosSub")}</div>
+              <div className="settings-zona-titulo">{t("config.zona.institucion")}</div>
+              <div className="settings-zona-sub">{t("config.zona.institucionSub")}</div>
             </div>
             <div className="settings-masonry">
-              {/* Orden de la rejilla, por filas:
-                     datos institucionales │ vista previa del PDF
-                     tesorero              │ pastor
-                     firma del tesorero    │ firma del pastor
-                  La vista previa es el RESULTADO de las demás, así que va
-                  arriba a la derecha: se cambia un dato y se ve el efecto sin
-                  mover los ojos de sitio. Las dos personas comparten fila y
-                  las dos firmas otra, porque tarjetas del mismo tipo miden
-                  igual y la fila queda pareja. */}
+              {/* La vista previa es el RESULTADO de los datos institucionales,
+                  así que va a su lado: se cambia un dato y se ve el efecto sin
+                  mover los ojos de sitio. */}
               {verSecretaria && (
                 <InstitucionSettings
                   value={institucionForm}
@@ -441,6 +440,15 @@ export default function Configuracion({
                   tesoreroCargo={treasurerForm.cargo}
                 />
               )}
+            </div>
+          </section>
+
+          <section className={claseZona("personas")}>
+            <div className="settings-zona-head">
+              <div className="settings-zona-titulo">{t("config.zona.personas")}</div>
+              <div className="settings-zona-sub">{t("config.zona.personasSub")}</div>
+            </div>
+            <div className="settings-masonry">
               {/* Fila de personas y fila de firmas: dos tarjetas del mismo
                   tipo comparten fila, así que la fila entera mide igual. */}
               {verTesoreria && (
