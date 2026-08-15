@@ -18,6 +18,7 @@ import LoadingState from "../components/LoadingState";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
+import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
 
 /** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
@@ -377,6 +378,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   function abrirNueva(fecha: string | null) {
     setModal({ actividad: null, duplicarDe: null, fecha, mostrarRecurrencia: true });
   }
+  useAbrirCrearDesdeMas(() => abrirNueva(null));
 
   function abrirEditor(v: OcurrenciaVista) {
     setDetalle(null);

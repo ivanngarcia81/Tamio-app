@@ -18,6 +18,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconArrowDown, IconArrowUp, IconEdit, IconEye, IconIdBadge, IconMiembros, IconPlus, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
+import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 const COLS = "1.7fr 1fr 130px 190px 104px";
@@ -75,6 +76,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   const [pendingReactivar, setPendingReactivar] = useState<Member | null>(null);
   const [ficha, setFicha] = useState<Member | null>(null);
   const [crearFicha, setCrearFicha] = useState(false);
+  useAbrirCrearDesdeMas(() => setCrearFicha(true));
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const anio = currentYear();

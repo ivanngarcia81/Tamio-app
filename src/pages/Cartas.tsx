@@ -27,6 +27,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services/cartas/cartaDoc";
 import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
+import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
 
 const COLS = "130px 1.8fr 110px 150px 130px 72px";
@@ -188,6 +189,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     if (destino !== "nueva") setDesdeSolicitud(null);
     setTab(destino);
   }, [tab]);
+  useAbrirCrearDesdeMas(() => cambiarTab("nueva"));
 
   const nombreMiembro = useCallback(
     (id: number | null) => (id === null ? null : members.find((m) => m.id === id)?.nombre ?? null),

@@ -13,6 +13,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconBookOpen, IconMiembros, IconPlus, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
+import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
 const COLS = "110px 1.8fr 1fr 130px 72px";
 const PAGE_SIZE = 25;
@@ -39,6 +40,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState<{ open: boolean; servicio: Servicio | null }>({ open: false, servicio: null });
   const [prefill, setPrefill] = useState<{ fecha?: string; tipo?: string; dirige?: string; actividadId?: number } | null>(null);
+  useAbrirCrearDesdeMas(() => setModal({ open: true, servicio: null }));
 
   // Puente Agenda → Bitácora: si la Agenda navegó aquí con una actividad,
   // se abre el registro nuevo con la fecha y el tipo ya puestos. El state se

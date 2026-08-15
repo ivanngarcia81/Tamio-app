@@ -501,7 +501,13 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               acta: "/actas", carta: "/cartas", evento: "/agenda",
             };
             const r = rutas[id];
-            if (r) navigate(r);
+            // `state: { crear: true }` es la señal de "abre tu formulario de
+            // crear en cuanto montes" — cada una de estas seis páginas lo lee
+            // en un efecto al entrar. Sin esto, el "+" solo dejaba a medio
+            // camino: llevaba a la pantalla pero el botón que de verdad abría
+            // el formulario era el de la cabecera, que en el teléfono ya no
+            // se pinta (duplica a este mismo "+").
+            if (r) navigate(r, { state: { crear: true } });
           }}
         />
       )}

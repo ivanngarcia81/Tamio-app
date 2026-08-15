@@ -12,6 +12,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { printActaPdf } from "../services/print/printActa";
 import { IconFileText, IconPlus, IconPrinter, IconSearch } from "../icons";
+import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
 const COLS = "110px 1.8fr 110px 1fr 130px 72px";
 const PAGE_SIZE = 25;
@@ -43,6 +44,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   const [query, setQuery] = useState("");
   const [filtro, setFiltro] = useState<FiltroEstado>("todas");
   const [modal, setModal] = useState<{ open: boolean; acta: Acta | null }>({ open: false, acta: null });
+  useAbrirCrearDesdeMas(() => setModal({ open: true, acta: null }));
   const [pendingDelete, setPendingDelete] = useState<Acta | null>(null);
   const [imprimiendo, setImprimiendo] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);

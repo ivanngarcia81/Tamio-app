@@ -13,6 +13,7 @@ import Pagination from "../components/Pagination";
 import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
 import { CERO, sumar, type Centavos } from "../dinero";
+import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
 const PAGE_SIZE = 40;
 
@@ -70,6 +71,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
     setEditing(null);
     setModalOpen(true);
   }
+  useAbrirCrearDesdeMas(abrirNuevo);
 
   function abrirEditar(dep: Deposito) {
     setEditing(dep);
