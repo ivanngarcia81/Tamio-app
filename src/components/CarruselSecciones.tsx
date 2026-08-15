@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { areaDeRuta, seccionesVisibles, type Contador } from "../navegacion";
@@ -38,9 +38,36 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   // deslizamiento no debe leerse como "el usuario eligió otra sección" y
   // disparar una segunda navegación. Esta bandera corta ese eco.
   const propio = useRef(false);
+  /** Posición de la sección anterior, para saber hacia qué lado se viaja. */
+  const indiceAnterior = useRef<number | null>(null);
 
   const area = areaDeRuta(pathname);
   const secciones = area ? seccionesVisibles(area, role) : [];
+
+  // Hacia qué lado va el viaje, para que la página entre desde ahí (lo pinta
+  // el CSS leyendo `data-dir-nav`). Sin esto la página aparecería de golpe
+  // mientras los nombres se deslizan, y las dos mitades no contarían la
+  // misma historia. Fuera de un área se borra: Inicio o Ajustes no tienen
+  // hermanas a izquierda ni derecha, así que no hay dirección que animar.
+  //
+  // useLayoutEffect y no useEffect: la página nueva (su .header/.content) se
+  // monta en el MISMO commit que este cambio de ruta, y necesita conocer la
+  // dirección ANTES de que el navegador pinte el primer fotograma de su
+  // animación de entrada. Con useEffect llegaría un instante tarde.
+  useLayoutEffect(() => {
+    const indice = secciones.findIndex((s) => s.ruta === pathname);
+    const raiz = document.documentElement;
+    if (indice < 0) {
+      delete raiz.dataset.dirNav;
+      indiceAnterior.current = null;
+      return;
+    }
+    const previo = indiceAnterior.current;
+    if (previo !== null && previo !== indice) {
+      raiz.dataset.dirNav = indice > previo ? "der" : "izq";
+    }
+    indiceAnterior.current = indice;
+  }, [pathname, secciones]);
 
   // La sección activa se trae al centro. Cubre tanto la navegación externa
   // (entrar a Agenda desde la barra inferior, por ejemplo) como la respuesta

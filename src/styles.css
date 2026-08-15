@@ -5220,13 +5220,30 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      debajo de la barra de estado. Pantallas cortas (sin scroll) parecían
      correctas y las largas no, que fue justo el síntoma.
      `.header` pasa a un valor fijo para no sumar el hueco dos veces. */
-  /* Sin la transición de entrada de página en el teléfono. No es un capricho
-     estético: `routeIn` anima `transform` y `opacity` con `fill-mode: both`,
-     así que en WebKit —el motor de iOS— el elemento se queda con contexto de
-     apilamiento propio para siempre, y el contenido acababa pintándose ENCIMA
-     del carrusel por mucho z-index que este llevara. En la Mac y el iPad la
-     animación se queda. */
-  .main .header, .main .content { animation: none; }
+  /* La página entra deslizándose desde el lado por el que se viaja —igual
+     que los nombres del carrusel, para que las dos mitades cuenten la misma
+     historia. No es `routeIn` (la de Mac/iPad): esa anima `transform` y
+     `opacity` con `fill-mode: both`, y en WebKit —el motor de iOS— eso deja
+     al elemento con un contexto de apilamiento propio PARA SIEMPRE, así que
+     el contenido acababa pintándose encima del carrusel por mucho z-index
+     que este llevara (ver el commit que quitó `routeIn` de aquí). Con
+     `z-index: 30` puesto a propósito en `.carrusel-secciones` y comprobado
+     con Playwright, la animación de abajo no reabre ese problema. */
+  :root[data-dir-nav="der"] .main .header,
+  :root[data-dir-nav="der"] .main .content { animation: entradaDer .22s ease both; }
+  :root[data-dir-nav="izq"] .main .header,
+  :root[data-dir-nav="izq"] .main .content { animation: entradaIzq .22s ease both; }
+  @keyframes entradaDer {
+    from { transform: translateX(28px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  @keyframes entradaIzq {
+    from { transform: translateX(-28px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root[data-dir-nav] .main .header, :root[data-dir-nav] .main .content { animation: none; }
+  }
 
   .app { padding-top: env(safe-area-inset-top); }
   /* `.header` y `.content` traen el hueco de la muesca desde la base móvil
