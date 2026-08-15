@@ -5309,6 +5309,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     position: sticky;
     top: 0;
     z-index: 30;
+    /* `.main` es un flex en columna. Un hijo con `overflow` distinto de
+       `visible` (aquí, el `overflow-x: auto` de arriba) pierde su alto
+       mínimo automático por especificación y puede terminar comprimido por
+       el resto del contenido — comprobado con Playwright: sin esto, la
+       altura calculada bajaba a 20px en vez de los ~58px que necesitan sus
+       pastillas (`min-height: 38px` cada una, más el relleno). */
+    flex-shrink: 0;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
