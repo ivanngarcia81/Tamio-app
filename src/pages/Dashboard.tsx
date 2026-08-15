@@ -9,7 +9,6 @@ import {
   type Church, type DailyPoint, type MonthTotals, type Tx, type YearTotals,
 } from "../db";
 import TxList, { EmptyState } from "../components/TxList";
-import Sparkline from "../components/Sparkline";
 import Delta from "../components/Delta";
 import CountUp from "../components/CountUp";
 import DashboardCharts from "../components/DashboardCharts";
@@ -99,6 +98,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const gastosAnt = totalesAnt?.gastos ?? CERO;
   const balanceAnt = restar(ingresosAnt, gastosAnt);
   const balanceAnio = restar(anio?.ingresos ?? CERO, anio?.gastos ?? CERO);
+
+  // Proporción de la barra ingresos/gastos de la tarjeta "Balance del mes":
+  // cuánto del movimiento total del mes fue ingreso vs. gasto. Sin
+  // movimientos, la barra se queda vacía en vez de partirse 50/50 (que
+  // insinuaría datos que no existen).
+  const movimientoTotalMes = ingresos + gastos;
+  const pctBarraIngreso = movimientoTotalMes > 0 ? (ingresos / movimientoTotalMes) * 100 : 0;
+  const pctBarraGasto = movimientoTotalMes > 0 ? (gastos / movimientoTotalMes) * 100 : 0;
 
   const categoriaTopGasto = useMemo(() => {
     const entries = Object.entries(totales?.porCategoriaGasto ?? {});
@@ -242,39 +249,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         </div>
 
         <div className="summary-4 enter">
-          <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("dashboard.ingresosDelMes")}</span>
-              <div className="stat-icon up"><IconArrowUp size={16} strokeWidth={2.2} /></div>
-            </div>
-            <div className="stat-row">
-              <div className="stat-value md">
-                <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-              </div>
-              <Sparkline data={dias.map((d) => d.ingresos)} color="var(--accent-1)" />
-            </div>
-            <div className="stat-foot">
-              <Delta pct={pctChange(ingresos, ingresosAnt)} /> {t("dashboard.vsMesAnterior")}
-            </div>
-          </div>
-
-          <div className="stat-card accent" style={accentStyle("var(--accent-2)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("dashboard.gastosDelMes")}</span>
-              <div className="stat-icon down"><IconArrowDown size={16} strokeWidth={2.2} /></div>
-            </div>
-            <div className="stat-row">
-              <div className="stat-value md">
-                <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-              </div>
-              <Sparkline data={dias.map((d) => d.gastos)} color="var(--accent-2)" />
-            </div>
-            <div className="stat-foot">
-              <Delta pct={pctChange(gastos, gastosAnt)} invert /> {t("dashboard.vsMesAnterior")}
-            </div>
-          </div>
-
-          <div className="stat-card accent" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
+          {/* Ingresos, Gastos y Balance del mes eran tres tarjetas separadas
+              con los mismos datos que ya se resumen aquí. Se consolidan en
+              una sola (inspirada en Copilot): el balance manda arriba, la
+              barra muestra qué proporción del movimiento del mes fue
+              ingreso vs. gasto, y el desglose de abajo conserva las mismas
+              cifras y comparativas de antes — nada se pierde, solo ocupa
+              menos alto en móvil. */}
+          <div className="stat-card accent resumen-mes" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
             <div className="stat-head">
               <span className="stat-label">{t("dashboard.balanceDelMesLabel")}</span>
               {/* El icono sigue el signo, igual que el color de acento de la
@@ -291,6 +273,38 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             <div className="stat-foot">
               <Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}
+            </div>
+
+            <div className="resumen-bar" title={`${t("charts.ingresos")} ${Math.round(pctBarraIngreso)}% · ${t("charts.gastos")} ${Math.round(pctBarraGasto)}%`}>
+              <span className="seg ingreso" style={{ width: `${pctBarraIngreso}%` }} />
+              <span className="seg gasto" style={{ width: `${pctBarraGasto}%` }} />
+            </div>
+
+            {/* Etiquetas cortas ("Ingresos", no "Ingresos del mes"): el título
+                de la tarjeta ya dice "Balance del mes", repetirlo en cada fila
+                era lo que dejaba tan poco ancho que "Ingresos del mes" se
+                truncaba a "Ingresos del …" en el teléfono. */}
+            <div className="resumen-desglose">
+              <div className="resumen-item">
+                <span className="dot" style={{ background: "var(--accent-1)" }} />
+                <div className="resumen-item-texto">
+                  <span className="resumen-item-label">{t("charts.ingresos")}</span>
+                  <span className="resumen-item-valor">
+                    <CountUp value={ingresos} format={fmtMoney} paso={100} /> {church.moneda}
+                  </span>
+                </div>
+                <Delta pct={pctChange(ingresos, ingresosAnt)} />
+              </div>
+              <div className="resumen-item">
+                <span className="dot" style={{ background: "var(--accent-2)" }} />
+                <div className="resumen-item-texto">
+                  <span className="resumen-item-label">{t("charts.gastos")}</span>
+                  <span className="resumen-item-valor">
+                    <CountUp value={gastos} format={fmtMoney} paso={100} /> {church.moneda}
+                  </span>
+                </div>
+                <Delta pct={pctChange(gastos, gastosAnt)} invert />
+              </div>
             </div>
           </div>
 
