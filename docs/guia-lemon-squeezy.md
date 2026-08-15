@@ -191,12 +191,32 @@ está en `docs/checklist-app-store.md`.
 
 ## Lista de cotejo
 
-- [ ] Fase 1 — Producto "Tamio" creado en test mode y enlace guardado
-- [ ] Fase 1-bis — `VITE_URL_COMPRA` puesto en el `.env`
-- [ ] Fase 2 — Webhook creado con URL + secreto + 7 eventos
-- [ ] Fase 3 — Secreto guardado y función desplegada
-- [ ] Fase 4 — Compra falsa con 200 `ok` (o el 404 esperado sin login)
+- [x] Fase 1 — Producto "Tamio" creado en test mode y enlace guardado (15 ago 2026)
+- [x] Fase 1-bis — `VITE_URL_COMPRA` puesto en el `.env`
+- [x] Fase 2 — Webhook creado con URL + secreto + 7 eventos
+- [x] Fase 3 — Secreto guardado y función desplegada
+- [x] Fase 4 — Compra falsa con 200 `ok`
 - [ ] Fase 5 — (esperar a Apple + 1.1)
+
+### Lo que se aprendió probándolo de verdad (15 ago 2026)
+
+- **Test mode y live mode son webhooks completamente separados en Lemon
+  Squeezy** — cada uno con su propio signing secret y su propia lista de
+  eventos. Editar el de test mode no toca el de live mode (y viceversa); hay
+  que confirmar en cuál se está parado antes de tocar nada.
+- El primer intento dio **401 "firma inválida"**: el secreto de Lemon
+  Squeezy y el de `supabase secrets set LEMON_WEBHOOK_SECRET` no coincidían
+  byte por byte. Se corrigió reescribiéndolo igual en los dos lados. Lemon
+  Squeezy deja **reintentar una entrega fallida** (botón "Resend") sin tener
+  que volver a pagar.
+- El reintento dio **200**, pero con cuerpo `cortesia: sin cambios` — no es
+  un fallo: la iglesia de prueba (la del dueño) tiene `sub_estado =
+  'cortesia'` a propósito (`supabase/sub-1-plan.sql:37`), y esa protección
+  funcionó exactamente como se diseñó. El valor por defecto de una iglesia
+  nueva es `'activa'` (`sub-1-plan.sql:15`), así que un cliente real sí
+  recibiría la actualización de plan — el camino de escritura (`UPDATE` en
+  `pago-webhook/index.ts:204`) es el mismo código sin ramas especiales, y no
+  hizo falta una iglesia sin cortesía para confirmarlo con confianza.
 
 ## Cómo saber si la función ya está desplegada
 
