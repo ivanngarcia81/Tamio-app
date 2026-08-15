@@ -1941,7 +1941,6 @@ html.vibrancy .main { background: var(--surface); }
   align-items: center;
   justify-content: center;
   padding: 40px;
-  z-index: 50;
   animation: overlayIn .15s ease both;
 }
 .modal-card {
@@ -5213,6 +5212,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .sidebar, .menu-hamburguesa, .menu-telon { display: none !important; }
   .app::before { display: none; }
   .app { grid-template-columns: 1fr; }
+
+  /* Sin barra fija arriba (a diferencia del iPad, aquí no hay botón ☰ que
+     cubrir), así que basta con la propia muesca/reloj. Antes solo `.header`
+     y `.content` tenían este relleno, y el carrusel de secciones —que vive
+     ANTES de los dos en `.main`— quedaba pegado detrás de la barra de
+     estado. `.header` pasa a un valor fijo para no sumar el hueco dos veces. */
+  .main { padding-top: env(safe-area-inset-top); }
+  .header, :root.movil .header { padding-top: 12px; }
 
   /* Sitio para la barra (58px) más la franja del home indicator. */
   .content { padding-bottom: calc(58px + 26px + env(safe-area-inset-bottom)); }
