@@ -4669,6 +4669,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil {
   --tabbar-h: 58px;
   --navrow-h: 44px;
+  /* Alto real del carrusel de secciones (10px + 10px de relleno vertical
+   * más la píldora de 38px, ver .carrusel-secciones/.carrusel-selector más
+   * abajo). Es solo del teléfono: el iPad no lo pinta (usa el sidebar). Vive
+   * aquí, junto a --navrow-h, para que el padding-top del área con scroll y
+   * el top fijo del propio carrusel nunca se desincronicen. */
+  --carrusel-h: 58px;
 }
 
 /* Sin barra de título de macOS: en iOS no hay ventana que arrastrar
@@ -4702,10 +4708,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de teléfono (<=600px, más abajo) para que un iPhone apaisado se
    comporte EXACTAMENTE como uno en vertical, no como un iPad angosto
    sin sidebar. !important porque estos valores viven dentro de un
-   @media(min-width:601px) con la misma especificidad. */
-:root.iphone .main { padding-top: 0 !important; }
-:root.iphone .header { padding-top: calc(var(--navrow-h) + 12px) !important; }
-:root.iphone .content { padding-top: calc(var(--navrow-h) + 12px) !important; }
+   @media(min-width:601px) con la misma especificidad. El carrusel de
+   secciones no se muestra en este ancho (su interruptor sigue atado a
+   <=600px, aparte de este bug), así que aquí el hueco es solo navrow-h —
+   sin --carrusel-h — igual que el rango de teléfono sin carrusel. */
+:root.iphone .main { padding-top: calc(var(--navrow-h) + 12px) !important; }
+:root.iphone .header { padding-top: 12px !important; }
+:root.iphone .content { padding-top: 6px !important; }
 :root.iphone .btn-crear { top: env(safe-area-inset-top) !important; }
 :root.iphone .btn-compartir-cabecera { top: env(safe-area-inset-top) !important; }
 :root.iphone .btn-header-menu-icono { top: env(safe-area-inset-top) !important; }
@@ -5983,10 +5992,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      historia. No es `routeIn` (la de Mac/iPad): esa anima `transform` y
      `opacity` con `fill-mode: both`, y en WebKit —el motor de iOS— eso deja
      al elemento con un contexto de apilamiento propio PARA SIEMPRE, así que
-     el contenido acababa pintándose encima del carrusel por mucho z-index
-     que este llevara (ver el commit que quitó `routeIn` de aquí). Con
-     `z-index: 30` puesto a propósito en `.carrusel-secciones` y comprobado
-     con Playwright, la animación de abajo no reabre ese problema. */
+     el contenido podía acabar pintándose encima de lo que fuera fixed por
+     mucho z-index que llevara (ver el commit que quitó `routeIn` de aquí).
+     El carrusel ya no puede sufrirlo — es hermano de `.main`, no descendiente
+     suyo, así que esta animación (que solo toca `.main .header`/`.main
+     .content`) no lo alcanza en absoluto. */
   :root[data-dir-nav="der"] .main .header,
   :root[data-dir-nav="der"] .main .content { animation: entradaDer .22s ease both; }
   :root[data-dir-nav="izq"] .main .header,
@@ -6004,14 +6014,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
 
   .app { padding-top: env(safe-area-inset-top); }
-  /* `.header` y `.content` traen el hueco de la muesca desde la base móvil
-     (:root.movil, para el iPad); aquí ya lo pone `.app`, así que sumarlo otra
-     vez dejaría el doble de aire arriba. Se le suma --navrow-h: la fila fija
-     de "+"/compartir vive con `position: fixed` pegada a la muesca, así que
-     no empuja el contenido por sí sola —hay que dejarle el sitio a mano, o
-     el título grande arrancaría debajo de ella. */
-  .header, :root.movil .header { padding-top: calc(var(--navrow-h) + 12px); }
-  :root.movil .content { padding-top: calc(var(--navrow-h) + 12px); }
+  /* Bug corregido: `.header` Y `.content` llevaban CADA UNO su propia
+     compensación de navrow-h — dos gastos del mismo hueco, uno detrás del
+     otro en el flujo normal, así que entre el título y el contenido
+     quedaba un salto vacío del DOBLE del alto real de la barra (con
+     carrusel, más todavía: el término --carrusel-h también iba en los
+     dos). Toda página con `.content` lleva también `.header` (comprobado
+     en los ficheros de páginas), así que el segundo cobro era puro
+     sobrante. La cuenta se hace UNA vez, en `.main`, que es el área con
+     scroll de verdad — tal como pide la propia estructura: el hueco de
+     arriba es del CONTENEDOR, no de cada hijo por su cuenta. */
+  .main { padding-top: calc(var(--navrow-h) + 12px); }
+  /* Solo cuando la página tiene carrusel de verdad (App.tsx, `hayCarrusel`
+     — la misma cuenta que hace CarruselSecciones.tsx para decidir si pinta
+     algo): el área con scroll despeja además su alto (--carrusel-h). */
+  .main.con-carrusel { padding-top: calc(var(--navrow-h) + var(--carrusel-h) + 12px); }
+  /* `.header` ya no necesita compensar nada —eso ahora vive en `.main`—,
+     así que se queda con un aire propio pequeño, el mismo que ya usaba de
+     sobra sobre la barra fija. `.content` no lleva ninguno: su propio
+     `padding-top: 6px` de base (línea ~1143) ya es el hueco correcto
+     después de `.header`. */
+  .header, :root.movil .header { padding-top: 12px; }
 
   /* Mismo motivo que en el rango de iPad (línea ~4505): `.main` solo declara
      `overflow-y: auto`, y por especificación eso hace que el otro eje deje
@@ -6020,6 +6043,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      ejemplo) dejaba deslizar la página ENTERA de lado. Comprobado con
      Playwright: sin esto, .main medía 920px con la pantalla en 393px. */
   .main { overflow-x: hidden; }
+  /* Nada debe quedar tapado bajo la nav bar/carrusel fijos al saltar el
+     scroll por programa (p. ej. un enlace a una fila concreta): el mismo
+     total que ya lleva el padding-top de arriba, como scroll-padding, que
+     es lo que de verdad lee un scrollIntoView/anchor, no el padding visual. */
+  .main { scroll-padding-top: calc(var(--navrow-h) + 12px); }
+  .main.con-carrusel { scroll-padding-top: calc(var(--navrow-h) + var(--carrusel-h) + 12px); }
+  /* La barra de scroll vertical de .main: en el simulador de iOS con ratón/
+     trackpad (no con el dedo) WebKit pinta la barra clásica de escritorio en
+     vez del hilo transitorio táctil — algo que iOS nativo no hace nunca.
+     Se apaga a mano; el scroll en sí no se toca, solo su indicador visual. */
+  .main { scrollbar-width: none; }
+  .main::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
   /* Sitio para la barra inferior (58px) más la franja del home indicator.
      El "+" ya no vive aquí abajo —se mudó a la fila fija superior—, así que
@@ -6093,12 +6128,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      no hace falta despejarlo también aquí.) */
   .toast-host { bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); }
 
-  /* Fijo arriba, con fondo propio. Dos motivos, y el segundo es el que
-     importa: (1) las secciones del área siguen a mano sin volver arriba del
-     todo, y (2) el carrusel vive DENTRO de `.main`, que es quien hace scroll,
-     así que sin `sticky` se desplazaba hacia arriba y acababa pintándose bajo
-     el reloj y la muesca. El fondo opaco es parte del arreglo: aunque el
-     hueco de safe-area fallara, aquí no se transparenta nada. */
+  /* Bug corregido: el carrusel vivía DENTRO de `.main` (el área con scroll)
+     y usaba `position: sticky` para no desplazarse con el contenido — pero
+     seguía siendo contenido desplazable de todos modos, así que al ENTRAR a
+     la página aparecía tapado bajo la fila fija de "+"/compartir, y hacía
+     falta arrastrar hacia abajo para revelarlo (además de un hueco vacío
+     donde el layout reservaba su alto sin que estuviera realmente ahí
+     arriba). Ahora es HERMANO de `.main` en el marcado (App.tsx) y
+     `position: fixed` de verdad, exactamente como la fila de "+"/compartir:
+     nav bar → carrusel → recién ahí el área con scroll. El fondo opaco es
+     parte del arreglo: aunque el hueco de safe-area fallara, aquí no se
+     transparenta nada. */
   /* El "selector de vidrio" (Proyecto B, Copilot): el círculo/píldora activa
      NUNCA se mueve del centro. Lo que se desliza es la TIRA de secciones por
      debajo; la que quede bajo el centro al soltar es la que se abre —lo
@@ -6114,20 +6154,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        propio y volvía a `none`. Comprobado con Playwright: sin esto, el
        carrusel entero medía 0×0. */
     display: block;
-    position: sticky;
-    top: 0;
-    z-index: 30;
+    position: fixed;
+    top: calc(var(--navrow-h) + env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    height: var(--carrusel-h);
+    z-index: 95;
     padding: 10px 0;
+    box-sizing: border-box;
     /* Ancla de la píldora de vidrio, que va posicionada contra este bloque. */
     --ancho-selector: 120px;
-    margin: 0 -20px 4px;
-    /* `.main` es un flex en columna. Un hijo con `overflow` distinto de
-       `visible` (más abajo, en `.carrusel-pista`) pierde su alto mínimo
-       automático por especificación y puede terminar comprimido por el
-       resto del contenido — comprobado con Playwright: sin esto, la altura
-       calculada bajaba a 20px en vez de los ~58px que necesitan sus
-       pastillas (`min-height: 38px` cada una, más el relleno). */
-    flex-shrink: 0;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);

@@ -42,6 +42,7 @@ import { ACENTOS, type Acento } from "./components/settings/AccentSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
+import { areaDeRuta, seccionesVisibles } from "./navegacion";
 import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { authHabilitado } from "./supabase";
@@ -130,6 +131,15 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const location = useLocation();
   useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
+  // El carrusel de secciones (bug de teléfono corregido más abajo: ahora vive
+  // FUERA de <main>, fijo bajo la fila de "+"/compartir) no siempre pinta
+  // algo — CarruselSecciones.tsx devuelve null fuera de un área o con una
+  // sola sección visible. El área con scroll necesita saberlo para reservar
+  // su alto (--carrusel-h) solo cuando de verdad hay carrusel que despejar;
+  // la misma cuenta que hace ese componente, repetida aquí porque el CSS no
+  // puede leer el resultado de un render ajeno.
+  const areaActual = areaDeRuta(location.pathname);
+  const hayCarrusel = areaActual !== null && seccionesVisibles(areaActual, role).length >= 2;
 
   // Título grande que se encoge al hacer scroll (iPhone/iPad): clase de DOM
   // directa por ref, no estado de React — con setState en cada scroll el
@@ -376,11 +386,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       </button>
       {menuAbierto && <div className="menu-telon" onClick={() => setMenuAbierto(false)} />}
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
-      <main className="main" ref={mainRef}>
+      {/* Bug de teléfono: el carrusel vivía DENTRO de <main> (el área con
+          scroll) y se posicionaba con position:sticky para no desplazarse —
+          pero seguía siendo contenido desplazable, así que al entrar a la
+          página aparecía tapado bajo la fila fija de "+"/compartir y había
+          que arrastrar para revelarlo. Ahora es HERMANO de <main>, fijo de
+          verdad (position:fixed en el CSS), igual que esa fila: nav bar →
+          carrusel → recién ahí el área con scroll. */}
+      <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} />
+      <main className={`main${hayCarrusel ? " con-carrusel" : ""}`} ref={mainRef}>
         <UpdateBanner />
         <SyncPausadoBanner />
         {authHabilitado && <SubBanner church={church} />}
-        <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} />
         <Routes>
           <Route
             path="/"
