@@ -141,20 +141,37 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const areaActual = areaDeRuta(location.pathname);
   const hayCarrusel = areaActual !== null && seccionesVisibles(areaActual, role).length >= 2;
 
-  // Título grande que se encoge al hacer scroll (iPhone/iPad): clase de DOM
-  // directa por ref, no estado de React — con setState en cada scroll el
-  // re-render de toda la Shell en cada frame se sentía a tirones. El CSS lee
-  // `.main.scrolled .page-title` (ver styles.css, Prioridad 4).
+  // Large Title que se reubica de verdad en la barra fija al hacer scroll
+  // (iPhone/iPad): nada de esto pasa por estado de React — con setState en
+  // cada scroll el re-render de toda la Shell en cada frame se sentía a
+  // tirones. En vez de eso, cada evento de scroll escribe una única
+  // variable CSS (`--progreso-titulo`, 0 en reposo → 1 con el título ya
+  // "llegado" a la barra) en <html>, y el CSS de `.page-title` y de la
+  // copia fija `.titulo-fijo` (ver styles.css, Prioridad 4) la leen para
+  // decidir su propia opacidad/tamaño/posición — así los dos quedan atados
+  // al mismo número, en tiempo real, sin animación diferida ni salto por
+  // umbral. `.scrolled` en `.main` se conserva solo como bandera booleana
+  // para la barra (fondo/blur/borde), que si aparece de golpe con el
+  // primer pixel de scroll o interpola junto con el título no importa para
+  // el ojo: ver `:has()` en styles.css.
+  const UMBRAL_TITULO = 48;
   const mainRef = useRef<HTMLElement>(null);
+  const tituloFijoRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = mainRef.current;
     if (!el) return;
-    function onScroll() {
-      el!.classList.toggle("scrolled", el!.scrollTop > 8);
+    function sync() {
+      const scrollTop = el!.scrollTop;
+      const progreso = Math.min(1, scrollTop / UMBRAL_TITULO);
+      el!.classList.toggle("scrolled", progreso >= 1);
+      document.documentElement.style.setProperty("--progreso-titulo", String(progreso));
+      const fijo = tituloFijoRef.current;
+      if (fijo) fijo.textContent = el!.querySelector(".page-title")?.textContent ?? "";
     }
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    return () => el.removeEventListener("scroll", sync);
+  }, [location.pathname]);
 
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
   // sin necesidad de recargar la app cuando el usuario lo cambia en macOS/
@@ -394,6 +411,13 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           verdad (position:fixed en el CSS), igual que esa fila: nav bar →
           carrusel → recién ahí el área con scroll. */}
       <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} />
+      {/* Copia acoplada del Large Title: vive siempre fija en la fila del
+          "+", con el mismo texto que `.page-title` (el efecto de scroll de
+          arriba la mantiene sincronizada). En reposo es invisible
+          (--progreso-titulo en 0); al hacer scroll se desvanece hacia
+          dentro mientras el título grande se desvanece hacia afuera —
+          ver styles.css. */}
+      <div className="titulo-fijo" ref={tituloFijoRef} aria-hidden="true" />
       <main className={`main${hayCarrusel ? " con-carrusel" : ""}`} ref={mainRef}>
         <UpdateBanner />
         <SyncPausadoBanner />

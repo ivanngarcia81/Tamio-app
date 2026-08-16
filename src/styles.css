@@ -4802,6 +4802,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   top: 0 !important;
   height: calc(var(--navrow-h) + env(safe-area-inset-top)) !important;
 }
+:root.iphone .titulo-fijo {
+  top: env(safe-area-inset-top) !important;
+  height: var(--navrow-h) !important;
+}
 
 /* Prioridad 2 — fondo agrupado tipo Ajustes de iOS: las tarjetas dejan de
    flotar en blanco sobre blanco y pasan a blanco/#1C1C1E sobre un gris/negro
@@ -4879,7 +4883,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    en el iPad la barra del ☰ (.app::before, abajo) sí tenía difuminado,
    pero la franja de la fila fija que cuelga justo debajo no. Un pseudo-
    elemento nuevo (.app::after) le da a esa franja el mismo tratamiento en
-   los dos rangos, con top/height propios de cada uno (ver los @media). */
+   los dos rangos, con top/height propios de cada uno (ver los @media).
+   Nace transparente: como el título grande, gana su fondo/blur/borde
+   recién cuando el título ya "llegó" arriba (`.scrolled` en `.main`, leído
+   por `:has()`) — antes de eso el contenido se ve directamente bajo los
+   glifos, como en Mail o Ajustes de iOS. */
 :root.movil .app::after {
   content: "";
   position: fixed;
@@ -4890,16 +4898,47 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 0.5px solid var(--line);
   pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease;
 }
+:root.movil .app:has(.main.scrolled)::after { opacity: 1; }
 
-/* Título grande que se encoge a 17px al hacer scroll (fila fija arriba
-   estable, título abajo cediendo sitio) — el propio App.tsx alterna la
-   clase `.scrolled` en `.main` leyendo su scrollTop. Nota: se queda en
-   ENCOGER EN SITIO; no se muda de verdad a la fila fija (eso pediría que
-   cada página le pasara su título a un componente compartido — más cambio
-   de estructura del que entra en este bloque). */
-:root.movil .page-title { transition: font-size .18s ease; }
-:root.movil .main.scrolled .page-title { font-size: 17px; }
+/* Large Title que se reubica de verdad en la fila fija al hacer scroll:
+   dos nodos —`.page-title` (grande, en su sitio de siempre) y `.titulo-fijo`
+   (la copia siempre-fija de la fila del "+", ver App.tsx) — atados a la
+   misma variable `--progreso-titulo` que un listener de scroll escribe en
+   <html> en cada evento, sin pasar por estado de React ni por transición
+   con retraso: sigue al dedo/scroll en tiempo real. Uno se apaga y sube un
+   poco mientras el otro se enciende ya en su tamaño y sitio finales (17px,
+   centrado en la fila) — la ilusión de una sola etiqueta viajando, aunque
+   en el DOM sean dos. `prefers-reduced-motion` no necesita nada especial
+   aquí: al no haber `transition`, el valor sigue el scroll 1:1 sin ningún
+   easing que apagar (ver más abajo solo para el fondo de `.app::after`,
+   que sí anima con duración propia). */
+:root.movil .page-title {
+  opacity: calc(1 - var(--progreso-titulo, 0));
+  transform: translateY(calc(var(--progreso-titulo, 0) * -10px));
+}
+:root.movil .titulo-fijo {
+  position: fixed;
+  left: 96px; right: 132px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: var(--progreso-titulo, 0);
+  transform:
+    translateY(calc((1 - var(--progreso-titulo, 0)) * 6px))
+    scale(calc(0.92 + var(--progreso-titulo, 0) * 0.08));
+}
 
 /* Botón primario: negro sólido (--ink) es el acento de un dashboard de
    escritorio; en iOS el tinte de marca es el que marca la acción
@@ -5821,6 +5860,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .sidebar { transition: none; }
   :root.movil .page-title { transition: none; }
+  :root.movil .app::after { transition: none; }
 }
 
 /* ============ Visor de PDF (iPad/iPhone) ============ */
@@ -5964,6 +6004,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .btn-compartir-cabecera { top: calc(58px + env(safe-area-inset-top)); right: 68px; }
   :root.movil .btn-header-menu-icono { top: calc(58px + env(safe-area-inset-top)); right: 16px; }
   :root.movil .app::after { top: calc(58px + env(safe-area-inset-top)); height: var(--navrow-h); }
+  :root.movil .titulo-fijo { top: calc(58px + env(safe-area-inset-top)); height: var(--navrow-h); }
   :root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
 
@@ -6250,6 +6291,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .btn-compartir-cabecera { top: env(safe-area-inset-top); right: 68px; }
   :root.movil .btn-header-menu-icono { top: env(safe-area-inset-top); right: 16px; }
   :root.movil .app::after { top: 0; height: calc(var(--navrow-h) + env(safe-area-inset-top)); }
+  :root.movil .titulo-fijo { top: env(safe-area-inset-top); height: var(--navrow-h); }
 
   /* Los toasts de confirmación ("Miembro agregado", "Deshacer"…) traían un
      `bottom: 24px` fijo pensado para el escritorio, donde no hay nada abajo.
