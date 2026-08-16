@@ -126,11 +126,24 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                      `método` caía en la columna del importe (132px) y quedaba
                      a media fila del `·` que lo precedía: el hueco horizontal
                      enorme entre concepto y cifra. Aquí NO va la fecha (sí en
-                     TxTable) porque esta lista ya viene agrupada por día. */
+                     TxTable) porque esta lista ya viene agrupada por día.
+
+                     Mismo ajuste que TxTable: el titular pasa a ser la
+                     PERSONA, no el concepto — en altas rápidas el concepto
+                     suele ser literalmente el nombre de la categoría
+                     ("Tithe"/"Diezmo"), que ya se lee en la secundaria.
+                     Repetirlo en negrita no informaba nada y enterraba el
+                     nombre (el dato que de verdad identifica la fila) al
+                     final de una línea que se corta con "…" antes de llegar
+                     a él. Sin persona, el titular sigue siendo el concepto. */
+                  const personaTitular = quien || null;
+                  const conceptoRedundante = tx.concepto.trim().toLowerCase() === cat.nombre.trim().toLowerCase();
                   const metodoTexto = metodo ? metodoNombre(metodo.id) : tx.metodo_pago;
-                  const secundariaMovil = [quien, cat.nombre, metodoTexto]
-                    .filter(Boolean)
-                    .join(" · ");
+                  const secundariaMovil = [
+                    personaTitular && !conceptoRedundante ? tx.concepto : null,
+                    cat.nombre,
+                    metodoTexto,
+                  ].filter(Boolean).join(" · ");
                   return (
                     <div className="tx-row" data-fila key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
                       {/* La hora es opcional al registrar, así que hay filas
@@ -149,7 +162,8 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                             <IconRepeat size={11} strokeWidth={2.2} />
                           </span>
                         )}
-                        {tx.concepto}
+                        <span className="solo-escritorio">{tx.concepto}</span>
+                        <span className="solo-movil">{personaTitular ?? tx.concepto}</span>
                         {tx.estado === "pendiente" && (
                           <span
                             /* Tokens y no hex: con los colores a mano esta
