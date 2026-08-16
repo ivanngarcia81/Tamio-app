@@ -4698,6 +4698,70 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .titlebar-drag { display: none; }
 :root.movil { -webkit-tap-highlight-color: transparent; }
 
+/* Prioridad 6 — comportamiento nativo.
+   Sin el menú de "copiar/guardar imagen" de iOS al mantener presionado
+   sobre texto o un ícono: en una app nativa ese gesto no existe salvo
+   donde el usuario está escribiendo. */
+:root.movil { -webkit-touch-callout: none; }
+/* Nada de texto seleccionable por accidente al tocar un poco largo un
+   botón, una fila o una etiqueta — el resaltado azul de selección es una
+   señal de página web, no de app. Los campos de formulario son la
+   excepción explícita: ahí SÍ hace falta seleccionar para copiar/pegar
+   o corregir lo escrito. */
+:root.movil {
+  -webkit-user-select: none;
+  user-select: none;
+}
+:root.movil input,
+:root.movil textarea,
+:root.movil [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* El "rebote" de goma de iOS no debe arrastrar consigo a lo que esté
+   detrás (la barra inferior, el fondo de la página) cuando el scroll
+   llega al tope o al final. */
+:root.movil .main { overscroll-behavior-y: contain; }
+
+/* :hover en un dispositivo sin puntero real es un simulacro: WebKit
+   puede disparar el estado al tocar y dejarlo pegado hasta el próximo
+   toque en otro sitio — el botón se queda "iluminado" de más. La
+   retroalimentación táctil correcta es `:active` (ya la tienen la
+   mayoría de estos, de prioridades anteriores); aquí se apaga el :hover
+   de los controles que SÍ se tocan en el teléfono, devolviéndolos a su
+   estado de reposo. `@media (hover: none)` — no `:root.movil` — porque
+   es justo la característica que hay que preguntarle a la plataforma:
+   un trackpad conectado a un iPad seguiría reportando hover:hover y
+   conservaría el comportamiento de siempre, como corresponde. No es una
+   pasada exhaustiva de los ~95 `:hover` del fichero: son los controles
+   que de verdad aparecen y se tocan en la interfaz móvil (botones,
+   chips, filas de listas y menús); el resto vive en zonas que ya están
+   ocultas en el teléfono, así que su :hover nunca llega a dispararse. */
+@media (hover: none) {
+  .nav-item:hover { background: none; color: var(--text-2); }
+  .icon-btn:hover { background: none; color: var(--text-2); }
+  .btn.secondary:hover { background: var(--surface); }
+  .btn.ghost:hover { background: none; color: var(--text-2); }
+  .btn.danger-btn:hover { background: transparent; }
+  .btn.ia:hover {
+    background: color-mix(in srgb, #059669 8%, var(--surface));
+    border-color: color-mix(in srgb, #059669 30%, var(--line));
+  }
+  .btn.ia-primary:hover { filter: none; }
+  .chip:hover:not(.active) { background: var(--surface-2); color: var(--text-2); }
+  .chip.active:hover { opacity: 1; }
+  .row-menu-item:hover { background: none; }
+  .cuenta-fila:hover { background: none; }
+  .data-table .tr:hover {
+    /* En el teléfono la Prioridad 5 ya apaga el cebrado de filas pares
+       (transparent), así que este es el reposo real, no una suposición. */
+    background: transparent;
+    box-shadow: none;
+  }
+  .btn.primary:hover,
+  .btn.primary.danger:hover { opacity: 1; }
+}
+
 /* ============================================================
    BUG DE ACCESO: el sidebar (cajón + ☰) se activaba en iPhone
    apaisado porque el rango que lo enciende (601-1023px, pensado para
@@ -5054,6 +5118,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      La especificidad iguala a .data-table .row-actions (línea ~1557) para
      poder ganarle; si no, esa regla base dejaría el icono ocupando sitio. */
   .data-table .row-actions { display: none; }
+  /* Excepción real, no hipotética: Ingresos/Gastos SÍ dejan un icono
+     visible en táctil (el clip de "ver comprobante"), decidido junto con
+     el resto de la Prioridad 5 (ver TxTable.tsx) — el editar suelto de al
+     lado se oculta aparte con `.solo-escritorio` porque el "···" ya lo
+     cubre, pero el comprobante no tenía otro camino tan directo. Sin esta
+     excepción la regla de arriba ganaba y el clip quedaba invisible pese
+     a estar en el marcado: se veía en el código pero no en el teléfono. */
+  .data-table.tabla-tx .row-actions { display: inline-flex; }
 }
 
 /* ============================================================
@@ -5594,7 +5666,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     height: auto;
     max-height: 90dvh;
     border-radius: 18px 18px 0 0;
-    padding-top: 0;
+    padding-top: 18px;
   }
   /* Diálogo destructivo (Borrar registros / reinicio de fábrica): hoja
      inferior del alto de su contenido, no de pantalla completa. Antes el
@@ -5608,7 +5680,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     height: auto;
     max-height: 90dvh;
     border-radius: 18px 18px 0 0;
-    padding-top: 0;
+    padding-top: 18px;
+  }
+  /* Agarradera: la señal de "esto es una hoja que se puede deslizar",
+     sin JSX propio — un solo `::before` cubre las dos variantes de hoja
+     inferior (y a cualquier modal nuevo que adopte alguna de las dos
+     clases), así que no hay que tocar los 23 componentes que usan
+     .modal-card. Puramente visual: el cierre sigue siendo la ✕ o
+     Cancelar, no un gesto de arrastre. */
+  .modal-card.hoja-ia,
+  .modal-card.hoja-abajo {
+    position: relative;
+  }
+  .modal-card.hoja-ia::before,
+  .modal-card.hoja-abajo::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--line);
   }
 
   /* El contenido deja de tocar los bordes de la pantalla. */
