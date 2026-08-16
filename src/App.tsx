@@ -154,7 +154,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // para la barra (fondo/blur/borde), que si aparece de golpe con el
   // primer pixel de scroll o interpola junto con el título no importa para
   // el ojo: ver `:has()` en styles.css.
-  const UMBRAL_TITULO = 48;
+  // 24px NO es un número al azar: es la holgura real entre el borde inferior
+  // de la barra fija y el techo del título — 12px del padding de `.main`
+  // (que despeja navrow + carrusel) más 12px del de `.header`, y sale igual
+  // con carrusel y sin él. Atar el umbral a esa holgura hace que TODO ocurra
+  // en el mismo instante en que el contenido alcanza la barra: el título
+  // grande termina de desvanecerse, la copia fija termina de aparecer y la
+  // barra gana su fondo. Con el valor anterior (48px) el título seguía a
+  // media opacidad cuando la banda opaca del carrusel ya lo estaba tapando,
+  // y se veía literalmente rebanado por la mitad.
+  const UMBRAL_TITULO = 24;
   const mainRef = useRef<HTMLElement>(null);
   const tituloFijoRef = useRef<HTMLDivElement>(null);
   useEffect(() => {

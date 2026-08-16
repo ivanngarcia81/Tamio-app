@@ -4915,14 +4915,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    aquí: al no haber `transition`, el valor sigue el scroll 1:1 sin ningún
    easing que apagar (ver más abajo solo para el fondo de `.app::after`,
    que sí anima con duración propia). */
+/* Sin `translateY` propio: el título ya sube solo, porque vive dentro del
+   área con scroll. El desplazamiento extra que llevaba antes lo hacía
+   ALCANZAR la barra antes de haberse desvanecido del todo — justo el corte
+   a media altura que se veía. Aquí solo se atenúa; de moverse se encarga el
+   scroll. */
 :root.movil .page-title {
   opacity: calc(1 - var(--progreso-titulo, 0));
-  transform: translateY(calc(var(--progreso-titulo, 0) * -10px));
 }
 :root.movil .titulo-fijo {
   position: fixed;
   left: 96px; right: 132px;
-  z-index: 100;
+  /* 101, NO 100: el fondo de la barra es `.app::after`, un pseudo-elemento
+     de `.app`, y a igualdad de z-index el orden de pintado es el del árbol,
+     donde ::after cuenta como último hijo — o sea que con 100 la barra
+     translúcida con blur se pintaba ENCIMA del título y lo dejaba casi
+     invisible. El "+" nunca lo sufrió porque ya estaba en 101; esto lo
+     iguala. */
+  z-index: 101;
   display: flex;
   align-items: center;
   justify-content: center;
