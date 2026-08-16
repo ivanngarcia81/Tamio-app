@@ -41,6 +41,15 @@ export default function BarraInferior({
   // apagaba entera y el usuario dejaba de saber dónde está.
   const areaActual = areaDeRuta(pathname);
 
+  // Los atajos (Pending review, Bank deposit, Agenda…) apuntan a una pantalla
+  // que TAMBIÉN es sección de su área — /bandeja está en Tesorería, /agenda en
+  // Secretaría. Sin este freno, al aterrizar justo en la página de un atajo se
+  // encendían las dos pestañas a la vez (la del atajo por ruta exacta y la del
+  // área por pertenencia): "Treasury" y "Pending review" verdes juntas, y
+  // ninguna de las dos diciendo de verdad dónde estás. El atajo, al ser más
+  // específico, se queda con la ruta exacta y el área cede.
+  const rutasDeAtajo = new Set(ranuras.filter((r) => r.atajo).map((r) => r.destino.ruta));
+
   return (
     <nav className="barra-inferior" aria-label={t("nav.abrirMenu")}>
       {ranuras.map(({ destino, atajo }) => {
@@ -52,7 +61,7 @@ export default function BarraInferior({
           const areaDelDestino = atajo ? null : areaDeRuta(destino.ruta);
           const activo =
             pathname === destino.ruta ||
-            (areaDelDestino !== null && areaDelDestino.id === areaActual?.id);
+            (areaDelDestino !== null && areaDelDestino.id === areaActual?.id && !rutasDeAtajo.has(pathname));
           const n = numero(destino.contador);
           return (
             <NavLink
