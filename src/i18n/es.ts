@@ -36,6 +36,9 @@ export const es = {
     camposOpcionales: "Los campos marcados como opcionales se pueden completar después.",
     montoInvalido: "Escribe un monto válido mayor a cero.",
     conceptoObligatorio: "El concepto es obligatorio.",
+    descartarCambiosTitulo: "¿Descartar cambios?",
+    descartarCambiosMensaje: "Lo que escribiste se perderá.",
+    descartarCambiosBtn: "Descartar",
   },
 
   fechas: {

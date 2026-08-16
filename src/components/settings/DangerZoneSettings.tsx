@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { borrarDatosIglesia, reinicioDeFabrica, type Church } from "../../db";
 import { IconWarn } from "../../icons";
 import Portal from "../Portal";
+import { useHojaDeslizable } from "../../hooks/useHojaDeslizable";
 
 interface Props {
   church: Church;
@@ -25,6 +26,8 @@ export default function DangerZoneSettings({ church }: Props) {
 
   function abrir(a: Accion) { setAccion(a); setTexto(""); setError(null); }
   function cerrar() { if (!trabajando) { setAccion(null); setTexto(""); setError(null); } }
+
+  const { refHoja, refVelo } = useHojaDeslizable(!!accion && !trabajando, cerrar);
 
   async function confirmar() {
     if (!habilitado || !accion) return;
@@ -78,8 +81,8 @@ export default function DangerZoneSettings({ church }: Props) {
 
       {accion && (
         <Portal>
-        <div className="modal-overlay hoja-abajo" onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
-          <div className="modal-card hoja-abajo" style={{ maxWidth: 420 }}>
+        <div className="modal-overlay hoja-abajo" ref={refVelo} onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
+          <div className="modal-card hoja-abajo" ref={refHoja} style={{ maxWidth: 420 }}>
             <div className="modal-header">
               <div><div className="modal-title">{t("reset.confirmarTitulo")}</div></div>
             </div>

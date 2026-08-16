@@ -9,10 +9,12 @@ import { aplicarVariables, contextoDe } from "../services/cartas/plantillas";
 import { parseFirmas, buildCartaHtml, abrirCartaParaImprimir } from "../services/cartas/cartaDoc";
 import { Seccion } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
+import ActionSheet from "./ActionSheet";
 import { IconClose, IconPrinter, IconSparkles, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { iaHabilitada, redactarCarta } from "../ia";
+import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
 
 export const TIPOS_CARTA = [
   "recomendacion", "certificacion", "constanciaActivo", "buenaConducta", "presentacion",
@@ -70,6 +72,16 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
   const [iaPuntos, setIaPuntos] = useState("");
   const [iaGenerando, setIaGenerando] = useState(false);
   const [iaError, setIaError] = useState<string | null>(null);
+  const [iaConfirmarDescartar, setIaConfirmarDescartar] = useState(false);
+
+  const { refHoja: refHojaIa, refVelo: refVeloIa } = useHojaDeslizable(
+    iaAbierta && !iaGenerando,
+    () => setIaAbierta(false),
+    {
+      hayCambiosSinGuardar: () => iaPuntos.trim().length > 0,
+      onIntentoConCambios: () => setIaConfirmarDescartar(true),
+    },
+  );
 
   const [tipo, setTipo] = useState(carta?.tipo ?? prefill?.tipo ?? "recomendacion");
   const [fechaEmision, setFechaEmision] = useState(carta?.fecha_emision ?? hoyLocal());
@@ -576,8 +588,8 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
       )}
 
       {iaAbierta && (
-        <div className="modal-overlay hoja-ia" onClick={(e) => { if (e.target === e.currentTarget && !iaGenerando) setIaAbierta(false); }}>
-          <div className="modal-card hoja-ia" style={{ width: 560, maxWidth: "94vw" }}>
+        <div className="modal-overlay hoja-ia" ref={refVeloIa} onClick={(e) => { if (e.target === e.currentTarget && !iaGenerando) setIaAbierta(false); }}>
+          <div className="modal-card hoja-ia" ref={refHojaIa} style={{ width: 560, maxWidth: "94vw" }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("cartas.ia.titulo")}</div>
@@ -611,6 +623,19 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
             </div>
           </div>
         </div>
+      )}
+
+      {iaConfirmarDescartar && (
+        <ActionSheet
+          title={t("common.descartarCambiosTitulo")}
+          message={t("common.descartarCambiosMensaje")}
+          options={[{
+            label: t("common.descartarCambiosBtn"),
+            danger: true,
+            onClick: () => { setIaConfirmarDescartar(false); setIaAbierta(false); },
+          }]}
+          onCancel={() => setIaConfirmarDescartar(false)}
+        />
       )}
 
       {confirmEntrega && (

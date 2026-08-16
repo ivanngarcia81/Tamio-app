@@ -22,6 +22,8 @@ import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
 import CountUp from "../components/CountUp";
 import { CERO, porcentaje, restar, sumar, type Centavos } from "../dinero";
+import ActionSheet from "../components/ActionSheet";
+import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
 
@@ -49,6 +51,21 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [pregTexto, setPregTexto] = useState("");
   const [pregRespuesta, setPregRespuesta] = useState<string | null>(null);
   const [pregGenerando, setPregGenerando] = useState(false);
+  const [pregConfirmarDescartar, setPregConfirmarDescartar] = useState(false);
+
+  const { refHoja: refHojaPreg, refVelo: refVeloPreg } = useHojaDeslizable(
+    pregOpen && !pregGenerando,
+    () => setPregOpen(false),
+    {
+      hayCambiosSinGuardar: () => pregTexto.trim().length > 0,
+      onIntentoConCambios: () => setPregConfirmarDescartar(true),
+    },
+  );
+  const { refHoja: refHojaResumen, refVelo: refVeloResumen } = useHojaDeslizable(
+    !!iaResumen,
+    () => setIaResumen(null),
+  );
+
   const esMesActual = mes >= currentMonth();
   const mesStr = mesLegible(mes);
   const mesAnterior = prevMonth(mes);
@@ -633,8 +650,8 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       )}
 
       {pregOpen && (
-        <div className="modal-overlay hoja-ia" onClick={(e) => { if (e.target === e.currentTarget && !pregGenerando) setPregOpen(false); }}>
-          <div className="modal-card hoja-ia" style={{ width: 560 }}>
+        <div className="modal-overlay hoja-ia" ref={refVeloPreg} onClick={(e) => { if (e.target === e.currentTarget && !pregGenerando) setPregOpen(false); }}>
+          <div className="modal-card hoja-ia" ref={refHojaPreg} style={{ width: 560 }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.pregunta.titulo")}</div>
@@ -672,9 +689,22 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
+      {pregConfirmarDescartar && (
+        <ActionSheet
+          title={t("common.descartarCambiosTitulo")}
+          message={t("common.descartarCambiosMensaje")}
+          options={[{
+            label: t("common.descartarCambiosBtn"),
+            danger: true,
+            onClick: () => { setPregConfirmarDescartar(false); setPregOpen(false); },
+          }]}
+          onCancel={() => setPregConfirmarDescartar(false)}
+        />
+      )}
+
       {iaResumen && (
-        <div className="modal-overlay hoja-ia" onClick={(e) => { if (e.target === e.currentTarget) setIaResumen(null); }}>
-          <div className="modal-card hoja-ia" style={{ width: 560 }}>
+        <div className="modal-overlay hoja-ia" ref={refVeloResumen} onClick={(e) => { if (e.target === e.currentTarget) setIaResumen(null); }}>
+          <div className="modal-card hoja-ia" ref={refHojaResumen} style={{ width: 560 }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title modal-title-ia"><IconSparkles size={17} /> {t("reportes.ia.titulo", { mes: mesStr })}</div>
