@@ -4501,6 +4501,45 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .titlebar-drag { display: none; }
 :root.movil { -webkit-tap-highlight-color: transparent; }
 
+/* Prioridad 2 — fondo agrupado tipo Ajustes de iOS: las tarjetas dejan de
+   flotar en blanco sobre blanco y pasan a blanco/#1C1C1E sobre un gris/negro
+   de fondo que las agrupa visualmente. Solo toca el fondo y las tarjetas —
+   inputs, menús y modales conservan su borde (siguen necesitando afordancia
+   propia) y no se tocan aquí. */
+:root.movil {
+  --bg: #f2f2f7;
+  --canvas: #f2f2f7;
+}
+:root.movil[data-theme="dark"] {
+  --bg: #000000;
+  --canvas: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+}
+/* .main trae su propio fondo blanco (el panel de contenido de escritorio):
+   en iOS eso tapaba el fondo agrupado de arriba — las tarjetas quedaban
+   blancas sobre blanco, sin agrupar nada. Aquí .main pasa a ser el fondo
+   gris/negro y las tarjetas individuales aportan su propio blanco/#1C1C1E. */
+:root.movil .main { background: var(--bg); }
+:root.movil .card,
+:root.movil .stat-card,
+:root.movil .tx-list,
+:root.movil .data-table {
+  border: none;
+  box-shadow: none;
+  border-radius: 12px;
+}
+:root.movil .card:hover,
+:root.movil .stat-card:hover {
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+/* La línea de acento de color arriba de la tarjeta (ingresos/gastos/balance)
+   es un patrón de dashboard web, no de iOS: el tinte va en el ícono/valor,
+   no en un borde de la tarjeta. */
+:root.movil .stat-card.accent::before { display: none; }
+
 /* El "+" de la fila fija superior (iPhone e iPad) ya cubre crear ingreso,
    gasto, depósito, miembro, servicio, acta, carta y evento en la pantalla
    donde ya está el usuario — los mismos botones de cabecera y de estado
