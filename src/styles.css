@@ -4791,8 +4791,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    @media(min-width:601px) con la misma especificidad. El carrusel de
    secciones no se muestra en este ancho (su interruptor sigue atado a
    <=600px, aparte de este bug), así que aquí el hueco es solo navrow-h —
-   sin --carrusel-h — igual que el rango de teléfono sin carrusel. */
+   sin --carrusel-h — igual que el rango de teléfono sin carrusel.
+   OJO: el comentario de arriba dice "un @media(min-width:601px)", pero el
+   selector en realidad vive dentro de `@media (hover: none)` (línea
+   ~4740) — una consulta de CAPACIDAD del dispositivo, no de ancho. Eso lo
+   vuelve verdadero en CUALQUIER iPhone táctil, vertical incluido, no solo
+   apaisado. Sin la regla de abajo, esta compensación fija (solo
+   navrow-h) le ganaba por !important a la de `.main.con-carrusel` del
+   rango de teléfono (línea ~6224, que sí suma --carrusel-h), y el
+   carrusel —58px— quedaba montado sobre "agosto"/las acciones de
+   cabecera en TODO iPhone vertical con carrusel (Ingresos, Gastos,
+   Reportes, Informes de membresía): tapado en reposo, no un efecto que
+   apareciera solo al deslizar. Medido con Playwright: el padding-top
+   real de `.main.con-carrusel` daba 56px (solo navrow-h+12) en vez de
+   los 114px que le tocan (navrow-h+carrusel-h+12). */
 :root.iphone .main { padding-top: calc(var(--navrow-h) + 12px) !important; }
+:root.iphone .main.con-carrusel { padding-top: calc(var(--navrow-h) + var(--carrusel-h) + 12px) !important; }
 :root.iphone .header { padding-top: 12px !important; }
 :root.iphone .content { padding-top: 6px !important; }
 :root.iphone .btn-crear { top: env(safe-area-inset-top) !important; }
