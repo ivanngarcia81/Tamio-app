@@ -4540,6 +4540,37 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    no en un borde de la tarjeta. */
 :root.movil .stat-card.accent::before { display: none; }
 
+/* Prioridad 3 — tipografía nativa. Escala iOS (Large Title 34 / Title 22 /
+   Body 17 / Subhead 15 / Footnote 13 / Caption 11): Title, Subhead y Caption
+   ya coincidían con lo que había (--fs-section-title 22, --fs-card-title 15,
+   --fs-caption ~11.5); solo Large Title y Body tenían la brecha grande — el
+   título de página vivía en 30 y el cuerpo en 13.5, notablemente "de escritorio
+   comprimido en el teléfono" en vez de nativo. -apple-system ya era la fuente
+   base (línea 231): eso no hacía falta tocarlo. */
+:root.movil {
+  --fs-page-title: 34px;
+  --fs-body: 17px;
+  --fs-secondary: 13px;
+  --fs-caption: 11px;
+}
+:root.movil .page-title { letter-spacing: -0.022em; }
+/* Etiqueta de tarjeta de resumen ("BALANCE DEL MES"): en iOS el patrón de
+   mayúsculas+tracking es de encabezado de LISTA (ver .data-table thead, que
+   sigue en mayúsculas), no de etiqueta de cifra — esa va en minúscula
+   sentencia, gris, 13px, como el resto de las Subhead/Footnote nativas. */
+:root.movil .stat-label {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13px;
+  color: #8a8a8e;
+}
+/* .btn hereda --fs-body (ahora 17px, pensado para texto de lectura: listas,
+   inputs). A ese tamaño, con el padding compacto que ya tenía, las
+   etiquetas largas ("Nuevo registro") partían a dos líneas y el botón se
+   veía como una píldora deforme. Los botones se quedan en Subhead (15px):
+   más grandes que antes (13.5px) pero sin ese salto. */
+:root.movil .btn { font-size: 15px; }
+
 /* El "+" de la fila fija superior (iPhone e iPad) ya cubre crear ingreso,
    gasto, depósito, miembro, servicio, acta, carta y evento en la pantalla
    donde ya está el usuario — los mismos botones de cabecera y de estado
