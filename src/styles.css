@@ -4442,6 +4442,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    main.tsx al detectar iOS; pointer:coarse cubre el táctil.
    ============================================================ */
 
+/* Fuente única de las medidas que varias reglas necesitan de acuerdo:
+   el alto de la barra inferior (.barra-item, teléfono) y el tamaño del
+   botón "+" flotante (.btn-crear). Antes cada regla llevaba estos números
+   sueltos y a mano; en cuanto una de las copias no se actualizaba a la
+   par de las demás, algo quedaba tapado. Ver el bug real más abajo. */
+:root.movil {
+  --tabbar-h: 58px;
+  --fab-size: 56px;
+}
+
 /* Sin barra de título de macOS: en iOS no hay ventana que arrastrar
    y el hueco superior lo gobierna la safe-area del notch. */
 :root.movil .titlebar-drag { display: none; }
@@ -4451,7 +4461,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .sidebar { padding-top: calc(14px + env(safe-area-inset-top)); }
 :root.movil .content,
 :root.movil .header { padding-top: calc(12px + env(safe-area-inset-top)); }
-:root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+/* El padding-bottom que compensa la barra inferior + el botón "+" NO va
+   aquí: vive en las reglas de iPad y de teléfono más abajo, cada una con
+   la holgura que le corresponde (el iPad no tiene barra inferior, el
+   teléfono sí). Aquí SÍ vivía antes, sin media query, con un valor de
+   24px que no alcanzaba para ninguno de los dos casos — y por
+   especificidad (":root.movil .content" son tres selectores, más que el
+   ".content" a secas que arregla el problema) GANABA sobre las reglas
+   correctas de más abajo. El "+" volvía a tapar lo último de cada
+   pantalla pasara lo que pasara con esas otras reglas: un bug real, no
+   hipotético, y la razón por la que el arreglo de hoy sobre .content
+   nunca llegó a verse en un iPhone real. */
 
 /* Objetivos táctiles (44pt según Apple) y 16px en inputs para que
    iOS no haga zoom automático al enfocar. */
@@ -5218,7 +5238,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   position: fixed;
   right: 16px;
   bottom: calc(24px + env(safe-area-inset-bottom));
-  width: 56px; height: 56px;
+  width: var(--fab-size); height: var(--fab-size);
   border: none; border-radius: 50%;
   background: var(--brand, #059669); color: #fff;
   box-shadow: 0 6px 20px rgba(0, 0, 0, .24);
@@ -5234,7 +5254,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* El iPad conserva la barra lateral, así que necesita el mismo aire abajo que
    el teléfono para que el botón no se siente encima de la última fila. */
 @media (min-width: 601px) {
-  :root.movil .content { padding-bottom: calc(56px + 32px + env(safe-area-inset-bottom)); }
+  :root.movil .content { padding-bottom: calc(var(--fab-size) + 32px + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 600px) {
@@ -5444,7 +5464,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      se había llegado al final del scroll no había forma de destaparlos. Se
      vio en "Contributors": la tarjeta vacía y su botón "New member" quedaban
      medio cubiertos por el "+". */
-  .content { padding-bottom: calc(58px + 16px + 56px + 14px + env(safe-area-inset-bottom)); }
+  /* :root.movil (no ".content" a secas) a propósito: es la misma
+     especificidad que la regla de la línea ~4462 que ESTA sustituye — con
+     bare ".content" el bug volvía a colarse en cuanto alguien tocara esa
+     zona sin saber que esta regla dependía de ganarle por especificidad. */
+  :root.movil .content { padding-bottom: calc(var(--tabbar-h) + 16px + var(--fab-size) + 14px + env(safe-area-inset-bottom)); }
 
   .barra-inferior {
     display: grid;
@@ -5463,7 +5487,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     position: relative;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 4px;
-    min-height: 58px;
+    min-height: var(--tabbar-h);
     padding: 6px 2px;
     text-decoration: none;
     color: var(--text-3);
@@ -5498,14 +5522,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      se leería como parte de esa pestaña. Al borde se lee como lo que es, algo
      que flota sobre la página. Todo lo demás del botón está fuera de este
      bloque, porque el iPad también lo lleva. */
-  :root.movil .btn-crear { bottom: calc(58px + 16px + env(safe-area-inset-bottom)); }
+  :root.movil .btn-crear { bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); }
 
   /* Los toasts de confirmación ("Miembro agregado", "Deshacer"…) traían un
      `bottom: 24px` fijo pensado para el escritorio, donde no hay nada abajo.
-     En el teléfono esos 24px caen DENTRO de la barra inferior (58px de alto)
-     y del botón "+" flotante: el aviso salía tapado justo en el momento que
-     confirma que algo se acaba de crear. Se sube por encima de los dos. */
-  .toast-host { bottom: calc(58px + 16px + 56px + 14px + env(safe-area-inset-bottom)); }
+     En el teléfono esos 24px caen DENTRO de la barra inferior y del botón
+     "+" flotante: el aviso salía tapado justo en el momento que confirma
+     que algo se acaba de crear. Se sube por encima de los dos. */
+  .toast-host { bottom: calc(var(--tabbar-h) + 16px + var(--fab-size) + 14px + env(safe-area-inset-bottom)); }
 
   /* Fijo arriba, con fondo propio. Dos motivos, y el segundo es el que
      importa: (1) las secciones del área siguen a mano sin volver arriba del
