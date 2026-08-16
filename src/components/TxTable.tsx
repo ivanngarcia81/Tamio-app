@@ -82,6 +82,11 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           const persona = tx.member_nombre ?? tx.beneficiario ?? "—";
           const hora = fmtFecha(tx.fecha).hora;
 
+          const metodoTexto = metodo ? metodoNombre(metodo.id) : tx.metodo_pago;
+          const secundariaMovil = [fmtFechaCorta(tx.fecha), cat.nombre, metodoTexto, persona !== "—" ? persona : null]
+            .filter(Boolean)
+            .join(" · ");
+
           const celdaConcepto = (
             <div className="td">
               <div className="truncate" style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }} title={tx.concepto}>
@@ -91,12 +96,14 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                   </span>
                 )}
                 <span className="truncate">{tx.concepto}</span>
+                {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
               </div>
               {tx.detalle && (
-                <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={tx.detalle}>
+                <div className="truncate solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={tx.detalle}>
                   {tx.detalle}
                 </div>
               )}
+              <div className="tx-secundaria-movil solo-movil" title={secundariaMovil}>{secundariaMovil}</div>
             </div>
           );
           const celdaFecha = (
@@ -164,7 +171,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                       <IconClip size={13} strokeWidth={2} />
                     </span>
                   )}
-                  <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(tx)}>
+                  <span className="row-icon-btn solo-escritorio" title={t("common.editar")} onClick={() => onEdit(tx)}>
                     <IconEdit size={13} strokeWidth={2} />
                   </span>
                 </span>

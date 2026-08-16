@@ -4632,6 +4632,94 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: 0 1px 2px rgba(0,0,0,.08);
 }
 
+/* Prioridad 5 — densidad de listas.
+   TxTable (Ingresos/Gastos, la tabla que más se usa): la segunda línea con
+   fecha·categoría·método·persona que arma TxTable.tsx en `secundariaMovil`.
+   El grid de 2 columnas que la ubica vive en los rangos de iPad/teléfono
+   (línea ~4894 y ~5990), porque tiene que ganarle a un `!important` en
+   línea que fija el ancho de columnas de escritorio. */
+:root.movil .tx-secundaria-movil {
+  /* `.solo-movil` (Prioridad 1) pone display:inline-flex por defecto —
+     bueno para un botón, no para esta línea: sin display:block se mide
+     por su contenido en vez de por el ancho de su celda, y el elipsis
+     nunca llega a activarse (se recorta en seco contra el overflow:hidden
+     del .td, sin puntos suspensivos). */
+  display: block;
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tx-punto-pendiente { display: none; }
+:root.movil .tx-punto-pendiente {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--warn, #b45309);
+  margin-left: 5px;
+  flex-shrink: 0;
+}
+
+/* TxList (movimientos recientes del inicio): ya era una tarjeta de 2
+   líneas (Fase 2 de más abajo, línea ~5040); lo que le falta es el acabado
+   plano de iOS. Categoría y método pasan de píldora/insignia de color a
+   una sola línea gris — el color de categoría es útil en el chip de
+   filtro de arriba, no aquí, donde compite con el propio verde/rojo del
+   importe. El importe iguala el tamaño del concepto (17px). La fecha que
+   encabeza el grupo se lee AFUERA de la tarjeta, como encabezado de
+   sección de una tabla agrupada de iOS, no impresa dentro de ella. Y el
+   separador entre filas arranca con el texto, no debajo del ícono. */
+:root.movil .tx-list {
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+:root.movil .tx-day { padding: 0; }
+:root.movil .day-label { padding: 0 4px 8px; }
+:root.movil .day-label .day-num,
+:root.movil .day-label .day-month,
+:root.movil .day-label .day-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a8a8e;
+}
+:root.movil .day-rows {
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+}
+:root.movil .tx-row {
+  padding: 10px 14px;
+  border-bottom: none;
+  position: relative;
+}
+:root.movil .tx-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 46px; right: 14px; bottom: 0;
+  height: 0.5px;
+  background: var(--line-soft);
+}
+:root.movil .tx-row > .tx-amount { font-size: 17px; }
+:root.movil .tx-row > .tag {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-3);
+  text-align: left;
+}
+:root.movil .tx-row > .method { font-size: 13px; color: var(--text-3); }
+:root.movil .tx-row > .method .m-badge { display: none; }
+:root.movil .tx-row > .method::before { content: "·"; margin-right: 4px; }
+
 /* El "+" de la fila fija superior (iPhone e iPad) ya cubre crear ingreso,
    gasto, depósito, miembro, servicio, acta, carta y evento en la pantalla
    donde ya está el usuario — los mismos botones de cabecera y de estado
@@ -4891,6 +4979,33 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .data-table.tabla-tx .tx-amount { font-size: var(--fs-card-title); }
   .tx-amount { white-space: nowrap; }
 
+  /* Prioridad 5 (solo iOS, no una ventana angosta de Mac): la tarjeta de
+     4 líneas de arriba (fecha+concepto / categoría / método / persona+
+     acciones) baja a 2. Fecha, categoría, método y persona se funden en
+     una sola línea gris bajo el concepto (`secundariaMovil` en
+     TxTable.tsx); lo demás se oculta por columna — decisión consultada,
+     no una lectura literal del prompt: con 8 datos por fila, comprimir a
+     dos líneas sin perder nada no entraba. */
+  :root.movil .data-table.tabla-tx .tr {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    grid-template-areas: "principal monto acciones" !important;
+    padding: 10px 14px;
+    gap: 10px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  :root.movil .data-table.tabla-tx .tr:nth-child(even) { background: transparent; }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(1),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(3),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(4),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(5),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(7) {
+    display: none;
+  }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(2) { grid-area: principal; }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; }
+  :root.movil .data-table.tabla-tx .tx-amount { font-size: 17px; }
+
   /* Filtros de categoría: no tiene sentido ocupar cuatro filas de chips
      con categorías que no tienen ni un movimiento. */
   /* Las categorías en cero ya no se renderizan en ninguna plataforma
@@ -5084,6 +5199,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* Detalles redundantes en pantalla angosta (p. ej. el periodo "2026-07"
      debajo de una fecha que ya dice julio de 2026). */
   .solo-escritorio { display: none; }
+  /* `.data-table .row-icon-btn` (0,2,0) le gana a `.solo-escritorio` solo
+     (0,1,0) pese al orden: el editar suelto de TxTable.tsx se quedaba
+     visible en el teléfono aunque llevara la marca. Empate explícito. */
+  .data-table .row-icon-btn.solo-escritorio { display: none; }
 
   /* Mensajes como un chat de verdad: la tarjeta deja su altura fija
      (calc(100vh - 220px), pensada para una ventana de escritorio) y llena
@@ -5957,6 +6076,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .data-table.tabla-tx .tx-amount { font-size: var(--fs-card-title); }
   .tx-amount { white-space: nowrap; }
 
+  /* Prioridad 5 — ver la nota gemela en el rango de iPad (línea ~4894). */
+  :root.movil .data-table.tabla-tx .tr {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    grid-template-areas: "principal monto acciones" !important;
+    padding: 10px 14px;
+    gap: 10px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  :root.movil .data-table.tabla-tx .tr:nth-child(even) { background: transparent; }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(1),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(3),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(4),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(5),
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(7) {
+    display: none;
+  }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(2) { grid-area: principal; }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; }
+  :root.movil .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; }
+  :root.movil .data-table.tabla-tx .tx-amount { font-size: 17px; }
+
   /* ---- Archivo de cartas: de tabla de 6 columnas a tarjeta ----
      Sus columnas suman ~590 px fijos, muy por encima de los 393 del
      teléfono. El nombre del documento manda, el estado va como pastilla a
@@ -6106,6 +6246,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
   /* Detalles redundantes en pantalla angosta. */
   .solo-escritorio { display: none; }
+  /* Ver la nota gemela en el rango de iPad (línea ~5199): `.data-table
+     .row-icon-btn` le gana en especificidad a `.solo-escritorio` solo. */
+  .data-table .row-icon-btn.solo-escritorio { display: none; }
 
   /* Mensajes como un chat de verdad: la tarjeta llena lo que queda de
      pantalla, el hilo desplaza por dentro y el compositor se queda pegado
