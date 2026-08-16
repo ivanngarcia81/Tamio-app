@@ -119,6 +119,18 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                   const metodo = METODOS_PAGO.find((m) => m.id === tx.metodo_pago);
                   const quien =
                     tx.member_nombre ?? tx.beneficiario ?? tx.detalle ?? tx.subcategoria ?? "";
+                  /* En el teléfono, `quien`, categoría y método dejan de ser
+                     tres elementos sueltos de la rejilla y pasan a UNA sola
+                     línea de texto corrido — el mismo `secundariaMovil` que ya
+                     usa TxTable en Ingresos/Gastos. Como elementos separados,
+                     `método` caía en la columna del importe (132px) y quedaba
+                     a media fila del `·` que lo precedía: el hueco horizontal
+                     enorme entre concepto y cifra. Aquí NO va la fecha (sí en
+                     TxTable) porque esta lista ya viene agrupada por día. */
+                  const metodoTexto = metodo ? metodoNombre(metodo.id) : tx.metodo_pago;
+                  const secundariaMovil = [quien, cat.nombre, metodoTexto]
+                    .filter(Boolean)
+                    .join(" · ");
                   return (
                     <div className="tx-row" data-fila key={tx.id} onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}>
                       {/* La hora es opcional al registrar, así que hay filas
@@ -160,7 +172,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                             {t("tx.pendiente")}
                           </span>
                         )}
-                        {quien && <span className="who">{quien}</span>}
+                        {quien && <span className="who solo-escritorio">{quien}</span>}
                         {tx.comprobante_path && (
                           <span
                             title={t("tx.verComprobante")}
@@ -177,6 +189,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                           </span>
                         )}
                       </div>
+                      <div className="tx-secundaria-movil solo-movil" title={secundariaMovil}>{secundariaMovil}</div>
                       <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
                       <span className="method">
                         {metodo && (

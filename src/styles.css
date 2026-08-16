@@ -5033,7 +5033,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   overflow: hidden;
 }
 :root.movil .tx-row {
-  padding: 10px 16px;
+  /* 8px arriba/abajo dejan la fila de dos líneas en ~62px, dentro del
+     rango nativo de 58-64 (antes ~110 con tres líneas). */
+  padding: 8px 16px;
   border-bottom: none;
   position: relative;
 }
@@ -5050,21 +5052,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-variant-numeric: tabular-nums;
 }
 :root.movil .tx-amount .cur { font-size: 13px; }
-:root.movil .tx-row > .tag {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-  border-radius: 0;
-  text-transform: none;
-  letter-spacing: normal;
-  font-weight: 500;
-  font-size: 13px;
-  color: var(--text-3);
-  text-align: left;
-}
-:root.movil .tx-row > .method { font-size: 13px; color: var(--text-3); }
-:root.movil .tx-row > .method .m-badge { display: none; }
-:root.movil .tx-row > .method::before { content: "·"; margin-right: 4px; }
+/* `.tag` y `.method` de la fila ya no se pintan sueltos en el teléfono: su
+   texto vive dentro de `.tx-secundaria-movil` (ver el grid de 2 líneas en
+   los rangos de iPad/teléfono). Las reglas que los maquillaban aquí —fondo
+   transparente, `·` en un ::before— se fueron con ellos. */
 
 /* El "+" de la fila fija superior (iPhone e iPad) ya cubre crear ingreso,
    gasto, depósito, miembro, servicio, acta, carta y evento en la pantalla
@@ -5444,15 +5435,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        rejilla, así que "auto" dejaba el importe en un sitio distinto según
        cuánto midiera esa cifra en concreto. 132px alcanza para
        "+$10,000.00 USD" con margen. */
-    grid-template-columns: 24px minmax(0, 1fr) 132px auto;
+    /* Pista del importe en `auto`, no fija en 132px. Con `desc` en 1fr el
+       1fr absorbe la diferencia, así que el BORDE DERECHO de todos los
+       importes cae en la misma x igual (medido: 0.00px de desviación entre
+       "+$10,000.00 USD" y "−$5.00 USD") — la alineación se conserva sin
+       reservar un ancho muerto. Los 132px fijos además se quedaban cortos
+       para seis cifras ("−$100,000.00 USD" mide 134.9px) y le robaban al
+       concepto un ancho que no usaban: con ellos "Compra de café" y "Pago
+       de electricidad" truncaban en filas que tenían sitio de sobra. */
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    /* Dos líneas, no tres. Antes `tag` y `metodo` eran DOS celdas distintas
+       de la segunda fila, y `metodo` caía en la columna del importe (132px):
+       de ahí el hueco enorme entre "Diezmo" y "Efectivo", con el `·` colgado
+       en medio de la nada. Ahora esa segunda fila es una sola celda (`sec`)
+       con texto corrido, y el "···" abarca las dos filas a la derecha. */
     grid-template-areas:
-      "icono desc  desc   monto"
-      "icono tag   metodo menu";
-    gap: var(--space-1) 8px;
+      "icono desc monto menu"
+      "icono sec  sec   menu";
+    gap: 2px 8px;
     align-items: center;
   }
   .tx-row > .tx-icon { grid-area: icono; align-self: start; }
   .tx-row > .tx-desc { grid-area: desc; }
+  .tx-row > .tx-secundaria-movil { grid-area: sec; }
+  /* Ya viven dentro de `sec` como texto; sueltos solo reabrirían el hueco. */
+  .tx-row > .tag,
+  .tx-row > .method { display: none; }
   /* Fase 2: el texto no se recortaba, se derramaba fuera de su celda y la
      etiqueta —que va después en el marcado— se pintaba encima. No era
      truncamiento fallido: era desbordamiento. min-width: 0 permite que la
@@ -5465,15 +5473,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .tx-row > .tag { grid-area: tag; justify-self: start; }
-  .tx-row > .method { grid-area: metodo; justify-self: start; }
   .tx-row > .tx-amount {
     grid-area: monto;
     justify-self: end;
     font-size: var(--fs-card-title);
     white-space: nowrap;
   }
-  .tx-row > .more { grid-area: menu; justify-self: end; }
+  .tx-row > .more { grid-area: menu; justify-self: end; align-self: center; }
 
   /* ---- Selector de categoría del formulario de movimientos ----
      Fase 1: eran cuatro columnas fijas. Como cada columna es 1fr (mínimo
@@ -5573,6 +5579,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      (0,1,0) pese al orden: el editar suelto de TxTable.tsx se quedaba
      visible en el teléfono aunque llevara la marca. Empate explícito. */
   .data-table .row-icon-btn.solo-escritorio { display: none; }
+  /* Mismo empate, misma razón: `.tx-desc .who` (0,2,0) fuerza display:block
+     para su propia línea en Mac, así que el nombre seguía pintándose como
+     tercera línea en el teléfono pese a la marca — ahora vive dentro de
+     `.tx-secundaria-movil`. */
+  .tx-desc .who.solo-escritorio { display: none; }
 
   /* Mensajes como un chat de verdad: la tarjeta deja su altura fija
      (calc(100vh - 220px), pensada para una ventana de escritorio) y llena
@@ -6583,15 +6594,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        rejilla, así que "auto" dejaba el importe en un sitio distinto según
        cuánto midiera esa cifra en concreto. 132px alcanza para
        "+$10,000.00 USD" con margen. */
-    grid-template-columns: 24px minmax(0, 1fr) 132px auto;
+    /* Pista del importe en `auto`, no fija en 132px. Con `desc` en 1fr el
+       1fr absorbe la diferencia, así que el BORDE DERECHO de todos los
+       importes cae en la misma x igual (medido: 0.00px de desviación entre
+       "+$10,000.00 USD" y "−$5.00 USD") — la alineación se conserva sin
+       reservar un ancho muerto. Los 132px fijos además se quedaban cortos
+       para seis cifras ("−$100,000.00 USD" mide 134.9px) y le robaban al
+       concepto un ancho que no usaban: con ellos "Compra de café" y "Pago
+       de electricidad" truncaban en filas que tenían sitio de sobra. */
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    /* Dos líneas, no tres. Antes `tag` y `metodo` eran DOS celdas distintas
+       de la segunda fila, y `metodo` caía en la columna del importe (132px):
+       de ahí el hueco enorme entre "Diezmo" y "Efectivo", con el `·` colgado
+       en medio de la nada. Ahora esa segunda fila es una sola celda (`sec`)
+       con texto corrido, y el "···" abarca las dos filas a la derecha. */
     grid-template-areas:
-      "icono desc  desc   monto"
-      "icono tag   metodo menu";
-    gap: var(--space-1) 8px;
+      "icono desc monto menu"
+      "icono sec  sec   menu";
+    gap: 2px 8px;
     align-items: center;
   }
   .tx-row > .tx-icon { grid-area: icono; align-self: start; }
   .tx-row > .tx-desc { grid-area: desc; }
+  .tx-row > .tx-secundaria-movil { grid-area: sec; }
+  /* Ya viven dentro de `sec` como texto; sueltos solo reabrirían el hueco. */
+  .tx-row > .tag,
+  .tx-row > .method { display: none; }
   .tx-row > .tx-desc,
   .tx-row > .tx-desc .who {
     min-width: 0;
@@ -6599,15 +6627,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .tx-row > .tag { grid-area: tag; justify-self: start; }
-  .tx-row > .method { grid-area: metodo; justify-self: start; }
   .tx-row > .tx-amount {
     grid-area: monto;
     justify-self: end;
     font-size: var(--fs-card-title);
     white-space: nowrap;
   }
-  .tx-row > .more { grid-area: menu; justify-self: end; }
+  .tx-row > .more { grid-area: menu; justify-self: end; align-self: center; }
 
   /* ---- Selector de categoría del formulario de movimientos ----
      Con once categorías, cuatro columnas fijas no caben en 440 pt: los
@@ -6687,6 +6713,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* Ver la nota gemela en el rango de iPad (línea ~5199): `.data-table
      .row-icon-btn` le gana en especificidad a `.solo-escritorio` solo. */
   .data-table .row-icon-btn.solo-escritorio { display: none; }
+  /* Mismo empate, misma razón: `.tx-desc .who` (0,2,0) fuerza display:block
+     para su propia línea en Mac, así que el nombre seguía pintándose como
+     tercera línea en el teléfono pese a la marca — ahora vive dentro de
+     `.tx-secundaria-movil`. */
+  .tx-desc .who.solo-escritorio { display: none; }
 
   /* Mensajes como un chat de verdad: la tarjeta llena lo que queda de
      pantalla, el hilo desplaza por dentro y el compositor se queda pegado
