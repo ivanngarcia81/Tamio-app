@@ -23,7 +23,8 @@ import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
-import { IconEdit, IconMiembros, IconPrinter, IconSearch } from "../icons";
+import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconShare } from "../icons";
+import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
 
 const COLS = "1.5fr 150px 1.4fr 140px 72px";
@@ -378,13 +379,33 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           <div className="page-title">{t("informes.titulo")}</div>
           <div className="page-sub">{t("informes.sub")}</div>
         </div>
-        <div className="header-actions">
+        <div className="header-actions solo-escritorio">
           <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
             <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
           </button>
           <button className="btn secondary" onClick={exportar} disabled={filas.length === 0}>
             {t("informes.exportar")}
           </button>
+        </div>
+        <div className="header-actions solo-movil">
+          <button
+            type="button"
+            className="btn-compartir-cabecera"
+            onClick={exportar}
+            disabled={filas.length === 0}
+            aria-label={t("informes.exportar")}
+          >
+            <IconShare size={18} />
+          </button>
+          <HeaderMenu
+            icon={<IconMore size={20} />}
+            ariaLabel={t("common.masAcciones")}
+            sections={[
+              { items: [
+                { label: t("informes.imprimirGeneral"), icon: <IconPrinter size={13} />, disabled: loading || miembros.length === 0, onClick: imprimirGeneral },
+              ] },
+            ]}
+          />
         </div>
       </div>
 

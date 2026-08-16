@@ -10,6 +10,8 @@ export const en: Resources = {
     buscarMiembroCorto: "Search member…",
     compartirNoDisponible: "The share sheet could not be opened on this device.",
     mas: "More",
+    masAcciones: "More actions",
+    mensual: "Monthly",
     cancelar: "Cancel",
     cerrar: "Close",
     volver: "Back",

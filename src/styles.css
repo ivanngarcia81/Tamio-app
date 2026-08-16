@@ -994,6 +994,41 @@ html.vibrancy .main { background: var(--surface); }
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* Fila de "alcance" del reporte (iPhone/iPad): mes actual a la izquierda,
+   Mensual/Anual como segmented control a la derecha — es un alcance, no una
+   acción, así que no vive en la fila fija ni en el "···". */
+.periodo-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.segmented {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.segmented-item {
+  border: none;
+  background: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+.segmented-item:disabled { cursor: default; }
+.segmented-item.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
 .search {
   display: flex; align-items: center; gap: var(--space-2);
   color: var(--text-2);
@@ -2698,6 +2733,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .row-menu-item.danger:active { background: #fecaca; }
 :root[data-theme="dark"] .row-menu-item.danger:hover { background: rgba(220,38,38,.15); }
 :root[data-theme="dark"] .row-menu-item.danger:active { background: rgba(220,38,38,.28); }
+.row-menu-separator { height: 1px; margin: 4px 0; background: var(--line); }
 
 /* Detalle de miembro: encabezado con avatar, estado y chips de contacto */
 .member-detail-head { align-items: flex-start; }
@@ -4503,6 +4539,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .btn-compartir-cabecera:active { opacity: .3; }
 :root.movil .btn-compartir-cabecera .btn-compartir-texto { display: none; }
 
+/* "···" de HeaderMenu en modo ícono: mismo tratamiento que el "+"/compartir.
+   En Reportes e InformesMembresía, que no tienen "+" (no crean nada), ocupa
+   el hueco de la derecha que el "+" dejaría libre. */
+:root.movil .btn-header-menu-icono {
+  display: inline-flex; align-items: center; justify-content: center;
+  position: fixed;
+  width: 44px; height: var(--navrow-h);
+  padding: 0;
+  border: none; border-radius: 0;
+  background: none; box-shadow: none;
+  color: var(--brand, #059669);
+  z-index: 101;
+  transition: opacity var(--dur) ease;
+}
+:root.movil .btn-header-menu-icono:active { opacity: .3; }
+
 /* Respeta notch/isla dinámica y el home indicator. */
 :root.movil .sidebar { padding-top: calc(14px + env(safe-area-inset-top)); }
 :root.movil .content,
@@ -5306,6 +5358,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 @media (min-width: 601px) {
   :root.movil .btn-crear { top: calc(58px + env(safe-area-inset-top)); right: 16px; }
   :root.movil .btn-compartir-cabecera { top: calc(58px + env(safe-area-inset-top)); right: 68px; }
+  :root.movil .btn-header-menu-icono { top: calc(58px + env(safe-area-inset-top)); right: 16px; }
   :root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
 
@@ -5564,6 +5617,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      que el iPad reserva para su ☰. */
   :root.movil .btn-crear { top: env(safe-area-inset-top); }
   :root.movil .btn-compartir-cabecera { top: env(safe-area-inset-top); right: 68px; }
+  :root.movil .btn-header-menu-icono { top: env(safe-area-inset-top); right: 16px; }
 
   /* Los toasts de confirmación ("Miembro agregado", "Deshacer"…) traían un
      `bottom: 24px` fijo pensado para el escritorio, donde no hay nada abajo.

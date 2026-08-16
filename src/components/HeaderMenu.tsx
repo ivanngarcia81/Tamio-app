@@ -6,12 +6,30 @@ export interface HeaderMenuItem {
   label: string;
   icon?: ReactNode;
   disabled?: boolean;
+  /** Acción destructiva (borrar, reiniciar…): va en rojo. Agrúpala sola en
+   *  la ÚLTIMA sección — nunca mezclada con acciones normales — para que no
+   *  quede a un toque de distancia de algo inocuo. */
+  danger?: boolean;
   onClick: () => void;
 }
 
-interface Props {
-  label: string;
+/** Un grupo de items separado del resto por una línea. Secciones en vez de
+ *  una lista plana: "menú nativo con secciones", no un popover de accesos
+ *  directos sueltos. */
+export interface HeaderMenuSection {
   items: HeaderMenuItem[];
+}
+
+interface Props {
+  /** Ícono o texto del botón que abre el menú. Con `icon`, el botón queda
+   *  solo-ícono (el "···" de la fila fija de iPhone/iPad); con `label`, el
+   *  botón de texto+flecha de siempre (escritorio). Uno de los dos. */
+  icon?: ReactNode;
+  label?: string;
+  ariaLabel?: string;
+  /** Atajo para un menú de una sola sección, sin separadores. */
+  items?: HeaderMenuItem[];
+  sections?: HeaderMenuSection[];
 }
 
 /**
@@ -19,11 +37,12 @@ interface Props {
  * Mismo patrón de portal que RowMenu: position:fixed calculada en JS para no
  * quedar recortado por overflow de los contenedores.
  */
-export default function HeaderMenu({ label, items }: Props) {
+export default function HeaderMenu({ icon, label, ariaLabel, items, sections }: Props) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const grupos = sections ?? [{ items: items ?? [] }];
 
   useLayoutEffect(() => {
     if (!open || !btnRef.current) return;
@@ -58,8 +77,18 @@ export default function HeaderMenu({ label, items }: Props) {
 
   return (
     <>
-      <button className="btn secondary" ref={btnRef} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        {label} <IconChevronDown size={13} />
+      <button
+        className={icon ? "btn-header-menu-icono" : "btn secondary"}
+        ref={btnRef}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={icon ? ariaLabel : undefined}
+      >
+        {icon ?? (
+          <>
+            {label} <IconChevronDown size={13} />
+          </>
+        )}
       </button>
       {open && pos &&
         createPortal(
@@ -68,20 +97,25 @@ export default function HeaderMenu({ label, items }: Props) {
             ref={menuRef}
             style={{ position: "fixed", top: pos.top, left: pos.left, minWidth: 180 }}
           >
-            {items.map((item) => (
-              <div
-                key={item.label}
-                className={`row-menu-item${item.disabled ? " disabled" : ""}`}
-                onClick={() => {
-                  if (item.disabled) return;
-                  setOpen(false);
-                  item.onClick();
-                }}
-              >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  {item.icon}
-                  {item.label}
-                </span>
+            {grupos.map((grupo, gi) => (
+              <div key={gi}>
+                {gi > 0 && <div className="row-menu-separator" />}
+                {grupo.items.map((item) => (
+                  <div
+                    key={item.label}
+                    className={`row-menu-item${item.disabled ? " disabled" : ""}${item.danger ? " danger" : ""}`}
+                    onClick={() => {
+                      if (item.disabled) return;
+                      setOpen(false);
+                      item.onClick();
+                    }}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                      {item.icon}
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             ))}
           </div>,

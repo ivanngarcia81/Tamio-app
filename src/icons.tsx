@@ -390,6 +390,17 @@ export const IconShare = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
   </svg>
 );
 
+/** "···" horizontal: botón de más acciones de la fila fija superior en
+ *  iPhone/iPad, equivalente al ellipsis.circle de SF Symbols. Tres puntos
+ *  rellenos, no de trazo — a este tamaño un círculo trazado se ve borroso. */
+export const IconMore = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+    <circle cx="5" cy="12" r="2.1" />
+    <circle cx="12" cy="12" r="2.1" />
+    <circle cx="19" cy="12" r="2.1" />
+  </svg>
+);
+
 /** Destellos (IA). Un destello grande de cuatro puntas y dos chispas pequeñas;
  *  relleno para que se lea nítido a tamaño pequeño en los botones. */
 export const IconSparkles = ({ size = 14 }: { size?: number }) => (

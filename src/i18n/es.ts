@@ -4,6 +4,8 @@ export const es = {
     buscarMiembroCorto: "Buscar miembro…",
     compartirNoDisponible: "No se pudo abrir la hoja de compartir en este dispositivo.",
     mas: "Más",
+    masAcciones: "Más acciones",
+    mensual: "Mensual",
     cancelar: "Cancelar",
     cerrar: "Cerrar",
     volver: "Volver",

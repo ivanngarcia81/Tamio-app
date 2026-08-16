@@ -15,7 +15,7 @@ import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconPrinter, IconSparkles, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconShare, IconSparkles, IconUpload } from "../icons";
 import HeaderMenu from "../components/HeaderMenu";
 import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
@@ -289,7 +289,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <div className="page-title">{t("reportes.titulo")}</div>
           <div className="page-sub">{t("reportes.sub", { mes: mesStr })}</div>
         </div>
-        <div className="header-actions">
+        <div className="header-actions solo-escritorio">
           <div className="month-nav">
             <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
               <IconChevronLeft size={16} />
@@ -327,6 +327,59 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           <button className="btn primary" onClick={() => handleExport("pdf")} disabled={exporting !== null}>
             {exporting === "pdf" ? t("common.generando") : "PDF"}
           </button>
+        </div>
+        <div className="header-actions solo-movil">
+          <button
+            type="button"
+            className="btn-compartir-cabecera"
+            onClick={() => handleExport("pdf")}
+            disabled={exporting !== null}
+            aria-label={t("reportes.titulo") + " — " + t("common.imprimir")}
+          >
+            <IconShare size={18} />
+          </button>
+          <HeaderMenu
+            icon={<IconMore size={20} />}
+            ariaLabel={t("common.masAcciones")}
+            sections={[
+              {
+                items: [
+                  { label: t("reportes.asamblea.boton"), icon: <IconMonitor size={13} />, disabled: loading || !totales, onClick: () => setAsambleaOpen(true) },
+                  ...(iaHabilitada ? [
+                    { label: t("reportes.pregunta.boton"), icon: <IconSparkles size={13} />, onClick: () => setPregOpen(true) },
+                    { label: iaGenerando ? t("cartas.ia.generando") : t("reportes.ia.boton"), icon: <IconSparkles size={13} />, disabled: iaGenerando || loading || !totales, onClick: resumirIA },
+                  ] : []),
+                ],
+              },
+              {
+                items: [
+                  { label: t("miembros.importarCsv"), icon: <IconUpload size={13} />, onClick: () => setImportOpen(true) },
+                  { label: exporting === "print" ? t("common.preparando") : t("common.imprimir"), icon: <IconPrinter size={14} />, disabled: exporting !== null, onClick: handlePrint },
+                ],
+              },
+            ]}
+          />
+        </div>
+        <div className="periodo-selector solo-movil">
+          <div className="month-nav">
+            <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
+              <IconChevronLeft size={16} />
+            </span>
+            <span className="month-nav-label">{mesStr}</span>
+            <span
+              className={`icon-btn${esMesActual ? " disabled" : ""}`}
+              title={t("mov.mesSiguiente")}
+              onClick={() => !esMesActual && setMes(nextMonth(mes))}
+            >
+              <IconChevronRight size={16} />
+            </span>
+          </div>
+          <div className="segmented">
+            <button type="button" className="segmented-item active" disabled>{t("common.mensual")}</button>
+            <button type="button" className="segmented-item" onClick={handleAnnual} disabled={exporting !== null}>
+              {exporting === "anual" ? t("common.generando") : t("anual.boton")}
+            </button>
+          </div>
         </div>
       </div>
       {exportError && (
