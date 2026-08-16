@@ -5266,7 +5266,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* La safe-area ya la cubre .main; se anula también la regla de iPad
      (:root.movil .header), que tiene más especificidad que ".header". */
   .header, :root.movil .header { padding-top: 18px; }
-  .header-actions { justify-content: flex-start; }
+  /* Antes flex-start. Con el "+"/compartir ya fijos de verdad (arriba en la
+     fila fija, no aquí dentro), lo único que queda EN FLUJO dentro de
+     `.header-actions` en el teléfono es el selector de mes de Ingresos/
+     Gastos (Movimientos.tsx) — en Dashboard/Reportes/Informes de membresía
+     no queda nada (todo fijo o `.solo-escritorio`), así que ahí da igual.
+     Sin la anulación, vuelve a la base (`justify-content: flex-end`, línea
+     ~966): "agosto 2026" usa el ancho que dejó libre el botón de compartir
+     al dejar de ocupar sitio en el flujo, en vez de quedarse pegado a la
+     izquierda con todo ese hueco muerto a la derecha. */
 
   /* Tarjetas de resumen de dos en dos (estilo apps de banca): un solo
      número no necesita todo el ancho, y así la página respira sin tanto
@@ -6240,10 +6248,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      El carrusel ya no puede sufrirlo — es hermano de `.main`, no descendiente
      suyo, así que esta animación (que solo toca `.main .header`/`.main
      .content`) no lo alcanza en absoluto. */
+  /* "backwards", NO "both": el mismo bug de WebKit que documenta el
+     párrafo de arriba sobre `routeIn` —fill-mode:both deja al elemento con
+     contexto de apilamiento propio para siempre— se coló de vuelta aquí.
+     El carrusel escapa por ser hermano de `.main`, pero cualquier hijo
+     `position:fixed` DENTRO de `.header` (el botón de compartir/exportar
+     de cada página, `.btn-compartir-cabecera`) seguía atrapado: tras
+     navegar una vez entre secciones del carrusel, `data-dir-nav` queda
+     puesto y esta animación nunca deja de "estar en efecto", así que el
+     botón dejaba de posicionarse contra el viewport y pasaba a
+     posicionarse contra `.header` — se veía flotando junto al título en
+     vez de arriba en la fila fija. Con "backwards" el final visual es
+     idéntico (transform:none, opacity:1 ya son los valores base del
+     elemento) pero no queda nada aplicado al terminar. Medido con
+     Playwright: el botón pasaba de top:0 a top:114 (el propio borde
+     superior de `.header`) en cuanto `data-dir-nav` se ponía. */
   :root[data-dir-nav="der"] .main .header,
-  :root[data-dir-nav="der"] .main .content { animation: entradaDer .22s ease both; }
+  :root[data-dir-nav="der"] .main .content { animation: entradaDer .22s ease backwards; }
   :root[data-dir-nav="izq"] .main .header,
-  :root[data-dir-nav="izq"] .main .content { animation: entradaIzq .22s ease both; }
+  :root[data-dir-nav="izq"] .main .content { animation: entradaIzq .22s ease backwards; }
   @keyframes entradaDer {
     from { transform: translateX(28px); opacity: 0; }
     to { transform: none; opacity: 1; }
@@ -6508,7 +6531,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      dejando fuera solo lo que es propio de la navegación de iPad (cajón
      lateral, ☰, barra superior con blur): el teléfono ya tiene su propia
      barra inferior + carrusel y no los necesita. */
-  .header-actions { justify-content: flex-start; }
+  /* Se quita la anulación a flex-start: ver el comentario gemelo en el
+     rango de iPad (línea ~5269) — vuelve a la base flex-end para que
+     "agosto 2026" (Movimientos.tsx) use el hueco que dejó libre el botón
+     de compartir al fijarse de verdad arriba, en vez de la izquierda. */
 
   /* Tarjetas de resumen de dos en dos (estilo apps de banca): un solo
      número no necesita todo el ancho, y así la página respira sin tanto
