@@ -1615,6 +1615,22 @@ html.vibrancy .main { background: var(--surface); }
 }
 .tx-icon.income { background: var(--pos-bg); color: var(--pos); }
 .tx-icon.expense { background: var(--neg-bg); color: var(--neg); }
+/* Insignia ↑/↓ junto al concepto (TxTable/Ingresos y Gastos, teléfono):
+   la flecha sale de la columna del importe —que debe quedar en cifras
+   puras, alineadas a la derecha— y se duplica aquí (ver TxTable.tsx,
+   `.tx-concepto-icono` junto a `.tx-icon` del td-monto marcado
+   `.solo-escritorio`). No usa `.solo-movil`: esa utilidad pone
+   `display:inline-flex` sin centrar el contenido, y aquí hace falta
+   `place-items:center` para que la flecha no quede pegada a una esquina. */
+.tx-concepto-icono { display: none; }
+:root.movil .tx-concepto-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
 .tx-desc { font-size: var(--fs-body); font-weight: 600; }
 .tx-desc .who { color: var(--text-3); font-weight: 500; font-size: var(--fs-secondary); display: block; margin-top: 1px;}
 .tx-amount {
@@ -4914,18 +4930,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   overflow: hidden;
 }
 :root.movil .tx-row {
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-bottom: none;
   position: relative;
 }
 :root.movil .tx-row:not(:last-child)::after {
   content: "";
   position: absolute;
-  left: 46px; right: 14px; bottom: 0;
+  left: 46px; right: 16px; bottom: 0;
   height: 0.5px;
   background: var(--line-soft);
 }
-:root.movil .tx-row > .tx-amount { font-size: 17px; }
+:root.movil .tx-row > .tx-amount {
+  font-size: 17px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+:root.movil .tx-amount .cur { font-size: 13px; }
 :root.movil .tx-row > .tag {
   background: transparent;
   box-shadow: none;
@@ -5209,9 +5230,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      no una lectura literal del prompt: con 8 datos por fila, comprimir a
      dos líneas sin perder nada no entraba. */
   :root.movil .data-table.tabla-tx .tr {
-    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    /* "monto" a ancho FIJO, no "auto": cada `.tr` es su propia rejilla
+       independiente (no una tabla que comparta columnas entre filas), así
+       que con "auto" cada importe medía lo que su propio texto necesitaba
+       y la columna se movía de fila en fila — "+$450.00 USD" no terminaba
+       en el mismo píxel que "−$85.00 USD". Con un ancho fijo, igual en
+       todas las filas, el borde derecho del importe SIEMPRE cae en el
+       mismo sitio. 132px alcanza con margen para "+$10,000.00 USD". */
+    grid-template-columns: minmax(0, 1fr) 132px auto !important;
     grid-template-areas: "principal monto acciones" !important;
-    padding: 10px 14px;
+    padding: 10px 16px;
     gap: 10px;
     border-bottom: 0.5px solid var(--line-soft);
   }
@@ -5226,7 +5254,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(2) { grid-area: principal; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; }
-  :root.movil .data-table.tabla-tx .tx-amount { font-size: 17px; }
+  :root.movil .data-table.tabla-tx .tx-amount {
+    font-size: 17px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* Filtros de categoría: no tiene sentido ocupar cuatro filas de chips
      con categorías que no tienen ni un movimiento. */
@@ -5296,7 +5328,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .day-label .day-month { margin-top: 0; }
 
   .tx-row {
-    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    /* "monto" a ancho FIJO, no "auto": ver la nota gemela en
+       .data-table.tabla-tx .tr (línea ~5227) — cada fila es su propia
+       rejilla, así que "auto" dejaba el importe en un sitio distinto según
+       cuánto midiera esa cifra en concreto. 132px alcanza para
+       "+$10,000.00 USD" con margen. */
+    grid-template-columns: 24px minmax(0, 1fr) 132px auto;
     grid-template-areas:
       "icono desc  desc   monto"
       "icono tag   metodo menu";
@@ -6327,9 +6364,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
   /* Prioridad 5 — ver la nota gemela en el rango de iPad (línea ~4894). */
   :root.movil .data-table.tabla-tx .tr {
-    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    /* "monto" a ancho FIJO, no "auto": cada `.tr` es su propia rejilla
+       independiente (no una tabla que comparta columnas entre filas), así
+       que con "auto" cada importe medía lo que su propio texto necesitaba
+       y la columna se movía de fila en fila — "+$450.00 USD" no terminaba
+       en el mismo píxel que "−$85.00 USD". Con un ancho fijo, igual en
+       todas las filas, el borde derecho del importe SIEMPRE cae en el
+       mismo sitio. 132px alcanza con margen para "+$10,000.00 USD". */
+    grid-template-columns: minmax(0, 1fr) 132px auto !important;
     grid-template-areas: "principal monto acciones" !important;
-    padding: 10px 14px;
+    padding: 10px 16px;
     gap: 10px;
     border-bottom: 0.5px solid var(--line-soft);
   }
@@ -6344,7 +6388,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(2) { grid-area: principal; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; }
-  :root.movil .data-table.tabla-tx .tx-amount { font-size: 17px; }
+  :root.movil .data-table.tabla-tx .tx-amount {
+    font-size: 17px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* ---- Archivo de cartas: de tabla de 6 columnas a tarjeta ----
      Sus columnas suman ~590 px fijos, muy por encima de los 393 del
@@ -6394,7 +6442,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .day-label .day-month { margin-top: 0; }
 
   .tx-row {
-    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    /* "monto" a ancho FIJO, no "auto": ver la nota gemela en
+       .data-table.tabla-tx .tr (línea ~5227) — cada fila es su propia
+       rejilla, así que "auto" dejaba el importe en un sitio distinto según
+       cuánto midiera esa cifra en concreto. 132px alcanza para
+       "+$10,000.00 USD" con margen. */
+    grid-template-columns: 24px minmax(0, 1fr) 132px auto;
     grid-template-areas:
       "icono desc  desc   monto"
       "icono tag   metodo menu";

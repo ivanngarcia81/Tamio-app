@@ -90,6 +90,12 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           const celdaConcepto = (
             <div className="td">
               <div className="truncate" style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }} title={tx.concepto}>
+                <span
+                  className={`tx-icon tx-concepto-icono ${tx.tipo === "ingreso" ? "income" : "expense"}`}
+                  aria-hidden="true"
+                >
+                  {tx.tipo === "ingreso" ? <IconArrowUp size={10} strokeWidth={2.2} /> : <IconArrowDown size={10} strokeWidth={2.2} />}
+                </span>
                 {tx.recurrente_id != null && (
                   <span style={{ color: "var(--text-3)", flexShrink: 0, display: "inline-flex" }} title={t("recurrente.marcaEnTabla")}>
                     <IconRepeat size={11} strokeWidth={2.2} />
@@ -147,8 +153,13 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
               </div>
               <div className="td td-monto" style={{ textAlign: "right" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+                  {/* En el teléfono esta flecha se duplica junto al concepto
+                      (arriba, .tx-concepto-icono) y esta copia se oculta: la
+                      columna de importe queda con cifras puras, alineadas a
+                      la derecha, sin nada que le reste ancho útil. En Mac se
+                      queda igual que siempre, junto al importe. */}
                   <span
-                    className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`}
+                    className={`tx-icon solo-escritorio ${tx.tipo === "ingreso" ? "income" : "expense"}`}
                     style={{ width: 20, height: 20 }}
                   >
                     {tx.tipo === "ingreso" ? <IconArrowUp size={10} strokeWidth={2.2} /> : <IconArrowDown size={10} strokeWidth={2.2} />}
