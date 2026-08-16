@@ -5362,8 +5362,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        y la columna se movía de fila en fila — "+$450.00 USD" no terminaba
        en el mismo píxel que "−$85.00 USD". Con un ancho fijo, igual en
        todas las filas, el borde derecho del importe SIEMPRE cae en el
-       mismo sitio. 132px alcanza con margen para "+$10,000.00 USD". */
-    grid-template-columns: minmax(0, 1fr) 132px auto !important;
+       mismo sitio. 132px alcanza con margen para "+$10,000.00 USD".
+       "acciones" por la misma razón pasa de `auto` a fijo: con `auto`, una
+       fila CON comprobante (los "···" de verdad, 44px de objetivo táctil)
+       y una fila SIN comprobante (el hueco invisible del gesto de
+       deslizar, ver `.tabla-tx .more` más abajo) medían columnas de ancho
+       distinto, y el importe se desalineaba entre ellas — el mismo bug que
+       esta regla ya evita para "monto", reintroducido por la otra punta.
+       24px alcanza para el glifo "···"; el objetivo de 44pt de la fila con
+       puntos de verdad se consigue con un área de toque invisible que se
+       extiende MÁS ALLÁ de esos 24px (ver `.tabla-tx .more::before`), no
+       agrandando la pista. */
+    grid-template-columns: minmax(0, 1fr) 132px 24px !important;
     grid-template-areas: "principal monto acciones" !important;
     padding: 10px 16px;
     gap: 10px;
@@ -5632,6 +5642,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-width: 44px;
     min-height: 44px;
     margin-right: 6px;
+  }
+  /* tabla-tx (Ingresos/Gastos) no usa el "···" de 44px+6px de margen de la
+     regla de arriba: con "acciones" ya fijo en 24px (ver el grid-template
+     de la fila más arriba), el glifo se queda pequeño y centrado ahí, y el
+     objetivo táctil de 44pt para la fila que SÍ tiene comprobante (puntos
+     de verdad, clicables) se consigue con un área de toque invisible que
+     se EXTIENDE más allá de esos 24px, no agrandándolos — así el ancho
+     reservado es el mismo tenga o no puntos, y el importe no se desalinea
+     entre filas. En el resto de tablas (Miembros, Cartas…) no se toca
+     nada: siguen con el "···" de 44px de siempre. */
+  .data-table.tabla-tx .more {
+    min-width: 0;
+    min-height: 0;
+    width: 24px;
+    height: 24px;
+    margin-right: 0;
+    position: relative;
+  }
+  /* El área de toque invisible NO va en el placeholder (`.sin-puntos`):
+     ya lleva `pointer-events:none` (RowMenu.tsx) y ensancharla ahí no
+     agranda ningún objetivo real, solo vuelve a robarle ancho al importe
+     — justo lo que esta fila fija quería evitar. */
+  .data-table.tabla-tx .more:not(.sin-puntos)::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
   }
 
   /* Densidad compacta: los tamaños "aireados" de la Mac desperdician
@@ -6541,8 +6577,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        y la columna se movía de fila en fila — "+$450.00 USD" no terminaba
        en el mismo píxel que "−$85.00 USD". Con un ancho fijo, igual en
        todas las filas, el borde derecho del importe SIEMPRE cae en el
-       mismo sitio. 132px alcanza con margen para "+$10,000.00 USD". */
-    grid-template-columns: minmax(0, 1fr) 132px auto !important;
+       mismo sitio. 132px alcanza con margen para "+$10,000.00 USD".
+       "acciones" por la misma razón pasa de `auto` a fijo: con `auto`, una
+       fila CON comprobante (los "···" de verdad, 44px de objetivo táctil)
+       y una fila SIN comprobante (el hueco invisible del gesto de
+       deslizar, ver `.tabla-tx .more` más abajo) medían columnas de ancho
+       distinto, y el importe se desalineaba entre ellas — el mismo bug que
+       esta regla ya evita para "monto", reintroducido por la otra punta.
+       24px alcanza para el glifo "···"; el objetivo de 44pt de la fila con
+       puntos de verdad se consigue con un área de toque invisible que se
+       extiende MÁS ALLÁ de esos 24px (ver `.tabla-tx .more::before`), no
+       agrandando la pista. */
+    grid-template-columns: minmax(0, 1fr) 132px 24px !important;
     grid-template-areas: "principal monto acciones" !important;
     padding: 10px 16px;
     gap: 10px;
@@ -6763,6 +6809,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-width: 44px;
     min-height: 44px;
     margin-right: 6px;
+  }
+  /* tabla-tx (Ingresos/Gastos) no usa el "···" de 44px+6px de margen de la
+     regla de arriba: con "acciones" ya fijo en 24px (ver el grid-template
+     de la fila más arriba), el glifo se queda pequeño y centrado ahí, y el
+     objetivo táctil de 44pt para la fila que SÍ tiene comprobante (puntos
+     de verdad, clicables) se consigue con un área de toque invisible que
+     se EXTIENDE más allá de esos 24px, no agrandándolos — así el ancho
+     reservado es el mismo tenga o no puntos, y el importe no se desalinea
+     entre filas. En el resto de tablas (Miembros, Cartas…) no se toca
+     nada: siguen con el "···" de 44px de siempre. */
+  .data-table.tabla-tx .more {
+    min-width: 0;
+    min-height: 0;
+    width: 24px;
+    height: 24px;
+    margin-right: 0;
+    position: relative;
+  }
+  /* El área de toque invisible NO va en el placeholder (`.sin-puntos`):
+     ya lleva `pointer-events:none` (RowMenu.tsx) y ensancharla ahí no
+     agranda ningún objetivo real, solo vuelve a robarle ancho al importe
+     — justo lo que esta fila fija quería evitar. */
+  .data-table.tabla-tx .more:not(.sin-puntos)::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
   }
 
   /* Densidad compacta: los tamaños "aireados" de la Mac desperdician

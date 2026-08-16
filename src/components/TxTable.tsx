@@ -83,13 +83,26 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           const hora = fmtFecha(tx.fecha).hora;
 
           const metodoTexto = metodo ? metodoNombre(metodo.id) : tx.metodo_pago;
-          const secundariaMovil = [fmtFechaCorta(tx.fecha), cat.nombre, metodoTexto, persona !== "—" ? persona : null]
-            .filter(Boolean)
-            .join(" · ");
+          /* En el teléfono el titular de la fila pasa a ser la PERSONA
+             (miembro o beneficiario), no el concepto: en altas rápidas el
+             concepto suele ser literalmente el nombre de la categoría
+             ("Tithe"/"Diezmo"), que ya se lee en la secundaria — repetirlo
+             en negrita no informa nada, y de paso enterraba el nombre (el
+             dato que de verdad identifica la fila) al final de una línea
+             que se corta con "…" antes de llegar a él. En Mac no cambia:
+             concepto y persona ya viven en columnas separadas, sin eco. */
+          const personaTitular = persona !== "—" ? persona : null;
+          const conceptoRedundante = tx.concepto.trim().toLowerCase() === cat.nombre.trim().toLowerCase();
+          const secundariaMovil = [
+            fmtFechaCorta(tx.fecha),
+            personaTitular && !conceptoRedundante ? tx.concepto : null,
+            cat.nombre,
+            metodoTexto,
+          ].filter(Boolean).join(" · ");
 
           const celdaConcepto = (
             <div className="td">
-              <div className="truncate" style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }} title={tx.concepto}>
+              <div className="truncate" style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }} title={personaTitular ?? tx.concepto}>
                 <span
                   className={`tx-icon tx-concepto-icono ${tx.tipo === "ingreso" ? "income" : "expense"}`}
                   aria-hidden="true"
@@ -101,7 +114,8 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                     <IconRepeat size={11} strokeWidth={2.2} />
                   </span>
                 )}
-                <span className="truncate">{tx.concepto}</span>
+                <span className="truncate solo-escritorio">{tx.concepto}</span>
+                <span className="truncate solo-movil">{personaTitular ?? tx.concepto}</span>
                 {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
               </div>
               {tx.detalle && (
