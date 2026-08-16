@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
@@ -130,6 +130,21 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const location = useLocation();
   useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
+
+  // Título grande que se encoge al hacer scroll (iPhone/iPad): clase de DOM
+  // directa por ref, no estado de React — con setState en cada scroll el
+  // re-render de toda la Shell en cada frame se sentía a tirones. El CSS lee
+  // `.main.scrolled .page-title` (ver styles.css, Prioridad 4).
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    function onScroll() {
+      el!.classList.toggle("scrolled", el!.scrollTop > 8);
+    }
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   // "Automático" sigue el modo claro/oscuro del sistema operativo en vivo,
   // sin necesidad de recargar la app cuando el usuario lo cambia en macOS/
@@ -361,7 +376,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       </button>
       {menuAbierto && <div className="menu-telon" onClick={() => setMenuAbierto(false)} />}
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
-      <main className="main">
+      <main className="main" ref={mainRef}>
         <UpdateBanner />
         <SyncPausadoBanner />
         {authHabilitado && <SubBanner church={church} />}

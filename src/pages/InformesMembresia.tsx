@@ -441,7 +441,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         </div>
 
         {/* Pestañas: registro de miembros, asistencia y seguimiento */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "14px 0 4px" }}>
+        <div className="chip-toggle" style={{ flexWrap: "wrap", margin: "14px 0 4px" }}>
           {(["miembros", "asistencia", "seguimiento", "general"] as Vista[]).map((v) => (
             <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
               {t(`informes.vista.${v}`)}

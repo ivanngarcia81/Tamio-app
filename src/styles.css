@@ -4571,6 +4571,67 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    más grandes que antes (13.5px) pero sin ese salto. */
 :root.movil .btn { font-size: 15px; }
 
+/* Prioridad 4 — barras y controles.
+   Fondo traslúcido de la fila fija ("+"/compartir/"···"): antes esos
+   glifos flotaban sueltos sobre el contenido, sin ninguna barra detrás —
+   en el iPad la barra del ☰ (.app::before, abajo) sí tenía difuminado,
+   pero la franja de la fila fija que cuelga justo debajo no. Un pseudo-
+   elemento nuevo (.app::after) le da a esa franja el mismo tratamiento en
+   los dos rangos, con top/height propios de cada uno (ver los @media). */
+:root.movil .app::after {
+  content: "";
+  position: fixed;
+  left: 0; right: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--line);
+  pointer-events: none;
+}
+
+/* Título grande que se encoge a 17px al hacer scroll (fila fija arriba
+   estable, título abajo cediendo sitio) — el propio App.tsx alterna la
+   clase `.scrolled` en `.main` leyendo su scrollTop. Nota: se queda en
+   ENCOGER EN SITIO; no se muda de verdad a la fila fija (eso pediría que
+   cada página le pasara su título a un componente compartido — más cambio
+   de estructura del que entra en este bloque). */
+:root.movil .page-title { transition: font-size .18s ease; }
+:root.movil .main.scrolled .page-title { font-size: 17px; }
+
+/* Botón primario: negro sólido (--ink) es el acento de un dashboard de
+   escritorio; en iOS el tinte de marca es el que marca la acción
+   principal. Mismo verde que ya usan el "+" y el ícono de compartir. */
+:root.movil .btn.primary {
+  background: var(--brand, #059669);
+  color: #fff;
+}
+
+/* Interruptor de vista (Agenda: Lista/Calendario; Informes: pestañas) como
+   segmented control: antes eran chips sueltos con su propio fondo activo
+   negro; ahora comparten una pista gris y la opción activa es una píldora
+   clara — mismo lenguaje visual que el Mensual/Anual de Reportes
+   (Prioridad 2, .segmented). Los chips de filtro por categoría (Ingresos/
+   Gastos) NO entran aquí a propósito: son una lista larga y desplazable,
+   no un selector de 2-4 opciones fijas — forzarlos a segmented control los
+   habría roto en cuanto hubiera más categorías que ancho de pantalla. */
+:root.movil .chip-toggle {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 2px;
+  gap: 2px;
+}
+:root.movil .chip-toggle .chip {
+  border: none;
+  background: transparent;
+}
+:root.movil .chip-toggle .chip.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+
 /* El "+" de la fila fija superior (iPhone e iPad) ya cubre crear ingreso,
    gasto, depósito, miembro, servicio, acta, carta y evento en la pantalla
    donde ya está el usuario — los mismos botones de cabecera y de estado
@@ -5287,6 +5348,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar { transition: none; }
+  :root.movil .page-title { transition: none; }
 }
 
 /* ============ Visor de PDF (iPad/iPhone) ============ */
@@ -5429,6 +5491,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .btn-crear { top: calc(58px + env(safe-area-inset-top)); right: 16px; }
   :root.movil .btn-compartir-cabecera { top: calc(58px + env(safe-area-inset-top)); right: 68px; }
   :root.movil .btn-header-menu-icono { top: calc(58px + env(safe-area-inset-top)); right: 16px; }
+  :root.movil .app::after { top: calc(58px + env(safe-area-inset-top)); height: var(--navrow-h); }
   :root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
 
@@ -5643,10 +5706,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     left: 0; right: 0; bottom: 0;
     z-index: 100;
     padding-bottom: env(safe-area-inset-bottom);
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid var(--line);
   }
   .barra-item {
     position: relative;
@@ -5656,7 +5719,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 6px 2px;
     text-decoration: none;
     color: var(--text-3);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     /* Cabe "Reporte de miembros" en un quinto de 390px solo si se corta. */
     overflow: hidden;
@@ -5688,6 +5751,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .btn-crear { top: env(safe-area-inset-top); }
   :root.movil .btn-compartir-cabecera { top: env(safe-area-inset-top); right: 68px; }
   :root.movil .btn-header-menu-icono { top: env(safe-area-inset-top); right: 16px; }
+  :root.movil .app::after { top: 0; height: calc(var(--navrow-h) + env(safe-area-inset-top)); }
 
   /* Los toasts de confirmación ("Miembro agregado", "Deshacer"…) traían un
      `bottom: 24px` fijo pensado para el escritorio, donde no hay nada abajo.
@@ -5769,6 +5833,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     /* Sobre la píldora, para que el texto se lea encima de ella. */
     position: relative;
     z-index: 1;
+    /* Difuminado en los bordes: la sección que asoma a medias en el borde de
+       la tira se desvanece en vez de cortarse en seco — el relleno de los
+       lados (abajo) ya deja hueco de sitio, esto es solo la lectura visual. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
   }
   .carrusel-pista::-webkit-scrollbar { display: none; }
   /* Relleno a cada lado: sin esto, la primera y la última sección no pueden
