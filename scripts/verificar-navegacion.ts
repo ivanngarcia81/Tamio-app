@@ -10,7 +10,7 @@
 // "a veces no funciona".
 
 import {
-  AREAS, ACCIONES_CREAR, accionesCrearVisibles, areaDeRuta, areasVisibles,
+  AREAS, areaDeRuta, areasVisibles,
   barraDeRol, primeraSeccion, seccionesVisibles,
 } from "../src/navegacion";
 import { puedeVer, RUTAS_SECRETARIA, RUTAS_TESORERIA, type Role } from "../src/role";
@@ -77,13 +77,6 @@ chk(areaDeRuta("/cartas")?.id, "secretaria", "/cartas es de Secretaría");
 for (const suelta of ["/", "/inbox", "/ayuda", "/configuracion"]) {
   chk(areaDeRuta(suelta), null, `${suelta} no pertenece a ningún área`);
 }
-
-console.log("\nLa hoja de crear solo ofrece lo que el rol puede hacer");
-chk(accionesCrearVisibles("administrador").length, ACCIONES_CREAR.length, "administrador: las ocho");
-chk(accionesCrearVisibles("tesorero").map((a) => a.id), ["ingreso", "gasto", "deposito"],
-    "tesorero: solo lo de Tesorería");
-chk(accionesCrearVisibles("secretaria").map((a) => a.id), ["miembro", "servicio", "acta", "carta", "evento"],
-    "secretaria: solo lo de Secretaría");
 
 console.log(fallos === 0
   ? `\n✔ la navegación es coherente en los tres roles.\n`

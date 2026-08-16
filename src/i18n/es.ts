@@ -2250,8 +2250,27 @@ export const es = {
       preferenciasSub: "Apariencia, idioma y sonidos",
       delicada: "Zona sensible",
       delicadaSub: "Respaldos y acciones que no tienen vuelta atrás",
+      cuenta: "Cuenta",
+      cuentaSub: "Organización, tu cuenta, sincronización y ayuda",
     },
     nombreIglesiaObligatorio: "El nombre de la iglesia es obligatorio.",
+  },
+
+  /** Zona "Cuenta" de Ajustes, exclusiva de iPhone: reemplaza al sidebar
+   *  (ver App.tsx / movil.ts, esIPhone). Es lo único que el sidebar tenía y
+   *  no estaba ya en otra parte de Ajustes o en la barra inferior. */
+  cuenta: {
+    organizacion: "Organización",
+    miCuenta: "Mi cuenta",
+    sinNombre: "Sin nombre",
+    ayuda: "Ayuda",
+    acercaDe: "Acerca de",
+    cerrarSesion: "Cerrar sesión",
+    confirmarTitulo: "¿Cerrar sesión?",
+    confirmarMensaje: "Vas a salir de tu cuenta en este dispositivo. Tus datos ya guardados no se pierden.",
+    acercaDeVersion: "Versión {{version}}",
+    acercaDeTagline: "Tesorería y secretaría para tu iglesia.",
+    acercaDeCopyright: "© 2026 Tamio",
   },
 
   iglesia: {

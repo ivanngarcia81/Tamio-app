@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { getVersion } from "@tauri-apps/api/app";
 import { listUsuarios, updateChurch, type Church, type ChurchUpdate, type Usuario } from "../db";
 import type { LangPref } from "../i18n";
 import { CERO, aTextoEditable, deTexto } from "../dinero";
 import { showToast } from "../toast";
+import { esIPhone } from "../movil";
+import { iniciales } from "../services/avatar";
+import ActionSheet from "../components/ActionSheet";
+import Portal from "../components/Portal";
+import SyncIndicator from "../components/SyncIndicator";
 import { type EstadoGuardado } from "../components/settings/GuardadoChip";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
@@ -34,7 +41,7 @@ import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 import {
   IconChurch, IconIdBadge, IconFileText, IconUser, IconTag, IconMonitor, IconWarn,
-  IconChevronLeft, IconChevronRight,
+  IconChevronLeft, IconChevronRight, IconLogout, IconHelp, IconInfo, IconTamio,
 } from "../icons";
 
 interface Props {
@@ -48,9 +55,18 @@ interface Props {
   onLangPrefChange: (pref: LangPref) => void;
   role: Role;
   onRoleChange: (r: Role) => void;
-  /** Con login activo la sesión vive en el sidebar; aquí solo se muestra el
-   *  selector manual de rol cuando NO hay login configurado. */
+  /** Con login activo la sesión vive en el sidebar (iPad/Mac) o en la zona
+   *  "Cuenta" de aquí (iPhone, ver esIPhone); aquí sin login solo se muestra
+   *  el selector manual de rol. */
   authActivo: boolean;
+  /** Sesión y su edición: el sidebar los recibía ya listos desde App.tsx
+   *  (useSupabaseAuth); esta zona los reutiliza tal cual para no duplicar
+   *  esa lógica. Solo hacen falta en iPhone, donde no hay sidebar. */
+  sesionEmail?: string | null;
+  sesionNombre?: string | null;
+  sesionFoto?: string | null;
+  onEditarPerfil?: () => void;
+  onSalir?: () => void;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,9 +75,10 @@ const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 export default function Configuracion({
   church, onChurchUpdated, themePref, onThemePrefChange, acento, onAcentoChange,
   langPref, onLangPrefChange, role, onRoleChange,
-  authActivo,
+  authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir,
 }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   // Reparto de Ajustes por rol: cada quien ve solo lo suyo + lo común.
   // - Tesorería (tesorero + admin): datos/firma del tesorero, vista previa del
   //   PDF, categorías y la moneda.
@@ -72,6 +89,13 @@ export default function Configuracion({
   const esAdmin = role === "administrador";
   const verTesoreria = esAdmin || role === "tesorero";
   const verSecretaria = esAdmin || role === "secretaria";
+  // El sidebar no existe en iPhone (bug de acceso corregido en main.tsx /
+  // styles.css: split view no corresponde ahí). Esta zona sustituye lo que
+  // el sidebar tenía y no vivía ya en otra parte de Ajustes o en la barra
+  // inferior: organización, cuenta, sincronización, ayuda, acerca de y
+  // cerrar sesión. En iPad/Mac el sidebar sigue igual, así que aquí no
+  // hace falta repetir nada.
+  const enIPhone = esIPhone();
 
   // Ajustes con índice (13 ago 2026, idea de "Proyecto B" en plan-1-1.md):
   // una columna de zonas a la izquierda, una a la vez a la derecha, en vez de
@@ -80,6 +104,7 @@ export default function Configuracion({
   // solo se oculta con CSS cuando no es la zona activa. Así el guardado
   // automático y sus temporizadores (más abajo) no se enteran del cambio.
   const ZONAS = [
+    { key: "cuenta", icono: <IconUser size={16} />, titulo: t("config.zona.cuenta"), visible: enIPhone },
     { key: "iglesia", icono: <IconChurch size={16} />, titulo: t("config.zona.iglesia"), visible: true },
     { key: "acceso", icono: <IconIdBadge size={16} />, titulo: t("config.zona.acceso"), visible: true },
     { key: "institucion", icono: <IconFileText size={16} />, titulo: t("config.zona.institucion"), visible: true },
@@ -96,6 +121,12 @@ export default function Configuracion({
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? null : "iglesia"
   ));
   const claseZona = (key: string) => `settings-zona${zonaActiva === key ? "" : " settings-zona-inactiva"}`;
+  const [salirAbierto, setSalirAbierto] = useState(false);
+  const [acercaDeAbierto, setAcercaDeAbierto] = useState(false);
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => {
+    if (acercaDeAbierto && version === null) getVersion().then(setVersion).catch(() => setVersion("—"));
+  }, [acercaDeAbierto, version]);
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
@@ -367,6 +398,78 @@ export default function Configuracion({
               <IconChevronLeft size={14} /> {t("common.volver")}
             </button>
 
+          {enIPhone && (
+            <section className={claseZona("cuenta")}>
+              <div className="settings-zona-head">
+                <div className="settings-zona-titulo">{t("config.zona.cuenta")}</div>
+                <div className="settings-zona-sub">{t("config.zona.cuentaSub")}</div>
+              </div>
+
+              <div className="cuenta-grupo">
+                <button type="button" className="cuenta-fila" onClick={() => setZonaActiva("iglesia")}>
+                  <span className="cuenta-fila-icono cuenta-fila-icono-iglesia">
+                    <IconChurch size={17} />
+                  </span>
+                  <span className="cuenta-fila-textos">
+                    <span className="cuenta-fila-titulo">{t("cuenta.organizacion")}</span>
+                    <span className="cuenta-fila-sub">{church.nombre}</span>
+                  </span>
+                  <IconChevronRight size={14} />
+                </button>
+              </div>
+
+              {authActivo && (
+                <div className="cuenta-grupo">
+                  <button type="button" className="cuenta-fila" onClick={onEditarPerfil}>
+                    <span className="cuenta-fila-icono cuenta-fila-icono-persona">
+                      {sesionFoto
+                        ? <img src={sesionFoto} alt="" />
+                        : (iniciales(sesionNombre ?? null, sesionEmail ?? null) || <IconUser size={16} />)}
+                    </span>
+                    <span className="cuenta-fila-textos">
+                      <span className="cuenta-fila-titulo">{(sesionNombre && sesionNombre.trim()) || t("cuenta.sinNombre")}</span>
+                      {sesionEmail && <span className="cuenta-fila-sub">{sesionEmail}</span>}
+                    </span>
+                    <IconChevronRight size={14} />
+                  </button>
+                  {SYNC_HABILITADO && (
+                    <div className="cuenta-fila cuenta-fila-sync">
+                      <SyncIndicator />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="cuenta-grupo">
+                <button type="button" className="cuenta-fila" onClick={() => navigate("/ayuda")}>
+                  <span className="cuenta-fila-icono cuenta-fila-icono-neutro"><IconHelp size={16} /></span>
+                  <span className="cuenta-fila-textos">
+                    <span className="cuenta-fila-titulo">{t("cuenta.ayuda")}</span>
+                  </span>
+                  <IconChevronRight size={14} />
+                </button>
+                <button type="button" className="cuenta-fila" onClick={() => setAcercaDeAbierto(true)}>
+                  <span className="cuenta-fila-icono cuenta-fila-icono-neutro"><IconInfo size={16} /></span>
+                  <span className="cuenta-fila-textos">
+                    <span className="cuenta-fila-titulo">{t("cuenta.acercaDe")}</span>
+                  </span>
+                  <IconChevronRight size={14} />
+                </button>
+              </div>
+
+              {authActivo && (
+                <div className="cuenta-grupo">
+                  <button type="button" className="cuenta-fila danger" onClick={() => setSalirAbierto(true)}>
+                    <span className="cuenta-fila-icono cuenta-fila-icono-danger"><IconLogout size={16} /></span>
+                    <span className="cuenta-fila-textos">
+                      <span className="cuenta-fila-titulo">{t("cuenta.cerrarSesion")}</span>
+                    </span>
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* Mosaico de 2 columnas balanceadas: las tarjetas fluyen y el CSS
               reparte las alturas, así no queda una columna larga y otra vacía
               cuando el rol/plan oculta tarjetas. */}
@@ -543,6 +646,30 @@ export default function Configuracion({
           </div>
         </div>
       </div>
+
+      {salirAbierto && onSalir && (
+        <ActionSheet
+          title={t("cuenta.confirmarTitulo")}
+          message={t("cuenta.confirmarMensaje")}
+          options={[{ label: t("cuenta.cerrarSesion"), danger: true, onClick: () => { setSalirAbierto(false); onSalir(); } }]}
+          onCancel={() => setSalirAbierto(false)}
+        />
+      )}
+
+      {acercaDeAbierto && (
+        <Portal>
+          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setAcercaDeAbierto(false); }}>
+            <div className="acerca-de-card">
+              <IconTamio size={56} />
+              <div className="acerca-de-nombre">Tamio</div>
+              <div className="acerca-de-version">{t("cuenta.acercaDeVersion", { version: version ?? "…" })}</div>
+              <div className="acerca-de-tagline">{t("cuenta.acercaDeTagline")}</div>
+              <div className="acerca-de-copyright">{t("cuenta.acercaDeCopyright")}</div>
+              <button type="button" className="btn secondary" onClick={() => setAcercaDeAbierto(false)}>{t("common.cerrar")}</button>
+            </div>
+          </div>
+        </Portal>
+      )}
     </>
   );
 }

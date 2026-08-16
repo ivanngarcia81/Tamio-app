@@ -8,6 +8,12 @@ export function esMovil(): boolean {
   return document.documentElement.classList.contains("movil");
 }
 
+/** iPhone específicamente (ni iPad ni Mac): el sidebar con split view no
+ *  corresponde ahí en ningún ancho — ver la nota en main.tsx. */
+export function esIPhone(): boolean {
+  return document.documentElement.classList.contains("iphone");
+}
+
 /** Texto para un campo: la versión corta en teléfono, la larga en el resto.
  *  Los placeholders descriptivos de escritorio ("Buscar por nombre, correo
  *  o RFC…") se cortan a media palabra en una pantalla angosta. */

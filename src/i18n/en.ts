@@ -2242,8 +2242,24 @@ export const en: Resources = {
       preferenciasSub: "Appearance, language, and sounds",
       delicada: "Sensitive zone",
       delicadaSub: "Backups and actions with no way back",
+      cuenta: "Account",
+      cuentaSub: "Organization, your account, sync, and help",
     },
     nombreIglesiaObligatorio: "The church name is required.",
+  },
+
+  cuenta: {
+    organizacion: "Organization",
+    miCuenta: "My account",
+    sinNombre: "No name",
+    ayuda: "Help",
+    acercaDe: "About",
+    cerrarSesion: "Sign out",
+    confirmarTitulo: "Sign out?",
+    confirmarMensaje: "You'll be signed out of your account on this device. Your saved data isn't lost.",
+    acercaDeVersion: "Version {{version}}",
+    acercaDeTagline: "Treasury and secretariat for your church.",
+    acercaDeCopyright: "© 2026 Tamio",
   },
 
   iglesia: {

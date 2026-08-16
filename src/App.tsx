@@ -517,6 +517,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 role={role}
                 onRoleChange={onRoleChange}
                 authActivo={authHabilitado}
+                sesionEmail={authEstado.email}
+                sesionNombre={authEstado.nombre}
+                sesionFoto={authEstado.foto}
+                onEditarPerfil={() => setPerfilAbierto(true)}
+                onSalir={salir}
               />
             }
           />

@@ -3091,6 +3091,181 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    bordes rojos anidados, y el énfasis duplicado resta énfasis. */
 .settings-zona.peligro .settings-zona-titulo { color: #c0392b; }
 
+/* Zona "Cuenta" de Ajustes (exclusiva de iPhone, sustituye al sidebar):
+   lista agrupada al estilo Ajustes de iOS — grupos separados por espacio,
+   filas con separador fino dentro de cada grupo, la última zona ("Cerrar
+   sesión") en rojo y sola. */
+.cuenta-grupo {
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+.cuenta-fila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+  font-family: inherit;
+  transition: background-color var(--dur) ease;
+}
+.cuenta-fila:last-child { border-bottom: none; }
+.cuenta-fila:hover { background: var(--surface-2); }
+.cuenta-fila:active { background: var(--line); }
+.cuenta-fila-icono {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  overflow: hidden;
+  color: #fff;
+}
+.cuenta-fila-icono img { width: 100%; height: 100%; object-fit: cover; }
+.cuenta-fila-icono-iglesia { background: var(--brand, #059669); }
+.cuenta-fila-icono-persona { background: var(--accent-4, #06b6d4); font-size: var(--fs-caption); font-weight: 700; }
+.cuenta-fila-icono-neutro { background: var(--text-3); }
+.cuenta-fila-icono-danger { background: #dc2626; }
+.cuenta-fila-textos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cuenta-fila-titulo {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cuenta-fila-sub {
+  font-size: var(--fs-secondary);
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cuenta-fila.danger { color: #dc2626; }
+.cuenta-fila.danger .cuenta-fila-titulo { color: #dc2626; }
+/* La fila de sincronización no navega a ningún sitio (SyncIndicator ya
+   fuerza una sync al tocarse): se ve igual que las demás pero sin flecha
+   ni cursor de "vas a algún lado". */
+.cuenta-fila-sync { cursor: default; }
+.cuenta-fila-sync:hover { background: none; }
+.cuenta-fila-sync .sync-indicator {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+/* Hoja de "Acerca de": una tarjeta simple centrada, no la hoja de acciones
+   (esa es solo para confirmar Cerrar sesión). */
+.acerca-de-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  padding: 32px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 280px;
+  text-align: center;
+  animation: modalIn .28s cubic-bezier(.34,1.45,.64,1) both;
+}
+.acerca-de-nombre { font-size: var(--fs-section-title); font-weight: 700; margin-top: 10px; }
+.acerca-de-version { font-size: var(--fs-secondary); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.acerca-de-tagline { font-size: var(--fs-body); color: var(--text-2); margin-top: 10px; }
+.acerca-de-copyright { font-size: var(--fs-caption); color: var(--text-3); margin: 10px 0 18px; }
+@media (prefers-reduced-motion: reduce) {
+  .acerca-de-card { animation: none; }
+}
+
+/* Hoja de acciones (ActionSheet): confirmación de "Cerrar sesión" al
+   estilo iOS — ancla abajo, Cancelar aparte del bloque de opciones. Vive
+   fuera de :root.movil a propósito: React solo la monta desde la zona
+   "Cuenta", que ya es exclusiva de iPhone (esIPhone), así que no necesita
+   guardarse dos veces contra Mac/iPad. */
+.action-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(15,15,15,.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: overlayIn .15s ease both;
+}
+.action-sheet {
+  width: 100%;
+  max-width: 560px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: hojaEntra .22s cubic-bezier(.32,.72,.35,1) both;
+}
+@keyframes hojaEntra {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-sheet-overlay, .action-sheet { animation: none; }
+}
+.action-sheet-head {
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.action-sheet-title { font-size: var(--fs-secondary); font-weight: 700; }
+.action-sheet-message { font-size: var(--fs-caption); color: var(--text-3); margin-top: 4px; }
+.action-sheet-opciones {
+  background: var(--surface);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.action-sheet-opcion {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-top: 0.5px solid var(--line-soft);
+  background: none;
+  font-family: inherit;
+  font-size: var(--fs-modal-title);
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.action-sheet-opcion:first-child { border-top: none; }
+.action-sheet-opcion:active { background: var(--surface-2); }
+.action-sheet-opcion.danger { color: #dc2626; }
+.action-sheet-cancelar {
+  background: var(--surface);
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-family: inherit;
+  font-size: var(--fs-modal-title);
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.action-sheet-cancelar:active { background: var(--surface-2); }
+
 /* ============ Modo Asamblea (presentación para proyector) ============ */
 .asamblea {
   position: fixed; inset: 0; z-index: 200;
@@ -4500,6 +4675,44 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    y el hueco superior lo gobierna la safe-area del notch. */
 :root.movil .titlebar-drag { display: none; }
 :root.movil { -webkit-tap-highlight-color: transparent; }
+
+/* ============================================================
+   BUG DE ACCESO: el sidebar (cajón + ☰) se activaba en iPhone
+   apaisado porque el rango que lo enciende (601-1023px, pensado para
+   iPad) es por ANCHO de ventana, y un iPhone en horizontal cae ahí
+   también — se comportaba como un iPad angosto. "Cerrar sesión" solo
+   vivía en el pie del sidebar, así que un iPhone en horizontal
+   dejaba al usuario sin forma de cerrar sesión al volver a vertical
+   (donde el sidebar SÍ se ocultaba, sin sustituto).
+   Se corrige por PLATAFORMA (.iphone, de main.tsx: userAgent
+   "iPhone"/"iPod"), no por ancho: un iPhone nunca es un iPad, gírelo
+   como lo gire. El contenido del sidebar que no vivía ya en otra
+   parte —organización, cuenta, sync, ayuda, acerca de y cerrar
+   sesión— se mudó a Ajustes → zona "Cuenta" (Configuracion.tsx,
+   esIPhone). iPad y Mac conservan el sidebar exactamente igual. */
+:root.iphone .sidebar,
+:root.iphone .menu-hamburguesa,
+:root.iphone .menu-telon,
+:root.iphone .app::before {
+  display: none !important;
+}
+/* Sin el sidebar ni su barra del ☰ (58px), el resto del layout del
+   rango de iPad —pensado para dejarles sitio— se queda con hueco de
+   sobra arriba. Estas reglas repiten los valores que ya usa el rango
+   de teléfono (<=600px, más abajo) para que un iPhone apaisado se
+   comporte EXACTAMENTE como uno en vertical, no como un iPad angosto
+   sin sidebar. !important porque estos valores viven dentro de un
+   @media(min-width:601px) con la misma especificidad. */
+:root.iphone .main { padding-top: 0 !important; }
+:root.iphone .header { padding-top: calc(var(--navrow-h) + 12px) !important; }
+:root.iphone .content { padding-top: calc(var(--navrow-h) + 12px) !important; }
+:root.iphone .btn-crear { top: env(safe-area-inset-top) !important; }
+:root.iphone .btn-compartir-cabecera { top: env(safe-area-inset-top) !important; }
+:root.iphone .btn-header-menu-icono { top: env(safe-area-inset-top) !important; }
+:root.iphone .app::after {
+  top: 0 !important;
+  height: calc(var(--navrow-h) + env(safe-area-inset-top)) !important;
+}
 
 /* Prioridad 2 — fondo agrupado tipo Ajustes de iOS: las tarjetas dejan de
    flotar en blanco sobre blanco y pasan a blanco/#1C1C1E sobre un gris/negro
