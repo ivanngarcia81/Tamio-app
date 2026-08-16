@@ -784,24 +784,10 @@ export const es = {
     verReportes: "Ver reportes",
   },
   crear: {
-    kicker: "Acción rápida",
-    titulo: "¿Qué desea crear?",
-    ingreso: "Registrar entrada",
-    ingresoSub: "Diezmo, ofrenda o donación",
-    gasto: "Registrar gasto",
-    gastoSub: "Pago o gasto recurrente",
-    deposito: "Preparar depósito",
-    depositoSub: "Llevar al banco lo recibido",
-    miembro: "Añadir miembro",
-    miembroSub: "Nuevo perfil del directorio",
-    servicio: "Registrar culto",
-    servicioSub: "Culto y asistencia",
-    acta: "Crear acta",
-    actaSub: "Reunión y acuerdos",
-    carta: "Crear carta",
-    cartaSub: "Documento desde plantilla",
-    evento: "Crear evento",
-    eventoSub: "Agenda y calendario",
+    /** Aria-label del botón "+" fijo (fila superior, móvil): la acción es
+     *  contextual a la pantalla — no hace falta describir cuál, el propio
+     *  título de la página ya lo dice. */
+    ayuda: "Crear",
   },
   invitar: {
     titulo: "Invitar a alguien",

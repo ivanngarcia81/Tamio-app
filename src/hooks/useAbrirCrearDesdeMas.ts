@@ -2,13 +2,13 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 /**
- * El botón flotante "+" del teléfono manda aquí con `state: { crear: true }`
- * (ver App.tsx, HojaCrear) para las seis acciones que no abren su modal
- * directo desde la hoja — a diferencia de ingreso/gasto, estas navegan
+ * El "+" fijo de iPhone/iPad (ver App.tsx, `crearAqui`) manda aquí con
+ * `state: { crear: true }` para las seis pantallas que no abren su modal
+ * directo desde ese "+" — a diferencia de ingreso/gasto, estas navegan
  * primero a su página. Sin este enganche, "Crear carta" (o acta, servicio…)
  * dejaba a medio camino: llegabas a la pantalla y ahí no pasaba nada, porque
- * el botón que de verdad abría el formulario es el de la cabecera, que en el
- * teléfono ya no se pinta (duplica a este mismo "+").
+ * el botón que de verdad abría el formulario es el de la cabecera, que en
+ * iPhone/iPad ya no se pinta (duplica a este mismo "+").
  *
  * `abrir` se llama UNA vez al entrar con la señal puesta, y el estado se
  * limpia enseguida (`replace`) para que un refresco o un "atrás" no vuelva a

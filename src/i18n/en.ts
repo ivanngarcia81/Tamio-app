@@ -790,24 +790,10 @@ export const en: Resources = {
     verReportes: "View reports",
   },
   crear: {
-    kicker: "Quick action",
-    titulo: "What would you like to create?",
-    ingreso: "Record income",
-    ingresoSub: "Tithe, offering or donation",
-    gasto: "Record expense",
-    gastoSub: "Payment or recurring expense",
-    deposito: "Prepare deposit",
-    depositoSub: "Take what came in to the bank",
-    miembro: "Add member",
-    miembroSub: "New directory profile",
-    servicio: "Record service",
-    servicioSub: "Service and attendance",
-    acta: "Create minutes",
-    actaSub: "Meeting and agreements",
-    carta: "Create letter",
-    cartaSub: "Document from a template",
-    evento: "Create event",
-    eventoSub: "Agenda and calendar",
+    /** Aria-label of the fixed "+" button (top row, mobile): the action is
+     *  contextual to the screen — no need to describe which, the page's own
+     *  title already says it. */
+    ayuda: "Create",
   },
   invitar: {
     titulo: "Invite someone",

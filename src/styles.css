@@ -3353,6 +3353,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .hstack { display: flex; align-items: center; gap: var(--space-2); }
 .vstack { display: flex; flex-direction: column; gap: var(--space-1); }
 
+/* Opuesto de .solo-escritorio: oculto por defecto (Mac), visible solo en
+   iPhone/iPad. Para pares de icono Mac/iOS en el mismo botón, donde el
+   glifo cambia de un lado a otro pero el botón y su acción son los
+   mismos —p. ej. IconPrinter en Mac, el glifo de compartir de iOS en
+   móvil—, sin duplicar el botón entero. */
+.solo-movil { display: none; }
+:root.movil .solo-movil { display: inline-flex; }
+
 /* Toasts de confirmación */
 .toast-host {
   position: fixed;
@@ -4442,20 +4450,58 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    main.tsx al detectar iOS; pointer:coarse cubre el táctil.
    ============================================================ */
 
-/* Fuente única de las medidas que varias reglas necesitan de acuerdo:
-   el alto de la barra inferior (.barra-item, teléfono) y el tamaño del
-   botón "+" flotante (.btn-crear). Antes cada regla llevaba estos números
-   sueltos y a mano; en cuanto una de las copias no se actualizaba a la
-   par de las demás, algo quedaba tapado. Ver el bug real más abajo. */
+/* Fuente única de las medidas que varias reglas necesitan de acuerdo: el
+   alto de la barra inferior (.barra-item, teléfono) y el alto de la fila
+   fija superior (Atrás / compartir / "+"). Antes cada regla llevaba estos
+   números sueltos y a mano; en cuanto una de las copias no se actualizaba
+   a la par de las demás, algo quedaba tapado. Ver el bug real más abajo. */
 :root.movil {
   --tabbar-h: 58px;
-  --fab-size: 56px;
+  --navrow-h: 44px;
 }
 
 /* Sin barra de título de macOS: en iOS no hay ventana que arrastrar
    y el hueco superior lo gobierna la safe-area del notch. */
 :root.movil .titlebar-drag { display: none; }
 :root.movil { -webkit-tap-highlight-color: transparent; }
+
+/* El "+" de la fila fija superior (iPhone e iPad) ya cubre crear ingreso,
+   gasto, depósito, miembro, servicio, acta, carta y evento en la pantalla
+   donde ya está el usuario — los mismos botones de cabecera y de estado
+   vacío que en Mac son necesarios (ahí no hay fila fija) aquí sobran y
+   ocupan sitio de más. Solo se ocultan los que de verdad duplican al "+"
+   (marcados a mano en cada página). */
+:root.movil .btn-nuevo-cabecera,
+:root.movil .empty-accion.duplica-crear { display: none; }
+
+/* Orden visual del encabezado en iPhone/iPad: fila fija de "+"/compartir
+   arriba, título grande y subtítulo debajo — al revés que en Mac, donde
+   título y acciones van lado a lado. `order` cambia el orden PINTADO sin
+   tocar el DOM (el bloque de título sigue siendo el primer hijo en el
+   marcado; las acciones, el segundo), así que ningún componente de página
+   tiene que reordenar su propio JSX para esto. */
+:root.movil .header { flex-direction: column; align-items: stretch; }
+:root.movil .header-actions { order: -1; }
+
+/* Ícono de compartir/exportar de la fila fija: mismo tratamiento que el
+   "+" (glifo solo, sin fondo ni sombra, atenúa al tocar en vez de cambiar
+   de color) y position:fixed independiente, porque vive en el JSX de cada
+   página (Dashboard, Ingresos/Gastos) y no puede compartir elemento con el
+   "+" global de BotonCrear. El offset de la derecha lo pone cada rango más
+   abajo, siempre pegado al lado izquierdo del "+". */
+:root.movil .btn-compartir-cabecera {
+  display: inline-flex; align-items: center; justify-content: center;
+  position: fixed;
+  width: 44px; height: var(--navrow-h);
+  padding: 0;
+  border: none; border-radius: 0;
+  background: none; box-shadow: none;
+  color: var(--brand, #059669);
+  z-index: 101;
+  transition: opacity var(--dur) ease;
+}
+:root.movil .btn-compartir-cabecera:active { opacity: .3; }
+:root.movil .btn-compartir-cabecera .btn-compartir-texto { display: none; }
 
 /* Respeta notch/isla dinámica y el home indicator. */
 :root.movil .sidebar { padding-top: calc(14px + env(safe-area-inset-top)); }
@@ -4570,11 +4616,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     z-index: 100;
   }
 
-  /* El contenido arranca debajo de la barra superior fija y, al hacer
-     scroll, se desliza por debajo de su difuminado. overflow-x evita que
-     cualquier elemento más ancho que la pantalla desplace la página
-     entera de lado (las tablas anchas tienen su propio scroll interno). */
-  .main { padding-top: calc(58px + env(safe-area-inset-top)); overflow-x: hidden; }
+  /* El contenido arranca debajo de la barra superior fija Y de la fila de
+     "+"/compartir (--navrow-h), que vive pegada justo debajo de esa barra.
+     Al hacer scroll, se desliza por debajo de su difuminado. overflow-x
+     evita que cualquier elemento más ancho que la pantalla desplace la
+     página entera de lado (las tablas anchas tienen su propio scroll
+     interno). */
+  .main { padding-top: calc(58px + var(--navrow-h) + env(safe-area-inset-top)); overflow-x: hidden; }
   /* La safe-area ya la cubre .main; se anula también la regla de iPad
      (:root.movil .header), que tiene más especificidad que ".header". */
   .header, :root.movil .header { padding-top: 18px; }
@@ -5230,45 +5278,41 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .barra-inferior, .btn-crear, .carrusel-secciones { display: none; }
 
 /* El botón de crear es de TODO lo táctil, iPad incluido: crear un movimiento
-   en una tablet cuesta los mismos toques que en un teléfono. Vive fuera del
-   corte de la barra inferior justo por eso —el iPad tiene botón pero no
-   barra—. En el Mac no sale: ahí están Cmd+N y el botón de cada pantalla. */
+   en una tablet cuesta los mismos toques que en un teléfono. En el Mac no
+   sale: ahí están Cmd+N y el botón de cada pantalla.
+   Patrón nativo de iOS (Notas, Recordatorios): un glifo "+" solo, sin
+   círculo, sin fondo, sin sombra — no el botón flotante de Material Design
+   que llevaba antes. Vive en la fila fija superior, extremo derecho; el
+   `top` exacto (debajo de la barra de iPad, o pegado a la muesca en
+   teléfono) lo pone cada rango más abajo. */
 :root.movil .btn-crear {
   display: inline-flex; align-items: center; justify-content: center;
   position: fixed;
   right: 16px;
-  bottom: calc(24px + env(safe-area-inset-bottom));
-  width: var(--fab-size); height: var(--fab-size);
-  border: none; border-radius: 50%;
-  background: var(--brand, #059669); color: #fff;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .24);
+  width: 44px; height: var(--navrow-h);
+  padding: 0;
+  border: none; border-radius: 0;
+  background: none; box-shadow: none;
+  color: var(--brand, #059669);
   z-index: 101;
-  transition: transform var(--dur) ease, opacity var(--dur) ease;
+  transition: opacity var(--dur) ease;
 }
-:root.movil .btn-crear:active { transform: scale(.92); }
-/* Se aparta cuando hay una fila deslizada: sus botones de Editar y Eliminar
-   salen por este mismo borde, y es el único sitio de la app donde un toque
-   equivocado borra algo. */
-:root.movil .btn-crear.oculto { opacity: 0; transform: scale(.6); pointer-events: none; }
+/* Nunca cambio de fondo al tocar (eso sería el patrón Android): solo
+   atenúa, como cualquier botón de barra de iOS. */
+:root.movil .btn-crear:active { opacity: .3; }
 
-/* El iPad conserva la barra lateral, así que necesita el mismo aire abajo que
-   el teléfono para que el botón no se siente encima de la última fila. */
+/* El iPad conserva la barra lateral y su propia barra superior (58px, con
+   el ☰): la fila de "+"/compartir vive pegada justo debajo. */
 @media (min-width: 601px) {
-  :root.movil .content { padding-bottom: calc(var(--fab-size) + 32px + env(safe-area-inset-bottom)); }
+  :root.movil .btn-crear { top: calc(58px + env(safe-area-inset-top)); right: 16px; }
+  :root.movil .btn-compartir-cabecera { top: calc(58px + env(safe-area-inset-top)); right: 68px; }
+  :root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 600px) {
   /* La barra lateral y su cajón desaparecen del todo. No se adaptan: la
      navegación entera pasa a la barra de abajo y al carrusel. */
   .sidebar, .menu-hamburguesa, .menu-telon { display: none !important; }
-  /* El botón flotante "+" (abajo a la derecha) ya cubre crear ingreso, gasto,
-     depósito, miembro, servicio, acta, carta y evento desde cualquier
-     pantalla — los mismos botones de cabecera y de estado vacío que en
-     Mac/iPad son necesarios (ahí no hay botón flotante) aquí sobran y
-     ocupan sitio de más. Solo se ocultan los que de verdad duplican al "+"
-     (marcados a mano en cada página); los que no tienen atajo ahí —como
-     Miembros en /miembros— se quedan. */
-  .btn-nuevo-cabecera, .empty-accion.duplica-crear { display: none; }
 
   /* Campos de fecha/hora en el iPhone: el control nativo de iOS conserva un
      ancho intrínseco propio e IGNORA el text-align del <input> (por eso el
@@ -5444,9 +5488,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .app { padding-top: env(safe-area-inset-top); }
   /* `.header` y `.content` traen el hueco de la muesca desde la base móvil
      (:root.movil, para el iPad); aquí ya lo pone `.app`, así que sumarlo otra
-     vez dejaría el doble de aire arriba. */
-  .header, :root.movil .header { padding-top: 12px; }
-  :root.movil .content { padding-top: 12px; }
+     vez dejaría el doble de aire arriba. Se le suma --navrow-h: la fila fija
+     de "+"/compartir vive con `position: fixed` pegada a la muesca, así que
+     no empuja el contenido por sí sola —hay que dejarle el sitio a mano, o
+     el título grande arrancaría debajo de ella. */
+  .header, :root.movil .header { padding-top: calc(var(--navrow-h) + 12px); }
+  :root.movil .content { padding-top: calc(var(--navrow-h) + 12px); }
 
   /* Mismo motivo que en el rango de iPad (línea ~4505): `.main` solo declara
      `overflow-y: auto`, y por especificación eso hace que el otro eje deje
@@ -5456,19 +5503,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      Playwright: sin esto, .main medía 920px con la pantalla en 393px. */
   .main { overflow-x: hidden; }
 
-  /* Sitio para la barra (58px) más la franja del home indicator, y sobre
-     todo la altura completa del botón flotante "+" (74px de hueco sobre la
-     barra + 56px de alto = 130px desde el borde de la pantalla). Antes solo
-     se reservaban 26px extra sobre la barra, así que el "+" —que flota más
-     arriba, a 130px— tapaba los últimos ~46px de contenido real, y como ya
-     se había llegado al final del scroll no había forma de destaparlos. Se
-     vio en "Contributors": la tarjeta vacía y su botón "New member" quedaban
-     medio cubiertos por el "+". */
+  /* Sitio para la barra inferior (58px) más la franja del home indicator.
+     El "+" ya no vive aquí abajo —se mudó a la fila fija superior—, así que
+     esto solo tiene que despejar la barra de pestañas. */
   /* :root.movil (no ".content" a secas) a propósito: es la misma
      especificidad que la regla de la línea ~4462 que ESTA sustituye — con
      bare ".content" el bug volvía a colarse en cuanto alguien tocara esa
      zona sin saber que esta regla dependía de ganarle por especificidad. */
-  :root.movil .content { padding-bottom: calc(var(--tabbar-h) + 16px + var(--fab-size) + 14px + env(safe-area-inset-bottom)); }
+  :root.movil .content { padding-bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); }
 
   .barra-inferior {
     display: grid;
@@ -5517,19 +5559,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
   }
 
-  /* En el teléfono el botón sube por encima de la barra, pegado al borde
-     derecho y sin quedar centrado sobre ninguna pestaña: centrado sobre una
-     se leería como parte de esa pestaña. Al borde se lee como lo que es, algo
-     que flota sobre la página. Todo lo demás del botón está fuera de este
-     bloque, porque el iPad también lo lleva. */
-  :root.movil .btn-crear { bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); }
+  /* En el teléfono no hay barra superior propia (esa es cosa del iPad): la
+     fila de "+"/compartir empieza pegada a la muesca, sin los 58px extra
+     que el iPad reserva para su ☰. */
+  :root.movil .btn-crear { top: env(safe-area-inset-top); }
+  :root.movil .btn-compartir-cabecera { top: env(safe-area-inset-top); right: 68px; }
 
   /* Los toasts de confirmación ("Miembro agregado", "Deshacer"…) traían un
      `bottom: 24px` fijo pensado para el escritorio, donde no hay nada abajo.
-     En el teléfono esos 24px caen DENTRO de la barra inferior y del botón
-     "+" flotante: el aviso salía tapado justo en el momento que confirma
-     que algo se acaba de crear. Se sube por encima de los dos. */
-  .toast-host { bottom: calc(var(--tabbar-h) + 16px + var(--fab-size) + 14px + env(safe-area-inset-bottom)); }
+     En el teléfono esos 24px caen DENTRO de la barra inferior: el aviso
+     salía tapado justo en el momento que confirma que algo se acaba de
+     crear. Se sube por encima de ella. (El "+" ya no vive abajo, así que
+     no hace falta despejarlo también aquí.) */
+  .toast-host { bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); }
 
   /* Fijo arriba, con fondo propio. Dos motivos, y el segundo es el que
      importa: (1) las secciones del área siguen a mano sin volver arriba del
@@ -6013,59 +6055,3 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .tabla-membresia .row-actions { display: none; }
 }
 
-/* La hoja de "¿Qué desea crear?" */
-.hoja-telon {
-  position: fixed; inset: 0; z-index: 300;
-  display: flex; align-items: flex-end; justify-content: center;
-  background: rgba(10, 12, 11, .42);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-}
-.hoja-crear {
-  position: relative;
-  width: min(560px, 100%);
-  max-height: 86vh;
-  overflow-y: auto;
-  padding: 10px 20px calc(24px + env(safe-area-inset-bottom));
-  background: var(--surface);
-  border-radius: 22px 22px 0 0;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, .26);
-}
-.hoja-agarre {
-  display: block; width: 40px; height: 4px; margin: 4px auto 14px;
-  border-radius: 999px; background: var(--line);
-}
-.hoja-kicker {
-  font-size: var(--fs-caption); font-weight: 700;
-  text-transform: uppercase; letter-spacing: .06em;
-  color: var(--brand, #059669);
-}
-.hoja-titulo { font-size: var(--fs-section-title); margin: 4px 0 16px; }
-.hoja-rejilla {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
-}
-.hoja-tarjeta {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  padding: 14px;
-  min-height: 104px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-2);
-  font-family: inherit; text-align: left; cursor: pointer;
-}
-.hoja-tarjeta:active { background: var(--line-soft); }
-.hoja-icono {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; margin-bottom: 8px;
-  border-radius: 11px;
-  background: var(--surface); color: var(--brand, #059669);
-}
-.hoja-tarjeta-titulo { font-size: var(--fs-body); font-weight: 700; color: var(--text); }
-.hoja-tarjeta-sub { font-size: var(--fs-caption); color: var(--text-3); line-height: 1.35; }
-.hoja-cerrar {
-  position: absolute; top: 14px; right: 16px;
-  width: 36px; height: 36px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--line); border-radius: 50%;
-  background: var(--surface); color: var(--text-2); cursor: pointer;
-}

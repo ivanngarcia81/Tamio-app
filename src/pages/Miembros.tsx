@@ -174,7 +174,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
               <button className="btn secondary" onClick={() => setImportOpen(true)}>
                 <IconUpload size={13} /> {t("miembros.importarCsv")}
               </button>
-              <button className="btn primary" onClick={onNew}>
+              <button className="btn primary btn-nuevo-cabecera" onClick={onNew}>
                 <IconPlus size={14} /> {t("miembros.nuevo")}
               </button>
             </>
@@ -231,6 +231,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
             accion={members.length === 0 && puedeCrear
               ? { label: t("miembros.nuevo"), onClick: onNew }
               : undefined}
+            duplicaCrear
           />
         ) : (
           <div className="data-table roomy tabla-miembros">

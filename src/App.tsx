@@ -10,7 +10,6 @@ import UpdateBanner from "./components/UpdateBanner";
 import BarraInferior from "./components/BarraInferior";
 import BotonCrear from "./components/BotonCrear";
 import CarruselSecciones from "./components/CarruselSecciones";
-import HojaCrear from "./components/HojaCrear";
 import SyncPausadoBanner from "./components/SyncPausadoBanner";
 import CmdPalette from "./components/CmdPalette";
 import ToastHost from "./components/ToastHost";
@@ -114,7 +113,6 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [langPref, setLangPref] = useState<LangPref>(initialLangPref);
   const [systemDark, setSystemDark] = useState<boolean>(systemPrefersDark);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
-  const [hojaCrear, setHojaCrear] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [rolManual, setRolManual] = useState<Role>(initialRole);
   const [showWelcome, setShowWelcome] = useState(() => esPrimerArranque(church));
@@ -242,6 +240,42 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     puedeVer(role, path) && rutaPermitidaPorPlan(church.plan, path)
       ? element
       : <Navigate to={HOME_POR_ROL[role]} replace />;
+
+  // ---------------------------------------------------------------------
+  // El "+" de iPhone/iPad (BotonCrear) ya no abre un selector de tipo: crea
+  // lo que corresponde a la pantalla en la que ya está el usuario. Las rutas
+  // guardadas por `guard()` arriba no necesitan repetir aquí su permiso —si
+  // `location.pathname` es esa ruta, `guard` ya la dejó pasar—; las dos
+  // excepciones son "/" (no pasa por `guard`, decide sola qué pinta según
+  // rol y plan) y "/miembros" (ver permite verla, crear es un permiso más
+  // fino aparte — mismo `puedeCrearMiembros` que ya usa esa página).
+  // Ingresos y gastos abren su modal aquí mismo; el resto navega a su propia
+  // pantalla con `state: { crear: true }`, la señal que ya lee cada una
+  // (`useAbrirCrearDesdeMas`) para abrir su formulario en cuanto monta.
+  const dashboardEsFinanciero = role !== "secretaria" && incluyeTesoreria(church.plan);
+  const puedeCrearMiembrosAqui = puedeCrearMiembros(role, church.plan);
+  const RUTAS_CREAR_NAVEGABLE = new Set([
+    "/depositos", "/membresia", "/servicios", "/actas", "/cartas", "/agenda",
+  ]);
+  function hayCrearAqui(pathname: string): boolean {
+    if (pathname === "/") return dashboardEsFinanciero;
+    if (pathname === "/ingresos" || pathname === "/gastos") return true;
+    if (pathname === "/miembros") return puedeCrearMiembrosAqui;
+    return RUTAS_CREAR_NAVEGABLE.has(pathname);
+  }
+  function crearAqui() {
+    const p = location.pathname;
+    if ((p === "/" && dashboardEsFinanciero) || p === "/ingresos") {
+      setModalMode({ kind: "create", tab: "ingreso" });
+      return;
+    }
+    if (p === "/gastos") { setModalMode({ kind: "create", tab: "gasto" }); return; }
+    if (p === "/miembros") {
+      if (puedeCrearMiembrosAqui) setModalMode({ kind: "create", tab: "miembro" });
+      return;
+    }
+    if (RUTAS_CREAR_NAVEGABLE.has(p)) navigate(p, { state: { crear: true } });
+  }
 
   // Puerta de autenticación (solo si hay credenciales de Supabase configuradas).
   if (authHabilitado) {
@@ -480,37 +514,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         pendingCount={pendingCount}
         unreadCount={unreadCount}
       />
-      <BotonCrear onCrear={() => setHojaCrear(true)} />
-
-      {hojaCrear && (
-        <HojaCrear
-          role={role}
-          onCerrar={() => setHojaCrear(false)}
-          onElegir={(id) => {
-            setHojaCrear(false);
-            // Ingresos y gastos abren su modal desde aquí: son los dos que se
-            // registran cada semana y merecen los dos toques prometidos. Los
-            // demás llevan a su pantalla, donde está su propio botón de crear
-            // -un primer paso honesto, y sin tocar seis páginas-.
-            if (id === "ingreso" || id === "gasto") {
-              setModalMode({ kind: "create", tab: id });
-              return;
-            }
-            const rutas: Record<string, string> = {
-              deposito: "/depositos", miembro: "/membresia", servicio: "/servicios",
-              acta: "/actas", carta: "/cartas", evento: "/agenda",
-            };
-            const r = rutas[id];
-            // `state: { crear: true }` es la señal de "abre tu formulario de
-            // crear en cuanto montes" — cada una de estas seis páginas lo lee
-            // en un efecto al entrar. Sin esto, el "+" solo dejaba a medio
-            // camino: llevaba a la pantalla pero el botón que de verdad abría
-            // el formulario era el de la cabecera, que en el teléfono ya no
-            // se pinta (duplica a este mismo "+").
-            if (r) navigate(r, { state: { crear: true } });
-          }}
-        />
-      )}
+      {hayCrearAqui(location.pathname) && <BotonCrear onCrear={crearAqui} />}
 
       {modalMode && (
         <NewRecordModal

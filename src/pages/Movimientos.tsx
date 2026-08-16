@@ -17,7 +17,7 @@ import { playSound } from "../sound";
 import TxTable from "../components/TxTable";
 import {
   IconChevronLeft, IconChevronRight, IconClose, IconEdit, IconGasto, IconIngreso,
-  IconPlus, IconPrinter, IconRepeat, IconSearch, IconWarn,
+  IconPlus, IconPrinter, IconShare, IconRepeat, IconSearch, IconWarn,
 } from "../icons";
 import { printRegister } from "../services/print/printRegister";
 import CountUp from "../components/CountUp";
@@ -202,8 +202,10 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               <IconChevronRight size={16} />
             </span>
           </div>
-          <button className="btn secondary" onClick={handlePrint} disabled={printing}>
-            <IconPrinter size={14} /> {printing ? t("common.preparando") : t("common.imprimir")}
+          <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
+            <span className="solo-escritorio"><IconPrinter size={14} /></span>
+            <span className="solo-movil"><IconShare size={18} strokeWidth={1.8} /></span>
+            <span className="btn-compartir-texto">{printing ? t("common.preparando") : t("common.imprimir")}</span>
           </button>
           <button className="btn primary btn-nuevo-cabecera" onClick={onNew}>
             <IconPlus size={14} /> {esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto")}

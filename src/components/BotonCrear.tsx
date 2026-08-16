@@ -1,44 +1,39 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconPlus } from "../icons";
-import { EVENTO_FILA, hayFilaAbierta } from "./useFilaDeslizable";
 
 interface Props {
   onCrear: () => void;
 }
 
 /**
- * Botón flotante de crear. **Vive aparte de la barra inferior a propósito**:
- * el iPad no lleva barra de pestañas —tiene sitio de sobra para la barra
- * lateral, igual que el Mac— pero sí merece el atajo de crear. Si el botón
- * fuera parte de la barra, darle el atajo al iPad obligaría a darle también
- * una barra que ahí sobra.
+ * Botón de crear de iPhone/iPad: un glifo "+" solo, sin círculo ni fondo ni
+ * sombra —el patrón nativo de iOS (Notas, Recordatorios), no el círculo
+ * flotante de Material Design que llevaba antes—, fijo en la fila superior
+ * de cada pantalla, extremo derecho.
  *
- * Dónde aparece y a qué altura lo decide el CSS: en el iPhone se sienta encima
- * de la barra; en el iPad, en la esquina, porque no hay barra debajo. En el Mac
- * no sale: ahí está Cmd+N y el botón de cada pantalla.
+ * La acción es CONTEXTUAL: quien lo renderiza (`App.tsx`) decide qué hace
+ * `onCrear` según la ruta actual —crear un ingreso en /ingresos, un gasto en
+ * /gastos, etc.— y solo lo pinta en las pantallas donde de verdad hay algo
+ * que crear. Ya no hay un paso intermedio de "¿qué desea crear?": estando en
+ * la pantalla, el "+" ya sabe qué hacer.
+ *
+ * Dónde aparece lo decide el CSS: en el iPhone comparte fila con el ícono de
+ * compartir de cada pantalla; en el iPad, misma fila, porque no lleva la
+ * barra de pestañas del teléfono —tiene sitio de sobra para la barra
+ * lateral, igual que el Mac— pero sí merece el atajo de crear. En el Mac no
+ * sale: ahí está Cmd+N y el botón de cada pantalla.
  */
 export default function BotonCrear({ onCrear }: Props) {
   const { t } = useTranslation();
 
-  // Se aparta mientras hay una fila deslizada: los botones de Editar y
-  // Eliminar salen por este mismo borde derecho, y es el único sitio de la app
-  // donde un toque equivocado borra algo.
-  const [filaAbierta, setFilaAbierta] = useState(false);
-  useEffect(() => {
-    const mirar = () => setFilaAbierta(hayFilaAbierta());
-    window.addEventListener(EVENTO_FILA, mirar);
-    return () => window.removeEventListener(EVENTO_FILA, mirar);
-  }, []);
-
   return (
     <button
       type="button"
-      className={`btn-crear${filaAbierta ? " oculto" : ""}`}
+      className="btn-crear"
       onClick={onCrear}
-      aria-label={t("crear.titulo")}
+      aria-label={t("crear.ayuda")}
     >
-      <IconPlus size={24} strokeWidth={2.4} />
+      <IconPlus size={22} strokeWidth={2} />
     </button>
   );
 }

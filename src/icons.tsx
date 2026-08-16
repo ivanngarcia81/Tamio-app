@@ -379,6 +379,17 @@ export const IconClip = ({ size = 14, strokeWidth = 2 }: IconProps) => (
   </svg>
 );
 
+/** Compartir/exportar, equivalente a square.and.arrow.up de SF Symbols:
+ *  caja con la tapa abierta arriba y una flecha saliendo hacia arriba.
+ *  Reemplaza al botón "Imprimir" con borde en el encabezado móvil. */
+export const IconShare = ({ size = 18, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <path d="M12 15V3" />
+    <path d="M8 7l4-4 4 4" />
+    <path d="M4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+  </svg>
+);
+
 /** Destellos (IA). Un destello grande de cuatro puntas y dos chispas pequeñas;
  *  relleno para que se lea nítido a tamaño pequeño en los botones. */
 export const IconSparkles = ({ size = 14 }: { size?: number }) => (

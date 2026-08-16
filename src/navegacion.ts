@@ -11,7 +11,6 @@
 // Aquí solo vive la ESTRUCTURA. Los permisos siguen en `role.ts`
 // (`puedeVer`), que es su sitio, y este módulo los consulta.
 
-import type { ReactNode } from "react";
 import { puedeVer, type Role } from "./role";
 
 /** De qué contador cuelga la insignia de un destino. Se guarda el nombre y no
@@ -195,35 +194,3 @@ export function primeraSeccion(area: Area, rol: Role): string {
   return seccionesVisibles(area, rol)[0]?.ruta ?? "/";
 }
 
-// ---------------------------------------------------------------------------
-// La hoja de "Crear"
-// ---------------------------------------------------------------------------
-
-export interface AccionCrear {
-  id: string;
-  /** Clave de i18n del título. */
-  clave: string;
-  /** Clave de i18n de la línea de debajo. */
-  claveSub: string;
-  /** Ruta que hay que tener permiso para ver. */
-  requiere: string;
-  icono?: ReactNode;
-}
-
-/** Lo que se puede crear desde el botón flotante, en orden de frecuencia real:
- *  un tesorero registra entradas y gastos todas las semanas; un acta, una vez
- *  al mes. */
-export const ACCIONES_CREAR: AccionCrear[] = [
-  { id: "ingreso", clave: "crear.ingreso", claveSub: "crear.ingresoSub", requiere: "/ingresos" },
-  { id: "gasto", clave: "crear.gasto", claveSub: "crear.gastoSub", requiere: "/gastos" },
-  { id: "deposito", clave: "crear.deposito", claveSub: "crear.depositoSub", requiere: "/depositos" },
-  { id: "miembro", clave: "crear.miembro", claveSub: "crear.miembroSub", requiere: "/membresia" },
-  { id: "servicio", clave: "crear.servicio", claveSub: "crear.servicioSub", requiere: "/servicios" },
-  { id: "acta", clave: "crear.acta", claveSub: "crear.actaSub", requiere: "/actas" },
-  { id: "carta", clave: "crear.carta", claveSub: "crear.cartaSub", requiere: "/cartas" },
-  { id: "evento", clave: "crear.evento", claveSub: "crear.eventoSub", requiere: "/agenda" },
-];
-
-export function accionesCrearVisibles(rol: Role): AccionCrear[] {
-  return ACCIONES_CREAR.filter((a) => puedeVer(rol, a.requiere));
-}
