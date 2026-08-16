@@ -1,7 +1,11 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
-import { areaDeRuta, barraDeRol, type Contador } from "../navegacion";
+import { areaDeRuta, barraDeRol, type Area, type Contador } from "../navegacion";
 import type { Role } from "../role";
+import {
+  IconBandeja, IconBank, IconCalendar, IconClipboardList, IconConfig, IconHome, IconMail, IconReportes,
+} from "../icons";
 
 interface Props {
   role: Role;
@@ -9,6 +13,29 @@ interface Props {
   pendingCount: number;
   unreadCount: number;
 }
+
+/** Icono por ruta, para las ranuras que apuntan a una pantalla concreta
+ *  (atajos, o la única sección visible de un área — ver `comoArea` en
+ *  navegacion.ts). Mismos iconos que ya usa `Sidebar.tsx` para cada ruta,
+ *  así la barra inferior y la barra lateral se leen como el mismo mapa. */
+const ICONOS_RUTA: Record<string, ReactNode> = {
+  "/": <IconHome size={20} strokeWidth={1.8} />,
+  "/bandeja": <IconBandeja size={20} strokeWidth={1.8} />,
+  "/depositos": <IconBank size={20} strokeWidth={1.8} />,
+  "/reportes": <IconReportes size={20} strokeWidth={1.8} />,
+  "/agenda": <IconCalendar size={20} strokeWidth={1.8} />,
+  "/inbox": <IconMail size={20} strokeWidth={1.8} />,
+  "/configuracion": <IconConfig size={20} strokeWidth={1.8} />,
+};
+
+/** Icono por ÁREA, para la ranura que representa el área entera (Tesorería,
+ *  Secretaría) y no una pantalla suya en particular — su ruta es solo la
+ *  primera sección visible, así que un icono de ruta ahí confundiría más de
+ *  lo que aclara. */
+const ICONOS_AREA: Record<Area["id"], ReactNode> = {
+  tesoreria: <IconBank size={20} strokeWidth={1.8} />,
+  secretaria: <IconClipboardList size={20} strokeWidth={1.8} />,
+};
 
 /**
  * Barra de pestañas del teléfono. **Sustituye a la barra lateral**, no la
@@ -63,13 +90,16 @@ export default function BarraInferior({
             pathname === destino.ruta ||
             (areaDelDestino !== null && areaDelDestino.id === areaActual?.id && !rutasDeAtajo.has(pathname));
           const n = numero(destino.contador);
+          // Una pestaña de ÁREA (no atajo, con área propia) usa el icono del
+          // área entera; el resto —Inicio, Ajustes, cada atajo— el de su ruta.
+          const icono = areaDelDestino !== null ? ICONOS_AREA[areaDelDestino.id] : ICONOS_RUTA[destino.ruta];
           return (
             <NavLink
               key={destino.clave + destino.ruta}
               to={destino.ruta}
               className={`barra-item${activo ? " activo" : ""}`}
             >
-              <span className="barra-punto" aria-hidden />
+              <span className="barra-icon" aria-hidden>{icono}</span>
               <span className="barra-label">{t(destino.claveCorta ?? destino.clave)}</span>
               {n > 0 && <span className="barra-badge">{n > 99 ? "99+" : n}</span>}
             </NavLink>

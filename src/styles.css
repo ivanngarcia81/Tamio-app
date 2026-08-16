@@ -5500,13 +5500,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     max-width: 100%;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .barra-punto {
-    width: 20px; height: 3px; border-radius: 999px;
-    background: transparent;
-    transition: background-color var(--dur) ease;
+  .barra-icon {
+    display: flex;
+    color: var(--text-3);
+    transition: color var(--dur) ease;
   }
   .barra-item.activo { color: var(--brand, #059669); }
-  .barra-item.activo .barra-punto { background: currentColor; }
+  .barra-item.activo .barra-icon { color: currentColor; }
   .barra-item:active { opacity: .6; }
   .barra-badge {
     position: absolute;
