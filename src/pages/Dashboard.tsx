@@ -13,7 +13,8 @@ import Delta from "../components/Delta";
 import CountUp from "../components/CountUp";
 import DashboardCharts from "../components/DashboardCharts";
 import { printDashboard } from "../services/print/printDashboard";
-import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter, IconShare } from "../icons";
+import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
+import { ShareIcon } from "../components/icons/IOSIcons";
 import { CERO, restar } from "../dinero";
 
 interface Props {
@@ -227,7 +228,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         <div className="header-actions">
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
             <span className="solo-escritorio"><IconPrinter size={14} /></span>
-            <span className="solo-movil"><IconShare size={18} strokeWidth={1.8} /></span>
+            <span className="solo-movil"><ShareIcon size={22} /></span>
             <span className="btn-compartir-texto">{printing ? t("common.preparando") : t("common.imprimir")}</span>
           </button>
           <button className="btn primary btn-nuevo-cabecera" onClick={onNew} title={`${t("dashboard.nuevoRegistro")}  ⌘N`}>

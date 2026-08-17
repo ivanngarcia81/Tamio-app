@@ -4832,7 +4832,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    números sueltos y a mano; en cuanto una de las copias no se actualizaba
    a la par de las demás, algo quedaba tapado. Ver el bug real más abajo. */
 :root.movil {
-  --tabbar-h: 58px;
+  /* 49px, la medida real de la tab bar de iOS (UIKit) — antes 58px, un
+     valor pensado para los íconos de contorno de 20px que llevaba antes;
+     con el glifo relleno de 25px de IOSIcons.tsx cabe justo en la medida
+     de Apple sin necesitar margen extra. */
+  --tabbar-h: 49px;
   --navrow-h: 44px;
   /* Alto real del carrusel de secciones (10px + 10px de relleno vertical
    * más la píldora de 38px, ver .carrusel-secciones/.carrusel-selector más
@@ -6496,13 +6500,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .barra-item {
     position: relative;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 4px;
+    gap: 2px;
     min-height: var(--tabbar-h);
-    padding: 6px 2px;
+    padding: 5px 2px 0;
     text-decoration: none;
     color: var(--text-3);
     font-size: 10px;
-    font-weight: 600;
+    font-weight: 500;
+    letter-spacing: 0.012em;
     /* Cabe "Reporte de miembros" en un quinto de 390px solo si se corta. */
     overflow: hidden;
   }
@@ -6515,8 +6520,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     color: var(--text-3);
     transition: color var(--dur) ease;
   }
-  .barra-item.activo { color: var(--brand, #059669); }
-  .barra-item.activo .barra-icon { color: currentColor; }
+  /* aria-selected="true" (BarraInferior.tsx), no una clase de color escrita
+     a mano: el estado activo ya lo calcula el componente (pertenencia al
+     área, atajos que le ganan al área…), esto solo lo traduce a color. */
+  .barra-item[aria-selected="true"] { color: var(--brand, #059669); }
+  .barra-item[aria-selected="true"] .barra-icon { color: currentColor; }
   .barra-item:active { opacity: .6; }
   .barra-badge {
     position: absolute;

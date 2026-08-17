@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { IconPlus } from "../icons";
+import { PlusIcon } from "./icons/IOSIcons";
 
 interface Props {
   onCrear: () => void;
@@ -33,7 +33,7 @@ export default function BotonCrear({ onCrear }: Props) {
       onClick={onCrear}
       aria-label={t("crear.ayuda")}
     >
-      <IconPlus size={22} strokeWidth={2} />
+      <PlusIcon size={22} />
     </button>
   );
 }

@@ -15,7 +15,8 @@ import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconShare, IconSparkles, IconUpload } from "../icons";
+import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconSparkles, IconUpload } from "../icons";
+import { ShareIcon } from "../components/icons/IOSIcons";
 import HeaderMenu from "../components/HeaderMenu";
 import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
@@ -353,7 +354,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             disabled={exporting !== null}
             aria-label={t("reportes.titulo") + " — " + t("common.imprimir")}
           >
-            <IconShare size={18} />
+            <ShareIcon size={22} />
           </button>
           <HeaderMenu
             icon={<IconMore size={20} />}

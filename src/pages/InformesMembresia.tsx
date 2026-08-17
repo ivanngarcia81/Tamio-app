@@ -23,7 +23,8 @@ import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
-import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconShare } from "../icons";
+import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch } from "../icons";
+import { ShareIcon } from "../components/icons/IOSIcons";
 import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
 
@@ -395,7 +396,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             disabled={filas.length === 0}
             aria-label={t("informes.exportar")}
           >
-            <IconShare size={18} />
+            <ShareIcon size={22} />
           </button>
           <HeaderMenu
             icon={<IconMore size={20} />}

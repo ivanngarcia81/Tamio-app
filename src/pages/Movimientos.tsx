@@ -17,8 +17,9 @@ import { playSound } from "../sound";
 import TxTable from "../components/TxTable";
 import {
   IconChevronLeft, IconChevronRight, IconClose, IconEdit, IconGasto, IconIngreso,
-  IconPlus, IconPrinter, IconShare, IconRepeat, IconSearch, IconWarn,
+  IconPlus, IconPrinter, IconRepeat, IconSearch, IconWarn,
 } from "../icons";
+import { ShareIcon } from "../components/icons/IOSIcons";
 import { printRegister } from "../services/print/printRegister";
 import CountUp from "../components/CountUp";
 import { CERO, sumar } from "../dinero";
@@ -204,7 +205,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           </div>
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
             <span className="solo-escritorio"><IconPrinter size={14} /></span>
-            <span className="solo-movil"><IconShare size={18} strokeWidth={1.8} /></span>
+            <span className="solo-movil"><ShareIcon size={22} /></span>
             <span className="btn-compartir-texto">{printing ? t("common.preparando") : t("common.imprimir")}</span>
           </button>
           <button className="btn primary btn-nuevo-cabecera" onClick={onNew}>
