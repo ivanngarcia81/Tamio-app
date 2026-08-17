@@ -92,7 +92,10 @@ function FirmaField({
         <span className="ios-field-label">{label}</span>
         <span className="ios-field-value" />
         <span className="ios-avatar">
-          {previewUrl ? <img src={previewUrl} alt={t(`${ns}.alt`)} /> : <IconSignature size={18} />}
+          {/* 22 y no 18: el recuadro mide 40, y a 18 el glifo flotaba en medio
+              de un hueco gris que se leía como un cuadro vacío en vez de como
+              "toca para poner tu firma". */}
+          {previewUrl ? <img src={previewUrl} alt={t(`${ns}.alt`)} /> : <IconSignature size={22} />}
         </span>
       </button>
       {error && <p className="ios-field-error" style={{ padding: "0 16px 8px" }}>{error}</p>}

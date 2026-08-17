@@ -198,10 +198,27 @@ export const IconUser = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
   </svg>
 );
 
+/** Rúbrica sobre su línea. El trazo anterior eran cuatro ondas iguales de
+ *  poca amplitud: a los 17 px del recuadro de Ajustes se aplanaba y se leía
+ *  como una virgulilla, no como una firma. Este tiene una sola subida alta y
+ *  dos caídas, que es lo que hace legible una rúbrica en miniatura. */
 export const IconSignature = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
   <svg {...base(size, strokeWidth)}>
-    <path d="M3 16c1.5-3 3-3 4.5 0s3 3 4.5 0 3-3 4.5 0 3 3 4.5 0" />
-    <path d="M4 20h16" />
+    <path d="M3 15.5c3.5 0 4.5-9.5 6.5-9.5s.5 11 3 11 3.5-5.5 5-5.5 2 2.5 3.5 2.5" />
+    <path d="M4 20.5h16" />
+  </svg>
+);
+
+/** Llave: "quién entra y a qué". Se dibuja horizontal y no en diagonal
+ *  porque a 17 px los dientes de la diagonal se pierden — comprobado
+ *  contra un candado (dice "bloqueado", que no es lo que hace esta
+ *  pantalla) y un escudo con check (dice "verificado"). */
+export const IconLlave = ({ size = 16, strokeWidth = 1.8 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <circle cx="7.5" cy="12" r="4.5" />
+    <path d="M12 12h9" />
+    <path d="M17.5 12v3.5" />
+    <path d="M20.5 12v2.5" />
   </svg>
 );
 

@@ -45,7 +45,7 @@ import CategoriesSettingsIOS from "../components/settings/CategoriesSettingsIOS"
 import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 import {
-  IconChurch, IconIdBadge, IconFileText, IconUser, IconTag, IconMonitor, IconWarn,
+  IconChurch, IconLlave, IconFileText, IconSignature, IconUser, IconTag, IconMonitor, IconWarn,
   IconChevronLeft, IconChevronRight, IconTamio,
 } from "../icons";
 import { IOSNavBar } from "../components/ios/FormularioIOS";
@@ -124,9 +124,16 @@ export default function Configuracion({
   const ZONAS = [
     { key: "cuenta", icono: <IconUser size={16} />, titulo: t("config.zona.cuenta"), visible: enIPhone },
     { key: "iglesia", icono: <IconChurch size={16} />, titulo: t("config.zona.iglesia"), visible: true },
-    { key: "acceso", icono: <IconIdBadge size={16} />, titulo: t("config.zona.acceso"), visible: true },
+    /* Llave, no `IconIdBadge`: ese glifo significa MEMBRESÍA en toda la app
+       —el sidebar, los accesos rápidos del inicio de secretaría, el RFC de la
+       ficha— y repetirlo aquí lo hacía decir dos cosas distintas. */
+    { key: "acceso", icono: <IconLlave size={16} />, titulo: t("config.zona.acceso"), visible: true },
     { key: "institucion", icono: <IconFileText size={16} />, titulo: t("config.zona.institucion"), visible: true },
-    { key: "personas", icono: <IconUser size={16} />, titulo: t("config.zona.personas"), visible: true },
+    /* Firma y no `IconUser`: "Cuenta" ya usaba ese mismo glifo dos filas más
+       arriba, y dos iconos idénticos en una lista de ocho es lo que la hace
+       parecer genérica. La rúbrica además dice de qué va la pantalla — los
+       nombres, cargos y firmas que salen en los PDF. */
+    { key: "personas", icono: <IconSignature size={16} />, titulo: t("config.zona.personas"), visible: true },
     { key: "categorias", icono: <IconTag size={16} />, titulo: t("config.zona.categorias"), visible: verTesoreria },
     { key: "preferencias", icono: <IconMonitor size={16} />, titulo: t("config.zona.preferencias"), visible: true },
     { key: "delicada", icono: <IconWarn size={16} />, titulo: t("config.zona.delicada"), visible: esAdmin },
