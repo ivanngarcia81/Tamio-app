@@ -148,7 +148,12 @@ export function barraDeRol(rol: Role): RanuraBarra[] {
   // los días: el tesorero, lo que le falta por revisar; la secretaria, sus
   // mensajes, porque la Bandeja no la puede ver (`role.ts`).
   const central: RanuraBarra = puedeVer(rol, "/bandeja")
-    ? { destino: { ruta: "/bandeja", clave: "nav.porRevisar", contador: "pendientes" }, atajo: true }
+    ? {
+        destino: {
+          ruta: "/bandeja", clave: "nav.porRevisar", claveCorta: "nav.porRevisarCorto", contador: "pendientes",
+        },
+        atajo: true,
+      }
     : { destino: MENSAJES, atajo: true };
 
   // Un área con UNA sola sección visible no es un área para esa persona: es

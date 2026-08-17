@@ -44,6 +44,17 @@ import {
   IconChevronLeft, IconChevronRight, IconLogout, IconHelp, IconInfo, IconTamio,
 } from "../icons";
 
+/** Chevron de la lista agrupada de iPhone: 7×12px reales, no el ícono
+ *  cuadrado de `IconChevronRight` (pensado para 1:1) estirado a la fuerza.
+ *  Mismo trazo fino que usa iOS en sus listas de Ajustes. */
+function IosChevron() {
+  return (
+    <span className="ios-chevron" aria-hidden="true">
+      <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
+    </span>
+  );
+}
+
 interface Props {
   church: Church;
   onChurchUpdated: (c: Church) => void;
@@ -113,6 +124,40 @@ export default function Configuracion({
     { key: "preferencias", icono: <IconMonitor size={16} />, titulo: t("config.zona.preferencias"), visible: true },
     { key: "delicada", icono: <IconWarn size={16} />, titulo: t("config.zona.delicada"), visible: esAdmin },
   ] as const;
+  type ZonaKey = (typeof ZONAS)[number]["key"];
+  const ZONAS_POR_KEY = Object.fromEntries(ZONAS.map((z) => [z.key, z])) as Record<ZonaKey, (typeof ZONAS)[number]>;
+
+  // Lista agrupada estilo iOS (enIPhone, ver más abajo): mismas zonas,
+  // iconos y guardas de rol que ZONAS de arriba — una sola fuente de
+  // verdad para qué existe y quién lo ve — más el tinte del icono, el
+  // valor secundario (nombre de iglesia/tesorero) y en qué tarjeta cae
+  // cada una. En Mac/iPad no se usa: ahí sigue el índice de siempre.
+  const TINTE_IOS: Record<ZonaKey, string> = {
+    cuenta: "var(--ios-gray)",
+    iglesia: "var(--ios-green)",
+    acceso: "var(--ios-blue)",
+    institucion: "var(--ios-indigo)",
+    personas: "var(--ios-teal)",
+    categorias: "var(--ios-orange)",
+    preferencias: "var(--ios-gray)",
+    delicada: "var(--ios-red)",
+  };
+  const VALOR_IOS: Partial<Record<ZonaKey, string>> = {
+    iglesia: church.nombre,
+    personas: church.tesorero_nombre ?? undefined,
+  };
+  const SECCIONES_IOS: { key: string; encabezado?: string; pie?: string; filas: ZonaKey[] }[] = [
+    { key: "cuenta", filas: ["cuenta"] },
+    {
+      key: "iglesia",
+      encabezado: t("config.zona.iglesia"),
+      pie: t("config.zona.iglesiaPie"),
+      filas: ["iglesia", "institucion", "personas", "acceso"],
+    },
+    { key: "general", encabezado: t("config.zona.grupoGeneral"), filas: ["categorias", "preferencias"] },
+    { key: "delicada", pie: t("config.zona.delicadaPie"), filas: ["delicada"] },
+  ];
+
   // En una pantalla angosta (teléfono) arranca sin zona elegida, mostrando
   // solo el índice — hay que tocar una para ver su contenido. En Mac/iPad,
   // que sí tienen sitio para las dos columnas, arranca en "Iglesia" para no
@@ -124,9 +169,13 @@ export default function Configuracion({
   const [salirAbierto, setSalirAbierto] = useState(false);
   const [acercaDeAbierto, setAcercaDeAbierto] = useState(false);
   const [version, setVersion] = useState<string | null>(null);
+  // Antes solo se pedía al abrir "Acerca de". La lista agrupada de iPhone
+  // (enIPhone) lleva su propio pie "Tamio {versión}" siempre visible, así
+  // que hace falta desde que se monta la pantalla, no solo dentro de ese
+  // diálogo — se pide una vez, sirve para los dos sitios.
   useEffect(() => {
-    if (acercaDeAbierto && version === null) getVersion().then(setVersion).catch(() => setVersion("—"));
-  }, [acercaDeAbierto, version]);
+    if (version === null) getVersion().then(setVersion).catch(() => setVersion("—"));
+  }, [version]);
   const [churchForm, setChurchForm] = useState<ChurchFormValues>({
     nombre: church.nombre,
     ciudad: church.ciudad ?? "",
@@ -372,26 +421,61 @@ export default function Configuracion({
       <div className="header">
         <div>
           <div className="page-title">{t("config.titulo")}</div>
-          <div className="page-sub">{t("config.sub")}</div>
+          {/* En iPhone (lista agrupada estilo iOS, ver más abajo) este
+              subtítulo se quita: su contenido pasa a repartirse entre los
+              pies de sección ("Define quién entra a Tesorería...",
+              "Respaldos, restauración..."). En Mac/iPad no cambia. */}
+          {!enIPhone && <div className="page-sub">{t("config.sub")}</div>}
         </div>
       </div>
 
       <div className="content">
         <div className={`settings-shell${zonaActiva ? " zona-abierta" : ""}`}>
-          <nav className="settings-nav">
-            {ZONAS.filter((z) => z.visible).map((z) => (
-              <button
-                key={z.key}
-                type="button"
-                className={`settings-nav-item${zonaActiva === z.key ? " activo" : ""}`}
-                onClick={() => setZonaActiva(z.key)}
-              >
-                <span className="settings-nav-icono">{z.icono}</span>
-                <span className="settings-nav-nombre">{z.titulo}</span>
-                <span className="settings-nav-flecha"><IconChevronRight size={13} /></span>
-              </button>
-            ))}
-          </nav>
+          {enIPhone ? (
+            <nav className="ios-lista" aria-label={t("config.titulo")}>
+              {SECCIONES_IOS.map((seccion) => {
+                const filas = seccion.filas.map((k) => ZONAS_POR_KEY[k]).filter((z) => z.visible);
+                if (filas.length === 0) return null;
+                return (
+                  <section className="ios-section" key={seccion.key}>
+                    {seccion.encabezado && <h2 className="ios-section-header">{seccion.encabezado}</h2>}
+                    <div className="ios-group">
+                      {filas.map((z) => (
+                        <button
+                          type="button"
+                          key={z.key}
+                          className={`ios-row${z.key === "delicada" ? " ios-row--destructive" : ""}`}
+                          onClick={() => setZonaActiva(z.key)}
+                        >
+                          <span className="ios-icon" style={{ background: TINTE_IOS[z.key] }}>{z.icono}</span>
+                          <span className="ios-row-label">{z.titulo}</span>
+                          {VALOR_IOS[z.key] && <span className="ios-row-value">{VALOR_IOS[z.key]}</span>}
+                          <IosChevron />
+                        </button>
+                      ))}
+                    </div>
+                    {seccion.pie && <p className="ios-section-footer">{seccion.pie}</p>}
+                  </section>
+                );
+              })}
+              <p className="ios-version">{version && t("config.pieVersion", { version })}</p>
+            </nav>
+          ) : (
+            <nav className="settings-nav">
+              {ZONAS.filter((z) => z.visible).map((z) => (
+                <button
+                  key={z.key}
+                  type="button"
+                  className={`settings-nav-item${zonaActiva === z.key ? " activo" : ""}`}
+                  onClick={() => setZonaActiva(z.key)}
+                >
+                  <span className="settings-nav-icono">{z.icono}</span>
+                  <span className="settings-nav-nombre">{z.titulo}</span>
+                  <span className="settings-nav-flecha"><IconChevronRight size={13} /></span>
+                </button>
+              ))}
+            </nav>
+          )}
 
           <div className="settings-detail">
             <button type="button" className="settings-detail-volver" onClick={() => setZonaActiva(null)}>

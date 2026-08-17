@@ -849,6 +849,10 @@ export const es = {
     bandeja: "Bandeja",
     inbox: "Mensajes",
     porRevisar: "Por revisar",
+    // Corta, para la ranura de la barra inferior — mismo patrón que
+    // "ajustes" arriba (clave completa vs. claveCorta en navegacion.ts):
+    // "Por revisar" se cortaba en pantallas angostas.
+    porRevisarCorto: "Pendientes",
     configuracion: "Configuración",
     abrirMenu: "Abrir menú",
     ayuda: "Ayuda",
@@ -2255,7 +2259,19 @@ export const es = {
       delicadaSub: "Respaldos y acciones que no tienen vuelta atrás",
       cuenta: "Cuenta",
       cuentaSub: "Tu cuenta, sincronización y ayuda",
+      // Lista agrupada de iPhone (ver Configuracion.tsx, enIPhone): un
+      // encabezado nuevo para agrupar Categorías + Preferencias. No
+      // "Configuración" —el título de la propia pantalla ya es ese texto,
+      // y repetirlo justo debajo de sí mismo confunde— así que se toma
+      // prestado el nombre que usa el propio Ajustes de iOS para el mismo
+      // tipo de agrupación.
+      grupoGeneral: "General",
+      // Pies de sección: sustituyen al subtítulo de página ("Datos de la
+      // iglesia y del tesorero"), que se quita en esta lista.
+      iglesiaPie: "Define quién entra a Tesorería y quién a Secretaría.",
+      delicadaPie: "Respaldos, restauración y borrado de datos. Los cambios aquí no se pueden deshacer.",
     },
+    pieVersion: "Tamio {{version}}",
     nombreIglesiaObligatorio: "El nombre de la iglesia es obligatorio.",
   },
 

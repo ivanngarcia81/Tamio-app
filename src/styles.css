@@ -3007,6 +3007,155 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .settings-shell.zona-abierta .settings-detail { display: flex; }
 }
 
+/* ============================================================
+   Ajustes en iPhone (enIPhone, Configuracion.tsx): el índice de zonas
+   (.settings-nav) se reemplaza por una lista agrupada estilo iOS —
+   ".ios-lista" en vez de ".settings-nav", montada aparte, así que Mac/iPad
+   siguen con el índice de siempre sin ningún cambio. Métricas tomadas de
+   UIKit (pt = px @1x): fila de 44px, tarjetas a 16px del borde con radio
+   10px, separador de 0.5px con sangría de 57px, tile de icono de 29px con
+   radio 6.5px.
+
+   Colores de fondo/tarjeta/texto/separador NO se reinventan aquí: son
+   `--bg`/`--surface`/`--text`/`--text-2`/`--text-3`/`--line`/`--line-soft`,
+   los mismos tokens que ya trae `:root.movil` (Prioridad 2, más arriba) —
+   ya valen exactamente lo que pide iOS (`--bg:#f2f2f7` claro/`#000` oscuro,
+   `--surface:#fff`/`#1c1c1e`), así que duplicarlos en un token `--ios-bg`
+   aparte solo los habría desincronizado el día que alguno de los dos
+   cambiara. Los únicos tokens NUEVOS son los tintes de los tiles de
+   icono, que no tenían ningún equivalente previo. */
+:root.iphone {
+  --ios-red: #ff3b30;
+  --ios-green: #34c759;
+  --ios-blue: #007aff;
+  --ios-indigo: #5856d6;
+  --ios-teal: #30b0c7;
+  --ios-orange: #ff9500;
+  --ios-gray: #8e8e93;
+}
+:root.iphone[data-theme="dark"] { --ios-red: #ff453a; }
+
+:root.iphone .settings-shell.zona-abierta .ios-lista { display: none; }
+
+:root.iphone .ios-section { margin-bottom: 35px; }
+:root.iphone .ios-section:last-of-type { margin-bottom: 24px; }
+
+:root.iphone .ios-section-header {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-2);
+  padding: 0 32px 6px;
+  margin: 0;
+}
+:root.iphone .ios-section-footer {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-2);
+  padding: 7px 32px 0;
+  margin: 0;
+}
+
+:root.iphone .ios-group {
+  background: var(--surface);
+  border-radius: 10px;
+  margin: 0 16px;
+  overflow: hidden;
+}
+
+:root.iphone .ios-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 16px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .08s ease;
+}
+:root.iphone .ios-row:active { background: var(--line); }
+
+/* Separador con sangría: arranca donde empieza el texto (16 + 29 + 12),
+   nunca en la última fila de la tarjeta. */
+:root.iphone .ios-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 57px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+
+:root.iphone .ios-icon {
+  flex: 0 0 auto;
+  width: 29px;
+  height: 29px;
+  border-radius: 6.5px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+:root.iphone .ios-icon svg { width: 17px; height: 17px; }
+
+:root.iphone .ios-row-label {
+  /* min-width:0 para que este flex-item pueda encogerse por debajo de su
+     ancho intrínseco: sin esto, una etiqueta larga junto a un valor
+     ("Tesorero y pastor" + nombre) empujaba la fila a DOS líneas —altura
+     de fila variable, contra la regla de "44px mínimo, nunca 90px". Ahora
+     el que cede es el texto (con "…"), no la altura de la fila. */
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  line-height: 22px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .ios-row-value {
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--text-2);
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root.iphone .ios-chevron { flex: 0 0 auto; width: 7px; height: 12px; color: var(--text-3); }
+:root.iphone .ios-chevron svg {
+  width: 100%; height: 100%;
+  stroke: currentColor; stroke-width: 2.5; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+:root.iphone .ios-row--destructive .ios-row-label { color: var(--ios-red); }
+
+:root.iphone .ios-version {
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-2);
+  padding: 8px 16px 0;
+  /* Vacío mientras `version` no ha llegado (getVersion() es async): sin
+     esto la lista "salta" un renglón hacia arriba cuando el texto aparece
+     un instante después de pintar la pantalla. */
+  min-height: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ios-row { transition: none; }
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
