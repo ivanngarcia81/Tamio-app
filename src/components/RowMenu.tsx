@@ -47,6 +47,30 @@ interface Props {
  * Si la fila no lleva `data-fila`, en el móvil se cae a los tres puntitos en
  * vez de quedarse sin acciones. Una lista sin marcar sigue funcionando.
  */
+/** Traslación horizontal que el elemento lleva puesta ahora mismo (negativa
+ *  cuando la fila está corrida hacia la izquierda). 0 si no tiene ninguna. */
+function traslacionX(el: HTMLElement): number {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === "none") return 0;
+  try { return new DOMMatrixReadOnly(t).m41; } catch { return 0; }
+}
+
+/** Radio del contenedor de la lista, para que el panel no asome por fuera de
+ *  la curva de la tarjeta. Solo la primera y la última fila tocan una esquina
+ *  redondeada; las de en medio van rectas. Se lee del DOM en vez de pasarlo
+ *  por prop porque las nueve listas usan contenedores distintos
+ *  (`.ios-listcard` a 16, `.data-table` en iPad) y ninguna tendría por qué
+ *  saber que existe este panel. */
+function radioDeEsquinas(fila: HTMLElement): { arriba: number; abajo: number } {
+  const cont = fila.parentElement;
+  if (!cont) return { arriba: 0, abajo: 0 };
+  const cs = getComputedStyle(cont);
+  return {
+    arriba: fila.previousElementSibling === null ? parseFloat(cs.borderTopRightRadius) || 0 : 0,
+    abajo: fila.nextElementSibling === null ? parseFloat(cs.borderBottomRightRadius) || 0 : 0,
+  };
+}
+
 export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems, onBorrarDirecto }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -103,11 +127,27 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems, onB
     };
   }, [open]);
 
-  // El panel de botones se dibuja donde ha quedado el borde derecho de la fila.
+  // El panel de botones se dibuja en el hueco que la fila deja al correrse.
   // Va en `position: fixed` y no dentro de la fila porque la fila se mueve
   // entera: metido dentro, se movería con ella y nunca se vería.
   const fila = conGesto ? btnRef.current?.closest<HTMLElement>("[data-fila]") : null;
   const rect = desliza.x > 0 && fila ? fila.getBoundingClientRect() : null;
+  // `rect` NO sirve tal cual para colocar el panel, por dos motivos a la vez:
+  //
+  //  1. `getBoundingClientRect()` de un elemento con `transform` devuelve la
+  //     caja YA desplazada, así que `rect.right` vale (borde original − x).
+  //     Restarle `x` otra vez —lo que se hacía— dejaba el panel en
+  //     (borde original − 2x): con la fila abierta, 168 px a la izquierda de
+  //     su sitio, pintado ENCIMA de la fila en vez de en su hueco.
+  //  2. La traslación la aplica el hook en un efecto, o sea DESPUÉS de
+  //     pintar, así que durante el arrastre el DOM lleva todavía la `x` del
+  //     render anterior y el panel iría un frame por detrás de la fila.
+  //
+  // Los dos se arreglan recuperando el borde ORIGINAL: se le quita a `rect`
+  // la traslación que tiene puesta en este preciso momento, y a partir de
+  // ahí se resta la `x` de ESTE render.
+  const derechaOriginal = fila && rect ? rect.right - traslacionX(fila) : 0;
+  const radioEsquinas = fila && rect ? radioDeEsquinas(fila) : { arriba: 0, abajo: 0 };
 
   return (
     <>
@@ -127,25 +167,38 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems, onB
               position: "fixed",
               top: rect.top,
               height: rect.height,
-              left: rect.right - desliza.x,
-              width: Math.max(ANCHO_ACCIONES, desliza.x),
+              // La ventana es justo el hueco: empieza donde acabó la fila y
+              // termina donde acababa antes de moverse.
+              left: derechaOriginal - desliza.x,
+              width: desliza.x,
+              borderTopRightRadius: radioEsquinas.arriba,
+              borderBottomRightRadius: radioEsquinas.abajo,
               transition: desliza.arrastrando ? "none" : "left var(--dur) ease, width var(--dur) ease",
             }}
           >
-            <button
-              className="fila-accion editar"
-              onClick={() => { desliza.cerrar(); onEdit(); }}
-            >
-              <IconEdit size={18} />
-              <span>{t("common.editar")}</span>
-            </button>
-            <button
-              className="fila-accion eliminar"
-              onClick={() => { desliza.cerrar(); onDelete(); }}
-            >
-              <IconTrash size={18} />
-              <span>{deleteLabel ?? t("common.eliminar")}</span>
-            </button>
+            {/* Los botones van en una pista de ancho FIJO pegada al borde
+                derecho, y la ventana de arriba la recorta: así se descubren
+                desde el borde sin cambiar de tamaño, como en Mail, en vez de
+                aparecer enteros desde el primer píxel del arrastre. El
+                `min-width: 100%` del CSS la deja crecer cuando la ventana se
+                pasa de ancho — la pared elástica y, sobre todo, el borrado
+                por deslizamiento completo, donde el rojo se come el panel. */}
+            <div className="fila-acciones-pista" style={{ width: ANCHO_ACCIONES }}>
+              <button
+                className="fila-accion editar"
+                onClick={() => { desliza.cerrar(); onEdit(); }}
+              >
+                <IconEdit size={18} />
+                <span>{t("common.editar")}</span>
+              </button>
+              <button
+                className="fila-accion eliminar"
+                onClick={() => { desliza.cerrar(); onDelete(); }}
+              >
+                <IconTrash size={18} />
+                <span>{deleteLabel ?? t("common.eliminar")}</span>
+              </button>
+            </div>
           </div>,
           document.body
         )}

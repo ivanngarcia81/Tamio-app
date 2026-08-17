@@ -7587,12 +7587,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    se mueve entera con `transform`, así que un panel metido dentro se movería
    con ella y nunca se vería. Las posiciones las calcula RowMenu a partir del
    rectángulo real de la fila. */
+/* Ventana que recorta: su ancho es lo arrastrado. El radio de las esquinas
+   derechas lo pone RowMenu en línea, copiado del contenedor de la lista
+   (16 en `.ios-listcard`) y solo en la primera y la última fila, que son las
+   que tocan una esquina curva; con el `0 10px 10px 0` fijo de antes el verde
+   asomaba por fuera de la curva de la tarjeta. El `overflow: hidden` recorta
+   a los hijos, no a la sombra propia, que sigue cayendo hacia la fila. */
 .fila-acciones {
-  display: flex;
+  position: relative;
   z-index: 900;
-  border-radius: 0 10px 10px 0;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: -6px 0 14px rgba(0, 0, 0, .10);
+}
+/* Pista de ancho fijo pegada al borde derecho: los botones se descubren
+   desde ahí sin moverse ni cambiar de tamaño. `min-width: 100%` para cuando
+   la ventana se pasa del ancho de la pista — la pared elástica al llegar al
+   tope, y el borrado por deslizamiento completo, donde la ventana crece
+   hasta el ancho de la fila entera y el rojo tiene que llenarla. */
+.fila-acciones-pista {
+  position: absolute;
+  inset: 0 0 0 auto;
+  min-width: 100%;
+  display: flex;
 }
 .fila-accion {
   flex: 1 1 0;
