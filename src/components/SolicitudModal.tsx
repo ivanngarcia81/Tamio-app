@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   insertSolicitud, updateSolicitud,
   type Church, type Member, type NewSolicitud, type Solicitud,
@@ -31,6 +33,12 @@ interface Props {
 
 export default function SolicitudModal({ church, solicitud, members, onClose, onSaved }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
+  /** Un catálogo de claves + su prefijo de i18n -> opciones del picker.
+   *  Las mismas listas alimentan los `<option>` de Mac, así que el
+   *  catálogo sigue estando una sola vez. */
+  const opc = (claves: readonly string[], pref: string) =>
+    claves.map((k) => ({ value: k, label: t(`${pref}.${k}`) }));
   useEscapeClose(onClose);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,12 +120,22 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
               {esMiembro ? (
                 <div className="form-group">
                   <label className="form-label">{t("cartas.miembro")}</label>
-                  <select className="form-input" value={memberId ?? ""} onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}>
-                    <option value="">{t("cartas.eligeMiembro")}</option>
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>{m.nombre}</option>
-                    ))}
-                  </select>
+                  {enIPhone ? (
+                    <IOSPickerInput
+                      ariaLabel={t("cartas.miembro")}
+                      options={[{ value: "", label: t("cartas.eligeMiembro") }, ...members.map((m) => ({ value: String(m.id), label: m.nombre }))]}
+                      value={memberId === null ? "" : String(memberId)}
+                      placeholder={t("cartas.eligeMiembro")}
+                      onSelect={(v) => setMemberId(v ? Number(v) : null)}
+                    />
+                  ) : (
+                    <select className="form-input" value={memberId ?? ""} onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}>
+                      <option value="">{t("cartas.eligeMiembro")}</option>
+                      {members.map((m) => (
+                        <option key={m.id} value={m.id}>{m.nombre}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               ) : (
                 <div className="form-group">
@@ -127,11 +145,13 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
               )}
               <div className="form-group">
                 <label className="form-label">{t("cartas.tipoCarta")}</label>
-                <select className="form-input" value={tipoCarta} onChange={(e) => setTipoCarta(e.target.value)}>
-                  {TIPOS_CARTA.map((ti) => (
-                    <option key={ti} value={ti}>{t(`cartas.tipoDoc.${ti}`)}</option>
-                  ))}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("cartas.tipoCarta")} options={opc(TIPOS_CARTA, "cartas.tipoDoc")} value={tipoCarta} onSelect={setTipoCarta} />
+                ) : (
+                  <select className="form-input" value={tipoCarta} onChange={(e) => setTipoCarta(e.target.value)}>
+                    {opc(TIPOS_CARTA, "cartas.tipoDoc").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("solicitudes.motivo")}</label>
@@ -152,11 +172,13 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.medioEntrega")}</label>
-                <select className="form-input" value={medio} onChange={(e) => setMedio(e.target.value)}>
-                  {MEDIOS_ENTREGA.map((m) => (
-                    <option key={m} value={m}>{t(`solicitudes.medio.${m}`)}</option>
-                  ))}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("solicitudes.medioEntrega")} options={opc(MEDIOS_ENTREGA, "solicitudes.medio")} value={medio} onSelect={setMedio} />
+                ) : (
+                  <select className="form-input" value={medio} onChange={(e) => setMedio(e.target.value)}>
+                    {opc(MEDIOS_ENTREGA, "solicitudes.medio").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.responsable")}</label>
@@ -164,19 +186,23 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.prioridad")}</label>
-                <select className="form-input" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
-                  {PRIORIDADES.map((p) => (
-                    <option key={p} value={p}>{t(`solicitudes.prioridadOpcion.${p}`)}</option>
-                  ))}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("solicitudes.prioridad")} options={opc(PRIORIDADES, "solicitudes.prioridadOpcion")} value={prioridad} onSelect={setPrioridad} />
+                ) : (
+                  <select className="form-input" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
+                    {opc(PRIORIDADES, "solicitudes.prioridadOpcion").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">{t("membresia.colEstado")}</label>
-                <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
-                  {ESTADOS_SOLICITUD.map((es) => (
-                    <option key={es} value={es}>{t(`solicitudes.estado.${es}`)}</option>
-                  ))}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("membresia.colEstado")} options={opc(ESTADOS_SOLICITUD, "solicitudes.estado")} value={estado} onSelect={setEstado} />
+                ) : (
+                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+                    {opc(ESTADOS_SOLICITUD, "solicitudes.estado").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("cartas.observaciones")}</label>

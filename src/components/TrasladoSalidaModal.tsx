@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   darDeBajaMember, insertCarta, insertTrasladoSalida, memberTieneTrasladoActivo, updateTrasladoSalida,
   type Church, type Member, type NewCarta, type NewTrasladoSalida, type TrasladoSalida,
@@ -42,6 +44,7 @@ const METODOS_ENTREGA = ["mano", "email", "postal", "tercero", "otro"] as const;
 
 export default function TrasladoSalidaModal({ church, traslado, members, preMemberId, onClose, onSaved, onAbrirCarta }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
   useEscapeClose(onClose);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +67,17 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
   const [cartaId, setCartaId] = useState<number | null>(traslado?.carta_id ?? null);
   const [fechaEntrega, setFechaEntrega] = useState(traslado?.fecha_entrega ?? "");
   const [metodoEntrega, setMetodoEntrega] = useState(traslado?.metodo_entrega ?? "");
+  /* Mismo criterio que el desplegable de Mac: los traslados viejos
+     guardaban texto libre, así que si el valor guardado no es una de las
+     claves nuevas se ofrece tal cual para que abrir y guardar un registro
+     antiguo no lo borre. */
+  const opcMetodoEntrega = [
+    { value: "", label: "—" },
+    ...METODOS_ENTREGA.map((m) => ({ value: m, label: t(`traslados.entrega.${m}`) })),
+    ...(metodoEntrega && !METODOS_ENTREGA.includes(metodoEntrega as (typeof METODOS_ENTREGA)[number])
+      ? [{ value: metodoEntrega, label: metodoEntrega }]
+      : []),
+  ];
   const [confirmacion, setConfirmacion] = useState(traslado ? traslado.confirmacion_recibida === 1 : false);
   const [fechaConfirmacion, setFechaConfirmacion] = useState(traslado?.fecha_confirmacion ?? "");
   const [observaciones, setObservaciones] = useState(traslado?.observaciones ?? "");
@@ -205,17 +219,28 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("cartas.miembro")}</label>
-                <select
-                  className="form-input"
-                  value={memberId ?? ""}
-                  disabled={traslado !== null}
-                  onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">{t("cartas.eligeMiembro")}</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>{m.nombre}</option>
-                  ))}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput
+                    ariaLabel={t("cartas.miembro")}
+                    options={[{ value: "", label: t("cartas.eligeMiembro") }, ...members.map((m) => ({ value: String(m.id), label: m.nombre }))]}
+                    value={memberId === null ? "" : String(memberId)}
+                    placeholder={t("cartas.eligeMiembro")}
+                    disabled={traslado !== null}
+                    onSelect={(v) => setMemberId(v ? Number(v) : null)}
+                  />
+                ) : (
+                  <select
+                    className="form-input"
+                    value={memberId ?? ""}
+                    disabled={traslado !== null}
+                    onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">{t("cartas.eligeMiembro")}</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>{m.nombre}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.fechaSolicitud")}</label>
@@ -269,11 +294,20 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("membresia.colEstado")}</label>
-                <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
-                  {ESTADOS_TS.map((es) => (
-                    <option key={es} value={es}>{t(`traslados.estadoTS.${es}`)}</option>
-                  ))}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput
+                    ariaLabel={t("membresia.colEstado")}
+                    options={ESTADOS_TS.map((es) => ({ value: es, label: t(`traslados.estadoTS.${es}`) }))}
+                    value={estado}
+                    onSelect={setEstado}
+                  />
+                ) : (
+                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+                    {ESTADOS_TS.map((es) => (
+                      <option key={es} value={es}>{t(`traslados.estadoTS.${es}`)}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">{t("actas.fechaAprobacion")}</label>
@@ -316,7 +350,16 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
               </div>
               <div className="form-group">
                 <label className="form-label">{t("traslados.metodoEntrega")}</label>
-                <select className="form-select" value={metodoEntrega} onChange={(e) => setMetodoEntrega(e.target.value)}>
+                {enIPhone ? (
+                  <IOSPickerInput
+                    ariaLabel={t("traslados.metodoEntrega")}
+                    options={opcMetodoEntrega}
+                    value={metodoEntrega}
+                    placeholder="—"
+                    onSelect={setMetodoEntrega}
+                  />
+                ) : (
+                  <select className="form-select" value={metodoEntrega} onChange={(e) => setMetodoEntrega(e.target.value)}>
                   <option value="">—</option>
                   {METODOS_ENTREGA.map((m) => (
                     <option key={m} value={m}>{t(`traslados.entrega.${m}`)}</option>
@@ -329,6 +372,7 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
                     <option value={metodoEntrega}>{metodoEntrega}</option>
                   )}
                 </select>
+                )}
               </div>
               <div className="form-group">
                 <SwitchRow label={t("traslados.confirmacionRecibida")} value={confirmacion} onChange={setConfirmacion} />

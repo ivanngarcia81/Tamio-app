@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   ESTADOS_ACTIVIDAD, RECURRENCIA_NINGUNA, TIPOS_ACTIVIDAD, hoyISO, insertActividad, listMembersRoster,
   parseRecordatorios, parseRecurrencia, updateActividad,
@@ -52,6 +54,9 @@ export default function ActividadModal({
   onSubmitOverride, detectarConflictos, onClose, onSaved,
 }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
+  const opc = (claves: readonly string[], pref: string) =>
+    claves.map((k) => ({ value: k, label: t(`${pref}.${k}`) }));
   const editar = actividad !== null;
   const base = actividad ?? duplicarDe ?? null;
   const recBase = useMemo(() => parseRecurrencia(base?.recurrencia), [base]);
@@ -96,6 +101,18 @@ export default function ActividadModal({
   const [recConteo, setRecConteo] = useState(recBase.fin.tipo === "conteo" ? recBase.fin.conteo : 10);
 
   const [miembros, setMiembros] = useState<{ id: number; nombre: string }[]>([]);
+  // Estas dos no son un catálogo pelado: llevan centinelas propios
+  // ("sin asignar", "externa") que no salen de ninguna lista.
+  const opcResponsable = [
+    { value: "", label: t("agenda.responsableSinAsignar") },
+    ...miembros.map((m) => ({ value: String(m.id), label: m.nombre })),
+    { value: "externa", label: t("agenda.responsableExterno") },
+  ];
+  const opcRecFin = [
+    { value: "nunca", label: t("agenda.finNunca") },
+    { value: "hasta", label: t("agenda.finHasta") },
+    { value: "conteo", label: t("agenda.finConteo") },
+  ];
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conflictos, setConflictos] = useState<ConflictoAgenda[] | null>(null);
@@ -210,9 +227,13 @@ export default function ActividadModal({
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("agenda.tipo")}</label>
-                <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                  {TIPOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.tipos.${k}`)}</option>)}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("agenda.tipo")} options={opc(TIPOS_ACTIVIDAD, "agenda.tipos")} value={tipo} onSelect={setTipo} />
+                ) : (
+                  <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                    {opc(TIPOS_ACTIVIDAD, "agenda.tipos").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               {tipo === "otra" && (
                 <div className="form-group">
@@ -259,11 +280,13 @@ export default function ActividadModal({
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("agenda.responsable")}</label>
-                <select className="form-input" value={responsableMemberId} onChange={(e) => setResponsableMemberId(e.target.value)}>
-                  <option value="">{t("agenda.responsableSinAsignar")}</option>
-                  {miembros.map((m) => <option key={m.id} value={String(m.id)}>{m.nombre}</option>)}
-                  <option value="externa">{t("agenda.responsableExterno")}</option>
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("agenda.responsable")} options={opcResponsable} value={responsableMemberId} onSelect={setResponsableMemberId} />
+                ) : (
+                  <select className="form-input" value={responsableMemberId} onChange={(e) => setResponsableMemberId(e.target.value)}>
+                    {opcResponsable.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               {responsableMemberId === "externa" && (
                 <div className="form-group">
@@ -293,9 +316,13 @@ export default function ActividadModal({
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">{t("agenda.repeticion")}</label>
-                  <select className="form-input" value={recTipo} onChange={(e) => setRecTipo(e.target.value as RecurrenciaTipo)}>
-                    {REC_TIPOS.map((k) => <option key={k} value={k}>{t(`agenda.rec.${k}`)}</option>)}
-                  </select>
+                  {enIPhone ? (
+                    <IOSPickerInput ariaLabel={t("agenda.repetir")} options={opc(REC_TIPOS, "agenda.rec")} value={recTipo} onSelect={(v) => setRecTipo(v as RecurrenciaTipo)} />
+                  ) : (
+                    <select className="form-input" value={recTipo} onChange={(e) => setRecTipo(e.target.value as RecurrenciaTipo)}>
+                      {opc(REC_TIPOS, "agenda.rec").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  )}
                 </div>
                 {recTipo === "personalizada" && (
                   <div className="form-group">
@@ -320,11 +347,13 @@ export default function ActividadModal({
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">{t("agenda.finRepeticion")}</label>
-                    <select className="form-input" value={recFinTipo} onChange={(e) => setRecFinTipo(e.target.value as RecFin["tipo"])}>
-                      <option value="nunca">{t("agenda.finNunca")}</option>
-                      <option value="hasta">{t("agenda.finHasta")}</option>
-                      <option value="conteo">{t("agenda.finConteo")}</option>
-                    </select>
+                    {enIPhone ? (
+                      <IOSPickerInput ariaLabel={t("agenda.termina")} options={opcRecFin} value={recFinTipo} onSelect={(v) => setRecFinTipo(v as RecFin["tipo"])} />
+                    ) : (
+                      <select className="form-input" value={recFinTipo} onChange={(e) => setRecFinTipo(e.target.value as RecFin["tipo"])}>
+                        {opcRecFin.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    )}
                   </div>
                   {recFinTipo === "hasta" && (
                     <div className="form-group">
@@ -347,9 +376,13 @@ export default function ActividadModal({
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("agenda.estado")}</label>
-                <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
-                  {ESTADOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.estados.${k}`)}</option>)}
-                </select>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("membresia.colEstado")} options={opc(ESTADOS_ACTIVIDAD, "agenda.estados")} value={estado} onSelect={setEstado} />
+                ) : (
+                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+                    {opc(ESTADOS_ACTIVIDAD, "agenda.estados").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
               </div>
               <div className="form-group" style={{ justifyContent: "flex-end" }}>
                 <label className="check-inline">
