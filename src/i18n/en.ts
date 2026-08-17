@@ -226,6 +226,7 @@ export const en: Resources = {
     statDiezmadores: "Tithed this year",
     statAportaronAnio: "Gave this year",
     statTotalAnio: "Year total",
+    seccionResumen: "Overview",
     activos_one: "{{count}} person on file",
     activos_other: "{{count}} people on file",
     importarCsv: "Import CSV",

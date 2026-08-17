@@ -4054,6 +4054,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-width: 44px;
   min-height: 44px;
 }
+/* Variante para filas que sí navegan al tocarlas (Miembros: abre la ficha),
+   a diferencia de las de Movimientos, que no hacen nada al tocar la fila
+   misma (solo deslizar/"···"). `.mini-avatar` (genérico, ya usado en toda
+   la app) ocupa el mismo lugar que `.tx-icon`. */
+:root.iphone .ios-txrow--clickable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:root.iphone .ios-txrow--clickable:active { background: var(--line); }
+:root.iphone .ios-txrow .mini-avatar { flex: 0 0 auto; box-shadow: none; }
 
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }

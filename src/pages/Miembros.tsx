@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
   insertMember, listMembers, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
@@ -63,6 +63,10 @@ interface PendingDelete {
 
 export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones ya muestra "Miembros" como pastilla activa
+  // (ver Cartas.tsx/Movimientos.tsx) — el título grande de aquí abajo sobra
+  // ahí.
+  const enIPhone = esIPhone();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
   const [query, setQuery] = useState("");
@@ -164,10 +168,12 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("miembros.titulo")}</div>
-          <div className="page-sub">{t("miembros.activos", { count: members.length })}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("miembros.titulo")}</div>
+            <div className="page-sub">{t("miembros.activos", { count: members.length })}</div>
+          </div>
+        )}
         <div className="header-actions">
           {puedeCrear ? (
             <>
@@ -205,26 +211,50 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
 
       <div className="content">
         {!loading && (
-          <div className="dash-canvas">
-            <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.total} format={String} /></div>
-              </div>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("miembros.statDiezmadores")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.diezmadores} format={String} /></div>
-              </div>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("miembros.statAportaronAnio")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.aportaron} format={String} /></div>
-              </div>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+          enIPhone ? (
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("miembros.seccionResumen")}</h2></div>
+              <div className="ios-panel-grid">
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statTotal")}</span></div>
+                  <span className="ios-stat-num"><CountUp value={resumen.total} format={String} /></span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statDiezmadores")}</span></div>
+                  <span className="ios-stat-num"><CountUp value={resumen.diezmadores} format={String} /></span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statAportaronAnio")}</span></div>
+                  <span className="ios-stat-num"><CountUp value={resumen.aportaron} format={String} /></span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statTotalAnio")}</span></div>
+                  <span className="ios-stat-num money"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="dash-canvas">
+              <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.total} format={String} /></div>
+                </div>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("miembros.statDiezmadores")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.diezmadores} format={String} /></div>
+                </div>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("miembros.statAportaronAnio")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.aportaron} format={String} /></div>
+                </div>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+                </div>
+              </div>
+            </div>
+          )
         )}
 
         <div className="tx-head">
@@ -253,19 +283,62 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
             duplicaCrear
           />
         ) : (
-          <div className="data-table roomy tabla-miembros">
-            <div className="thead" style={{ gridTemplateColumns: cols }}>
-              <div className="th">{t("miembros.colMiembro")}</div>
-              {hayEtiquetas && <div className="th">{t("miembros.colEtiquetas")}</div>}
-              <div className="th">{t("miembros.colUltimoAporte")}</div>
-              <div className="th" style={{ textAlign: "right" }}>{t("miembros.colTotalAnio")}</div>
-              <div className="th">{t("miembros.colContacto")}</div>
-              <div className="th"></div>
-            </div>
+          <div className={enIPhone ? "ios-listcard" : "data-table roomy tabla-miembros"}>
+            {!enIPhone && (
+              <div className="thead" style={{ gridTemplateColumns: cols }}>
+                <div className="th">{t("miembros.colMiembro")}</div>
+                {hayEtiquetas && <div className="th">{t("miembros.colEtiquetas")}</div>}
+                <div className="th">{t("miembros.colUltimoAporte")}</div>
+                <div className="th" style={{ textAlign: "right" }}>{t("miembros.colTotalAnio")}</div>
+                <div className="th">{t("miembros.colContacto")}</div>
+                <div className="th"></div>
+              </div>
+            )}
             {pagina.map((m, i) => {
               let etiquetas: string[] = [];
               try { etiquetas = JSON.parse(m.etiquetas); } catch { /* noop */ }
               const stat = stats[m.id];
+
+              if (enIPhone) {
+                return (
+                  <div
+                    className="ios-txrow ios-txrow--clickable"
+                    data-fila
+                    key={m.id}
+                    onClick={() => setDetalle(m)}
+                    onContextMenu={(e) =>
+                      abrirMenu(e, [
+                        { label: t("common.verFicha"), onClick: () => setDetalle(m) },
+                        { label: t("common.editar"), onClick: () => onEdit(m) },
+                        { label: t("common.eliminar"), danger: true, onClick: () => requestDelete(m) },
+                      ])}
+                  >
+                    <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                      {initials(m.nombre)}
+                    </div>
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title" title={m.nombre}>{m.nombre}</div>
+                      <div className="tx-secundaria-movil" title={m.email ?? undefined}>
+                        {m.email ?? t("miembros.sinCorreoRegistrado")}
+                      </div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      {stat?.totalAnio ? (
+                        <span className="tx-amount positive">
+                          {fmtMoney(stat.totalAnio)}<span className="cur">{church.moneda}</span>
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--text-3)", fontSize: 15 }}>—</span>
+                      )}
+                    </div>
+                    <RowMenu
+                      onEdit={() => onEdit(m)}
+                      onDelete={() => requestDelete(m)}
+                    />
+                  </div>
+                );
+              }
+
               return (
                 <div
                   className="tr" data-fila
