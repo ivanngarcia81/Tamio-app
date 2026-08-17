@@ -29,10 +29,50 @@ import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services
 import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
+import { MenuAnchor, type MenuItem } from "../components/MenuAnchor";
 
 const COLS = "130px 1.8fr 110px 150px 130px 72px";
 const COLS_SOL = "120px 1.6fr 120px 110px 140px 72px";
 const PAGE_SIZE = 25;
+
+/** Glifos del menú "+" — el ícono va a la derecha del texto (convención de
+ *  menú de iOS). "Nueva solicitud" reutiliza IconMail (misma silueta de
+ *  sobre que ya usa esa acción en su propia pestaña); los otros tres no
+ *  tenían equivalente en el set de íconos y se agregan aquí, solo para
+ *  este menú. */
+const DocPlusIcon = () => (
+  <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
+    <path d="M14 2v5h5M12 11v6M9 14h6" />
+  </svg>
+);
+const ArrowUpRightIcon = () => (
+  <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 17 17 7M9 7h8v8" />
+  </svg>
+);
+const ArrowDownLeftIcon = () => (
+  <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 7 7 17M15 17H7V9" />
+  </svg>
+);
+const TemplateIcon = () => (
+  <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="3" />
+    <path d="M3 9h18M9 9v12" />
+  </svg>
+);
+const ArchiveIcon = () => (
+  <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <path d="M2 4h20v4H2zM9 13h6" />
+  </svg>
+);
+const IosChevron = () => (
+  <span className="ios-chevron" aria-hidden="true">
+    <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
+  </span>
+);
 
 type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
 
@@ -137,6 +177,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const [filtroMiembro, setFiltroMiembro] = useState<string>("todos");
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("resumen");
+  const [menuCrearAbierto, setMenuCrearAbierto] = useState(false);
   const [editando, setEditando] = useState<Carta | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Carta | null>(null);
   const [pendingTab, setPendingTab] = useState<Tab | null>(null);
@@ -451,6 +492,33 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     cambiarTab("archivo");
   }
 
+  // Las cuatro acciones de crear, antes cuatro pastillas de la fila que se
+  // quitó. Cada una hace lo mismo que hacía su pastilla: cambia a la
+  // pestaña correspondiente y, si esa pestaña abre con un modal (solicitud,
+  // traslado), lo abre de una vez — el mismo atajo que ya usaban los dos
+  // botones de "Registrar traslado" del resumen. Sin este cambio de
+  // pestaña, "Solicitudes" se quedaba sin ninguna forma de llegar a su
+  // lista: a diferencia del paquete de referencia, aquí SÍ es una lista de
+  // verdad, no solo un formulario.
+  const menuCrearItems: MenuItem[] = [
+    { label: t("cartas.nuevaCartaMenu"), icon: <DocPlusIcon />, onPress: () => cambiarTab("nueva") },
+    {
+      label: t("solicitudes.nuevaSolicitud"),
+      icon: <IconMail size={20} strokeWidth={1.8} />,
+      onPress: () => { cambiarTab("solicitudes"); setSolicitudModal({ open: true, solicitud: null }); },
+    },
+    {
+      label: t("traslados.registrarSalida"),
+      icon: <ArrowUpRightIcon />,
+      onPress: () => { cambiarTab("salida"); setTsModal({ open: true, traslado: null }); },
+    },
+    {
+      label: t("traslados.registrarEntrada"),
+      icon: <ArrowDownLeftIcon />,
+      onPress: () => { cambiarTab("entrada"); setTeModal({ open: true, traslado: null }); },
+    },
+  ];
+
   return (
     <>
       <div className="header">
@@ -459,21 +527,19 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           <div className="page-sub">{t("secretaria.cartas.sub")}</div>
         </div>
         <div className="header-actions">
-          <button className="btn primary btn-nuevo-cabecera" onClick={() => { cambiarTab("nueva"); }}>
-            <IconPlus size={14} /> {t("cartas.nuevaCarta")}
-          </button>
+          <div className="cartas-menu-crear">
+            <MenuAnchor
+              open={menuCrearAbierto}
+              onOpenChange={setMenuCrearAbierto}
+              button={<IconPlus size={22} strokeWidth={2.1} />}
+              ariaLabel={t("cartas.nuevaCarta")}
+              items={menuCrearItems}
+            />
+          </div>
         </div>
       </div>
 
       <div className="content">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
-          {(["resumen", "nueva", "solicitudes", "salida", "entrada", "plantillas", "archivo"] as Tab[]).map((tb) => (
-            <button key={tb} className={`chip${tab === tb ? " active" : ""}`} onClick={() => cambiarTab(tb)}>
-              {t(`cartas.tab.${tb}`)}
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <LoadingState />
         ) : tab === "resumen" ? (
@@ -512,12 +578,19 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
             </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-              <button className="btn secondary" onClick={() => { cambiarTab("salida"); setTsModal({ open: true, traslado: null }); }}>
-                <IconPlus size={13} /> {t("traslados.registrarSalida")}
+            {/* Las dos cajas de "Registrar traslado" vivían aquí — ya están
+                en el menú del "+". Este mismo sitio ahora es Plantillas y
+                Archivo, que eran pastillas de la fila que se quitó. */}
+            <div className="ios-navcards" style={{ marginTop: 14 }}>
+              <button type="button" className="ios-navcard" onClick={() => cambiarTab("plantillas")}>
+                <span className="ios-navcard-icon"><TemplateIcon /></span>
+                <span className="ios-navcard-label">{t("cartas.tab.plantillas")}</span>
+                <IosChevron />
               </button>
-              <button className="btn secondary" onClick={() => { cambiarTab("entrada"); setTeModal({ open: true, traslado: null }); }}>
-                <IconPlus size={13} /> {t("traslados.registrarEntrada")}
+              <button type="button" className="ios-navcard" onClick={() => cambiarTab("archivo")}>
+                <span className="ios-navcard-icon"><ArchiveIcon /></span>
+                <span className="ios-navcard-label">{t("cartas.tab.archivo")}</span>
+                <IosChevron />
               </button>
             </div>
 

@@ -1335,6 +1335,7 @@ export const en: Resources = {
   cartas: {
     tab: { resumen: "Overview", nueva: "New letter", solicitudes: "Requests", salida: "Outgoing transfer", entrada: "Incoming transfer", plantillas: "Templates", archivo: "Archive" },
     nuevaCarta: "New letter",
+    nuevaCartaMenu: "New recommendation letter",
     guardarBorrador: "Save draft",
     cardPreparacion: "In preparation",
     cardFirma: "Awaiting signature",

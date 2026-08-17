@@ -1337,6 +1337,9 @@ export const es = {
   cartas: {
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
     nuevaCarta: "Nueva carta",
+    // Etiqueta larga para el menú del "+" (MenuAnchor) — "nuevaCarta" de
+    // arriba es la corta, para la pestaña/botón de cabecera.
+    nuevaCartaMenu: "Nueva carta de recomendación",
     guardarBorrador: "Guardar borrador",
     cardPreparacion: "En preparación",
     cardFirma: "Esperando firma",

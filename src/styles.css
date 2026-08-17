@@ -2751,6 +2751,180 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root[data-theme="dark"] .row-menu-item.danger:active { background: rgba(220,38,38,.28); }
 .row-menu-separator { height: 1px; margin: 4px 0; background: var(--line); }
 
+/* ============================================================
+   MenuAnchor (components/MenuAnchor.tsx) — menú de acciones anclado a un
+   botón, estilo UIMenu de iOS: baja DESDE el botón (no sube desde abajo
+   como una hoja), con el ícono de cada ítem a la derecha de la etiqueta.
+   Todas las plataformas (no escondido en :root.iphone): hoy solo lo usa
+   Cartas.tsx, en el botón "+" de la cabecera.
+   ============================================================ */
+.ios-menu-anchor { position: relative; }
+
+/* Glifo solo, sin fondo — mismo lenguaje visual que el "+" fijo del
+   teléfono (btn-crear), pero inline en la cabecera en vez de flotante. */
+.ios-bar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--dur) ease;
+}
+.ios-bar-button:hover { opacity: .8; }
+.ios-bar-button:active { opacity: .5; }
+
+.ios-menu-backdrop { position: fixed; inset: 0; z-index: 90; background: transparent; }
+
+.ios-menu {
+  position: absolute;
+  top: calc(100% - 2px);
+  right: 4px;
+  z-index: 91;
+  min-width: 250px;
+  max-width: 290px;
+  padding: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  font: inherit;
+  /* Crece desde la esquina donde está el botón — un menú "baja", no "sube"
+     como una hoja: las hojas son para formularios, los menús para elegir
+     una acción. */
+  transform-origin: top right;
+  animation: ios-menu-in 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes ios-menu-in {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.ios-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ios-menu-item:hover { background: var(--surface-2); }
+.ios-menu-item:active { background: var(--line); }
+/* Separador a todo el ancho, sin sangría — es una lista de acciones, no
+   una lista de datos con icono que la sangría tendría que esquivar. */
+.ios-menu-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+
+.ios-menu-label { flex: 1 1 auto; }
+
+/* El ícono va a la DERECHA en un menú de iOS, no a la izquierda. */
+.ios-menu-icon { flex: 0 0 auto; width: 20px; height: 20px; color: var(--text-2); }
+.ios-menu-icon svg {
+  width: 100%; height: 100%;
+  stroke: currentColor; stroke-width: 1.9; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.ios-menu-item--destructive,
+.ios-menu-item--destructive .ios-menu-icon { color: var(--neg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-menu { animation: none; }
+}
+
+/* ---------------- Tarjeta de navegación (ios-navcard) ----------------
+   Reemplaza a las cajas con borde de "Record transfer" — Plantillas y
+   Archivo, en Cartas.tsx. Sin borde a propósito: las cajas con borde son
+   de web. Todas las plataformas, igual que MenuAnchor arriba. */
+.ios-navcards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ios-navcard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 16px 14px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.ios-navcard:active { transform: scale(0.975); }
+.ios-navcard:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: 2px; }
+
+.ios-navcard-icon {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(118, 118, 128, 0.12);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+}
+:root[data-theme="dark"] .ios-navcard-icon { background: rgba(118, 118, 128, 0.24); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ios-navcard-icon { background: rgba(118, 118, 128, 0.24); }
+}
+.ios-navcard-icon svg {
+  width: 17px; height: 17px;
+  stroke: currentColor; stroke-width: 1.9; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.ios-navcard-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chevron de 7×12 sin escalar a la fuerza, para cualquier plataforma —
+   ya existía igual bajo :root.iphone (índice de Ajustes); aquí queda
+   disponible también en Mac/iPad para .ios-navcard. */
+.ios-chevron { flex: 0 0 auto; width: 7px; height: 12px; color: var(--text-3); }
+.ios-chevron svg {
+  width: 100%; height: 100%;
+  stroke: currentColor; stroke-width: 2.5; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-navcard { transition: none; }
+}
+
 /* Detalle de miembro: encabezado con avatar, estado y chips de contacto */
 .member-detail-head { align-items: flex-start; }
 .member-detail-id { display: flex; gap: var(--space-3); align-items: center; min-width: 0; }
@@ -5756,7 +5930,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    ocupan sitio de más. Solo se ocultan los que de verdad duplican al "+"
    (marcados a mano en cada página). */
 :root.movil .btn-nuevo-cabecera,
-:root.movil .empty-accion.duplica-crear { display: none; }
+:root.movil .empty-accion.duplica-crear,
+/* El menú de Cartas.tsx (MenuAnchor con las 4 acciones de crear) es el
+   mismo caso: en el teléfono el "+" fijo ya cubre "Nueva carta" (mismo
+   destino, cambiarTab("nueva")), así que su versión de cabecera se
+   esconde igual que .btn-nuevo-cabecera para no duplicar el botón. */
+:root.movil .cartas-menu-crear { display: none; }
 
 /* Orden visual del encabezado en iPhone/iPad: fila fija de "+"/compartir
    arriba, título grande y subtítulo debajo — al revés que en Mac, donde
