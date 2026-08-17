@@ -9,7 +9,7 @@ export type Acento = (typeof ACENTOS)[number];
 /** Muestra de cada acento para el selector. Es solo la pastilla de color de
  *  esta pantalla: el color real de la app lo definen las variables `--ink` de
  *  styles.css, que además tienen su versión para modo oscuro. */
-const MUESTRA: Record<Acento, string> = {
+export const MUESTRA: Record<Acento, string> = {
   neutro: "#0f0f0f",
   verde: "#047857",
   azul: "#1d4ed8",

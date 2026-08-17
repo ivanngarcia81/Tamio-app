@@ -30,6 +30,7 @@ import AppearanceSettings, { type ThemePref } from "../components/settings/Appea
 import AccentSettings, { type Acento } from "../components/settings/AccentSettings";
 import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
+import PreferenciasSettingsIOS from "../components/settings/PreferenciasSettingsIOS";
 import RoleSettings from "../components/settings/RoleSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import ComprobantesPendientes from "../components/settings/ComprobantesPendientes";
@@ -768,20 +769,28 @@ export default function Configuracion({
             </section>
           )}
 
-          <section className={claseZona("preferencias")}>
+          <section className={`${claseZona("preferencias")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.preferencias")}</div>
               <div className="settings-zona-sub">{t("config.zona.preferenciasSub")}</div>
             </div>
-            {/* Apariencia e Idioma son gemelas (misma pinta, misma altura) y
-                comparten fila; Acento y Sonido, las dos con selector, la de
-                abajo. */}
-            <div className="settings-masonry">
-              <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
-              <LanguageSettings value={langPref} onChange={onLangPrefChange} />
-              <AccentSettings value={acento} onChange={onAcentoChange} />
-              <SoundSettings />
-            </div>
+            {enIPhone ? (
+              <PreferenciasSettingsIOS
+                themePref={themePref} onThemePrefChange={onThemePrefChange}
+                acento={acento} onAcentoChange={onAcentoChange}
+                langPref={langPref} onLangPrefChange={onLangPrefChange}
+              />
+            ) : (
+              // Apariencia e Idioma son gemelas (misma pinta, misma altura) y
+              // comparten fila; Acento y Sonido, las dos con selector, la de
+              // abajo.
+              <div className="settings-masonry">
+                <AppearanceSettings value={themePref} onChange={onThemePrefChange} />
+                <LanguageSettings value={langPref} onChange={onLangPrefChange} />
+                <AccentSettings value={acento} onChange={onAcentoChange} />
+                <SoundSettings />
+              </div>
+            )}
           </section>
 
           {esAdmin && (

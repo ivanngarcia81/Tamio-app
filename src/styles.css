@@ -30,6 +30,15 @@
   --ink-contrast: #ffffff;
   --active: var(--ink);
   --active-text: var(--ink-contrast);
+  /* Alias del color de acento para los controles de iOS (switch, foco,
+     fila seleccionada, botón de volver…): todos esos paquetes se
+     escribieron con `var(--brand, #059669)` sin que `--brand` llegara a
+     definirse en ningún sitio, así que siempre caían en ese verde fijo,
+     ajenos a lo que el usuario eligiera en Ajustes → Preferencias →
+     Color de acento. Con el alias, cambiar el acento (que ya mueve
+     --ink vía [data-acento]) mueve también todo lo de iOS sin tocar
+     cada sitio uno por uno. */
+  --brand: var(--ink);
   --accent-1: #22c55e;   /* ingresos - verde */
   --accent-2: #ef4444;   /* gastos - rojo */
   --accent-3: #7c3aed;   /* diezmos - morado */
@@ -3609,6 +3618,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .ios-switch[aria-checked="true"] { background: var(--brand, #059669); }
 :root.iphone .ios-switch[aria-checked="true"]::after { transform: translateX(20px); }
+/* `.ios-field-label` por defecto no encoge (`flex:0 0 auto`): le sirve a
+   TextField, donde el campo de al lado sí se encoge. SwitchField no tiene
+   ese campo — con una etiqueta larga ("Sonido al guardar o borrar") el
+   switch (también fijo, con margin-left:auto) se salía de la tarjeta.
+   Aquí sí encoge y trunca; el switch conserva su tamaño de 51×31. */
+:root.iphone .ios-field:has(.ios-switch) .ios-field-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 @media (prefers-reduced-motion: reduce) {
   :root.iphone .ios-switch,
@@ -3617,6 +3638,74 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     transition: none;
   }
 }
+
+/* ============================================================
+   Preferencias (iPhone): fila de opción exclusiva (check en vez de
+   pastilla) y fila de colores de acento (aro en vez de borde negro).
+   ============================================================ */
+:root.iphone .ios-choice-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-choice-row:active { background: var(--line); }
+:root.iphone .ios-choice-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .ios-choice-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root.iphone .ios-choice-check { flex: 0 0 auto; width: 15px; height: 15px; color: var(--brand, #059669); opacity: 0; }
+:root.iphone .ios-choice-row[aria-checked="true"] .ios-choice-check { opacity: 1; }
+:root.iphone .ios-choice-check svg {
+  width: 100%; height: 100%;
+  stroke: currentColor; stroke-width: 2.6; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Fila de colores de acento: los círculos caben en una sola fila del
+   grupo, no piden su propia tarjeta como el selector de categorías
+   (`.ios-colors`, una rejilla aparte para muchos más colores). */
+:root.iphone .ios-colors-row { display: flex; align-items: center; gap: 16px; padding: 13px 16px; }
+:root.iphone .ios-color-dot {
+  position: relative;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Aro del MISMO color, nunca negro. */
+:root.iphone .ios-color-dot[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2.5px solid currentColor;
+}
+:root.iphone .ios-color-dot:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: 4px; border-radius: 50%; }
 
 /* ============================================================
    Categorías (iPhone): lista editable — filas con punto de color en vez
@@ -3987,7 +4076,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 :root.iphone .ios-badge--pending { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
-:root.iphone .ios-badge--ok { background: color-mix(in srgb, var(--brand, #059669) 12%, transparent); color: var(--brand, #059669); }
+/* --pos y no --brand/--ink: "aprobada/lista/entregada" es un semáforo de
+   estado (verde = éxito), no un elemento de marca — no debe teñirse de
+   ámbar solo porque alguien eligió ámbar como color de acento. */
+:root.iphone .ios-badge--ok { background: var(--pos-bg); color: var(--pos); }
 
 /* Fila de movimiento (TxTable, Ingresos/Gastos) — de la tabla de escritorio
    apretada a 3 columnas fijas (Prioridad 5, más arriba en este archivo) a
