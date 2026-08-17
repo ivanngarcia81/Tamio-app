@@ -17,6 +17,7 @@ import { EmptyState } from "../components/TxList";
 import RowMenu, { type RowMenuItem } from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA, type CartaPrefill } from "../components/CartaEditor";
+import ActionSheet, { type ActionSheetOption } from "../components/ActionSheet";
 import SolicitudModal from "../components/SolicitudModal";
 import TrasladoSalidaModal from "../components/TrasladoSalidaModal";
 import TrasladoEntradaModal from "../components/TrasladoEntradaModal";
@@ -192,6 +193,10 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("resumen");
   const [menuCrearAbierto, setMenuCrearAbierto] = useState(false);
+  // El "+" fijo de iPhone (BotonCrear, ver App.tsx) no puede anclar el menú
+  // de escritorio (MenuAnchor cuelga del botón de la cabecera, que en móvil
+  // no se pinta): en su lugar abre esta hoja de acciones, mismo contenido.
+  const [hojaCrearAbierta, setHojaCrearAbierta] = useState(false);
   const [editando, setEditando] = useState<Carta | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Carta | null>(null);
   const [pendingTab, setPendingTab] = useState<Tab | null>(null);
@@ -244,7 +249,13 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     if (destino !== "nueva") setDesdeSolicitud(null);
     setTab(destino);
   }, [tab]);
-  useAbrirCrearDesdeMas(() => cambiarTab("nueva"));
+  // En iPad (movil sin ser iPhone) el "+" sigue abriendo "Nueva carta"
+  // directo, como antes — el gap que se cierra aquí es solo el de iPhone,
+  // que además tiene el carrusel para ubicarse sin la fila de pastillas.
+  useAbrirCrearDesdeMas(() => {
+    if (enIPhone) setHojaCrearAbierta(true);
+    else cambiarTab("nueva");
+  });
 
   const nombreMiembro = useCallback(
     (id: number | null) => (id === null ? null : members.find((m) => m.id === id)?.nombre ?? null),
@@ -532,6 +543,15 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
       onPress: () => { cambiarTab("entrada"); setTeModal({ open: true, traslado: null }); },
     },
   ];
+
+  // Mismas cuatro acciones que menuCrearItems, para la hoja del "+" fijo de
+  // iPhone (ver hojaCrearAbierta arriba) — un ActionSheet no tiene "icono",
+  // así que aquí solo importan label y onPress.
+  const hojaCrearOpciones: ActionSheetOption[] = menuCrearItems.map((item) => ({
+    label: item.label,
+    danger: item.destructive,
+    onClick: () => { setHojaCrearAbierta(false); item.onPress(); },
+  }));
 
   return (
     <>
@@ -1224,6 +1244,13 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
             }
           }}
           onCancel={() => { setPendingTab(null); setPendingAbrir(null); }}
+        />
+      )}
+
+      {hojaCrearAbierta && (
+        <ActionSheet
+          options={hojaCrearOpciones}
+          onCancel={() => setHojaCrearAbierta(false)}
         />
       )}
     </>
