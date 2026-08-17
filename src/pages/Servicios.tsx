@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import { currentMonth, deleteServicio, fmtFechaCorta, listServicios, type Church, type Servicio } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -34,6 +34,9 @@ interface Props {
 
 export default function Servicios({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones ya muestra "Servicios" como pastilla activa —
+  // el título grande sobra ahí.
+  const enIPhone = esIPhone();
   const location = useLocation();
   const navigate = useNavigate();
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -111,10 +114,12 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("secretaria.servicios.titulo")}</div>
-          <div className="page-sub">{t("secretaria.servicios.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("secretaria.servicios.titulo")}</div>
+            <div className="page-sub">{t("secretaria.servicios.sub")}</div>
+          </div>
+        )}
         <div className="header-actions">
           <button className="btn primary btn-nuevo-cabecera" onClick={() => setModal({ open: true, servicio: null })}>
             <IconPlus size={14} /> {t("servicios.nuevoServicio")}
@@ -123,31 +128,51 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
-        <div className="dash-canvas">
-        <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-          <div className="stat-card accent" style={accent("var(--accent-4)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("servicios.statServiciosMes")}</span>
-              <div className="stat-icon neutral"><IconBookOpen size={15} strokeWidth={1.8} /></div>
+        {enIPhone ? (
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("servicios.seccionResumen")}</h2></div>
+            <div className="ios-panel-grid">
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("servicios.statServiciosMes")}</span></div>
+                <span className="ios-stat-num"><CountUp value={statsMes.servicios} format={String} /></span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("servicios.statAsistenciaPromedio")}</span></div>
+                <span className="ios-stat-num">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("servicios.statVisitantesMes")}</span></div>
+                <span className="ios-stat-num"><CountUp value={statsMes.visitantes} format={String} /></span>
+              </div>
             </div>
-            <div className="stat-value md"><CountUp value={statsMes.servicios} format={String} /></div>
           </div>
-          <div className="stat-card accent" style={accent("var(--accent-2)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("servicios.statAsistenciaPromedio")}</span>
-              <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
+        ) : (
+          <div className="dash-canvas">
+          <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+            <div className="stat-card accent" style={accent("var(--accent-4)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("servicios.statServiciosMes")}</span>
+                <div className="stat-icon neutral"><IconBookOpen size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md"><CountUp value={statsMes.servicios} format={String} /></div>
             </div>
-            <div className="stat-value md">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</div>
-          </div>
-          <div className="stat-card accent" style={accent("var(--accent-1)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("servicios.statVisitantesMes")}</span>
-              <div className="stat-icon neutral"><IconPlus size={15} strokeWidth={1.8} /></div>
+            <div className="stat-card accent" style={accent("var(--accent-2)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("servicios.statAsistenciaPromedio")}</span>
+                <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</div>
             </div>
-            <div className="stat-value md"><CountUp value={statsMes.visitantes} format={String} /></div>
+            <div className="stat-card accent" style={accent("var(--accent-1)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("servicios.statVisitantesMes")}</span>
+                <div className="stat-icon neutral"><IconPlus size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md"><CountUp value={statsMes.visitantes} format={String} /></div>
+            </div>
           </div>
-        </div>
-        </div>
+          </div>
+        )}
 
         {/* Las tarjetas de arriba cuentan SOLO el mes en curso; esta tabla es
             la bitácora entera y su buscador busca en todo lo registrado. Sin
@@ -179,6 +204,33 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
               : undefined}
             duplicaCrear
           />
+        ) : enIPhone ? (
+          <div className="ios-listcard">
+            {pagina.map((s) => (
+              <div
+                className="ios-txrow ios-txrow--clickable"
+                data-fila
+                key={s.id}
+                onClick={() => setModal({ open: true, servicio: s })}
+              >
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title">{t(`servicios.tipo.${s.tipo}`)}</div>
+                  <div className="tx-secundaria-movil">
+                    {[s.titulo_mensaje, s.predica, fmtFechaCorta(s.fecha)].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                <div className="ios-txrow-trailing">
+                  <span style={{ fontWeight: 700, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>
+                    {totalPresentes(s) || "—"}
+                  </span>
+                </div>
+                <RowMenu
+                  onEdit={() => setModal({ open: true, servicio: s })}
+                  onDelete={() => setPendingDelete(s)}
+                />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="data-table roomy tabla-servicios">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>

@@ -4100,8 +4100,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   min-height: 64px;
   padding: 10px 14px;
+  /* Ya son el valor por defecto de un <div> (de ahí que nunca hicieran
+     falta) — pero Agenda usa esta misma fila como <button> (sin RowMenu
+     que la obligue a ser <div>), y un botón sí trae su propio borde,
+     fondo y fuente que hay que resetear. */
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
 }
 :root.iphone .ios-txrow:not(:last-child)::after {
   content: "";

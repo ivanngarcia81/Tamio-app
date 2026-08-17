@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
   type Church, type Member, type MembresiaStats,
@@ -42,6 +42,16 @@ function estadoBadge(m: Member): { key: string; clase: string } {
   return { key: "membresia.estadoBaja", clase: "baja" };
 }
 
+/** Solo "activo" (de verdad, no visitante/en proceso/inactivo) se destaca
+ *  en verde; el resto —incluidas todas las bajas— se queda en gris
+ *  neutro. Mismo criterio que InformesMembresia (badgeClaseEstadoMiembro):
+ *  son estados administrativos, no una cola de trabajo con "pendiente". */
+function badgeClaseMembresiaIOS(m: Member): string {
+  if (m.activo !== 1) return "";
+  const e = ["activo", "inactivo", "visitante", "enProceso"].includes(m.estado_membresia) ? m.estado_membresia : "activo";
+  return e === "activo" ? "ios-badge--ok" : "";
+}
+
 function initials(nombre: string): string {
   return nombre
     .split(" ")
@@ -65,6 +75,9 @@ interface Props {
 
 export default function Membresia({ church, refreshKey, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones ya muestra "Membresía" como pastilla activa —
+  // el título grande sobra ahí.
+  const enIPhone = esIPhone();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MembresiaStats | null>(null);
   const [query, setQuery] = useState("");
@@ -135,10 +148,12 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("secretaria.membresia.titulo")}</div>
-          <div className="page-sub">{t("secretaria.membresia.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("secretaria.membresia.titulo")}</div>
+            <div className="page-sub">{t("secretaria.membresia.sub")}</div>
+          </div>
+        )}
         <div className="header-actions">
           <button className="btn primary btn-nuevo-cabecera" onClick={() => setCrearFicha(true)}>
             <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
@@ -147,38 +162,62 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
       </div>
 
       <div className="content">
-        <div className="dash-canvas">
-        <div className="summary-4 enter">
-          <div className="stat-card accent" style={accent("var(--accent-2)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("membresia.statActivos")}</span>
-              <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
+        {enIPhone ? (
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("membresia.seccionResumen")}</h2></div>
+            <div className="ios-panel-grid">
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("membresia.statActivos")}</span></div>
+                <span className="ios-stat-num">{stats ? <CountUp value={stats.activos} format={String} /> : "—"}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("membresia.statAltas", { anio })}</span></div>
+                <span className="ios-stat-num">{stats ? <CountUp value={stats.altasAnio} format={String} /> : "—"}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("membresia.statBajas", { anio })}</span></div>
+                <span className="ios-stat-num">{stats ? <CountUp value={stats.bajasAnio} format={String} /> : "—"}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("membresia.statTotal")}</span></div>
+                <span className="ios-stat-num">{stats ? <CountUp value={stats.total} format={String} /> : "—"}</span>
+              </div>
             </div>
-            <div className="stat-value md">{stats ? <CountUp value={stats.activos} format={String} /> : "—"}</div>
           </div>
-          <div className="stat-card accent" style={accent("var(--accent-1)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("membresia.statAltas", { anio })}</span>
-              <div className="stat-icon neutral"><IconArrowUp size={15} strokeWidth={1.8} /></div>
+        ) : (
+          <div className="dash-canvas">
+          <div className="summary-4 enter">
+            <div className="stat-card accent" style={accent("var(--accent-2)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("membresia.statActivos")}</span>
+                <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md">{stats ? <CountUp value={stats.activos} format={String} /> : "—"}</div>
             </div>
-            <div className="stat-value md">{stats ? <CountUp value={stats.altasAnio} format={String} /> : "—"}</div>
-          </div>
-          <div className="stat-card accent" style={accent("var(--accent-3)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("membresia.statBajas", { anio })}</span>
-              <div className="stat-icon neutral"><IconArrowDown size={15} strokeWidth={1.8} /></div>
+            <div className="stat-card accent" style={accent("var(--accent-1)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("membresia.statAltas", { anio })}</span>
+                <div className="stat-icon neutral"><IconArrowUp size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md">{stats ? <CountUp value={stats.altasAnio} format={String} /> : "—"}</div>
             </div>
-            <div className="stat-value md">{stats ? <CountUp value={stats.bajasAnio} format={String} /> : "—"}</div>
-          </div>
-          <div className="stat-card accent" style={accent("var(--accent-5)")}>
-            <div className="stat-head">
-              <span className="stat-label">{t("membresia.statTotal")}</span>
-              <div className="stat-icon neutral"><IconIdBadge size={15} strokeWidth={1.8} /></div>
+            <div className="stat-card accent" style={accent("var(--accent-3)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("membresia.statBajas", { anio })}</span>
+                <div className="stat-icon neutral"><IconArrowDown size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md">{stats ? <CountUp value={stats.bajasAnio} format={String} /> : "—"}</div>
             </div>
-            <div className="stat-value md">{stats ? <CountUp value={stats.total} format={String} /> : "—"}</div>
+            <div className="stat-card accent" style={accent("var(--accent-5)")}>
+              <div className="stat-head">
+                <span className="stat-label">{t("membresia.statTotal")}</span>
+                <div className="stat-icon neutral"><IconIdBadge size={15} strokeWidth={1.8} /></div>
+              </div>
+              <div className="stat-value md">{stats ? <CountUp value={stats.total} format={String} /> : "—"}</div>
+            </div>
           </div>
-        </div>
-        </div>
+          </div>
+        )}
 
         <div className="tx-head">
           <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
@@ -212,6 +251,46 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             sub={members.length === 0 ? t("miembros.agregaPrimero") : t("membresia.sinResultadosSub")}
             icon={<IconIdBadge size={20} strokeWidth={1.8} />}
           />
+        ) : enIPhone ? (
+          <div className="ios-listcard">
+            {pagina.map((m, i) => {
+              const badge = estadoBadge(m);
+              const motivoTexto = m.motivo_baja
+                ? MOTIVOS_CONOCIDOS.includes(m.motivo_baja)
+                  ? t(`membresia.motivo.${m.motivo_baja}`)
+                  : m.motivo_baja
+                : null;
+              const subtitulo = m.activo === 1
+                ? (m.email ?? t("miembros.sinCorreoRegistrado"))
+                : [m.fecha_baja ? fmtFechaCorta(m.fecha_baja) : null, motivoTexto].filter(Boolean).join(" · ") || "—";
+              return (
+                <div
+                  className="ios-txrow ios-txrow--clickable"
+                  data-fila
+                  key={m.id}
+                  style={{ opacity: m.activo === 1 ? 1 : 0.72 }}
+                  onClick={() => setFicha(m)}
+                >
+                  <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                    {initials(m.nombre)}
+                  </div>
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title" title={m.nombre}>{m.nombre}</div>
+                    <div className="tx-secundaria-movil">{subtitulo}</div>
+                  </div>
+                  <div className="ios-txrow-trailing">
+                    <span className={`ios-badge ${badgeClaseMembresiaIOS(m)}`}>{t(badge.key)}</span>
+                  </div>
+                  <RowMenu
+                    onEdit={() => onEdit(m)}
+                    onDelete={() => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))}
+                    deleteLabel={m.activo === 1 ? t("membresia.darDeBaja") : t("membresia.reactivar")}
+                    extraItems={[{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
+                  />
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <div className="data-table roomy tabla-membresia">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>

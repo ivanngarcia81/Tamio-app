@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import type { TFunction } from "i18next";
 import {
   ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, agregarExcepcionAgenda, deleteActividad, fmtFecha, fmtFechaCorta,
@@ -114,7 +114,21 @@ function payloadACambios(p: NewActividad): ExcepcionAgenda["cambios"] {
   };
 }
 
-/** Fila compacta reutilizada por la vista de lista y el historial. */
+/** "Programada" es lo único que espera confirmación; "confirmada" y
+ *  "completada" son destinos felices. Borrador/cancelada se quedan en
+ *  gris neutro — mismo criterio que Actas/Cartas: un borrador no es una
+ *  alerta, solo una etapa temprana. */
+function badgeClaseAgendaIOS(estado: string): string {
+  if (estado === "programada") return "ios-badge--pending";
+  if (estado === "confirmada" || estado === "completada") return "ios-badge--ok";
+  return "";
+}
+
+/** Fila compacta reutilizada por la vista de lista y el historial. En
+ *  iPhone pasa al idioma de panel (.ios-txrow como <button>, sin RowMenu
+ *  porque esta fila nunca tuvo deslizar/editar — un solo toque ya abre el
+ *  detalle, igual que antes). Mac/iPad no cambian: siguen con
+ *  .agenda-fila de siempre. */
 function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }: {
   a: OcurrenciaVista;
   onOpen: () => void;
@@ -122,6 +136,27 @@ function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }: {
   nombreResponsable: (x: Actividad) => string | null;
   t: TFunction;
 }) {
+  if (esIPhone()) {
+    const hora = a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ? `${a.hora_inicio}${a.hora_fin ? `–${a.hora_fin}` : ""}` : "—");
+    return (
+      <button type="button" className="ios-txrow ios-txrow--clickable" onClick={onOpen}>
+        <div className="ios-txrow-main">
+          <div className="ios-txrow-title">
+            {a.es_fecha_importante === 1 && <span style={{ marginRight: 4 }}>★</span>}
+            <span className="truncate">{a.nombre}</span>
+          </div>
+          <div className="tx-secundaria-movil">
+            {fmtFechaCorta(a.fecha)} · {hora} · {etiquetaTipo(a)}
+            {a.lugar && ` · ${a.lugar}`}
+            {nombreResponsable(a) && ` · ${nombreResponsable(a)}`}
+          </div>
+        </div>
+        <div className="ios-txrow-trailing">
+          <span className={`ios-badge ${badgeClaseAgendaIOS(a.estado)}`}>{t(`agenda.estados.${a.estado}`)}</span>
+        </div>
+      </button>
+    );
+  }
   return (
     <button className="agenda-fila" onClick={onOpen}>
       <div className="agenda-fila-fecha">
@@ -150,6 +185,9 @@ interface Props {
 export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  // El carrusel de secciones ya muestra "Agenda" como pastilla activa —
+  // el título grande sobra ahí.
+  const enIPhone = esIPhone();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [miembros, setMiembros] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -466,36 +504,62 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("secretaria.agenda.titulo")}</div>
-          <div className="page-sub">{t("secretaria.agenda.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("secretaria.agenda.titulo")}</div>
+            <div className="page-sub">{t("secretaria.agenda.sub")}</div>
+          </div>
+        )}
         <div className="header-actions">
           <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
         </div>
       </div>
 
       <div className="content">
-        <div className="dash-canvas">
-        <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-          <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={irASemanaDeHoy}>
-            <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md"><CountUp value={stats.deHoy} format={String} /></div>
-          </button>
-          <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={irASemanaDeHoy}>
-            <div className="stat-head"><span className="stat-label">{t("agenda.statSemana")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md"><CountUp value={stats.deSemana} format={String} /></div>
-          </button>
-          <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={irALista}>
-            <div className="stat-head"><span className="stat-label">{t("agenda.statProximas")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md"><CountUp value={stats.proximas} format={String} /></div>
-          </button>
-          <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={irALista}>
-            <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
-            <div className="stat-value md"><CountUp value={stats.porConfirmar} format={String} /></div>
-          </button>
-        </div>
-        </div>
+        {enIPhone ? (
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("agenda.seccionResumen")}</h2></div>
+            <div className="ios-panel-grid">
+              <button type="button" className="ios-stat" onClick={irASemanaDeHoy}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statHoy")}</span></div>
+                <span className="ios-stat-num"><CountUp value={stats.deHoy} format={String} /></span>
+              </button>
+              <button type="button" className="ios-stat" onClick={irASemanaDeHoy}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statSemana")}</span></div>
+                <span className="ios-stat-num"><CountUp value={stats.deSemana} format={String} /></span>
+              </button>
+              <button type="button" className="ios-stat" onClick={irALista}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statProximas")}</span></div>
+                <span className="ios-stat-num"><CountUp value={stats.proximas} format={String} /></span>
+              </button>
+              <button type="button" className="ios-stat" onClick={irALista}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statPorConfirmar")}</span></div>
+                <span className="ios-stat-num"><CountUp value={stats.porConfirmar} format={String} /></span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="dash-canvas">
+          <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+            <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={irASemanaDeHoy}>
+              <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
+              <div className="stat-value md"><CountUp value={stats.deHoy} format={String} /></div>
+            </button>
+            <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={irASemanaDeHoy}>
+              <div className="stat-head"><span className="stat-label">{t("agenda.statSemana")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
+              <div className="stat-value md"><CountUp value={stats.deSemana} format={String} /></div>
+            </button>
+            <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={irALista}>
+              <div className="stat-head"><span className="stat-label">{t("agenda.statProximas")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
+              <div className="stat-value md"><CountUp value={stats.proximas} format={String} /></div>
+            </button>
+            <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={irALista}>
+              <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
+              <div className="stat-value md"><CountUp value={stats.porConfirmar} format={String} /></div>
+            </button>
+          </div>
+          </div>
+        )}
 
         {!loading && !vacio && recordatorios.length > 0 && (
           <div className="agenda-recordatorios">
@@ -648,7 +712,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 items.length === 0 ? null : (
                   <div key={clave} className="agenda-grupo">
                     <div className="agenda-grupo-titulo">{t(`agenda.${clave}`)} <span className="agenda-grupo-n">{items.length}</span></div>
-                    <div className="data-table">
+                    <div className={enIPhone ? "ios-listcard" : "data-table"}>
                       {items.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
                     </div>
                   </div>
@@ -663,7 +727,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           ) : (
             <div className="agenda-grupo">
               <div className="agenda-grupo-titulo">{t("agenda.historialTitulo")} <span className="agenda-grupo-n">{historial.length}</span></div>
-              <div className="data-table">
+              <div className={enIPhone ? "ios-listcard" : "data-table"}>
                 {historial.map((a) => <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} />)}
               </div>
             </div>
