@@ -36,6 +36,11 @@ interface Common {
   /** texto cuando `value` está vacío (el equivalente al <option value="">) */
   placeholder?: string;
   disabled?: boolean;
+  /** Qué valor significa "sin filtrar". Casi siempre "" (Agenda), pero hay
+   *  barras que usan un centinela con nombre — InformesMembresia y Cartas
+   *  guardan "todos"/"todas" — y sin esto el chip se pintaría como activo
+   *  desde el primer render, sin que nadie haya filtrado nada. */
+  emptyValue?: string;
 }
 
 const etiquetaDe = (
@@ -111,12 +116,13 @@ export function IOSPickerChip({
   onSelect,
   placeholder,
   disabled,
+  emptyValue = "",
 }: Common & {
   /** nombre del filtro: "Tipo", "Estado", "Ministerio" */
   label: string;
 }) {
   const [abierto, setAbierto] = useState(false);
-  const activo = value !== "";
+  const activo = value !== emptyValue;
 
   return (
     <>

@@ -27,6 +27,8 @@ import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch } from "../ic
 import { ShareIcon } from "../components/icons/IOSIcons";
 import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
+import { IOSPickerChip } from "../components/ios/IOSPickerField";
+import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 const COLS = "1.5fr 150px 1.4fr 140px 72px";
 const PAGE_SIZE = 25;
@@ -216,6 +218,31 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
   const hayFiltros = query || tarjeta !== "todos" || filtroEstado !== "todos" || filtroMinisterio !== "todos" ||
     filtroCargo !== "todos" || filtroInstrumento !== "todos" || soloRacha || soloIncompletos;
+
+  // Catálogos de los filtros, en un solo sitio: los consumen tanto los
+  // `<option>` de Mac como los chips de iPhone. Aquí el centinela de "sin
+  // filtrar" es "todos" (no ""), de ahí el `emptyValue` de los chips.
+  const opcEstadoFiltro: IOSPickerOption[] = useMemo(() => [
+    { value: "todos", label: t("informes.filtroTodosEstados") },
+    ...["activo", "inactivo", "visitante", "enProceso", "trasladado", "retirado", "fallecido"]
+      .map((e) => ({ value: e, label: t(`membresia.estado.${e}`) })),
+  ], [t]);
+  const opcMinisterioFiltro: IOSPickerOption[] = useMemo(() => [
+    { value: "todos", label: t("informes.filtroMinisterio") },
+    ...MINISTERIOS.map((m) => ({ value: m, label: t(`ficha.ministerio.${m}`) })),
+  ], [t]);
+  const opcCargoFiltro: IOSPickerOption[] = useMemo(() => [
+    { value: "todos", label: t("informes.filtroCargo") },
+    ...CARGOS.map((c) => ({ value: c, label: t(`ficha.cargo.${c}`) })),
+  ], [t]);
+  const opcInstrumentoFiltro: IOSPickerOption[] = useMemo(() => [
+    { value: "todos", label: t("informes.filtroInstrumento") },
+    ...INSTRUMENTOS.map((i) => ({ value: i, label: t(`ficha.instrumento.${i}`) })),
+  ], [t]);
+  const opcTrimestre: IOSPickerOption[] = useMemo(
+    () => [1, 2, 3, 4].map((q) => ({ value: String(q), label: t("informes.trimestreN", { n: q }) })),
+    [t]
+  );
 
   function limpiarFiltros() {
     setQuery(""); setTarjeta("todos"); setFiltroEstado("todos"); setFiltroMinisterio("todos");
@@ -441,11 +468,21 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             {(periodoTipo === "trimestre" || periodoTipo === "anio") && (
               <input type="number" className="form-input" style={{ width: 100 }} value={anioSel} min={2000} max={2100} onChange={(e) => setAnioSel(e.target.value)} aria-label={t("informes.periodo.anio")} />
             )}
-            {periodoTipo === "trimestre" && (
+            {periodoTipo === "trimestre" && (enIPhone ? (
+              /* Este no es un filtro que se ponga y se quite: el trimestre
+                 SIEMPRE tiene valor, así que el chip va siempre teñido y
+                 mostrando cuál es — que es justo lo que interesa leer. */
+              <IOSPickerChip
+                label={t("informes.periodo.trimestre")}
+                options={opcTrimestre}
+                value={String(trimestreSel)}
+                onSelect={(v) => setTrimestreSel(Number(v) as 1 | 2 | 3 | 4)}
+              />
+            ) : (
               <select className="form-input" style={{ width: "auto" }} value={trimestreSel} onChange={(e) => setTrimestreSel(Number(e.target.value) as 1 | 2 | 3 | 4)} aria-label={t("informes.periodo.trimestre")}>
-                {[1, 2, 3, 4].map((q) => <option key={q} value={q}>{t("informes.trimestreN", { n: q })}</option>)}
+                {opcTrimestre.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-            )}
+            ))}
             {periodoTipo === "rango" && (
               <>
                 <input type="date" className="form-input" style={{ width: "auto" }} value={rangoDesde} onChange={(e) => setRangoDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
@@ -643,33 +680,45 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             )}
 
             {/* Filtros combinables */}
-            <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
-              <div className="search-input-wrap" style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
-                <IconSearch size={15} strokeWidth={2} />
-                <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("informes.buscar"))} value={query} onChange={(e) => setQuery(e.target.value)} />
+            {enIPhone ? (
+              <>
+                <div className="search-input-wrap" style={{ marginTop: 6, marginBottom: 10 }}>
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("informes.buscar"))} value={query} onChange={(e) => setQuery(e.target.value)} />
+                </div>
+                <div className="ios-filtros">
+                  <IOSPickerChip label={t("membresia.colEstado")} options={opcEstadoFiltro} value={filtroEstado} emptyValue="todos" onSelect={setFiltroEstado} />
+                  <IOSPickerChip label={t("informes.colMinisterio")} options={opcMinisterioFiltro} value={filtroMinisterio} emptyValue="todos" onSelect={setFiltroMinisterio} />
+                  <IOSPickerChip label={t("ficha.cargosLabel")} options={opcCargoFiltro} value={filtroCargo} emptyValue="todos" onSelect={setFiltroCargo} />
+                  <IOSPickerChip label={t("informes.colInstrumento")} options={opcInstrumentoFiltro} value={filtroInstrumento} emptyValue="todos" onSelect={setFiltroInstrumento} />
+                  <button className={`chip${soloRacha ? " active" : ""}`} onClick={() => setSoloRacha((v) => !v)}>{t("informes.filtroRacha")}</button>
+                  <button className={`chip${soloIncompletos ? " active" : ""}`} onClick={() => setSoloIncompletos((v) => !v)}>{t("informes.filtroIncompletos")}</button>
+                  {hayFiltros && <button className="chip" onClick={limpiarFiltros}>{t("informes.limpiar")}</button>}
+                </div>
+              </>
+            ) : (
+              <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                <div className="search-input-wrap" style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("informes.buscar"))} value={query} onChange={(e) => setQuery(e.target.value)} />
+                </div>
+                <select className="form-input" style={{ width: "auto" }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label={t("membresia.colEstado")}>
+                  {opcEstadoFiltro.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <select className="form-input" style={{ width: "auto", maxWidth: 160 }} value={filtroMinisterio} onChange={(e) => setFiltroMinisterio(e.target.value)} aria-label={t("informes.colMinisterio")}>
+                  {opcMinisterioFiltro.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <select className="form-input" style={{ width: "auto", maxWidth: 160 }} value={filtroCargo} onChange={(e) => setFiltroCargo(e.target.value)} aria-label={t("ficha.cargosLabel")}>
+                  {opcCargoFiltro.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <select className="form-input" style={{ width: "auto", maxWidth: 160 }} value={filtroInstrumento} onChange={(e) => setFiltroInstrumento(e.target.value)} aria-label={t("informes.colInstrumento")}>
+                  {opcInstrumentoFiltro.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <button className={`chip${soloRacha ? " active" : ""}`} onClick={() => setSoloRacha((v) => !v)}>{t("informes.filtroRacha")}</button>
+                <button className={`chip${soloIncompletos ? " active" : ""}`} onClick={() => setSoloIncompletos((v) => !v)}>{t("informes.filtroIncompletos")}</button>
+                {hayFiltros && <button className="chip" onClick={limpiarFiltros}>{t("informes.limpiar")}</button>}
               </div>
-              <select className="form-input" style={{ width: "auto" }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label={t("membresia.colEstado")}>
-                <option value="todos">{t("informes.filtroTodosEstados")}</option>
-                {["activo", "inactivo", "visitante", "enProceso", "trasladado", "retirado", "fallecido"].map((e) => (
-                  <option key={e} value={e}>{t(`membresia.estado.${e}`)}</option>
-                ))}
-              </select>
-              <select className="form-input" style={{ width: "auto", maxWidth: 160 }} value={filtroMinisterio} onChange={(e) => setFiltroMinisterio(e.target.value)} aria-label={t("informes.colMinisterio")}>
-                <option value="todos">{t("informes.filtroMinisterio")}</option>
-                {MINISTERIOS.map((m) => <option key={m} value={m}>{t(`ficha.ministerio.${m}`)}</option>)}
-              </select>
-              <select className="form-input" style={{ width: "auto", maxWidth: 160 }} value={filtroCargo} onChange={(e) => setFiltroCargo(e.target.value)} aria-label={t("ficha.cargosLabel")}>
-                <option value="todos">{t("informes.filtroCargo")}</option>
-                {CARGOS.map((c) => <option key={c} value={c}>{t(`ficha.cargo.${c}`)}</option>)}
-              </select>
-              <select className="form-input" style={{ width: "auto", maxWidth: 160 }} value={filtroInstrumento} onChange={(e) => setFiltroInstrumento(e.target.value)} aria-label={t("informes.colInstrumento")}>
-                <option value="todos">{t("informes.filtroInstrumento")}</option>
-                {INSTRUMENTOS.map((i) => <option key={i} value={i}>{t(`ficha.instrumento.${i}`)}</option>)}
-              </select>
-              <button className={`chip${soloRacha ? " active" : ""}`} onClick={() => setSoloRacha((v) => !v)}>{t("informes.filtroRacha")}</button>
-              <button className={`chip${soloIncompletos ? " active" : ""}`} onClick={() => setSoloIncompletos((v) => !v)}>{t("informes.filtroIncompletos")}</button>
-              {hayFiltros && <button className="chip" onClick={limpiarFiltros}>{t("informes.limpiar")}</button>}
-            </div>
+            )}
 
             {/* Tabla principal */}
             {miembros.length === 0 ? (
