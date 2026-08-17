@@ -3643,8 +3643,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-picker-chip svg { flex: 0 0 auto; opacity: 0.5; }
 
 /* Filtro puesto: relleno con el acento. Así se ve de un vistazo cuáles
-   están filtrando, algo que un <select> gris no comunica. --brand (alias
-   de --ink) y --ink-contrast, no un verde fijo: el paquete traía
+   están filtrando, algo que un <select> gris no comunica. --brand (el
+   acento elegido, o el verde de la app si no hay ninguno) y
+   --ink-contrast, no un verde fijo: el paquete traía
    `var(--verde, #1e8e5a)`, token inexistente aquí, y con él un acento
    ámbar o azul elegido en Ajustes habría seguido pintando chips verdes. */
 :root.iphone .ios-picker-chip[data-activo="true"] {
@@ -4340,6 +4341,68 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
+
+/* ============================================================
+   Mensajes en iPhone: un chat, no una tarjeta con un formulario dentro.
+
+   La caja de `.card` (borde, radio, superficie propia) se va y el hilo
+   ocupa la pantalla de lado a lado, con las burbujas sobre el fondo. La
+   maquinaria que ya hacía que el hilo desplace por dentro y el compositor
+   se quede abajo vive en el rango de teléfono (~línea 8190) y NO se toca:
+   aquí solo se le quita el maquillaje de tarjeta, se corrige el hueco de
+   la barra de pestañas y las burbujas pasan a color de chat. */
+:root.iphone .msg-card { border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+:root.iphone .main:has(.msg-card) .content { padding-left: 0; padding-right: 0; }
+:root.iphone .msg-thread { padding: 14px 16px; }
+/* `.content` se queda sin padding-bottom para que el compositor llegue al
+   borde, pero `.barra-inferior` es `position: fixed` y le pasa por encima:
+   sin esto el botón "Enviar" quedaba DEBAJO de la barra de pestañas. */
+:root.iphone .msg-composer {
+  padding-bottom: calc(12px + var(--tabbar-h) + env(safe-area-inset-bottom));
+}
+
+/* Burbujas de chat. La propia con el acento y no con el casi-negro de
+   `--ink`, que es lo que salía con el acento de fábrica ("neutro"); la
+   ajena con el mismo relleno gris de iOS que ya usan `.ios-navcard-icon`
+   y los chips —el paquete pedía `--fill-gray`, token que no existe en
+   este repo—. El par `--brand`/`--ink-contrast` es el que ya usa el chip
+   de filtro activo: los dos giran juntos con el tema, así que contrasta
+   tanto en claro (fondo oscuro, texto blanco) como en oscuro (fondo
+   claro, texto oscuro). */
+:root.iphone .msg-bubble {
+  border: 0;
+  border-radius: 18px;
+  background: rgba(118, 118, 128, 0.12);
+  padding: 8px 13px;
+}
+:root[data-theme="dark"].iphone .msg-bubble { background: rgba(118, 118, 128, 0.24); }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .msg-bubble { background: rgba(118, 118, 128, 0.24); }
+}
+:root.iphone .msg-row.propio .msg-bubble {
+  background: var(--brand, #059669);
+  color: var(--ink-contrast, #fff);
+}
+/* El blanco fijo de escritorio no vale aquí: con un acento claro en modo
+   oscuro la burbuja es clara y la fecha se perdía encima. */
+:root.iphone .msg-row.propio .msg-fecha {
+  color: color-mix(in srgb, var(--ink-contrast, #fff) 78%, transparent);
+}
+
+/* Objetivo táctil de 44pt sin mover nada de sitio: el icono sigue
+   midiendo 12 y el área invisible crece a su alrededor — el mismo recurso
+   que ya usa el "···" de las tablas. Crecer el botón de verdad habría
+   estirado la línea de autor/fecha que lo contiene. */
+:root.iphone .msg-del { position: relative; opacity: 0.55; }
+:root.iphone .msg-del::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
 
 @media (prefers-reduced-motion: reduce) {
   :root.iphone .ios-stat { transition: none; }

@@ -11,6 +11,7 @@ import { EmptyState } from "../components/TxList";
 import { IconClose, IconMail } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
+import { esIPhone } from "../movil";
 
 interface Props {
   church: Church;
@@ -21,6 +22,7 @@ interface Props {
 
 export default function Mensajes({ church, role, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [loading, setLoading] = useState(true);
   const [texto, setTexto] = useState("");
@@ -91,14 +93,21 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("mensajes.titulo")}</div>
-          <div className="page-sub">{t("mensajes.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("mensajes.titulo")}</div>
+            <div className="page-sub">{t("mensajes.sub")}</div>
+          </div>
+        )}
       </div>
 
       <div className="content">
-        <div className="card msg-card">
+        {/* `msg-card` se queda en el teléfono aunque ya no parezca tarjeta:
+            de él cuelga toda la maquinaria de chat (`.main:has(.msg-card)`,
+            el hilo que desplaza por dentro, el compositor pegado abajo).
+            Lo que se va es `card`, que es lo que le ponía borde, radio y
+            superficie propia. */}
+        <div className={enIPhone ? "msg-card" : "card msg-card"}>
           <div className="msg-thread">
             {loading ? (
               <LoadingState />
