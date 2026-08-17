@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, undeleteTx, metodoAbr, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconClip, IconEdit, IconRepeat } from "../icons";
+import { esIPhone } from "../movil";
 import RowMenu from "./RowMenu";
 import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
 import ComprobantePreview from "./ComprobantePreview";
@@ -29,6 +30,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { abrirMenu, menu } = useContextMenu();
   const esIngreso = tipo === "ingreso";
   const cols = esIngreso ? COLS_INGRESO : COLS_GASTO;
+  const enIPhone = esIPhone();
 
   function itemsDe(tx: Tx): CtxMenuItem[] {
     const items: CtxMenuItem[] = [{ label: t("common.editar"), onClick: () => onEdit(tx) }];
@@ -65,17 +67,19 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
 
   return (
     <>
-      <div className="data-table roomy tabla-tx">
-        <div className="thead" style={{ gridTemplateColumns: cols }}>
-          <div className="th">{t("tx.colFecha")}</div>
-          <div className="th">{esIngreso ? t("tx.colConcepto") : t("tx.colDescripcion")}</div>
-          <div className="th">{t("tx.colCategoria")}</div>
-          <div className="th">{esIngreso ? t("tx.colMiembro") : t("tx.colBeneficiario")}</div>
-          <div className="th">{t("tx.colMetodo")}</div>
-          <div className="th" style={{ textAlign: "right" }}>{t("tx.colMonto")}</div>
-          <div className="th">{t("tx.colEstado")}</div>
-          <div className="th"></div>
-        </div>
+      <div className={enIPhone ? "ios-listcard" : "data-table roomy tabla-tx"}>
+        {!enIPhone && (
+          <div className="thead" style={{ gridTemplateColumns: cols }}>
+            <div className="th">{t("tx.colFecha")}</div>
+            <div className="th">{esIngreso ? t("tx.colConcepto") : t("tx.colDescripcion")}</div>
+            <div className="th">{t("tx.colCategoria")}</div>
+            <div className="th">{esIngreso ? t("tx.colMiembro") : t("tx.colBeneficiario")}</div>
+            <div className="th">{t("tx.colMetodo")}</div>
+            <div className="th" style={{ textAlign: "right" }}>{t("tx.colMonto")}</div>
+            <div className="th">{t("tx.colEstado")}</div>
+            <div className="th"></div>
+          </div>
+        )}
         {txs.map((tx) => {
           const cat = categoriaInfo(tx.tipo, tx.categoria);
           const metodo = METODOS_PAGO.find((m) => m.id === tx.metodo_pago);
@@ -99,6 +103,52 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
             cat.nombre,
             metodoTexto,
           ].filter(Boolean).join(" · ");
+
+          if (enIPhone) {
+            return (
+              <div
+                className="ios-txrow"
+                data-fila
+                key={tx.id}
+                onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}
+              >
+                <span className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`} aria-hidden="true">
+                  {tx.tipo === "ingreso" ? <IconArrowUp size={13} strokeWidth={2.2} /> : <IconArrowDown size={13} strokeWidth={2.2} />}
+                </span>
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title" title={personaTitular ?? tx.concepto}>
+                    {tx.recurrente_id != null && (
+                      <span style={{ color: "var(--text-3)", flexShrink: 0, display: "inline-flex", marginRight: 4 }} title={t("recurrente.marcaEnTabla")}>
+                        <IconRepeat size={12} strokeWidth={2.2} />
+                      </span>
+                    )}
+                    <span className="truncate">{personaTitular ?? tx.concepto}</span>
+                    {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
+                  </div>
+                  <div className="tx-secundaria-movil" title={secundariaMovil}>{secundariaMovil}</div>
+                </div>
+                <div className="ios-txrow-trailing">
+                  {tx.comprobante_path && (
+                    <span className="row-icon-btn" title={t("tx.verComprobante")} onClick={() => setPreview(tx.comprobante_path!)}>
+                      <IconClip size={13} strokeWidth={2} />
+                    </span>
+                  )}
+                  <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
+                    {tx.tipo === "ingreso" ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
+                    <span className="cur">{tx.moneda}</span>
+                  </span>
+                </div>
+                <RowMenu
+                  onEdit={() => onEdit(tx)}
+                  onDelete={() => setPendingDelete(tx)}
+                  onBorrarDirecto={() => void borrarConDeshacer(tx)}
+                  extraItems={tx.comprobante_path
+                    ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
+                    : undefined}
+                />
+              </div>
+            );
+          }
 
           const celdaConcepto = (
             <div className="td">

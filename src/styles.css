@@ -3982,6 +3982,79 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-badge--pending { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 :root.iphone .ios-badge--ok { background: color-mix(in srgb, var(--brand, #059669) 12%, transparent); color: var(--brand, #059669); }
 
+/* Fila de movimiento (TxTable, Ingresos/Gastos) — de la tabla de escritorio
+   apretada a 3 columnas fijas (Prioridad 5, más arriba en este archivo) a
+   una fila de dos líneas en el idioma de panel. A diferencia de
+   `.ios-listrow` (un solo `<button>`), esta fila NO es un botón: lleva
+   dentro el "···"/deslizar de RowMenu y a veces el clip del comprobante,
+   así que es un `<div data-fila>` con hijos interactivos propios — anidar
+   eso en un `<button>` sería HTML inválido y rompería los toques. Por lo
+   mismo no lleva `cursor:pointer` ni fondo en `:active`: la fila en sí no
+   hace nada al tocarla, igual que en escritorio. `.tx-icon`/`.tx-amount`/
+   `.tx-punto-pendiente`/`.tx-secundaria-movil` (Prioridad 5) se reutilizan
+   tal cual — son genéricos, no piden clase de contenedor. El contenedor
+   reutiliza `.ios-listcard` de arriba: ya trae `overflow:hidden`, que el
+   gesto de deslizar necesita para recortar la fila al salirse (ver el
+   comentario largo en useFilaDeslizable.ts). */
+:root.iphone .ios-txrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 10px 14px;
+}
+:root.iphone .ios-txrow:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .ios-txrow .tx-icon { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; }
+:root.iphone .ios-txrow-main { flex: 1 1 auto; min-width: 0; }
+:root.iphone .ios-txrow-title {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .ios-txrow-trailing { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+:root.iphone .ios-txrow .tx-amount { font-size: 16px; }
+/* El clip del comprobante reutiliza `.row-icon-btn`, pero esa clase base
+   está definida como `.data-table .row-icon-btn` — sin ese ancestro (esta
+   fila ya no vive dentro de `.data-table`) se quedaba sin su tamaño ni su
+   glifo centrado. Mismo aspecto, ancla nueva. */
+:root.iphone .ios-txrow .row-icon-btn {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-2);
+  cursor: pointer;
+}
+/* El disparador "···" de RowMenu (`.more`, genérico) tenía su objetivo
+   táctil de 44pt resuelto por `.data-table .more` — esta fila ya no vive
+   ahí. Mismo tamaño, ancla nueva; aquí no hace falta el área invisible
+   que sí necesitaba `.data-table.tabla-tx .more` (esa existía solo porque
+   la rejilla vieja fijaba la columna "acciones" en 24px — esta fila no
+   compite por ese espacio, así que el glifo puede medir 44pt de verdad). */
+:root.iphone .ios-txrow .more {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
 
