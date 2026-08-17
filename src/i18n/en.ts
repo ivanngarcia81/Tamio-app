@@ -2246,13 +2246,12 @@ export const en: Resources = {
       delicada: "Sensitive zone",
       delicadaSub: "Backups and actions with no way back",
       cuenta: "Account",
-      cuentaSub: "Organization, your account, sync, and help",
+      cuentaSub: "Your account, sync, and help",
     },
     nombreIglesiaObligatorio: "The church name is required.",
   },
 
   cuenta: {
-    organizacion: "Organization",
     miCuenta: "My account",
     sinNombre: "No name",
     ayuda: "Help",

@@ -405,19 +405,6 @@ export default function Configuracion({
                 <div className="settings-zona-sub">{t("config.zona.cuentaSub")}</div>
               </div>
 
-              <div className="cuenta-grupo">
-                <button type="button" className="cuenta-fila" onClick={() => setZonaActiva("iglesia")}>
-                  <span className="cuenta-fila-icono cuenta-fila-icono-iglesia">
-                    <IconChurch size={17} />
-                  </span>
-                  <span className="cuenta-fila-textos">
-                    <span className="cuenta-fila-titulo">{t("cuenta.organizacion")}</span>
-                    <span className="cuenta-fila-sub">{church.nombre}</span>
-                  </span>
-                  <IconChevronRight size={14} />
-                </button>
-              </div>
-
               {authActivo && (
                 <div className="cuenta-grupo">
                   <button type="button" className="cuenta-fila" onClick={onEditarPerfil}>

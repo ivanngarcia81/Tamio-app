@@ -2254,7 +2254,7 @@ export const es = {
       delicada: "Zona sensible",
       delicadaSub: "Respaldos y acciones que no tienen vuelta atrás",
       cuenta: "Cuenta",
-      cuentaSub: "Organización, tu cuenta, sincronización y ayuda",
+      cuentaSub: "Tu cuenta, sincronización y ayuda",
     },
     nombreIglesiaObligatorio: "El nombre de la iglesia es obligatorio.",
   },
@@ -2263,7 +2263,6 @@ export const es = {
    *  (ver App.tsx / movil.ts, esIPhone). Es lo único que el sidebar tenía y
    *  no estaba ya en otra parte de Ajustes o en la barra inferior. */
   cuenta: {
-    organizacion: "Organización",
     miCuenta: "Mi cuenta",
     sinNombre: "Sin nombre",
     ayuda: "Ayuda",
