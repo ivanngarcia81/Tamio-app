@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import { deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -32,6 +32,15 @@ const BADGE_ESTADO: Record<string, string> = {
   archivada: "administracion",
 };
 
+/** "Pendiente de aprobación" es lo único que espera una acción; "aprobada"
+ *  es el destino final feliz. Borrador/corregida/archivada se quedan en
+ *  gris neutro — son etapas normales, no una alerta. */
+function badgeClaseActa(estado: string): string {
+  if (estado === "pendiente") return "ios-badge--pending";
+  if (estado === "aprobada") return "ios-badge--ok";
+  return "";
+}
+
 interface Props {
   church: Church;
   refreshKey: number;
@@ -40,6 +49,9 @@ interface Props {
 
 export default function Actas({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones ya muestra "Actas" como pastilla activa (ver
+  // Cartas.tsx/Movimientos.tsx/Miembros.tsx) — el título grande sobra ahí.
+  const enIPhone = esIPhone();
   const [actas, setActas] = useState<Acta[]>([]);
   const [query, setQuery] = useState("");
   const [filtro, setFiltro] = useState<FiltroEstado>("todas");
@@ -98,10 +110,12 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("secretaria.actas.titulo")}</div>
-          <div className="page-sub">{t("secretaria.actas.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("secretaria.actas.titulo")}</div>
+            <div className="page-sub">{t("secretaria.actas.sub")}</div>
+          </div>
+        )}
         <div className="header-actions">
           <button className="btn primary btn-nuevo-cabecera" onClick={() => setModal({ open: true, acta: null })}>
             <IconPlus size={14} /> {t("actas.nuevaActa")}
@@ -146,6 +160,37 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
               : undefined}
             duplicaCrear
           />
+        ) : enIPhone ? (
+          <div className="ios-listcard">
+            {pagina.map((a) => (
+              <div
+                className="ios-txrow ios-txrow--clickable"
+                data-fila
+                key={a.id}
+                onClick={() => setModal({ open: true, acta: a })}
+              >
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title" title={a.titulo}>
+                    {a.confidencial === 1 && (
+                      <span title={t("actas.confidencial")} style={{ marginRight: 4 }}>🔒</span>
+                    )}
+                    <span className="truncate">{a.titulo}</span>
+                  </div>
+                  <div className="tx-secundaria-movil">
+                    {t(`actas.tipo.${a.tipo}`)}{a.preside ? ` · ${a.preside}` : ""} · {fmtFechaCorta(a.fecha)}
+                  </div>
+                </div>
+                <div className="ios-txrow-trailing">
+                  <span className={`ios-badge ${badgeClaseActa(a.estado)}`}>{t(`actas.estado.${a.estado}`)}</span>
+                </div>
+                <RowMenu
+                  onEdit={() => setModal({ open: true, acta: a })}
+                  extraItems={[{ label: t("common.imprimir"), onClick: () => { if (imprimiendo === null) imprimir(a); } }]}
+                  onDelete={() => setPendingDelete(a)}
+                />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="data-table roomy tabla-actas">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>
