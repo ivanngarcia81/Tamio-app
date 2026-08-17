@@ -21,6 +21,7 @@ import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, I
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
+import IOSSegmented from "../components/ios/IOSSegmented";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 /** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
@@ -681,6 +682,53 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           </div>
         ))}
 
+        {enIPhone ? (
+          /* Dos filas en vez de una. El selector va ARRIBA y a todo el ancho
+             del contenido, así que aparecer o desaparecer la fila de abajo ya
+             no lo mueve. Antes las dos cosas compartían una fila con
+             `justify-content: space-between` y un `.agenda-nav` que se
+             pintaba siempre aunque estuviera vacío: en Lista el hueco vacío
+             empujaba el selector al extremo derecho, y en Mes/Semana la fila
+             no cabía en 390 px y lo tiraba a una segunda línea. Medido: x=123
+             en Lista contra x=14 en las demás, y 46 px de diferencia de
+             altura. */
+          <>
+            <div className="agenda-vistas-ios">
+              <IOSSegmented
+                options={[
+                  { value: "mes", label: t("agenda.vistaMes") },
+                  { value: "semana", label: t("agenda.vistaSemana") },
+                  { value: "lista", label: t("agenda.vistaLista") },
+                  { value: "historial", label: t("agenda.vistaHistorial") },
+                ]}
+                value={vista}
+                onChange={setVista}
+              />
+            </div>
+
+            {/* Fila 2: solo lo que depende de la vista. Colapsa del todo
+                cuando no hay nada que poner (Lista), sin dejar hueco. */}
+            {(vista === "mes" || vista === "semana") && (
+              <div className="agenda-contexto-ios">
+                <div className="agenda-nav-group">
+                  <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={15} /></button>
+                  <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+                  <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={15} /></button>
+                </div>
+                <span className="agenda-mes-titulo">{titulo}</span>
+              </div>
+            )}
+            {vista === "historial" && (
+              /* `.ios-filtros` ya se sale a sangre con su margen negativo
+                 —para que los chips puedan desplazarse de borde a borde—,
+                 así que va suelto y no dentro de `.agenda-contexto-ios`. */
+              <div className="ios-filtros" style={{ paddingBottom: 0 }}>
+                <IOSPickerChip label={t("agenda.filtrarAnio")} options={opcAnioHist} value={anioHist} onSelect={setAnioHist} />
+                <IOSPickerChip label={t("agenda.filtrarMes")} options={opcMesHist} value={mesHist} onSelect={setMesHist} />
+              </div>
+            )}
+          </>
+        ) : (
         <div className="agenda-toolbar">
           <div className="agenda-nav">
             {(vista === "mes" || vista === "semana") && (
@@ -693,12 +741,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 <span className="agenda-mes-titulo">{titulo}</span>
               </>
             )}
-            {vista === "historial" && (enIPhone ? (
-              <div className="ios-filtros" style={{ paddingBottom: 0 }}>
-                <IOSPickerChip label={t("agenda.filtrarAnio")} options={opcAnioHist} value={anioHist} onSelect={setAnioHist} />
-                <IOSPickerChip label={t("agenda.filtrarMes")} options={opcMesHist} value={mesHist} onSelect={setMesHist} />
-              </div>
-            ) : (
+            {/* Sin la rama de iPhone que había aquí: esta barra ya solo se
+                pinta cuando NO es iPhone, así que era un camino muerto. */}
+            {vista === "historial" && (
               <>
                 <select className="form-input sm" aria-label={t("agenda.filtrarAnio")} value={anioHist} onChange={(e) => setAnioHist(e.target.value)}>
                   {opcAnioHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -707,7 +752,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                   {opcMesHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </>
-            ))}
+            )}
           </div>
           <div className="chip-toggle" role="tablist" aria-label={t("agenda.cambiarVista")}>
             {(["mes", "semana", "lista", "historial"] as Vista[]).map((v) => (
@@ -717,6 +762,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             ))}
           </div>
         </div>
+        )}
 
         {loading ? (
           <LoadingState />

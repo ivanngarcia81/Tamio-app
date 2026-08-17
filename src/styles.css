@@ -3993,7 +3993,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   position: absolute;
   top: 2px;
   left: 2px;
-  width: calc(50% - 2px);
+  /* Mismo ancho que una casilla: la pista tiene `padding: 2px`, así que sus
+     n botones (`flex: 1 1 0`, sin gap) se reparten (100% − 4px). El
+     `translateX(activo * 100%)` mueve el pulgar el 100 % de SU ancho, que
+     es justo el paso entre casillas — cuadra al píxel para cualquier n.
+     Con n = 2 da `50% − 2px`, exactamente lo que había antes. */
+  width: calc((100% - 4px) / var(--n, 2));
   height: 28px;
   background: var(--surface);
   border-radius: 7px;
@@ -4373,6 +4378,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: color-mix(in srgb, var(--brand, #059669) 30%, transparent);
 }
 :root.iphone .ios-row-accion:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: -6px; border-radius: 50%; }
+
+/* ============================================================
+   Agenda en iPhone: el selector de vista en su propia fila.
+
+   `.ios-segmented` trae `margin: 0 16px` porque nació dentro de `.ios-form`,
+   que no lleva relleno propio. Aquí vive dentro de `.content`, que ya pone
+   el suyo (`--content-pad-x`), así que el margen se anula: sin eso el
+   control quedaba metido 16 px más adentro que las tarjetas de Resumen que
+   tiene justo encima. */
+:root.iphone .agenda-vistas-ios { margin-bottom: 10px; }
+:root.iphone .agenda-vistas-ios .ios-segmented { margin: 0; }
+/* Fila de contexto (‹ Hoy › + mes/semana). No reserva altura cuando no se
+   pinta: colapsa entera, y como el selector va ARRIBA eso ya no lo mueve. */
+:root.iphone .agenda-contexto-ios {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
 
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
