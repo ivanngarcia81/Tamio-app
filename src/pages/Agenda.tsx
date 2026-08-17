@@ -130,8 +130,14 @@ function badgeClaseAgendaIOS(estado: string): string {
  *  iPhone pasa al idioma de panel (.ios-txrow como <button>, sin RowMenu
  *  porque esta fila nunca tuvo deslizar/editar — un solo toque ya abre el
  *  detalle, igual que antes). Mac/iPad no cambian: siguen con
- *  .agenda-fila de siempre. */
-function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }: {
+ *  .agenda-fila de siempre.
+ *
+ *  Se exporta para que InicioSecretaria pinte ahí sus "Próximas
+ *  actividades" con esta misma fila en vez de una copia: son las mismas
+ *  ocurrencias de `expandirTodas`, y dos filas parecidas se separan al
+ *  primer retoque. `nombreResponsable` puede devolver siempre null cuando
+ *  la pantalla que la usa no carga los miembros. */
+export function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }: {
   a: OcurrenciaVista;
   onOpen: () => void;
   etiquetaTipo: (x: Actividad) => string;

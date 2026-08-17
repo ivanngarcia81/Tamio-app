@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   currentYear, fmtFechaCorta, hoyISO, listActividades, listMembersRegistro, membresiaStats,
   type Actividad, type Church, type MembresiaStats,
@@ -12,6 +12,9 @@ import CountUp from "../components/CountUp";
 import {
   IconCalendar, IconClipboardList, IconIdBadge, IconMail, IconMiembros, IconWarn,
 } from "../icons";
+import { esIPhone } from "../movil";
+import { IosChevron } from "../components/ios/FormularioIOS";
+import { FilaActividad } from "./Agenda";
 
 function accent(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
@@ -31,6 +34,8 @@ interface Props {
 
 export default function InicioSecretaria({ church, refreshKey }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<MembresiaStats | null>(null);
   const [incompletos, setIncompletos] = useState(0);
   const [actividades, setActividades] = useState<Actividad[]>([]);
@@ -81,15 +86,85 @@ export default function InicioSecretaria({ church, refreshKey }: Props) {
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("inicioSec.titulo")}</div>
-          <div className="page-sub">{church.nombre}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("inicioSec.titulo")}</div>
+            <div className="page-sub">{church.nombre}</div>
+          </div>
+        )}
       </div>
 
       <div className="content">
         {loading ? (
           <LoadingState />
+        ) : enIPhone ? (
+          <>
+            {/* Sin franja de color ni icono en recuadro: en media pantalla
+                compiten con el número, que es lo único que se viene a leer. */}
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("inicioSec.seccionResumen")}</h2></div>
+              <div className="ios-panel-grid">
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("inicioSec.statActivos")}</span></div>
+                  <span className="ios-stat-num"><CountUp value={stats?.activos ?? 0} format={String} /></span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("inicioSec.statAltas", { anio: currentYear() })}</span></div>
+                  <span className="ios-stat-num"><CountUp value={stats?.altasAnio ?? 0} format={String} /></span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("inicioSec.statIncompletos")}</span></div>
+                  <span className="ios-stat-num"><CountUp value={incompletos} format={String} /></span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("inicioSec.statProximas")}</span></div>
+                  <span className="ios-stat-num"><CountUp value={proximas.length} format={String} /></span>
+                </div>
+              </div>
+            </div>
+
+            <div className="ios-panel">
+              <div className="ios-panel-head">
+                <h2>{t("inicioSec.proximasTitulo")}</h2>
+                <button type="button" className="ios-panel-action" onClick={() => navigate("/agenda")}>
+                  {t("inicioSec.verAgenda")}
+                </button>
+              </div>
+              {proximas5.length === 0 ? (
+                <div className="ios-panel-empty">{t("inicioSec.sinProximas")}</div>
+              ) : (
+                <div className="ios-listcard">
+                  {/* La MISMA fila de Agenda, no una copia: son las mismas
+                      ocurrencias de `expandirTodas`. Esta pantalla no carga
+                      los miembros, así que el responsable se omite — es el
+                      único dato de la línea secundaria que no tiene. */}
+                  {proximas5.map((a) => (
+                    <FilaActividad
+                      key={`${a._master.id}:${a._fechaOriginal}`}
+                      a={a}
+                      onOpen={() => navigate("/agenda")}
+                      etiquetaTipo={etiquetaTipo}
+                      nombreResponsable={() => null}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("inicioSec.accesosTitulo")}</h2></div>
+              <div className="ios-navcards">
+                {accesos.map((a) => (
+                  <Link key={a.to} to={a.to} className="ios-navcard">
+                    <span className="ios-navcard-icon">{a.icon}</span>
+                    <span className="ios-navcard-label">{a.label}</span>
+                    <IosChevron />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </>
         ) : (
           <div className="dash-canvas">
             <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>

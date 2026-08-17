@@ -2877,6 +2877,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Archivo, en Cartas.tsx. Sin borde a propósito: las cajas con borde son
    de web. Todas las plataformas, igual que MenuAnchor arriba. */
 .ios-navcards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* `1fr` es en realidad `minmax(auto, 1fr)`: sin esto la columna no puede
+   bajar del min-content de su tarjeta, y una etiqueta larga —"Informes de
+   membresía" en el inicio de secretaría— ensancha su columna hasta
+   desbordar la rejilla (465 px medidos en un panel de 362). El `min-width:0`
+   de `.ios-navcard-label` no alcanza: arregla al hijo flex, no al hijo de
+   la rejilla. En Cartas no se notaba porque "Plantillas" y "Archivo" caben. */
+.ios-navcards > * { min-width: 0; }
 .ios-navcard {
   display: flex;
   align-items: center;

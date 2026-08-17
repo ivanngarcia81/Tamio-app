@@ -2251,6 +2251,7 @@ export const es = {
   },
 
   inicioSec: {
+    seccionResumen: "Resumen",
     titulo: "Inicio",
     statActivos: "Miembros activos",
     statAltas: "Altas en {{anio}}",

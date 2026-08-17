@@ -2233,6 +2233,7 @@ export const en: Resources = {
   },
 
   inicioSec: {
+    seccionResumen: "Overview",
     titulo: "Home",
     statActivos: "Active members",
     statAltas: "Additions in {{anio}}",
