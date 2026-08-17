@@ -4296,6 +4296,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-width: 44px;
   min-height: 44px;
 }
+/* …pero el HUECO de RowMenu no. Cuando una fila no tiene acciones de más,
+   RowMenu no pinta los puntitos: pinta un `<span class="more sin-puntos">`
+   vacío y sin eventos, que existe para que la REJILLA de `.data-table` no
+   recoloque sus columnas al quedarse sin la casilla de acciones. Esta fila
+   no es una rejilla, es un flex: ahí ese hueco no sostiene nada y se comía
+   44 px de ancho más los 10 del `gap` en cada fila de Movimientos,
+   Depósitos, Actas, Servicios, Membresía, Miembros y Cartas — 54 px que le
+   faltaban a la línea secundaria, que es justo la que se recortaba.
+
+   `display: none` y no `min-width: 0`: un inline-grid vacío mide cero pero
+   el `gap` del flex se lo sigue cobrando. Quitarlo del flujo no rompe el
+   deslizamiento: RowMenu usa este span solo para localizar la fila con
+   `closest("[data-fila]")` —que funciona igual sobre un elemento oculto— y
+   solo le mide el rectángulo al abrir su menú desplegable, cosa que el
+   placeholder nunca hace. Los puntitos DE VERDAD (filas con acciones de
+   más: ver comprobante, imprimir acta…) no entran aquí y conservan sus
+   44 pt. */
+:root.iphone .ios-txrow .more.sin-puntos { display: none; }
 /* Variante para filas que sí navegan al tocarlas (Miembros: abre la ficha),
    a diferencia de las de Movimientos, que no hacen nada al tocar la fila
    misma (solo deslizar/"···"). `.mini-avatar` (genérico, ya usado en toda
