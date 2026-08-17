@@ -171,7 +171,14 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
         <div className="header-actions">
           {puedeCrear ? (
             <>
-              <button className="btn secondary" onClick={() => setImportOpen(true)}>
+              {/* En el teléfono este botón se pintaba entero (borde, fondo,
+                  texto "Import CSV") junto al título, en vez de reducirse al
+                  glifo solo que ya llevan el resto de páginas en la fila fija
+                  de arriba — a esta página nunca le llegó ese tratamiento.
+                  La versión de escritorio se marca aparte y la fija de abajo
+                  cubre el móvil, mismo patrón que .btn-compartir-cabecera en
+                  Dashboard/Movimientos/Reportes/InformesMembresia. */}
+              <button className="btn secondary solo-escritorio" onClick={() => setImportOpen(true)}>
                 <IconUpload size={13} /> {t("miembros.importarCsv")}
               </button>
               <button className="btn primary btn-nuevo-cabecera" onClick={onNew}>
@@ -182,6 +189,18 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
             <span className="form-hint">{t("miembros.padronSecretaria")}</span>
           )}
         </div>
+        {puedeCrear && (
+          <div className="header-actions solo-movil">
+            <button
+              type="button"
+              className="btn-compartir-cabecera"
+              onClick={() => setImportOpen(true)}
+              aria-label={t("miembros.importarCsv")}
+            >
+              <IconUpload size={18} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="content">
