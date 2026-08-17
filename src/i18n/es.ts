@@ -1761,6 +1761,7 @@ export const es = {
   informes: {
     titulo: "Información de Membresía",
     sub: "Resumen, seguimiento e informes de los miembros de la iglesia.",
+    seccionResumen: "Resumen",
     exportar: "Exportar (CSV)",
     imprimirGeneral: "Imprimir / PDF",
     toastExportado: "Informe exportado",

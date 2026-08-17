@@ -3896,6 +3896,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-stat:disabled { cursor: default; }
 :root.iphone .ios-stat:disabled:active { transform: none; }
 :root.iphone .ios-stat:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: 2px; }
+/* Tarjetas-filtro (InformesMembresia): a diferencia de las de resumen de
+   Cartas/Movimientos/Miembros, que solo navegan, estas alternan un filtro
+   — necesitan decir cuál está activo. */
+:root.iphone .ios-stat[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--brand, #059669) 14%, var(--surface));
+  box-shadow: 0 0 0 1.5px var(--brand, #059669) inset;
+}
 :root.iphone .ios-stat-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 :root.iphone .ios-stat-label { font-size: 15px; font-weight: 500; line-height: 1.25; color: var(--text-2); }
 :root.iphone .ios-stat-num {

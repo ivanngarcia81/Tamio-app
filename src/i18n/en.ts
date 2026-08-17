@@ -1757,6 +1757,7 @@ export const en: Resources = {
   informes: {
     titulo: "Membership Information",
     sub: "Overview, follow-up, and reports of the church members.",
+    seccionResumen: "Overview",
     exportar: "Export (CSV)",
     imprimirGeneral: "Print / PDF",
     toastExportado: "Report exported",

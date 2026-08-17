@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import {
   currentMonth, currentYear, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
   listServiciosLigero, listTrasladosEntrada, listTrasladosSalida,
@@ -54,6 +54,14 @@ function accent(color: string): CSSProperties {
   return { "--accent-color": color, textAlign: "left", cursor: "pointer", font: "inherit" } as CSSProperties;
 }
 
+/** El resto de estados (inactivo/visitante/enProceso/trasladado/retirado/
+ *  fallecido/baja) son administrativos, no una cola de trabajo con
+ *  "pendiente" como Cartas/Traslados — así que solo "activo" se destaca en
+ *  verde y el resto se queda en gris neutro. */
+function badgeClaseEstadoMiembro(estado: string): string {
+  return estado === "activo" ? "ios-badge--ok" : "";
+}
+
 function parseLista(json: string): string[] {
   try {
     const v = JSON.parse(json);
@@ -76,6 +84,10 @@ interface Props {
 
 export default function InformesMembresia({ church, refreshKey, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones ya muestra "Reporte de Miembros" como pastilla
+  // activa (ver Cartas.tsx/Movimientos.tsx/Miembros.tsx) — el título grande
+  // de aquí abajo sobra ahí.
+  const enIPhone = esIPhone();
   const [miembros, setMiembros] = useState<Member[]>([]);
   const [servicios, setServicios] = useState<ServicioLigero[]>([]);
   const [asistenciaRaw, setAsistenciaRaw] = useState<AsistenciaLigera[]>([]);
@@ -376,10 +388,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("informes.titulo")}</div>
-          <div className="page-sub">{t("informes.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("informes.titulo")}</div>
+            <div className="page-sub">{t("informes.sub")}</div>
+          </div>
+        )}
         <div className="header-actions solo-escritorio">
           <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
             <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
@@ -491,6 +505,22 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               </div>
               {movimientos.length === 0 ? (
                 <EmptyState titulo={t("informes.sinMovimientos")} sub={t("informes.sinMovimientosSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
+              ) : enIPhone ? (
+                <div className="ios-listcard">
+                  {movimientos.map((mv) => (
+                    <div className="ios-txrow" key={mv.folio}>
+                      <div className="ios-txrow-main">
+                        <div className="ios-txrow-title">{mv.persona}</div>
+                        <div className="tx-secundaria-movil">
+                          {mv.tipo === "recibido" ? t("informes.movRecibido") : t("informes.movEnviado")} · {mv.iglesia} · {fmtFechaCorta(mv.fecha)}
+                        </div>
+                      </div>
+                      <div className="ios-txrow-trailing">
+                        <span className="ios-badge">{mv.estado}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="data-table roomy">
                   <div className="thead" style={{ gridTemplateColumns: "120px 130px 1.4fr 110px 130px" }}>
@@ -523,6 +553,22 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         ) : vista === "seguimiento" ? (
           gruposSeguimiento.length === 0 ? (
             <EmptyState titulo={t("seguimiento.vacioTitulo")} sub={t("seguimiento.vacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
+          ) : enIPhone ? (
+            <div className="ios-listcard">
+              {gruposSeguimiento.map(({ miembro: m, alertas }) => (
+                <div className="ios-txrow ios-txrow--clickable" key={m.id} onClick={() => setSeguimiento(m)}>
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{m.nombre}</div>
+                    <div className="tx-secundaria-movil">{alertas.map((al) => etiquetaAlerta(al)).join(" · ")}</div>
+                  </div>
+                  {!m.seguimiento_revisado_en && (
+                    <div className="ios-txrow-trailing">
+                      <span className="ios-badge ios-badge--pending">{t("seguimiento.sinRevisar")}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="data-table roomy enter">
               <div className="thead" style={{ gridTemplateColumns: "1.5fr 2fr 150px 90px" }}>
@@ -557,23 +603,44 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         ) : vista === "miembros" ? (
           <>
             {/* Tarjetas de resumen clicables — agrupadas en el lienzo. */}
-            <div className="dash-canvas">
-            <div className="summary-8 enter">
-              {tarjetas.map((c) => (
-                <button
-                  key={c.id}
-                  className={`stat-card accent${tarjeta === c.id ? " is-selected" : ""}`}
-                  style={accent(c.color)}
-                  title={c.id === "frecuentes" ? t("informes.cardFrecuentesRegla", { n: umbrales.rachaServicios }) : undefined}
-                  aria-pressed={tarjeta === c.id}
-                  onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
-                >
-                  <div className="stat-head"><span className="stat-label">{c.label}</span></div>
-                  <div className="stat-value md"><CountUp value={c.valor} format={String} /></div>
-                </button>
-              ))}
-            </div>
-            </div>
+            {enIPhone ? (
+              <div className="ios-panel">
+                <div className="ios-panel-head"><h2>{t("informes.seccionResumen")}</h2></div>
+                <div className="ios-panel-grid">
+                  {tarjetas.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="ios-stat"
+                      title={c.id === "frecuentes" ? t("informes.cardFrecuentesRegla", { n: umbrales.rachaServicios }) : undefined}
+                      aria-pressed={tarjeta === c.id}
+                      onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
+                    >
+                      <div className="ios-stat-top"><span className="ios-stat-label">{c.label}</span></div>
+                      <span className="ios-stat-num"><CountUp value={c.valor} format={String} /></span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="dash-canvas">
+              <div className="summary-8 enter">
+                {tarjetas.map((c) => (
+                  <button
+                    key={c.id}
+                    className={`stat-card accent${tarjeta === c.id ? " is-selected" : ""}`}
+                    style={accent(c.color)}
+                    title={c.id === "frecuentes" ? t("informes.cardFrecuentesRegla", { n: umbrales.rachaServicios }) : undefined}
+                    aria-pressed={tarjeta === c.id}
+                    onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
+                  >
+                    <div className="stat-head"><span className="stat-label">{c.label}</span></div>
+                    <div className="stat-value md"><CountUp value={c.valor} format={String} /></div>
+                  </button>
+                ))}
+              </div>
+              </div>
+            )}
 
             {/* Filtros combinables */}
             <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
@@ -609,6 +676,37 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               <EmptyState titulo={t("informes.vacioTitulo")} sub={t("informes.vacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
             ) : filas.length === 0 ? (
               <EmptyState titulo={t("informes.sinResultadosTitulo")} sub={t("informes.sinResultadosSub")} icon={<IconSearch size={20} strokeWidth={1.8} />} />
+            ) : enIPhone ? (
+              <div className="ios-listcard">
+                {pagina.map(({ miembro: m, asistencia: a }) => {
+                  const e = estadoEfectivo(m);
+                  const incompleto = camposFaltantes(m).length > 0;
+                  const servicioTxt = [
+                    chipsDe(t, m.ministerios, "ficha.ministerio"),
+                    chipsDe(t, m.cargos, "ficha.cargo"),
+                    chipsDe(t, m.instrumentos, "ficha.instrumento"),
+                  ].filter(Boolean).join(" · ");
+                  return (
+                    <div className="ios-txrow ios-txrow--clickable" key={m.id} onClick={() => setFicha(m)}>
+                      <div className="ios-txrow-main">
+                        <div className="ios-txrow-title" title={m.nombre}>
+                          {incompleto && <span title={t("informes.incompletoTitle")} style={{ marginRight: 4 }}>⚠️</span>}
+                          <span className="truncate">{m.nombre}</span>
+                        </div>
+                        <div className="tx-secundaria-movil">
+                          {servicioTxt || "—"}{a && a.pct !== null ? ` · ${a.pct}%` : ""}
+                        </div>
+                      </div>
+                      <div className="ios-txrow-trailing">
+                        <span className="row-icon-btn" title={t("common.editar")} onClick={(ev) => { ev.stopPropagation(); onEdit(m); }}>
+                          <IconEdit size={13} strokeWidth={2} />
+                        </span>
+                        <span className={`ios-badge ${badgeClaseEstadoMiembro(e)}`}>{t(`membresia.estado.${e}`)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="data-table roomy tabla-informe-miembros">
                 <div className="thead" style={{ gridTemplateColumns: COLS, position: "sticky", top: 0, zIndex: 1, background: "var(--surface)" }}>
@@ -681,24 +779,48 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
             {/* Indicadores generales + destacados: panel de resumen. */}
             <div className="dash-canvas">
-            <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("informes.totalServicios")}</span></div>
-                <div className="stat-value md"><CountUp value={asistGeneral.totalServicios} format={String} /></div>
+            {enIPhone ? (
+              <div className="ios-panel">
+                <div className="ios-panel-head"><h2>{t("informes.seccionResumen")}</h2></div>
+                <div className="ios-panel-grid">
+                  <div className="ios-stat" style={{ cursor: "default" }}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("informes.totalServicios")}</span></div>
+                    <span className="ios-stat-num"><CountUp value={asistGeneral.totalServicios} format={String} /></span>
+                  </div>
+                  <div className="ios-stat" style={{ cursor: "default" }}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("informes.asistenciaTotal")}</span></div>
+                    <span className="ios-stat-num"><CountUp value={asistGeneral.asistenciaTotal} format={String} /></span>
+                  </div>
+                  <div className="ios-stat" style={{ cursor: "default" }}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("informes.promedioServicio")}</span></div>
+                    <span className="ios-stat-num"><CountUp value={asistGeneral.promedioPorServicio} format={String} /></span>
+                  </div>
+                  <div className="ios-stat" style={{ cursor: "default" }}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("informes.pctGeneral")}</span></div>
+                    <span className="ios-stat-num">{asistGeneral.pctGeneral !== null ? <CountUp value={asistGeneral.pctGeneral} format={(n) => `${n}%`} /> : "—"}</span>
+                  </div>
+                </div>
               </div>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("informes.asistenciaTotal")}</span></div>
-                <div className="stat-value md"><CountUp value={asistGeneral.asistenciaTotal} format={String} /></div>
+            ) : (
+              <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("informes.totalServicios")}</span></div>
+                  <div className="stat-value md"><CountUp value={asistGeneral.totalServicios} format={String} /></div>
+                </div>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("informes.asistenciaTotal")}</span></div>
+                  <div className="stat-value md"><CountUp value={asistGeneral.asistenciaTotal} format={String} /></div>
+                </div>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("informes.promedioServicio")}</span></div>
+                  <div className="stat-value md"><CountUp value={asistGeneral.promedioPorServicio} format={String} /></div>
+                </div>
+                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
+                  <div className="stat-head"><span className="stat-label">{t("informes.pctGeneral")}</span></div>
+                  <div className="stat-value md">{asistGeneral.pctGeneral !== null ? <CountUp value={asistGeneral.pctGeneral} format={(n) => `${n}%`} /> : "—"}</div>
+                </div>
               </div>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("informes.promedioServicio")}</span></div>
-                <div className="stat-value md"><CountUp value={asistGeneral.promedioPorServicio} format={String} /></div>
-              </div>
-              <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
-                <div className="stat-head"><span className="stat-label">{t("informes.pctGeneral")}</span></div>
-                <div className="stat-value md">{asistGeneral.pctGeneral !== null ? <CountUp value={asistGeneral.pctGeneral} format={(n) => `${n}%`} /> : "—"}</div>
-              </div>
-            </div>
+            )}
 
             {/* Mejores asistencias + sin asistir recientemente */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
@@ -737,31 +859,54 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             <div className="tx-head" style={{ marginTop: 18 }}>
               <span className="card-title">{t("informes.porMiembroTitulo")}</span>
             </div>
-            <div className="data-table roomy">
-              <div className="thead" style={{ gridTemplateColumns: "1.6fr 90px 90px 90px 130px" }}>
-                <div className="th">{t("informes.colMiembro")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("informes.colAsistidos")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("informes.colAusentes")}</div>
-                <div className="th" style={{ textAlign: "right" }}>%</div>
-                <div className="th">{t("informes.colUltima")}</div>
+            {enIPhone ? (
+              <div className="ios-listcard">
+                {asistenciaMiembros.map(({ miembro: m, datos: a }) => (
+                  <div className="ios-txrow ios-txrow--clickable" key={m.id} onClick={() => setFicha(m)}>
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{m.nombre}</div>
+                      <div className="tx-secundaria-movil">
+                        {t("informes.deN", { asis: a!.asistidos, total: a!.enRoster })}
+                        {" · "}
+                        {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
+                      </div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      {a!.racha >= umbrales.rachaServicios && (
+                        <span className="ios-badge ios-badge--pending">{t("informes.ausenciasN", { n: a!.racha })}</span>
+                      )}
+                      <span style={{ fontWeight: 700, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{a!.pct}%</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-              {asistenciaMiembros.map(({ miembro: m, datos: a }) => (
-                <div key={m.id} className="tr" style={{ gridTemplateColumns: "1.6fr 90px 90px 90px 130px", cursor: "pointer" }} onClick={() => setFicha(m)}>
-                  <div className="td" style={{ minWidth: 0 }}>
-                    <div className="p-name truncate">{m.nombre}</div>
-                    {a!.racha >= umbrales.rachaServicios && (
-                      <span className="tag baja">{t("informes.ausenciasN", { n: a!.racha })}</span>
-                    )}
-                  </div>
-                  <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a!.asistidos}</div>
-                  <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-2)" }}>{a!.ausentes}</div>
-                  <div className="td" style={{ textAlign: "right", fontWeight: 700 }}>{a!.pct}%</div>
-                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                    {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
-                  </div>
+            ) : (
+              <div className="data-table roomy">
+                <div className="thead" style={{ gridTemplateColumns: "1.6fr 90px 90px 90px 130px" }}>
+                  <div className="th">{t("informes.colMiembro")}</div>
+                  <div className="th" style={{ textAlign: "right" }}>{t("informes.colAsistidos")}</div>
+                  <div className="th" style={{ textAlign: "right" }}>{t("informes.colAusentes")}</div>
+                  <div className="th" style={{ textAlign: "right" }}>%</div>
+                  <div className="th">{t("informes.colUltima")}</div>
                 </div>
-              ))}
-            </div>
+                {asistenciaMiembros.map(({ miembro: m, datos: a }) => (
+                  <div key={m.id} className="tr" style={{ gridTemplateColumns: "1.6fr 90px 90px 90px 130px", cursor: "pointer" }} onClick={() => setFicha(m)}>
+                    <div className="td" style={{ minWidth: 0 }}>
+                      <div className="p-name truncate">{m.nombre}</div>
+                      {a!.racha >= umbrales.rachaServicios && (
+                        <span className="tag baja">{t("informes.ausenciasN", { n: a!.racha })}</span>
+                      )}
+                    </div>
+                    <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a!.asistidos}</div>
+                    <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-2)" }}>{a!.ausentes}</div>
+                    <div className="td" style={{ textAlign: "right", fontWeight: 700 }}>{a!.pct}%</div>
+                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                      {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

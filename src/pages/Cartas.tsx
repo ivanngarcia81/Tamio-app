@@ -1124,6 +1124,46 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 sub={cartas.length === 0 ? t("cartas.agregaPrimera") : t("cartas.sinResultadosSub")}
                 icon={<IconMail size={20} strokeWidth={1.8} />}
               />
+            ) : enIPhone ? (
+              <div className="ios-listcard">
+                {pagina.map((c) => (
+                  <div
+                    className="ios-txrow ios-txrow--clickable"
+                    data-fila
+                    key={c.id}
+                    onClick={() => abrirCarta(c)}
+                  >
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{c.destinatario_nombre}</div>
+                      <div className="tx-secundaria-movil">
+                        {t(`cartas.tipoDoc.${c.tipo}`)}{c.asunto ? ` · ${c.asunto}` : ""} · {fmtFechaCorta(c.fecha_emision)}
+                      </div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span className={`ios-badge ${badgeClaseIOS(c.estado)}`}>{t(`cartas.estado.${c.estado}`)}</span>
+                    </div>
+                    <RowMenu
+                      onEdit={() => abrirCarta(c)}
+                      extraItems={(() => {
+                        const extra: RowMenuItem[] = [
+                          { label: t("cartas.imprimirPdf"), onClick: () => imprimir(c) },
+                          { label: t("cartas.duplicar"), onClick: () => duplicarCarta(c) },
+                        ];
+                        if (!["entregada", "archivada", "cancelada"].includes(c.estado)) {
+                          extra.push({ label: t("cartas.marcarEntregadaAccion"), onClick: () => setConfirmAction({ tipo: "entregar", carta: c }) });
+                          extra.push({ label: t("cartas.cancelarAccion"), danger: true, onClick: () => setConfirmAction({ tipo: "cancelar", carta: c }) });
+                        }
+                        if (["archivada", "cancelada"].includes(c.estado)) {
+                          extra.push({ label: t("cartas.restaurar"), onClick: () => restaurarCarta(c) });
+                        }
+                        return extra;
+                      })()}
+                      onDelete={() => (c.estado === "borrador" ? setPendingDelete(c) : archivarCarta(c))}
+                      deleteLabel={c.estado === "borrador" ? t("common.eliminar") : t("cartas.archivar")}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="data-table roomy tabla-doc">
                 <div className="thead" style={{ gridTemplateColumns: COLS }}>
