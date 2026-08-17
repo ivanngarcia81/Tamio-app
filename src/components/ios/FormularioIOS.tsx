@@ -84,6 +84,8 @@ export function TextField({
   type,
   error,
   stacked,
+  autoFocus,
+  onKeyDown,
 }: {
   label: string;
   value: string;
@@ -96,6 +98,10 @@ export function TextField({
   error?: string | null;
   /** Etiqueta arriba, campo abajo — solo cuando el valor no cabe en una línea. */
   stacked?: boolean;
+  autoFocus?: boolean;
+  /** Para conservar atajos de teclado que la pantalla ya tenía (la
+   *  bienvenida envía con Enter desde el nombre de la iglesia). */
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }) {
   const { t } = useTranslation();
   // Un error siempre fuerza el apilado: en una fila de una sola línea no hay
@@ -114,6 +120,8 @@ export function TextField({
         type={type}
         placeholder={placeholder}
         inputMode={inputMode}
+        autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
         onChange={(e) => onChange(e.target.value)}
       />
       {error && <span className="ios-field-error">{error}</span>}

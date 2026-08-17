@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone } from "../movil";
-import { IOSPickerInput } from "./ios/IOSPickerField";
+import { IOSPickerField, IOSPickerInput } from "./ios/IOSPickerField";
+import { Section, TextField } from "./ios/FormularioIOS";
 import { updateChurch, type Church } from "../db";
 import { cargarDatosDemo } from "../demo";
 import { authHabilitado } from "../supabase";
@@ -23,6 +24,7 @@ interface Props {
  *  del shell normal, así hereda tema e idioma. */
 export default function Welcome({ church, langPref, onLangPrefChange, onDone }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
   const [slide, setSlide] = useState(0);
   const [nombre, setNombre] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -96,6 +98,136 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
       setError(t("common.noSePudoGuardar", { error: String(e) }));
       setSaving(false);
     }
+  }
+
+  const opcionesMoneda = CURRENCIES.map((c) => ({ value: c.code, label: currencyLabel(c.code, currentLang()) }));
+  const opcionesIdioma = idiomas.map((o) => ({ value: o.id, label: o.label }));
+
+  const puntos = (
+    <div className="welcome-dots">
+      {Array.from({ length: totalPasos }, (_, i) => (
+        <span
+          key={i}
+          className={`welcome-dot${i === slide ? " active" : ""}`}
+          onClick={() => setSlide(i)}
+        />
+      ))}
+    </div>
+  );
+
+  const botonesTour = (
+    <div style={{ display: "flex", gap: 10 }}>
+      <button className="btn ghost" style={{ flex: 1, justifyContent: "center" }} onClick={() => setSlide(tour.length)}>
+        {t("bienvenida.omitir")}
+      </button>
+      <button className="btn primary" style={{ flex: 2, justifyContent: "center" }} onClick={() => setSlide(slide + 1)}>
+        {t("bienvenida.siguiente")}
+      </button>
+    </div>
+  );
+
+  /* ---------- iPhone: pantalla completa, sin tarjeta ----------
+     El degradado del overlay pasa a ser el fondo. El cuerpo desplaza y el
+     pie (puntos + botones) queda anclado abajo respetando la safe-area.
+     Esta pantalla va ENCIMA de la barra de pestañas (z-index 160), así que
+     aquí no se suma `--tabbar-h`, al revés que el compositor de Mensajes. */
+  if (enIPhone) {
+    return (
+      <div className="welcome-overlay">
+        <div className="welcome-movil">
+          <div className="welcome-movil-cuerpo">
+            {enTour ? (
+              <div className="welcome-slide" key={slide}>
+                <div className="welcome-movil-tour">
+                  <div className="welcome-slide-icon">{tour[slide].icon}</div>
+                  <div className="welcome-movil-titulo">{tour[slide].titulo}</div>
+                  <div className="welcome-movil-sub">{tour[slide].texto}</div>
+                </div>
+                {/* Mismo cambio de idioma que antes en la primera
+                    diapositiva, pero como fila: el segmentado pedía 319 px
+                    dentro de 295 y "English" se salía del borde. */}
+                {slide === 0 && (
+                  <div className="ios-group" style={{ marginTop: 22 }}>
+                    <IOSPickerField
+                      label={t("idioma.titulo")}
+                      options={opcionesIdioma}
+                      value={langPref}
+                      onSelect={(v) => onLangPrefChange(v as LangPref)}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="welcome-slide" key="form">
+                <div className="welcome-movil-head">
+                  <div className="welcome-movil-logo"><IconTamio size={60} /></div>
+                  <div className="welcome-movil-titulo">{t("bienvenida.titulo")}</div>
+                  <div className="welcome-movil-sub">{t("bienvenida.sub")}</div>
+                </div>
+
+                {/* Una fila por campo: Ciudad y Moneda ya no se reparten el
+                    ancho de un teléfono. El aviso de validación va de pie
+                    del grupo, no dentro de la fila. */}
+                <Section
+                  footer={
+                    <>
+                      {error && <span className="welcome-movil-error">{error}</span>}
+                      {t("idioma.hint")}
+                    </>
+                  }
+                >
+                  <TextField
+                    label={t("bienvenida.filaIglesia")}
+                    value={nombre}
+                    onChange={setNombre}
+                    autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") comenzar(); }}
+                    placeholder={t("iglesia.nombrePlaceholder")}
+                  />
+                  <TextField
+                    label={t("iglesia.ciudad")}
+                    value={ciudad}
+                    onChange={setCiudad}
+                    placeholder={t("bienvenida.ciudadOpcional")}
+                  />
+                  <IOSPickerField
+                    label={t("iglesia.moneda")}
+                    options={opcionesMoneda}
+                    value={moneda}
+                    onSelect={setMoneda}
+                  />
+                  <IOSPickerField
+                    label={t("idioma.titulo")}
+                    options={opcionesIdioma}
+                    value={langPref}
+                    onSelect={(v) => onLangPrefChange(v as LangPref)}
+                  />
+                </Section>
+              </div>
+            )}
+          </div>
+
+          <div className="welcome-movil-pie">
+            {puntos}
+            {enTour ? botonesTour : (
+              <>
+                <button className="welcome-cta" onClick={comenzar} disabled={saving}>
+                  {saving ? t("common.guardando") : t("bienvenida.comenzar")}
+                </button>
+                {!authHabilitado && (
+                  <>
+                    <button className="welcome-cta-texto" onClick={explorarDemo} disabled={saving}>
+                      {saving ? t("common.guardando") : t("bienvenida.demoBoton")}
+                    </button>
+                    <div className="welcome-movil-nota">{t("bienvenida.demoHint")}</div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

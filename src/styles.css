@@ -4411,6 +4411,145 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    midiendo 12 y el área invisible crece a su alrededor — el mismo recurso
    que ya usa el "···" de las tablas. Crecer el botón de verdad habría
    estirado la línea de autor/fecha que lo contiene. */
+/* ============================================================
+   Bienvenida en iPhone: primer arranque a pantalla completa.
+
+   Era la única pantalla sin una sola regla de iPhone. El fondo de marca
+   (los tres degradados de `.welcome-overlay`) se conserva idéntico en las
+   dos plataformas; lo que se va es la tarjeta de 480 px con borde y blur,
+   que dentro de un teléfono es una caja flotando en otra caja.
+
+   Todo cuelga de `.welcome-overlay` a propósito: ese contenedor lleva
+   `color-scheme: dark` fijo e ignora el tema de la app, así que las clases
+   `.ios-*` con sus tokens normales quedarían invisibles y hay que darles
+   una piel translúcida clara. Acotarlo así impide que se filtre a las
+   listas del resto de la app. */
+:root.iphone .welcome-overlay {
+  padding: 0;
+  place-items: stretch;
+  overflow: hidden; /* el que desplaza es el cuerpo, no el telón */
+}
+:root.iphone .welcome-movil {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+:root.iphone .welcome-movil-cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(28px + env(safe-area-inset-top)) 16px 10px;
+}
+/* Pie anclado. Esta pantalla va ENCIMA de la barra de pestañas
+   (`.welcome-overlay` tiene z-index 160), así que aquí NO se suma
+   `var(--tabbar-h)` — al contrario que el compositor de Mensajes, que vive
+   por debajo de ella. */
+:root.iphone .welcome-movil-pie {
+  flex: 0 0 auto;
+  padding: 6px 16px calc(14px + env(safe-area-inset-bottom));
+}
+
+:root.iphone .welcome-movil-head,
+:root.iphone .welcome-movil-tour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+:root.iphone .welcome-movil-head { margin-bottom: 22px; }
+:root.iphone .welcome-movil-logo { line-height: 0; margin-bottom: 14px; }
+:root.iphone .welcome-movil-titulo {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
+  color: #fff;
+}
+:root.iphone .welcome-movil-sub {
+  margin-top: 7px;
+  font-size: 15px;
+  line-height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+:root.iphone .welcome-movil-tour .welcome-slide-icon { margin-bottom: 16px; }
+
+/* Piel clara de la lista agrupada sobre el telón oscuro. */
+:root.iphone .welcome-overlay .ios-section { margin: 0; }
+:root.iphone .welcome-overlay .ios-group {
+  margin: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.09);
+}
+:root.iphone .welcome-overlay .ios-field { min-height: 46px; color: #fff; }
+:root.iphone .welcome-overlay .ios-field:not(:last-child)::after { background: rgba(255, 255, 255, 0.16); }
+:root.iphone .welcome-overlay .ios-field-input { color: #fff; }
+:root.iphone .welcome-overlay .ios-field-input::placeholder { color: rgba(255, 255, 255, 0.42); }
+:root.iphone .welcome-overlay .ios-field-value { color: rgba(255, 255, 255, 0.62); }
+:root.iphone .welcome-overlay .ios-field--link:active { background: rgba(255, 255, 255, 0.08); }
+:root.iphone .welcome-overlay .ios-chevron { color: rgba(255, 255, 255, 0.42); }
+:root.iphone .welcome-overlay .ios-section-footer {
+  padding: 9px 4px 0;
+  color: rgba(255, 255, 255, 0.5);
+}
+/* El rojo de iOS es para fondo claro; sobre este telón se apaga. */
+:root.iphone .welcome-movil-error { display: block; margin-bottom: 5px; color: #ff8f8a; }
+
+/* Puntos de página: todos del mismo ancho y el activo por opacidad. El
+   activo estirado a 18 px es de Material Design, no de iOS. */
+:root.iphone .welcome-overlay .welcome-dots { margin: 0 0 16px; }
+:root.iphone .welcome-overlay .welcome-dot {
+  width: 7px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background-color 0.15s ease;
+}
+:root.iphone .welcome-overlay .welcome-dot.active { width: 7px; background: #fff; }
+
+/* Primario del color de acento, no el blanco de `btn primary` sobre este
+   telón. Mismo par que las burbujas de Mensajes: gira con el tema y no se
+   rompe con un acento claro en oscuro. */
+:root.iphone .welcome-cta {
+  display: block;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--brand, #059669);
+  color: var(--ink-contrast, #fff);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.41px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .welcome-cta:active { opacity: 0.85; }
+:root.iphone .welcome-cta:disabled { opacity: 0.5; }
+:root.iphone .welcome-cta-texto {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .welcome-cta-texto:active { opacity: 0.5; }
+:root.iphone .welcome-cta-texto:disabled { opacity: 0.5; }
+:root.iphone .welcome-movil-nota {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 :root.iphone .msg-del { position: relative; opacity: 0.55; }
 :root.iphone .msg-del::before {
   content: "";

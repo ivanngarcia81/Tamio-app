@@ -597,6 +597,12 @@ export const es = {
   },
 
   bienvenida: {
+    /* Etiquetas cortas SOLO para las filas de lista del primer arranque en
+       iPhone: ahí la etiqueta va a la izquierda y el campo a la derecha, y
+       "Nombre de la iglesia" no deja sitio para escribir. En Mac se sigue
+       usando `iglesia.nombreLabel` completo, encima del campo. */
+    filaIglesia: "Iglesia",
+    ciudadOpcional: "Opcional",
     titulo: "Bienvenido a Tamio",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
     comenzar: "Comenzar",
