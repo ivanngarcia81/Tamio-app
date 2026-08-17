@@ -147,6 +147,24 @@ function badgeClaseIOS(estado: string): string {
   return "";
 }
 
+/** Solicitudes comparte los mismos nombres de etapa ("firma", "lista",
+ *  "entregada") que las cartas, así que reutiliza badgeClaseIOS tal cual —
+ *  ver comentario ahí arriba. Traslados de salida y entrada tienen su
+ *  propio vocabulario de estados (revisión/aprobación/confirmación
+ *  pendientes vs. completado/entregado/aceptado), así que cada uno arma su
+ *  propio mapeo gris/ámbar/verde a partir de lo que ya dice cada etiqueta
+ *  en `traslados.estadoTS`/`traslados.estadoTE` (es.ts). */
+function badgeClaseTS(estado: string): string {
+  if (["revision", "aprobacion", "confirmacion"].includes(estado)) return "ios-badge--pending";
+  if (["cartaEntregada", "completado"].includes(estado)) return "ios-badge--ok";
+  return "";
+}
+function badgeClaseTE(estado: string): string {
+  if (["revision", "incompleta", "entrevista", "aprobacion"].includes(estado)) return "ios-badge--pending";
+  if (["aceptado", "completado"].includes(estado)) return "ios-badge--ok";
+  return "";
+}
+
 interface Props {
   church: Church;
   refreshKey: number;
@@ -747,6 +765,45 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 sub={t("solicitudes.agregaPrimera")}
                 icon={<IconMail size={20} strokeWidth={1.8} />}
               />
+            ) : enIPhone ? (
+              <div className="ios-listcard">
+                {solicitudes.map((s) => {
+                  const cartaVinculada = cartas.find((c) => c.id === s.carta_id) ?? null;
+                  const extra: RowMenuItem[] = [];
+                  if (!s.carta_id && !["entregada", "cancelada"].includes(s.estado)) {
+                    extra.push({ label: t("solicitudes.crearCarta"), onClick: () => crearDesdeSolicitud(s) });
+                  }
+                  if (cartaVinculada) {
+                    extra.push({ label: t("solicitudes.abrirCarta", { folio: cartaVinculada.folio }), onClick: () => abrirCarta(cartaVinculada) });
+                  }
+                  return (
+                    <div
+                      className="ios-txrow ios-txrow--clickable"
+                      data-fila
+                      key={s.id}
+                      onClick={() => setSolicitudModal({ open: true, solicitud: s })}
+                    >
+                      <div className="ios-txrow-main">
+                        <div className="ios-txrow-title">{nombreMiembro(s.member_id) ?? s.solicitante_externo ?? "—"}</div>
+                        <div className="tx-secundaria-movil">
+                          {t(`cartas.tipoDoc.${s.tipo_carta}`)}
+                          {cartaVinculada ? ` · ${cartaVinculada.folio}` : ""}
+                          {" · "}{fmtFechaCorta(s.fecha_solicitud)}
+                        </div>
+                      </div>
+                      <div className="ios-txrow-trailing">
+                        <span className={`ios-badge ${badgeClaseIOS(s.estado)}`}>{t(`solicitudes.estado.${s.estado}`)}</span>
+                      </div>
+                      <RowMenu
+                        onEdit={() => setSolicitudModal({ open: true, solicitud: s })}
+                        extraItems={extra}
+                        onDelete={() => setPendingDeleteSol(s)}
+                        deleteLabel={s.estado === "nueva" && s.carta_id === null ? t("common.eliminar") : t("solicitudes.cancelar")}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="data-table roomy">
                 <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
@@ -825,6 +882,32 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 sub={t("traslados.agregaPrimeroSalida")}
                 icon={<IconMail size={20} strokeWidth={1.8} />}
               />
+            ) : enIPhone ? (
+              <div className="ios-listcard">
+                {trasladosSalida.map((s) => (
+                  <div
+                    className="ios-txrow ios-txrow--clickable"
+                    data-fila
+                    key={s.id}
+                    onClick={() => setTsModal({ open: true, traslado: s })}
+                  >
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{nombreMiembro(s.member_id) ?? "—"}</div>
+                      <div className="tx-secundaria-movil">
+                        {s.iglesia_destino ?? t("traslados.sinDestino")} · {fmtFechaCorta(s.fecha_solicitud)}
+                      </div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span className={`ios-badge ${badgeClaseTS(s.estado)}`}>{t(`traslados.estadoTS.${s.estado}`)}</span>
+                    </div>
+                    <RowMenu
+                      onEdit={() => setTsModal({ open: true, traslado: s })}
+                      onDelete={() => setPendingDeleteTS(s)}
+                      deleteLabel={s.estado === "borrador" ? t("common.eliminar") : t("solicitudes.cancelar")}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="data-table roomy">
                 <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
@@ -882,6 +965,33 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 sub={t("traslados.agregaPrimeroEntrada")}
                 icon={<IconMail size={20} strokeWidth={1.8} />}
               />
+            ) : enIPhone ? (
+              <div className="ios-listcard">
+                {trasladosEntrada.map((s) => (
+                  <div
+                    className="ios-txrow ios-txrow--clickable"
+                    data-fila
+                    key={s.id}
+                    onClick={() => setTeModal({ open: true, traslado: s })}
+                  >
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{s.nombre}</div>
+                      <div className="tx-secundaria-movil">
+                        {s.iglesia_procedencia ?? "—"}
+                        {s.fecha_recepcion ? ` · ${fmtFechaCorta(s.fecha_recepcion)}` : ""}
+                      </div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span className={`ios-badge ${badgeClaseTE(s.estado)}`}>{t(`traslados.estadoTE.${s.estado}`)}</span>
+                    </div>
+                    <RowMenu
+                      onEdit={() => setTeModal({ open: true, traslado: s })}
+                      onDelete={() => setPendingDeleteTE(s)}
+                      deleteLabel={s.estado === "recibida" && s.member_id === null ? t("common.eliminar") : t("cartas.archivar")}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="data-table roomy">
                 <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
