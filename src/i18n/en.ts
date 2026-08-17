@@ -183,6 +183,7 @@ export const en: Resources = {
     nuevoGasto: "New expense",
     noHayRegistros: "There are no records to print.",
     totalDelMes: "Total for the month",
+    seccionResumen: "Overview",
     pctDelTotal: "{{pct}}% of total",
     todosIngresos: "All income",
     todosGastos: "All expenses",

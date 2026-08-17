@@ -177,6 +177,7 @@ export const es = {
     nuevoGasto: "Nuevo gasto",
     noHayRegistros: "No hay registros para imprimir.",
     totalDelMes: "Total del mes",
+    seccionResumen: "Resumen",
     pctDelTotal: "{{pct}}% del total",
     todosIngresos: "Todos los ingresos",
     todosGastos: "Todos los gastos",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import {
   catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
   getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
@@ -37,6 +37,11 @@ const PAGE_SIZE = 40;
 
 export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones ya muestra "Ingresos"/"Gastos" como pastilla
+  // activa (ver Cartas.tsx) — el título grande de aquí abajo sobra ahí. El
+  // resto de la cabecera (mes anterior/siguiente, compartir) se queda: no
+  // tiene equivalente en el carrusel ni en la barra inferior.
+  const enIPhone = esIPhone();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
@@ -185,10 +190,12 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{titulo}</div>
-          <div className="page-sub">{t("mov.registrados", { count: txs.length })}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{titulo}</div>
+            <div className="page-sub">{t("mov.registrados", { count: txs.length })}</div>
+          </div>
+        )}
         <div className="header-actions">
           <div className="month-nav">
             <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
@@ -227,36 +234,68 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           <LoadingState />
         ) : (
           <>
-            <div className="dash-canvas">
-            <div className="summary-4 enter">
-              <div className="stat-card">
-                <div className="stat-head">
-                  <span className="stat-label">{t("mov.totalDelMes")}</span>
-                </div>
-                <div className="stat-value md">
-                  <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+            {enIPhone ? (
+              <div className="ios-panel">
+                <div className="ios-panel-head"><h2>{t("mov.seccionResumen")}</h2></div>
+                <div className="ios-panel-grid">
+                  <div className="ios-stat" style={{ cursor: "default" }}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("mov.totalDelMes")}</span></div>
+                    <span className="ios-stat-num money">
+                      <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                    </span>
+                  </div>
+                  {tarjetasCategoria.map((c) => {
+                    const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
+                    return (
+                      <div className="ios-stat" key={c.id} style={{ cursor: "default" }}>
+                        <div className="ios-stat-top">
+                          <span className="ios-stat-label">{c.nombre}</span>
+                          <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
+                        </div>
+                        <span className="ios-stat-num money">
+                          <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                        </span>
+                        <div className="stat-bar">
+                          <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
+                        </div>
+                        <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              {tarjetasCategoria.map((c) => {
-                const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
-                return (
-                  <div className="stat-card" key={c.id}>
-                    <div className="stat-head">
-                      <span className="stat-label">{c.nombre}</span>
-                      <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
-                    </div>
-                    <div className="stat-value md">
-                      <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                    </div>
-                    <div className="stat-bar">
-                      <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
-                    </div>
-                    <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
+            ) : (
+              <div className="dash-canvas">
+              <div className="summary-4 enter">
+                <div className="stat-card">
+                  <div className="stat-head">
+                    <span className="stat-label">{t("mov.totalDelMes")}</span>
                   </div>
-                );
-              })}
-            </div>
-            </div>
+                  <div className="stat-value md">
+                    <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                  </div>
+                </div>
+                {tarjetasCategoria.map((c) => {
+                  const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
+                  return (
+                    <div className="stat-card" key={c.id}>
+                      <div className="stat-head">
+                        <span className="stat-label">{c.nombre}</span>
+                        <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
+                      </div>
+                      <div className="stat-value md">
+                        <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                      </div>
+                      <div className="stat-bar">
+                        <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
+                      </div>
+                      <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              </div>
+            )}
 
             {recurrentes.length > 0 && (
               <div className="card" style={{ marginBottom: 18 }}>

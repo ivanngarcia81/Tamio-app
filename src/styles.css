@@ -3906,6 +3906,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text); /* NO azul del sistema */
   font-variant-numeric: tabular-nums;
 }
+/* Sufijo de moneda (Movimientos: Ingresos/Gastos) — mismo `.stat-cur` que
+   ya usa `.stat-value` en el lenguaje de tarjeta viejo, aquí más chico que
+   el número grande en vez de iconos/flechas. `.stat-bar`/`.stat-pct`/
+   `.cat-dot` del mismo archivo se reutilizan tal cual dentro de `.ios-stat`
+   — son genéricos, no piden clase de contenedor. */
+:root.iphone .ios-stat-num .stat-cur {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+/* Variante para montos (Movimientos): a 34px "12,500.00 MXN" no cabe en
+   la mitad de una tarjeta de 2 columnas — el 34px de Cartas es para
+   contadores de 1-2 dígitos, no para dinero. Mismo criterio que ya usaba
+   el lenguaje de tarjeta viejo (.stat-value.md más chico que .stat-value
+   a secas) aplicado aquí. */
+:root.iphone .ios-stat-num.money {
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+:root.iphone .ios-stat-num.money .stat-cur { font-size: 13px; margin-left: 3px; }
 
 /* Tarjeta con filas dentro — filas de 52px (más altas que en una lista
    agrupada: el ritmo aquí es de panel, no de Ajustes). */
