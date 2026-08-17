@@ -3831,6 +3831,142 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.iphone .ios-sheet-overlay, :root.iphone .ios-sheet { animation: none; }
 }
 
+/* ============================================================
+   Idioma de PANEL (tipo Salud/Wallet), solo iPhone — Cartas.tsx (resumen)
+   por ahora. Distinto del idioma de LISTA de Ajustes: tarjetas de radio
+   16, números grandes, encabezados de 22px con acción a la derecha. Una
+   pantalla de DATOS con filas de 44px se lee como un menú de Ajustes —
+   ver el comentario largo en CLAUDE-CODE-secretaria-v2.md.
+
+   Sin padding horizontal propio: vive dentro de `.content`, que ya pone
+   el suyo (`--content-pad-x`) — .ios-group (Ajustes) sí necesita margen
+   propio porque cuelga directo de `.ios-form`, sin padding; aquí
+   `.ios-panel-grid`/`.ios-listcard` son hijos de `.ios-panel`, que
+   tampoco pone padding horizontal, así que no hay nada que compensar. */
+:root.iphone .ios-panel { padding: 4px 0 8px; }
+
+:root.iphone .ios-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+}
+:root.iphone .ios-panel-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+:root.iphone .ios-panel-action {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-panel-action:active { opacity: 0.35; }
+
+:root.iphone .ios-panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 26px; }
+
+/* Tarjeta de dato, tocable — una tarjeta que no lleva a ninguna parte es
+   decoración, no un dato. */
+:root.iphone .ios-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 14px 14px 16px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-stat:active { transform: scale(0.975); }
+:root.iphone .ios-stat:disabled { cursor: default; }
+:root.iphone .ios-stat:disabled:active { transform: none; }
+:root.iphone .ios-stat:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: 2px; }
+:root.iphone .ios-stat-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+:root.iphone .ios-stat-label { font-size: 15px; font-weight: 500; line-height: 1.25; color: var(--text-2); }
+:root.iphone .ios-stat-num {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--text); /* NO azul del sistema */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tarjeta con filas dentro — filas de 52px (más altas que en una lista
+   agrupada: el ritmo aquí es de panel, no de Ajustes). */
+:root.iphone .ios-listcard { background: var(--surface); border-radius: 16px; overflow: hidden; }
+:root.iphone .ios-listrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 14px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-listrow:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .ios-listrow:active { background: var(--line); }
+:root.iphone .ios-listrow-code { flex: 0 0 auto; font-size: 15px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+:root.iphone .ios-listrow-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* El color de la insignia significa algo — nada de cian decorativo.
+   Reutiliza --warn (ya es el ámbar de "atención" de toda la app) en vez
+   de inventar un naranja aparte solo para esto. */
+:root.iphone .ios-badge {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--line-soft);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+:root.iphone .ios-badge--pending { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+:root.iphone .ios-badge--ok { background: color-mix(in srgb, var(--brand, #059669) 12%, transparent); color: var(--brand, #059669); }
+
+:root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
+:root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ios-stat { transition: none; }
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;

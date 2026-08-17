@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { textoCorto } from "../movil";
+import { esIPhone, textoCorto } from "../movil";
 import {
   deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
   estadoAnteriorDeHistorial, fmtFechaCorta, insertCarta,
@@ -136,6 +136,16 @@ function accent(color: string): CSSProperties {
   return { "--accent-color": color, textAlign: "left", cursor: "pointer", font: "inherit" } as CSSProperties;
 }
 
+/** Mismo agrupamiento que `resumen` (útil arriba), aplicado a la insignia de
+ *  cada fila de actividad reciente en el idioma de panel de iPhone: gris por
+ *  default, ámbar mientras espera firma, verde ya lista/entregada. Nunca
+ *  cian — esa era la queja original sobre `.tag.administracion`. */
+function badgeClaseIOS(estado: string): string {
+  if (estado === "firma") return "ios-badge--pending";
+  if (["aprobada", "lista", "entregada"].includes(estado)) return "ios-badge--ok";
+  return "";
+}
+
 interface Props {
   church: Church;
   refreshKey: number;
@@ -144,6 +154,10 @@ interface Props {
 
 export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  // El carrusel de secciones (CarruselSecciones, solo iPhone) ya muestra el
+  // nombre de la sección activa, así que el título grande de aquí abajo
+  // sobra ahí — igual que en Ajustes (ver Configuracion.tsx/enIPhone).
+  const enIPhone = esIPhone();
   const [cartas, setCartas] = useState<Carta[]>([]);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -521,66 +535,103 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
-      <div className="header">
-        <div>
-          <div className="page-title">{t("secretaria.cartas.titulo")}</div>
-          <div className="page-sub">{t("secretaria.cartas.sub")}</div>
-        </div>
-        <div className="header-actions">
-          <div className="cartas-menu-crear">
-            <MenuAnchor
-              open={menuCrearAbierto}
-              onOpenChange={setMenuCrearAbierto}
-              button={<IconPlus size={22} strokeWidth={2.1} />}
-              ariaLabel={t("cartas.nuevaCarta")}
-              items={menuCrearItems}
-            />
+      {!enIPhone && (
+        <div className="header">
+          <div>
+            <div className="page-title">{t("secretaria.cartas.titulo")}</div>
+            <div className="page-sub">{t("secretaria.cartas.sub")}</div>
+          </div>
+          <div className="header-actions">
+            <div className="cartas-menu-crear">
+              <MenuAnchor
+                open={menuCrearAbierto}
+                onOpenChange={setMenuCrearAbierto}
+                button={<IconPlus size={22} strokeWidth={2.1} />}
+                ariaLabel={t("cartas.nuevaCarta")}
+                items={menuCrearItems}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="content">
         {loading ? (
           <LoadingState />
         ) : tab === "resumen" ? (
           <>
-            <div className="dash-canvas">
-            <div className="summary-4 enter">
-              <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
-                <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.enPreparacion} format={String} /></div>
-              </button>
-              <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={() => irAArchivoFiltrado("firma")}>
-                <div className="stat-head"><span className="stat-label">{t("cartas.cardFirma")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.esperandoFirma} format={String} /></div>
-              </button>
-              <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={() => irAArchivoFiltrado("lista")}>
-                <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
-                <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
-              </button>
-              {/* Cuatro tarjetas que cuentan una sola historia, y todas son
-                  colas de trabajo: en preparación → esperando firma → listas
-                  para entregar, más los traslados en curso. Antes eran seis
-                  (con "Emitidas este mes", puro dato, y los traslados
-                  separados en dos) y la sexta rompía la fila sola. */}
-              <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
-                <div className="stat-head"><span className="stat-label">{t("traslados.cardEnProceso")}</span></div>
-                <div className="stat-value md">
-                  <CountUp
-                    value={
-                      trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
-                      trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
-                    }
-                    format={String}
-                  />
+            {enIPhone ? (
+              <div className="ios-panel">
+                <div className="ios-panel-head"><h2>{t("cartas.seccionEstado")}</h2></div>
+                <div className="ios-panel-grid">
+                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("borrador")}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardPreparacion")}</span></div>
+                    <span className="ios-stat-num"><CountUp value={resumen.enPreparacion} format={String} /></span>
+                  </button>
+                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("firma")}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardFirma")}</span></div>
+                    <span className="ios-stat-num"><CountUp value={resumen.esperandoFirma} format={String} /></span>
+                  </button>
+                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("lista")}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardListas")}</span></div>
+                    <span className="ios-stat-num"><CountUp value={resumen.listas} format={String} /></span>
+                  </button>
+                  <button type="button" className="ios-stat" onClick={() => cambiarTab("salida")}>
+                    <div className="ios-stat-top"><span className="ios-stat-label">{t("traslados.cardEnProceso")}</span></div>
+                    <span className="ios-stat-num">
+                      <CountUp
+                        value={
+                          trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
+                          trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
+                        }
+                        format={String}
+                      />
+                    </span>
+                  </button>
                 </div>
-              </button>
-            </div>
-            </div>
+              </div>
+            ) : (
+              <div className="dash-canvas">
+              <div className="summary-4 enter">
+                <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
+                  <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.enPreparacion} format={String} /></div>
+                </button>
+                <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={() => irAArchivoFiltrado("firma")}>
+                  <div className="stat-head"><span className="stat-label">{t("cartas.cardFirma")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.esperandoFirma} format={String} /></div>
+                </button>
+                <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={() => irAArchivoFiltrado("lista")}>
+                  <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
+                  <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
+                </button>
+                {/* Cuatro tarjetas que cuentan una sola historia, y todas son
+                    colas de trabajo: en preparación → esperando firma → listas
+                    para entregar, más los traslados en curso. Antes eran seis
+                    (con "Emitidas este mes", puro dato, y los traslados
+                    separados en dos) y la sexta rompía la fila sola. */}
+                <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
+                  <div className="stat-head"><span className="stat-label">{t("traslados.cardEnProceso")}</span></div>
+                  <div className="stat-value md">
+                    <CountUp
+                      value={
+                        trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
+                        trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
+                      }
+                      format={String}
+                    />
+                  </div>
+                </button>
+              </div>
+              </div>
+            )}
 
             {/* Las dos cajas de "Registrar traslado" vivían aquí — ya están
                 en el menú del "+". Este mismo sitio ahora es Plantillas y
-                Archivo, que eran pastillas de la fila que se quitó. */}
+                Archivo, que eran pastillas de la fila que se quitó. Este
+                bloque no varía por plataforma: no es parte del idioma de
+                panel de iPhone, es el reemplazo directo de la fila de
+                pastillas que se quitó para todos por igual. */}
             <div className="ios-navcards" style={{ marginTop: 14 }}>
               <button type="button" className="ios-navcard" onClick={() => cambiarTab("plantillas")}>
                 <span className="ios-navcard-icon"><TemplateIcon /></span>
@@ -594,24 +645,51 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </button>
             </div>
 
-            <div className="card enter" style={{ marginTop: 18 }}>
-              <div className="card-head"><span className="card-title">{t("cartas.actividadReciente")}</span></div>
-              {cartas.length === 0 ? (
-                <EmptyState
-                  titulo={t("cartas.aunNoHay")}
-                  sub={t("cartas.agregaPrimera")}
-                  icon={<IconMail size={20} strokeWidth={1.8} />}
-                />
-              ) : (
-                cartas.slice(0, 5).map((c) => (
-                  <div key={c.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => abrirCarta(c)}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, width: 120, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.folio}</span>
-                    <span className="roster-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
-                    <span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span>
+            {enIPhone ? (
+              <div className="ios-panel" style={{ marginTop: 18 }}>
+                <div className="ios-panel-head">
+                  <h2>{t("cartas.actividadReciente")}</h2>
+                  {cartas.length > 0 && (
+                    <button type="button" className="ios-panel-action" onClick={() => cambiarTab("archivo")}>
+                      {t("cartas.verTodo")}
+                    </button>
+                  )}
+                </div>
+                {cartas.length === 0 ? (
+                  <div className="ios-panel-empty">{t("cartas.aunNoHay")}</div>
+                ) : (
+                  <div className="ios-listcard">
+                    {cartas.slice(0, 5).map((c) => (
+                      <button key={c.id} type="button" className="ios-listrow" onClick={() => abrirCarta(c)}>
+                        <span className="ios-listrow-code">{c.folio}</span>
+                        <span className="ios-listrow-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
+                        <span className={`ios-badge ${badgeClaseIOS(c.estado)}`}>{t(`cartas.estado.${c.estado}`)}</span>
+                        <IosChevron />
+                      </button>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div className="card enter" style={{ marginTop: 18 }}>
+                <div className="card-head"><span className="card-title">{t("cartas.actividadReciente")}</span></div>
+                {cartas.length === 0 ? (
+                  <EmptyState
+                    titulo={t("cartas.aunNoHay")}
+                    sub={t("cartas.agregaPrimera")}
+                    icon={<IconMail size={20} strokeWidth={1.8} />}
+                  />
+                ) : (
+                  cartas.slice(0, 5).map((c) => (
+                    <div key={c.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => abrirCarta(c)}>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, width: 120, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.folio}</span>
+                      <span className="roster-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
+                      <span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </>
         ) : tab === "nueva" ? (
           <CartaEditor
