@@ -14,6 +14,7 @@ import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
 import { CERO, sumar, type Centavos } from "../dinero";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
+import { esIPhone } from "../movil";
 
 const PAGE_SIZE = 40;
 
@@ -25,6 +26,7 @@ interface Props {
 
 export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
   const [depositos, setDepositos] = useState<Deposito[]>([]);
   const [totalMes, setTotalMes] = useState<Centavos>(CERO);
   const [conteoMes, setConteoMes] = useState(0);
@@ -86,10 +88,16 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   return (
     <>
       <div className="header">
-        <div>
-          <div className="page-title">{t("depositos.titulo")}</div>
-          <div className="page-sub">{t("depositos.sub")}</div>
-        </div>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("depositos.titulo")}</div>
+            <div className="page-sub">{t("depositos.sub")}</div>
+          </div>
+        )}
+        {/* El botón se queda: `.btn-nuevo-cabecera` ya lo oculta en el
+            teléfono, donde crear un depósito lo cubre el "+" flotante — el
+            `useAbrirCrearDesdeMas(abrirNuevo)` de arriba es justo lo que
+            conecta ese "+" con este mismo modal. */}
         <div className="header-actions">
           <button className="btn primary btn-nuevo-cabecera" onClick={abrirNuevo}>
             <IconPlus size={14} /> {t("depositos.nuevoDeposito")}
@@ -98,6 +106,48 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
+        {enIPhone ? (
+          /* Sin la franja de color de `.stat-card accent` ni el icono en
+             recuadro: en una tarjeta de la mitad del ancho compiten con la
+             cifra, que es lo único que se viene a leer. Las tres siguen
+             llevando su pie —cuántos y de qué mes, qué año, cuándo y a qué
+             cuenta fue el último— porque sin él la cifra no dice de qué
+             período habla. Tres tarjetas en dos columnas dejan un hueco en
+             la última fila; es lo que ya hace Servicios, que también tiene
+             tres. */
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("depositos.seccionResumen")}</h2></div>
+            <div className="ios-panel-grid">
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("depositos.depositosDelMes")}</span></div>
+                <span className="ios-stat-num money">
+                  <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                </span>
+                <div className="stat-pct">{t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}</div>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("depositos.totalAnio")}</span></div>
+                <span className="ios-stat-num money">
+                  <CountUp value={totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                </span>
+                <div className="stat-pct">{anio}</div>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("depositos.ultimoDeposito")}</span></div>
+                <span className="ios-stat-num money">
+                  {ultimo
+                    ? <><CountUp value={ultimo.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></>
+                    : <span style={{ color: "var(--text-3)" }}>—</span>}
+                </span>
+                <div className="stat-pct">
+                  {ultimo
+                    ? `${fmtFechaCorta(ultimo.fecha)} · ${ultimo.cuenta_banco}`
+                    : t("depositos.sinDepositos")}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
             <div className="stat-head">
@@ -140,10 +190,15 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             </div>
           </div>
         </div>
+        )}
 
-        <div className="tx-head">
-          <div className="tx-title">{t("depositos.historial")}</div>
-        </div>
+        {enIPhone ? (
+          <div className="ios-panel-head"><h2>{t("depositos.historial")}</h2></div>
+        ) : (
+          <div className="tx-head">
+            <div className="tx-title">{t("depositos.historial")}</div>
+          </div>
+        )}
 
         {loading ? (
           <LoadingState />

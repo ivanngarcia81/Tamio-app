@@ -7,6 +7,7 @@ import { useContextMenu } from "./ContextMenu";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
+import { esIPhone } from "../movil";
 
 interface Props {
   depositos: Deposito[];
@@ -40,6 +41,77 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
         onChanged();
       },
     });
+  }
+
+  /* Misma fila que ya usan Movimientos y las demás tablas convertidas: un
+     `<div data-fila>` con RowMenu dentro, no un tercer patrón. La fila en sí
+     no es tocable (no lleva `--clickable`) porque las acciones viven en el
+     deslizamiento y en el "···", igual que en Movimientos; el lápiz de la
+     columna de acciones se va porque en el teléfono duplicaba la primera
+     entrada del propio menú. Las notas no caben en dos líneas y se quedan
+     solo en Mac: son el campo más largo y el menos consultado. */
+  if (esIPhone()) {
+    return (
+      <>
+        <div className="ios-listcard">
+          {depositos.map((dep) => {
+            // El período solo se canta cuando NO coincide con el mes de la
+            // fecha; si no, un depósito parecería no contar en ningún lado.
+            // Va ANTES de la referencia, no después: la línea se recorta a
+            // unos 150 px y puesto al final no llegaba a verse nunca —
+            // justo en las filas donde es lo único que hay que leer.
+            const secundaria = [
+              fmtFechaCorta(dep.fecha),
+              dep.periodo !== dep.fecha.slice(0, 7)
+                ? t("depositos.correspondeA", { periodo: mesLegible(dep.periodo) })
+                : null,
+              dep.referencia,
+            ].filter(Boolean).join(" · ");
+            return (
+              <div
+                className="ios-txrow" data-fila
+                key={dep.id}
+                onContextMenu={(e) =>
+                  abrirMenu(e, [
+                    { label: t("common.editar"), onClick: () => onEdit(dep) },
+                    { label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(dep) },
+                  ])}
+              >
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title" title={dep.cuenta_banco}>
+                    <span className="truncate">{dep.cuenta_banco}</span>
+                  </div>
+                  <div className="tx-secundaria-movil" title={secundaria}>{secundaria}</div>
+                </div>
+                <div className="ios-txrow-trailing">
+                  <span className="tx-amount negative">
+                    {fmtMoney(dep.monto)}<span className="cur">{dep.moneda}</span>
+                  </span>
+                </div>
+                <RowMenu
+                  onEdit={() => onEdit(dep)}
+                  onDelete={() => setPendingDelete(dep)}
+                  onBorrarDirecto={() => void borrarConDeshacer(dep)}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {menu}
+
+        {pendingDelete && (
+          <ConfirmDialog
+            title={t("depositos.eliminarTitulo")}
+            message={t("depositos.eliminarMensaje", { monto: `${fmtMoney(pendingDelete.monto)} ${pendingDelete.moneda}`, cuenta: pendingDelete.cuenta_banco })}
+            confirmLabel={t("common.eliminar")}
+            danger
+            onConfirm={confirmDelete}
+            onCancel={() => setPendingDelete(null)}
+          />
+        )}
+      </>
+    );
   }
 
   return (

@@ -300,6 +300,7 @@ export const es = {
   },
 
   depositos: {
+    seccionResumen: "Resumen",
     titulo: "Depósito bancario",
     sub: "Registrar dinero depositado en la cuenta bancaria de la iglesia",
     nuevoDeposito: "Nuevo depósito",

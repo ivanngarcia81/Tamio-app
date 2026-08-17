@@ -306,6 +306,7 @@ export const en: Resources = {
   },
 
   depositos: {
+    seccionResumen: "Overview",
     titulo: "Bank deposit",
     sub: "Record money deposited into the church's bank account",
     nuevoDeposito: "New deposit",
