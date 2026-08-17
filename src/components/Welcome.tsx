@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import { updateChurch, type Church } from "../db";
 import { cargarDatosDemo } from "../demo";
 import { authHabilitado } from "../supabase";
@@ -153,11 +155,20 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
               </div>
               <div className="form-group">
                 <label className="form-label">{t("iglesia.moneda")}</label>
-                <select className="form-select" value={moneda} onChange={(e) => setMoneda(e.target.value)}>
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>{currencyLabel(c.code, currentLang())}</option>
-                  ))}
-                </select>
+                {esIPhone() ? (
+                  <IOSPickerInput
+                    ariaLabel={t("iglesia.moneda")}
+                    options={CURRENCIES.map((c) => ({ value: c.code, label: currencyLabel(c.code, currentLang()) }))}
+                    value={moneda}
+                    onSelect={setMoneda}
+                  />
+                ) : (
+                  <select className="form-select" value={moneda} onChange={(e) => setMoneda(e.target.value)}>
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{currencyLabel(c.code, currentLang())}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 

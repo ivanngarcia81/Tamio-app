@@ -1,5 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import { textoCorto } from "../movil";
 import {
   buscarPosiblesDuplicados, getServicioAsistencia, insertServicio, insertVisitanteComoMiembro,
@@ -90,17 +92,27 @@ const RosterRow = memo(function RosterRow({ id, estado, conMotivo, onToggle, onR
       )}
       {!estado.presente && conMotivo && (
         <span className="roster-controls">
-          <select
-            className="form-input"
-            aria-label={t("servicios.razonAusencia")}
-            value={estado.razon}
-            onChange={(e) => onRazon(id, e.target.value)}
-          >
-            <option value="">{t("servicios.sinRazon")}</option>
-            {RAZONES_AUSENCIA.map((r) => (
-              <option key={r} value={r}>{t(`servicios.razon.${r}`)}</option>
-            ))}
-          </select>
+          {esIPhone() ? (
+            <IOSPickerInput
+              ariaLabel={t("servicios.razonAusencia")}
+              options={[{ value: "", label: t("servicios.sinRazon") }, ...RAZONES_AUSENCIA.map((r) => ({ value: r, label: t(`servicios.razon.${r}`) }))]}
+              value={estado.razon}
+              placeholder={t("servicios.sinRazon")}
+              onSelect={(v) => onRazon(id, v)}
+            />
+          ) : (
+            <select
+              className="form-input"
+              aria-label={t("servicios.razonAusencia")}
+              value={estado.razon}
+              onChange={(e) => onRazon(id, e.target.value)}
+            >
+              <option value="">{t("servicios.sinRazon")}</option>
+              {RAZONES_AUSENCIA.map((r) => (
+                <option key={r} value={r}>{t(`servicios.razon.${r}`)}</option>
+              ))}
+            </select>
+          )}
           {estado.razon === "otra" && (
             <input
               className="form-input"
@@ -482,11 +494,20 @@ export default function ServicioModal({ church, servicio, prefill, onClose, onSa
               </div>
               <div className="form-group">
                 <label className="form-label">{t("servicios.tipoServicio")}</label>
-                <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                  {TIPOS_SERVICIO.map((ti) => (
-                    <option key={ti} value={ti}>{t(`servicios.tipo.${ti}`)}</option>
-                  ))}
-                </select>
+                {esIPhone() ? (
+                  <IOSPickerInput
+                    ariaLabel={t("servicios.colServicio")}
+                    options={TIPOS_SERVICIO.map((ti) => ({ value: ti, label: t(`servicios.tipo.${ti}`) }))}
+                    value={tipo}
+                    onSelect={setTipo}
+                  />
+                ) : (
+                  <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                    {TIPOS_SERVICIO.map((ti) => (
+                      <option key={ti} value={ti}>{t(`servicios.tipo.${ti}`)}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">{t("servicios.dirige")} <span className="opt">{t("common.opcional")}</span></label>

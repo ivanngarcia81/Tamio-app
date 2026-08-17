@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
@@ -34,6 +36,7 @@ interface Props {
 
 export default function TrasladoEntradaModal({ church, traslado, onClose, onSaved }: Props) {
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
   useEscapeClose(onClose);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -297,11 +300,15 @@ export default function TrasladoEntradaModal({ church, traslado, onClose, onSave
               </div>
               <div className="form-group">
                 <label className="form-label">{t("membresia.colEstado")}</label>
-                <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("membresia.colEstado")} options={ESTADOS_TE.map((k) => ({ value: k, label: t(`traslados.estadoTE.${k}`) }))} value={estado} onSelect={setEstado} />
+                ) : (
+                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
                   {ESTADOS_TE.map((es) => (
-                    <option key={es} value={es}>{t(`traslados.estadoTE.${es}`)}</option>
+                  <option key={es} value={es}>{t(`traslados.estadoTE.${es}`)}</option>
                   ))}
-                </select>
+                  </select>
+                )}
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("cartas.observaciones")}</label>

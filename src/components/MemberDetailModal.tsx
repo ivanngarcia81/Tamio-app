@@ -1,5 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   catNombre, categoriaInfo, currentYear, fmtFechaCorta, fmtMoney, listMemberAportes,
   memberAporteYears, metodoNombre, METODOS_PAGO, type Church, type Member, type Tx,
@@ -134,11 +136,22 @@ export default function MemberDetailModal({ church, member, onClose }: Props) {
             </div>
             <div className="stat-card" style={{ padding: "14px 16px", minWidth: 130 }}>
               <div className="stat-label">{t("detalleMiembro.anio")}</div>
-              <select className="form-select" value={year} onChange={(e) => setYear(e.target.value)} style={{ marginTop: 6 }}>
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+              {esIPhone() ? (
+                <div style={{ marginTop: 6 }}>
+                  <IOSPickerInput
+                    ariaLabel={t("detalleMiembro.anio")}
+                    options={years.map((y) => ({ value: String(y), label: String(y) }))}
+                    value={String(year)}
+                    onSelect={setYear}
+                  />
+                </div>
+              ) : (
+                <select className="form-select" value={year} onChange={(e) => setYear(e.target.value)} style={{ marginTop: 6 }}>
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 

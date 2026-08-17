@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   insertActa, updateActa,
   type Acta, type ActaAcuerdo, type ActaMocion, type Church, type NewActa,
@@ -61,6 +63,7 @@ interface Props {
 
 export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
   const { t, i18n } = useTranslation();
+  const enIPhone = esIPhone();
   useEscapeClose(onClose);
   const [saving, setSaving] = useState(false);
   const [iaAbierta, setIaAbierta] = useState(false);
@@ -185,11 +188,15 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("actas.tipoReunion")}</label>
-                <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("actas.tipoActa")} options={TIPOS_ACTA.map((k) => ({ value: k, label: t(`actas.tipo.${k}`) }))} value={tipo} onSelect={setTipo} />
+                ) : (
+                  <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
                   {TIPOS_ACTA.map((ti) => (
-                    <option key={ti} value={ti}>{t(`actas.tipo.${ti}`)}</option>
+                  <option key={ti} value={ti}>{t(`actas.tipo.${ti}`)}</option>
                   ))}
-                </select>
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">{t("actas.tituloActa")}</label>
@@ -376,11 +383,15 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("actas.estadoActa")}</label>
-                <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
+                {enIPhone ? (
+                  <IOSPickerInput ariaLabel={t("actas.estadoActa")} options={ESTADOS_ACTA.map((k) => ({ value: k, label: t(`actas.estado.${k}`) }))} value={estado} onSelect={setEstado} />
+                ) : (
+                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
                   {ESTADOS_ACTA.map((es) => (
-                    <option key={es} value={es}>{t(`actas.estado.${es}`)}</option>
+                  <option key={es} value={es}>{t(`actas.estado.${es}`)}</option>
                   ))}
-                </select>
+                  </select>
+                )}
               </div>
               {muestraAprobacion && (
                 <div className="form-group">

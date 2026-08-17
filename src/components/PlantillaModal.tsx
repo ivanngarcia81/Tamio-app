@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import { insertPlantilla, updatePlantilla, type Church, type NewPlantilla, type Plantilla } from "../db";
 import { aplicarVariables, contextoDe, VARIABLES } from "../services/cartas/plantillas";
 import { renderCartaHtml } from "../services/cartas/renderCarta";
@@ -147,11 +149,20 @@ export default function PlantillaModal({ church, plantilla, base, onClose, onSav
               </div>
               <div className="form-group">
                 <label className="form-label">{t("cartas.tipoCarta")}</label>
-                <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                  {TIPOS_CARTA.map((ti) => (
-                    <option key={ti} value={ti}>{t(`cartas.tipoDoc.${ti}`)}</option>
-                  ))}
-                </select>
+                {esIPhone() ? (
+                  <IOSPickerInput
+                    ariaLabel={t("cartas.tipoCarta")}
+                    options={TIPOS_CARTA.map((ti) => ({ value: ti, label: t(`cartas.tipoDoc.${ti}`) }))}
+                    value={tipo}
+                    onSelect={setTipo}
+                  />
+                ) : (
+                  <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                    {TIPOS_CARTA.map((ti) => (
+                      <option key={ti} value={ti}>{t(`cartas.tipoDoc.${ti}`)}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="form-group">
                 <SwitchRow label={t("plantillas.activa")} value={activa} onChange={setActiva} />
@@ -176,18 +187,29 @@ export default function PlantillaModal({ church, plantilla, base, onClose, onSav
             <div className="form-group full">
               <label className="form-label">{t("cartas.cuerpo")}</label>
               <div style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
-                <select
-                  className="form-input"
-                  style={{ width: "auto", padding: "6px 10px" }}
-                  value=""
-                  aria-label={t("plantillas.insertarVariable")}
-                  onChange={(e) => { if (e.target.value) insertarVariable(e.target.value); e.target.value = ""; }}
-                >
-                  <option value="">{t("plantillas.insertarVariable")}</option>
-                  {VARIABLES.map((v) => (
-                    <option key={v} value={v}>{t(`plantillas.variable.${v}`)}</option>
-                  ))}
-                </select>
+                {/* Menú de acción, no campo: inserta la variable y vuelve a vacío. */}
+                {esIPhone() ? (
+                  <IOSPickerInput
+                    ariaLabel={t("plantillas.insertarVariable")}
+                    options={VARIABLES.map((v) => ({ value: v, label: t(`plantillas.variable.${v}`) }))}
+                    value=""
+                    placeholder={t("plantillas.insertarVariable")}
+                    onSelect={insertarVariable}
+                  />
+                ) : (
+                  <select
+                    className="form-input"
+                    style={{ width: "auto", padding: "6px 10px" }}
+                    value=""
+                    aria-label={t("plantillas.insertarVariable")}
+                    onChange={(e) => { if (e.target.value) insertarVariable(e.target.value); e.target.value = ""; }}
+                  >
+                    <option value="">{t("plantillas.insertarVariable")}</option>
+                    {VARIABLES.map((v) => (
+                      <option key={v} value={v}>{t(`plantillas.variable.${v}`)}</option>
+                    ))}
+                  </select>
+                )}
                 <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t("plantillas.variableHint")}</span>
               </div>
               <div

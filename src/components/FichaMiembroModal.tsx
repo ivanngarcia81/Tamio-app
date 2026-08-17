@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, updateMemberFicha,
   type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha, type NewMember,
@@ -402,6 +404,13 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
                 <label className="form-label">{t("membresia.colEstado")}</label>
                 {esBaja ? (
                   <input className="form-input" value={t("ficha.estadoBajaNota")} disabled />
+                ) : esIPhone() ? (
+                  <IOSPickerInput
+                    ariaLabel={t("membresia.colEstado")}
+                    options={ESTADOS_REGISTRO.map((es) => ({ value: es, label: t(`membresia.estado.${es}`) }))}
+                    value={estado}
+                    onSelect={setEstado}
+                  />
                 ) : (
                   <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
                     {ESTADOS_REGISTRO.map((es) => (

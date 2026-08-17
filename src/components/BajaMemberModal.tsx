@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import type { Member } from "../db";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
@@ -52,11 +54,20 @@ export default function BajaMemberModal({ member, onConfirm, onCancel }: Props) 
         </div>
         <div className="form-group">
           <label className="form-label">{t("membresia.bajaMotivo")}</label>
-          <select className="form-input" value={motivo} onChange={(e) => setMotivo(e.target.value as MotivoId)}>
-            {MOTIVOS.map((m) => (
-              <option key={m} value={m}>{t(`membresia.motivo.${m}`)}</option>
-            ))}
-          </select>
+          {esIPhone() ? (
+            <IOSPickerInput
+              ariaLabel={t("membresia.bajaMotivo")}
+              options={MOTIVOS.map((m) => ({ value: m, label: t(`membresia.motivo.${m}`) }))}
+              value={motivo}
+              onSelect={(v) => setMotivo(v as MotivoId)}
+            />
+          ) : (
+            <select className="form-input" value={motivo} onChange={(e) => setMotivo(e.target.value as MotivoId)}>
+              {MOTIVOS.map((m) => (
+                <option key={m} value={m}>{t(`membresia.motivo.${m}`)}</option>
+              ))}
+            </select>
+          )}
         </div>
         {motivo === "otro" && (
           <div className="form-group">

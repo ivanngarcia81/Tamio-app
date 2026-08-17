@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { autoDetectMapping, applyMapping, parseCsvFile, type CsvField, type ImportRowError } from "../services/csvImport";
@@ -159,16 +161,26 @@ export default function GenericCsvImportModal<T>({
                     <label className="form-label">
                       {t(f.label)} {!f.required && <span className="opt">{t("common.opcional")}</span>}
                     </label>
-                    <select
-                      className="form-select"
-                      value={step.mapping[f.key] ?? ""}
-                      onChange={(e) => actualizarMapeo(f.key, e.target.value)}
-                    >
-                      <option value="">{f.required ? t("importar.seleccionaColumna") : t("importar.ninguna")}</option>
-                      {step.headers.map((h) => (
-                        <option key={h} value={h}>{h}</option>
-                      ))}
-                    </select>
+                    {esIPhone() ? (
+                      <IOSPickerInput
+                        ariaLabel={f.label}
+                        options={[{ value: "", label: f.required ? t("importar.seleccionaColumna") : t("importar.ninguna") }, ...step.headers.map((h) => ({ value: h, label: h }))]}
+                        value={step.mapping[f.key] ?? ""}
+                        placeholder={f.required ? t("importar.seleccionaColumna") : t("importar.ninguna")}
+                        onSelect={(v) => actualizarMapeo(f.key, v)}
+                      />
+                    ) : (
+                      <select
+                        className="form-select"
+                        value={step.mapping[f.key] ?? ""}
+                        onChange={(e) => actualizarMapeo(f.key, e.target.value)}
+                      >
+                        <option value="">{f.required ? t("importar.seleccionaColumna") : t("importar.ninguna")}</option>
+                        {step.headers.map((h) => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 ))}
               </div>

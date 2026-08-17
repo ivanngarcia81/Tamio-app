@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
 import { textoCorto } from "../movil";
 import { CERO, aTextoEditable, deTexto, multiplicar, type Centavos } from "../dinero";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
@@ -677,9 +679,21 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
                 </div>
                 <div className="form-group">
                   <label className="form-label">{t("recordModal.moneda")}</label>
-                  <select className="form-select" value={church.moneda} disabled>
-                    <option value={church.moneda}>{currencyLabel(church.moneda, i18n.language)}</option>
-                  </select>
+                  {/* Una sola opción y deshabilitado: no despliega nada, pero
+                      WebKit le pinta igual el doble chevron. */}
+                  {esIPhone() ? (
+                    <IOSPickerInput
+                      ariaLabel={t("iglesia.moneda")}
+                      options={[{ value: church.moneda, label: currencyLabel(church.moneda, i18n.language) }]}
+                      value={church.moneda}
+                      disabled
+                      onSelect={() => {}}
+                    />
+                  ) : (
+                    <select className="form-select" value={church.moneda} disabled>
+                      <option value={church.moneda}>{currencyLabel(church.moneda, i18n.language)}</option>
+                    </select>
+                  )}
                 </div>
               </div>
 

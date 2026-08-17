@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esIPhone } from "../../movil";
+import { IOSPickerInput } from "../ios/IOSPickerField";
 import { supabase } from "../../supabase";
 import { ROLES_ACCESO, type Role } from "../../role";
 import { IconMail, IconPlus } from "../../icons";
@@ -104,16 +106,25 @@ export default function InvitarUsuario() {
 
       <div className="form-row">
         <label className="form-label" htmlFor="invitar-rol">{t("invitar.rol")}</label>
-        <select
-          id="invitar-rol"
-          className="form-select"
-          value={rol}
-          onChange={(e) => setRol(e.target.value as Role)}
-        >
-          {ROLES_ACCESO.map((r) => (
-            <option key={r} value={r}>{t(`rolAcceso.${r}`)}</option>
-          ))}
-        </select>
+        {esIPhone() ? (
+          <IOSPickerInput
+            ariaLabel={t("invitar.rol")}
+            options={ROLES_ACCESO.map((r) => ({ value: r, label: t(`rolAcceso.${r}`) }))}
+            value={rol}
+            onSelect={(v) => setRol(v as Role)}
+          />
+        ) : (
+          <select
+            id="invitar-rol"
+            className="form-select"
+            value={rol}
+            onChange={(e) => setRol(e.target.value as Role)}
+          >
+            {ROLES_ACCESO.map((r) => (
+              <option key={r} value={r}>{t(`rolAcceso.${r}`)}</option>
+            ))}
+          </select>
+        )}
         <div className="form-hint">{t(`invitar.queVe.${rol}`)}</div>
       </div>
 
