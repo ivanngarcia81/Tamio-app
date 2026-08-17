@@ -31,6 +31,8 @@ import { IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
 import { MenuAnchor, type MenuItem } from "../components/MenuAnchor";
+import { IOSPickerChip } from "../components/ios/IOSPickerField";
+import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 const COLS = "130px 1.8fr 110px 150px 130px 72px";
 const COLS_SOL = "120px 1.6fr 120px 110px 140px 72px";
@@ -529,6 +531,22 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     );
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Catálogos de los filtros del Archivo, en un solo sitio: los consumen
+  // tanto los `<option>` de Mac como los chips de iPhone. Aquí el centinela
+  // de "sin filtrar" es "todas"/"todos", de ahí el `emptyValue`.
+  const opcFiltroEstado: IOSPickerOption[] = useMemo(() => [
+    { value: "todas", label: t("cartas.filtroTodosEstados") },
+    ...ESTADOS_CARTA.map((es) => ({ value: es, label: t(`cartas.estado.${es}`) })),
+  ], [t]);
+  const opcFiltroTipo: IOSPickerOption[] = useMemo(() => [
+    { value: "todos", label: t("cartas.filtroTodosTipos") },
+    ...TIPOS_CARTA.map((ti) => ({ value: ti, label: t(`cartas.tipoDoc.${ti}`) })),
+  ], [t]);
+  const opcFiltroMiembro: IOSPickerOption[] = useMemo(() => [
+    { value: "todos", label: t("cartas.filtroMiembro") },
+    ...members.map((m) => ({ value: String(m.id), label: m.nombre })),
+  ], [members, t]);
 
   function irAArchivoFiltrado(estado: string) {
     setFiltroEstado(estado);
@@ -1086,37 +1104,49 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           </>
         ) : (
           <>
-            <div className="tx-head" style={{ flexWrap: "wrap", gap: 8 }}>
-              <div className="search-input-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 340 }}>
-                <IconSearch size={15} strokeWidth={2} />
-                <input
-                  className="form-input"
-                  placeholder={textoCorto(t("common.buscarCorto"), t("cartas.buscarPlaceholder"))}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
+            {enIPhone ? (
+              <>
+                <div className="search-input-wrap" style={{ marginBottom: 10 }}>
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input
+                    className="form-input"
+                    placeholder={textoCorto(t("common.buscarCorto"), t("cartas.buscarPlaceholder"))}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <div className="ios-filtros">
+                  <IOSPickerChip label={t("membresia.colEstado")} options={opcFiltroEstado} value={filtroEstado} emptyValue="todas" onSelect={setFiltroEstado} />
+                  <IOSPickerChip label={t("cartas.tipoCarta")} options={opcFiltroTipo} value={filtroTipo} emptyValue="todos" onSelect={setFiltroTipo} />
+                  <IOSPickerChip label={t("cartas.filtroMiembro")} options={opcFiltroMiembro} value={filtroMiembro} emptyValue="todos" onSelect={setFiltroMiembro} />
+                  <input type="date" aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} value={desde} onChange={(e) => setDesde(e.target.value)} />
+                  <input type="date" aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} value={hasta} onChange={(e) => setHasta(e.target.value)} />
+                </div>
+              </>
+            ) : (
+              <div className="tx-head" style={{ flexWrap: "wrap", gap: 8 }}>
+                <div className="search-input-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 340 }}>
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input
+                    className="form-input"
+                    placeholder={textoCorto(t("common.buscarCorto"), t("cartas.buscarPlaceholder"))}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <select className="form-input" style={{ width: "auto" }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label={t("membresia.colEstado")}>
+                  {opcFiltroEstado.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <select className="form-input" style={{ width: "auto" }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} aria-label={t("cartas.tipoCarta")}>
+                  {opcFiltroTipo.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <select className="form-input" style={{ width: "auto", maxWidth: 180 }} value={filtroMiembro} onChange={(e) => setFiltroMiembro(e.target.value)} aria-label={t("cartas.filtroMiembro")}>
+                  {opcFiltroMiembro.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <input type="date" className="form-input" style={{ width: "auto" }} value={desde} onChange={(e) => setDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
+                <input type="date" className="form-input" style={{ width: "auto" }} value={hasta} onChange={(e) => setHasta(e.target.value)} aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} />
               </div>
-              <select className="form-input" style={{ width: "auto" }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label={t("membresia.colEstado")}>
-                <option value="todas">{t("cartas.filtroTodosEstados")}</option>
-                {ESTADOS_CARTA.map((es) => (
-                  <option key={es} value={es}>{t(`cartas.estado.${es}`)}</option>
-                ))}
-              </select>
-              <select className="form-input" style={{ width: "auto" }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} aria-label={t("cartas.tipoCarta")}>
-                <option value="todos">{t("cartas.filtroTodosTipos")}</option>
-                {TIPOS_CARTA.map((ti) => (
-                  <option key={ti} value={ti}>{t(`cartas.tipoDoc.${ti}`)}</option>
-                ))}
-              </select>
-              <select className="form-input" style={{ width: "auto", maxWidth: 180 }} value={filtroMiembro} onChange={(e) => setFiltroMiembro(e.target.value)} aria-label={t("cartas.filtroMiembro")}>
-                <option value="todos">{t("cartas.filtroMiembro")}</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>{m.nombre}</option>
-                ))}
-              </select>
-              <input type="date" className="form-input" style={{ width: "auto" }} value={desde} onChange={(e) => setDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
-              <input type="date" className="form-input" style={{ width: "auto" }} value={hasta} onChange={(e) => setHasta(e.target.value)} aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} />
-            </div>
+            )}
 
             {visibles.length === 0 ? (
               <EmptyState
