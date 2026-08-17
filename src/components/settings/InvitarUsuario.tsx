@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../../movil";
-import { IOSPickerInput } from "../ios/IOSPickerField";
 import { supabase } from "../../supabase";
 import { ROLES_ACCESO, type Role } from "../../role";
 import { IconMail, IconPlus } from "../../icons";
@@ -22,7 +20,14 @@ import { playSound } from "../../sound";
  * viaja en la petición**, se lee del perfil de quien invita. Aquí no se manda
  * ningún `church_id` ni se puede.
  */
-export default function InvitarUsuario() {
+/**
+ * Estado y envío de la invitación, sin nada de presentación. Lo comparten
+ * esta tarjeta (Mac/iPad) y `AccesosSettingsIOS` (iPhone), que pintan lo
+ * mismo de dos formas: duplicar el `invoke` a la Edge Function y, sobre
+ * todo, la traducción del error POR CÓDIGO habría dejado dos copias de la
+ * parte del archivo que más fácil se desincroniza.
+ */
+export function useInvitacion() {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [nombre, setNombre] = useState("");
@@ -70,6 +75,13 @@ export default function InvitarUsuario() {
 
   const listo = email.trim().length > 3 && !enviando;
 
+  return { email, setEmail, nombre, setNombre, rol, setRol, enviando, error, setError, listo, invitar };
+}
+
+export default function InvitarUsuario() {
+  const { t } = useTranslation();
+  const { email, setEmail, nombre, setNombre, rol, setRol, enviando, error, setError, listo, invitar } = useInvitacion();
+
   return (
     <div className="card">
       <div className="card-head">
@@ -106,25 +118,18 @@ export default function InvitarUsuario() {
 
       <div className="form-row">
         <label className="form-label" htmlFor="invitar-rol">{t("invitar.rol")}</label>
-        {esIPhone() ? (
-          <IOSPickerInput
-            ariaLabel={t("invitar.rol")}
-            options={ROLES_ACCESO.map((r) => ({ value: r, label: t(`rolAcceso.${r}`) }))}
-            value={rol}
-            onSelect={(v) => setRol(v as Role)}
-          />
-        ) : (
-          <select
-            id="invitar-rol"
-            className="form-select"
-            value={rol}
-            onChange={(e) => setRol(e.target.value as Role)}
-          >
-            {ROLES_ACCESO.map((r) => (
-              <option key={r} value={r}>{t(`rolAcceso.${r}`)}</option>
-            ))}
-          </select>
-        )}
+        {/* Sin rama de iPhone: esta tarjeta ya solo se pinta en Mac/iPad —
+            el teléfono usa `AccesosSettingsIOS`, que monta el mismo hook. */}
+        <select
+          id="invitar-rol"
+          className="form-select"
+          value={rol}
+          onChange={(e) => setRol(e.target.value as Role)}
+        >
+          {ROLES_ACCESO.map((r) => (
+            <option key={r} value={r}>{t(`rolAcceso.${r}`)}</option>
+          ))}
+        </select>
         <div className="form-hint">{t(`invitar.queVe.${rol}`)}</div>
       </div>
 

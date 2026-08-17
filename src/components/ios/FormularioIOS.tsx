@@ -177,15 +177,19 @@ export function ActionField({
   label,
   onPress,
   destructive,
+  disabled,
 }: {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  /** Se apaga a gris sin cambiar de alto, para que la fila no salte. */
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       className={`ios-field ${destructive ? "ios-field--destructive" : "ios-field--action"}`}
+      disabled={disabled}
       onClick={onPress}
     >
       {label}

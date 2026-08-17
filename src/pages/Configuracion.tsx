@@ -15,6 +15,7 @@ import ChurchSettingsIOS from "../components/settings/ChurchSettingsIOS";
 import CuentaSettingsIOS from "../components/settings/CuentaSettingsIOS";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
 import InstitucionSettingsIOS from "../components/settings/InstitucionSettingsIOS";
+import AccesosSettingsIOS from "../components/settings/AccesosSettingsIOS";
 import TreasurerSettings, {
   type TreasurerFormErrors, type TreasurerFormValues,
 } from "../components/settings/TreasurerSettings";
@@ -620,11 +621,33 @@ export default function Configuracion({
               dato local) y quién administra (Usuarios). Antes vivían en tres
               secciones distintas con dos pantallas de distancia, siendo la
               misma pregunta contada dos veces. */}
-          <section className={claseZona("acceso")}>
+          <section className={`${claseZona("acceso")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.acceso")}</div>
               <div className="settings-zona-sub">{t("config.zona.accesoSub")}</div>
             </div>
+            {enIPhone ? (
+              <>
+                {/* Las cuatro guardas de abajo viven ahora dentro del
+                    componente, con las mismas condiciones. */}
+                <AccesosSettingsIOS
+                  church={church}
+                  role={role}
+                  onRoleChange={onRoleChange}
+                  onChurchUpdated={onChurchUpdated}
+                  esAdmin={esAdmin}
+                  authActivo={authActivo}
+                />
+                {/* El directorio de usuarios no se convirtió en esta tarea, así
+                    que conserva su tarjeta debajo de las secciones planas —
+                    mismo trato que `PDFPreview` en la zona de institución. */}
+                {esAdmin && authActivo && (
+                  <div className="settings-masonry una-tarjeta">
+                    <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
+                  </div>
+                )}
+              </>
+            ) : (
             <div className="settings-masonry">
               {/* Suscripción: la administra el dueño (admin) o, en modo local
                   sin login, quien usa la app en su propia instalación. */}
@@ -640,6 +663,7 @@ export default function Configuracion({
               {esAdmin && authActivo && <InvitarUsuario />}
               {authActivo && SYNC_HABILITADO && <SyncSettings />}
             </div>
+            )}
           </section>
 
           {/* Antes "Documentos oficiales" era una sola zona con seis tarjetas

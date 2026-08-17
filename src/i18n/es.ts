@@ -568,6 +568,10 @@ export const es = {
     hintAuto: "Se sincroniza sola: al abrir, al guardar, al reconectar y cada pocos minutos. Aquí puedes forzarla a mano. Piloto: por ahora solo la lista de miembros. Requiere sesión iniciada e internet.",
     ultimaVez: "Última sincronización: {{hora}}",
     estado: {
+      /* `SyncIndicator` deja este estado sin texto a propósito (no pinta nada
+         en el sidebar), pero la fila de Ajustes sí necesita un valor: un
+         "Estado" en blanco se lee como que algo falló. */
+      desactivado: "Sin activar",
       inactivo: "Sin sincronizar",
       sincronizando: "Sincronizando…",
       ok: "Sincronizado",
@@ -575,6 +579,10 @@ export const es = {
       error: "Error al sincronizar",
     },
     resultado: "Sincronizado — {{subidos}} subidos, {{bajados}} bajados.",
+    /* Para la fila de iPhone: ahí "Sincronizado" ya lo dice la fila de Estado
+       justo encima, así que el valor solo lleva el recuento. */
+    ultimoCambio: "Último cambio",
+    resultadoCorto: "{{subidos}} subidos · {{bajados}} bajados",
     errorSinLogin: "Inicia sesión para sincronizar.",
     errorSinIglesia: "Tu cuenta aún no está vinculada a una iglesia en la nube.",
     errorSinConexion: "Sin conexión con la nube. Revisa tu internet e intenta de nuevo.",

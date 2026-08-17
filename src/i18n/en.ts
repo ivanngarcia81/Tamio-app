@@ -574,6 +574,7 @@ export const en: Resources = {
     hintAuto: "It syncs on its own: on open, on save, on reconnect and every few minutes. Here you can force it manually. Pilot: for now only the members list. Requires being signed in and internet.",
     ultimaVez: "Last sync: {{hora}}",
     estado: {
+      desactivado: "Not active",
       inactivo: "Not synced yet",
       sincronizando: "Syncing…",
       ok: "Synced",
@@ -581,6 +582,8 @@ export const en: Resources = {
       error: "Sync error",
     },
     resultado: "Synced — {{subidos}} uploaded, {{bajados}} downloaded.",
+    ultimoCambio: "Last change",
+    resultadoCorto: "{{subidos}} up · {{bajados}} down",
     errorSinLogin: "Sign in to sync.",
     errorSinIglesia: "Your account is not linked to a cloud church yet.",
     errorSinConexion: "No connection to the cloud. Check your internet and try again.",

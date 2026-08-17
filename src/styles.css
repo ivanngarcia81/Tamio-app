@@ -3567,6 +3567,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 
+/* Valor de estado en verde (Accesos y áreas: el sync correcto). El resto de
+   estados se quedan en el gris de `.ios-field-value`: solo el bueno necesita
+   decirse de un vistazo. */
+:root.iphone .ios-field-value--pos { color: var(--pos); }
+
+/* Piezas sueltas del pie de sección, cuando lleva más de una línea: el aviso
+   de error en rojo y el detalle técnico del sync en monoespaciada. Van como
+   bloques para que cada una ocupe su renglón. */
+:root.iphone .ios-section-footer > span { display: block; margin-top: 6px; }
+:root.iphone .ios-section-footer--error { color: var(--ios-red); }
+:root.iphone .ios-section-footer--tecnico {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text-3);
+  user-select: text;
+  word-break: break-word;
+}
+
 :root.iphone .ios-field--link { cursor: pointer; transition: background-color 0.08s ease; }
 :root.iphone .ios-field--link:active { background: var(--line); }
 /* Una fila de picker deshabilitada (p. ej. el municipio antes de elegir
@@ -3698,6 +3716,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 :root.iphone .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
+/* Acción no disponible (invitar sin correo, sincronizar mientras sincroniza):
+   se apaga a gris, NO a un acento translúcido — un verde a media opacidad se
+   lee como "así es su color", no como "ahora no". La fila conserva su alto. */
+:root.iphone .ios-field--action:disabled { color: var(--text-3); cursor: default; }
 :root.iphone .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: 17px; cursor: pointer; }
 
 /* ---------------- Logo / avatar ---------------- */
