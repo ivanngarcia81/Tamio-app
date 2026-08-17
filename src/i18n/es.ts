@@ -840,12 +840,17 @@ export const es = {
     miembros: "Aportantes",
     reportes: "Reportes",
     depositos: "Depósito bancario",
+    // Corta, para el atajo de la barra inferior — mismo patrón que
+    // "porRevisarCorto": "Depósito bancario" se cortaba ahí.
+    depositosCorto: "Depósitos",
     membresia: "Membresía",
     actas: "Actas",
     servicios: "Registro de servicios",
     cartas: "Cartas y traslados",
     reporteMiembros: "Informes de membresía",
     agenda: "Agenda y calendario",
+    // Corta, mismo motivo: "Agenda y calendario" no cabía en el atajo.
+    agendaCorto: "Agenda",
     bandeja: "Bandeja",
     inbox: "Mensajes",
     porRevisar: "Por revisar",

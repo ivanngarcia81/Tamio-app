@@ -3,8 +3,17 @@ import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 import { areaDeRuta, barraDeRol, type Area, type Contador } from "../navegacion";
 import type { Role } from "../role";
-import { IconBank, IconCalendar, IconMail, IconReportes } from "../icons";
-import { HomeIcon, PendingIcon, SecretaryIcon, SettingsIcon, TreasuryIcon } from "./icons/IOSIcons";
+import {
+  AgendaIcon,
+  DepositIcon,
+  HomeIcon,
+  InboxIcon,
+  PendingIcon,
+  ReportsIcon,
+  SecretaryIcon,
+  SettingsIcon,
+  TreasuryIcon,
+} from "./icons/IOSIcons";
 
 interface Props {
   role: Role;
@@ -15,24 +24,19 @@ interface Props {
 
 /** Icono por ruta, para las ranuras que apuntan a una pantalla concreta
  *  (atajos, o la única sección visible de un área — ver `comoArea` en
- *  navegacion.ts). Mismos iconos que ya usa `Sidebar.tsx` para cada ruta,
- *  así la barra inferior y la barra lateral se leen como el mismo mapa.
- *
- *  "/" y "/configuracion" son la excepción: en el teléfono llevan el glifo
- *  RELLENO de `IOSIcons.tsx` (25px, fill), la convención de iOS para
- *  íconos de tab bar — de contorno se leía como web. `/depositos`,
- *  `/reportes`, `/agenda` e `/inbox` se quedan con el de trazo de siempre:
- *  solo aparecen como atajo en configuraciones de rol menos comunes (una
- *  sola sección visible en un área, o Mensajes en vez de Bandeja) y el
- *  paquete de íconos entregado no traía un relleno para ellos — inventar
- *  uno nuevo se salía de "solo íconos, los que vienen en el paquete". */
+ *  navegacion.ts). En el teléfono todas llevan el glifo RELLENO de
+ *  `IOSIcons.tsx` (25px, fill), la convención de iOS para íconos de tab
+ *  bar — de contorno se leía como web. `/depositos`, `/reportes`,
+ *  `/agenda` e `/inbox` solo aparecen como atajo en configuraciones de rol
+ *  menos comunes (una sola sección visible en un área, o Mensajes en vez
+ *  de Bandeja), pero llevan el mismo tratamiento que el resto. */
 const ICONOS_RUTA: Record<string, ReactNode> = {
   "/": <HomeIcon size={25} />,
   "/bandeja": <PendingIcon size={25} />,
-  "/depositos": <IconBank size={20} strokeWidth={1.8} />,
-  "/reportes": <IconReportes size={20} strokeWidth={1.8} />,
-  "/agenda": <IconCalendar size={20} strokeWidth={1.8} />,
-  "/inbox": <IconMail size={20} strokeWidth={1.8} />,
+  "/depositos": <DepositIcon size={25} />,
+  "/reportes": <ReportsIcon size={25} />,
+  "/agenda": <AgendaIcon size={25} />,
+  "/inbox": <InboxIcon size={25} />,
   "/configuracion": <SettingsIcon size={25} />,
 };
 

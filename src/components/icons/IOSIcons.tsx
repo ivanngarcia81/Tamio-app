@@ -98,6 +98,38 @@ export const SettingsIcon = ({ size = 25, className }: IconProps) => (
   </svg>
 );
 
+/** Depósito bancario · banknote.fill (rectángulo con el óvalo típico del billete, recortado) */
+export const DepositIcon = ({ size = 25, className }: IconProps) => (
+  <svg {...fillProps(size, className)} fillRule="evenodd" clipRule="evenodd">
+    <path d="M3.9 5.7H20.1a2.4 2.4 0 0 1 2.4 2.4V17a2.4 2.4 0 0 1-2.4 2.4H3.9A2.4 2.4 0 0 1 1.5 17V8.1a2.4 2.4 0 0 1 2.4-2.4zM12 15.45a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2z" />
+  </svg>
+);
+
+/** Reportes · chart.bar.fill */
+export const ReportsIcon = ({ size = 25, className }: IconProps) => (
+  <svg {...fillProps(size, className)}>
+    <rect x="2" y="13.6" width="4.4" height="8" rx="1.4" />
+    <rect x="9.8" y="9" width="4.4" height="12.6" rx="1.4" />
+    <rect x="17.6" y="4.2" width="4.4" height="17.4" rx="1.4" />
+  </svg>
+);
+
+/** Agenda · calendar */
+export const AgendaIcon = ({ size = 25, className }: IconProps) => (
+  <svg {...fillProps(size, className)}>
+    <rect x="4.4" y="1.6" width="2.4" height="5.2" rx="1.2" />
+    <rect x="17.2" y="1.6" width="2.4" height="5.2" rx="1.2" />
+    <path d="M4.4 4.6h15.2A2.4 2.4 0 0 1 22 7v12.6a2.4 2.4 0 0 1-2.4 2.4H4.4A2.4 2.4 0 0 1 2 19.6V7a2.4 2.4 0 0 1 2.4-2.4z" />
+  </svg>
+);
+
+/** Mensajes (bandeja de entrada del área) · envelope.fill (con el pliegue recortado) */
+export const InboxIcon = ({ size = 25, className }: IconProps) => (
+  <svg {...fillProps(size, className)} fillRule="evenodd" clipRule="evenodd">
+    <path d="M4.4 4.6H19.6A2.4 2.4 0 0 1 22 7V17.6A2.4 2.4 0 0 1 19.6 20H4.4A2.4 2.4 0 0 1 2 17.6V7A2.4 2.4 0 0 1 4.4 4.6zM4.9 5.6 12 12.2 19.1 5.6z" />
+  </svg>
+);
+
 /* ---------------- Nav bar (trazo) ---------------- */
 
 /** Nuevo movimiento · plus */

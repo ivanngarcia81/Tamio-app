@@ -184,8 +184,8 @@ export function barraDeRol(rol: Role): RanuraBarra[] {
   // depósito del domingo, los compromisos de los próximos días—. Sigue estando
   // en el carrusel; esto solo es un camino corto.
   const extra: Destino = unica.id === "tesoreria"
-    ? { ruta: "/depositos", clave: "nav.depositos" }
-    : { ruta: "/agenda", clave: "nav.agenda" };
+    ? { ruta: "/depositos", clave: "nav.depositos", claveCorta: "nav.depositosCorto" }
+    : { ruta: "/agenda", clave: "nav.agenda", claveCorta: "nav.agendaCorto" };
 
   const ranuras: RanuraBarra[] = [{ destino: INICIO }, comoArea(unica), central];
   if (puedeVer(rol, extra.ruta)) ranuras.push({ destino: extra, atajo: true });
