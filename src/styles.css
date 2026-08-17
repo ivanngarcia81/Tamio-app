@@ -3444,6 +3444,219 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
 }
 
+/* ============================================================
+   Categorías (iPhone): lista editable — filas con punto de color en vez
+   de icono, deslizar-para-borrar en las propias, fila estática (sin
+   chevron, sin :active) en las del sistema.
+   ============================================================ */
+
+/* Sin icono de 29px, el separador arranca donde arranca el texto de
+   verdad: 16 (borde) + 12 (punto) + 10 (gap) = 38, no los 57 de una fila
+   con icono. Y no depende de si la FILA es la última hija de su padre —
+   dentro de `.ios-swipe` la fila siempre es la última (el botón rojo va
+   ANTES en el DOM) — sino de si el WRAPPER `.ios-swipe` es el último
+   dentro de `.ios-group`, que es la pregunta real ("¿hay otra categoría
+   debajo?"). Por eso la regla base `.ios-row:not(:last-child)::after` de
+   Prioridad 4 nunca se dispara aquí, y esta la reemplaza a propósito. */
+:root.iphone .ios-swipe:not(:last-child) .ios-row--dot::after {
+  content: "";
+  position: absolute;
+  left: 38px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+
+:root.iphone .ios-row--static { cursor: default; }
+:root.iphone .ios-row--static:active { background: transparent; }
+
+:root.iphone .ios-dot {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Recorta el botón rojo mientras la fila se desliza (useFilaDeslizable
+   mueve la fila con transform; este wrapper la recorta al salirse). */
+:root.iphone .ios-swipe { position: relative; overflow: hidden; background: var(--surface); }
+/* `.ios-row` es transparente por diseño (vive directo sobre `.ios-group`
+   en el resto de listas); aquí, con el botón rojo posicionado DEBAJO en
+   el mismo wrapper, transparente lo dejaba asomando desde el reposo. */
+:root.iphone .ios-swipe .ios-row { background: var(--surface); }
+
+:root.iphone .ios-swipe-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 88px;
+  border: 0;
+  background: var(--ios-red);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Fila para agregar: mismo alto/tipografía que una fila normal, con un
+   círculo "+" en vez de punto de color. */
+:root.iphone .ios-new-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+  background: var(--surface);
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+:root.iphone .ios-new-row:active { background: var(--line); }
+:root.iphone .ios-new-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand, #059669);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+:root.iphone .ios-new-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  fill: none;
+  stroke-linecap: round;
+}
+
+/* Fila roja de borrar, dentro de la hoja de editar — la vía VISIBLE del
+   borrado; deslizar en la lista es solo el atajo. */
+:root.iphone .ios-delete-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+  background: var(--surface);
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--ios-red);
+  cursor: pointer;
+}
+:root.iphone .ios-delete-row:active { background: var(--line); }
+
+/* ---------------- Selector de color ---------------- */
+:root.iphone .ios-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  margin: 0 16px;
+}
+:root.iphone .ios-color {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  justify-self: center;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-color[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2.5px solid currentColor;
+}
+
+/* ---------------- Segmentado de 2 opciones ---------------- */
+:root.iphone .ios-segmented {
+  position: relative;
+  display: flex;
+  margin: 0 16px;
+  padding: 2px;
+  background: var(--line-soft);
+  border-radius: 9px;
+  height: 32px;
+}
+:root.iphone .ios-segmented-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  height: 28px;
+  background: var(--surface);
+  border-radius: 7px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+:root.iphone .ios-segmented-opcion {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ios-segmented-thumb { transition: none; }
+}
+
+/* ---------------- Hoja de formulario de pantalla completa ---------------- */
+:root.iphone .ios-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  animation: overlayIn 0.15s ease both;
+}
+:root.iphone .ios-sheet {
+  width: 100%;
+  height: 92%;
+  margin-top: auto;
+  background: var(--bg);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: hojaEntra 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+:root.iphone .ios-sheet .ios-nav { position: sticky; border-radius: 12px 12px 0 0; }
+:root.iphone .ios-sheet-cancelar { font-weight: 400; }
+:root.iphone .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ios-sheet-overlay, :root.iphone .ios-sheet { animation: none; }
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;

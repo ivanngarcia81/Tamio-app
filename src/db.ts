@@ -392,6 +392,24 @@ export async function insertCategoriaCustom(
   await loadCategoriasCustom(churchId);
 }
 
+/** Edita nombre/color/tipo de una categoría personalizada ya creada. Igual
+ *  que el borrado, la decisión de si el TIPO se puede tocar (una categoría
+ *  ya usada en movimientos cambiaría de qué lado del reporte aparece) la
+ *  toma quien llama —`countTxByCategoria` antes de armar el parche—, no
+ *  esta función: ella solo escribe lo que le llega. */
+export async function updateCategoriaCustom(
+  uid: string,
+  churchId: number,
+  patch: { nombre: string; color: string; tipo: "ingreso" | "gasto" }
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE categorias_custom SET nombre = $1, color = $2, tipo = $3, updated_at = datetime('now') WHERE uid = $4 AND church_id = $5",
+    [patch.nombre.trim(), patch.color, patch.tipo, uid, churchId]
+  );
+  await loadCategoriasCustom(churchId);
+}
+
 /** Borrado SUAVE (deleted = 1) por uid, para que se propague en la
  *  sincronización. Las consultas ya excluyen deleted = 1. */
 export async function deleteCategoriaCustom(uid: string, churchId: number): Promise<void> {

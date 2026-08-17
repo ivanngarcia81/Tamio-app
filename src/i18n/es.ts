@@ -621,6 +621,17 @@ export const es = {
     agregada: "Categoría agregada",
     eliminada: "Categoría eliminada",
     hint: "Las categorías integradas no se pueden eliminar. Las personalizadas aparecen en los formularios, filtros, reportes y PDFs igual que las demás.",
+    // Lista editable de iPhone (CategoriesSettingsIOS.tsx): hoja de
+    // crear/editar y filas "Nueva categoría de…".
+    nombreLabel: "Nombre",
+    tipoLabel: "Tipo",
+    colorLabel: "Color",
+    tipoBloqueado: "Ya tiene movimientos: el tipo no se puede cambiar.",
+    nuevaIngreso: "Nueva categoría de ingreso",
+    nuevaEgreso: "Nueva categoría de egreso",
+    nueva: "Nueva categoría",
+    editar: "Editar categoría",
+    borrarCategoria: "Borrar categoría",
   },
 
   recurrente: {

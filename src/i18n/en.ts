@@ -627,6 +627,15 @@ export const en: Resources = {
     agregada: "Category added",
     eliminada: "Category deleted",
     hint: "Built-in categories cannot be deleted. Custom ones appear in forms, filters, reports and PDFs just like the rest.",
+    nombreLabel: "Name",
+    tipoLabel: "Type",
+    colorLabel: "Color",
+    tipoBloqueado: "Already has transactions: the type can't be changed.",
+    nuevaIngreso: "New income category",
+    nuevaEgreso: "New expense category",
+    nueva: "New category",
+    editar: "Edit category",
+    borrarCategoria: "Delete category",
   },
 
   recurrente: {

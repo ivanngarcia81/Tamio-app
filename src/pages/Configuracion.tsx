@@ -39,6 +39,7 @@ import DangerZoneSettings from "../components/settings/DangerZoneSettings";
 import SyncSettings from "../components/settings/SyncSettings";
 import { SYNC_HABILITADO } from "../syncManager";
 import CategoriesSettings from "../components/settings/CategoriesSettings";
+import CategoriesSettingsIOS from "../components/settings/CategoriesSettingsIOS";
 import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 import {
@@ -752,14 +753,18 @@ export default function Configuracion({
           </section>
 
           {verTesoreria && (
-            <section className={claseZona("categorias")}>
+            <section className={`${claseZona("categorias")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
               <div className="settings-zona-head">
                 <div className="settings-zona-titulo">{t("config.zona.categorias")}</div>
                 <div className="settings-zona-sub">{t("config.zona.categoriasSub")}</div>
               </div>
-              <div className="settings-masonry una-tarjeta">
-                <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
-              </div>
+              {enIPhone ? (
+                <CategoriesSettingsIOS church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+              ) : (
+                <div className="settings-masonry una-tarjeta">
+                  <CategoriesSettings church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
+                </div>
+              )}
             </section>
           )}
 
