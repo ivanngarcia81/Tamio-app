@@ -605,6 +605,7 @@ export const en: Resources = {
   bienvenida: {
     filaIglesia: "Church",
     ciudadOpcional: "Optional",
+    idiomaHint: "\"Automatic\" uses the system language.",
     titulo: "Welcome to Tamio",
     sub: "Set up your church in a minute — everything can be changed later in Settings.",
     comenzar: "Get started",

@@ -172,7 +172,7 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
                   footer={
                     <>
                       {error && <span className="welcome-movil-error">{error}</span>}
-                      {t("idioma.hint")}
+                      {t("bienvenida.idiomaHint")}
                     </>
                   }
                 >

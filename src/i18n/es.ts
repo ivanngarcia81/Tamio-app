@@ -603,6 +603,11 @@ export const es = {
        usando `iglesia.nombreLabel` completo, encima del campo. */
     filaIglesia: "Iglesia",
     ciudadOpcional: "Opcional",
+    /* Versión corta de `idioma.hint`. La larga explica la regla completa y
+       sigue en Ajustes → Preferencias, que es donde se va a leer; aquí el
+       pie está debajo de un grupo de cuatro filas en un teléfono y en tres
+       renglones pesaba más que los propios campos. */
+    idiomaHint: "\"Automático\" usa el idioma del sistema.",
     titulo: "Bienvenido a Tamio",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
     comenzar: "Comenzar",
