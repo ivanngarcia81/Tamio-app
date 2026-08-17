@@ -4295,6 +4295,41 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-txrow--clickable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 :root.iphone .ios-txrow--clickable:active { background: var(--line); }
 :root.iphone .ios-txrow .mini-avatar { flex: 0 0 auto; box-shadow: none; }
+/* Acción única de fila (Bandeja: "Marcar revisado" / "Restaurar"). En Mac
+   son dos botones de texto dentro de la fila; a 390 px de ancho el texto se
+   come el concepto y el monto, así que la fila entera pasa a ser el gesto
+   "editar" y la acción positiva se queda como un botón redondo al final —
+   el patrón de Mail/Recordatorios.
+
+   El botón mide 44pt (objetivo táctil), el círculo visible 30: si el círculo
+   midiera los 44 pesaría más que el monto que tiene al lado. Vive DENTRO de
+   `.ios-txrow-trailing`, así que hereda su `flex:0 0 auto` de ahí. */
+:root.iphone .ios-row-accion {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px -7px -8px 0; /* recupera el alto de fila: 44 > 30 + padding */
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-row-accion > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand, #059669) 14%, transparent);
+}
+:root.iphone .ios-row-accion:active > span {
+  background: color-mix(in srgb, var(--brand, #059669) 30%, transparent);
+}
+:root.iphone .ios-row-accion:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: -6px; border-radius: 50%; }
 
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
