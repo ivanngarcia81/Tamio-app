@@ -3268,7 +3268,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
   padding: 7px 16px;
   background: transparent;
   border: 0;
@@ -3513,7 +3513,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
   padding: 7px 16px;
   background: transparent;
   border: 0;
@@ -3922,7 +3922,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   gap: 11px;
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
   padding: 7px 16px;
   border: 0;
   background: var(--surface);
@@ -3960,7 +3960,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
   padding: 7px 16px;
   border: 0;
   background: var(--surface);
@@ -4545,7 +4545,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.09);
 }
-:root.iphone .welcome-overlay .ios-field { min-height: 46px; color: #fff; }
+/* Sin `min-height` propio: los 46 px ya son los de `.ios-field` en toda la
+   app desde que se subieron ahí. */
+:root.iphone .welcome-overlay .ios-field { color: #fff; }
 :root.iphone .welcome-overlay .ios-field:not(:last-child)::after { background: rgba(255, 255, 255, 0.16); }
 :root.iphone .welcome-overlay .ios-field-input { color: #fff; }
 :root.iphone .welcome-overlay .ios-field-input::placeholder { color: rgba(255, 255, 255, 0.42); }
