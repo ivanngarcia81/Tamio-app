@@ -20,6 +20,8 @@ import { playSound } from "../sound";
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
+import { IOSPickerChip } from "../components/ios/IOSPickerField";
+import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 /** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
  *  puente Agenda→Servicios ("Registrar en bitácora"). */
@@ -285,6 +287,29 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ocurrencias, filtros, soloImportantes, miembros]);
 
+  // Catálogos de los filtros, en un solo sitio: los consumen tanto los
+  // `<option>` de Mac como los chips de iPhone. Cada lista lleva de primera
+  // la fila de "quitar el filtro" (value ""), que en Mac es el `<option>` de
+  // siempre y en iPhone es la única forma de soltar UN filtro sin borrarlos
+  // todos con "Limpiar filtros" — sin ella un chip sería de ida y vuelta
+  // solo por la puerta grande.
+  const opcTipo: IOSPickerOption[] = useMemo(() => [
+    { value: "", label: t("agenda.filtroTodosTipos") },
+    ...TIPOS_ACTIVIDAD.map((k) => ({ value: k, label: t(`agenda.tipos.${k}`) })),
+  ], [t]);
+  const opcEstado: IOSPickerOption[] = useMemo(() => [
+    { value: "", label: t("agenda.filtroTodosEstados") },
+    ...ESTADOS_ACTIVIDAD.map((k) => ({ value: k, label: t(`agenda.estados.${k}`) })),
+  ], [t]);
+  const opcMinisterio: IOSPickerOption[] = useMemo(() => [
+    { value: "", label: t("agenda.filtroTodosMinisterios") },
+    ...ministeriosPresentes.map((m) => ({ value: m, label: m })),
+  ], [ministeriosPresentes, t]);
+  const opcResponsable: IOSPickerOption[] = useMemo(() => [
+    { value: "", label: t("agenda.filtroTodosResponsables") },
+    ...responsablesPresentes.map((r) => ({ value: r, label: r })),
+  ], [responsablesPresentes, t]);
+
   const porFecha = useMemo(() => {
     const mapa = new Map<string, OcurrenciaVista[]>();
     for (const a of filtradas) {
@@ -384,6 +409,16 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     () => Array.from({ length: 12 }, (_, i) => fmtFecha(`2000-${String(i + 1).padStart(2, "0")}-01`).mesAnio.split(" ")[0]),
     []
   );
+  // Los otros catálogos de filtro viven más arriba, junto a `filtradas`;
+  // estos dos van aquí porque dependen de `aniosHist`/`mesesNombres`.
+  const opcAnioHist: IOSPickerOption[] = useMemo(() => [
+    { value: "", label: t("agenda.ultimosMeses") },
+    ...aniosHist.map((y) => ({ value: String(y), label: String(y) })),
+  ], [aniosHist, t]);
+  const opcMesHist: IOSPickerOption[] = useMemo(() => [
+    { value: "", label: t("agenda.todosLosMeses") },
+    ...mesesNombres.map((nom, i) => ({ value: String(i + 1).padStart(2, "0"), label: nom })),
+  ], [mesesNombres, t]);
   const historial = useMemo(() => {
     const desde = anioHist ? `${anioHist}-01-01` : addDays(hoy, -731);
     const hasta = anioHist ? `${anioHist}-12-31` : hoy;
@@ -576,30 +611,59 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           </div>
         )}
 
-        {!vacio && (
+        {!vacio && (enIPhone ? (
+          /* En iPhone la búsqueda se queda a lo ancho y los filtros bajan a
+             una fila propia que se DESLIZA: con seis, envolver dejaba la
+             pantalla en escalera. */
+          <>
+            <div className="search-input-wrap" style={{ marginBottom: 10 }}>
+              <IconSearch size={15} strokeWidth={2} />
+              <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
+            </div>
+            <div className="ios-filtros">
+              <IOSPickerChip label={t("agenda.filtrarTipo")} options={opcTipo} value={filtros.tipo}
+                onSelect={(v) => setFiltros((f) => ({ ...f, tipo: v }))} />
+              <IOSPickerChip label={t("agenda.filtrarEstado")} options={opcEstado} value={filtros.estado}
+                onSelect={(v) => setFiltros((f) => ({ ...f, estado: v }))} />
+              {ministeriosPresentes.length > 0 && (
+                <IOSPickerChip label={t("agenda.filtrarMinisterio")} options={opcMinisterio} value={filtros.ministerio}
+                  onSelect={(v) => setFiltros((f) => ({ ...f, ministerio: v }))} />
+              )}
+              {responsablesPresentes.length > 0 && (
+                <IOSPickerChip label={t("agenda.filtrarResponsable")} options={opcResponsable} value={filtros.responsable}
+                  onSelect={(v) => setFiltros((f) => ({ ...f, responsable: v }))} />
+              )}
+              {/* Las fechas siguen siendo `input type=date`: iOS ya abre su
+                  propio selector de rueda, que ES el control nativo correcto
+                  — el problema era solo el doble chevron del `select`. */}
+              <input type="date" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
+              <input type="date" aria-label={t("agenda.rangoHasta")} value={filtros.hasta} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value }))} />
+              <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
+                ★ {t("agenda.soloImportantes")}
+              </button>
+              {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
+            </div>
+          </>
+        ) : (
           <div className="agenda-filtros">
             <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
               <IconSearch size={15} strokeWidth={2} />
               <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
             </div>
             <select className="form-input sm" aria-label={t("agenda.filtrarTipo")} value={filtros.tipo} onChange={(e) => setFiltros((f) => ({ ...f, tipo: e.target.value }))}>
-              <option value="">{t("agenda.filtroTodosTipos")}</option>
-              {TIPOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.tipos.${k}`)}</option>)}
+              {opcTipo.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <select className="form-input sm" aria-label={t("agenda.filtrarEstado")} value={filtros.estado} onChange={(e) => setFiltros((f) => ({ ...f, estado: e.target.value }))}>
-              <option value="">{t("agenda.filtroTodosEstados")}</option>
-              {ESTADOS_ACTIVIDAD.map((k) => <option key={k} value={k}>{t(`agenda.estados.${k}`)}</option>)}
+              {opcEstado.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             {ministeriosPresentes.length > 0 && (
               <select className="form-input sm" aria-label={t("agenda.filtrarMinisterio")} value={filtros.ministerio} onChange={(e) => setFiltros((f) => ({ ...f, ministerio: e.target.value }))}>
-                <option value="">{t("agenda.filtroTodosMinisterios")}</option>
-                {ministeriosPresentes.map((m) => <option key={m} value={m}>{m}</option>)}
+                {opcMinisterio.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             )}
             {responsablesPresentes.length > 0 && (
               <select className="form-input sm" aria-label={t("agenda.filtrarResponsable")} value={filtros.responsable} onChange={(e) => setFiltros((f) => ({ ...f, responsable: e.target.value }))}>
-                <option value="">{t("agenda.filtroTodosResponsables")}</option>
-                {responsablesPresentes.map((r) => <option key={r} value={r}>{r}</option>)}
+                {opcResponsable.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             )}
             <input type="date" className="form-input sm" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
@@ -609,7 +673,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             </button>
             {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
           </div>
-        )}
+        ))}
 
         <div className="agenda-toolbar">
           <div className="agenda-nav">
@@ -623,18 +687,21 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 <span className="agenda-mes-titulo">{titulo}</span>
               </>
             )}
-            {vista === "historial" && (
+            {vista === "historial" && (enIPhone ? (
+              <div className="ios-filtros" style={{ paddingBottom: 0 }}>
+                <IOSPickerChip label={t("agenda.filtrarAnio")} options={opcAnioHist} value={anioHist} onSelect={setAnioHist} />
+                <IOSPickerChip label={t("agenda.filtrarMes")} options={opcMesHist} value={mesHist} onSelect={setMesHist} />
+              </div>
+            ) : (
               <>
                 <select className="form-input sm" aria-label={t("agenda.filtrarAnio")} value={anioHist} onChange={(e) => setAnioHist(e.target.value)}>
-                  <option value="">{t("agenda.ultimosMeses")}</option>
-                  {aniosHist.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                  {opcAnioHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 <select className="form-input sm" aria-label={t("agenda.filtrarMes")} value={mesHist} onChange={(e) => setMesHist(e.target.value)}>
-                  <option value="">{t("agenda.todosLosMeses")}</option>
-                  {mesesNombres.map((nom, i) => <option key={i} value={String(i + 1).padStart(2, "0")}>{nom}</option>)}
+                  {opcMesHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </>
-            )}
+            ))}
           </div>
           <div className="chip-toggle" role="tablist" aria-label={t("agenda.cambiarVista")}>
             {(["mes", "semana", "lista", "historial"] as Vista[]).map((v) => (

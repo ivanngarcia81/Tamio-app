@@ -30,15 +30,20 @@
   --ink-contrast: #ffffff;
   --active: var(--ink);
   --active-text: var(--ink-contrast);
-  /* Alias del color de acento para los controles de iOS (switch, foco,
-     fila seleccionada, botón de volver…): todos esos paquetes se
-     escribieron con `var(--brand, #059669)` sin que `--brand` llegara a
-     definirse en ningún sitio, así que siempre caían en ese verde fijo,
-     ajenos a lo que el usuario eligiera en Ajustes → Preferencias →
-     Color de acento. Con el alias, cambiar el acento (que ya mueve
-     --ink vía [data-acento]) mueve también todo lo de iOS sin tocar
-     cada sitio uno por uno. */
-  --brand: var(--ink);
+  /* Tinte de los controles de iOS (switch, check, foco, chip de filtro
+     activo, "Ver todo"…). Todos esos paquetes se escribieron con
+     `var(--brand, #059669)` sin que `--brand` llegara a definirse, así
+     que siempre caían en ese verde fijo, ajenos al acento elegido en
+     Ajustes → Preferencias.
+
+     NO es un alias directo de --ink: el acento de fábrica ("neutro") deja
+     --ink en #0f0f0f, y con un alias los switches, checks y chips activos
+     salían casi NEGROS — justo el patrón que este rediseño vino a quitar
+     ("iOS no usa negro puro como estado activo"). Así que el valor de
+     partida es el verde de la app (--pos, que además ya trae su versión
+     aclarada para oscuro) y solo se cambia cuando el usuario SÍ eligió un
+     acento, más abajo en los bloques [data-acento]. */
+  --brand: var(--pos);
   --accent-1: #22c55e;   /* ingresos - verde */
   --accent-2: #ef4444;   /* gastos - rojo */
   --accent-3: #7c3aed;   /* diezmos - morado */
@@ -215,17 +220,17 @@
 
    Van después del bloque de tema oscuro a propósito: al combinar dos
    atributos ganan en especificidad y no dependen del orden. */
-:root[data-acento="verde"] { --ink: #047857; --ink-contrast: #ffffff; }
-:root[data-theme="dark"][data-acento="verde"] { --ink: #34d399; --ink-contrast: #052e22; }
+:root[data-acento="verde"] { --ink: #047857; --ink-contrast: #ffffff; --brand: var(--ink); }
+:root[data-theme="dark"][data-acento="verde"] { --ink: #34d399; --ink-contrast: #052e22; --brand: var(--ink); }
 
-:root[data-acento="azul"] { --ink: #1d4ed8; --ink-contrast: #ffffff; }
-:root[data-theme="dark"][data-acento="azul"] { --ink: #60a5fa; --ink-contrast: #0a1e3d; }
+:root[data-acento="azul"] { --ink: #1d4ed8; --ink-contrast: #ffffff; --brand: var(--ink); }
+:root[data-theme="dark"][data-acento="azul"] { --ink: #60a5fa; --ink-contrast: #0a1e3d; --brand: var(--ink); }
 
-:root[data-acento="morado"] { --ink: #6d28d9; --ink-contrast: #ffffff; }
-:root[data-theme="dark"][data-acento="morado"] { --ink: #a78bfa; --ink-contrast: #241046; }
+:root[data-acento="morado"] { --ink: #6d28d9; --ink-contrast: #ffffff; --brand: var(--ink); }
+:root[data-theme="dark"][data-acento="morado"] { --ink: #a78bfa; --ink-contrast: #241046; --brand: var(--ink); }
 
-:root[data-acento="ambar"] { --ink: #b45309; --ink-contrast: #ffffff; }
-:root[data-theme="dark"][data-acento="ambar"] { --ink: #fbbf24; --ink-contrast: #3a2606; }
+:root[data-acento="ambar"] { --ink: #b45309; --ink-contrast: #ffffff; --brand: var(--ink); }
+:root[data-theme="dark"][data-acento="ambar"] { --ink: #fbbf24; --ink-contrast: #3a2606; --brand: var(--ink); }
 
 @media (min-width: 1728px) {
   :root { --content-pad-x: 40px; }
@@ -3552,6 +3557,93 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.iphone .ios-field--link { cursor: pointer; transition: background-color 0.08s ease; }
 :root.iphone .ios-field--link:active { background: var(--line); }
+/* Una fila de picker deshabilitada (p. ej. el municipio antes de elegir
+   estado) no puede verse igual que una que sí abre: sin esto el toque no
+   hacía nada y no había forma de saber por qué. */
+:root.iphone .ios-field--link:disabled { cursor: default; opacity: 0.45; }
+:root.iphone .ios-field--link:disabled:active { background: transparent; }
+
+/* ---------------- Chip de filtro (IOSPickerChip) ----------------
+   Sustituye al `<select>` nativo SOLO en iPhone — en Mac el desplegable
+   del sistema es el control correcto y se queda.
+
+   Barra de filtros: se desliza en horizontal, no envuelve a dos líneas.
+   Con seis filtros en Agenda, envolver deja la pantalla en escalera. El
+   margen negativo cancela el `--content-pad-x` del `.content` para que
+   la fila pueda sangrar hasta el borde al deslizarse, y el padding se lo
+   devuelve por dentro. */
+:root.iphone .ios-filtros {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px var(--content-pad-x) 10px;
+  margin: 0 calc(-1 * var(--content-pad-x));
+}
+:root.iphone .ios-filtros::-webkit-scrollbar { display: none; }
+
+:root.iphone .ios-picker-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 16px;
+  /* Mismo relleno gris de iOS que ya usa `.ios-navcard-icon`, con su
+     misma subida a .24 en oscuro (a .12 sobre negro no se ve). El
+     paquete traía `var(--fill-gray, …)`, pero ese token no existe en
+     este repo: siempre habría caído en el respaldo, sin versión
+     oscura. */
+  background: rgba(118, 118, 128, 0.12);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.24px;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root[data-theme="dark"].iphone .ios-picker-chip { background: rgba(118, 118, 128, 0.24); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]).iphone .ios-picker-chip { background: rgba(118, 118, 128, 0.24); }
+}
+:root.iphone .ios-picker-chip:active { opacity: 0.6; }
+:root.iphone .ios-picker-chip:disabled { opacity: 0.4; cursor: default; }
+:root.iphone .ios-picker-chip svg { flex: 0 0 auto; opacity: 0.5; }
+
+/* Filtro puesto: relleno con el acento. Así se ve de un vistazo cuáles
+   están filtrando, algo que un <select> gris no comunica. --brand (alias
+   de --ink) y --ink-contrast, no un verde fijo: el paquete traía
+   `var(--verde, #1e8e5a)`, token inexistente aquí, y con él un acento
+   ámbar o azul elegido en Ajustes habría seguido pintando chips verdes. */
+:root.iphone .ios-picker-chip[data-activo="true"] {
+  background: var(--brand, #059669);
+  color: var(--ink-contrast, #fff);
+  font-weight: 600;
+}
+:root.iphone .ios-picker-chip[data-activo="true"] svg { opacity: 0.85; }
+
+/* Campos de fecha en la barra de filtros: que no midan 44 px de alto ni
+   ocupen todo el ancho, para que convivan con los chips. */
+:root.iphone .ios-filtros input[type="date"] {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 16px;
+  border: 0;
+  background: rgba(118, 118, 128, 0.12);
+  font-size: 15px;
+  color: var(--text);
+}
+:root[data-theme="dark"].iphone .ios-filtros input[type="date"] { background: rgba(118, 118, 128, 0.24); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]).iphone .ios-filtros input[type="date"] { background: rgba(118, 118, 128, 0.24); }
+}
 
 /* Etiqueta arriba, campo abajo — solo cuando el valor no cabe en una línea. */
 :root.iphone .ios-field--stacked {
