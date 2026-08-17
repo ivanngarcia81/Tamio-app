@@ -6,6 +6,7 @@ type Resources = typeof es;
 
 export const en: Resources = {
   common: {
+    verTodo: "See all",
     buscarCorto: "Search…",
     buscarMiembroCorto: "Search member…",
     compartirNoDisponible: "The share sheet could not be opened on this device.",
@@ -143,6 +144,7 @@ export const en: Resources = {
     ingresosDelMes: "Income this month",
     gastosDelMes: "Expenses this month",
     balanceDelMesLabel: "Balance this month",
+    saldoDelMes: "{{mes}} balance",
     balanceDelAnio: "Balance this year",
     vsMesAnterior: "vs. last month",
     anioResumen: "{{anio}} · Income {{ingresos}} · Expenses {{gastos}}",
@@ -171,6 +173,8 @@ export const en: Resources = {
     evolucionBalance: "Balance trend",
     ultimos30: "Last 30 days",
     balanceAcumulado: "Cumulative balance",
+    sinTendenciaTitulo: "Not enough data yet",
+    sinTendenciaSub: "With one or two entries, a chart suggests a trend that is not there yet. It will appear once a few weeks are on record.",
   },
 
   mov: {

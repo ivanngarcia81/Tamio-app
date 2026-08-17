@@ -1,9 +1,13 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { fmtMoney } from "../db";
+import { aDecimal, type Centavos } from "../dinero";
+import { esIPhone } from "../movil";
+import { EmptyState } from "./TxList";
+import { IconReportes } from "../icons";
 
 interface WeekPoint {
   label: string;
@@ -23,6 +27,52 @@ interface Props {
 }
 
 const axisTick = { fontSize: 11, fill: "var(--text-3)" };
+
+/** Etiqueta corta para el eje Y: "13k", "1.4M". Los importes vienen en
+ *  centavos, así que primero se pasan a la unidad de la moneda. Sin eje Y
+ *  no había forma de saber si una barra son 13 mil o 130 mil. */
+function tickCompacto(centavos: number): string {
+  // El valor que entrega recharts SÍ son centavos (viene de los mismos datos
+  // que ya pasan por fmtMoney), pero llega tipado como `number` pelado: el
+  // molde recupera la marca de `Centavos` sin cambiar nada en tiempo de
+  // ejecución. Ver la nota sobre el tipo marcado en dinero.ts.
+  const n = aDecimal(centavos as Centavos);
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`;
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}k`;
+  return String(Math.round(n));
+}
+
+/**
+ * ¿Hay bastante para que una gráfica signifique algo?
+ *
+ * Con dos movimientos, las barras salen una al 100 % de alto y el resto a
+ * cero, y la línea sale plana con un escalón: las dos **sugieren una
+ * tendencia que no existe**. Vale más decir que aún no hay datos.
+ *
+ * El umbral se aplica también en Mac, no solo en el teléfono: ahí desinforma
+ * igual.
+ */
+function hayTendenciaSemanal(weekly: WeekPoint[]): boolean {
+  return weekly.filter((w) => w.ingresos + w.gastos > 0).length >= 3;
+}
+function hayTendenciaBalance(serie: BalancePoint[]): boolean {
+  if (serie.length < 7) return false;
+  // Se cuentan MOVIMIENTOS (días en que el acumulado cambia), no valores
+  // distintos.
+  //
+  // La regla de la tarea era "3 valores distintos", pero esta serie es
+  // ACUMULADA: dos movimientos dan siempre exactamente tres valores (0 →
+  // tras el primero → tras el segundo), así que ese umbral dejaba pasar
+  // justo el caso que se quería excluir — y en agosto, con dos
+  // movimientos, la gráfica seguía dibujando su línea plana con un
+  // escalón. Contando movimientos el umbral dice lo que se quería decir, y
+  // queda alineado con el de las barras (3 semanas con movimiento).
+  const movimientos = serie.filter((p, i) =>
+    i === 0 ? p.balance !== 0 : p.balance !== serie[i - 1].balance
+  ).length;
+  return movimientos >= 3;
+}
 
 function TooltipCard({ active, payload, label, moneda }: any) {
   if (!active || !payload?.length) return null;
@@ -51,6 +101,20 @@ function TooltipCard({ active, payload, label, moneda }: any) {
 export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props) {
   const { t } = useTranslation();
   const gradId = `bal-grad-${useId().replace(/:/g, "")}`;
+  const enIPhone = esIPhone();
+  // 210 px es cómodo en una ventana de Mac y demasiado en un teléfono, donde
+  // la gráfica se come la pantalla antes de llegar a las cifras.
+  const alto = enIPhone ? 180 : 210;
+  // En el teléfono no hay hover: sin esto el tooltip era inalcanzable.
+  const disparoTooltip = enIPhone ? "click" : "hover";
+
+  const SinDatos = () => (
+    <EmptyState
+      titulo={t("charts.sinTendenciaTitulo")}
+      sub={t("charts.sinTendenciaSub")}
+      icon={<IconReportes size={22} strokeWidth={1.6} />}
+    />
+  );
 
   return (
     <div className="charts enter">
@@ -59,21 +123,28 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
           <span className="card-title">{t("charts.ingresosVsGastos")}</span>
           <span className="card-meta">{t("charts.porSemana")}</span>
         </div>
-        <div style={{ height: 210 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weekly} barGap={4} barCategoryGap="28%" margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke="var(--line-soft)" strokeDasharray="3 4" />
-              <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-              <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} />
-              <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
-              <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="legend">
-          <span><span className="dot" style={{ background: "var(--accent-1)" }} /> {t("charts.ingresos")}</span>
-          <span><span className="dot" style={{ background: "var(--accent-2)" }} /> {t("charts.gastos")}</span>
-        </div>
+        {hayTendenciaSemanal(weekly) ? (
+          <>
+            <div style={{ height: alto }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weekly} barGap={4} barCategoryGap="28%" margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--line-soft)" />
+                  <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
+                  <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={4} width={38} tickFormatter={tickCompacto} />
+                  <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} trigger={disparoTooltip} />
+                  <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
+                  <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="legend">
+              <span><span className="dot" style={{ background: "var(--accent-1)" }} /> {t("charts.ingresos")}</span>
+              <span><span className="dot" style={{ background: "var(--accent-2)" }} /> {t("charts.gastos")}</span>
+            </div>
+          </>
+        ) : (
+          <SinDatos />
+        )}
       </div>
 
       <div className="card">
@@ -81,33 +152,38 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
           <span className="card-title">{t("charts.evolucionBalance")}</span>
           <span className="card-meta">{t("charts.ultimos30")}</span>
         </div>
-        <div style={{ height: 210 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={balanceSeries} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
-              <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--accent-3)" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="var(--accent-3)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke="var(--line-soft)" strokeDasharray="3 4" />
-              <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} minTickGap={40} />
-              <Tooltip content={<TooltipCard moneda={moneda} />} />
-              <Area
-                type="monotone"
-                dataKey="balance"
-                name={t("charts.balanceAcumulado")}
-                stroke="var(--accent-3)"
-                strokeWidth={1.5}
-                fill={`url(#${gradId})`}
-                dot={false}
-                activeDot={{ r: 4 }}
-                animationDuration={600}
-                animationEasing="ease-out"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {hayTendenciaBalance(balanceSeries) ? (
+          <div style={{ height: alto }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={balanceSeries} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--accent-3)" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="var(--accent-3)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="var(--line-soft)" />
+                <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} minTickGap={40} />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={4} width={38} tickFormatter={tickCompacto} />
+                <Tooltip content={<TooltipCard moneda={moneda} />} trigger={disparoTooltip} />
+                <Area
+                  type="monotone"
+                  dataKey="balance"
+                  name={t("charts.balanceAcumulado")}
+                  stroke="var(--accent-3)"
+                  strokeWidth={1.5}
+                  fill={`url(#${gradId})`}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                  animationDuration={600}
+                  animationEasing="ease-out"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <SinDatos />
+        )}
       </div>
     </div>
   );

@@ -4137,6 +4137,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .ios-stat-num.money .stat-cur { font-size: 13px; margin-left: 3px; }
 
+/* Dashboard: ocho indicadores en una pantalla que YA tiene su cifra grande
+   arriba (el saldo del mes). Si cada tarjeta usara los 34 px de
+   `.ios-stat-num`, competirían con ella y no habría un solo punto de
+   entrada visual. A 22 px siguen siendo el dato de su tarjeta sin pelear
+   con el titular. `.money` ya da ese tamaño para importes; esta es la
+   variante para lo que no lleva moneda (conteos, tiempo relativo). */
+:root.iphone .ios-stat-num.sm { font-size: 22px; letter-spacing: -0.3px; }
+
+/* Tarjeta de indicador que además navega (Miembros activos): el chevron va
+   abajo a la derecha, sin robarle la línea al número. */
+:root.iphone .ios-stat--link { position: relative; }
+:root.iphone .ios-stat--link .ios-chevron { position: absolute; right: 12px; bottom: 12px; }
+
 /* Tarjeta con filas dentro — filas de 52px (más altas que en una lista
    agrupada: el ritmo aquí es de panel, no de Ajustes). */
 :root.iphone .ios-listcard { background: var(--surface); border-radius: 16px; overflow: hidden; }

@@ -1,5 +1,6 @@
 export const es = {
   common: {
+    verTodo: "Ver todo",
     buscarCorto: "Buscar…",
     buscarMiembroCorto: "Buscar miembro…",
     compartirNoDisponible: "No se pudo abrir la hoja de compartir en este dispositivo.",
@@ -137,6 +138,7 @@ export const es = {
     ingresosDelMes: "Ingresos del mes",
     gastosDelMes: "Gastos del mes",
     balanceDelMesLabel: "Balance del mes",
+    saldoDelMes: "Saldo de {{mes}}",
     balanceDelAnio: "Balance del año",
     vsMesAnterior: "vs. mes anterior",
     anioResumen: "{{anio}} · Ingresos {{ingresos}} · Gastos {{gastos}}",
@@ -165,6 +167,8 @@ export const es = {
     evolucionBalance: "Evolución del balance",
     ultimos30: "Últimos 30 días",
     balanceAcumulado: "Balance acumulado",
+    sinTendenciaTitulo: "Aún no hay suficientes datos",
+    sinTendenciaSub: "Con uno o dos movimientos, una gráfica insinúa una tendencia que todavía no existe. Aparecerá cuando haya algunas semanas registradas.",
   },
 
   mov: {

@@ -16,6 +16,7 @@ import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import { CERO, restar } from "../dinero";
+import { esIPhone } from "../movil";
 
 interface Props {
   church: Church;
@@ -25,6 +26,12 @@ interface Props {
   onChanged: () => void;
   onNew: () => void;
 }
+
+const IosChevron = () => (
+  <span className="ios-chevron" aria-hidden="true">
+    <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
+  </span>
+);
 
 function accentStyle(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
@@ -65,6 +72,9 @@ function toCumulativeBalance(dias: DailyPoint[]) {
 
 export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew }: Props) {
   const { t } = useTranslation();
+  // Igual que en Miembros.tsx: el carrusel/la barra ya sitúan la pantalla, y
+  // en el teléfono manda el idioma de panel. Mac no cambia.
+  const enIPhone = esIPhone();
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [anio, setAnio] = useState<YearTotals | null>(null);
@@ -214,7 +224,9 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     <>
       <div className="header">
         <div>
-          <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>
+          {/* El saludo gasta una línea y no dice nada del dinero: fuera en el
+              teléfono. La cifra grande se queda — es EL dato de la app. */}
+          {!enIPhone && <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>}
           <div className="balance">
             {/* La cifra que el tesorero mira primero también comunica el signo,
                 con la misma semántica de color que las tarjetas de abajo. */}
@@ -223,7 +235,11 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             <div className="currency">{church.moneda}</div>
           </div>
-          <div className="balance-sub">{t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}</div>
+          <div className="balance-sub">
+            {enIPhone
+              ? t("dashboard.saldoDelMes", { mes: mesLegible(mes) })
+              : t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}
+          </div>
         </div>
         <div className="header-actions">
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
@@ -251,6 +267,94 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
         </div>
 
+        {enIPhone ? (
+          /* Los ocho indicadores en dos columnas. En Mac siguen siendo las
+             dos filas de tarjetas de siempre; aquí la tarjeta consolidada
+             "Balance del mes" se abre en sus tres cifras (saldo, ingresos,
+             gastos) porque en dos columnas ya no hace falta apretarlas en
+             una sola tarjeta con barra y desglose. */
+          <div className="ios-panel">
+            <div className="ios-panel-grid">
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.balanceDelMesLabel")}</span></div>
+                <span className="ios-stat-num money">
+                  <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                </span>
+                {pctChange(balance, balanceAnt) !== null && <Delta pct={pctChange(balance, balanceAnt)} />}
+              </div>
+
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("charts.ingresos")}</span></div>
+                <span className="ios-stat-num money">
+                  <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                </span>
+                <Delta pct={pctChange(ingresos, ingresosAnt)} />
+              </div>
+
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("charts.gastos")}</span></div>
+                <span className="ios-stat-num money">
+                  <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                </span>
+                <Delta pct={pctChange(gastos, gastosAnt)} invert />
+              </div>
+
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.balanceDelAnio")}</span></div>
+                <span className="ios-stat-num money">
+                  <CountUp value={balanceAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                </span>
+              </div>
+
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.mayorGasto")}</span></div>
+                {categoriaTopGasto ? (
+                  <>
+                    <span className="ios-stat-num money">
+                      <CountUp value={categoriaTopGasto.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                    </span>
+                    <div className="ios-panel-note" style={{ margin: 0 }}>
+                      {categoriaTopGasto.info.nombre} · {t("dashboard.pctDelGasto", { pct: categoriaTopGasto.pct })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="ios-panel-note" style={{ margin: 0 }}>{t("dashboard.sinGastosEsteMes")}</div>
+                )}
+              </div>
+
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.ingresoMasFrecuente")}</span></div>
+                {ingresoMasFrecuente ? (
+                  <>
+                    <span className="ios-stat-num sm">
+                      {ingresoMasFrecuente.cnt}<span className="stat-cur">{t("dashboard.movimientosUnidad")}</span>
+                    </span>
+                    <div className="ios-panel-note" style={{ margin: 0 }}>{ingresoMasFrecuente.info.nombre}</div>
+                  </>
+                ) : (
+                  <div className="ios-panel-note" style={{ margin: 0 }}>{t("dashboard.sinIngresosEsteMes")}</div>
+                )}
+              </div>
+
+              {/* Ya era un enlace a Miembros; en el teléfono la tarjeta
+                  entera es el objetivo táctil, con su chevron. */}
+              <Link to="/miembros" className="ios-stat ios-stat--link">
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.miembrosActivos")}</span></div>
+                <span className="ios-stat-num sm">{memberCount}</span>
+                <IosChevron />
+              </Link>
+
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.ultimaActualizacion")}</span></div>
+                <span className="ios-stat-num sm">{fmtRelativo(ultimaActividad)}</span>
+                <div className="ios-panel-note" style={{ margin: 0 }}>
+                  {ultimaActividad ? fmtFechaCorta(ultimaActividad) : t("dashboard.sinMovimientosRegistrados")}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="summary-4 enter">
           {/* Ingresos, Gastos y Balance del mes eran tres tarjetas separadas
               con los mismos datos que ya se resumen aquí. Se consolidan en
@@ -274,9 +378,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             <div className="stat-value md">
               <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
             </div>
-            <div className="stat-foot">
-              <Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}
-            </div>
+            {/* "vs. mes anterior" sin porcentaje no dice nada: cuando no hay
+                mes anterior con que comparar (pctChange devuelve null) se
+                omite la línea entera, no solo el número. */}
+            {pctChange(balance, balanceAnt) !== null && (
+              <div className="stat-foot">
+                <Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}
+              </div>
+            )}
 
             <div className="resumen-bar" title={`${t("charts.ingresos")} ${Math.round(pctBarraIngreso)}% · ${t("charts.gastos")} ${Math.round(pctBarraGasto)}%`}>
               <span className="seg ingreso" style={{ width: `${pctBarraIngreso}%` }} />
@@ -392,30 +501,71 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
           </div>
         </div>
+          </>
+        )}
 
-        <div className="card enter" ref={categoryChartRef}>
-          <div className="card-head">
-            <span className="card-title">{t("dashboard.distribucionGastos")}</span>
-            <span className="card-meta">{mesLegible(mes)}</span>
-          </div>
-          {topGastos.length === 0 ? (
-            <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
-          ) : (
-            topGastos.map((g) => (
-              <div className="hbar-row" key={g.id}>
-                <span className="hbar-label">{g.nombre}</span>
-                <div className="hbar-track">
-                  <div className="hbar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
-                </div>
-                <span className="hbar-val">{fmtMoney(g.monto)}</span>
+        {enIPhone ? (
+          <div className="ios-panel" ref={categoryChartRef}>
+            <div className="ios-panel-head">
+              <h2>{t("dashboard.distribucionGastos")}</h2>
+              {/* `topGastos` ya viene recortado a 5; si el mes tuvo más
+                  categorías, el resto se ve en Gastos. */}
+              {categoriasGasto.length > topGastos.length && (
+                <Link to="/gastos" className="ios-panel-action">{t("common.verTodo")}</Link>
+              )}
+            </div>
+            {topGastos.length === 0 ? (
+              <div className="ios-panel-empty">{t("dashboard.sinGastosEsteMesPunto")}</div>
+            ) : (
+              <div className="ios-listcard">
+                {topGastos.map((g) => (
+                  <div className="ios-txrow" key={g.id}>
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{g.nombre}</div>
+                      <div className="stat-bar" style={{ marginTop: 6 }}>
+                        <div className="stat-bar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
+                      </div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(g.monto)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="card enter" ref={categoryChartRef}>
+            <div className="card-head">
+              <span className="card-title">{t("dashboard.distribucionGastos")}</span>
+              <span className="card-meta">{mesLegible(mes)}</span>
+            </div>
+            {topGastos.length === 0 ? (
+              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
+            ) : (
+              topGastos.map((g) => (
+                <div className="hbar-row" key={g.id}>
+                  <span className="hbar-label">{g.nombre}</span>
+                  <div className="hbar-track">
+                    <div className="hbar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
+                  </div>
+                  <span className="hbar-val">{fmtMoney(g.monto)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
         </div>
 
         <div className="tx-head">
           <div className="tx-title">{t("dashboard.movimientosRecientes")}</div>
+          {/* La lista trae hasta 30; con más de 5 se ofrece el salto a la
+              pantalla que los tiene todos con sus filtros. */}
+          {txs.length > 5 && (
+            <Link to="/ingresos" className={enIPhone ? "ios-panel-action" : "btn secondary"} style={enIPhone ? undefined : { textDecoration: "none" }}>
+              {t("common.verTodo")}
+            </Link>
+          )}
         </div>
 
         {txs.length === 0 ? (
