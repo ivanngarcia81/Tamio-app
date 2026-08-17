@@ -3156,6 +3156,250 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.iphone .ios-row { transition: none; }
 }
 
+/* ============================================================
+   Pantallas internas de Ajustes en iPhone: nav bar + formulario plano
+   (Configuracion.tsx + components/ios/FormularioIOS.tsx). Reutiliza
+   .ios-section/.ios-group/.ios-chevron de arriba — misma lista agrupada,
+   solo que aquí las filas son campos en vez de enlaces a otra pantalla.
+   ============================================================ */
+
+/* Mismo slot que `.titulo-fijo` (App.tsx, Prioridad 4 más arriba): fija,
+   env(safe-area-inset-top), --navrow-h de alto, mismo z-index — así ocupa
+   exactamente el hueco que `.main` ya reserva con su padding-top, sin
+   negociar nada nuevo. A diferencia de `.titulo-fijo` (que solo se ve tras
+   el scroll, mientras el título grande se desvanece), esta SIEMPRE está
+   visible: una pantalla empujada de iOS no tiene título grande que encoger. */
+:root.iphone .ios-nav {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: 0;
+  right: 0;
+  z-index: 101;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  height: var(--navrow-h);
+  padding: 0 8px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--line);
+}
+:root.iphone .ios-nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+/* Botón de volver: chevron + nombre de la pantalla ANTERIOR. */
+:root.iphone .ios-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--navrow-h);
+  padding: 0 6px 0 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--brand, #059669);
+  cursor: pointer;
+  justify-self: start;
+  max-width: 100%;
+}
+:root.iphone .ios-back:active { opacity: .35; }
+:root.iphone .ios-back svg {
+  width: 11px;
+  height: 19px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+:root.iphone .ios-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+:root.iphone .ios-nav-action {
+  justify-self: end;
+  height: var(--navrow-h);
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--brand, #059669);
+  cursor: pointer;
+}
+:root.iphone .ios-nav-action:disabled { color: var(--text-3); cursor: default; }
+
+/* El título grande se quita de una pantalla interna (Configuracion.tsx);
+   sin `.header`, `.settings-zona-head` (título+subtítulo repetido dentro de
+   cada zona) queda redundante con el título de `.ios-nav` — se apaga aquí
+   para las 8 zonas a la vez, aunque por ahora solo Iglesia lleva ya el
+   marcado plano por dentro: el resto sigue con sus tarjetas de siempre, sin
+   la cabecera repetida encima. */
+:root.iphone .settings-zona-head { display: none; }
+
+/* Zona sin el panel gris que envuelve sus tarjetas: un solo nivel de
+   contenedor (.ios-group) sobre el fondo, como pide el patrón de formulario
+   de iOS — nada anidado. Solo para las zonas ya convertidas (llevan esta
+   clase a mano en Configuracion.tsx); el resto conserva el panel gris +
+   tarjeta blanca de siempre hasta que se conviertan también. */
+:root.iphone .settings-zona--ios-flat {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+/* ---------------- Fila de campo ---------------- */
+:root.iphone .ios-field {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 16px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+}
+:root.iphone .ios-field:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .ios-field-label {
+  flex: 0 0 auto;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  line-height: 22px;
+}
+:root.iphone .ios-field-optional { color: var(--text-2); }
+
+:root.iphone .ios-field-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--text);
+  text-align: right;
+  padding: 0;
+}
+:root.iphone .ios-field-input::placeholder { color: var(--text-3); }
+:root.iphone .ios-field-input:focus { outline: none; }
+
+:root.iphone .ios-field-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  color: var(--text-2);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root.iphone .ios-field--link { cursor: pointer; transition: background-color 0.08s ease; }
+:root.iphone .ios-field--link:active { background: var(--line); }
+
+/* Etiqueta arriba, campo abajo — solo cuando el valor no cabe en una línea. */
+:root.iphone .ios-field--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+:root.iphone .ios-field--stacked .ios-field-label { font-size: 13px; color: var(--text-2); }
+:root.iphone .ios-field--stacked .ios-field-input { text-align: left; }
+
+:root.iphone .ios-field-error {
+  flex-basis: 100%;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--ios-red);
+  padding-top: 2px;
+}
+
+:root.iphone .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
+:root.iphone .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: 17px; cursor: pointer; }
+
+/* ---------------- Logo / avatar ---------------- */
+:root.iphone .ios-avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--text-2);
+}
+:root.iphone .ios-avatar img { width: 100%; height: 100%; object-fit: cover; }
+:root.iphone .ios-field--avatar { min-height: 58px; }
+
+/* ---------------- Switch nativo ---------------- */
+:root.iphone .ios-switch {
+  flex: 0 0 auto;
+  margin-left: auto;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+  background: var(--line-soft);
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+:root.iphone .ios-switch[aria-checked="true"] { background: var(--brand, #059669); }
+:root.iphone .ios-switch[aria-checked="true"]::after { transform: translateX(20px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ios-switch,
+  :root.iphone .ios-switch::after,
+  :root.iphone .ios-field--link {
+    transition: none;
+  }
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
@@ -3430,6 +3674,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
 }
 .action-sheet-cancelar:active { background: var(--surface-2); }
+
+/* Variante de ActionSheet para una LISTA de opciones (IOSPickerSheet.tsx) en
+   vez de acciones sueltas: scroll propio (una lista de monedas no cabe
+   entera) y cada fila puede llevar una marca de check a la derecha. */
+.action-sheet-opciones--lista { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.action-sheet-opcion--lista {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 400;
+  color: var(--brand, #059669);
+}
+.action-sheet-opcion--lista svg { flex: 0 0 auto; color: var(--brand, #059669); }
 
 /* ============ Modo Asamblea (presentación para proyector) ============ */
 .asamblea {

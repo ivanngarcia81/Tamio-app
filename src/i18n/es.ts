@@ -2308,6 +2308,7 @@ export const es = {
     imagenPng: "Imagen PNG",
     imagen: "Imagen",
     logoAlt: "Logo de la iglesia",
+    logoFila: "Logo",
     nombreLabel: "Nombre de la iglesia",
     nombrePlaceholder: "p. ej. Iglesia Central",
     ciudad: "Ciudad",

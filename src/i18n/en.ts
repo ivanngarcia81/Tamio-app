@@ -2283,6 +2283,7 @@ export const en: Resources = {
     imagenPng: "PNG image",
     imagen: "Image",
     logoAlt: "Church logo",
+    logoFila: "Logo",
     nombreLabel: "Church name",
     nombrePlaceholder: "e.g. Central Church",
     ciudad: "City",

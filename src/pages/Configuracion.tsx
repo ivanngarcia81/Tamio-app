@@ -13,6 +13,7 @@ import Portal from "../components/Portal";
 import SyncIndicator from "../components/SyncIndicator";
 import { type EstadoGuardado } from "../components/settings/GuardadoChip";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
+import ChurchSettingsIOS from "../components/settings/ChurchSettingsIOS";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
 import TreasurerSettings, {
   type TreasurerFormErrors, type TreasurerFormValues,
@@ -43,6 +44,8 @@ import {
   IconChurch, IconIdBadge, IconFileText, IconUser, IconTag, IconMonitor, IconWarn,
   IconChevronLeft, IconChevronRight, IconLogout, IconHelp, IconInfo, IconTamio,
 } from "../icons";
+import { IOSNavBar } from "../components/ios/FormularioIOS";
+import { useSwipeBack } from "../hooks/useSwipeBack";
 
 /** Chevron de la lista agrupada de iPhone: 7×12px reales, no el ícono
  *  cuadrado de `IconChevronRight` (pensado para 1:1) estirado a la fuerza.
@@ -166,6 +169,12 @@ export default function Configuracion({
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? null : "iglesia"
   ));
   const claseZona = (key: string) => `settings-zona${zonaActiva === key ? "" : " settings-zona-inactiva"}`;
+  // Volver deslizando desde el borde izquierdo, como cualquier pantalla
+  // "empujada" de iOS. No hay rutas por zona (`zonaActiva` es solo estado),
+  // así que no hay gesto de router que activar — se reconoce a mano (ver
+  // el hook). Solo mientras hay una zona abierta en iPhone: en el índice no
+  // hay a dónde volver, y en Mac/iPad las dos columnas conviven siempre.
+  const contentRef = useSwipeBack(enIPhone && zonaActiva !== null, () => setZonaActiva(null));
   const [salirAbierto, setSalirAbierto] = useState(false);
   const [acercaDeAbierto, setAcercaDeAbierto] = useState(false);
   const [version, setVersion] = useState<string | null>(null);
@@ -416,20 +425,38 @@ export default function Configuracion({
       });
   }, [church.id, onChurchUpdated, t]);
 
+  const zonaActivaInfo = zonaActiva ? ZONAS_POR_KEY[zonaActiva as (typeof ZONAS)[number]["key"]] : undefined;
+
   return (
     <>
-      <div className="header">
-        <div>
-          <div className="page-title">{t("config.titulo")}</div>
-          {/* En iPhone (lista agrupada estilo iOS, ver más abajo) este
-              subtítulo se quita: su contenido pasa a repartirse entre los
-              pies de sección ("Define quién entra a Tesorería...",
-              "Respaldos, restauración..."). En Mac/iPad no cambia. */}
-          {!enIPhone && <div className="page-sub">{t("config.sub")}</div>}
+      {/* El título grande solo va en la pantalla raíz (el índice de zonas):
+          al entrar a una, la lleva su propia nav bar (IOSNavBar, más abajo)
+          y repetirlo aquí encima sería el mismo título dos veces. La copia
+          fija de la barra al hacer scroll (`.titulo-fijo`, App.tsx) lee el
+          texto de `.page-title` en vivo, así que con este bloque fuera del
+          DOM esa copia queda vacía en vez de mostrar "Ajustes" duplicado. */}
+      {!(enIPhone && zonaActiva) && (
+        <div className="header">
+          <div>
+            <div className="page-title">{t("config.titulo")}</div>
+            {/* En iPhone (lista agrupada estilo iOS, ver más abajo) este
+                subtítulo se quita: su contenido pasa a repartirse entre los
+                pies de sección ("Define quién entra a Tesorería...",
+                "Respaldos, restauración..."). En Mac/iPad no cambia. */}
+            {!enIPhone && <div className="page-sub">{t("config.sub")}</div>}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="content">
+      {enIPhone && zonaActiva && (
+        <IOSNavBar
+          backLabel={t("nav.ajustes")}
+          title={zonaActivaInfo?.titulo ?? ""}
+          onBack={() => setZonaActiva(null)}
+        />
+      )}
+
+      <div className="content" ref={contentRef as React.RefObject<HTMLDivElement>}>
         <div className={`settings-shell${zonaActiva ? " zona-abierta" : ""}`}>
           {enIPhone ? (
             <nav className="ios-lista" aria-label={t("config.titulo")}>
@@ -478,9 +505,17 @@ export default function Configuracion({
           )}
 
           <div className="settings-detail">
-            <button type="button" className="settings-detail-volver" onClick={() => setZonaActiva(null)}>
-              <IconChevronLeft size={14} /> {t("common.volver")}
-            </button>
+            {/* En iPhone el volver ya lo lleva `.ios-nav` (fija, arriba de
+                todo) — este botón es solo para Mac/iPad y para una ventana
+                de escritorio angosta (el media query de abajo), donde no
+                hay `.ios-nav`. Sin la guarda, en un iPhone real (que
+                también cae bajo ese mismo media query, por ancho) saldrían
+                los DOS botones de volver a la vez. */}
+            {!enIPhone && (
+              <button type="button" className="settings-detail-volver" onClick={() => setZonaActiva(null)}>
+                <IconChevronLeft size={14} /> {t("common.volver")}
+              </button>
+            )}
 
           {enIPhone && (
             <section className={claseZona("cuenta")}>
@@ -547,13 +582,16 @@ export default function Configuracion({
           {/* Zonas con jerarquía visual: cada categoría vive en su propio
               contenedor (panel plano) con título, y las tarjetas se elevan
               encima. El mosaico interno balancea las alturas por zona. */}
-          <section className={claseZona("iglesia")}>
+          <section className={`${claseZona("iglesia")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+            {/* En Mac/iPad esta cabecera se queda (sigue siendo el índice de
+                dos columnas de siempre); en iPhone la oculta el CSS de
+                `.settings-zona-head` — el título ya lo lleva `.ios-nav`. */}
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.iglesia")}</div>
               <div className="settings-zona-sub">{t("config.zona.iglesiaSub")}</div>
             </div>
-            <div className="settings-masonry una-tarjeta">
-              <ChurchSettings
+            {enIPhone ? (
+              <ChurchSettingsIOS
                 value={churchForm}
                 onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
                 error={churchError}
@@ -563,7 +601,20 @@ export default function Configuracion({
                 showCurrency={verTesoreria}
                 estado={estados.iglesia}
               />
-            </div>
+            ) : (
+              <div className="settings-masonry una-tarjeta">
+                <ChurchSettings
+                  value={churchForm}
+                  onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
+                  error={churchError}
+                  saldoError={saldoError}
+                  logoPath={logoPath}
+                  onLogoPathChange={cambiarLogo}
+                  showCurrency={verTesoreria}
+                  estado={estados.iglesia}
+                />
+              </div>
+            )}
           </section>
 
           {/* Acceso y alcance en UNA sección: qué módulos tiene la iglesia
