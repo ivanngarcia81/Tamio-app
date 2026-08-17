@@ -11,16 +11,18 @@ import { iniciales } from "../services/avatar";
 import ActionSheet from "../components/ActionSheet";
 import Portal from "../components/Portal";
 import SyncIndicator from "../components/SyncIndicator";
-import { type EstadoGuardado } from "../components/settings/GuardadoChip";
+import GuardadoChip, { type EstadoGuardado } from "../components/settings/GuardadoChip";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import ChurchSettingsIOS from "../components/settings/ChurchSettingsIOS";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
+import InstitucionSettingsIOS from "../components/settings/InstitucionSettingsIOS";
 import TreasurerSettings, {
   type TreasurerFormErrors, type TreasurerFormValues,
 } from "../components/settings/TreasurerSettings";
 import PastorSettings, {
   type PastorFormErrors, type PastorFormValues,
 } from "../components/settings/PastorSettings";
+import PersonasSettingsIOS from "../components/settings/PersonasSettingsIOS";
 import SignatureUploader from "../components/settings/SignatureUploader";
 import UsersSettings from "../components/settings/UsersSettings";
 import InvitarUsuario from "../components/settings/InvitarUsuario";
@@ -427,6 +429,40 @@ export default function Configuracion({
 
   const zonaActivaInfo = zonaActiva ? ZONAS_POR_KEY[zonaActiva as (typeof ZONAS)[number]["key"]] : undefined;
 
+  // El hueco de acción de `.ios-nav` (Configuracion.tsx, iPhone) no lleva un
+  // botón "Guardar" —el guardado sigue siendo automático, por campo— pero SÍ
+  // necesita seguir avisando cuando algo se está guardando o falló: eso ya
+  // existía por tarjeta (GuardadoChip) y se perdía sin más al quitar la
+  // cabecera de cada tarjeta. Una zona puede tener varias tarjetas (Tesorero
+  // y pastor: 4) así que se combinan en un solo estado — un error pesa más
+  // que "guardando", que pesa más que "guardado" — para no atarse a un
+  // orden de prioridad. */
+  function combinarEstados(...lista: EstadoGuardado[]): EstadoGuardado {
+    return (
+      lista.find((e) => e.tipo === "error")
+      ?? lista.find((e) => e.tipo === "guardando")
+      ?? lista.find((e) => e.tipo === "guardado")
+      ?? ESTADO_OCULTO
+    );
+  }
+  const ESTADOS_POR_ZONA: Partial<Record<string, EstadoGuardado>> = {
+    iglesia: estados.iglesia,
+    institucion: estados.institucion,
+    personas: combinarEstados(estados.tesorero, estados.pastor, estados.firmaTesorero, estados.firmaPastor),
+  };
+  const estadoNavBar = zonaActiva ? ESTADOS_POR_ZONA[zonaActiva] ?? ESTADO_OCULTO : ESTADO_OCULTO;
+  // El hueco de acción es angosto y comparte fila con el título centrado —
+  // "guardando"/"guardado" son siempre cortos y caben, pero un error es
+  // texto libre (puede venir de cualquier fallo de red o de guardado) y
+  // GuardadoChip lo pinta en un `inline-flex` (ícono + texto): el
+  // `text-overflow: ellipsis` de un solo nodo de texto no funciona ahí, así
+  // que un error largo empujaba el título en vez de recortarse. El detalle
+  // completo ya se ve en el campo que falló (TextField.error); aquí basta
+  // el ícono para avisar que algo no se guardó. */
+  const accionNavBar = estadoNavBar.tipo === "error"
+    ? <span className="ios-nav-action-warn"><IconWarn size={16} /></span>
+    : estadoNavBar.tipo !== "oculto" ? <GuardadoChip estado={estadoNavBar} /> : undefined;
+
   return (
     <>
       {/* El título grande solo va en la pantalla raíz (el índice de zonas):
@@ -453,6 +489,7 @@ export default function Configuracion({
           backLabel={t("nav.ajustes")}
           title={zonaActivaInfo?.titulo ?? ""}
           onBack={() => setZonaActiva(null)}
+          action={accionNavBar}
         />
       )}
 
@@ -648,69 +685,111 @@ export default function Configuracion({
               (tres filas) — la que más scroll pedía de las seis. Se parte en
               dos zonas más cortas, cada una con lo suyo: el membrete/vista
               previa por un lado, las dos personas y sus firmas por el otro. */}
-          <section className={claseZona("institucion")}>
+          <section className={`${claseZona("institucion")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.institucion")}</div>
               <div className="settings-zona-sub">{t("config.zona.institucionSub")}</div>
             </div>
-            <div className="settings-masonry">
-              {/* La vista previa es el RESULTADO de los datos institucionales,
-                  así que va a su lado: se cambia un dato y se ve el efecto sin
-                  mover los ojos de sitio. */}
-              {verSecretaria && (
-                <InstitucionSettings
-                  value={institucionForm}
-                  onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
-                  estado={estados.institucion}
-                />
-              )}
-              {verTesoreria && (
-                <PDFPreview
-                  churchNombre={churchForm.nombre}
-                  tesoreroNombre={treasurerForm.nombre}
-                  tesoreroCargo={treasurerForm.cargo}
-                />
-              )}
-            </div>
+            {enIPhone ? (
+              <>
+                {verSecretaria && (
+                  <InstitucionSettingsIOS
+                    value={institucionForm}
+                    onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
+                    estado={estados.institucion}
+                  />
+                )}
+                {/* La vista previa NO es un campo de formulario — es un
+                    mockup visual que refleja lo escrito en otras tarjetas —
+                    así que se queda con su tarjeta de siempre, debajo de las
+                    secciones planas, en vez de forzarla a una fila de campo
+                    que no le corresponde. */}
+                {verTesoreria && (
+                  <div className="settings-masonry una-tarjeta">
+                    <PDFPreview
+                      churchNombre={churchForm.nombre}
+                      tesoreroNombre={treasurerForm.nombre}
+                      tesoreroCargo={treasurerForm.cargo}
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="settings-masonry">
+                {/* La vista previa es el RESULTADO de los datos institucionales,
+                    así que va a su lado: se cambia un dato y se ve el efecto sin
+                    mover los ojos de sitio. */}
+                {verSecretaria && (
+                  <InstitucionSettings
+                    value={institucionForm}
+                    onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
+                    estado={estados.institucion}
+                  />
+                )}
+                {verTesoreria && (
+                  <PDFPreview
+                    churchNombre={churchForm.nombre}
+                    tesoreroNombre={treasurerForm.nombre}
+                    tesoreroCargo={treasurerForm.cargo}
+                  />
+                )}
+              </div>
+            )}
           </section>
 
-          <section className={claseZona("personas")}>
+          <section className={`${claseZona("personas")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.personas")}</div>
               <div className="settings-zona-sub">{t("config.zona.personasSub")}</div>
             </div>
-            <div className="settings-masonry">
-              {/* Fila de personas y fila de firmas: dos tarjetas del mismo
-                  tipo comparten fila, así que la fila entera mide igual. */}
-              {verTesoreria && (
-                <TreasurerSettings
-                  value={treasurerForm}
-                  onChange={(patch) => { setTreasurerForm((v) => ({ ...v, ...patch })); programarGuardado("tesorero"); }}
-                  errors={treasurerErrors}
-                  estado={estados.tesorero}
-                />
-              )}
-              {/* Pastor: compartido (firma en tesorería y secretaría). */}
-              <PastorSettings
-                value={pastorForm}
-                onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
-                errors={pastorErrors}
-                estado={estados.pastor}
+            {enIPhone ? (
+              <PersonasSettingsIOS
+                verTesoreria={verTesoreria}
+                treasurerValue={treasurerForm}
+                onTreasurerChange={(patch) => { setTreasurerForm((v) => ({ ...v, ...patch })); programarGuardado("tesorero"); }}
+                treasurerErrors={treasurerErrors}
+                firmaPath={firmaPath}
+                onFirmaPathChange={(p) => { setFirmaPath(p); programarGuardado("firmaTesorero", 50); }}
+                pastorValue={pastorForm}
+                onPastorChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
+                pastorErrors={pastorErrors}
+                pastorFirmaPath={pastorFirmaPath}
+                onPastorFirmaPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
               />
-              {verTesoreria && (
+            ) : (
+              <div className="settings-masonry">
+                {/* Fila de personas y fila de firmas: dos tarjetas del mismo
+                    tipo comparten fila, así que la fila entera mide igual. */}
+                {verTesoreria && (
+                  <TreasurerSettings
+                    value={treasurerForm}
+                    onChange={(patch) => { setTreasurerForm((v) => ({ ...v, ...patch })); programarGuardado("tesorero"); }}
+                    errors={treasurerErrors}
+                    estado={estados.tesorero}
+                  />
+                )}
+                {/* Pastor: compartido (firma en tesorería y secretaría). */}
+                <PastorSettings
+                  value={pastorForm}
+                  onChange={(patch) => { setPastorForm((v) => ({ ...v, ...patch })); programarGuardado("pastor"); }}
+                  errors={pastorErrors}
+                  estado={estados.pastor}
+                />
+                {verTesoreria && (
+                  <SignatureUploader
+                    path={firmaPath}
+                    onPathChange={(p) => { setFirmaPath(p); programarGuardado("firmaTesorero", 50); }}
+                    estado={estados.firmaTesorero}
+                  />
+                )}
                 <SignatureUploader
-                  path={firmaPath}
-                  onPathChange={(p) => { setFirmaPath(p); programarGuardado("firmaTesorero", 50); }}
-                  estado={estados.firmaTesorero}
+                  path={pastorFirmaPath}
+                  onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
+                  variant="pastor"
+                  estado={estados.firmaPastor}
                 />
-              )}
-              <SignatureUploader
-                path={pastorFirmaPath}
-                onPathChange={(p) => { setPastorFirmaPath(p); programarGuardado("firmaPastor", 50); }}
-                variant="pastor"
-                estado={estados.firmaPastor}
-              />
-            </div>
+              </div>
+            )}
           </section>
 
           {verTesoreria && (

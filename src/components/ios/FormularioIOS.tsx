@@ -44,7 +44,9 @@ export function IOSNavBar({
         <span className="ios-back-label">{backLabel}</span>
       </button>
       <h1 className="ios-nav-title">{title}</h1>
-      {action ?? <span />}
+      {/* Envuelto siempre (incluso vacío) para reservar la columna derecha
+          de la grilla y mantener el título de verdad centrado. */}
+      <span className="ios-nav-status">{action}</span>
     </div>
   );
 }

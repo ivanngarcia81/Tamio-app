@@ -3241,6 +3241,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .ios-nav-action:disabled { color: var(--text-3); cursor: default; }
 
+/* Hueco de acción de `.ios-nav`: reserva la columna derecha (título de
+   verdad centrado) y, cuando lleva el indicador de guardado automático
+   (GuardadoChip), lo mantiene compacto — el hueco es angosto y comparte
+   fila con el título. */
+:root.iphone .ios-nav-status {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 130px;
+}
+:root.iphone .ios-nav-status .form-hint,
+:root.iphone .ios-nav-status .settings-saved-pill {
+  font-size: 13px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Error: solo el ícono (ver el comentario en Configuracion.tsx sobre por
+   qué el texto libre de GuardadoChip no cabe/no trunca bien aquí). */
+:root.iphone .ios-nav-action-warn { display: flex; color: var(--ios-red); flex: 0 0 auto; }
+
 /* El título grande se quita de una pantalla interna (Configuracion.tsx);
    sin `.header`, `.settings-zona-head` (título+subtítulo repetido dentro de
    cada zona) queda redundante con el título de `.ios-nav` — se apaga aquí
@@ -3265,7 +3288,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-field {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   width: 100%;
