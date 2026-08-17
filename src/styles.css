@@ -3611,6 +3611,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]).iphone .ios-picker-chip { background: rgba(118, 118, 128, 0.24); }
 }
+/* Disparador con pinta de `.form-input` (IOSPickerInput): hereda todo el
+   aspecto de sus vecinos de la rejilla `.form-group` y solo añade el
+   reparto interno y el chevron simple. */
+:root.iphone .ios-picker-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+:root.iphone .ios-picker-input > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .ios-picker-input svg { flex: 0 0 auto; opacity: 0.45; }
+:root.iphone .ios-picker-input-vacio { color: var(--text-3); }
+:root.iphone .ios-picker-input:disabled { opacity: 0.5; cursor: default; }
+
 :root.iphone .ios-picker-chip:active { opacity: 0.6; }
 :root.iphone .ios-picker-chip:disabled { opacity: 0.4; cursor: default; }
 :root.iphone .ios-picker-chip svg { flex: 0 0 auto; opacity: 0.5; }

@@ -15,6 +15,9 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { iaHabilitada, redactarCarta } from "../ia";
 import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
+import { esIPhone } from "../movil";
+import { IOSPickerInput } from "./ios/IOSPickerField";
+import type { IOSPickerOption } from "./ios/IOSPickerSheet";
 
 export const TIPOS_CARTA = [
   "recomendacion", "certificacion", "constanciaActivo", "buenaConducta", "presentacion",
@@ -139,6 +142,48 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
     document.execCommand("insertText", false, texto);
     setDirty(true);
   }
+
+  /** Qué texto mete cada opción de "Insertar dato". Se extrajo del onChange
+   *  del desplegable para que el picker de iPhone y el de Mac hagan lo
+   *  mismo sin copiar la cadena de ifs. */
+  function insertarDato(v: string) {
+    if (v === "fecha") insertar(new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }));
+    if (v === "iglesia") insertar(church.nombre);
+    if (v === "pastor") insertar(church.pastor_nombre ?? "");
+    if (v === "secretaria") insertar(church.secretaria_nombre ?? "");
+    if (v === "miembro") insertar(miembroSel?.nombre ?? "");
+    if (v === "fechaMembresia") insertar(miembroSel?.fecha_ingreso ?? "");
+    if (v === "fechaCongregacion") insertar(miembroSel?.fecha_congregacion ?? "");
+  }
+
+  // Catálogos de los desplegables, en un solo sitio: los consumen tanto los
+  // `<option>` de Mac como los pickers de iPhone.
+  const enIPhone = esIPhone();
+  const opcTipoCarta: IOSPickerOption[] = useMemo(
+    () => TIPOS_CARTA.map((ti) => ({ value: ti, label: t(`cartas.tipoDoc.${ti}`) })), [t]);
+  const opcDestinatario: IOSPickerOption[] = useMemo(
+    () => DESTINATARIOS.map((d) => ({ value: d, label: t(`cartas.destinatario.${d}`) })), [t]);
+  const opcEstadoCarta: IOSPickerOption[] = useMemo(
+    () => ESTADOS_CARTA.map((es) => ({ value: es, label: t(`cartas.estado.${es}`) })), [t]);
+  const opcMiembros: IOSPickerOption[] = useMemo(
+    () => [{ value: "", label: t("cartas.eligeMiembro") }, ...members.map((m) => ({ value: String(m.id), label: m.nombre }))],
+    [members, t]);
+  const opcPlantillas: IOSPickerOption[] = useMemo(() => (plantillas ?? [])
+    .slice()
+    .sort((a, b) => (a.tipo === tipo ? -1 : 0) - (b.tipo === tipo ? -1 : 0) || (b.predeterminada - a.predeterminada))
+    .map((pl) => ({
+      value: String(pl.id),
+      label: pl.nombre + (pl.tipo === tipo && pl.predeterminada === 1 ? ` — ${t("plantillas.predeterminadaBadge")}` : ""),
+    })), [plantillas, tipo, t]);
+  const opcInsertar: IOSPickerOption[] = useMemo(() => [
+    { value: "fecha", label: t("cartas.varFecha") },
+    { value: "iglesia", label: t("cartas.varIglesia") },
+    { value: "pastor", label: t("cartas.varPastor") },
+    { value: "secretaria", label: t("cartas.varSecretaria") },
+    ...(miembroSel ? [{ value: "miembro", label: t("cartas.varMiembro") }] : []),
+    ...(miembroSel?.fecha_ingreso ? [{ value: "fechaMembresia", label: t("cartas.varFechaMembresia") }] : []),
+    ...(miembroSel?.fecha_congregacion ? [{ value: "fechaCongregacion", label: t("cartas.varFechaCongregacion") }] : []),
+  ], [miembroSel, t]);
 
   /** Aplica la plantilla con las variables resueltas al momento. */
   function aplicarPlantilla(p: Plantilla) {
@@ -324,11 +369,13 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
         <div className="form-grid">
           <div className="form-group">
             <label className="form-label">{t("cartas.tipoCarta")}</label>
-            <select className="form-input" value={tipo} onChange={(e) => marcar(setTipo)(e.target.value)}>
-              {TIPOS_CARTA.map((ti) => (
-                <option key={ti} value={ti}>{t(`cartas.tipoDoc.${ti}`)}</option>
-              ))}
-            </select>
+            {enIPhone ? (
+              <IOSPickerInput ariaLabel={t("cartas.tipoCarta")} options={opcTipoCarta} value={tipo} onSelect={(v) => marcar(setTipo)(v)} />
+            ) : (
+              <select className="form-input" value={tipo} onChange={(e) => marcar(setTipo)(e.target.value)}>
+                {opcTipoCarta.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">{t("cartas.numeroInterno")}</label>
@@ -349,25 +396,34 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
         <div className="form-grid">
           <div className="form-group">
             <label className="form-label">{t("cartas.tipoDestinatario")}</label>
-            <select className="form-input" value={destTipo} onChange={(e) => marcar(setDestTipo)(e.target.value)}>
-              {DESTINATARIOS.map((d) => (
-                <option key={d} value={d}>{t(`cartas.destinatario.${d}`)}</option>
-              ))}
-            </select>
+            {enIPhone ? (
+              <IOSPickerInput ariaLabel={t("cartas.tipoDestinatario")} options={opcDestinatario} value={destTipo} onSelect={(v) => marcar(setDestTipo)(v)} />
+            ) : (
+              <select className="form-input" value={destTipo} onChange={(e) => marcar(setDestTipo)(e.target.value)}>
+                {opcDestinatario.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
           </div>
           {destTipo === "miembro" ? (
             <div className="form-group">
               <label className="form-label">{t("cartas.miembro")}</label>
-              <select
-                className="form-input"
-                value={memberId ?? ""}
-                onChange={(e) => marcar(setMemberId)(e.target.value ? Number(e.target.value) : null)}
-              >
-                <option value="">{t("cartas.eligeMiembro")}</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>{m.nombre}</option>
-                ))}
-              </select>
+              {enIPhone ? (
+                <IOSPickerInput
+                  ariaLabel={t("cartas.miembro")}
+                  options={opcMiembros}
+                  value={memberId === null ? "" : String(memberId)}
+                  placeholder={t("cartas.eligeMiembro")}
+                  onSelect={(v) => marcar(setMemberId)(v ? Number(v) : null)}
+                />
+              ) : (
+                <select
+                  className="form-input"
+                  value={memberId ?? ""}
+                  onChange={(e) => marcar(setMemberId)(e.target.value ? Number(e.target.value) : null)}
+                >
+                  {opcMiembros.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              )}
             </div>
           ) : (
             <div className="form-group">
@@ -397,26 +453,33 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
         {(plantillas ?? []).length > 0 && (
           <div className="form-group full">
             <label className="form-label">{t("plantillas.usarPlantilla")}</label>
-            <select
-              className="form-input"
-              value=""
-              onChange={(e) => {
-                const p = (plantillas ?? []).find((x) => x.id === Number(e.target.value));
-                if (p) pedirAplicarPlantilla(p);
-                e.target.value = "";
-              }}
-            >
-              <option value="">{t("plantillas.elegirPlantilla")}</option>
-              {(plantillas ?? [])
-                .slice()
-                .sort((a, b) => (a.tipo === tipo ? -1 : 0) - (b.tipo === tipo ? -1 : 0) || (b.predeterminada - a.predeterminada))
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                    {p.tipo === tipo && p.predeterminada === 1 ? ` — ${t("plantillas.predeterminadaBadge")}` : ""}
-                  </option>
-                ))}
-            </select>
+            {/* No es un campo con valor: es un menú de acción — se elige una
+                plantilla, se aplica y el control vuelve a quedar vacío. */}
+            {enIPhone ? (
+              <IOSPickerInput
+                ariaLabel={t("plantillas.usarPlantilla")}
+                options={opcPlantillas}
+                value=""
+                placeholder={t("plantillas.elegirPlantilla")}
+                onSelect={(v) => {
+                  const p = (plantillas ?? []).find((x) => x.id === Number(v));
+                  if (p) pedirAplicarPlantilla(p);
+                }}
+              />
+            ) : (
+              <select
+                className="form-input"
+                value=""
+                onChange={(e) => {
+                  const p = (plantillas ?? []).find((x) => x.id === Number(e.target.value));
+                  if (p) pedirAplicarPlantilla(p);
+                  e.target.value = "";
+                }}
+              >
+                <option value="">{t("plantillas.elegirPlantilla")}</option>
+                {opcPlantillas.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
           </div>
         )}
 
@@ -430,33 +493,26 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
             <button type="button" className="btn secondary" title={t("cartas.alinearIzq")} onClick={() => cmd("justifyLeft")}>⇤</button>
             <button type="button" className="btn secondary" title={t("cartas.alinearCentro")} onClick={() => cmd("justifyCenter")}>↔</button>
             <button type="button" className="btn secondary" title={t("cartas.alinearDer")} onClick={() => cmd("justifyRight")}>⇥</button>
-            <select
-              className="form-input"
-              style={{ width: "auto", padding: "6px 10px" }}
-              value=""
-              aria-label={t("cartas.insertarDato")}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (!v) return;
-                if (v === "fecha") insertar(new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }));
-                if (v === "iglesia") insertar(church.nombre);
-                if (v === "pastor") insertar(church.pastor_nombre ?? "");
-                if (v === "secretaria") insertar(church.secretaria_nombre ?? "");
-                if (v === "miembro") insertar(miembroSel?.nombre ?? "");
-                if (v === "fechaMembresia") insertar(miembroSel?.fecha_ingreso ?? "");
-                if (v === "fechaCongregacion") insertar(miembroSel?.fecha_congregacion ?? "");
-                e.target.value = "";
-              }}
-            >
-              <option value="">{t("cartas.insertarDato")}</option>
-              <option value="fecha">{t("cartas.varFecha")}</option>
-              <option value="iglesia">{t("cartas.varIglesia")}</option>
-              <option value="pastor">{t("cartas.varPastor")}</option>
-              <option value="secretaria">{t("cartas.varSecretaria")}</option>
-              {miembroSel && <option value="miembro">{t("cartas.varMiembro")}</option>}
-              {miembroSel?.fecha_ingreso && <option value="fechaMembresia">{t("cartas.varFechaMembresia")}</option>}
-              {miembroSel?.fecha_congregacion && <option value="fechaCongregacion">{t("cartas.varFechaCongregacion")}</option>}
-            </select>
+            {enIPhone ? (
+              <IOSPickerInput
+                ariaLabel={t("cartas.insertarDato")}
+                options={opcInsertar}
+                value=""
+                placeholder={t("cartas.insertarDato")}
+                onSelect={insertarDato}
+              />
+            ) : (
+              <select
+                className="form-input"
+                style={{ width: "auto", padding: "6px 10px" }}
+                value=""
+                aria-label={t("cartas.insertarDato")}
+                onChange={(e) => { if (e.target.value) insertarDato(e.target.value); e.target.value = ""; }}
+              >
+                <option value="">{t("cartas.insertarDato")}</option>
+                {opcInsertar.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
             {iaHabilitada && (
               <button
                 type="button"
@@ -524,11 +580,13 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
         <div className="form-grid">
           <div className="form-group">
             <label className="form-label">{t("membresia.colEstado")}</label>
-            <select className="form-input" value={estado} onChange={(e) => marcar(setEstado)(e.target.value)}>
-              {ESTADOS_CARTA.map((es) => (
-                <option key={es} value={es}>{t(`cartas.estado.${es}`)}</option>
-              ))}
-            </select>
+            {enIPhone ? (
+              <IOSPickerInput ariaLabel={t("cartas.secEstado")} options={opcEstadoCarta} value={estado} onSelect={(v) => marcar(setEstado)(v)} />
+            ) : (
+              <select className="form-input" value={estado} onChange={(e) => marcar(setEstado)(e.target.value)}>
+                {opcEstadoCarta.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )}
           </div>
           {estado === "entregada" && (
             <>

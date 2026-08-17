@@ -155,4 +155,56 @@ export function IOSPickerChip({
   );
 }
 
+/* ============================================================
+   Disparador con pinta de campo de formulario clásico
+   ============================================================
+   Tercer contexto, además de la fila de lista y el chip: los formularios
+   que NO son hojas de iOS y siguen usando la rejilla `.form-group`
+   (etiqueta arriba, control abajo) — CartaEditor y varios modales. Ahí una
+   fila `.ios-field` chocaría con los `<input>` de al lado; lo que encaja es
+   un botón con la misma pinta de `.form-input` que sus vecinos, sin el
+   doble chevron de WebKit. */
+
+export function IOSPickerInput({
+  ariaLabel,
+  sheetTitle,
+  options,
+  value,
+  onSelect,
+  placeholder,
+  disabled,
+}: Common & { ariaLabel: string }) {
+  const [abierto, setAbierto] = useState(false);
+  const texto = etiquetaDe(options, value, placeholder);
+  const vacio = !options.some((o) => o.value === value) && !!placeholder;
+
+  return (
+    <>
+      <button
+        type="button"
+        className="form-input ios-picker-input"
+        aria-label={ariaLabel}
+        disabled={disabled}
+        onClick={() => setAbierto(true)}
+      >
+        <span className={vacio ? "ios-picker-input-vacio" : undefined}>{texto}</span>
+        <IconChevronDown size={12} />
+      </button>
+
+      {abierto && (
+        <IOSPickerSheet
+          title={sheetTitle ?? ariaLabel}
+          options={options}
+          value={value}
+          onSelect={(v) => {
+            onSelect(v);
+            setAbierto(false);
+          }}
+          onCancel={() => setAbierto(false)}
+        />
+      )}
+    </>
+  );
+}
+
 export default IOSPickerField;
