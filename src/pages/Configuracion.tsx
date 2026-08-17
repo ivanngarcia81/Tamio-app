@@ -7,13 +7,12 @@ import type { LangPref } from "../i18n";
 import { CERO, aTextoEditable, deTexto } from "../dinero";
 import { showToast } from "../toast";
 import { esIPhone } from "../movil";
-import { iniciales } from "../services/avatar";
 import ActionSheet from "../components/ActionSheet";
 import Portal from "../components/Portal";
-import SyncIndicator from "../components/SyncIndicator";
 import GuardadoChip, { type EstadoGuardado } from "../components/settings/GuardadoChip";
 import ChurchSettings, { type ChurchFormValues } from "../components/settings/ChurchSettings";
 import ChurchSettingsIOS from "../components/settings/ChurchSettingsIOS";
+import CuentaSettingsIOS from "../components/settings/CuentaSettingsIOS";
 import InstitucionSettings, { type InstitucionFormValues } from "../components/settings/InstitucionSettings";
 import InstitucionSettingsIOS from "../components/settings/InstitucionSettingsIOS";
 import TreasurerSettings, {
@@ -44,7 +43,7 @@ import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 import {
   IconChurch, IconIdBadge, IconFileText, IconUser, IconTag, IconMonitor, IconWarn,
-  IconChevronLeft, IconChevronRight, IconLogout, IconHelp, IconInfo, IconTamio,
+  IconChevronLeft, IconChevronRight, IconTamio,
 } from "../icons";
 import { IOSNavBar } from "../components/ios/FormularioIOS";
 import { useSwipeBack } from "../hooks/useSwipeBack";
@@ -555,61 +554,21 @@ export default function Configuracion({
             )}
 
           {enIPhone && (
-            <section className={claseZona("cuenta")}>
+            <section className={`${claseZona("cuenta")} settings-zona--ios-flat`}>
               <div className="settings-zona-head">
                 <div className="settings-zona-titulo">{t("config.zona.cuenta")}</div>
                 <div className="settings-zona-sub">{t("config.zona.cuentaSub")}</div>
               </div>
-
-              {authActivo && (
-                <div className="cuenta-grupo">
-                  <button type="button" className="cuenta-fila" onClick={onEditarPerfil}>
-                    <span className="cuenta-fila-icono cuenta-fila-icono-persona">
-                      {sesionFoto
-                        ? <img src={sesionFoto} alt="" />
-                        : (iniciales(sesionNombre ?? null, sesionEmail ?? null) || <IconUser size={16} />)}
-                    </span>
-                    <span className="cuenta-fila-textos">
-                      <span className="cuenta-fila-titulo">{(sesionNombre && sesionNombre.trim()) || t("cuenta.sinNombre")}</span>
-                      {sesionEmail && <span className="cuenta-fila-sub">{sesionEmail}</span>}
-                    </span>
-                    <IconChevronRight size={14} />
-                  </button>
-                  {SYNC_HABILITADO && (
-                    <div className="cuenta-fila cuenta-fila-sync">
-                      <SyncIndicator />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="cuenta-grupo">
-                <button type="button" className="cuenta-fila" onClick={() => navigate("/ayuda")}>
-                  <span className="cuenta-fila-icono cuenta-fila-icono-neutro"><IconHelp size={16} /></span>
-                  <span className="cuenta-fila-textos">
-                    <span className="cuenta-fila-titulo">{t("cuenta.ayuda")}</span>
-                  </span>
-                  <IconChevronRight size={14} />
-                </button>
-                <button type="button" className="cuenta-fila" onClick={() => setAcercaDeAbierto(true)}>
-                  <span className="cuenta-fila-icono cuenta-fila-icono-neutro"><IconInfo size={16} /></span>
-                  <span className="cuenta-fila-textos">
-                    <span className="cuenta-fila-titulo">{t("cuenta.acercaDe")}</span>
-                  </span>
-                  <IconChevronRight size={14} />
-                </button>
-              </div>
-
-              {authActivo && (
-                <div className="cuenta-grupo">
-                  <button type="button" className="cuenta-fila danger" onClick={() => setSalirAbierto(true)}>
-                    <span className="cuenta-fila-icono cuenta-fila-icono-danger"><IconLogout size={16} /></span>
-                    <span className="cuenta-fila-textos">
-                      <span className="cuenta-fila-titulo">{t("cuenta.cerrarSesion")}</span>
-                    </span>
-                  </button>
-                </div>
-              )}
+              <CuentaSettingsIOS
+                authActivo={authActivo}
+                sesionEmail={sesionEmail}
+                sesionNombre={sesionNombre}
+                sesionFoto={sesionFoto}
+                onEditarPerfil={onEditarPerfil}
+                onAyuda={() => navigate("/ayuda")}
+                onAcercaDe={() => setAcercaDeAbierto(true)}
+                onCerrarSesion={() => setSalirAbierto(true)}
+              />
             </section>
           )}
 

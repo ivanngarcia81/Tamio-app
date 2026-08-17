@@ -3104,6 +3104,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: #fff;
 }
 :root.iphone .ios-icon svg { width: 17px; height: 17px; }
+/* Foto de perfil (Cuenta) en vez del glifo de siempre. */
+:root.iphone .ios-icon img { width: 100%; height: 100%; object-fit: cover; }
+/* Iniciales (Cuenta, sin foto) en vez del glifo. */
+:root.iphone .ios-icon-texto { font-size: 12px; font-weight: 700; }
+
+/* Fila de dos líneas (Cuenta: nombre + correo) — la única del patrón de
+   lista que necesita subtítulo; el resto es título solo o título+valor. */
+:root.iphone .ios-row-textos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+:root.iphone .ios-row-textos .ios-row-label { display: block; }
+:root.iphone .ios-row-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 :root.iphone .ios-row-label {
   /* min-width:0 para que este flex-item pueda encogerse por debajo de su
