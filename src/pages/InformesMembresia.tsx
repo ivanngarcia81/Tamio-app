@@ -22,6 +22,7 @@ import SeguimientoModal from "../components/SeguimientoModal";
 import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
+import RowMenu from "../components/RowMenu";
 import { showToast } from "../toast";
 import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
@@ -736,7 +737,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     chipsDe(t, m.instrumentos, "ficha.instrumento"),
                   ].filter(Boolean).join(" · ");
                   return (
-                    <div className="ios-txrow ios-txrow--clickable" key={m.id} onClick={() => setFicha(m)}>
+                    /* El lápiz se va del teléfono: aquí editar se hace
+                       deslizando la fila, como en el resto de las listas, y
+                       tenerlo además como icono era la misma acción dos
+                       veces quitándole sitio al nombre. En Mac se queda —ahí
+                       no hay gesto y es la única forma de llegar. */
+                    <div className="ios-txrow ios-txrow--clickable" data-fila key={m.id} onClick={() => setFicha(m)}>
                       <div className="ios-txrow-main">
                         <div className="ios-txrow-title" title={m.nombre}>
                           {incompleto && <span title={t("informes.incompletoTitle")} style={{ marginRight: 4 }}>⚠️</span>}
@@ -747,11 +753,11 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                         </div>
                       </div>
                       <div className="ios-txrow-trailing">
-                        <span className="row-icon-btn" title={t("common.editar")} onClick={(ev) => { ev.stopPropagation(); onEdit(m); }}>
-                          <IconEdit size={13} strokeWidth={2} />
-                        </span>
                         <span className={`ios-badge ${badgeClaseEstadoMiembro(e)}`}>{t(`membresia.estado.${e}`)}</span>
                       </div>
+                      {/* Sin `onDelete`: esta pantalla es de consulta y no
+                          borra miembros en ninguna plataforma. */}
+                      <RowMenu onEdit={() => onEdit(m)} />
                     </div>
                   );
                 })}

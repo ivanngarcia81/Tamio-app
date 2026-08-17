@@ -12,7 +12,14 @@ export interface RowMenuItem {
 
 interface Props {
   onEdit: () => void;
-  onDelete: () => void;
+  /**
+   * Opcional: hay listas que no borran. Informes de membresía es una pantalla
+   * de CONSULTA —solo recibe `onEdit`, ni en Mac tiene borrado— y meterle un
+   * Eliminar para poder ofrecer el gesto sería inventar una acción
+   * destructiva donde a propósito no la hay. Sin esto, el panel y el menú
+   * enseñan solo Editar.
+   */
+  onDelete?: () => void;
   deleteLabel?: string;
   /** Acciones adicionales entre Editar y la acción destructiva. */
   extraItems?: RowMenuItem[];
@@ -79,7 +86,11 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems, onB
   const menuRef = useRef<HTMLDivElement>(null);
 
   const [conGesto, setConGesto] = useState(false);
-  const desliza = useFilaDeslizable(conGesto, onBorrarDirecto !== undefined, onBorrarDirecto ?? onDelete);
+  const desliza = useFilaDeslizable(
+    conGesto,
+    onBorrarDirecto !== undefined,
+    onBorrarDirecto ?? onDelete ?? (() => {}),
+  );
 
   // El gesto descubre Editar y Eliminar, que son las dos de siempre. Una fila
   // con acciones de más —imprimir un acta, fusionar un miembro, ver el
@@ -191,13 +202,15 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems, onB
                 <IconEdit size={18} />
                 <span>{t("common.editar")}</span>
               </button>
-              <button
-                className="fila-accion eliminar"
-                onClick={() => { desliza.cerrar(); onDelete(); }}
-              >
-                <IconTrash size={18} />
-                <span>{deleteLabel ?? t("common.eliminar")}</span>
-              </button>
+              {onDelete && (
+                <button
+                  className="fila-accion eliminar"
+                  onClick={() => { desliza.cerrar(); onDelete(); }}
+                >
+                  <IconTrash size={18} />
+                  <span>{deleteLabel ?? t("common.eliminar")}</span>
+                </button>
+              )}
             </div>
           </div>,
           document.body
@@ -222,9 +235,11 @@ export default function RowMenu({ onEdit, onDelete, deleteLabel, extraItems, onB
                 {item.label}
               </div>
             ))}
-            <div className="row-menu-item danger" onClick={() => { setOpen(false); onDelete(); }}>
-              {deleteLabel ?? t("common.eliminar")}
-            </div>
+            {onDelete && (
+              <div className="row-menu-item danger" onClick={() => { setOpen(false); onDelete(); }}>
+                {deleteLabel ?? t("common.eliminar")}
+              </div>
+            )}
           </div>,
           document.body
         )}
