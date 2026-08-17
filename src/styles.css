@@ -3238,6 +3238,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-section-header {
   font-size: 13px;
   line-height: 18px;
+  /* El elemento es un `<h2>` y traía la negrita del navegador: la regla
+     fijaba tamaño, color y sangría pero nunca reseteaba el peso. En iOS un
+     encabezado de sección va en peso normal y color secundario — la
+     jerarquía la hace el tamaño y el gris, no el trazo. */
+  font-weight: 400;
   color: var(--text-2);
   padding: 0 32px 6px;
   margin: 0;
@@ -4033,7 +4038,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-direction: column;
   animation: hojaEntra 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
-:root.iphone .ios-sheet .ios-nav { position: sticky; border-radius: 12px 12px 0 0; }
+/* `static`, no `sticky`. Dentro de la hoja esta barra no tiene de qué
+   pegarse: `.ios-sheet` es un flex en columna y quien desplaza es
+   `.ios-sheet-body`, que es su hermano, así que la barra ya está fuera del
+   área desplazable. Con `sticky` seguía heredando el
+   `top: env(safe-area-inset-top)` de la regla de pantalla completa de
+   arriba —que ahí sí hace falta, para calzar en el hueco que reserva
+   `.main`—. En un teléfono con muesca eso son 59 px: la barra bajaba 59 px
+   DENTRO de la hoja y se dibujaba encima de la primera fila del
+   formulario. Medido con la muesca simulada: barra en 127-171 con el campo
+   de Nombre empezando en 112, o sea etiqueta y placeholder por detrás.
+   Con `static` el `top` deja de existir para esta barra, y ese es el punto:
+   no es solo que hoy quede bien, es que no puede volver a heredarlo. */
+:root.iphone .ios-sheet .ios-nav { position: static; border-radius: 12px 12px 0 0; }
 :root.iphone .ios-sheet-cancelar { font-weight: 400; }
 :root.iphone .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 @media (prefers-reduced-motion: reduce) {

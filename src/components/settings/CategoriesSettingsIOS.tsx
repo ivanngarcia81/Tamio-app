@@ -144,10 +144,18 @@ function CategorySheet({
         />
       </Section>
 
-      <Section
-        header={t("categorias.tipoLabel")}
-        footer={tipoBloqueado ? t("categorias.tipoBloqueado") : undefined}
-      >
+      {/* El segmentado va directamente sobre el fondo gris, sin `Section`:
+          esa mete siempre un `.ios-group` blanco alrededor de sus hijos, y
+          la pista gris del control quedaba con ~13 px de blanco a cada
+          lado — el de la derecha se leía como una tercera casilla vacía. En
+          iOS (Fotos, Libros) un segmentado dentro de un formulario no lleva
+          tarjeta. Se repiten a mano las dos piezas de `Section` que sí
+          hacen falta, encabezado y pie, en vez de tocar `Section`, que la
+          usan todas las pantallas de Ajustes. La alineación con las
+          tarjetas de arriba y abajo ya la da el `margin: 0 16px` que
+          `.ios-segmented` tiene de suyo. */}
+      <section className="ios-section">
+        <h2 className="ios-section-header">{t("categorias.tipoLabel")}</h2>
         <IOSSegmented
           options={[
             { value: "ingreso", label: t("tx.ingreso") },
@@ -156,7 +164,8 @@ function CategorySheet({
           value={tipo}
           onChange={tipoBloqueado ? () => {} : setTipo}
         />
-      </Section>
+        {tipoBloqueado && <p className="ios-section-footer">{t("categorias.tipoBloqueado")}</p>}
+      </section>
 
       <Section header={t("categorias.colorLabel")}>
         <div className="ios-colors">
