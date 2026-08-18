@@ -4398,6 +4398,107 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Pie suelto, sin grupo encima (la nota de "no se imprime"). */
 :root.iphone .ios-pie-suelto { margin-top: -4px; }
 
+/* ---------------- Informes de membresía en iPhone ----------------
+   Antes había tres barras apiladas antes del primer dato —periodo, vista y
+   filtros—, unos 260 px de mandos. Y la de filtros se deslizaba en
+   horizontal, que es la peor forma de esconder algo: un filtro puesto en el
+   cuarto chip dejaba la lista incompleta sin que nada lo dijera. */
+
+/* Una sola fila de control: qué vista, qué periodo y cuántos salen. */
+:root.iphone .inf-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 4px 0 12px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+}
+:root.iphone .inf-control-texto { flex: 1 1 auto; min-width: 0; }
+:root.iphone .inf-control-titulo {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  /* El periodo puede ser largo ("1 de marzo → 30 de junio"); antes de
+     desalinear la fila, se corta. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .inf-control-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* La tarjeta que está filtrando: teñida y con su ✕. */
+:root.iphone .ios-stat.es-filtro {
+  background: var(--brand-soft, rgba(16, 185, 129, 0.12));
+  box-shadow: inset 0 0 0 1.5px var(--brand);
+}
+:root.iphone .ios-stat.es-filtro .ios-stat-label { color: var(--brand); font-weight: 600; }
+:root.iphone .ios-stat-quitar {
+  margin-left: auto;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--brand);
+}
+
+/* Lo que se está mostrando, dicho en palabras y con su salida. */
+:root.iphone .inf-filtrando {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0 2px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: var(--brand-soft, rgba(16, 185, 129, 0.12));
+  color: var(--brand);
+  font-size: 14px;
+}
+:root.iphone .inf-filtrando button {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Conteo a la izquierda y "Más filtros" a la derecha, en la misma línea. */
+:root.iphone .inf-resultados {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 2px 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+:root.iphone .inf-resultados button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font-size: 14px;
+}
+/* Punto que avisa de que dentro de la hoja hay algo puesto. Sin él, un filtro
+   escondido en la hoja repite el problema de la barra deslizable. */
+:root.iphone .inf-punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
 /* El editor a sangre sobre el fondo gris, sin la tarjeta blanca con relleno
    del escritorio: una lista agrupada dentro de una tarjeta es una caja dentro
    de otra caja, que es justo lo que se fue de la bienvenida y de Ajustes. */

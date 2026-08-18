@@ -25,8 +25,12 @@ import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../com
 import Pagination from "../components/Pagination";
 import RowMenu from "../components/RowMenu";
 import { showToast } from "../toast";
-import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconWarn } from "../icons";
+import { IconCheck, IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconWarn } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
+import Portal from "../components/Portal";
+import { useEscapeClose } from "../hooks/useEscapeClose";
+import { ActionField, IosChevron, Section, SwitchField } from "../components/ios/FormularioIOS";
+import { IOSPickerField } from "../components/ios/IOSPickerField";
 import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
@@ -91,6 +95,124 @@ interface Props {
   onChanged: () => void;
 }
 
+/** Hoja de vista + periodo del teléfono. Sustituye a las dos primeras barras
+ *  de la pantalla; no calcula nada, solo mueve los mismos setters que movían
+ *  los chips, así que el periodo sigue saliendo del mismo `useMemo`. */
+function IOSHojaControl({
+  vista, onVista, periodoTipo, onPeriodoTipo,
+  mesSel, onMes, anioSel, onAnio, trimestreSel, onTrimestre,
+  rangoDesde, onDesde, rangoHasta, onHasta,
+  pendientesSeguimiento, onCerrar,
+}: {
+  vista: Vista;
+  onVista: (v: Vista) => void;
+  periodoTipo: PeriodoTipo;
+  onPeriodoTipo: (p: PeriodoTipo) => void;
+  mesSel: string; onMes: (v: string) => void;
+  anioSel: string; onAnio: (v: string) => void;
+  trimestreSel: 1 | 2 | 3 | 4; onTrimestre: (v: 1 | 2 | 3 | 4) => void;
+  rangoDesde: string; onDesde: (v: string) => void;
+  rangoHasta: string; onHasta: (v: string) => void;
+  pendientesSeguimiento: number;
+  onCerrar: () => void;
+}) {
+  const { t } = useTranslation();
+  useEscapeClose(onCerrar);
+
+  return (
+    <Portal>
+      <div className="ios-sheet-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCerrar(); }}>
+        <div className="ios-sheet" role="dialog" aria-label={t("informes.titulo")}>
+          <div className="ios-nav">
+            <span className="ios-back" />
+            <h1 className="ios-nav-title">{t("informes.titulo")}</h1>
+            <span className="ios-nav-status">
+              <button type="button" className="ios-nav-action" onClick={onCerrar}>{t("common.listo")}</button>
+            </span>
+          </div>
+          <div className="ios-sheet-body">
+            <Section header={t("informes.hojaVista")}>
+              {(["miembros", "asistencia", "seguimiento", "general"] as Vista[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className="ios-field ios-field--link"
+                  onClick={() => { onVista(v); onCerrar(); }}
+                >
+                  <span className="ios-field-label">{t(`informes.vista.${v}`)}</span>
+                  {v === "seguimiento" && pendientesSeguimiento > 0 && (
+                    <span className="ios-insignia es-pendiente">{pendientesSeguimiento}</span>
+                  )}
+                  {v === vista && <IconCheck size={17} />}
+                </button>
+              ))}
+            </Section>
+
+            <Section header={t("informes.hojaPeriodo")}>
+              <IOSPickerField
+                label={t("informes.hojaPeriodo")}
+                options={(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => ({
+                  value: p, label: t(`informes.periodo.${p}`),
+                }))}
+                value={periodoTipo}
+                onSelect={(v) => onPeriodoTipo(v as PeriodoTipo)}
+              />
+              {periodoTipo === "mes" && (
+                <FilaNativa label={t("informes.periodo.mes")} tipo="month" valor={mesSel} onChange={onMes} />
+              )}
+              {(periodoTipo === "trimestre" || periodoTipo === "anio") && (
+                <label className="ios-field">
+                  <span className="ios-field-label">{t("informes.periodo.anio")}</span>
+                  <input
+                    className="ios-field-input nm-nativo"
+                    type="number"
+                    inputMode="numeric"
+                    min={2000}
+                    max={2100}
+                    value={anioSel}
+                    onChange={(e) => onAnio(e.target.value)}
+                  />
+                </label>
+              )}
+              {periodoTipo === "trimestre" && (
+                <IOSPickerField
+                  label={t("informes.periodo.trimestre")}
+                  options={[1, 2, 3, 4].map((n) => ({ value: String(n), label: `T${n}` }))}
+                  value={String(trimestreSel)}
+                  onSelect={(v) => onTrimestre(Number(v) as 1 | 2 | 3 | 4)}
+                />
+              )}
+              {periodoTipo === "rango" && (
+                <>
+                  <FilaNativa label={t("cartas.fechaDesde")} tipo="date" valor={rangoDesde} onChange={onDesde} />
+                  <FilaNativa label={t("cartas.fechaHasta")} tipo="date" valor={rangoHasta} onChange={onHasta} />
+                </>
+              )}
+            </Section>
+          </div>
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
+/** Fila de lista con un control nativo del sistema a la derecha. */
+function FilaNativa({
+  label, tipo, valor, onChange,
+}: {
+  label: string;
+  tipo: "date" | "month";
+  valor: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="ios-field">
+      <span className="ios-field-label">{label}</span>
+      <input className="ios-field-input nm-nativo" type={tipo} value={valor} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
+}
+
 export default function InformesMembresia({ church, refreshKey, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   // El carrusel de secciones ya muestra "Reporte de Miembros" como pastilla
@@ -127,6 +249,10 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   const [page, setPage] = useState(1);
   const [ficha, setFicha] = useState<Member | null>(null);
   const [vista, setVista] = useState<Vista>("miembros");
+  /* Hojas del teléfono: la de vista+periodo y la de los filtros que quedan.
+     En Mac no existen — ahí manda `MacFiltros`, que no se toca. */
+  const [hojaControl, setHojaControl] = useState(false);
+  const [hojaFiltros, setHojaFiltros] = useState(false);
   const [seguimiento, setSeguimiento] = useState<Member | null>(null);
 
   const periodo: Periodo = useMemo(() => {
@@ -136,6 +262,22 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     if (periodoTipo === "rango") return { desde: rangoDesde || null, hasta: rangoHasta || null };
     return PERIODO_TODO;
   }, [periodoTipo, mesSel, anioSel, trimestreSel, rangoDesde, rangoHasta]);
+
+  /** "Año 2026", "Marzo 2026", "T2 2026", "Todo" — lo que se lee en la fila
+   *  de control del teléfono. El periodo ya está calculado arriba; esto solo
+   *  le pone nombre, sin tocar de dónde salen las fechas. */
+  const periodoTexto = useMemo(() => {
+    if (periodoTipo === "mes") {
+      // "2026-03" → "marzo de 2026", en el idioma del aparato.
+      const [a, m] = mesSel.split("-");
+      return new Date(Number(a), Number(m) - 1, 1)
+        .toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    }
+    if (periodoTipo === "trimestre") return `${t("informes.periodo.trimestre")} ${trimestreSel} · ${anioSel}`;
+    if (periodoTipo === "anio") return `${t("informes.periodo.anio")} ${anioSel}`;
+    if (periodoTipo === "rango") return `${rangoDesde || "—"} → ${rangoHasta || "—"}`;
+    return t("informes.periodo.todo");
+  }, [periodoTipo, mesSel, anioSel, trimestreSel, rangoDesde, rangoHasta, t]);
 
   useEffect(() => {
     let cancelado = false;
@@ -223,6 +365,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
   const totalPages = Math.max(1, Math.ceil(filas.length / PAGE_SIZE));
   const pagina = filas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /** Cuántos de los cuatro filtros "finos" están puestos. Solo alimenta el
+   *  punto junto a "Más filtros": sin él, un filtro dentro de la hoja no se
+   *  ve desde fuera, que es el problema que tenía la barra deslizable. */
+  const nFiltrosFinos = [filtroEstado, filtroMinisterio, filtroCargo, filtroInstrumento]
+    .filter((v) => v !== "todos").length;
 
   const hayFiltros = query || tarjeta !== "todos" || filtroEstado !== "todos" || filtroMinisterio !== "todos" ||
     filtroCargo !== "todos" || filtroInstrumento !== "todos" || soloRacha || soloIncompletos;
@@ -499,7 +647,45 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
       </div>
 
       <div className="content">
+        {/* En el teléfono, UNA fila de control en vez de las dos barras de
+            arriba (periodo y vista). Eran unos 260 px de mandos antes del
+            primer dato, y la de filtros —que se deslizaba— escondía lo puesto
+            fuera del borde: un filtro en el cuarto chip dejaba la lista
+            incompleta sin que nada lo dijera. */}
+        {enIPhone && (
+          <>
+            <button type="button" className="inf-control" onClick={() => setHojaControl(true)}>
+              <span className="inf-control-texto">
+                <span className="inf-control-titulo">{t(`informes.vista.${vista}`)} · {periodoTexto}</span>
+                <span className="inf-control-sub">
+                  {hayFiltros && vista === "miembros"
+                    ? t("informes.conteoFiltrado", { visibles: filas.length, total: miembros.length })
+                    : t("informes.conteoTotal", { count: vista === "miembros" ? filas.length : miembros.length })}
+                </span>
+              </span>
+              <IosChevron />
+            </button>
+
+            {hojaControl && (
+              <IOSHojaControl
+                vista={vista}
+                onVista={(v) => setVista(v)}
+                periodoTipo={periodoTipo}
+                onPeriodoTipo={setPeriodoTipo}
+                mesSel={mesSel} onMes={setMesSel}
+                anioSel={anioSel} onAnio={setAnioSel}
+                trimestreSel={trimestreSel} onTrimestre={setTrimestreSel}
+                rangoDesde={rangoDesde} onDesde={setRangoDesde}
+                rangoHasta={rangoHasta} onHasta={setRangoHasta}
+                pendientesSeguimiento={gruposSeguimiento.length}
+                onCerrar={() => setHojaControl(false)}
+              />
+            )}
+          </>
+        )}
+
         {/* Selector de periodo — fuente de verdad */}
+        {!enIPhone && (
         <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
           {!enMac && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -540,8 +726,10 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             )}
           </div>
         </div>
+        )}
 
         {/* Pestañas: registro de miembros, asistencia y seguimiento */}
+        {!enIPhone && (
         <div className="chip-toggle" style={{ flexWrap: "wrap", margin: "14px 0 4px" }}>
           {(["miembros", "asistencia", "seguimiento", "general"] as Vista[]).map((v) => (
             <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
@@ -550,6 +738,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             </button>
           ))}
         </div>
+        )}
 
         {loading ? (
           <LoadingState />
@@ -697,12 +886,19 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     <button
                       key={c.id}
                       type="button"
-                      className="ios-stat"
+                      className={`ios-stat${tarjeta === c.id ? " es-filtro" : ""}`}
                       title={c.id === "frecuentes" ? t("informes.cardFrecuentesRegla", { n: umbrales.rachaServicios }) : undefined}
                       aria-pressed={tarjeta === c.id}
                       onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
                     >
-                      <div className="ios-stat-top"><span className="ios-stat-label">{c.label}</span></div>
+                      <div className="ios-stat-top">
+                        <span className="ios-stat-label">{c.label}</span>
+                        {/* La ✕ no es un botón aparte: la tarjeta entera ya
+                            alterna, y anidar un botón dentro de otro no es
+                            HTML válido. Es la señal de que un segundo toque
+                            la quita. */}
+                        {tarjeta === c.id && <span className="ios-stat-quitar" aria-hidden="true">✕</span>}
+                      </div>
                       <span className="ios-stat-num"><CountUp value={c.valor} format={String} /></span>
                     </button>
                   ))}
@@ -731,19 +927,75 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             {/* Filtros combinables */}
             {enIPhone ? (
               <>
+                {/* Lo que está filtrando, dicho en palabras. Antes había que
+                    deducirlo de un chip teñido que podía estar fuera de la
+                    parte visible de una barra que se deslizaba. */}
+                {tarjeta !== "todos" && (
+                  <div className="inf-filtrando">
+                    <span>{t("informes.mostrando", { que: (tarjetas.find((c) => c.id === tarjeta)?.label ?? "").toLowerCase() })}</span>
+                    <button type="button" onClick={() => setTarjeta("todos")}>{t("informes.quitar")}</button>
+                  </div>
+                )}
                 <div className="search-input-wrap" style={{ marginTop: 6, marginBottom: 10 }}>
                   <IconSearch size={15} strokeWidth={2} />
                   <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("informes.buscar"))} value={query} onChange={(e) => setQuery(e.target.value)} />
                 </div>
-                <div className="ios-filtros">
-                  <IOSPickerChip label={t("membresia.colEstado")} options={opcEstadoFiltro} value={filtroEstado} emptyValue="todos" onSelect={setFiltroEstado} />
-                  <IOSPickerChip label={t("informes.colMinisterio")} options={opcMinisterioFiltro} value={filtroMinisterio} emptyValue="todos" onSelect={setFiltroMinisterio} />
-                  <IOSPickerChip label={t("ficha.cargosLabel")} options={opcCargoFiltro} value={filtroCargo} emptyValue="todos" onSelect={setFiltroCargo} />
-                  <IOSPickerChip label={t("informes.colInstrumento")} options={opcInstrumentoFiltro} value={filtroInstrumento} emptyValue="todos" onSelect={setFiltroInstrumento} />
-                  <button className={`chip${soloRacha ? " active" : ""}`} onClick={() => setSoloRacha((v) => !v)}>{t("informes.filtroRacha")}</button>
-                  <button className={`chip${soloIncompletos ? " active" : ""}`} onClick={() => setSoloIncompletos((v) => !v)}>{t("informes.filtroIncompletos")}</button>
-                  {hayFiltros && <button className="chip" onClick={limpiarFiltros}>{t("informes.limpiar")}</button>}
+                <div className="inf-resultados">
+                  <span>{t("informes.conteoTotal", { count: filas.length })}</span>
+                  <button type="button" onClick={() => setHojaFiltros(true)}>
+                    {t("informes.masFiltros")}
+                    {nFiltrosFinos > 0 && <span className="inf-punto" aria-hidden="true" />}
+                  </button>
                 </div>
+                {hojaFiltros && (
+                  <Portal>
+                    <div className="ios-sheet-overlay" onClick={(e) => { if (e.target === e.currentTarget) setHojaFiltros(false); }}>
+                      <div className="ios-sheet" role="dialog" aria-label={t("informes.masFiltros")}>
+                        <div className="ios-nav">
+                          <span className="ios-back" />
+                          <h1 className="ios-nav-title">{t("informes.masFiltros")}</h1>
+                          <span className="ios-nav-status">
+                            <button type="button" className="ios-nav-action" onClick={() => setHojaFiltros(false)}>{t("common.listo")}</button>
+                          </span>
+                        </div>
+                        <div className="ios-sheet-body">
+                          <Section footer={t("informes.masFiltrosPie")}>
+                            <IOSPickerField label={t("membresia.colEstado")} options={opcEstadoFiltro} value={filtroEstado} onSelect={setFiltroEstado} />
+                            <IOSPickerField label={t("informes.colMinisterio")} options={opcMinisterioFiltro} value={filtroMinisterio} onSelect={setFiltroMinisterio} />
+                            <IOSPickerField label={t("ficha.cargosLabel")} options={opcCargoFiltro} value={filtroCargo} onSelect={setFiltroCargo} />
+                            <IOSPickerField label={t("informes.colInstrumento")} options={opcInstrumentoFiltro} value={filtroInstrumento} onSelect={setFiltroInstrumento} />
+                          </Section>
+                          {/* `soloIncompletos` se fue del teléfono: la tarjeta
+                              "Expedientes incompletos" tiene la MISMA condición
+                              (`camposFaltantes(m).length > 0`), comprobado línea
+                              a línea. El estado y su setter siguen ahí porque
+                              Mac los usa.
+
+                              `soloRacha` NO se fue, y la diferencia es real: la
+                              tarjeta "Con ausencias frecuentes" exige además que
+                              el miembro esté ACTIVO y el interruptor no. O sea
+                              que un inactivo con racha sale aquí y no en la
+                              tarjeta — que es una señal útil: alguien marcado
+                              como inactivo que en realidad sigue viniendo.
+                              Queda hasta que se decida si esa diferencia
+                              importa. */}
+                          <Section footer={t("informes.rachaPie", { n: umbrales.rachaServicios })}>
+                            <SwitchField
+                              label={t("informes.filtroRacha")}
+                              checked={soloRacha}
+                              onChange={setSoloRacha}
+                            />
+                          </Section>
+                          {hayFiltros && (
+                            <Section>
+                              <ActionField label={t("informes.limpiar")} destructive onPress={() => { limpiarFiltros(); setHojaFiltros(false); }} />
+                            </Section>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Portal>
+                )}
               </>
             ) : enMac ? null : (
               <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
@@ -796,8 +1048,14 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                           {incompleto && <span className="informes-aviso" title={t("informes.incompletoTitle")}><IconWarn size={11} strokeWidth={2.2} /></span>}
                           <span className="truncate">{m.nombre}</span>
                         </div>
+                        {/* Con el filtro "Incompletos" puesto, la segunda
+                            línea dice QUÉ le falta a cada uno. Es a lo que se
+                            entra desde esa tarjeta: el ministerio y el
+                            porcentaje no responden a esa pregunta. */}
                         <div className="tx-secundaria-movil">
-                          {servicioTxt || "—"}{a && a.pct !== null ? ` · ${a.pct}%` : ""}
+                          {tarjeta === "incompletos"
+                            ? camposFaltantes(m).map((c) => t(`informes.campo.${c}`, { defaultValue: c })).join(" · ")
+                            : <>{servicioTxt || "—"}{a && a.pct !== null ? ` · ${a.pct}%` : ""}</>}
                         </div>
                       </div>
                       <div className="ios-txrow-trailing">
