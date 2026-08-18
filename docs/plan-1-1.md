@@ -26,9 +26,9 @@ Tamio se pueda comprar, y nada más.
 
 | En la 1.1 | A la 1.2 |
 |---|---|
-| 1. Centavos enteros | 4. Exportaciones que faltan |
-| 2. Login + roles reales | 5. Asistencia = lista + contadores |
-| 3. Encender la tienda | 6. Panel de trabajo de Secretaría |
+| 1. Centavos enteros ✅ | 4. Exportaciones que faltan |
+| 2. Login + roles reales ✅ | 5. Asistencia = lista + contadores |
+| 3. Encender la tienda ✅ | 6. Panel de trabajo de Secretaría |
 | 9. Guarda de canal del actualizador ✅ | 7. Integridad de documentos oficiales |
 | | 8. Avisos de Agenda en Inicio |
 | | 10. Higiene: errores con rastro |
@@ -739,13 +739,16 @@ anon key es **público por diseño** —lo que protege los datos es la política
 de cada tabla, no el secreto de la clave, y esta misma clave ya viaja dentro del
 binario que está en la App Store—. La `service_role` no se pone ahí nunca.
 
-**Quedan dos cosas a mano:**
+~~**Quedan dos cosas a mano:**~~ **✅ Las dos están hechas (comprobado el 18 ago
+2026).** Se dejan escritas porque la regla —tamio.church se sirve desde
+`claude/hello-9v3atw`, no desde `main`— sigue valiendo para cualquier cambio
+futuro del sitio.
 
-1. **Copiarla a la rama que sirve Pages.** tamio.church se sirve desde
-   `claude/hello-9v3atw`, no desde `main`, así que el archivo en `main` no la
-   pone en línea por sí solo.
-2. En Supabase → Authentication → URL Configuration, la **Site URL** tiene que
-   apuntar a `https://tamio.church/invitacion.html`.
+1. ~~**Copiarla a la rama que sirve Pages.**~~ Hecho: `docs/invitacion.html` es
+   byte a byte igual en `main` y en `claude/hello-9v3atw`.
+2. ~~En Supabase → Authentication → URL Configuration, la **Site URL**.~~ Hecho:
+   la prueba de punta a punta del 15 ago (arriba, punto 3) confirma que el
+   enlace de la invitación aterriza en `tamio.church/invitacion.html`.
 
 Comprobada con Playwright: sin token enseña "este enlace no es válido"; con
 token deja escribir y valida largo y coincidencia; el token desaparece de la
@@ -775,5 +778,61 @@ sincronización apagada.
 | `invitar-usuario` | **1 (13 ago)** | sí |
 
 O sea que de los pasos que quedaban en Supabase, **el SQL ya estaba hecho y la
-función ya está desplegada**. Lo único que sigue pendiente allí es la *Site
-URL*, que es un ajuste del panel.
+función ya está desplegada**. ~~Lo único que sigue pendiente allí es la *Site
+URL*, que es un ajuste del panel.~~ La *Site URL* también quedó puesta; se vio
+en la prueba del 15 ago.
+
+---
+
+## Punto 3: la tienda encendida (18 ago 2026)
+
+**La tienda está abierta y en modo real**, no en pruebas. Tienda de Lemon
+Squeezy: `tamio1.lemonsqueezy.com`. Dos variantes de un solo producto, ya
+enlazadas desde `docs/index.html`:
+
+| Plan | Precio | Checkout |
+|---|---|---|
+| Mensual | $23.99 | `/checkout/buy/b94288df-8c4d-4e3c-973a-d5f891124f82` |
+| Anual | $239.99 (2 meses gratis) | `/checkout/buy/6836ff75-6173-401f-954a-96ae87a4aad8` |
+
+**El webhook no necesita tocarse.** Al no haber secretos `LEMON_PLAN_*`
+configurados, `planDe()` devuelve `"completo"` para cualquier pago
+(`pago-webhook/index.ts:113`), que con un producto único de dos variantes es
+justo lo que se quiere. Los secretos solo harán falta el día que se vendan
+planes por área.
+
+### La descarga, que faltaba y no se veía
+
+Al revisar la página apareció el otro medio camino: **se podía pagar y no había
+de dónde bajar la app**. `docs/index.html` tenía "See pricing" y los dos
+Subscribe, y ni un enlace de descarga ni al App Store. El cobro entraba, el
+cliente se quedaba sin nada que instalar y nada parecía roto.
+
+Se añadió la sección `#download` apuntando a
+`github.com/ivanngarcia81/Tamio-app/releases/latest/download/Tamio_universal.dmg`
+—la forma `latest` para no editar la página en cada versión— más una línea que
+manda a iPad y iPhone a la App Store. **Falta el enlace directo a la ficha de la
+App Store**, que no consta en el repositorio.
+
+**Tres cosas que aparecieron mirando el release, y conviene tener escritas:**
+
+- El repositorio **se llama hoy `Tamio-app`**; `tesoreria-Mac-` sigue
+  funcionando solo por la redirección de GitHub. `web/version.json:3` todavía
+  usa el nombre viejo.
+- El release publicado está etiquetado **v1.0.0** aunque la app va por 1.0.8: el
+  `.dmg` se resubió encima el 15 ago (16 MB, 0 descargas). La etiqueta miente
+  sobre la versión que se baja.
+- **El día que el repositorio se haga privado, este enlace muere.** Ya estaba
+  avisado en `docs/dia-de-la-aprobacion.md`, paso 5; ahora además hay una página
+  pública que depende de él. Antes de cerrar el repositorio hay que decidir
+  dónde viven los `.dmg`.
+
+### Lo que queda por confirmar
+
+1. **Recompilar la app con `VITE_URL_COMPRA`.** Se lee al COMPILAR
+   (`src/plan.ts:37`): sin recompilar, "Comprar" y "Renovar" siguen sin salir
+   (`App.tsx:355`, `SubBanner.tsx`). El valor real ya está en `.env.example`.
+2. **Un `subscription_created` con respuesta 200** en el registro de entregas de
+   Lemon Squeezy. Un **500** ahí significa que falta `LEMON_WEBHOOK_SECRET` en
+   Supabase (`pago-webhook/index.ts:134`), y ese caso es el feo: al comprador se
+   le cobra y a la iglesia no se le activa el plan.
