@@ -9692,3 +9692,116 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.mac .settings-detail .danger-row > .btn { grid-column: 2; grid-row: 1; justify-self: start; }
 }
+
+@media (min-width: 761px) {
+  /* ---- Categorías: tabla editable ----
+     Antes eran pastillas de SOLO LECTURA: para cambiarle el nombre o el color
+     a una categoría había que borrarla y volver a crearla, y eso le cambia el
+     uid, así que los movimientos que la usaban se quedaban apuntando a una
+     categoría que ya no existe. Ahora se edita en su sitio con
+     `updateCategoriaCustom`, que ya aceptaba nombre, color y tipo — no hizo
+     falta operación nueva en la base. */
+  :root.mac .cat-tabla {
+    border: 1px solid var(--mac-card-border);
+    border-radius: var(--mac-card-radius);
+    overflow: hidden;
+    background: var(--mac-card);
+    max-width: 520px;
+  }
+  :root.mac .cat-thead,
+  :root.mac .cat-tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 90px 74px 90px;
+    align-items: center;
+  }
+  :root.mac .cat-thead {
+    height: 22px;
+    border-bottom: 1px solid var(--mac-separator);
+    font-size: var(--mac-fs-small);
+    font-weight: 600;
+    color: var(--mac-secondary);
+  }
+  :root.mac .cat-th { padding: 0 8px; }
+  :root.mac .cat-tr {
+    min-height: var(--mac-table-row-h);
+    border-bottom: 1px solid var(--mac-separator);
+    cursor: default;
+  }
+  :root.mac .cat-tr:hover { background: var(--mac-hover); }
+  /* Fila seleccionada con el acento, que es como macOS marca sobre qué actúa
+     el "−" del pie. */
+  :root.mac .cat-tr.sel { background: var(--mac-accent); color: var(--mac-accent-text); }
+  :root.mac .cat-tr.sel .cat-sistema { color: inherit; opacity: .75; }
+  :root.mac .cat-td { padding: 0 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  :root.mac .cat-sistema { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+  /* Renombrar en el sitio: el campo ocupa la celda sin cambiarle la altura,
+     para que la fila no dé un salto al entrar en edición. */
+  :root.mac .cat-input {
+    width: 100%;
+    height: 18px;
+    padding: 0 4px;
+    border: 1px solid var(--mac-accent);
+    border-radius: 3px;
+    background: var(--mac-card);
+    color: var(--mac-label);
+    font: inherit;
+    outline: none;
+  }
+  :root.mac .cat-select {
+    height: 18px;
+    border: 1px solid var(--mac-card-border);
+    border-radius: 3px;
+    background: var(--mac-card);
+    color: var(--mac-label);
+    font: inherit;
+    font-size: var(--mac-fs-small);
+  }
+  :root.mac .cat-color { position: relative; overflow: visible; }
+  :root.mac .cat-muestra {
+    width: 13px;
+    height: 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    padding: 0;
+    cursor: pointer;
+  }
+  :root.mac .cat-muestra:disabled { cursor: default; opacity: .55; }
+  :root.mac .cat-muestra.activa { box-shadow: 0 0 0 2px var(--mac-card), 0 0 0 3px var(--mac-accent); }
+  /* Paleta al tocar la muestra: flotante para no empujar la fila. */
+  :root.mac .cat-paleta {
+    position: absolute;
+    top: calc(100% - 2px);
+    left: 4px;
+    z-index: 5;
+    display: flex;
+    gap: 5px;
+    padding: 6px;
+    border: 1px solid var(--mac-card-border);
+    border-radius: var(--mac-radius);
+    background: var(--mac-card);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  }
+  :root.mac .cat-paleta-fija { display: flex; gap: 3px; }
+  :root.mac .cat-paleta-fija .cat-muestra { width: 11px; height: 11px; }
+  /* Pie "+ / −", el patrón de macOS para editar una lista. */
+  :root.mac .cat-pie {
+    display: flex;
+    gap: 0;
+    height: 22px;
+    border-top: 1px solid var(--mac-separator);
+    background: var(--mac-hover);
+  }
+  :root.mac .cat-pie-btn {
+    width: 26px;
+    height: 100%;
+    border: 0;
+    border-right: 1px solid var(--mac-separator);
+    background: none;
+    color: var(--mac-label);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  :root.mac .cat-pie-btn:hover:not(:disabled) { background: var(--mac-hover); }
+  :root.mac .cat-pie-btn:disabled { color: var(--mac-tertiary); cursor: default; }
+}

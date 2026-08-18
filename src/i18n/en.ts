@@ -640,6 +640,9 @@ export const en: Resources = {
     agregada: "Category added",
     eliminada: "Category deleted",
     hint: "Built-in categories cannot be deleted. Custom ones appear in forms, filters, reports and PDFs just like the rest.",
+    // Editable table on Mac (CategoriesSettings.tsx, esMac branch).
+    delSistema: "Built-in",
+    hintMac: "Double-click one of your own categories to rename it; click its colour to change it. Built-in ones cannot be renamed or deleted, and the type is only chosen when creating.",
     nombreLabel: "Name",
     tipoLabel: "Type",
     colorLabel: "Color",

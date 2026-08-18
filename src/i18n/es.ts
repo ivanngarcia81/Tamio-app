@@ -649,6 +649,9 @@ export const es = {
     hint: "Las categorías integradas no se pueden eliminar. Las personalizadas aparecen en los formularios, filtros, reportes y PDFs igual que las demás.",
     // Lista editable de iPhone (CategoriesSettingsIOS.tsx): hoja de
     // crear/editar y filas "Nueva categoría de…".
+    // Tabla editable de Mac (CategoriesSettings.tsx, rama esMac).
+    delSistema: "Del sistema",
+    hintMac: "Doble clic en una categoría propia para renombrarla; toca su color para cambiarlo. Las del sistema no se pueden renombrar ni eliminar, y el tipo solo se elige al crearla.",
     nombreLabel: "Nombre",
     tipoLabel: "Tipo",
     colorLabel: "Color",
