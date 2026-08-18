@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, textoCorto, esMac } from "../movil";
+import { MacBuscador, MacFiltros, type CampoFiltro } from "../components/mac/MacFiltros";
 import {
   deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
   estadoAnteriorDeHistorial, fmtFechaCorta, insertCarta,
@@ -548,6 +549,26 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     ...members.map((m) => ({ value: String(m.id), label: m.nombre })),
   ], [members, t]);
 
+  /* Los mismos valores y setters que ya usaban los `<select>` del archivo. */
+  const camposFiltro: CampoFiltro[] = [
+    { tipo: "opciones", id: "estado", label: t("membresia.colEstado"), valor: filtroEstado, vacio: "todos",
+      opciones: opcFiltroEstado, onChange: setFiltroEstado },
+    { tipo: "opciones", id: "tipo", label: t("cartas.tipoCarta"), valor: filtroTipo, vacio: "todos",
+      opciones: opcFiltroTipo, onChange: setFiltroTipo },
+    { tipo: "opciones", id: "miembro", label: t("cartas.filtroMiembro"), valor: filtroMiembro, vacio: "todos",
+      opciones: opcFiltroMiembro, onChange: setFiltroMiembro },
+    { tipo: "fecha", id: "desde", label: t("cartas.fechaDesde"), valor: desde, onChange: setDesde },
+    { tipo: "fecha", id: "hasta", label: t("cartas.fechaHasta"), valor: hasta, onChange: setHasta },
+  ];
+  /* La búsqueda no entra: vive en la toolbar, a la vista. */
+  function restablecerFiltros() {
+    setFiltroEstado("todos");
+    setFiltroTipo("todos");
+    setFiltroMiembro("todos");
+    setDesde("");
+    setHasta("");
+  }
+
   function irAArchivoFiltrado(estado: string) {
     setFiltroEstado(estado);
     cambiarTab("archivo");
@@ -592,12 +613,20 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   return (
     <>
       {!enIPhone && (
-        <div className="header">
+        <div className="header" data-tauri-drag-region={esMac() || undefined}>
           <div>
             <div className="page-title">{t("secretaria.cartas.titulo")}</div>
-            <div className="page-sub">{t("secretaria.cartas.sub")}</div>
+            {!esMac() && <div className="page-sub">{t("secretaria.cartas.sub")}</div>}
           </div>
           <div className="header-actions">
+            {/* Buscador y filtros a la toolbar; los tres `<select>` y las dos
+                fechas del archivo se pliegan en el popover. */}
+            {esMac() && (
+              <>
+                <MacBuscador value={query} onChange={setQuery} placeholder={t("cartas.buscarPlaceholder")} ancho={170} />
+                <MacFiltros campos={camposFiltro} onRestablecer={restablecerFiltros} />
+              </>
+            )}
             <div className="cartas-menu-crear">
               <MenuAnchor
                 open={menuCrearAbierto}
@@ -1123,7 +1152,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   <input type="date" aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} value={hasta} onChange={(e) => setHasta(e.target.value)} />
                 </div>
               </>
-            ) : (
+            ) : esMac() ? null : (
               <div className="tx-head" style={{ flexWrap: "wrap", gap: 8 }}>
                 <div className="search-input-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 340 }}>
                   <IconSearch size={15} strokeWidth={2} />

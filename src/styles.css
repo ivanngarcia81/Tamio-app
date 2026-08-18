@@ -10242,3 +10242,61 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    overflow dejaba "Congregació" y "Asistenci". */
 :root.mac .data-table .thead { align-items: end; padding-bottom: 2px; }
 :root.mac .data-table .th { line-height: 14px; white-space: normal; }
+
+/* ---- Reportes ----
+   El donut baja de 180 a 96 px con la leyenda al lado y los porcentajes
+   alineados a la derecha. A 180 la gráfica ocupaba lo que un panel entero
+   para decir tres proporciones — que es justo lo que la leyenda ya dice con
+   números exactos. La leyenda ES el dato; el donut, la forma de ese dato. */
+:root.mac .donut { width: 96px; height: 96px; }
+:root.mac .donut-wrap { padding: 0; }
+:root.mac .donut-center { transform: translate(-50%, -50%); }
+:root.mac .donut-center .val { font-size: var(--mac-fs-title); }
+:root.mac .donut-center .lbl {
+  font-size: var(--mac-fs-small);
+  text-transform: none;
+  letter-spacing: normal;
+}
+:root.mac .donut-legend { gap: 2px; margin-top: 0; }
+:root.mac .donut-legend-row { font-size: var(--mac-fs-body); gap: 6px; }
+:root.mac .donut-legend-row .sw { width: 7px; height: 7px; border-radius: 50%; }
+:root.mac .donut-legend-row .name { font-weight: 400; }
+/* Los porcentajes, a la derecha y con ancho fijo de cifra: en una leyenda de
+   escritorio se leen en columna, no pegados a cada nombre. */
+:root.mac .donut-legend-row .pct {
+  margin-left: auto;
+  min-width: 44px;
+  text-align: right;
+  font-size: var(--mac-fs-body);
+}
+/* Estado financiero: tabla densa, como el resto. */
+:root.mac .report-preview .r-summary { font-size: var(--mac-fs-body); }
+:root.mac .report-preview .r-summary .k {
+  font-size: var(--mac-fs-small);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+}
+
+/* ---- Inicio ----
+   La cifra del saldo se queda en la toolbar, a la derecha del título y del
+   mes: es el dato que el tesorero mira primero y ahí está siempre a la vista
+   aunque se desplace la página. Es la ÚNICA de la pantalla en
+   `--mac-fs-large-title`; las cuatro tarjetas KPI usan 15. */
+:root.mac .header[data-tauri-drag-region] .balance {
+  order: 3;
+  margin-left: auto;
+  align-items: baseline;
+}
+:root.mac .header[data-tauri-drag-region] .balance .amount {
+  font-size: var(--mac-fs-large-title);
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+:root.mac .header[data-tauri-drag-region] .balance .currency { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+:root.mac .header[data-tauri-drag-region] .balance-sub {
+  font-size: var(--mac-fs-small);
+  color: var(--mac-tertiary);
+  white-space: nowrap;
+}

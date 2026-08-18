@@ -11,7 +11,7 @@ import { EmptyState } from "../components/TxList";
 import { IconClose, IconMail } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 
 interface Props {
   church: Church;
@@ -92,11 +92,11 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("mensajes.titulo")}</div>
-            <div className="page-sub">{t("mensajes.sub")}</div>
+            {!esMac() && <div className="page-sub">{t("mensajes.sub")}</div>}
           </div>
         )}
       </div>

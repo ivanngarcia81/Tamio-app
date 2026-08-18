@@ -9,7 +9,7 @@ import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 import { IconCheck, IconRefreshCw } from "../icons";
 
 interface Props {
@@ -68,7 +68,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("bandeja.titulo")}</div>

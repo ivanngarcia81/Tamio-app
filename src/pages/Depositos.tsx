@@ -14,7 +14,7 @@ import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
 import { CERO, sumar, type Centavos } from "../dinero";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 
 const PAGE_SIZE = 40;
 
@@ -87,7 +87,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("depositos.titulo")}</div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
+import { esMac } from "../movil";
 import {
   catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
@@ -302,7 +303,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         <div>
           <div className="page-title">{t("reportes.titulo")}</div>
           <div className="page-sub">{t("reportes.sub", { mes: mesStr })}</div>

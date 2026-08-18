@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Role } from "../role";
-import { esIPhone, esMovil } from "../movil";
+import { esIPhone, esMovil, esMac } from "../movil";
 import { IosChevron } from "../components/ios/FormularioIOS";
 
 interface Props {
@@ -108,10 +108,10 @@ export default function Ayuda({ role }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         <div>
           <div className="page-title">{t("ayuda.titulo")}</div>
-          <div className="page-sub">{t("ayuda.sub")}</div>
+          {!esMac() && <div className="page-sub">{t("ayuda.sub")}</div>}
         </div>
       </div>
 

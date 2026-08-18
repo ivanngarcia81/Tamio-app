@@ -12,7 +12,7 @@ import CountUp from "../components/CountUp";
 import {
   IconCalendar, IconClipboardList, IconIdBadge, IconMail, IconMiembros, IconWarn,
 } from "../icons";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 import { IosChevron } from "../components/ios/FormularioIOS";
 import { FilaActividad } from "./Agenda";
 
@@ -85,7 +85,7 @@ export default function InicioSecretaria({ church, refreshKey }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("inicioSec.titulo")}</div>

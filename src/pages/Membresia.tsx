@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, textoCorto, esMac } from "../movil";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
   type Church, type Member, type MembresiaStats,
@@ -147,11 +147,11 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("secretaria.membresia.titulo")}</div>
-            <div className="page-sub">{t("secretaria.membresia.sub")}</div>
+            {!esMac() && <div className="page-sub">{t("secretaria.membresia.sub")}</div>}
           </div>
         )}
         <div className="header-actions">

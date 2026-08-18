@@ -16,7 +16,7 @@ import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import { CERO, restar } from "../dinero";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 
 interface Props {
   church: Church;
@@ -82,6 +82,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   // Igual que en Miembros.tsx: el carrusel/la barra ya sitúan la pantalla, y
   // en el teléfono manda el idioma de panel. Mac no cambia.
   const enIPhone = esIPhone();
+  const enMac = esMac();
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [anio, setAnio] = useState<YearTotals | null>(null);
@@ -229,11 +230,19 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
 
   return (
     <>
-      <div className="header">
+      {/* En Mac la cabecera es la toolbar de la ventana: "Inicio" en 13
+          semibold, la cifra del saldo a su lado e Imprimir / Nuevo registro a
+          la derecha. La cifra se queda AQUÍ y no baja al contenido: es el dato
+          que el tesorero mira primero, y en la toolbar está siempre a la vista
+          aunque se desplace la página. Es la única cifra de la pantalla en
+          `--mac-fs-large-title` — las cuatro tarjetas KPI usan 15. El saludo
+          se va: en una barra de 52 px no cabe y no dice nada del dinero. */}
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         <div>
+          {enMac && <div className="page-title">{t("nav.inicio")}</div>}
           {/* El saludo gasta una línea y no dice nada del dinero: fuera en el
               teléfono. La cifra grande se queda — es EL dato de la app. */}
-          {!enIPhone && <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>}
+          {!enIPhone && !enMac && <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>}
           <div className="balance">
             {/* La cifra que el tesorero mira primero también comunica el signo,
                 con la misma semántica de color que las tarjetas de abajo. */}

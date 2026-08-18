@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, textoCorto, esMac } from "../movil";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
   insertMember, listMembers, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
@@ -167,7 +167,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("miembros.titulo")}</div>

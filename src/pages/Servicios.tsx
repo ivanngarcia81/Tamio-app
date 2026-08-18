@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, textoCorto, esMac } from "../movil";
 import { currentMonth, deleteServicio, fmtFechaCorta, listServicios, type Church, type Servicio } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -113,11 +113,11 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("secretaria.servicios.titulo")}</div>
-            <div className="page-sub">{t("secretaria.servicios.sub")}</div>
+            {!esMac() && <div className="page-sub">{t("secretaria.servicios.sub")}</div>}
           </div>
         )}
         <div className="header-actions">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, textoCorto, esMac } from "../movil";
 import { deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -109,11 +109,11 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("secretaria.actas.titulo")}</div>
-            <div className="page-sub">{t("secretaria.actas.sub")}</div>
+            {!esMac() && <div className="page-sub">{t("secretaria.actas.sub")}</div>}
           </div>
         )}
         <div className="header-actions">
