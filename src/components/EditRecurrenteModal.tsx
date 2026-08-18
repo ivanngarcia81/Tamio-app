@@ -7,8 +7,7 @@ import {
 } from "../db";
 import { IconClose, IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
-import { CERO, deTexto, type Centavos } from "../dinero";
-import { aTextoEditable } from "../dinero";
+import { CERO, aTextoTecleado, deTextoTecleado, type Centavos } from "../dinero";
 
 interface Props {
   church_id: number;
@@ -17,10 +16,11 @@ interface Props {
   onSaved: () => void;
 }
 
-/** Igual que en Nuevo movimiento: `deTexto` parsea, y aquí solo queda
- *  la regla de la pantalla (un importe mayor que cero). */
+/** Igual que en Nuevo movimiento: `deTextoTecleado` parsea —con el separador
+ *  decimal del país del aparato—, y aquí solo queda la regla de la pantalla
+ *  (un importe mayor que cero). */
 function parseMonto(s: string): Centavos | null {
-  const c = deTexto(s);
+  const c = deTextoTecleado(s);
   return c !== null && c > 0 ? c : null;
 }
 
@@ -35,7 +35,7 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
 
   const [categoria, setCategoria] = useState(recurrente.categoria);
   const [concepto, setConcepto] = useState(recurrente.concepto);
-  const [monto, setMonto] = useState(aTextoEditable(recurrente.monto));
+  const [monto, setMonto] = useState(aTextoTecleado(recurrente.monto));
   const [dia, setDia] = useState(String(recurrente.dia));
   const [metodo, setMetodo] = useState(recurrente.metodo_pago);
   const [beneficiario, setBeneficiario] = useState(recurrente.beneficiario ?? "");

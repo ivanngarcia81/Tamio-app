@@ -9,8 +9,10 @@
 // fila. Si alguien "simplifica" dinero.ts y quita un redondeo, esto lo caza.
 
 import {
-  aDecimal, aTextoCsv, aTextoEditable, deBD, deDecimalHeredado, deTexto,
-  porcentaje, restar, sumar, type Centavos,
+  aDecimal, aTextoCsv, aTextoEditable, aTextoTecleado, deBD, deDecimalHeredado,
+  deTexto, deTextoTecleado, decimalesDeMoneda, fijarLocaleDeNumeros,
+  fijarMonedaDeEntrada, porcentaje, restar, separadoresDeNumeros, sumar,
+  type Centavos,
 } from "../src/dinero.ts";
 
 let fallos = 0;
@@ -82,6 +84,98 @@ for (const s of ["0.01", "1.15", "125.50", "999999.99", "0.00"]) {
   const c = deTexto(s);
   igual(c === null ? null : aTextoEditable(c), s.replace(/^(\d+)$/, "$1.00"), `"${s}" → centavos → "${s}"`);
 }
+
+// ---------------------------------------------------------------------------
+// deTextoTecleado — el importe que se escribe en una pantalla
+//
+// Distinto de `deTexto`, que es el de los CSV y NO se toca: ahí el punto es
+// decimal siempre, porque ese formato lo escribe la propia app.
+// ---------------------------------------------------------------------------
+
+/** Deja el módulo en un país y una moneda concretos, para que las
+ *  comprobaciones no dependan del aparato donde se ejecuten. */
+function escenario(locale: string, moneda: string): void {
+  fijarLocaleDeNumeros(locale);
+  fijarMonedaDeEntrada(moneda);
+}
+
+console.log("\nseparadoresDeNumeros — el número grande importa");
+// Con 1234 en vez de 1234567.89, es-ES no agrupa y el separador de millares
+// saldría undefined. Es el error fácil de este trozo.
+igual(separadoresDeNumeros("en-US").decimal, ".", "en-US decimal = punto");
+igual(separadoresDeNumeros("en-US").miles, ",", "en-US millares = coma");
+igual(separadoresDeNumeros("es-ES").decimal, ",", "es-ES decimal = coma");
+igual(separadoresDeNumeros("es-ES").miles, ".", "es-ES millares = punto");
+igual(separadoresDeNumeros("pt-BR").decimal, ",", "pt-BR decimal = coma");
+
+console.log("\ndecimalesDeMoneda");
+igual(decimalesDeMoneda("USD"), 2, "USD → 2");
+igual(decimalesDeMoneda("EUR"), 2, "EUR → 2");
+igual(decimalesDeMoneda("CLP"), 0, "CLP → 0 (peso chileno, sin centavos)");
+igual(decimalesDeMoneda("PYG"), 0, "PYG → 0 (guaraní)");
+igual(decimalesDeMoneda("COP"), 0, "COP → 0 (peso colombiano)");
+igual(decimalesDeMoneda("ZZZ"), 2, "código desconocido → 2 (no revienta)");
+
+console.log("\ndeTextoTecleado — EL FALLO: la coma decimal");
+escenario("es-ES", "EUR");
+igual(deTextoTecleado("1,50"), 150, '"1,50" en España → 150 (antes daba 15000)');
+igual(deTextoTecleado("0,99"), 99, '"0,99" → 99 (antes 9900)');
+igual(deTextoTecleado("12,50"), 1250, '"12,50" → 1250 (antes 125000)');
+igual(deTextoTecleado("1.234,56"), 123456, '"1.234,56" → 123456 (millares y decimal)');
+igual(deTextoTecleado("1.234"), 123400, '"1.234" → 123400 (millares, no decimal)');
+igual(deTextoTecleado("500"), 50000, '"500" → 50000');
+igual(deTextoTecleado("€1.250,50"), 125050, "el símbolo no estorba");
+
+console.log("\ndeTextoTecleado — el mismo teclado, en Estados Unidos");
+escenario("en-US", "USD");
+igual(deTextoTecleado("1.50"), 150, '"1.50" → 150');
+igual(deTextoTecleado("1,234.56"), 123456, '"1,234.56" → 123456');
+igual(deTextoTecleado("1,234"), 123400, '"1,234" → 123400 (millares)');
+igual(deTextoTecleado("$1,234.56"), 123456, "con símbolo");
+igual(deTextoTecleado("125"), 12500, '"125" → 12500');
+igual(deTextoTecleado("1.15"), 115, '"1.15" → 115, NO 114 (el redondeo se conserva)');
+igual(deTextoTecleado("2.675"), 268, '"2.675" → 268 (tercer decimal redondea arriba)');
+igual(deTextoTecleado("-15.75"), -1575, "negativo");
+igual(deTextoTecleado(".5"), 50, '".5" → 50 (sin parte entera)');
+
+console.log("\ndeTextoTecleado — antes se tragaba lo dudoso; ahora avisa");
+// "1,50" en Estados Unidos no es un millar (dos cifras detrás) ni un decimal
+// (la coma no lo es allí). Nadie puede saber qué quiso escribir: se rechaza.
+igual(deTextoTecleado("1,50"), null, '"1,50" en EE. UU. → null, en vez de $150 callado');
+escenario("es-ES", "EUR");
+igual(deTextoTecleado("1.50"), null, '"1.50" en España → null (millar mal formado)');
+igual(deTextoTecleado("1,2,3"), null, "dos separadores decimales → null");
+igual(deTextoTecleado("1,234.56"), null, "millares detrás del decimal → null");
+igual(deTextoTecleado(""), null, '"" → null');
+igual(deTextoTecleado("abc"), null, '"abc" → null');
+
+console.log("\ndeTextoTecleado — monedas sin centavos");
+escenario("es-CL", "CLP");
+igual(deTextoTecleado("1.234"), 123400, '"1.234" en pesos chilenos → 1234 pesos (antes $1.23)');
+igual(deTextoTecleado("1.234.567"), 123456700, "millares encadenados");
+igual(deTextoTecleado("500"), 50000, '"500" → 500 pesos');
+igual(deTextoTecleado("1,50"), null, "una moneda sin fracción no admite decimales → null");
+
+console.log("\nIda y vuelta de pantalla (editar no debe mover el importe)");
+for (const [locale, moneda, centavos, texto] of [
+  ["en-US", "USD", 12550, "125.50"],
+  ["es-ES", "EUR", 12550, "125,50"],
+  ["pt-BR", "BRL", 1, "0,01"],
+  ["es-CL", "CLP", 123400, "1234"],
+] as const) {
+  escenario(locale, moneda);
+  igual(aTextoTecleado(centavos as Centavos), texto, `${moneda}: ${centavos} → "${texto}"`);
+  igual(deTextoTecleado(texto), centavos, `${moneda}: "${texto}" → ${centavos}`);
+}
+
+// El parser de los CSV NO cambia: el viaje exportar → importar depende de él.
+console.log("\ndeTexto (CSV) sigue siendo el de siempre");
+escenario("es-ES", "EUR");
+igual(deTexto("125.50"), 12550, "el CSV lleva punto decimal aunque el país use coma");
+igual(deTexto("$1,234.56"), 123456, "y coma de millares");
+
+fijarLocaleDeNumeros(null);
+fijarMonedaDeEntrada("USD");
 
 console.log("\nporcentaje");
 igual(porcentaje(2500 as Centavos, 10000 as Centavos), 25, "2500 de 10000 → 25 %");

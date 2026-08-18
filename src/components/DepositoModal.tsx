@@ -12,8 +12,8 @@ import { IconCheck, IconClose, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
-import { CERO, deTexto, maximo, type Centavos } from "../dinero";
-import { aTextoEditable } from "../dinero";
+import { CERO, aTextoTecleado, deTextoTecleado, maximo, type Centavos } from "../dinero";
+import { currencySymbol } from "../currencies";
 
 function fileNameFromPath(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
@@ -22,7 +22,7 @@ function fileNameFromPath(path: string): string {
 /** Igual que en Nuevo movimiento: el parseo vive en `dinero.ts` y aquí
  *  solo queda la regla de la pantalla (mayor que cero). */
 function parseMonto(s: string): Centavos | null {
-  const c = deTexto(s);
+  const c = deTextoTecleado(s);
   return c !== null && c > 0 ? c : null;
 }
 
@@ -38,10 +38,13 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
   useEscapeClose(onClose);
   const isEdit = editing !== null;
   const hoy = nowLocalIso().slice(0, 10);
+  /** Mismo criterio que en Nuevo movimiento: el ejemplo lo escribe el mismo
+   *  formateador que lee el campo. */
+  const placeholderMonto = currencySymbol(church.moneda) + aTextoTecleado(CERO);
 
   const [fecha, setFecha] = useState(editing?.fecha.slice(0, 10) ?? hoy);
   const [periodo, setPeriodo] = useState(editing?.periodo ?? hoy.slice(0, 7));
-  const [monto, setMonto] = useState(editing ? aTextoEditable(editing.monto) : "");
+  const [monto, setMonto] = useState(editing ? aTextoTecleado(editing.monto) : "");
   const [cuentaBanco, setCuentaBanco] = useState(editing?.cuenta_banco ?? "");
   const [referencia, setReferencia] = useState(editing?.referencia ?? "");
   const [notas, setNotas] = useState(editing?.notas ?? "");
@@ -161,7 +164,7 @@ export default function DepositoModal({ church, editing, onClose, onSaved }: Pro
             </div>
             <div className="form-group">
               <label className="form-label">{t("depositos.montoDepositado")}</label>
-              <input className="form-input" value={monto} onChange={(e) => { setMonto(e.target.value); setExcedeConfirmado(false); }} placeholder="$0.00" inputMode="decimal" />
+              <input className="form-input" value={monto} onChange={(e) => { setMonto(e.target.value); setExcedeConfirmado(false); }} placeholder={placeholderMonto} inputMode="decimal" />
             </div>
           </div>
 

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { esIPhone } from "../movil";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import { textoCorto } from "../movil";
-import { CERO, aTextoEditable, deTexto, multiplicar, type Centavos } from "../dinero";
+import { CERO, aTextoTecleado, deDecimalHeredado, deTextoTecleado, multiplicar, type Centavos } from "../dinero";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -16,7 +16,7 @@ import {
   type Church, type Member, type Tx,
 } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconSparkles, IconWarn } from "../icons";
-import { currencyLabel } from "../currencies";
+import { currencyLabel, currencySymbol } from "../currencies";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -60,7 +60,7 @@ interface Props {
  *  El parseo vive en `dinero.ts`; aquí solo queda la regla de esta pantalla:
  *  un movimiento tiene que ser mayor que cero. */
 function parseMonto(s: string): Centavos | null {
-  const c = deTexto(s);
+  const c = deTextoTecleado(s);
   return c !== null && c > 0 ? c : null;
 }
 
@@ -165,7 +165,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
       setConcepto(tx.concepto);
       setFecha(tx.fecha.slice(0, 10));
       setHora(tx.fecha.slice(11, 16));
-      setMonto(aTextoEditable(tx.monto));
+      setMonto(aTextoTecleado(tx.monto));
       setMetodo(tx.metodo_pago);
       setDetalle(tx.detalle ?? "");
       setAportanteId(tx.member_id ?? null);
@@ -231,6 +231,11 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     return null;
   }
 
+  /** "$0.00", "RD$0.00", "$0" en pesos chilenos. El cero sale del mismo
+   *  formateador que llena el campo al editar, así que el ejemplo que se
+   *  enseña es exactamente lo que la app sabe leer. */
+  const placeholderMonto = currencySymbol(church.moneda) + aTextoTecleado(CERO);
+
   const titulo = isEdit
     ? tab === "miembro" ? t("recordModal.editarMiembro") : tab === "ingreso" ? t("recordModal.editarIngreso") : t("recordModal.editarGasto")
     : tab === "miembro" ? t("recordModal.nuevoMiembro") : tab === "ingreso" ? t("recordModal.nuevoIngreso") : t("recordModal.nuevoGasto");
@@ -261,9 +266,18 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
     }
     if (it.concepto) { setConcepto(it.concepto); algo = true; }
     // OJO: lo que devuelve la IA es un DECIMAL (lee "125.50" del comprobante),
-    // no centavos. Va al campo de texto tal cual y parseMonto lo convierte.
-    // No cambiar por aTextoEditable: multiplicaría el importe por cien.
-    if (typeof it.monto === "number" && it.monto > 0) { setMonto(String(it.monto)); algo = true; }
+    // no centavos, así que primero pasa por `deDecimalHeredado` y solo
+    // entonces se escribe en el campo.
+    //
+    // Antes iba con `String(it.monto)`, que da "125.5" con PUNTO siempre. En
+    // un aparato configurado en España o Brasil el punto es separador de
+    // millares, así que el campo se quedaba con un importe que la propia
+    // pantalla rechazaba al guardar: la IA leía bien el comprobante y el
+    // usuario veía "escribe un monto válido".
+    if (typeof it.monto === "number" && it.monto > 0) {
+      setMonto(aTextoTecleado(deDecimalHeredado(it.monto)));
+      algo = true;
+    }
     if (it.fecha && /^\d{4}-\d{2}-\d{2}$/.test(it.fecha) && it.fecha <= hoy) { setFecha(it.fecha); algo = true; }
     if (it.metodo && METODOS_PAGO.some((m) => m.id === it.metodo)) { setMetodo(it.metodo); algo = true; }
     if (it.persona) {
@@ -675,7 +689,7 @@ export default function NewRecordModal({ church, mode, onClose, onSaved }: Props
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">{t("recordModal.monto")}</label>
-                  <input className="form-input" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="$0.00" inputMode="decimal" />
+                  <input className="form-input" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder={placeholderMonto} inputMode="decimal" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">{t("recordModal.moneda")}</label>

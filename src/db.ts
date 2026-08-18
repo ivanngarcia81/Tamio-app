@@ -1,7 +1,7 @@
 import Database from "./dbmotor";
 import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
-import { CERO, aDecimal, restar, sumar, type Centavos } from "./dinero";
+import { CERO, aDecimal, fijarMonedaDeEntrada, localeDeNumeros, restar, sumar, type Centavos } from "./dinero";
 import { tonoCategoria } from "./colores";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
@@ -3513,29 +3513,13 @@ export async function updateMontoDeSerie(recurrenteId: number, churchId: number,
 // símbolo global que se fija al cargar (o cambiar) la iglesia; fmtMoney lo lee.
 let simboloActivo = "$";
 
-/** Fija el símbolo que usará fmtMoney según el código de moneda de la iglesia. */
+/** Fija el símbolo que usará fmtMoney según el código de moneda de la iglesia,
+ *  y de paso la moneda con la que `dinero.ts` lee los importes tecleados (de
+ *  ella sale cuántos decimales admite). Una sola llamada para las dos cosas
+ *  porque las dos responden a lo mismo: qué moneda usa esta iglesia. */
 export function setMonedaActiva(code: string): void {
   simboloActivo = currencySymbol(code);
-}
-
-/** Configuración regional con la que se formatean los números.
- *
- *  Se toma del DISPOSITIVO, no del idioma de la app, porque cómo se separan los
- *  miles y los decimales es una convención del país y no del idioma: en México,
- *  Puerto Rico y Estados Unidos se escribe `1,250.50`, y en España y Argentina
- *  `1.250,50` — y los tres hablan español. Atarlo al idioma de la app le
- *  cambiaría el formato a una parte de los usuarios sin que lo hayan pedido.
- *
- *  Si el sistema no informa nada, se cae a `en-US`, que es lo que Tamio ha
- *  usado siempre. */
-let localeNumeros: string | null = null;
-function localeDeNumeros(): string {
-  if (localeNumeros === null) {
-    let l = "";
-    try { l = navigator.language ?? ""; } catch { /* entorno sin navigator */ }
-    localeNumeros = l || "en-US";
-  }
-  return localeNumeros;
+  fijarMonedaDeEntrada(code);
 }
 
 /** Dinero para pantalla. **Siempre dos decimales**: con `minimumFractionDigits: 0`

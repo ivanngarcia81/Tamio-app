@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getVersion } from "@tauri-apps/api/app";
 import { listUsuarios, updateChurch, type Church, type ChurchUpdate, type Usuario } from "../db";
 import type { LangPref } from "../i18n";
-import { CERO, aTextoEditable, deTexto } from "../dinero";
+import { CERO, aTextoTecleado, deTextoTecleado } from "../dinero";
 import { showToast } from "../toast";
 import { esIPhone, esMac } from "../movil";
 import ActionSheet from "../components/ActionSheet";
@@ -211,7 +211,7 @@ export default function Configuracion({
     moneda: church.moneda,
     // 0 se muestra vacío: el caso común (arrancar de cero) no obliga a nadie
     // a entender qué es un "saldo de apertura".
-    saldoInicial: church.saldo_inicial ? aTextoEditable(church.saldo_inicial) : "",
+    saldoInicial: church.saldo_inicial ? aTextoTecleado(church.saldo_inicial) : "",
   });
   const [saldoError, setSaldoError] = useState<string | null>(null);
   const [treasurerForm, setTreasurerForm] = useState<TreasurerFormValues>({
@@ -295,10 +295,17 @@ export default function Configuracion({
     const f = formsRef.current;
     if (tj === "iglesia") {
       const nombreErr = f.churchForm.nombre.trim() ? null : t("config.nombreIglesiaObligatorio");
-      const saldoTexto = f.churchForm.saldoInicial.replace(/[$,\s]/g, "");
-      // El saldo de apertura es lo único de esta pantalla que es dinero:
-      // se parsea con deTexto igual que cualquier otro importe tecleado.
-      const saldoNum = saldoTexto === "" ? CERO : deTexto(saldoTexto);
+      // El saldo de apertura es lo único de esta pantalla que es dinero: se
+      // parsea con `deTextoTecleado`, igual que cualquier otro importe
+      // escrito a mano.
+      //
+      // El texto va CRUDO a propósito. Antes se le quitaban las comas aquí
+      // —`replace(/[$,\s]/g, "")`— y eso, además de duplicar una limpieza que
+      // el parser ya hace, le borraba el separador decimal a media Europa y
+      // Latinoamérica antes de que pudiera interpretarlo: en España "1.234,56"
+      // llegaba como "1.23456" y se rechazaba por inválido.
+      const saldoTexto = f.churchForm.saldoInicial.trim();
+      const saldoNum = saldoTexto === "" ? CERO : deTextoTecleado(saldoTexto);
       const saldoErr = saldoNum !== null ? null : t("validacion.saldoInvalido");
       if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); }
       if (nombreErr || saldoErr) return { patch: {}, valido: false };
