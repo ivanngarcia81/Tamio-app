@@ -80,6 +80,29 @@ dar ningún error. Por eso el comando de desarrollo en un iPhone físico es
    tiene su propia regla para escritorio; conviene abrir la ventana estrecha y
    ver que el sidebar sigue siendo una columna y no aparece la hamburguesa.
 
+### Y la tienda, ahora que está encendida (18 ago 2026)
+
+Lo de arriba es del rediseño; esto es del punto 3 de la 1.1. Detalle completo
+en `docs/plan-1-1.md` → *Punto 3: la tienda encendida*.
+
+7. **Recompilar con `VITE_URL_COMPRA`.** Es lo primero, porque sin ello no hay
+   nada que mirar: el enlace se lee al COMPILAR (`src/plan.ts:37`), así que un
+   build viejo no enseña "Comprar" ni "Renovar" aunque el `.env` esté puesto.
+   El valor real ya está en `.env.example`. Se comprueba en la app: la tarjeta
+   de plan (Ajustes) y el banner de suscripción deben mostrar el botón.
+8. **El registro de entregas de Lemon Squeezy.** Buscar un
+   `subscription_created` con respuesta **200**. Un **500** significa que falta
+   `LEMON_WEBHOOK_SECRET` en Supabase (`pago-webhook/index.ts:134`), y ese es
+   el caso feo: al comprador se le cobra y a la iglesia no se le activa el
+   plan. Se arregla con `supabase secrets set LEMON_WEBHOOK_SECRET=...`.
+9. **tamio.church, con Pages ya republicado.** Que se vea la sección *Download
+   Tamio*, que el botón baje el `.dmg` y que el enlace de la App Store abra la
+   ficha (`id6794741319`). No se pudieron abrir desde aquí: el proxy de salida
+   bloquea tamio.church, lemonsqueezy.com y apps.apple.com.
+10. **Una compra real de punta a punta**, cuando quieras cerrar el círculo:
+    pagar, recibir el correo, instalar el `.dmg`, entrar con ese mismo correo y
+    ver el plan activo con su vencimiento en Ajustes.
+
 Además, lo que quedó explícitamente fuera y sigue pendiente de decisión:
 
 - El pie **"+ / −" de la tabla de usuarios** (Ajustes → Acceso y áreas). Pide
@@ -105,7 +128,8 @@ Además, lo que quedó explícitamente fuera y sigue pendiente de decisión:
 - `src/styles.css` — tokens de tipografía (`--fs-*`), color, sombras y layout.
   Punto de corte compacto (iPhone): `@media (max-width: 760px)`.
 - `src/i18n/` — `es.ts` es la fuente; `en.ts` usa tipo espejo.
-- `src-tauri/src/lib.rs` — migraciones SQL. **Van por la v35.**
+- `src-tauri/src/lib.rs` — migraciones SQL. **Van por la v37** (36 = centavos,
+  37 = EIN/estado/código postal de la iglesia).
   Regla: NUNCA reusar un número; siempre agregar al final.
 - `src-tauri/src/motordb.rs` — apertura de la base y `PRAGMA key` (SQLCipher).
 - `supabase/functions/` — `pago-webhook` y `borrar-cuenta`.
