@@ -8834,6 +8834,33 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
   --mac-accent: var(--brand, #059669);
   --mac-accent-text: var(--ink-contrast, #ffffff);
+
+  /* La escala de la app, redefinida a la de macOS. Se hace con los tokens que
+     ya existen —igual que `:root.movil` redefine los suyos— y no rescribiendo
+     los 200 usos repartidos por el archivo.
+
+     La base de escritorio no estaba tan lejos (13.5 / 12.5 / 11.5 / 10.5): lo
+     que sobraba eran los valores intermedios. macOS no tiene 12.5 ni 10.5 —
+     tiene 11, 13 y 15, y punto—, y la jerarquía la cargan el peso y el color,
+     no medio píxel de diferencia. El 18 del título de modal baja a 15, que es
+     lo que mide un título de panel.
+
+     `--fs-page-title` y `--fs-section-title` NO se tocan aquí: los usan las
+     pantallas que todavía no tienen toolbar, y encogerlos ahora dejaría un
+     título de 13 px flotando sobre 40 px de aire. Cada una los pierde cuando
+     le toque su conversión. */
+  --fs-body: 13px;
+  --fs-secondary: 11px;
+  --fs-caption: 11px;
+  --fs-table-head: 11px;
+  --fs-modal-title: 15px;
+}
+/* El 14 px heredado del `body` tampoco existe en la escala de macOS: es el
+   tamaño de todo lo que no fija el suyo. 13 y line-height de 16 px, que es la
+   métrica del cuerpo de macOS. */
+:root.mac body {
+  font-size: var(--mac-fs-body);
+  line-height: var(--mac-lh-body);
 }
 @supports (color: AccentColor) {
   :root.mac {
@@ -9169,3 +9196,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.mac .card-meta { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
 :root.mac .card-head { margin-bottom: 8px; }
+
+/* Los dos únicos 16/17 px que quedaban fuera de la escala en escritorio.
+   El campo de la paleta (⌘K) baja a 15 —el paso de "título de panel", que es
+   lo que es— y no a 13: un buscador tipo Spotlight pide algo más de cuerpo
+   que una fila de lista. Las iniciales de `.church-card-avatar` (17 px) se
+   quedan: son un monograma dentro de un cuadro de 52 px, no texto de
+   interfaz, igual que el 10 px del avatar del sidebar. */
+:root.mac .cmdk-input { font-size: var(--mac-fs-title); padding: 12px 14px; }
