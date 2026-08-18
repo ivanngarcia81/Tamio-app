@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, esMac, textoCorto } from "../movil";
 import type { TFunction } from "i18next";
 import {
   ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, agregarExcepcionAgenda, deleteActividad, fmtFecha, fmtFechaCorta,
@@ -15,6 +15,7 @@ import ActividadModal, { type ConflictoAgenda } from "../components/ActividadMod
 import ActividadDetalle from "../components/ActividadDetalle";
 import AlcanceDialog, { type Alcance } from "../components/AlcanceDialog";
 import LoadingState from "../components/LoadingState";
+import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../components/mac/MacFiltros";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSearch } from "../icons";
@@ -197,6 +198,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   // El carrusel de secciones ya muestra "Agenda" como pastilla activa —
   // el título grande sobra ahí.
   const enIPhone = esIPhone();
+  const enMac = esMac();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [miembros, setMiembros] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -262,6 +264,14 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     setFiltros(FILTROS_VACIOS);
     setSoloImportantes(false);
   }
+  /** "Restablecer" del popover de Mac. Deja la BÚSQUEDA como está: vive en la
+   *  toolbar, a la vista, y borrarla desde un botón escondido dentro del
+   *  popover sería borrar algo que el usuario no está mirando. */
+  function limpiarFiltrosMac() {
+    setFiltros((f) => ({ ...FILTROS_VACIOS, q: f.q }));
+    setSoloImportantes(false);
+  }
+
   function pasaFiltros(a: Actividad): boolean {
     if (filtros.tipo && a.tipo !== filtros.tipo) return false;
     if (filtros.estado && a.estado !== filtros.estado) return false;
@@ -426,6 +436,38 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     { value: "", label: t("agenda.todosLosMeses") },
     ...mesesNombres.map((nom, i) => ({ value: String(i + 1).padStart(2, "0"), label: nom })),
   ], [mesesNombres, t]);
+
+  /* Los mismos valores y los mismos setters que ya usaban los `<select>` de
+     la fila de filtros: solo cambia dónde se pintan. Ministerio y responsable
+     siguen apareciendo únicamente si hay alguno, igual que antes. */
+  const camposFiltro: CampoFiltro[] = [
+    { tipo: "opciones", id: "tipo", label: t("agenda.filtrarTipo"), valor: filtros.tipo, vacio: "",
+      opciones: opcTipo, onChange: (v) => setFiltros((f) => ({ ...f, tipo: v })) },
+    { tipo: "opciones", id: "estado", label: t("agenda.filtrarEstado"), valor: filtros.estado, vacio: "",
+      opciones: opcEstado, onChange: (v) => setFiltros((f) => ({ ...f, estado: v })) },
+    ...(ministeriosPresentes.length > 0
+      ? [{ tipo: "opciones", id: "ministerio", label: t("agenda.filtrarMinisterio"), valor: filtros.ministerio, vacio: "",
+          opciones: opcMinisterio, onChange: (v: string) => setFiltros((f) => ({ ...f, ministerio: v })) } as CampoFiltro]
+      : []),
+    ...(responsablesPresentes.length > 0
+      ? [{ tipo: "opciones", id: "responsable", label: t("agenda.filtrarResponsable"), valor: filtros.responsable, vacio: "",
+          opciones: opcResponsable, onChange: (v: string) => setFiltros((f) => ({ ...f, responsable: v })) } as CampoFiltro]
+      : []),
+    { tipo: "fecha", id: "desde", label: t("agenda.rangoDesde"), valor: filtros.desde,
+      onChange: (v) => setFiltros((f) => ({ ...f, desde: v })) },
+    { tipo: "fecha", id: "hasta", label: t("agenda.rangoHasta"), valor: filtros.hasta,
+      onChange: (v) => setFiltros((f) => ({ ...f, hasta: v })) },
+    { tipo: "interruptor", id: "importantes", label: t("agenda.soloImportantes"), valor: soloImportantes,
+      onChange: setSoloImportantes },
+    ...(vista === "historial"
+      ? [
+          { tipo: "opciones", id: "anio", label: t("agenda.filtrarAnio"), valor: anioHist, vacio: "",
+            opciones: opcAnioHist, onChange: setAnioHist } as CampoFiltro,
+          { tipo: "opciones", id: "mes", label: t("agenda.filtrarMes"), valor: mesHist, vacio: "",
+            opciones: opcMesHist, onChange: setMesHist } as CampoFiltro,
+        ]
+      : []),
+  ];
   const historial = useMemo(() => {
     const desde = anioHist ? `${anioHist}-01-01` : addDays(hoy, -731);
     const hasta = anioHist ? `${anioHist}-12-31` : hoy;
@@ -545,14 +587,50 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("secretaria.agenda.titulo")}</div>
-            <div className="page-sub">{t("secretaria.agenda.sub")}</div>
+            {!enMac && <div className="page-sub">{t("secretaria.agenda.sub")}</div>}
           </div>
         )}
         <div className="header-actions">
+          {/* En Mac la pantalla entera se maneja desde la toolbar: navegación
+              de mes, selector de vista, buscador y filtros. Antes eran dos
+              filas dentro del contenido —una barra y una fila de filtros que
+              envolvía— que empujaban el calendario media pantalla hacia
+              abajo. En iPad y iPhone no cambia nada. */}
+          {enMac && (
+            <>
+              {(vista === "mes" || vista === "semana") && (
+                <>
+                  <div className="agenda-nav-group">
+                    <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={13} /></button>
+                    <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+                    <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={13} /></button>
+                  </div>
+                  <span className="agenda-mes-titulo">{titulo}</span>
+                </>
+              )}
+              <MacSegmentado
+                value={vista}
+                onChange={(v) => setVista(v)}
+                aria={t("agenda.cambiarVista")}
+                opciones={[
+                  { id: "mes" as Vista, label: t("agenda.vistaMes") },
+                  { id: "semana" as Vista, label: t("agenda.vistaSemana") },
+                  { id: "lista" as Vista, label: t("agenda.vistaLista") },
+                  { id: "historial" as Vista, label: t("agenda.vistaHistorial") },
+                ]}
+              />
+              <MacBuscador
+                value={filtros.q}
+                onChange={(v) => setFiltros((f) => ({ ...f, q: v }))}
+                placeholder={t("agenda.buscarPlaceholder")}
+              />
+              <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltrosMac} />
+            </>
+          )}
           <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
         </div>
       </div>
@@ -651,7 +729,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
             </div>
           </>
-        ) : (
+        ) : enMac ? null : (
           <div className="agenda-filtros">
             <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
               <IconSearch size={15} strokeWidth={2} />
@@ -728,7 +806,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               </div>
             )}
           </>
-        ) : (
+        ) : enMac ? null : (
         <div className="agenda-toolbar">
           <div className="agenda-nav">
             {(vista === "mes" || vista === "semana") && (
