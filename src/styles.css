@@ -9642,3 +9642,53 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.mac .settings-zona--preferencias .tabs-segmented,
   :root.mac .settings-zona--preferencias .acento-fila { justify-self: start; }
 }
+
+@media (min-width: 761px) {
+  /* ---- Zona sensible ----
+     Fuera la caja roja: encerrar lo destructivo en un marco rojo es
+     convención de web (la "danger zone" de GitHub), no de macOS. Aquí lo
+     destructivo es un botón normal con el TEXTO en rojo, y el peligro lo
+     lleva la hoja de confirmación —que no se toca: sigue pidiendo escribir
+     la palabra y sigue recargando al terminar—. Un borde permanentemente
+     rojo alrededor de algo que no está pasando ahora mismo grita sin decir
+     nada; el rojo pesa cuando aparece solo en el momento de decidir. */
+  :root.mac .settings-detail .danger-zone { border-color: transparent; }
+  :root.mac .settings-zona--delicada .settings-zona-titulo { color: var(--mac-label); }
+  :root.mac .settings-detail .btn.danger-btn {
+    background: none;
+    border-color: var(--mac-card-border);
+    color: var(--mac-red);
+  }
+  :root.mac .settings-detail .btn.danger-btn:hover { background: var(--mac-hover); }
+  /* Respaldo, Restaurar, Compactar y las dos filas de reinicio: la misma
+     fila alineada que el resto del formulario —descripción a la izquierda en
+     la columna de etiquetas, acción a la derecha— en vez de un bloque a todo
+     el ancho con el botón empujado al borde. */
+  :root.mac .settings-detail .danger-row {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 10px;
+    padding: 8px 0;
+    border-top: 1px solid var(--mac-separator);
+  }
+  /* El título y su explicación vienen envueltos en un <div>, o sea un solo
+     hijo de la rejilla: `display: contents` los suelta para que cada uno
+     caiga en su columna —el título hace de etiqueta, la explicación va bajo
+     la acción— sin tocar el marcado del componente. */
+  :root.mac .settings-detail .danger-row > div { display: contents; }
+  :root.mac .settings-detail .danger-row .danger-row-title { grid-column: 1; grid-row: 1; text-align: right; }
+  :root.mac .settings-detail .danger-row .danger-row-title {
+    font-size: var(--mac-fs-body);
+    font-weight: 400;
+    margin-bottom: 0;
+  }
+  :root.mac .settings-detail .danger-row .form-hint { max-width: 340px; }
+  /* La explicación baja al pie de la acción, alineada con ella. */
+  :root.mac .settings-detail .danger-row .form-hint {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: left;
+  }
+  :root.mac .settings-detail .danger-row > .btn { grid-column: 2; grid-row: 1; justify-self: start; }
+}
