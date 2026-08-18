@@ -1757,6 +1757,10 @@ export const en: Resources = {
   },
 
   informes: {
+    // Columnas de la tabla de Mac: las fechas y el estado dejan de ir
+    // apiladas dentro de otra celda y cada dato tiene la suya.
+    colCongregacion: "Congregation",
+    colDesde: "Member since",
     titulo: "Membership Information",
     sub: "Overview, follow-up, and reports of the church members.",
     seccionResumen: "Overview",

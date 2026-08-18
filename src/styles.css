@@ -10170,3 +10170,75 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     z-index: auto;
   }
 }
+
+/* ---- Informes de membresía ----
+   El aviso de ficha incompleta era un emoji de advertencia. En una tabla de
+   escritorio
+   canta: lo pinta la fuente de emoji del sistema, no hereda el color del
+   texto y no tiene el mismo peso de trazo que el resto de los iconos. Pasa a
+   `IconWarn`, del mismo juego que usa toda la app, en el ámbar de aviso. */
+.informes-aviso {
+  display: inline-flex;
+  align-items: center;
+  color: var(--warn);
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+/* Las ocho tarjetas de KPI, en dos filas compactas. */
+:root.mac .summary-8 { gap: 8px; }
+:root.mac .summary-8 .stat-card { padding: 8px 10px; gap: 1px; }
+:root.mac .summary-8 .stat-value { font-size: var(--mac-fs-title); }
+
+/* Celda de dato numérico o de fecha: alineada a la derecha y con ancho fijo
+   de cifra, que es como se leen las columnas de fechas y porcentajes en una
+   tabla de escritorio. */
+:root.mac .data-table .td.num-celda,
+:root.mac .data-table .th.num-celda { text-align: right; font-variant-numeric: tabular-nums; }
+/* Esta tabla venía con `roomy` (filas más altas para dos líneas por celda);
+   con cada dato en su columna ya no hace falta. */
+:root.mac .data-table.roomy .th,
+:root.mac .data-table.roomy .td { padding: 0 8px; }
+:root.mac .tabla-informe-miembros .tr { min-height: var(--mac-table-row-h); }
+/* La insignia de estado, en su columna: sin fondo, punto de color y nombre,
+   igual que la categoría en Ingresos. */
+:root.mac .tabla-informe-miembros .tag { max-width: 100%; }
+
+/* Pestañas del contenido (Registro / Asistencia / Seguimiento / Resumen y las
+   de otras pantallas): 22 px y la activa con el acento del sistema. Era
+   `--ink`, o sea negro con el acento de fábrica — la regla que este paquete
+   repite en todos los controles: nunca negro como estado activo. */
+:root.mac .chip-toggle { gap: 4px; }
+:root.mac .chip-toggle .chip {
+  height: var(--mac-control-h);
+  min-height: 0;
+  padding: 0 10px;
+  border-radius: var(--mac-radius);
+  border: 1px solid var(--mac-card-border);
+  background: var(--mac-card);
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  color: var(--mac-label);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+:root.mac .chip-toggle .chip:hover { background: var(--mac-hover); }
+:root.mac .chip-toggle .chip.active {
+  background: var(--mac-accent);
+  border-color: transparent;
+  color: var(--mac-accent-text);
+}
+:root.mac .chip-toggle .chip .badge {
+  background: none;
+  color: inherit;
+  opacity: .7;
+  font-size: var(--mac-fs-small);
+  font-weight: 400;
+  padding: 0;
+  min-width: 0;
+}
+/* La cabecera de la tabla puede partir en dos líneas: "Miembro desde" o
+   "Última asistencia" no caben en una columna de 104 px, y recortarlas con
+   overflow dejaba "Congregació" y "Asistenci". */
+:root.mac .data-table .thead { align-items: end; padding-bottom: 2px; }
+:root.mac .data-table .th { line-height: 14px; white-space: normal; }

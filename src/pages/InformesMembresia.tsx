@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, esMac, textoCorto } from "../movil";
 import {
   currentMonth, currentYear, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
   listServiciosLigero, listTrasladosEntrada, listTrasladosSalida,
@@ -21,10 +21,11 @@ import FichaMiembroModal from "../components/FichaMiembroModal";
 import SeguimientoModal from "../components/SeguimientoModal";
 import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
+import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../components/mac/MacFiltros";
 import Pagination from "../components/Pagination";
 import RowMenu from "../components/RowMenu";
 import { showToast } from "../toast";
-import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch } from "../icons";
+import { IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconWarn } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
@@ -32,6 +33,11 @@ import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 const COLS = "1.5fr 150px 1.4fr 140px 72px";
+/* En Mac cada dato tiene su columna y la fila cabe en 26 px. Antes el estado
+   iba debajo del nombre, las dos fechas apiladas en una celda y la asistencia
+   con su última visita debajo: tres celdas de dos líneas que dejaban la fila
+   en ~100 px. Mismos datos, ninguno se pierde — solo dejan de amontonarse. */
+const COLS_MAC = "minmax(0,1.3fr) 88px 104px 104px minmax(0,1.1fr) 78px 104px 52px";
 const PAGE_SIZE = 25;
 
 type PeriodoTipo = "mes" | "trimestre" | "anio" | "rango" | "todo";
@@ -91,6 +97,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   // activa (ver Cartas.tsx/Movimientos.tsx/Miembros.tsx) — el título grande
   // de aquí abajo sobra ahí.
   const enIPhone = esIPhone();
+  const enMac = esMac();
   const [miembros, setMiembros] = useState<Member[]>([]);
   const [servicios, setServicios] = useState<ServicioLigero[]>([]);
   const [asistenciaRaw, setAsistenciaRaw] = useState<AsistenciaLigera[]>([]);
@@ -249,6 +256,22 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     setQuery(""); setTarjeta("todos"); setFiltroEstado("todos"); setFiltroMinisterio("todos");
     setFiltroCargo("todos"); setFiltroInstrumento("todos"); setSoloRacha(false); setSoloIncompletos(false);
   }
+
+  /* Los mismos valores y setters que ya usaban los cuatro `<select>` y las dos
+     pastillas de la fila de filtros; solo cambia dónde se pintan. El "todos"
+     es aquí el valor vacío, así que el contador del botón no lo cuenta. */
+  const camposFiltro: CampoFiltro[] = [
+    { tipo: "opciones", id: "estado", label: t("membresia.colEstado"), valor: filtroEstado, vacio: "todos",
+      opciones: opcEstadoFiltro, onChange: setFiltroEstado },
+    { tipo: "opciones", id: "ministerio", label: t("informes.colMinisterio"), valor: filtroMinisterio, vacio: "todos",
+      opciones: opcMinisterioFiltro, onChange: setFiltroMinisterio },
+    { tipo: "opciones", id: "cargo", label: t("ficha.cargosLabel"), valor: filtroCargo, vacio: "todos",
+      opciones: opcCargoFiltro, onChange: setFiltroCargo },
+    { tipo: "opciones", id: "instrumento", label: t("informes.colInstrumento"), valor: filtroInstrumento, vacio: "todos",
+      opciones: opcInstrumentoFiltro, onChange: setFiltroInstrumento },
+    { tipo: "interruptor", id: "racha", label: t("informes.filtroRacha"), valor: soloRacha, onChange: setSoloRacha },
+    { tipo: "interruptor", id: "incompletos", label: t("informes.filtroIncompletos"), valor: soloIncompletos, onChange: setSoloIncompletos },
+  ];
 
   function ordenarPor(campo: OrdenCampo) {
     setOrden((o) => (o.campo === campo ? { campo, dir: o.dir === 1 ? -1 : 1 } : { campo, dir: 1 }));
@@ -415,14 +438,37 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
   return (
     <>
-      <div className="header">
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{t("informes.titulo")}</div>
-            <div className="page-sub">{t("informes.sub")}</div>
+            {!enMac && <div className="page-sub">{t("informes.sub")}</div>}
           </div>
         )}
         <div className="header-actions solo-escritorio">
+          {/* De las TRES navegaciones apiladas que tenía la pantalla —periodo,
+              pestañas y fila de filtros— el periodo sube a la toolbar como
+              segmentado y los filtros se pliegan en su botón. Abajo quedan las
+              pestañas, que es la única navegación que de verdad cambia lo que
+              se está mirando. */}
+          {enMac && (
+            <>
+              <MacSegmentado
+                value={periodoTipo}
+                onChange={setPeriodoTipo}
+                aria={t("informes.periodo.mes")}
+                opciones={(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => ({
+                  id: p, label: t(`informes.periodo.${p}`),
+                }))}
+              />
+              {vista === "miembros" && (
+                <>
+                  <MacBuscador value={query} onChange={setQuery} placeholder={t("informes.buscar")} ancho={160} />
+                  <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltros} />
+                </>
+              )}
+            </>
+          )}
           <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
             <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
           </button>
@@ -455,6 +501,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
       <div className="content">
         {/* Selector de periodo — fuente de verdad */}
         <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+          {!enMac && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => (
               <button key={p} className={`chip${periodoTipo === p ? " active" : ""}`} onClick={() => setPeriodoTipo(p)}>
@@ -462,6 +509,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               </button>
             ))}
           </div>
+          )}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {periodoTipo === "mes" && (
               <input type="month" className="form-input" style={{ width: "auto" }} value={mesSel} onChange={(e) => setMesSel(e.target.value)} aria-label={t("informes.periodo.mes")} />
@@ -697,7 +745,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                   {hayFiltros && <button className="chip" onClick={limpiarFiltros}>{t("informes.limpiar")}</button>}
                 </div>
               </>
-            ) : (
+            ) : enMac ? null : (
               <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
                 <div className="search-input-wrap" style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
                   <IconSearch size={15} strokeWidth={2} />
@@ -745,7 +793,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     <div className="ios-txrow ios-txrow--clickable" data-fila key={m.id} onClick={() => setFicha(m)}>
                       <div className="ios-txrow-main">
                         <div className="ios-txrow-title" title={m.nombre}>
-                          {incompleto && <span title={t("informes.incompletoTitle")} style={{ marginRight: 4 }}>⚠️</span>}
+                          {incompleto && <span className="informes-aviso" title={t("informes.incompletoTitle")}><IconWarn size={11} strokeWidth={2.2} /></span>}
                           <span className="truncate">{m.nombre}</span>
                         </div>
                         <div className="tx-secundaria-movil">
@@ -764,11 +812,14 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               </div>
             ) : (
               <div className="data-table roomy tabla-informe-miembros">
-                <div className="thead" style={{ gridTemplateColumns: COLS, position: "sticky", top: 0, zIndex: 1, background: "var(--surface)" }}>
+                <div className="thead" style={{ gridTemplateColumns: enMac ? COLS_MAC : COLS, position: "sticky", top: 0, zIndex: 1, background: "var(--surface)" }}>
                   <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("nombre")}>{t("informes.colMiembro")}{flecha("nombre")}</button>
-                  <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("ingreso")}>{t("informes.colFechas")}{flecha("ingreso")}</button>
+                  {enMac && <div className="th">{t("membresia.colEstado")}</div>}
+                  {enMac && <div className="th">{t("informes.colCongregacion")}</div>}
+                  <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("ingreso")}>{enMac ? t("informes.colDesde") : t("informes.colFechas")}{flecha("ingreso")}</button>
                   <div className="th">{t("informes.colServicio")}</div>
                   <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("asistencia")}>{t("informes.colAsistencia")}{flecha("asistencia")}</button>
+                  {enMac && <div className="th">{t("informes.colUltima")}</div>}
                   <div className="th"></div>
                 </div>
                 {pagina.map(({ miembro: m, asistencia: a }) => {
@@ -780,33 +831,54 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     chipsDe(t, m.instrumentos, "ficha.instrumento"),
                   ].filter(Boolean).join(" · ");
                   return (
-                    <div className="tr" key={m.id} style={{ gridTemplateColumns: COLS, cursor: "pointer" }} onClick={() => setFicha(m)}>
+                    <div className="tr" key={m.id} style={{ gridTemplateColumns: enMac ? COLS_MAC : COLS, cursor: "pointer" }} onClick={() => setFicha(m)}>
                       <div className="td" style={{ minWidth: 0 }}>
                         <div className="p-name truncate" title={m.nombre}>
-                          {incompleto && <span title={t("informes.incompletoTitle")} style={{ marginRight: 5 }}>⚠️</span>}
+                          {incompleto && <span className="informes-aviso" title={t("informes.incompletoTitle")}><IconWarn size={11} strokeWidth={2.2} /></span>}
                           {m.nombre}
                         </div>
-                        <span className={`tag ${BADGE_ESTADO[e] ?? "otros"}`}>{t(`membresia.estado.${e}`)}</span>
+                        {!enMac && <span className={`tag ${BADGE_ESTADO[e] ?? "otros"}`}>{t(`membresia.estado.${e}`)}</span>}
                       </div>
-                      <div className="td" style={{ fontSize: 12, color: "var(--text-2)" }}>
-                        <div>{m.fecha_congregacion ? fmtFechaCorta(m.fecha_congregacion) : "—"}</div>
-                        <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
-                          {m.fecha_ingreso ? t("informes.miembroDesde", { fecha: fmtFechaCorta(m.fecha_ingreso) }) : t("informes.sinFechaMembresia")}
+                      {enMac && (
+                        <div className="td" style={{ minWidth: 0 }}>
+                          <span className={`tag ${BADGE_ESTADO[e] ?? "otros"}`}>{t(`membresia.estado.${e}`)}</span>
                         </div>
-                      </div>
-                      <div className="td" style={{ fontSize: 12, color: "var(--text-2)", minWidth: 0 }}>
-                        <div className="truncate" title={servicioTxt}>{servicioTxt || "—"}</div>
-                      </div>
-                      <div className="td" style={{ fontSize: 12.5 }}>
-                        {a && a.pct !== null ? (
+                      )}
+                      {enMac && (
+                        <div className="td num-celda">{m.fecha_congregacion ? fmtFechaCorta(m.fecha_congregacion) : "—"}</div>
+                      )}
+                      <div className="td num-celda" style={enMac ? undefined : { fontSize: 12, color: "var(--text-2)" }}>
+                        {enMac ? (
+                          m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : "—"
+                        ) : (
                           <>
-                            <div style={{ fontWeight: 700 }}>{a.pct}%</div>
+                            <div>{m.fecha_congregacion ? fmtFechaCorta(m.fecha_congregacion) : "—"}</div>
                             <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
-                              {a.ultimaAsistencia ? fmtFechaCorta(a.ultimaAsistencia) : t("informes.nuncaAsistio")}
+                              {m.fecha_ingreso ? t("informes.miembroDesde", { fecha: fmtFechaCorta(m.fecha_ingreso) }) : t("informes.sinFechaMembresia")}
                             </div>
                           </>
+                        )}
+                      </div>
+                      <div className="td" style={{ fontSize: enMac ? undefined : 12, color: enMac ? undefined : "var(--text-2)", minWidth: 0 }}>
+                        <div className="truncate" title={servicioTxt}>{servicioTxt || "—"}</div>
+                      </div>
+                      <div className="td num-celda" style={enMac ? undefined : { fontSize: 12.5 }}>
+                        {a && a.pct !== null ? (
+                          enMac ? `${a.pct}%` : (
+                            <>
+                              <div style={{ fontWeight: 700 }}>{a.pct}%</div>
+                              <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
+                                {a.ultimaAsistencia ? fmtFechaCorta(a.ultimaAsistencia) : t("informes.nuncaAsistio")}
+                              </div>
+                            </>
+                          )
                         ) : <span style={{ color: "var(--text-3)" }}>—</span>}
                       </div>
+                      {enMac && (
+                        <div className="td num-celda">
+                          {a?.ultimaAsistencia ? fmtFechaCorta(a.ultimaAsistencia) : "—"}
+                        </div>
+                      )}
                       <div className="td td-acciones" onClick={(ev) => ev.stopPropagation()}>
                         <span className="row-icon-btn" title={t("common.editar")} onClick={() => onEdit(m)}>
                           <IconEdit size={13} strokeWidth={2} />
