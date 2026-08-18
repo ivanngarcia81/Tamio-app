@@ -8766,3 +8766,208 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .tabla-membresia .row-actions { display: none; }
 }
 
+
+/* ============================================================
+   VERSIÓN MAC — Paquete 1: tokens, escala y sidebar denso
+   ============================================================
+
+   TODO lo de aquí abajo cuelga de `:root.mac`, la clase que main.tsx pone
+   solo en escritorio. No es cosmética del selector: el iPad comparte con el
+   Mac cada pantalla y cada componente —el sidebar es literalmente el mismo
+   `Sidebar.tsx`— y necesita lo contrario que el Mac (objetivos de 44 pt para
+   el dedo, no filas de 28 px para el ratón). Sin la clase, cada regla de
+   densidad de escritorio caería también en la tableta.
+
+   Los tres archivos del paquete (`macos-tokens.css`, `macos-chrome.css`,
+   `macos-charts.css`) van AQUÍ y no como archivos sueltos: este proyecto
+   tiene un único `styles.css` —regla explícita de las otras dos tareas de
+   Mac— y partirlo ahora obligaría a mantener dos convenciones a la vez.
+
+   El acento: en macOS lo elige el usuario en Ajustes del sistema, y
+   `AccentColor` es el color de sistema que lo expone. WKWebView (el motor de
+   Tauri en macOS) lo soporta; donde no, cae a `--brand`, que es el acento
+   que el usuario haya elegido DENTRO de Tamio (verde de fábrica, o el de
+   `data-acento`). Nunca `--ink` a secas: en el acento "neutro" eso es
+   #0f0f0f, o sea el negro que este paquete viene justamente a quitar. */
+:root.mac {
+  --mac-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
+
+  /* Escala de macOS: tres pasos, no seis. 11 para encabezados y datos
+     secundarios, 13 para TODO el texto de interfaz, 15 solo para títulos de
+     tarjeta o panel. La cifra destacada (--mac-fs-large-title) va una vez
+     por pantalla. Nada de 16 ni 17. */
+  --mac-fs-large-title: 26px;
+  --mac-fs-title: 15px;
+  --mac-fs-headline: 13px;
+  --mac-fs-body: 13px;
+  --mac-fs-small: 11px;
+  --mac-lh-body: 16px;
+
+  --mac-row-h: 28px;
+  --mac-table-row-h: 26px;
+  --mac-control-h: 22px;
+  --mac-toolbar-h: 52px;
+  --mac-radius: 6px;
+  --mac-card-radius: 8px;
+  --mac-inset: 12px;
+
+  --mac-content-bg: #ffffff;
+  /* Gris de contenido para pantallas con muchas tarjetas juntas (Inicio, y
+     solo Inicio por ahora). Más claro que el #F2F2F7 del iPhone a
+     propósito: en Mac el gris no es el que agrupa —eso lo hace el borde de
+     1 px— sino un fondo apenas separado del blanco de las tarjetas. */
+  --mac-content-bg-soft: #f5f5f7;
+  --mac-card: #ffffff;
+  --mac-card-border: rgba(0, 0, 0, 0.08);
+  --mac-label: #000000;
+  --mac-secondary: rgba(0, 0, 0, 0.55);
+  --mac-tertiary: rgba(0, 0, 0, 0.35);
+  --mac-separator: rgba(0, 0, 0, 0.1);
+  --mac-hover: rgba(0, 0, 0, 0.05);
+  --mac-red: #ff3b30;
+  --mac-orange: #ff9500;
+  --mac-green: #1e8e5a;
+
+  --mac-accent: var(--brand, #059669);
+  --mac-accent-text: var(--ink-contrast, #ffffff);
+}
+@supports (color: AccentColor) {
+  :root.mac {
+    --mac-accent: AccentColor;
+    --mac-accent-text: AccentColorText;
+  }
+}
+/* El tema oscuro se resuelve SIEMPRE en JS y se escribe como atributo (ver
+   App.tsx, incluido "automático", que sigue al sistema en vivo), así que
+   aquí basta el atributo: una consulta `prefers-color-scheme` en paralelo
+   solo podría desincronizarse del resto del archivo. */
+:root.mac[data-theme="dark"] {
+  --mac-content-bg: #1e1e1e;
+  --mac-content-bg-soft: #191919;
+  --mac-card: #262628;
+  --mac-card-border: rgba(255, 255, 255, 0.1);
+  --mac-label: #ffffff;
+  --mac-secondary: rgba(255, 255, 255, 0.6);
+  --mac-tertiary: rgba(255, 255, 255, 0.35);
+  --mac-separator: rgba(255, 255, 255, 0.12);
+  --mac-hover: rgba(255, 255, 255, 0.07);
+  --mac-red: #ff453a;
+  --mac-orange: #ff9f0a;
+  --mac-green: #34c759;
+}
+
+/* ---------------- Sidebar ----------------
+
+   Se re-viste el `Sidebar.tsx` que ya existe en vez de sustituirlo por el
+   `MacSidebar` del paquete. El del paquete es una lista genérica: no sabe de
+   roles, ni de plan contratado, ni carga el logo de la iglesia, ni recuerda
+   qué grupos quedaron abiertos, ni lleva el indicador de sincronización, el
+   perfil y el cierre de sesión. Cambiarlo por él borraría todo eso para
+   ganar un marcado que estas reglas ya consiguen — el existente tiene los
+   mismos ganchos (.nav-item, .badge, .nav-group-head, .church-select). Y
+   como el componente es el mismo que usa el iPad, tocarlo de verdad habría
+   arrastrado a la tableta.
+
+   Medido antes: filas de 38.9 px en 13.5 px, activo #0f0f0f (negro) con
+   barrita de acento de 3 px al lado, y contador como píldora negra. */
+:root.mac .app { grid-template-columns: 220px 1fr; }
+
+:root.mac .sidebar {
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 8px;
+  gap: 0;
+  font-size: var(--mac-fs-body);
+}
+
+/* Cabecera de organización: 40 px, avatar de 20. Conserva las dos líneas
+   (nombre + ciudad) que el sidebar ya mostraba; el `.mac-org` del paquete
+   solo trae el nombre, y la ciudad es dato de la iglesia, no decoración. */
+:root.mac .church-select {
+  gap: 8px;
+  padding: 4px 6px;
+  margin-bottom: 6px;
+  border-radius: var(--mac-radius);
+  border-color: transparent;
+}
+:root.mac .church-select:hover { background: var(--mac-hover); }
+:root.mac .church-select .church-avatar {
+  width: 20px; height: 20px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+:root.mac .church-name { font-size: var(--mac-fs-body); font-weight: 500; }
+:root.mac .church-sub { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+/* La flecha de "abre Ajustes" sobra en una fila de 28 px: el sidebar de
+   macOS no lleva galones, y quitarla devuelve 16 px al nombre. */
+:root.mac .church-select .church-chevron { display: none; }
+
+:root.mac .nav { gap: 0; }
+:root.mac .nav-item {
+  gap: 7px;
+  height: var(--mac-row-h);
+  padding: 0 8px;
+  border-radius: var(--mac-radius);
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  color: var(--mac-label);
+}
+:root.mac .nav-item:hover { background: var(--mac-hover); color: var(--mac-label); }
+/* Nada de escalar al pulsar: es un gesto de app táctil. */
+:root.mac .nav-item:active { transform: none; }
+:root.mac .nav-item .icon { width: 16px; height: 16px; color: var(--mac-secondary); opacity: 1; }
+:root.mac .nav-item svg { width: 16px; height: 16px; }
+
+/* Selección: relleno con el acento del sistema, sin negrita extra y SIN la
+   barrita vertical — en macOS no existe; es un patrón de web. */
+:root.mac .nav-item.active {
+  background: var(--mac-accent);
+  color: var(--mac-accent-text);
+  font-weight: 400;
+}
+:root.mac .nav-item.active::before { display: none; }
+:root.mac .nav-item.active .icon { color: inherit; }
+:root.mac .nav-item.active:hover { background: var(--mac-accent); opacity: 1; }
+/* Ventana en segundo plano: la selección se apaga a gris, como en Mail o
+   Finder. El atributo lo escribe main.tsx fuera de React. */
+:root.mac[data-ventana-activa="false"] .nav-item.active {
+  background: var(--mac-hover);
+  color: var(--mac-label);
+}
+:root.mac[data-ventana-activa="false"] .nav-item.active .icon { color: var(--mac-secondary); }
+
+/* Contador: en macOS es texto gris alineado a la derecha, no una píldora de
+   color. Con `tabular-nums` para que 9 y 128 no bailen. */
+:root.mac .nav-item .badge {
+  background: none;
+  color: var(--mac-tertiary);
+  font-size: var(--mac-fs-small);
+  font-weight: 400;
+  padding: 0;
+  min-width: 0;
+  border-radius: 0;
+  font-variant-numeric: tabular-nums;
+}
+:root.mac .nav-item.active .badge { background: none; color: inherit; opacity: .75; }
+
+/* Encabezado de grupo: 22 px, 11 semibold. Ya estaba cerca; solo baja de
+   altura y pierde el versalita apretado. */
+:root.mac .nav-group { gap: 0; margin-top: 10px; }
+:root.mac .nav-group-head {
+  height: 22px;
+  padding: 0 6px;
+  font-size: var(--mac-fs-small);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--mac-tertiary);
+}
+:root.mac .nav-group-head .chev svg { width: 9px; height: 9px; }
+
+:root.mac .sidebar-footer { gap: 0; padding-top: 8px; }
+:root.mac .sidebar-perfil { gap: 8px; padding: 4px 6px; margin: 0; border-radius: var(--mac-radius); border-color: transparent; }
+:root.mac .sidebar-perfil:hover { background: var(--mac-hover); }
+/* Mismo avatar que la cabecera de la iglesia: 20 px. A 30 px la fila del
+   perfil medía más que dos filas de navegación juntas. */
+:root.mac .perfil-avatar { width: 20px; height: 20px; font-size: 10px; }
+:root.mac .sidebar-perfil-nombre { font-size: var(--mac-fs-body); font-weight: 400; }
+:root.mac .sidebar-perfil-email { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
