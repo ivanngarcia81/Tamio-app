@@ -37,3 +37,6 @@ harness-db/target
 
 # Capturas de la vista previa: se regeneran, no se versionan
 pruebas/*.png
+
+# Arneses de verificación temporales (Playwright/esbuild)
+.tmp-*
