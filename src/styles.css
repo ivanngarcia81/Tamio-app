@@ -4588,12 +4588,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-height: 0;
 }
 :root.iphone .welcome-movil-cuerpo {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: calc(28px + env(safe-area-inset-top)) 16px 10px;
 }
+/* El contenido, centrado en vertical.
+   Las tres diapositivas del medio son un icono, un título y tres líneas: 178
+   px de contenido dentro de 757 px de cuerpo. Pegadas arriba dejaban el 73 %
+   de la pantalla vacía debajo del texto, con el pie flotando muy lejos.
+
+   Se centra con `margin-block: auto` y NO con `justify-content: center`: este
+   cuerpo es el que desplaza, y cuando el contenido pasa de alto —el
+   formulario final con el teclado abierto, o un texto largo en un iPhone
+   pequeño— `justify-content: center` deja el principio por encima del borde
+   superior y ahí no se puede llegar desplazando. Los márgenes automáticos
+   reparten solo el espacio que sobra: si no sobra, valen cero y todo se
+   comporta como antes. */
+:root.iphone .welcome-slide { margin-block: auto; }
 /* Pie anclado. Esta pantalla va ENCIMA de la barra de pestañas
    (`.welcome-overlay` tiene z-index 160), así que aquí NO se suma
    `var(--tabbar-h)` — al contrario que el compositor de Mensajes, que vive
@@ -4625,7 +4640,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 20px;
   color: rgba(255, 255, 255, 0.6);
 }
-:root.iphone .welcome-movil-tour .welcome-slide-icon { margin-bottom: 16px; }
+/* Icono de 104 px, no de 64. Centrada, la diapositiva necesita algo que
+   sostenga la mirada: 64 px es el tamaño de un icono de lista, y en medio de
+   una pantalla vacía se leía como un adorno. A 104 px es la ilustración de la
+   diapositiva, que es el papel que le toca. Se queda en el recorrido: en el
+   formulario final manda el logo de Tamio y las filas. */
+:root.iphone .welcome-movil-tour .welcome-slide-icon {
+  width: 104px;
+  height: 104px;
+  border-radius: 28px;
+  margin-bottom: 24px;
+}
+:root.iphone .welcome-movil-tour .welcome-slide-icon svg { width: 44px; height: 44px; }
 
 /* Piel clara de la lista agrupada sobre el telón oscuro. */
 :root.iphone .welcome-overlay .ios-section { margin: 0; }

@@ -86,7 +86,11 @@ if (pedido === "appstore") {
 } else {
   chk(traeManifiesto, "el bundle lleva el manifiesto: los .dmg sí se enteran de las versiones nuevas");
   if (enlacesPago.length === 0) {
-    console.log("  · sin enlace de compra (VITE_URL_COMPRA sin poner) — es el estado de hoy");
+    console.log(
+      "  · SIN enlace de compra: VITE_URL_COMPRA no está en el .env, así que\n" +
+      "    este build no enseña \"Comprar\" ni \"Renovar\". La tienda está encendida\n" +
+      "    desde el 18 ago 2026 — si es un .dmg para vender, falta el .env."
+    );
   } else {
     console.log("  · con enlace de compra, correcto en este canal");
   }
