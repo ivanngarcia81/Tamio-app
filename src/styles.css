@@ -3379,6 +3379,65 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* ============================================================
+   Ayuda en iPhone (Ayuda.tsx): las mismas preguntas, plegadas dentro de la
+   lista agrupada de arriba.
+
+   En Mac cada bloque es una tarjeta con las once respuestas desplegadas, y
+   ahí sobra sitio. En el teléfono eso medía 1693 px de alto (medido) con la
+   pregunta en `--fs-body` a peso 600 —más grande que el título de su propia
+   sección, o sea la jerarquía al revés— y ninguna pregunta se veía sin
+   desplazar. Aquí la pregunta es una fila normal de 46 pt con su galón, y
+   la respuesta aparece debajo al tocarla.
+   ============================================================ */
+:root.iphone .ayuda-ios-item { position: relative; }
+:root.iphone .ayuda-ios-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .ayuda-ios-p {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  padding: 9px 16px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+:root.iphone .ayuda-ios-p:active { background: var(--line); }
+:root.iphone .ayuda-ios-pregunta {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.41px;
+}
+/* Galón de desplegable: apunta a la derecha plegado y baja al abrirse, como
+   los grupos que se expanden en iOS. */
+:root.iphone .ayuda-ios-p .ios-chevron { transition: transform .18s ease; }
+:root.iphone .ayuda-ios-item.abierto .ios-chevron { transform: rotate(90deg); }
+:root.iphone .ayuda-ios-d {
+  padding: 0 16px 12px;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--text-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ayuda-ios-p .ios-chevron { transition: none; }
+}
+
+/* ============================================================
    Pantallas internas de Ajustes en iPhone: nav bar + formulario plano
    (Configuracion.tsx + components/ios/FormularioIOS.tsx). Reutiliza
    .ios-section/.ios-group/.ios-chevron de arriba — misma lista agrupada,
@@ -4420,57 +4479,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
-
-/* ============================================================
-   Globo del tutorial guiado en iPhone.
-
-   `driver.css` no trae NI UNA media query y fija blanco (#fff) con texto
-   #2d2d2d: en modo oscuro salía una tarjeta blanca ajena al tema. Sus
-   botones son de 12 px con 3 px de relleno —muy por debajo de los 44 pt— y
-   su radio de 5 no es el de esta app. Aquí se le pone la piel de Tamio;
-   `driver.js` sigue colocándolo, que es lo que sabe hacer. */
-:root.iphone .driver-popover {
-  max-width: min(320px, calc(100vw - 32px));
-  border-radius: 14px;
-  padding: 16px;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-}
-:root.iphone .driver-popover-title { font-size: 17px; letter-spacing: -0.41px; color: var(--text); }
-:root.iphone .driver-popover-description { font-size: 15px; line-height: 20px; color: var(--text-2); }
-:root.iphone .driver-popover-progress-text { font-size: 13px; color: var(--text-3); }
-:root.iphone .driver-popover-footer { margin-top: 14px; gap: 10px; }
-:root.iphone .driver-popover-footer-btn {
-  min-height: 40px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 10px;
-  background: rgba(118, 118, 128, 0.12);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 40px;
-}
-/* El de avanzar es la acción principal del paso. */
-:root.iphone .driver-popover-navigation-btns button:last-child {
-  background: var(--brand, #059669);
-  color: var(--ink-contrast, #fff);
-  font-weight: 600;
-}
-:root[data-theme="dark"].iphone .driver-popover-footer-btn { background: rgba(118, 118, 128, 0.24); }
-:root[data-theme="dark"].iphone .driver-popover-navigation-btns button:last-child {
-  background: var(--brand, #059669);
-  color: var(--ink-contrast, #fff);
-}
-/* La flecha hereda el blanco fijo de driver.css y quedaba de otro color que
-   el globo en cuanto el tema cambiaba. */
-:root.iphone .driver-popover-arrow-side-left { border-left-color: var(--surface); }
-:root.iphone .driver-popover-arrow-side-right { border-right-color: var(--surface); }
-:root.iphone .driver-popover-arrow-side-top { border-top-color: var(--surface); }
-:root.iphone .driver-popover-arrow-side-bottom { border-bottom-color: var(--surface); }
-/* Cerrar con la "×" también necesita su objetivo táctil. */
-:root.iphone .driver-popover-close-btn { width: 44px; height: 44px; font-size: 22px; color: var(--text-3); }
 
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }

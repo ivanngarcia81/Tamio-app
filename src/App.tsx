@@ -32,7 +32,6 @@ import Bandeja from "./pages/Bandeja";
 import Mensajes from "./pages/Mensajes";
 import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
-import { iniciarTour } from "./tour";
 import { migrarComprobantesExternos } from "./services/comprobantes";
 import { migrarImagenesIglesia } from "./services/imagenesIglesia";
 import { sincronizarPausaDesdeRust } from "./services/restaurar";
@@ -275,7 +274,6 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     listen("menu-ayuda", () => navigate("/ayuda")).then((f) => offs.push(f));
     listen<string>("menu-nav", (e) => navigate(e.payload)).then((f) => offs.push(f));
     listen("menu-sync", () => { if (authHabilitado) void ejecutarSync(); }).then((f) => offs.push(f));
-    listen("menu-tour", () => iniciarTour(t)).then((f) => offs.push(f));
     listen("menu-cmdk", () => setCmdOpen((v) => !v)).then((f) => offs.push(f));
     return () => { offs.forEach((f) => f()); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -548,10 +546,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
               <Bandeja church={church} refreshKey={refreshKey} onEditTx={openEditTx} onChanged={onChanged} />
             )}
           />
-          <Route
-            path="/ayuda"
-            element={<Ayuda role={role} onIniciarTour={() => iniciarTour(t)} />}
-          />
+          <Route path="/ayuda" element={<Ayuda role={role} />} />
           <Route
             path="/configuracion"
             element={

@@ -38,10 +38,9 @@ export default function DangerZoneSettings({ church }: Props) {
         await borrarDatosIglesia(church.id);
       } else {
         await reinicioDeFabrica();
-        // Vuelve a mostrarse la bienvenida y el tutorial en la app reiniciada.
+        // Vuelve a mostrarse la bienvenida en la app reiniciada.
         try {
           localStorage.removeItem("tesoreria-welcomed");
-          localStorage.removeItem("tamio-tour-hecho-v2");
         } catch { /* noop */ }
       }
       // Recarga para reconstruir todo el estado desde la base ya limpia.

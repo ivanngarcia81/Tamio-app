@@ -848,7 +848,6 @@ fn construir_menu(app: &tauri::AppHandle, en: bool) -> tauri::Result<tauri::menu
 
     let menu_ayuda = SubmenuBuilder::new(app, tr("Ayuda", "Help"))
         .item(&MenuItemBuilder::new(tr("Ayuda de Tamio", "Tamio Help")).id("ayuda").build(app)?)
-        .item(&MenuItemBuilder::new(tr("Guía de bienvenida (tour)", "Welcome guide (tour)")).id("tour").build(app)?)
         .build()?;
 
     MenuBuilder::new(app)
@@ -1678,7 +1677,6 @@ pub fn run() {
                 "ajustes" => { let _ = app.emit("menu-ajustes", ()); }
                 "sync" => { let _ = app.emit("menu-sync", ()); }
                 "ayuda" => { let _ = app.emit("menu-ayuda", ()); }
-                "tour" => { let _ = app.emit("menu-tour", ()); }
                 _ => {}
             }
         });

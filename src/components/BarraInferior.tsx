@@ -111,17 +111,6 @@ export default function BarraInferior({
               to={destino.ruta}
               className="barra-item"
               aria-selected={activo}
-              /* Anclas del tutorial guiado. Atributo propio y no el
-                 `data-tour` del sidebar: los dos existen a la vez en el DOM
-                 —en el teléfono el sidebar está `display:none`, no
-                 desmontado— y `querySelector` se quedaría con el del
-                 sidebar, que es justo el bug que esto arregla. */
-              data-tour-barra={
-                areaDelDestino !== null ? areaDelDestino.id
-                  : destino.ruta === "/" ? "inicio"
-                  : destino.ruta === "/configuracion" ? "config"
-                  : undefined
-              }
             >
               <span className="barra-icon" aria-hidden>{icono}</span>
               <span className="barra-label">{t(destino.claveCorta ?? destino.clave)}</span>

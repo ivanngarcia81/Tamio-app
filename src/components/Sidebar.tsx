@@ -61,9 +61,9 @@ function anchoCompacto(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches;
 }
 
-function Item({ to, icon, label, badge, dataTour }: { to: string; icon: ReactNode; label: string; badge?: number; dataTour?: string }) {
+function Item({ to, icon, label, badge }: { to: string; icon: ReactNode; label: string; badge?: number }) {
   return (
-    <NavLink to={to} end={to === "/"} data-tour={dataTour} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
+    <NavLink to={to} end={to === "/"} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}>
       <span className="icon">{icon}</span>
       {label}
       {badge !== undefined && badge > 0 && <span className="badge">{badge}</span>}
@@ -71,15 +71,14 @@ function Item({ to, icon, label, badge, dataTour }: { to: string; icon: ReactNod
   );
 }
 
-function Grupo({ abierto, etiqueta, onToggle, children, dataTour }: {
+function Grupo({ abierto, etiqueta, onToggle, children }: {
   abierto: boolean;
   etiqueta: string;
   onToggle: () => void;
   children: ReactNode;
-  dataTour?: string;
 }) {
   return (
-    <div className={`nav-group${abierto ? "" : " closed"}`} data-tour={dataTour}>
+    <div className={`nav-group${abierto ? "" : " closed"}`}>
       <button type="button" className="nav-group-head" onClick={onToggle} aria-expanded={abierto}>
         {etiqueta}
         <span className="chev"><IconChevronDown size={12} strokeWidth={2.2} /></span>
@@ -176,7 +175,6 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       <button
         type="button"
         className="church-select"
-        data-tour="marca"
         onClick={() => navigate("/configuracion")}
         title={t("iglesia.abrirAjustes")}
       >
@@ -191,10 +189,10 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       </button>
 
       <nav className="nav">
-        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} dataTour="inicio" />
+        <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />
 
         {verGrupoTesoreria && (
-          <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")} dataTour="tesoreria">
+          <Grupo abierto={open.tesoreria} etiqueta={t("nav.grupoTesoreria")} onToggle={() => toggle("tesoreria")}>
             {!esSecretaria && <Item to="/ingresos" icon={<IconIngreso />} label={t("nav.ingresos")} />}
             {!esSecretaria && <Item to="/gastos" icon={<IconGasto />} label={t("nav.gastos")} />}
             {!esSecretaria && <Item to="/miembros" icon={<IconMiembros />} label={t("nav.miembros")} badge={memberCount} />}
@@ -204,7 +202,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         )}
 
         {verGrupoSecretaria && !esTesorero && (
-          <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")} dataTour="secretaria">
+          <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
             <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
             <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
             <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />
@@ -218,8 +216,8 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       <div className="sidebar-footer">
         <Item to="/inbox" icon={<IconMail />} label={t("nav.inbox")} badge={unreadCount} />
         {verGrupoTesoreria && !esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
-        <Item to="/ayuda" icon={<IconHelp />} label={t("nav.ayuda")} dataTour="ayuda" />
-        <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} dataTour="config" />
+        <Item to="/ayuda" icon={<IconHelp />} label={t("nav.ayuda")} />
+        <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />
         {authActivo && (
           <>
             <SyncIndicator />
