@@ -103,6 +103,18 @@ en `docs/plan-1-1.md` → *Punto 3: la tienda encendida*.
     pagar, recibir el correo, instalar el `.dmg`, entrar con ese mismo correo y
     ver el plan activo con su vencimiento en Ajustes.
 
+### Y la hoja de Nuevo ingreso/gasto (ramas `coma-decimal` y `hoja-nuevo-movimiento`)
+
+11. **En un iPhone real, antes de fundir `hoja-nuevo-movimiento`:** que el
+    teclado numérico salga al abrir (con el separador decimal del país del
+    aparato), que la fecha y la hora abran la rueda nativa, que el tirador y
+    la hoja se sientan de iOS, y que "1,50"/"1.50" —según la región— guarde
+    $1.50 y no $150. Lo del arnés está medido; el teclado y la rueda son
+    justo lo que un navegador no puede enseñar.
+12. **En la Mac, tras fundir `coma-decimal`:** el modal debe verse idéntico a
+    antes salvo el marcador del importe, que ahora sigue la región del
+    sistema ("$0,00" en una Mac en español de España).
+
 Además, lo que quedó explícitamente fuera y sigue pendiente de decisión:
 
 - El pie **"+ / −" de la tabla de usuarios** (Ajustes → Acceso y áreas). Pide

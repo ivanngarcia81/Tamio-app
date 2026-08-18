@@ -378,6 +378,7 @@ export const en: Resources = {
     anotarVisitante: "Record “{{nombre}}” as a visitor",
     miembroFila: "Member",
     buscarMiembroCorto: "Name or visitor",
+    pagadoA: "Paid to",
     seccionDetalle: "Details",
     seccionMas: "More",
     adjuntarComprobante: "Attach receipt",
@@ -675,6 +676,7 @@ export const en: Resources = {
   recurrente: {
     label: "Recurring fixed transaction",
     pregunta: "Does this {{tipo}} repeat every month?",
+    seRepiteCadaMes: "Repeats every month",
     siRecurrente: "Yes, it's recurring",
     marcado: "✓ Recurring",
     agregarMeses: "Add to the months",

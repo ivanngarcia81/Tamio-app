@@ -6,6 +6,9 @@ import { IconCheck } from "../../icons";
 export interface IOSPickerOption {
   value: string;
   label: string;
+  /** Punto de color a la izquierda de la etiqueta (categorías). Opcional:
+   *  las listas sin color (moneda, idioma…) no pintan nada. */
+  color?: string;
 }
 
 interface Props {
@@ -42,7 +45,10 @@ export default function IOSPickerSheet({ title, options, value, onSelect, onCanc
                 className="action-sheet-opcion action-sheet-opcion--lista"
                 onClick={() => onSelect(op.value)}
               >
-                <span>{op.label}</span>
+                <span>
+                  {op.color && <span className="ios-picker-dot" style={{ background: op.color }} aria-hidden="true" />}
+                  {op.label}
+                </span>
                 {op.value === value && <IconCheck size={17} />}
               </button>
             ))}

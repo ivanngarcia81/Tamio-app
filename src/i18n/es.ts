@@ -372,6 +372,7 @@ export const es = {
     anotarVisitante: "Anotar «{{nombre}}» como visitante",
     miembroFila: "Miembro",
     buscarMiembroCorto: "Nombre o visitante",
+    pagadoA: "Pagado a",
     seccionDetalle: "Detalle",
     seccionMas: "Más",
     adjuntarComprobante: "Adjuntar comprobante",
@@ -684,6 +685,7 @@ export const es = {
   recurrente: {
     label: "Movimiento fijo recurrente",
     pregunta: "¿Este {{tipo}} se repite todos los meses?",
+    seRepiteCadaMes: "Se repite cada mes",
     siRecurrente: "Sí, es recurrente",
     marcado: "✓ Recurrente",
     agregarMeses: "Agregar a los meses",

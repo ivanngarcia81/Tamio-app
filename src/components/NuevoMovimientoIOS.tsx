@@ -27,7 +27,7 @@ import { IOSPickerField } from "./ios/IOSPickerField";
 import { ActionField, Section, SwitchField, TextField } from "./ios/FormularioIOS";
 import { IOSBuscadorField } from "./ios/IOSBuscadorSheet";
 import {
-  METODOS_PAGO, catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
+  METODOS_PAGO, catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
   mesesPendientesRecurrente, metodoNombre,
 } from "../db";
 import { CERO, multiplicar } from "../dinero";
@@ -79,9 +79,31 @@ export default function NuevoMovimientoIOS({
     descripcionOculta, descripcionOpcional, placeholderMonto, guardar,
   } = h;
 
+  // El punto de color va solo en GASTO: con once categorías y las que la
+  // iglesia cree, el color es lo que distingue la lista de un vistazo. Los
+  // cuatro tipos de ingreso del mockup van sin punto.
   const categorias = (tab === "gasto" ? getCategoriasGasto() : getCategoriasIngreso())
-    .map((c) => ({ value: c.id, label: catNombre(c.id) }));
+    .map((c) => ({
+      value: c.id,
+      label: catNombre(c.id),
+      color: tab === "gasto" ? colorCategoria("gasto", c.id) : undefined,
+    }));
   const metodos = METODOS_PAGO.map((m) => ({ value: m.id, label: metodoNombre(m.id) }));
+
+  const filaConcepto = !descripcionOculta && (
+    <TextField
+      label={t("recordModal.concepto")}
+      value={concepto}
+      onChange={setConcepto}
+      optional={descripcionOpcional}
+      stacked
+      placeholder={
+        tab === "ingreso"
+          ? t("recordModal.conceptoPlaceholderIngreso")
+          : t("recordModal.conceptoPlaceholderGasto")
+      }
+    />
+  );
 
   return (
     <Portal>
@@ -151,6 +173,11 @@ export default function NuevoMovimientoIOS({
                   optional
                 />
               )}
+              {/* En GASTO el concepto va pegado a la categoría —es su pareja:
+                  "Utilidades / Recibo de luz"— y en INGRESO al final, donde
+                  casi siempre ni aparece (Diezmo y Ofrenda lo ocultan). El
+                  orden es el de los mockups. */}
+              {tab === "gasto" && filaConcepto}
               <FilaNativa label={t("recordModal.fecha")} tipo="date" valor={fecha} max={h.hoy} onChange={setFecha} />
               <IOSPickerField
                 label={t("recordModal.metodoPago")}
@@ -158,20 +185,7 @@ export default function NuevoMovimientoIOS({
                 value={metodo}
                 onSelect={setMetodo}
               />
-              {!descripcionOculta && (
-                <TextField
-                  label={t("recordModal.concepto")}
-                  value={concepto}
-                  onChange={setConcepto}
-                  optional={descripcionOpcional}
-                  stacked
-                  placeholder={
-                    tab === "ingreso"
-                      ? t("recordModal.conceptoPlaceholderIngreso")
-                      : t("recordModal.conceptoPlaceholderGasto")
-                  }
-                />
-              )}
+              {tab !== "gasto" && filaConcepto}
             </Section>
 
             {tab === "ingreso" ? (
@@ -208,7 +222,7 @@ export default function NuevoMovimientoIOS({
             ) : (
               <Section header={t("recordModal.beneficiario")}>
                 <TextField
-                  label={t("recordModal.beneficiario")}
+                  label={t("recordModal.pagadoA")}
                   value={beneficiario}
                   onChange={setBeneficiario}
                   placeholder={t("recordModal.beneficiarioPlaceholder")}
@@ -230,7 +244,7 @@ export default function NuevoMovimientoIOS({
             <Section header={t("recordModal.seccionMas")} footer={t("common.camposOpcionales")}>
               {!isEdit && (
                 <SwitchField
-                  label={t("recurrente.siRecurrente")}
+                  label={t("recurrente.seRepiteCadaMes")}
                   checked={esRecurrente}
                   onChange={setEsRecurrente}
                 />
@@ -244,7 +258,6 @@ export default function NuevoMovimientoIOS({
                   onChange={setRecDesde}
                 />
               )}
-              <FilaNativa label={t("recordModal.hora")} tipo="time" valor={hora} onChange={setHora} />
               {comprobantePath ? (
                 <>
                   <button
@@ -271,6 +284,7 @@ export default function NuevoMovimientoIOS({
               ) : (
                 <ActionField label={t("recordModal.adjuntarComprobante")} onPress={pickComprobante} />
               )}
+              <FilaNativa label={t("recordModal.hora")} tipo="time" valor={hora} onChange={setHora} />
               <TextField
                 label={t("recordModal.notas")}
                 value={h.detalle}

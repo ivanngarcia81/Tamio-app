@@ -5082,7 +5082,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .action-sheet-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  /* 300, el MISMO plano que `.ios-sheet-overlay`, no uno menos. A 200, una
+     hoja de selección abierta desde DENTRO de una hoja de formulario (elegir
+     la categoría en Nuevo gasto) se pintaba detrás de ella: se veía el
+     formulario y los toques le caían al formulario. Con el plano empatado
+     decide el orden del documento —los portales se cuelgan de <body> al
+     abrirse, así que lo último abierto queda encima—, que es exactamente el
+     comportamiento que ya tenía el buscador de aportante. Categorías de
+     Ajustes no chocaba porque cierra su hoja antes de abrir la de borrar. */
+  z-index: 300;
   background: rgba(15,15,15,.4);
   display: flex;
   align-items: flex-end;
@@ -5151,6 +5159,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    vez de acciones sueltas: scroll propio (una lista de monedas no cabe
    entera) y cada fila puede llevar una marca de check a la derecha. */
 .action-sheet-opciones--lista { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* Punto de color de una opción (categorías): mismo tamaño en la fila del
+   formulario y en la hoja que abre, para que se lean como la misma cosa. */
+.ios-picker-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: 0;
+  flex: 0 0 auto;
+}
 .action-sheet-opcion--lista {
   display: flex;
   align-items: center;

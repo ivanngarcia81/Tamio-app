@@ -63,6 +63,7 @@ export function IOSPickerField({
   disabled,
 }: Common & { label: string }) {
   const [abierto, setAbierto] = useState(false);
+  const activa = options.find((o) => o.value === value);
 
   return (
     <>
@@ -74,6 +75,9 @@ export function IOSPickerField({
       >
         <span className="ios-field-label">{label}</span>
         <span className="ios-field-value">
+          {activa?.color && (
+            <span className="ios-picker-dot" style={{ background: activa.color }} aria-hidden="true" />
+          )}
           {etiquetaDe(options, value, placeholder)}
         </span>
         {/* El mismo chevron de 7×12 que el resto de filas de la app; el
