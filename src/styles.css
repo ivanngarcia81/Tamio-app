@@ -4173,6 +4173,80 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.iphone .ios-sheet-overlay, :root.iphone .ios-sheet { animation: none; }
 }
 
+/* ---------------- Nuevo ingreso / gasto (NuevoMovimientoIOS) ----------------
+   Reutiliza la hoja de arriba entera —telón, alto, esquinas, animación— y solo
+   añade lo que esta pantalla tiene y las demás no: el tirador, el segmentado
+   bajo la barra y el importe grande.
+
+   El tirador va aquí y no en `IOSFormSheet` a propósito: ese componente lo usa
+   hoy Categorías, y añadírselo le cambiaría el aspecto a una pantalla que
+   nadie pidió tocar. */
+:root.iphone .nm-hoja { position: relative; }
+:root.iphone .nm-tirador {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  z-index: 1;
+}
+/* La barra deja sitio al tirador; sin esto el título le queda debajo. */
+:root.iphone .nm-hoja .ios-nav { padding-top: 12px; }
+
+:root.iphone .nm-tipo { padding: 14px 16px 0; }
+
+/* El importe: lo primero que se teclea y lo único que se lee de lejos.
+   Centrado y grande como en Wallet, con la moneda, la categoría y el método
+   debajo en pequeño — así el resumen de lo que se va a guardar está a la
+   vista sin desplazar. */
+:root.iphone .nm-monto { padding: 18px 16px 6px; text-align: center; }
+:root.iphone .nm-monto-campo {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: center;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -1.4px;
+  color: var(--text);
+  /* Las cifras no bailan al teclear: sin esto, cada dígito cambia de ancho y
+     el número entero se desplaza a cada pulsación. */
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+}
+:root.iphone .nm-monto-campo:focus { outline: none; }
+:root.iphone .nm-monto-campo::placeholder { color: var(--text-3); }
+:root.iphone .nm-monto-pie {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* Fecha, hora y mes: el control del sistema, alineado a la derecha como el
+   valor de cualquier otra fila. No se sustituye por una hoja propia — en
+   WKWebView este `input` ES la rueda nativa de iOS. */
+:root.iphone .nm-nativo {
+  text-align: right;
+  color: var(--text-2);
+}
+:root.iphone .nm-sugerencia .ios-field-label { font-weight: 400; }
+:root.iphone .nm-nota,
+:root.iphone .nm-aviso {
+  margin: -4px 16px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+:root.iphone .nm-nota { color: var(--text-2); }
+:root.iphone .nm-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--warn);
+}
+
 /* ============================================================
    Idioma de PANEL (tipo Salud/Wallet), solo iPhone — Cartas.tsx (resumen)
    por ahora. Distinto del idioma de LISTA de Ajustes: tarjetas de radio
