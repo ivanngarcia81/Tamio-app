@@ -6602,13 +6602,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Nace transparente: como el título grande, gana su fondo/blur/borde
    recién cuando el título ya "llegó" arriba (`.scrolled` en `.main`, leído
    por `:has()`) — antes de eso el contenido se ve directamente bajo los
-   glifos, como en Mail o Ajustes de iOS. */
+   glifos, como en Mail o Ajustes de iOS.
+   El MATERIAL (88% + saturate 180% + blur 20) está calcado en el ::before
+   del carrusel de secciones (~8160): en el teléfono son dos franjas
+   contiguas que deben leerse como UNA superficie — con 82/blur20 aquí y
+   92/blur12 allá se veía el corte entre las dos. Si se ajusta un número,
+   ajustar el otro igual. */
 :root.movil .app::after {
   content: "";
   position: fixed;
   left: 0; right: 0;
   z-index: 100;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 0.5px solid var(--line);
@@ -7646,6 +7651,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .sidebar { transition: none; }
   :root.movil .page-title { transition: none; }
   :root.movil .app::after { transition: none; }
+  /* El vidrio del carrusel aparece con la franja: si ella no anima, él
+     tampoco. */
+  :root.movil .carrusel-secciones::before { transition: none; }
 }
 
 /* ============ Visor de PDF (iPad/iPhone) ============ */
@@ -8130,9 +8138,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      donde el layout reservaba su alto sin que estuviera realmente ahí
      arriba). Ahora es HERMANO de `.main` en el marcado (App.tsx) y
      `position: fixed` de verdad, exactamente como la fila de "+"/compartir:
-     nav bar → carrusel → recién ahí el área con scroll. El fondo opaco es
-     parte del arreglo: aunque el hueco de safe-area fallara, aquí no se
-     transparenta nada. */
+     nav bar → carrusel → recién ahí el área con scroll. */
   /* El "selector de vidrio" (Proyecto B, Copilot): el círculo/píldora activa
      NUNCA se mueve del centro. Lo que se desliza es la TIRA de secciones por
      debajo; la que quede bajo el centro al soltar es la que se abre —lo
@@ -8158,10 +8164,38 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     box-sizing: border-box;
     /* Ancla de la píldora de vidrio, que va posicionada contra este bloque. */
     --ancho-selector: 120px;
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
   }
+  /* El vidrio del carrusel, en un ::before para poder ENCENDERLO con
+     opacidad igual que la franja del "+" (`.app::after`, ~6606): con el
+     material puesto directamente en el bloque no habría forma de apagarlo
+     sin apagar también los nombres y la píldora. En reposo no hay nada —
+     los nombres se apoyan en el gris del contenido, como los glifos de la
+     franja— y al hacer scroll las DOS franjas aparecen a la vez con el
+     MISMO material (88% + saturate + blur 20, calcado de la franja: antes
+     eran 82/blur20 contra 92/blur12 y se veía el corte). La única línea
+     inferior de la barra es la de aquí abajo; la franja del "+" apaga la
+     suya cuando hay carrusel (ver la regla tras este bloque). z-index -1:
+     el carrusel es un stacking context (fixed + z 95), así que queda
+     detrás de la pista y la píldora pero encima del contenido. */
+  .carrusel-secciones::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--line);
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+  :root.movil .app:has(.main.scrolled) .carrusel-secciones::before { opacity: 1; }
+  /* Una sola línea inferior, la del carrusel: la franja del "+" no pinta la
+     suya cuando hay carrusel debajo — quedaba una raya a media altura entre
+     las dos. `con-carrusel` (App.tsx, `hayCarrusel`) marca exactamente las
+     páginas donde el carrusel pinta algo; fuera de este rango de ancho el
+     carrusel no existe y la franja conserva su línea de siempre. */
+  :root.movil .app:has(.main.con-carrusel)::after { border-bottom-color: transparent; }
   /* La píldora de vidrio, clavada en el centro y SIN moverse jamás: los
      nombres pasan por debajo y el que quede dentro es el seleccionado. Es
      el patrón de Copilot y Proyecto B, y la diferencia con lo que había
