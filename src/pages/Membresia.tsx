@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { esIPhone, textoCorto, esMac } from "../movil";
+import { MacBuscador } from "../components/mac/MacFiltros";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
   type Church, type Member, type MembresiaStats,
@@ -155,6 +156,9 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           </div>
         )}
         <div className="header-actions">
+          {/* El buscador vive en la toolbar; en táctil se queda dentro del
+              contenido, al alcance del pulgar. */}
+          {esMac() && <MacBuscador value={query} onChange={setQuery} placeholder={t("miembros.buscarPlaceholder")} />}
           <button className="btn primary btn-nuevo-cabecera" onClick={() => setCrearFicha(true)}>
             <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
           </button>

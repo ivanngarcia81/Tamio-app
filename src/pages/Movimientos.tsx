@@ -389,7 +389,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 <MacSegmentado
                   value={filtroCat ?? ""}
                   onChange={(v) => setFiltroCat(v === "" ? null : v)}
-                  aria={t("mov.filtrarCategoria", { defaultValue: "Categoría" })}
+                  aria={t("mov.filtrarCategoria")}
                   opciones={[
                     { id: "", label: <>{t("common.todos")} <span className="mac-seg-n">{buscados.length}</span></> },
                     ...categorias

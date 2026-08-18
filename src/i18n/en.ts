@@ -178,6 +178,8 @@ export const en: Resources = {
   },
 
   mov: {
+    // Nombre accesible del segmentado de categorías (Mac).
+    filtrarCategoria: "Filter by category",
     otrasCategorias: "Other ({{count}})",
     registrados_one: "{{count}} transaction recorded",
     registrados_other: "{{count}} transactions recorded",

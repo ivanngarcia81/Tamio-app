@@ -172,6 +172,8 @@ export const es = {
   },
 
   mov: {
+    // Nombre accesible del segmentado de categorías (Mac).
+    filtrarCategoria: "Filtrar por categoría",
     otrasCategorias: "Otras ({{count}})",
     registrados_one: "{{count}} movimiento registrado",
     registrados_other: "{{count}} movimientos registrados",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone, textoCorto, esMac } from "../movil";
+import { MacBuscador } from "../components/mac/MacFiltros";
 import { deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -117,6 +118,9 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
           </div>
         )}
         <div className="header-actions">
+          {/* El buscador vive en la toolbar; en táctil se queda dentro del
+              contenido, al alcance del pulgar. */}
+          {esMac() && <MacBuscador value={query} onChange={setQuery} placeholder={t("actas.buscarPlaceholder")} />}
           <button className="btn primary btn-nuevo-cabecera" onClick={() => setModal({ open: true, acta: null })}>
             <IconPlus size={14} /> {t("actas.nuevaActa")}
           </button>
