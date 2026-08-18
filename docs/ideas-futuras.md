@@ -124,6 +124,18 @@ el formato a los usuarios del mercado principal (la ficha de la App Store tiene
 Spanish (Mexico) como idioma). Se toma de la **configuración regional del
 dispositivo**, con `en-US` de reserva.
 
+**B1-bis. La ENTRADA de importes trataba la coma como millares.** — ✅
+**ARREGLADO (18 ago 2026, rama `coma-decimal`)**
+La otra mitad de B1, y más grave: `fmtMoney` era la salida, pero al TECLEAR,
+`deTexto` borraba la coma como separador de miles y `1,50` se guardaba como
+**$150.00**, sin aviso, en Mac y en iPhone por igual. Lo tecleado pasa ahora por
+`deTextoTecleado` (`src/dinero.ts`), que usa la misma configuración regional del
+dispositivo que B1 —entrada y salida responden a la misma pregunta con la misma
+fuente—, saca de la moneda cuántos decimales admite (CLP, PYG y COP no tienen), y
+**rechaza con aviso lo ambiguo** en vez de adivinar. `deTexto` se quedó intacto
+como parser de formato fijo de los CSV: los archivos guardados se leen igual que
+siempre.
+
 **B2. `fs:scope` abarca todo `$HOME`.** — ✅ **ARREGLADO (2 ago 2026)**
 El permiso estaba en `$HOME/**` en dos sitios (`fs:scope` y
 `opener:allow-open-path`): la carpeta del usuario entera, incluidas `~/.ssh`,

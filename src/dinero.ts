@@ -27,18 +27,23 @@ export type Centavos = number & { readonly __centavos: unique symbol };
 export const CERO = 0 as Centavos;
 
 /**
- * Texto tecleado por el usuario → centavos. `null` si no es un importe.
+ * Texto de un ARCHIVO → centavos. `null` si no es un importe.
  *
  * Se parsea por TEXTO, sin multiplicar por 100 en coma flotante: partir la
  * cadena por el punto y componer el entero es exacto por construcción, y
  * `Math.round(n * 100)` no lo es en los bordes.
  *
- * Acepta lo mismo que aceptaba `parseMonto` antes de esta migración —símbolo
- * de moneda, comas de millares y espacios— para no cambiar lo que el tesorero
- * ya tiene aprendido. **Ojo:** la coma se trata como separador de MILLARES,
- * así que "125,50" son ciento veinticinco mil cincuenta, no $125.50. Es el
- * comportamiento de siempre y este trabajo no lo toca (`docs/plan-centavos.md`
- * §6), pero está anotado en `docs/ideas-futuras.md` por si algún día conviene.
+ * Este es el parser de FORMATO FIJO: punto decimal, coma de millares, siempre.
+ * Lo usan los CSV —los que exporta `aTextoCsv` y los que la gente ya tiene
+ * guardados— y por eso NO es regional y NO debe cambiar: un archivo se escribe
+ * una vez y se lee años después, en cualquier aparato.
+ *
+ * Lo que TECLEA una persona en una pantalla ya no pasa por aquí: eso es
+ * `deTextoTecleado`, más abajo, que resuelve el separador con la configuración
+ * regional del dispositivo. (Hasta el 18 ago 2026 este parser atendía también
+ * el teclado, y "125,50" se guardaba como ciento veinticinco mil cincuenta;
+ * ese era el comportamiento heredado que `plan-centavos.md` §6 dejó fuera a
+ * propósito y que la entrega de la coma decimal por fin cambió.)
  */
 export function deTexto(s: string): Centavos | null {
   const limpio = s.replace(/[$,\s]/g, "");

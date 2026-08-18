@@ -243,3 +243,11 @@ respaldo portátil sigue siendo el ZIP de Ajustes.
 Cambiar cómo se ve el dinero, cuántos decimales se muestran, o el formato por
 país. Eso ya está resuelto y funcionando; esto es un cambio de fontanería que el
 usuario no debe notar en ninguna pantalla.
+
+> **Actualización (18 ago 2026):** el formato por país de la ENTRADA sí se hizo
+> después, como trabajo aparte (rama `coma-decimal`): teclear `1,50` guardaba
+> $150.00 porque la coma se descartaba como millares. Lo tecleado pasa ahora por
+> `deTextoTecleado` (`src/dinero.ts`), que resuelve el separador con la
+> configuración regional del dispositivo. `deTexto` —el parser de este plan— se
+> quedó tal cual como parser de FORMATO FIJO de los CSV, así que el viaje
+> exportar → importar de la sección 3 no cambió.
