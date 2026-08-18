@@ -47,6 +47,10 @@
   --accent-1: #22c55e;   /* ingresos - verde */
   --accent-2: #ef4444;   /* gastos - rojo */
   --accent-3: #7c3aed;   /* diezmos - morado */
+  /* Series de las gráficas, en tokens propios para que la versión Mac pueda
+     cambiarlas sin tocar el resto de la paleta (ver el bloque de Mac). */
+  --chart-axis: var(--text-3);
+  --chart-balance: var(--accent-3);
   --accent-4: #06b6d4;   /* donaciones - cian */
   --accent-5: #f97316;   /* eventos - naranja */
   /* Semánticos de importe/indicador: texto y fondo suave (pill/icono).
@@ -8870,7 +8874,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
    Medido antes: filas de 38.9 px en 13.5 px, activo #0f0f0f (negro) con
    barrita de acento de 3 px al lado, y contador como píldora negra. */
-:root.mac .app { grid-template-columns: 220px 1fr; }
+/* Solo a partir de 1024 px, que es donde el sidebar es de verdad una columna
+   de la rejilla. Por debajo el layout ya lo resuelven los dos rangos que
+   existen: entre 601 y 1023 el sidebar pasa a cajón `position: fixed` (o sea,
+   deja de ser hijo de la rejilla) y por debajo de 600 se oculta del todo, y
+   los dos ponen `.app` en una sola columna. Sin este @media, esta regla —más
+   específica y más abajo en el archivo— les ganaba a las dos: la columna de
+   220 px seguía reservada, `.main` caía dentro de ELLA por ser el primer hijo
+   que quedaba en flujo, y la ventana entera se estrujaba a 220 px. Medido en
+   el arnés antes de acotarla: el contenedor de la gráfica daba 150 px de
+   ancho contra los 932 del mismo caso en iPad. */
+@media (min-width: 1024px) {
+  :root.mac .app { grid-template-columns: 220px 1fr; }
+}
 
 :root.mac .sidebar {
   padding-left: 10px;
@@ -9104,3 +9120,52 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    del título de 34 px, que ya no está. */
 :root.mac .header[data-tauri-drag-region] + .content,
 :root.mac .header[data-tauri-drag-region] ~ .content { padding-top: 14px; }
+
+/* ---------------- Tarjetas, tablas y gráficas ---------------- */
+
+/* Radio 8 y borde de 1 px, sin sombra difusa: en macOS la tarjeta se separa
+   del fondo por su borde, no por una sombra. (En iPhone es al revés — fondo
+   gris y tarjetas blancas SIN borde—, y por eso esto vive bajo `.mac`.) */
+:root.mac .card,
+:root.mac .stat-card {
+  border-radius: var(--mac-card-radius);
+  border: 1px solid var(--mac-card-border);
+  box-shadow: none;
+  background: var(--mac-card);
+}
+:root.mac .stat-card { padding: 12px 14px 12px; gap: 6px; }
+/* Franja de color arriba de la tarjeta KPI: decoración de web. En Mac el
+   color lo lleva la cifra y la sparkline, no un filete. */
+:root.mac .stat-card.accent::before { display: none; }
+
+/* Gráficas: el eje en el gris terciario de macOS y el saldo en el ACENTO.
+   El morado (--accent-3) no está en la paleta de la app: es el color de
+   "diezmos" de las tarjetas, y de ahí se coló a la serie del balance. */
+:root.mac {
+  --chart-axis: var(--mac-tertiary);
+  --chart-balance: var(--mac-accent);
+}
+:root.mac .charts { gap: 12px; }
+/* Cifras del eje con ancho fijo: sin esto, "9k" y "13k" corren la gráfica
+   entera un píxel a cada repintado. */
+:root.mac .recharts-cartesian-axis-tick text { font-variant-numeric: tabular-nums; }
+
+/* Inicio es la ÚNICA pantalla de Mac con fondo gris, y por eso el gancho es
+   una clase de esa pantalla y no `.mac-content` a secas: junta dos gráficas y
+   cuatro KPI, y con el blanco de fondo las tarjetas de gráfica no se
+   despegaban. El resto del escritorio va en blanco. */
+:root.mac .content-inicio { background: var(--mac-content-bg-soft); }
+
+/* Título de tarjeta: en macOS es texto normal en 13 semibold, no versalitas
+   con tracking. Las mayúsculas espaciadas son un recurso de web —y en el
+   teléfono se usan para encabezados de LISTA, no para títulos de tarjeta—;
+   aquí solo alargan la etiqueta y le quitan sitio a la gráfica. */
+:root.mac .card-title {
+  font-size: var(--mac-fs-headline);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--mac-label);
+}
+:root.mac .card-meta { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+:root.mac .card-head { margin-bottom: 8px; }

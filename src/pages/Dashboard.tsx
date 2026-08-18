@@ -45,8 +45,15 @@ function franjaDelDia(): "manana" | "tarde" | "noche" {
   return "noche";
 }
 
+/** "15 ago" / "Aug 15" — la fecha del eje, sin año.
+ *
+ *  BUG: antes se quedaba con los dos primeros trozos separados por espacio, y
+ *  en inglés `fmtFechaCorta` devuelve "Aug 15, 2026" —la coma separa el día
+ *  del año—, así que el eje salía "Aug 15," con una coma colgando. En español
+ *  ("15 ago 2026") no se notaba, y por eso duró. Ahora se quita el año con su
+ *  coma, que es lo que de verdad sobra, en vez de contar palabras. */
 function fechaCortaSinAnio(fecha: string): string {
-  return fmtFechaCorta(fecha).split(" ").slice(0, 2).join(" ");
+  return fmtFechaCorta(fecha).replace(/,?\s*\d{4}$/, "");
 }
 
 function toWeeklyBuckets(dias: DailyPoint[]) {
@@ -259,7 +266,11 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         </div>
       )}
 
-      <div className="content">
+      {/* `content-inicio`: única pantalla de Mac con fondo gris leve. Va por
+          pantalla y NUNCA como valor global — en Mac el contenido es blanco y
+          lo que separa las tarjetas es su borde de 1 px; el gris solo se
+          justifica aquí, donde se juntan dos gráficas y cuatro KPI. */}
+      <div className="content content-inicio">
         {/* Lienzo único: gráficas, métricas y desglose comparten un solo panel
             gris claro para verse como un dashboard unificado. */}
         <div className="dash-canvas">

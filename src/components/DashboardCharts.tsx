@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { fmtMoney } from "../db";
 import { aDecimal, type Centavos } from "../dinero";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 import { EmptyState } from "./TxList";
 import { IconReportes } from "../icons";
 
@@ -26,7 +26,10 @@ interface Props {
   moneda: string;
 }
 
-const axisTick = { fontSize: 11, fill: "var(--text-3)" };
+/* El color del eje sale de un token para que Mac pueda usar su propio gris
+   (--mac-tertiary) sin tocar el teléfono. 11 px en las dos plataformas: la
+   gráfica es el dato, no el texto. */
+const axisTick = { fontSize: 11, fill: "var(--chart-axis)" };
 
 /** Etiqueta corta para el eje Y: "13k", "1.4M". Los importes vienen en
  *  centavos, así que primero se pasan a la unidad de la moneda. Sin eje Y
@@ -102,9 +105,19 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
   const { t } = useTranslation();
   const gradId = `bal-grad-${useId().replace(/:/g, "")}`;
   const enIPhone = esIPhone();
-  // 210 px es cómodo en una ventana de Mac y demasiado en un teléfono, donde
-  // la gráfica se come la pantalla antes de llegar a las cifras.
-  const alto = enIPhone ? 180 : 210;
+  const enMac = esMac();
+  // 180 en Mac y en teléfono; 210 se queda para el iPad.
+  //
+  // En Mac una gráfica de panel va entre 160 y 200: a 210, con las dos
+  // gráficas más las cuatro tarjetas KPI, se perdía la mitad inferior de una
+  // ventana de 900×600. En el teléfono el motivo es otro —la gráfica se come
+  // la pantalla antes de llegar a las cifras— pero la medida coincide.
+  const alto = enIPhone || enMac ? 180 : 210;
+  // Barras de macOS: radio 2 y 10 px de ancho máximo. Las de 18 con radio 4
+  // son de dashboard web; a esa anchura, además, cuatro semanas de dos series
+  // llenaban el panel de bloques.
+  const radioBarra: [number, number, number, number] = enMac ? [2, 2, 0, 0] : [4, 4, 0, 0];
+  const anchoBarra = enMac ? 10 : 18;
   // En el teléfono no hay hover: sin esto el tooltip era inalcanzable.
   const disparoTooltip = enIPhone ? "click" : "hover";
 
@@ -132,8 +145,8 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
                   <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
                   <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={4} width={38} tickFormatter={tickCompacto} />
                   <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} trigger={disparoTooltip} />
-                  <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
-                  <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" fillOpacity={0.9} radius={[4, 4, 0, 0]} maxBarSize={18} animationDuration={600} animationEasing="ease-out" />
+                  <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" fillOpacity={0.9} radius={radioBarra} maxBarSize={anchoBarra} animationDuration={600} animationEasing="ease-out" />
+                  <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" fillOpacity={0.9} radius={radioBarra} maxBarSize={anchoBarra} animationDuration={600} animationEasing="ease-out" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -158,8 +171,8 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
               <AreaChart data={balanceSeries} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--accent-3)" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="var(--accent-3)" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--chart-balance)" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="var(--chart-balance)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} stroke="var(--line-soft)" />
@@ -170,7 +183,7 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
                   type="monotone"
                   dataKey="balance"
                   name={t("charts.balanceAcumulado")}
-                  stroke="var(--accent-3)"
+                  stroke="var(--chart-balance)"
                   strokeWidth={1.5}
                   fill={`url(#${gradId})`}
                   dot={false}
