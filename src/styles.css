@@ -8971,3 +8971,136 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .perfil-avatar { width: 20px; height: 20px; font-size: 10px; }
 :root.mac .sidebar-perfil-nombre { font-size: var(--mac-fs-body); font-weight: 400; }
 :root.mac .sidebar-perfil-email { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+
+/* ---------------- Toolbar ----------------
+
+   La toolbar NO es un componente nuevo: es el `.header` que cada pantalla ya
+   renderiza —título, subtítulo y acciones, en ese orden— re-vestido con las
+   medidas de macOS. Cambiar el marcado habría significado reescribir la
+   cabecera de quince pantallas para acabar con los mismos tres bloques que ya
+   estaban, y con la rama de iPhone metida en medio en varias de ellas.
+
+   Es OPT-IN por pantalla, y el interruptor es `data-tauri-drag-region`, que
+   hace los dos trabajos a la vez: marca cuál `.header` ya es una toolbar y le
+   da a la ventana su zona de arrastre. Un atributo, no dos, y es el mecanismo
+   que Tauri entiende de verdad — `app-region: drag`, que trae el paquete, es
+   de Electron: en WKWebView no hace nada. Los controles hijos siguen
+   respondiendo al clic porque Tauri solo arrastra cuando el propio destino
+   del evento lleva el atributo, igual que ya hace `.titlebar-drag`.
+
+   Opt-in y no global porque las pantallas de datos (Agenda, Informes,
+   Cartas…) llevan filas de filtros dentro de su cabecera, y aplastarlas a 52
+   px de golpe las rompería. Cada una entra cuando le toque su conversión. */
+:root.mac .header[data-tauri-drag-region] {
+  flex-wrap: nowrap;
+  gap: 8px;
+  row-gap: 0;
+  justify-content: flex-start;
+  height: var(--mac-toolbar-h);
+  min-height: var(--mac-toolbar-h);
+  padding: 0 12px;
+  max-width: none;
+  margin-inline: 0;
+  border-bottom: 1px solid var(--mac-separator);
+  background: var(--mac-content-bg);
+  /* Pegada arriba: quien desplaza es `.main`, así que sin esto la toolbar se
+     iría con el contenido. En macOS no se va nunca. */
+  position: sticky;
+  top: 0;
+  /* 41 y no menos: `.titlebar-drag` (App.tsx) es fija, cubre los 28 px de
+     arriba de TODA la ventana y vive en 40. Sin subir por encima, la mitad
+     superior de los botones de la toolbar quedaba debajo de ella y no
+     recibía el clic. */
+  z-index: 41;
+  user-select: none;
+}
+/* Título y subtítulo: en macOS comparten renglón con las acciones. El bloque
+   que los envuelve deja de ser una columna. */
+:root.mac .header[data-tauri-drag-region] > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+:root.mac .header[data-tauri-drag-region] .page-title {
+  font-size: var(--mac-fs-headline);
+  font-weight: 600;
+  line-height: var(--mac-lh-body);
+  letter-spacing: normal;
+  color: var(--mac-label);
+  white-space: nowrap;
+}
+/* El subtítulo sobrevive solo si es un DATO corto ("2 movimientos"). Las
+   frases explicativas se apagan por pantalla, más abajo. */
+:root.mac .header[data-tauri-drag-region] .page-sub {
+  font-size: var(--mac-fs-small);
+  color: var(--mac-tertiary);
+  white-space: nowrap;
+}
+:root.mac .header[data-tauri-drag-region] .header-actions {
+  margin-left: auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  row-gap: 0;
+}
+
+/* Controles de la toolbar: 22 px, radio 6, borde de 1 px. Uno solo primario
+   por pantalla, relleno con el acento. */
+:root.mac .header[data-tauri-drag-region] .btn {
+  height: var(--mac-control-h);
+  min-height: 0;
+  padding: 0 9px;
+  gap: 5px;
+  border-radius: var(--mac-radius);
+  border: 1px solid var(--mac-card-border);
+  background: var(--mac-card);
+  color: var(--mac-label);
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  box-shadow: none;
+}
+:root.mac .header[data-tauri-drag-region] .btn:hover { background: var(--mac-hover); }
+:root.mac .header[data-tauri-drag-region] .btn:active { background: var(--mac-separator); transform: none; }
+:root.mac .header[data-tauri-drag-region] .btn.primary {
+  background: var(--mac-accent);
+  border-color: transparent;
+  color: var(--mac-accent-text);
+  font-weight: 500;
+}
+:root.mac .header[data-tauri-drag-region] .btn.primary:hover { background: var(--mac-accent); filter: brightness(1.07); }
+:root.mac .header[data-tauri-drag-region] .btn svg { width: 13px; height: 13px; }
+
+/* Stepper de mes: en macOS es un solo control segmentado con las flechas
+   pegadas a la etiqueta, no tres cosas sueltas con hueco entre ellas. */
+:root.mac .header[data-tauri-drag-region] .month-nav {
+  gap: 0;
+  height: var(--mac-control-h);
+  border: 1px solid var(--mac-card-border);
+  border-radius: var(--mac-radius);
+  background: var(--mac-card);
+  overflow: hidden;
+}
+:root.mac .header[data-tauri-drag-region] .month-nav .icon-btn {
+  width: 24px;
+  height: 100%;
+  border-radius: 0;
+  color: var(--mac-label);
+}
+:root.mac .header[data-tauri-drag-region] .month-nav .icon-btn:hover { background: var(--mac-hover); }
+:root.mac .header[data-tauri-drag-region] .month-nav .icon-btn:active { transform: none; }
+:root.mac .header[data-tauri-drag-region] .month-nav .icon-btn svg { width: 11px; height: 11px; }
+:root.mac .header[data-tauri-drag-region] .month-nav .month-nav-label {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  min-width: 108px;
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  border-inline: 1px solid var(--mac-card-border);
+}
+
+/* El contenido arranca pegado a la toolbar: los 40 px de aire de arriba eran
+   del título de 34 px, que ya no está. */
+:root.mac .header[data-tauri-drag-region] + .content,
+:root.mac .header[data-tauri-drag-region] ~ .content { padding-top: 14px; }

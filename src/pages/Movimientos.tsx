@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto } from "../movil";
+import { esIPhone, esMac, textoCorto } from "../movil";
 import {
   catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
   getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
@@ -189,7 +189,14 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
   return (
     <>
-      <div className="header">
+      {/* En Mac esta cabecera ES la toolbar de la ventana: el atributo la
+          marca como tal (styles.css, bloque de Mac) y a la vez le da la zona
+          de arrastre de la ventana. Solo en Mac: el manejador de arrastre que
+          Tauri inyecta escucha `mousedown`, y en iOS el toque genera eventos
+          de ratón sintéticos, así que en la tableta y el teléfono estaría
+          pidiendo arrastrar una ventana que no existe. Por eso mismo
+          `.titlebar-drag` se oculta en `:root.movil` (styles.css ~6422). */}
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
             <div className="page-title">{titulo}</div>

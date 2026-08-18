@@ -6,7 +6,7 @@ import { listUsuarios, updateChurch, type Church, type ChurchUpdate, type Usuari
 import type { LangPref } from "../i18n";
 import { CERO, aTextoEditable, deTexto } from "../dinero";
 import { showToast } from "../toast";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 import ActionSheet from "../components/ActionSheet";
 import Portal from "../components/Portal";
 import GuardadoChip, { type EstadoGuardado } from "../components/settings/GuardadoChip";
@@ -480,15 +480,21 @@ export default function Configuracion({
           fija de la barra al hacer scroll (`.titulo-fijo`, App.tsx) lee el
           texto de `.page-title` en vivo, así que con este bloque fuera del
           DOM esa copia queda vacía en vez de mostrar "Ajustes" duplicado. */}
+      {/* `data-tauri-drag-region` hace de interruptor de la toolbar de macOS
+          y de zona de arrastre de la ventana a la vez; solo en Mac (el
+          porqué, en Movimientos.tsx). */}
       {!(enIPhone && zonaActiva) && (
-        <div className="header">
+        <div className="header" data-tauri-drag-region={esMac() || undefined}>
           <div>
             <div className="page-title">{t("config.titulo")}</div>
             {/* En iPhone (lista agrupada estilo iOS, ver más abajo) este
                 subtítulo se quita: su contenido pasa a repartirse entre los
                 pies de sección ("Define quién entra a Tesorería...",
-                "Respaldos, restauración..."). En Mac/iPad no cambia. */}
-            {!enIPhone && <div className="page-sub">{t("config.sub")}</div>}
+                "Respaldos, restauración..."). En Mac tampoco entra, pero por
+                otro motivo: en la toolbar solo cabe un DATO corto ("2
+                movimientos"), y esto es una frase explicativa. Queda en el
+                iPad, que sí conserva el título de página con su subtítulo. */}
+            {!enIPhone && !esMac() && <div className="page-sub">{t("config.sub")}</div>}
           </div>
         </div>
       )}

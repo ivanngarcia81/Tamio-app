@@ -14,6 +14,14 @@ export function esIPhone(): boolean {
   return document.documentElement.classList.contains("iphone");
 }
 
+/** Escritorio (ni iPad ni iPhone). La clase la pone main.tsx antes de montar
+ *  React, igual que las otras dos, así que leerla al renderizar es seguro.
+ *  `!esMovil()` diría lo mismo hoy, pero el nombre positivo es el que se lee
+ *  en una condición: `esMac() ? toolbar : título de página`. */
+export function esMac(): boolean {
+  return document.documentElement.classList.contains("mac");
+}
+
 /** Texto para un campo: la versión corta en teléfono, la larga en el resto.
  *  Los placeholders descriptivos de escritorio ("Buscar por nombre, correo
  *  o RFC…") se cortan a media palabra en una pantalla angosta. */
