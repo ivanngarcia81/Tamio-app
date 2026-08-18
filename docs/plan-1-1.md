@@ -811,8 +811,10 @@ cliente se quedaba sin nada que instalar y nada parecía roto.
 Se añadió la sección `#download` apuntando a
 `github.com/ivanngarcia81/Tamio-app/releases/latest/download/Tamio_universal.dmg`
 —la forma `latest` para no editar la página en cada versión— más una línea que
-manda a iPad y iPhone a la App Store. **Falta el enlace directo a la ficha de la
-App Store**, que no consta en el repositorio.
+manda a iPad y iPhone a la ficha de la App Store:
+`apps.apple.com/us/app/tamio/id6794741319`. Es el primer sitio del repositorio
+donde queda escrito el identificador de la app (`6794741319`), que hasta ahora
+no constaba en ninguna parte.
 
 **Tres cosas que aparecieron mirando el release, y conviene tener escritas:**
 
