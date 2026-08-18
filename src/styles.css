@@ -10030,3 +10030,54 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
 }
 :root.mac .mac-seg-op.activa { background: var(--mac-accent); color: var(--mac-accent-text); }
+
+/* ---- Ingresos y Egresos ----
+   Categoría como punto de color más el nombre, no como píldora. El truco es
+   `-webkit-text-fill-color`: pinta SOLO el texto, así que `color` se queda
+   con el de la categoría (cada `.tag.<clase>` lo define) y el punto puede
+   heredarlo con `currentColor` mientras el nombre va en tinta normal. Sin
+   eso habría que duplicar los dieciocho colores de la paleta aquí. */
+:root.mac .data-table .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: none;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  -webkit-text-fill-color: var(--mac-label);
+}
+:root.mac .data-table .tag::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+/* Contador dentro de una opción del segmentado. */
+:root.mac .mac-seg-n { color: var(--mac-tertiary); font-variant-numeric: tabular-nums; }
+:root.mac .mac-seg-op.activa .mac-seg-n { color: inherit; opacity: .75; }
+/* Tarjetas de resumen compactas: cuatro columnas que caben en la ventana sin
+   empujar la tabla fuera de la primera pantalla. */
+:root.mac .summary-4 { gap: 10px; }
+:root.mac .summary-4 .stat-card { padding: 10px 12px; gap: 2px; }
+/* 15 px y no 26: `--mac-fs-large-title` es para UNA cifra destacada por
+   pantalla —el saldo del mes en Inicio—, y cuatro tarjetas usándolo a la vez
+   dejan de destacar nada. La jerarquía la hacen el peso y el color. */
+:root.mac .stat-value { font-size: var(--mac-fs-title); font-weight: 700; letter-spacing: -0.2px; font-variant-numeric: tabular-nums; }
+/* La etiqueta deja las versalitas con tracking: en macOS ese recurso es de
+   encabezado de tabla, no de rótulo de cifra. */
+:root.mac .stat-label {
+  font-size: var(--mac-fs-small);
+  color: var(--mac-secondary);
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* Encabezado de la tabla: título a la izquierda, segmentado a la derecha. */
+:root.mac .tx-head { align-items: center; gap: 10px; margin-bottom: 8px; }
+:root.mac .tx-title { font-size: var(--mac-fs-headline); font-weight: 600; }

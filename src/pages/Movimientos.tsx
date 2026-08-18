@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone, esMac, textoCorto } from "../movil";
+import { MacBuscador, MacSegmentado } from "../components/mac/MacFiltros";
 import {
   catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
   getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
@@ -42,6 +43,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   // resto de la cabecera (mes anterior/siguiente, compartir) se queda: no
   // tiene equivalente en el carrusel ni en la barra inferior.
   const enIPhone = esIPhone();
+  const enMac = esMac();
   const [txs, setTxs] = useState<Tx[]>([]);
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
@@ -217,6 +219,16 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               <IconChevronRight size={16} />
             </span>
           </div>
+          {/* El buscador vive en la toolbar, que es donde va en cualquier app
+              de Mac; en el teléfono y el iPad se queda dentro del contenido,
+              al alcance del pulgar. */}
+          {enMac && (
+            <MacBuscador
+              value={query}
+              onChange={setQuery}
+              placeholder={t("mov.buscarPlaceholder")}
+            />
+          )}
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
             <span className="solo-escritorio"><IconPrinter size={14} /></span>
             <span className="solo-movil"><ShareIcon size={22} /></span>
@@ -354,6 +366,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               </div>
             )}
 
+            {!enMac && (
             <div className="tx-head" style={{ marginBottom: 10 }}>
               <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
                 <IconSearch size={15} strokeWidth={2} />
@@ -365,9 +378,26 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 />
               </div>
             </div>
+            )}
 
             <div className="tx-head">
               <div className="tx-title">{esIngreso ? t("mov.todosIngresos") : t("mov.todosGastos")}</div>
+              {/* Los contadores no son filtros de popover: son vistas de la
+                  misma lista, y en macOS eso es un segmentado al lado del
+                  encabezado de la tabla, no una fila de pastillas. */}
+              {enMac ? (
+                <MacSegmentado
+                  value={filtroCat ?? ""}
+                  onChange={(v) => setFiltroCat(v === "" ? null : v)}
+                  aria={t("mov.filtrarCategoria", { defaultValue: "Categoría" })}
+                  opciones={[
+                    { id: "", label: <>{t("common.todos")} <span className="mac-seg-n">{buscados.length}</span></> },
+                    ...categorias
+                      .filter((c) => conteo(c.id) > 0 || filtroCat === c.id)
+                      .map((c) => ({ id: c.id, label: <>{catNombre(c.id)} <span className="mac-seg-n">{conteo(c.id)}</span></> })),
+                  ]}
+                />
+              ) : (
               <div className="tx-filters">
                 <div
                   className={`chip${filtroCat === null ? " active" : ""}`}
@@ -397,6 +427,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                     );
                   })}
               </div>
+              )}
             </div>
 
             {visibles.length === 0 ? (
