@@ -179,7 +179,12 @@ export default function Configuracion({
   const [zonaActiva, setZonaActiva] = useState<string | null>(() => (
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? null : "iglesia"
   ));
-  const claseZona = (key: string) => `settings-zona${zonaActiva === key ? "" : " settings-zona-inactiva"}`;
+  // `settings-zona--<key>`: gancho por zona para las reglas de Mac que no
+  // valen para todas (Preferencias alinea sus tarjetas como filas de
+  // formulario, Zona sensible pinta sus botones en rojo). Sin él habría que
+  // inventar una clase nueva dentro de cada componente de Ajustes.
+  const claseZona = (key: string) =>
+    `settings-zona settings-zona--${key}${zonaActiva === key ? "" : " settings-zona-inactiva"}`;
   // Volver deslizando desde el borde izquierdo, como cualquier pantalla
   // "empujada" de iOS. No hay rutas por zona (`zonaActiva` es solo estado),
   // así que no hay gesto de router que activar — se reconoce a mano (ver

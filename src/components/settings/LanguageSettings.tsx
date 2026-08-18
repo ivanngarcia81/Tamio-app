@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { LangPref } from "../../i18n";
+import { esMac } from "../../movil";
 import { IconGlobe, IconMonitor } from "../../icons";
 
 interface Props {
@@ -29,19 +30,37 @@ export default function LanguageSettings({ value, onChange }: Props) {
         </div>
       </div>
 
-      <div className="tabs-segmented" style={{ marginBottom: 10 }}>
-        {opciones.map((opt) => (
-          <button
-            type="button"
-            key={opt.id}
-            className={`seg${value === opt.id ? " active" : ""}`}
-            aria-pressed={value === opt.id}
-            onClick={() => onChange(opt.id)}
-          >
-            {opt.icon} {opt.label}
-          </button>
-        ))}
-      </div>
+      {/* En Mac, popup button: es el control de macOS para elegir de una
+          lista, y un segmentado a todo el ancho para tres idiomas es de web.
+          Sigue siendo un `<select>` nativo —la piel se la pone el CSS— para
+          no perder el menú del sistema, el teclado ni el lector de pantalla.
+          En iPad se queda el segmentado, que ahí sí es un control táctil. */}
+      {esMac() ? (
+        <select
+          className="form-select"
+          value={value}
+          onChange={(e) => onChange(e.target.value as LangPref)}
+          aria-label={t("idioma.titulo")}
+        >
+          {opciones.map((opt) => (
+            <option key={opt.id} value={opt.id}>{opt.label}</option>
+          ))}
+        </select>
+      ) : (
+        <div className="tabs-segmented" style={{ marginBottom: 10 }}>
+          {opciones.map((opt) => (
+            <button
+              type="button"
+              key={opt.id}
+              className={`seg${value === opt.id ? " active" : ""}`}
+              aria-pressed={value === opt.id}
+              onClick={() => onChange(opt.id)}
+            >
+              {opt.icon} {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="form-hint">{t("idioma.hint")}</div>
     </div>
   );

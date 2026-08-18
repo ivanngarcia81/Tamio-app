@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { esMac } from "../../movil";
 import {
   JUEGOS_SONIDO, juegoSonido, playSound, probarSonido, setJuegoSonido,
   setSonidoActivado, sonidoActivado, type JuegoSonido,
@@ -36,34 +37,69 @@ export default function SoundSettings() {
             <div className="card-title-sub">{t("sonido.sub")}</div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-            {activo ? t("sonido.activado") : t("sonido.desactivado")}
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={activo}
-            className={`switch${activo ? " on" : ""}`}
-            onClick={toggle}
-          />
-        </div>
+        {/* En Mac el interruptor sale del encabezado y baja al cuerpo como
+            una fila más del formulario (abajo), para que su etiqueta se
+            alinee con las demás en vez de quedar suelta en la esquina. */}
+        {!esMac() && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+              {activo ? t("sonido.activado") : t("sonido.desactivado")}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={activo}
+              className={`switch${activo ? " on" : ""}`}
+              onClick={toggle}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="form-label" style={{ marginBottom: 6 }}>{t("sonido.juego")}</div>
-      <div className="tabs-segmented" style={{ marginBottom: 10 }}>
-        {JUEGOS_SONIDO.map((j) => (
-          <button
-            type="button"
-            key={j}
-            className={`seg${juego === j ? " active" : ""}`}
-            aria-pressed={juego === j}
-            onClick={() => elegir(j)}
+      {/* Casilla de verificación y no interruptor: el de 52×31 es el control
+          de iOS y en una ventana de escritorio canta. La casilla nativa toma
+          el acento del sistema con `accent-color`. */}
+      {esMac() && (
+        <div className="form-group">
+          <label className="form-label">{t("sonido.titulo")}</label>
+          <label className="mac-check">
+            <input type="checkbox" checked={activo} onChange={toggle} />
+            <span>{activo ? t("sonido.activado") : t("sonido.desactivado")}</span>
+          </label>
+        </div>
+      )}
+
+      {esMac() ? (
+        <div className="form-group">
+          <label className="form-label">{t("sonido.juego")}</label>
+          <select
+            className="form-select"
+            value={juego}
+            onChange={(e) => elegir(e.target.value as typeof juego)}
           >
-            {t(`sonido.juegos.${j}`)}
-          </button>
-        ))}
-      </div>
+            {JUEGOS_SONIDO.map((j) => (
+              <option key={j} value={j}>{t(`sonido.juegos.${j}`)}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <>
+          <div className="form-label" style={{ marginBottom: 6 }}>{t("sonido.juego")}</div>
+          <div className="tabs-segmented" style={{ marginBottom: 10 }}>
+            {JUEGOS_SONIDO.map((j) => (
+              <button
+                type="button"
+                key={j}
+                className={`seg${juego === j ? " active" : ""}`}
+                aria-pressed={juego === j}
+                onClick={() => elegir(j)}
+              >
+                {t(`sonido.juegos.${j}`)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       <div className="form-hint">{t("sonido.hint")}</div>
       <div className="form-hint">{t("sonido.hintJuego")}</div>
     </div>

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { IconCheck, IconSparkles } from "../../icons";
 
@@ -50,7 +51,12 @@ export default function AccentSettings({ value, onChange }: Props) {
             type="button"
             key={a}
             className={`acento-punto${value === a ? " active" : ""}`}
-            style={{ background: MUESTRA[a] }}
+            /* `--muestra` además del fondo: en Mac el aro del elegido es del
+               MISMO color que el círculo, y una sombra no puede leer el
+               `background` de su elemento. `color` no vale como vehículo —lo
+               usa el check, que va en blanco—, así que el color viaja en su
+               propia variable. En iPad no la lee nadie. */
+            style={{ background: MUESTRA[a], "--muestra": MUESTRA[a] } as CSSProperties}
             aria-pressed={value === a}
             aria-label={t(`acento.nombre.${a}`)}
             title={t(`acento.nombre.${a}`)}

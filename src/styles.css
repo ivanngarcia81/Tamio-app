@@ -9489,3 +9489,156 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-weight: 500;
   }
 }
+
+@media (min-width: 761px) {
+  /* ---- Popup button ----
+     El control de macOS para elegir de una lista: caja de 22 px con el galón
+     doble dentro de un cuadradito del acento, a la derecha. Sigue siendo un
+     `<select>` nativo: `appearance: none` le quita la piel del navegador
+     pero conserva el menú del sistema, el teclado y el lector de pantalla,
+     que es justo lo que se perdería reimplementándolo con divs. */
+  :root.mac .settings-detail .form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 0 30px 0 7px;
+    background-color: var(--mac-card);
+    /* Galón doble (▲▼) blanco sobre el cuadro de acento, como imagen para
+       que quepa dentro del propio control. */
+    /* Dos capas y no una sombra interior: el galón va ENCIMA del cuadro de
+       acento, y una `inset box-shadow` se pinta por encima de la imagen de
+       fondo, así que tapaba las flechas por completo. Con dos capas el orden
+       lo decide la lista. */
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2 6.5 5 3l3 3.5M2 9.5 5 13l3-3.5' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+      linear-gradient(var(--mac-accent), var(--mac-accent));
+    background-repeat: no-repeat, no-repeat;
+    background-position: right 5px center, right 0 center;
+    background-size: 10px 14px, 20px 100%;
+    cursor: default;
+  }
+  :root.mac .settings-detail .form-select:focus-visible {
+    outline: 2px solid var(--mac-accent);
+    outline-offset: 1px;
+  }
+  /* El galón va pintado dentro del SVG, así que no puede leer
+     `--mac-accent-text`. En oscuro y SIN acento del sistema el repuesto es
+     `--brand`, que ahí es un verde claro (#34d399): blanco sobre ese verde
+     da ~1.9:1 y las flechas desaparecen. Se cambia el trazo a la tinta
+     oscura. Con `AccentColor` disponible —el caso del Mac de verdad— el
+     acento del sistema es de tono medio y su par es blanco en los dos
+     temas, así que ahí no se toca. */
+  :root.mac[data-theme="dark"] .settings-detail .form-select {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2 6.5 5 3l3 3.5M2 9.5 5 13l3-3.5' fill='none' stroke='%230b0b0c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+      linear-gradient(var(--mac-accent), var(--mac-accent));
+  }
+  @supports (color: AccentColor) {
+    :root.mac[data-theme="dark"] .settings-detail .form-select {
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2 6.5 5 3l3 3.5M2 9.5 5 13l3-3.5' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+        linear-gradient(var(--mac-accent), var(--mac-accent));
+    }
+  }
+
+  /* ---- Segmentado (Apariencia) ----
+     22 px de alto y el activo con el acento; antes el activo era `--ink`, o
+     sea negro con el acento de fábrica. */
+  :root.mac .settings-detail .tabs-segmented {
+    display: inline-flex;
+    height: var(--mac-control-h);
+    padding: 1px;
+    gap: 0;
+    border-radius: var(--mac-radius);
+    background: var(--mac-hover);
+    margin-bottom: 6px;
+  }
+  :root.mac .settings-detail .tabs-segmented .seg {
+    flex: 0 0 auto;
+    padding: 0 12px;
+    border-radius: 5px;
+    font-size: var(--mac-fs-body);
+    font-weight: 400;
+    color: var(--mac-label);
+  }
+  :root.mac .settings-detail .tabs-segmented .seg svg { width: 12px; height: 12px; }
+  :root.mac .settings-detail .tabs-segmented .seg:active { transform: none; }
+  :root.mac .settings-detail .tabs-segmented .seg.active {
+    background: var(--mac-accent);
+    color: var(--mac-accent-text);
+  }
+  :root.mac .settings-detail .tabs-segmented .seg.active:hover { opacity: 1; }
+
+  /* ---- Color de acento ----
+     Círculos de 18 px con el aro DEL MISMO COLOR. Antes eran de 32 con un
+     aro negro alrededor del elegido: el aro negro compite con el color que
+     se está eligiendo, que es lo único que la fila tiene que comunicar. */
+  :root.mac .settings-detail .acento-fila { gap: 8px; margin-top: 6px; }
+  :root.mac .settings-detail .acento-punto {
+    width: 18px;
+    height: 18px;
+    border: 0;
+    box-shadow: none;
+  }
+  :root.mac .settings-detail .acento-punto:hover { transform: none; }
+  :root.mac .settings-detail .acento-punto.active {
+    /* Hueco blanco + aro del propio color: el patrón del selector de color
+       de macOS. El color viaja en `--muestra` (AccentSettings.tsx) porque una
+       sombra no puede leer el `background` de su propio elemento, y
+       `currentColor` aquí es el blanco del check. */
+    transform: none;
+    box-shadow: 0 0 0 2px var(--mac-content-bg), 0 0 0 4px var(--muestra, var(--mac-accent));
+  }
+  :root.mac .settings-detail .acento-punto.active svg { width: 10px; height: 10px; }
+}
+
+@media (min-width: 761px) {
+  /* Casilla de verificación de macOS. El control es el `<input type=
+     "checkbox">` nativo: `accent-color` hace que el sistema lo pinte con el
+     acento que el usuario eligió, sin dibujar nada a mano. */
+  :root.mac .mac-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--mac-fs-body);
+    color: var(--mac-label);
+    cursor: pointer;
+  }
+  :root.mac .mac-check input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--mac-accent);
+    cursor: pointer;
+  }
+}
+
+@media (min-width: 761px) {
+  /* Preferencias: cada tarjeta es UN ajuste con un solo control, así que su
+     título hace de etiqueta y se coloca en la misma columna de 160 px que
+     las demás. Así la pestaña entera lee como un formulario alineado y no
+     como cuatro bloques apilados.
+
+     Solo las tarjetas de UN control: Sonido tiene dos (la casilla y el juego
+     de sonidos), conserva su título como encabezado de sección y cada fila
+     lleva su propia etiqueta. Al revés, "Juego de sonidos" se perdería
+     detrás de un "Sonido:" que no dice lo mismo. */
+  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 10px;
+  }
+  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) .card-head {
+    grid-column: 1;
+    display: block;
+    margin: 0;
+    text-align: right;
+  }
+  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) .card-head-left { display: block; }
+  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) .card-title-lg::after { content: ":"; }
+  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) > :not(.card-head) { grid-column: 2; }
+  /* Los controles se pegan al inicio de su columna en vez de estirarse a lo
+     ancho de la rejilla: un segmentado de tres opciones no mide 410 px. */
+  :root.mac .settings-zona--preferencias .tabs-segmented,
+  :root.mac .settings-zona--preferencias .acento-fila { justify-self: start; }
+}
