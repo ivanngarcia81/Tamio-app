@@ -4421,6 +4421,57 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin-bottom: 14px;
 }
 
+/* ============================================================
+   Globo del tutorial guiado en iPhone.
+
+   `driver.css` no trae NI UNA media query y fija blanco (#fff) con texto
+   #2d2d2d: en modo oscuro salía una tarjeta blanca ajena al tema. Sus
+   botones son de 12 px con 3 px de relleno —muy por debajo de los 44 pt— y
+   su radio de 5 no es el de esta app. Aquí se le pone la piel de Tamio;
+   `driver.js` sigue colocándolo, que es lo que sabe hacer. */
+:root.iphone .driver-popover {
+  max-width: min(320px, calc(100vw - 32px));
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+:root.iphone .driver-popover-title { font-size: 17px; letter-spacing: -0.41px; color: var(--text); }
+:root.iphone .driver-popover-description { font-size: 15px; line-height: 20px; color: var(--text-2); }
+:root.iphone .driver-popover-progress-text { font-size: 13px; color: var(--text-3); }
+:root.iphone .driver-popover-footer { margin-top: 14px; gap: 10px; }
+:root.iphone .driver-popover-footer-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.12);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 40px;
+}
+/* El de avanzar es la acción principal del paso. */
+:root.iphone .driver-popover-navigation-btns button:last-child {
+  background: var(--brand, #059669);
+  color: var(--ink-contrast, #fff);
+  font-weight: 600;
+}
+:root[data-theme="dark"].iphone .driver-popover-footer-btn { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].iphone .driver-popover-navigation-btns button:last-child {
+  background: var(--brand, #059669);
+  color: var(--ink-contrast, #fff);
+}
+/* La flecha hereda el blanco fijo de driver.css y quedaba de otro color que
+   el globo en cuanto el tema cambiaba. */
+:root.iphone .driver-popover-arrow-side-left { border-left-color: var(--surface); }
+:root.iphone .driver-popover-arrow-side-right { border-right-color: var(--surface); }
+:root.iphone .driver-popover-arrow-side-top { border-top-color: var(--surface); }
+:root.iphone .driver-popover-arrow-side-bottom { border-bottom-color: var(--surface); }
+/* Cerrar con la "×" también necesita su objetivo táctil. */
+:root.iphone .driver-popover-close-btn { width: 44px; height: 44px; font-size: 22px; color: var(--text-3); }
+
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
 
