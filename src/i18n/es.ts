@@ -256,6 +256,9 @@ export const es = {
   },
 
   reportes: {
+    // Encabezados de sección de la versión iPhone (Reportes.tsx, enIPhone).
+    seccionResumen: "Resumen",
+    seccionDistribucion: "Distribución",
     titulo: "Reportes",
     sub: "Estado financiero mensual · {{mes}}",
     ia: {

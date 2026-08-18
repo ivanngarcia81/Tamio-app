@@ -10330,3 +10330,107 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--mac-accent-text);
 }
 :root.mac .content .chip .count { color: inherit; opacity: .7; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Reportes en iPhone (Reportes.tsx, enIPhone) — la última pantalla que
+   quedaba sin convertir.
+
+   NADA de aquí toca la regla base de `.r-row`: la comparten Dashboard,
+   Cartas, Informes de membresía, ServicioModal, FichaMiembroModal,
+   FusionarMiembroModal y DangerZoneSettings. El estado financiero del
+   teléfono no la usa —monta `.ios-listcard` con `.ios-txrow`, el mismo
+   patrón de fila que el resto de las listas del teléfono— así que esas
+   siete pantallas no se enteran.
+   ============================================================ */
+
+/* Distribución: donut arriba, leyenda debajo. En Mac van lado a lado, que a
+   390 px deja el donut minúsculo o la leyenda en dos caracteres. */
+:root.iphone .donut-ios {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 16px 14px;
+}
+:root.iphone .donut-ios .donut { width: 120px; height: 120px; }
+:root.iphone .donut-ios .donut-wrap { padding: 0; align-self: center; }
+:root.iphone .donut-ios .donut-center .val { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; }
+:root.iphone .donut-ios .donut-center .lbl {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-3);
+}
+:root.iphone .donut-ios .donut-legend { gap: 0; margin: 0; }
+/* Fila de leyenda: color · nombre · monto · porcentaje, con las dos cifras
+   a la derecha y de ancho fijo para que no bailen entre filas. */
+:root.iphone .donut-ios .donut-legend-row {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto 44px;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 15px;
+  color: var(--text);
+}
+:root.iphone .donut-ios .donut-legend-row:not(:last-child) {
+  border-bottom: 1px solid var(--line-soft);
+}
+:root.iphone .donut-ios .donut-legend-row .sw { width: 9px; height: 9px; border-radius: 50%; }
+:root.iphone .donut-ios .donut-legend-row .name {
+  font-weight: 400;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .donut-ios .donut-legend-row .monto {
+  font-size: 15px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .donut-ios .donut-legend-row .pct {
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Encabezado del estado financiero: iglesia y periodo. Es lo que convierte
+   la pantalla en un documento presentable en una junta. */
+:root.iphone .rep-cabecera { padding: 0 2px; }
+:root.iphone .rep-iglesia { font-size: 15px; font-weight: 600; color: var(--text); }
+:root.iphone .rep-periodo { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+
+/* Fila del estado financiero y del resumen mensual. Reutiliza `.ios-txrow`
+   entera (alto, separador con sangría, dos líneas): aquí solo se le añade el
+   punto de color y el formato del monto. */
+:root.iphone .rep-fila { min-height: 56px; }
+:root.iphone .rep-punto {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+:root.iphone .rep-monto {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .rep-monto.pos { color: var(--pos); }
+:root.iphone .rep-monto.neg { color: var(--neg); }
+/* Total de una sección: separador arriba y sin punto de color, para que se
+   lea como cierre de la lista y no como una categoría más. */
+:root.iphone .rep-total { border-top: 1px solid var(--line); }
+:root.iphone .rep-total .ios-txrow-title { font-weight: 700; }
+:root.iphone .rep-total::after { display: none; }
+/* Balance y variación, uno bajo el otro y alineados a la derecha. */
+:root.iphone .rep-trailing { flex-direction: column; align-items: flex-end; gap: 2px; }
+:root.iphone .rep-var.vacia { font-size: 13px; color: var(--text-3); }
+
+/* Aire final por encima de la barra de pestañas y de la franja del gesto. */
+:root.iphone .main:has(.rep-fila) .content {
+  padding-bottom: calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom));
+}

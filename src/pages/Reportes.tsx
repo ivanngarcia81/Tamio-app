@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { esMac } from "../movil";
+import { esIPhone, esMac } from "../movil";
 import {
   catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
@@ -28,6 +28,112 @@ import ActionSheet from "../components/ActionSheet";
 import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
+
+/** Color de la fila "Otras", el mismo gris pizarra que ya usa el agrupado de
+ *  Movimientos: no se inventa una convención nueva para lo mismo. */
+const COLOR_OTRAS = "#64748b";
+
+interface FilaCat { id: string; color: string; total: Centavos }
+
+/**
+ * Hasta cinco categorías más una fila "Otras" con la suma del resto.
+ *
+ * Va SEPARADO de `filasIngreso`/`filasGasto`, que son las que alimentan
+ * `buildReportData()` y por tanto el PDF: agrupar ahí habría cambiado el
+ * documento, que es justo lo que esta tarea no debe tocar. Esto solo lo lee
+ * la leyenda del teléfono.
+ *
+ * Cada porcentaje se calcula de SU PROPIO monto, incluido el de "Otras"
+ * (suma de los agrupados). Es la misma regla del resto de la pantalla y del
+ * agrupado de Movimientos.
+ */
+function conOtras(filas: FilaCat[], nombreOtras: (n: number) => string): { id: string; nombre: string; color: string; total: Centavos }[] {
+  const ordenadas = [...filas].sort((a, b) => b.total - a.total);
+  if (ordenadas.length <= 5) {
+    return ordenadas.map((c) => ({ id: c.id, nombre: catNombre(c.id), color: c.color, total: c.total }));
+  }
+  const resto = ordenadas.slice(5);
+  return [
+    ...ordenadas.slice(0, 5).map((c) => ({ id: c.id, nombre: catNombre(c.id), color: c.color, total: c.total })),
+    {
+      id: "__otras",
+      nombre: nombreOtras(resto.length),
+      color: COLOR_OTRAS,
+      total: sumar(...resto.map((c) => c.total)),
+    },
+  ];
+}
+
+/** Un porcentaje entero legible; "—" cuando no hay base con que dividir. */
+function pctTexto(parte: Centavos, total: Centavos, decimales = 0): string {
+  if (total <= 0) return "—";
+  return `${((parte / total) * 100).toFixed(decimales)}%`;
+}
+
+/** Tarjeta de distribución del teléfono: donut arriba y leyenda DEBAJO.
+ *
+ *  En Mac los dos donuts van lado a lado con su leyenda al costado; en 390 px
+ *  eso deja el donut minúsculo o la leyenda en dos caracteres, así que aquí
+ *  van uno debajo del otro, cada uno a todo el ancho. */
+function DonutIOS({
+  titulo, filas, total, moneda, vacio, delayMs, nombreOtras,
+}: {
+  titulo: string;
+  filas: FilaCat[];
+  total: Centavos;
+  moneda: string;
+  vacio: string;
+  delayMs: number;
+  nombreOtras: (n: number) => string;
+}) {
+  const leyenda = conOtras(filas, nombreOtras);
+  return (
+    <div className="ios-panel">
+      <div className="ios-panel-head"><h2>{titulo}</h2></div>
+      {filas.length === 0 ? (
+        <div className="ios-panel-empty">{vacio}</div>
+      ) : (
+        <div className="ios-listcard donut-ios">
+          <div className="donut-wrap">
+            <Donut segments={filas.map((c) => ({ color: c.color, pct: porcentaje(c.total, total) }))} delayMs={delayMs} />
+            <div className="donut-center">
+              <div className="val">{fmtMoney(total)}</div>
+              <div className="lbl">{moneda}</div>
+            </div>
+          </div>
+          <div className="donut-legend">
+            {leyenda.map((c) => (
+              <div className="donut-legend-row" key={c.id}>
+                <span className="sw" style={{ background: c.color }} />
+                <span className="name">{c.nombre}</span>
+                <span className="monto">{fmtMoney(c.total)}</span>
+                <span className="pct">{pctTexto(c.total, total)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Fila del estado financiero en el teléfono: dos líneas —nombre con su punto
+ *  de color y el monto a la derecha; debajo, el porcentaje—. Las cuatro
+ *  columnas de escritorio no caben en 390 px sin cortar el nombre. */
+function FilaFinancieraIOS({ nombre, color, monto, pct }: { nombre: string; color?: string; monto: string; pct: string }) {
+  return (
+    <div className="ios-txrow rep-fila">
+      <div className="ios-txrow-main">
+        <div className="ios-txrow-title">
+          {color && <span className="rep-punto" style={{ background: color }} aria-hidden="true" />}
+          <span className="truncate">{nombre}</span>
+        </div>
+        <div className="tx-secundaria-movil">{pct}</div>
+      </div>
+      <div className="ios-txrow-trailing"><span className="rep-monto">{monto}</span></div>
+    </div>
+  );
+}
 
 interface Props {
   church: Church;
@@ -221,6 +327,9 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const balance = restar(ingresos, gastos);
   const balanceAnt = restar(totalesAnt?.ingresos ?? CERO, totalesAnt?.gastos ?? CERO);
 
+  const enIPhone = esIPhone();
+  const nombreOtras = (n: number) => t("mov.otrasCategorias", { count: n });
+
   const filasIngreso = getCategoriasIngreso()
     .map((c) => ({ ...c, color: colorCategoria("ingreso", c.id), total: totales?.porCategoriaIngreso[c.id] ?? CERO }))
     .filter((c) => c.total > 0);
@@ -304,10 +413,16 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        <div>
-          <div className="page-title">{t("reportes.titulo")}</div>
-          <div className="page-sub">{t("reportes.sub", { mes: mesStr })}</div>
-        </div>
+        {/* En el teléfono el carrusel de secciones ya dice dónde estás, y el
+            mes lo lleva el navegador de `.periodo-selector` de más abajo:
+            título y subtítulo solo repetirían. Igual que en las otras quince
+            pantallas convertidas. */}
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("reportes.titulo")}</div>
+            <div className="page-sub">{t("reportes.sub", { mes: mesStr })}</div>
+          </div>
+        )}
         <div className="header-actions solo-escritorio">
           <div className="month-nav">
             <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
@@ -409,6 +524,67 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
       <div className="content">
         {loading ? <LoadingState /> : <>
+        {enIPhone ? (
+          <>
+            {/* Las cuatro cifras del mes, en dos columnas y SIN la franja de
+                color de arriba: en el teléfono el color lo lleva el punto de
+                la leyenda y el signo del balance, no un filete decorativo. */}
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("reportes.seccionResumen")}</h2></div>
+              <div className="ios-panel-grid">
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.ingresosDelMes")}</span></div>
+                  <span className="ios-stat-num money">
+                    <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                  </span>
+                  <div className="stat-pct"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.gastosDelMes")}</span></div>
+                  <span className="ios-stat-num money">
+                    <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                  </span>
+                  <div className="stat-pct"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.balanceNeto")}</span></div>
+                  <span className={`ios-stat-num money${balance >= 0 ? " pos" : " neg"}`}>
+                    <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                  </span>
+                  <div className="stat-pct"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.mesAnterior")}</span></div>
+                  <span className="ios-stat-num money">
+                    <CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+                  </span>
+                  <div className="stat-pct">{mesLegible(mesAnterior)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Uno debajo del otro, cada uno a todo el ancho. */}
+            <DonutIOS
+              titulo={t("reportes.distGastos")}
+              filas={filasGasto}
+              total={gastos}
+              moneda={church.moneda}
+              vacio={t("reportes.sinGastosEsteMes")}
+              delayMs={0}
+              nombreOtras={nombreOtras}
+            />
+            <DonutIOS
+              titulo={t("reportes.distIngresos")}
+              filas={filasIngreso}
+              total={ingresos}
+              moneda={church.moneda}
+              vacio={t("reportes.sinIngresosEsteMes")}
+              delayMs={150}
+              nombreOtras={nombreOtras}
+            />
+          </>
+        ) : (
+        <>
         <div className="dash-canvas">
         <div className="summary-4 enter">
           <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
@@ -499,7 +675,107 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           </div>
         </div>
         </div>
+        </>
+        )}
 
+        {enIPhone ? (
+          <>
+            {/* Estado financiero. Las cuatro columnas de escritorio (color,
+                nombre, monto, porcentaje) no caben en 390 px sin cortar el
+                nombre, así que cada fila pasa a dos líneas dentro de una
+                tarjeta de lista. El encabezado con iglesia y periodo se
+                queda: es lo que convierte esto en un documento y no en una
+                pantalla más. */}
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("reportes.estadoFinanciero")}</h2></div>
+              <div className="rep-cabecera">
+                <div className="rep-iglesia">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+                <div className="rep-periodo">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
+              </div>
+            </div>
+
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("reportes.ingresosPeriodo")}</h2></div>
+              {filasIngreso.length === 0 ? (
+                <div className="ios-panel-empty">{t("reportes.sinIngresosRegistrados")}</div>
+              ) : (
+                <div className="ios-listcard">
+                  {filasIngreso.map((c) => (
+                    <FilaFinancieraIOS
+                      key={c.id}
+                      nombre={catNombre(c.id)}
+                      color={c.color}
+                      monto={fmtMoney(c.total)}
+                      pct={pctTexto(c.total, ingresos, 1)}
+                    />
+                  ))}
+                  <div className="ios-txrow rep-fila rep-total">
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{t("reportes.totalIngresos")}</div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span className="rep-monto pos">{fmtMoney(ingresos)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="ios-panel">
+              <div className="ios-panel-head"><h2>{t("reportes.gastosPeriodo")}</h2></div>
+              {filasGasto.length === 0 ? (
+                <div className="ios-panel-empty">{t("reportes.sinGastosRegistrados")}</div>
+              ) : (
+                <div className="ios-listcard">
+                  {filasGasto.map((c) => (
+                    <FilaFinancieraIOS
+                      key={c.id}
+                      nombre={catNombre(c.id)}
+                      color={c.color}
+                      monto={fmtMoney(c.total)}
+                      pct={pctTexto(c.total, gastos, 1)}
+                    />
+                  ))}
+                  <div className="ios-txrow rep-fila rep-total">
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{t("reportes.totalGastos")}</div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span className="rep-monto neg">{fmtMoney(gastos)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Los cuatro totales del pie, en la misma cuadrícula de dos
+                columnas que el resumen de arriba. La nota de depósitos se
+                queda: es información contable, no adorno. */}
+            <div className="ios-panel">
+              <div className="ios-panel-grid">
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalIngresos")}</span></div>
+                  <span className="ios-stat-num money pos">{fmtMoney(ingresos)}</span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalGastos")}</span></div>
+                  <span className="ios-stat-num money neg">{fmtMoney(gastos)}</span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.balanceNeto")}</span></div>
+                  <span className="ios-stat-num money">{fmtMoney(balance)}</span>
+                </div>
+                <div className="ios-stat" style={{ cursor: "default" }}>
+                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.depositosBancarios")}</span></div>
+                  <span className="ios-stat-num money">{fmtMoney(depositosMes)}</span>
+                </div>
+              </div>
+              {depositosMes > 0 && (
+                <p className="ios-panel-note">{t("reportes.depositosNota")}</p>
+              )}
+            </div>
+          </>
+        ) : (
         <div className="report-preview">
           <div className="r-head">
             <div>
@@ -574,11 +850,47 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           </div>
         </div>
 
+        )}
+
         {historial.length > 0 && (
           <>
             <div className="tx-head">
               <div className="tx-title">{t("reportes.resumenMensual")}</div>
             </div>
+            {enIPhone ? (
+              /* Cinco columnas de cifras no caben en 390 px: la fila pasa a
+                 dos líneas —el mes y su balance arriba; ingresos, gastos y la
+                 variación abajo—. Los nombres salen de los `data-label` que
+                 la tabla ya llevaba, no de claves nuevas. */
+              <div className="ios-listcard">
+                {historial.map((h, i) => {
+                  const bal = restar(h.ingresos, h.gastos);
+                  const anterior = historial[i - 1];
+                  const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
+                  const variacion = balAnt === null ? null : pctChange(bal, balAnt);
+                  return (
+                    <div className="ios-txrow rep-fila" key={h.mes}>
+                      <div className="ios-txrow-main">
+                        <div className="ios-txrow-title">{mesLegible(h.mes)}</div>
+                        <div className="tx-secundaria-movil">
+                          {t("charts.ingresos")} {fmtMoney(h.ingresos)} · {t("charts.gastos")} {fmtMoney(h.gastos)}
+                        </div>
+                      </div>
+                      <div className="ios-txrow-trailing rep-trailing">
+                        <span className="rep-monto">{fmtMoney(bal)}</span>
+                        {variacion === null ? (
+                          <span className="rep-var vacia">—</span>
+                        ) : (
+                          <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
+                            {variacion >= 0 ? "+" : ""}{variacion}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
             <div className="data-table roomy tabla-resumen-mes">
               <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
                 <div className="th">{t("reportes.colMes")}</div>
@@ -617,6 +929,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 );
               })}
             </div>
+            )}
           </>
         )}
         </>}
