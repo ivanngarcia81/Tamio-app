@@ -157,7 +157,7 @@ export default function AccesosSettingsIOS({
             </>
           }
         >
-          <FilaValor label={t("plan.estado")} value={estadoSync} tono={snap.estado === "ok" ? "pos" : undefined} />
+          <FilaValor label={t("sync.estadoLabel")} value={estadoSync} tono={snap.estado === "ok" ? "pos" : undefined} />
           {snap.estado === "ok" && snap.ultima != null && (
             <FilaValor
               label={t("sync.ultimoCambio")}

@@ -82,16 +82,16 @@ export default function PlanSettings({ church, onSaved }: Props) {
           {/* Vista informativa: qué plan tiene la iglesia hoy, sin controles. */}
           <div className="form-group" style={{ marginBottom: 12 }}>
             <label className="form-label">{t("plan.plan")}</label>
-            <div style={{ fontWeight: 700 }}>{t(`plan.nombre.${planVista}`)}</div>
+            <div className="form-valor">{t(`plan.nombre.${planVista}`)}</div>
           </div>
           <div className="form-group" style={{ marginBottom: 12 }}>
             <label className="form-label">{t("plan.estado")}</label>
-            <div style={{ fontWeight: 700 }}>{t(`plan.estadoNombre.${estadoVista}`)}</div>
+            <div className="form-valor">{t(`plan.estadoNombre.${estadoVista}`)}</div>
           </div>
           {venceVista && estadoVista !== "cortesia" && (
             <div className="form-group" style={{ marginBottom: 12 }}>
               <label className="form-label">{t("plan.vence")}</label>
-              <div style={{ fontWeight: 700 }}>{venceVista}</div>
+              <div className="form-valor">{venceVista}</div>
             </div>
           )}
         </>
@@ -109,24 +109,37 @@ export default function PlanSettings({ church, onSaved }: Props) {
         </>
       )}
 
-      {/* Resumen de lo que ve la iglesia */}
-      <div className="form-hint" style={{ marginBottom: 12 }}>
-        {t("plan.resumenAreas")}: <b>{areas || t("plan.ninguna")}</b>
-      </div>
-
+      {/* Vigencia y áreas: en solo lectura son FILAS del formulario, como Plan
+          y Suscripción, y no pies de texto. Eran datos con la misma
+          importancia que los de arriba escritos en gris pequeño detrás de dos
+          puntos, y la pestaña entera se leía a dos alturas distintas. */}
       {soloLectura ? (
         <>
-          <div className="form-hint" style={{ marginBottom: 12 }}>
-            {t("plan.resumenEstado")}:{" "}
-            <b style={{ color: vig.activa ? "var(--pos)" : "var(--neg)" }}>
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">{t("plan.resumenEstado")}</label>
+            <div className="form-valor" style={{ color: vig.activa ? "var(--pos)" : "var(--neg)" }}>
               {vig.activa ? t("plan.vigente") : t("plan.noVigente")}
-            </b>
-            {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
-            {estadoVista === "cortesia" && ` — ${t("plan.esCortesia")}`}
+              {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
+              {estadoVista === "cortesia" && ` — ${t("plan.esCortesia")}`}
+            </div>
+          </div>
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            {/* `plan.areas` ("Áreas en uso") y no `resumenAreas` ("Verá"):
+                el segundo es un fragmento de frase que funcionaba como pie
+                —"Verá: Tesorería · Secretaría"— pero como etiqueta de fila,
+                al lado de Plan y Suscripción, no dice qué es el dato. */}
+            <label className="form-label">{t("plan.areas")}</label>
+            <div className="form-valor">{areas || t("plan.ninguna")}</div>
           </div>
           <div className="form-hint">{t("plan.nubeManda")}</div>
         </>
       ) : (
+        <div className="form-hint" style={{ marginBottom: 12 }}>
+          {t("plan.resumenAreas")}: <b>{areas || t("plan.ninguna")}</b>
+        </div>
+      )}
+
+      {!soloLectura && (
         <div className="form-hint">{t("plan.seGuardaSolo")}</div>
       )}
     </div>

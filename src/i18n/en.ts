@@ -566,6 +566,9 @@ export const en: Resources = {
   },
 
   sync: {
+    /* El estado de la sincronización tenía prestado `plan.estado`, que ahora
+       dice "Suscripción": necesita el suyo. */
+    estadoLabel: "Status",
     titulo: "Sync (beta)",
     sub: "Share members across your church's Macs",
     sincronizarAhora: "Sync now",
@@ -2130,7 +2133,7 @@ export const en: Resources = {
       tesoreria: "Treasury only",
       secretaria: "Secretariat only",
     },
-    estado: "Status",
+    estado: "Subscription",
     estadoNombre: {
       activa: "Active",
       cortesia: "Courtesy",
@@ -2143,7 +2146,7 @@ export const en: Resources = {
     areaTesoreria: "Treasury",
     areaSecretaria: "Secretariat",
     ninguna: "None",
-    resumenEstado: "Status",
+    resumenEstado: "Validity",
     vigente: "Active",
     noVigente: "Not active",
     enGracia: "in grace period ({{dias}} days)",

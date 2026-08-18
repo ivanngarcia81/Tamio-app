@@ -560,6 +560,9 @@ export const es = {
   },
 
   sync: {
+    /* El estado de la sincronización tenía prestado `plan.estado`, que ahora
+       dice "Suscripción": necesita el suyo. */
+    estadoLabel: "Estado",
     titulo: "Sincronización (beta)",
     sub: "Comparte los miembros entre las Macs de tu iglesia",
     sincronizarAhora: "Sincronizar ahora",
@@ -2161,7 +2164,10 @@ export const es = {
       tesoreria: "Solo Tesorería",
       secretaria: "Solo Secretaría",
     },
-    estado: "Estado",
+    // "Suscripción" y no "Estado": más abajo hay OTRO campo que también se
+    // llamaba "Estado" con valores distintos (vigente / no vigente), y en la
+    // misma pantalla eso son dos etiquetas iguales que no dicen lo mismo.
+    estado: "Suscripción",
     estadoNombre: {
       activa: "Activa",
       cortesia: "Cortesía",
@@ -2174,7 +2180,7 @@ export const es = {
     areaTesoreria: "Tesorería",
     areaSecretaria: "Secretaría",
     ninguna: "Ninguna",
-    resumenEstado: "Estado",
+    resumenEstado: "Vigencia",
     vigente: "Vigente",
     noVigente: "No vigente",
     enGracia: "en periodo de gracia ({{dias}} días)",

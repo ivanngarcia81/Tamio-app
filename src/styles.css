@@ -2324,6 +2324,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .roster-counters b { color: var(--text); }
 .form-hint { font-size: var(--fs-caption); color: var(--text-3); }
+/* Valor de solo lectura dentro de un formulario (Tu plan). Era un
+   `style={{fontWeight:700}}` en línea, que ninguna hoja podía ajustar. */
+.form-valor { font-weight: 700; }
 .form-warning {
   font-size: var(--fs-caption);
   color: var(--warn);
@@ -9364,7 +9367,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      título. El título SÍ se queda: hay pestañas con dos bloques (Membrete y
      Secretaría, Tesorero y Pastor) y sin él no se sabría dónde acaba uno. */
   :root.mac .settings-detail .card-icon { display: none; }
-  :root.mac .settings-detail .card-title-sub { display: none; }
+  /* `.card-sub` además de `.card-title-sub`: la tarjeta de Invitar usa el
+     primero (y `.card-title` en vez de `.card-title-lg`), así que sin
+     nombrarlo se le quedaba el subtítulo explicativo que al resto se le
+     quita. */
+  :root.mac .settings-detail .card-title-sub,
+  :root.mac .settings-detail .card-sub { display: none; }
+  :root.mac .settings-detail .card-head .card-title {
+    font-size: var(--mac-fs-headline);
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--mac-label);
+  }
   :root.mac .settings-detail .card-title-lg {
     font-size: var(--mac-fs-headline);
     font-weight: 600;
@@ -9804,4 +9819,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.mac .cat-pie-btn:hover:not(:disabled) { background: var(--mac-hover); }
   :root.mac .cat-pie-btn:disabled { color: var(--mac-tertiary); cursor: default; }
+}
+
+@media (min-width: 761px) {
+  /* `.form-row` es la fila de Invitar (misma idea que `.form-group`, otro
+     nombre), así que entra en la misma rejilla alineada. */
+  :root.mac .settings-detail .form-row {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 10px;
+    margin-bottom: 8px;
+  }
+  :root.mac .settings-detail .form-row > .form-label {
+    grid-column: 1;
+    text-align: right;
+    font-size: var(--mac-fs-body);
+    font-weight: 400;
+    color: var(--mac-label);
+  }
+  :root.mac .settings-detail .form-row > .form-label::after { content: ":"; }
+  :root.mac .settings-detail .form-row > :not(.form-label) { grid-column: 2; }
+  /* En macOS un valor de solo lectura no va en negrita: se distingue de su
+     etiqueta por estar en la otra columna, no por el trazo. */
+  :root.mac .settings-detail .form-valor { font-weight: 400; }
 }
