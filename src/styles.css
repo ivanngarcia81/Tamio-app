@@ -3448,8 +3448,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    env(safe-area-inset-top), --navrow-h de alto, mismo z-index — así ocupa
    exactamente el hueco que `.main` ya reserva con su padding-top, sin
    negociar nada nuevo. A diferencia de `.titulo-fijo` (que solo se ve tras
-   el scroll, mientras el título grande se desvanece), esta SIEMPRE está
-   visible: una pantalla empujada de iOS no tiene título grande que encoger. */
+   el scroll, mientras el título grande se desvanece), el CONTENIDO de esta
+   (volver, título, acción) SIEMPRE está visible: una pantalla empujada de
+   iOS no tiene título grande que encoger.
+
+   Sin material propio: el vidrio lo pone `.app::after` (~6606), que ocupa
+   EXACTAMENTE esta misma banda (top 0 → navrow-h + safe-area, o sea el
+   mismo borde inferior) y ya sabe encenderse con el scroll. Antes esta
+   barra traía el suyo —82% + blur 20, siempre encendido— y quedaban dos
+   vidrios apilados en el mismo sitio: al hacer scroll se sumaban (0.82 y
+   0.88 dan un 97.8% efectivo, con el blur aplicado dos veces) y las dos
+   líneas de 0.5px caían una encima de la otra. Se veía como una barra que
+   se solidifica al deslizar, en una pantalla donde ninguna otra lo hace.
+   Ahora las pantallas empujadas de Ajustes se comportan igual que el
+   resto del teléfono: nada arriba en reposo, un solo vidrio y una sola
+   línea al hacer scroll. */
 :root.iphone .ios-nav {
   position: fixed;
   top: env(safe-area-inset-top, 0px);
@@ -3462,10 +3475,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 8px;
   height: var(--navrow-h);
   padding: 0 8px;
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid var(--line);
+  background: transparent;
+  border-bottom: 0;
 }
 :root.iphone .ios-nav-title {
   font-size: 17px;
@@ -4136,7 +4147,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de Nombre empezando en 112, o sea etiqueta y placeholder por detrás.
    Con `static` el `top` deja de existir para esta barra, y ese es el punto:
    no es solo que hoy quede bien, es que no puede volver a heredarlo. */
-:root.iphone .ios-sheet .ios-nav { position: static; border-radius: 12px 12px 0 0; }
+/* Dentro de la hoja SÍ lleva fondo propio: aquí no hay franja detrás que
+   se lo ponga —`.app::after` está fuera, tapada por la hoja— y la barra se
+   apoya en el `--bg` gris del cartón. Es el único sitio donde `.ios-nav`
+   pinta su propia superficie, y por eso va después de la regla de arriba,
+   que la deja transparente. Opaca, no translúcida: la barra es hermana de
+   `.ios-sheet-body` en un flex en columna, así que nada pasa nunca por
+   debajo de ella. */
+:root.iphone .ios-sheet .ios-nav {
+  position: static;
+  border-radius: 12px 12px 0 0;
+  background: var(--surface);
+  border-bottom: 0.5px solid var(--line);
+}
 :root.iphone .ios-sheet-cancelar { font-weight: 400; }
 :root.iphone .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 @media (prefers-reduced-motion: reduce) {
