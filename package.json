@@ -1,7 +1,7 @@
 {
   "name": "tamio",
   "private": true,
-  "version": "1.0.8",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "firmar:manual": "bash scripts/firmar-manual.sh",
     "build:appstore": "VITE_CANAL=appstore npm run build",
     "dist:appstore": "VITE_CANAL=appstore npx tauri build --bundles app --target universal-apple-darwin",
+    "ios:appstore": "VITE_CANAL=appstore npx tauri ios build --export-method app-store-connect",
     "verificar-csp": "node scripts/verificar-csp.mjs",
     "verificar-canal": "node scripts/verificar-canal.mjs",
     "verificar-invitacion": "node scripts/verificar-invitacion.mjs",
