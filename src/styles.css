@@ -9866,3 +9866,167 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      proporcional. */
   :root.mac .settings-detail .pdf-preview-stage { height: 232px; overflow: hidden; align-items: flex-start; }
 }
+
+/* ============================================================
+   VERSIÓN MAC — Paquete 3: barra de filtros, tablas y pantallas de datos
+   ============================================================ */
+
+/* ---- Botón "Filtros" y su popover ----
+   El botón se pinta con el acento en cuanto hay UN filtro puesto. No es
+   decoración: un filtro activo escondido dentro de un popover, sin señal
+   fuera, deja al usuario mirando una lista incompleta sin saber por qué. */
+:root.mac .mac-filtros { position: relative; display: inline-flex; }
+:root.mac .mac-filtros-btn { gap: 4px; }
+:root.mac .mac-filtros-btn.activo,
+/* `:hover` también: la regla genérica `.mac-btn:hover` tiene la misma
+   especificidad y va más abajo en el archivo, así que con el ratón encima el
+   botón perdía el acento justo mientras lo estabas usando. Medido: con un
+   filtro puesto y el cursor sobre el botón salía rgba(0,0,0,.05). */
+:root.mac .mac-filtros-btn.activo:hover {
+  background: var(--mac-accent);
+  border-color: transparent;
+  color: var(--mac-accent-text);
+}
+:root.mac .mac-filtros-chev {
+  width: 9px; height: 9px;
+  stroke: currentColor; stroke-width: 2.2; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+:root.mac .mac-filtros-pop {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  z-index: 60;
+  min-width: 260px;
+  padding: 10px;
+  border: 1px solid var(--mac-card-border);
+  border-radius: var(--mac-card-radius);
+  background: var(--mac-card);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.20);
+}
+/* Etiquetas a la derecha, como en el formulario de Ajustes: es el mismo
+   idioma de "campo con etiqueta" y no tendría sentido que aquí fuera otro. */
+:root.mac .mac-filtros-fila {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 6px;
+}
+:root.mac .mac-filtros-label {
+  text-align: right;
+  font-size: var(--mac-fs-body);
+  color: var(--mac-label);
+}
+:root.mac .mac-filtros-label::after { content: ":"; }
+:root.mac .mac-filtros-select,
+:root.mac .mac-filtros-input {
+  height: var(--mac-control-h);
+  width: 100%;
+  padding: 0 7px;
+  border: 1px solid var(--mac-card-border);
+  border-radius: 5px;
+  background: var(--mac-card);
+  color: var(--mac-label);
+  font: inherit;
+  font-size: var(--mac-fs-body);
+}
+:root.mac .mac-filtros-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 26px;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2 6.5 5 3l3 3.5M2 9.5 5 13l3-3.5' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    linear-gradient(var(--mac-accent), var(--mac-accent));
+  background-repeat: no-repeat, no-repeat;
+  background-position: right 5px center, right 0 center;
+  background-size: 10px 14px, 20px 100%;
+}
+:root.mac[data-theme="dark"] .mac-filtros-select {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2 6.5 5 3l3 3.5M2 9.5 5 13l3-3.5' fill='none' stroke='%230b0b0c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+    linear-gradient(var(--mac-accent), var(--mac-accent));
+}
+@supports (color: AccentColor) {
+  :root.mac[data-theme="dark"] .mac-filtros-select {
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 16'%3E%3Cpath d='M2 6.5 5 3l3 3.5M2 9.5 5 13l3-3.5' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+      linear-gradient(var(--mac-accent), var(--mac-accent));
+  }
+}
+:root.mac .mac-filtros-pie {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 6px;
+  margin-top: 4px;
+  border-top: 1px solid var(--mac-separator);
+}
+:root.mac .mac-filtros-pie .mac-btn:disabled { color: var(--mac-tertiary); cursor: default; }
+
+/* ---- Buscador de la toolbar ---- */
+:root.mac .mac-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--mac-control-h);
+  padding: 0 8px;
+  border: 1px solid var(--mac-card-border);
+  border-radius: var(--mac-radius);
+  background: var(--mac-card);
+}
+:root.mac .mac-search svg {
+  width: 12px; height: 12px; flex: 0 0 auto;
+  stroke: var(--mac-tertiary); stroke-width: 1.8; fill: none; stroke-linecap: round;
+}
+:root.mac .mac-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--mac-fs-body);
+  color: var(--mac-label);
+  outline: none;
+}
+:root.mac .mac-search input::placeholder { color: var(--mac-tertiary); }
+
+/* ---- Botón suelto de toolbar (fuera de `.header`) ---- */
+:root.mac .mac-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: var(--mac-control-h);
+  padding: 0 9px;
+  border: 1px solid var(--mac-card-border);
+  border-radius: var(--mac-radius);
+  background: var(--mac-card);
+  font: inherit;
+  font-size: var(--mac-fs-body);
+  color: var(--mac-label);
+  white-space: nowrap;
+  cursor: pointer;
+}
+:root.mac .mac-btn:hover { background: var(--mac-hover); }
+
+/* ---- Segmentado del encabezado de tabla ----
+   Los contadores ("Todos 8 · Ofrenda 2") son VISTAS de la misma lista, no
+   filtros: en macOS eso es un segmentado, no una fila de pastillas sueltas. */
+:root.mac .mac-seg {
+  display: inline-flex;
+  height: var(--mac-control-h);
+  padding: 1px;
+  border-radius: var(--mac-radius);
+  background: var(--mac-hover);
+}
+:root.mac .mac-seg-op {
+  border: 0;
+  padding: 0 10px;
+  border-radius: 5px;
+  background: none;
+  font: inherit;
+  font-size: var(--mac-fs-body);
+  color: var(--mac-label);
+  white-space: nowrap;
+  cursor: pointer;
+}
+:root.mac .mac-seg-op.activa { background: var(--mac-accent); color: var(--mac-accent-text); }

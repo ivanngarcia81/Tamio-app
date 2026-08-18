@@ -2151,6 +2151,13 @@ export const es = {
     pieCerrar: "cerrar",
   },
 
+  // Barra de filtros de Mac (components/mac/MacFiltros.tsx): un botón de la
+  // toolbar que despliega los filtros de la pantalla.
+  filtros: {
+    titulo: "Filtros",
+    conteo: "Filtros · {{n}}",
+    restablecer: "Restablecer",
+  },
   plan: {
     titulo: "Tu plan",
     sub: "Qué áreas ve esta iglesia. También sirve para regalar cuentas (cortesía).",

@@ -2120,6 +2120,12 @@ export const en: Resources = {
     pieCerrar: "close",
   },
 
+  // Mac filter bar (components/mac/MacFiltros.tsx).
+  filtros: {
+    titulo: "Filters",
+    conteo: "Filters · {{n}}",
+    restablecer: "Reset",
+  },
   plan: {
     titulo: "Your plan",
     sub: "Which areas this church sees. Also used to gift accounts (courtesy).",
