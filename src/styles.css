@@ -9204,3 +9204,50 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    quedan: son un monograma dentro de un cuadro de 52 px, no texto de
    interfaz, igual que el 10 px del avatar del sidebar. */
 :root.mac .cmdk-input { font-size: var(--mac-fs-title); padding: 12px 14px; }
+
+/* ---------------- Tabla densa ----------------
+
+   Filas de 26 px y cabecera de 22 en 11 semibold, que es la densidad de una
+   lista de Finder o de Mail. Antes: 50 px de fila con 12/18 de relleno, o sea
+   la mitad de información en el mismo espacio.
+
+   La cabecera pierde las mayúsculas con tracking (recurso de web) y el
+   rayado por filas pares: en macOS las filas se separan con una línea, y el
+   rayado alterno es de tabla de informe impreso. El realce al pasar el ratón
+   deja de pintar una barra de tinta a la izquierda —esa barra era un
+   sustituto del estado "seleccionado", que en macOS se marca con el acento en
+   toda la fila. */
+:root.mac .data-table {
+  border-radius: var(--mac-card-radius);
+  border-color: var(--mac-card-border);
+  box-shadow: none;
+  background: var(--mac-card);
+}
+:root.mac .data-table .th,
+:root.mac .data-table .td {
+  padding: 0 8px;
+  font-size: var(--mac-fs-body);
+}
+:root.mac .data-table .thead {
+  min-height: 22px;
+  background: transparent;
+  color: var(--mac-secondary);
+  font-size: var(--mac-fs-small);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: 1px solid var(--mac-separator);
+}
+:root.mac .data-table .tr {
+  min-height: var(--mac-table-row-h);
+  border-bottom: 1px solid var(--mac-separator);
+}
+:root.mac .data-table .tr:nth-child(even) { background: transparent; }
+:root.mac .data-table .tr:hover { background: var(--mac-hover); box-shadow: none; }
+/* Cifras con ancho fijo en toda la tabla: una columna de dinero que baila al
+   repintar es de las cosas que más delatan a una tabla web. Se aplica a la
+   celda entera y no a una clase de "columna numérica" —que en este proyecto
+   no existe: el importe es `.td-monto` con su alineación en línea— porque en
+   las letras `tabular-nums` no cambia nada. */
+:root.mac .data-table .th,
+:root.mac .data-table .td { font-variant-numeric: tabular-nums; }
