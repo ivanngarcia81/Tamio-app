@@ -9844,3 +9844,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      etiqueta por estar en la otra columna, no por el trazo. */
   :root.mac .settings-detail .form-valor { font-weight: 400; }
 }
+
+@media (min-width: 761px) {
+  /* La vista previa del PDF deja de repartirse la ventana al 50 % con el
+     formulario —eso ya lo hizo la rejilla de una columna— y además se
+     encoge: sirve para COMPROBAR el membrete, no para ocupar media pantalla.
+     Se queda como una tarjeta pequeña alineada con los campos, en la misma
+     columna que ellos. */
+  :root.mac .settings-detail .pdf-preview-card {
+    margin-left: 170px;
+    max-width: 320px;
+    border: 1px solid var(--mac-card-border);
+    border-radius: var(--mac-card-radius);
+    padding: 10px;
+  }
+  :root.mac .settings-detail .pdf-preview-stage { padding: 10px; border-radius: 6px; }
+  :root.mac .settings-detail .pdf-preview-hint { margin-bottom: 8px; }
+  :root.mac .settings-detail .pdf-sheet { transform: scale(.62); transform-origin: top center; }
+  /* El alto del cartón lo fija la hoja SIN escalar, así que al encogerla
+     quedaba un hueco muerto debajo; se recupera con un margen negativo
+     proporcional. */
+  :root.mac .settings-detail .pdf-preview-stage { height: 232px; overflow: hidden; align-items: flex-start; }
+}
