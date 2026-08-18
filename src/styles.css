@@ -4602,12 +4602,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de la pantalla vacía debajo del texto, con el pie flotando muy lejos.
 
    Se centra con `margin-block: auto` y NO con `justify-content: center`: este
-   cuerpo es el que desplaza, y cuando el contenido pasa de alto —el
-   formulario final con el teclado abierto, o un texto largo en un iPhone
-   pequeño— `justify-content: center` deja el principio por encima del borde
-   superior y ahí no se puede llegar desplazando. Los márgenes automáticos
-   reparten solo el espacio que sobra: si no sobra, valen cero y todo se
-   comporta como antes. */
+   cuerpo es el que desplaza, y el centrado de alineación en un contenedor que
+   desplaza deja, en los motores anteriores al arreglo de 2024, la mitad de
+   arriba por encima del borde y sin forma de llegar a ella —el formulario
+   final con el teclado abierto, o un texto largo en un iPhone pequeño—. Los
+   márgenes automáticos reparten solo el espacio que sobra: si no sobra, valen
+   cero y todo se comporta como antes, en cualquier motor. Misma decisión y
+   mismo motivo que en `.welcome-overlay`; ver la nota de allí. */
 :root.iphone .welcome-slide { margin-block: auto; }
 /* Pie anclado. Esta pantalla va ENCIMA de la barra de pestañas
    (`.welcome-overlay` tiene z-index 160), así que aquí NO se suma
@@ -5395,7 +5396,37 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   inset: 0;
   z-index: 160; /* sobre la barra móvil, el ☰ y los modales */
   display: grid;
-  place-items: center;
+  /* Centrado vertical con márgenes automáticos, NO con `place-items: center`.
+     Este telón desplaza (`overflow-y: auto`), y el centrado de alineación en
+     un contenedor que desplaza tiene una trampa vieja: lo que no cabe se
+     reparte a los dos lados y la mitad de arriba queda por encima del borde,
+     donde no se llega desplazando. Sería el "Comenzar" del formulario fuera
+     de alcance, en la primera pantalla que ve un cliente nuevo.
+
+     **Los motores recientes ya lo arreglan** —se comprobó con Chromium 2025:
+     restaurando `place-items: center` y estrujando la ventana a 1100x400, la
+     tarjeta sigue empezando en su sitio y el botón se alcanza—. Pero Tamio
+     admite macOS 11, y el WKWebView de esas versiones es anterior al arreglo.
+     Los márgenes automáticos no dependen de eso: reparten solo el espacio que
+     sobra y valen cero cuando no sobra, en cualquier motor. Es un seguro, no
+     la reparación de algo roto.
+
+     Y el margen es fino: en la ventana mínima de Mac (1100x700) y en español,
+     la diapositiva del formulario deja 24 px de holgura. Basta que crezca una
+     traducción o que se añada un campo.
+
+     No se usa `place-items: safe center`, que diría esto mismo en una línea,
+     porque un WKWebView que no la entienda descarta la declaración entera y
+     la tarjeta se estiraría a lo ancho — peor que el problema que evita.
+
+     `justify-items` se queda centrado: en el eje horizontal no hay desborde
+     posible, la tarjeta mide 480 px fijos.
+
+     El teléfono no entra aquí: `:root.iphone .welcome-overlay` pone
+     `place-items: stretch` con más especificidad, y su hijo es
+     `.welcome-movil`, no `.card`. */
+  align-items: start;
+  justify-items: center;
   overflow-y: auto;
   /* En teléfono el margen se reduce para que la tarjeta quepa completa. */
   padding: clamp(14px, 5vw, 40px);
@@ -5447,6 +5478,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    versión oscura, replicando el tratamiento del login e independiente del tema
    de la app. */
 .welcome-overlay .card {
+  /* El centrado vertical que el telón ya no hace por sí solo. Ver la nota de
+     `.welcome-overlay`. */
+  margin-block: auto;
   /* Como hijo de grid, sin esto el "min-content" interno (p. ej. el selector
      de idioma) puede ganarle al max-width y desbordar la pantalla en iPhone. */
   min-width: 0;
