@@ -16,8 +16,47 @@ import { playSound } from "../sound";
 import { iaHabilitada, redactarCarta } from "../ia";
 import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
 import { esIPhone } from "../movil";
-import { IOSPickerInput } from "./ios/IOSPickerField";
+import { IOSPickerField, IOSPickerInput } from "./ios/IOSPickerField";
+import { ActionField, IosChevron, Section, SwitchField } from "./ios/FormularioIOS";
+import { IOSFilaTexto } from "./ios/IOSPantallaTexto";
+import Portal from "./Portal";
 import type { IOSPickerOption } from "./ios/IOSPickerSheet";
+
+/** Fila de lista con un control nativo del sistema a la derecha. En WKWebView
+ *  este `input` ES la rueda de fecha de iOS, así que se conserva tal cual. */
+function FilaNativa({
+  label, tipo, valor, min, onChange,
+}: {
+  label: string;
+  tipo: "date" | "time";
+  valor: string;
+  min?: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="ios-field">
+      <span className="ios-field-label">{label}</span>
+      <input
+        className="ios-field-input nm-nativo"
+        type={tipo}
+        value={valor}
+        min={min}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+/** El cuerpo, con las variables sin resolver en el color de acento. Se pintan
+ *  distintas porque no son texto: son huecos que el PDF rellena, y verlos
+ *  mezclados con la prosa es lo que hace que se cuelen sin querer. */
+function resaltarVariables(texto: string) {
+  return texto.split(/(\{[a-zA-ZñÑáéíóú]+\})/g).map((trozo, i) =>
+    /^\{[a-zA-ZñÑáéíóú]+\}$/.test(trozo)
+      ? <span key={i} className="ios-cuerpo-var">{trozo}</span>
+      : <span key={i}>{trozo}</span>
+  );
+}
 
 export const TIPOS_CARTA = [
   "recomendacion", "certificacion", "constanciaActivo", "buenaConducta", "presentacion",
@@ -114,11 +153,39 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
   });
 
   const cuerpoRef = useRef<HTMLDivElement>(null);
+  /* Copia del cuerpo SOLO PARA ENSEÑARLO en la lista del teléfono.
+     `cuerpoRef` sigue siendo la única fuente de la que salen el guardado y el
+     PDF (`generarHtml`), que no se han tocado. Esta copia existe porque React
+     no se entera de que el `contentEditable` cambió: sin ella, la fila de
+     lectura enseñaría siempre el texto del primer render. Si alguna vez se
+     desincroniza, lo que se ve mal es la vista previa de la lista, nunca el
+     documento. */
+  const [cuerpoVista, setCuerpoVista] = useState(carta?.cuerpo_html ?? "");
+  const [cuerpoAbierto, setCuerpoAbierto] = useState(false);
+  const [firmaAbierta, setFirmaAbierta] = useState<string | null>(null);
+  /** Cada vez que el cuerpo cambia por donde sea (teclado, plantilla, IA). */
+  function sincronizarVista() {
+    // `textContent` a secas pega los bloques ("…Ramírez.Miembro desde 2020"):
+    // los saltos de un HTML son etiquetas, no texto. Se cierran a mano antes
+    // de leerlos. Es solo para la vista previa de la lista — el documento
+    // sale del innerHTML, que no se toca.
+    const html = cuerpoRef.current?.innerHTML ?? "";
+    const plano = html
+      .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    const doc = document.createElement("textarea");
+    doc.innerHTML = plano;
+    setCuerpoVista(doc.value);
+  }
   const [dirty, setDirty] = useState(false);
   useEffect(() => { dirtyRef.current = dirty; }, [dirty, dirtyRef]);
 
   useEffect(() => {
     if (cuerpoRef.current) cuerpoRef.current.innerHTML = carta?.cuerpo_html ?? "";
+    sincronizarVista();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carta?.id]);
 
@@ -197,6 +264,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
     setSaludo(aplicarVariables(p.saludo ?? "", ctx));
     setDespedida(aplicarVariables(p.despedida ?? "", ctx));
     if (cuerpoRef.current) cuerpoRef.current.innerHTML = aplicarVariables(p.cuerpo_html, ctx);
+    sincronizarVista();
     setDirty(true);
     setPendingPlantilla(null);
   }
@@ -223,6 +291,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
         idioma: i18n.language?.startsWith("en") ? "en" : "es",
       });
       if (cuerpoRef.current) cuerpoRef.current.innerHTML = html;
+      sincronizarVista();
       setDirty(true);
       setIaAbierta(false);
       setIaPuntos("");
@@ -349,12 +418,168 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
   }
 
   return (
-    <div className="card pad-lg enter">
+    <div className={enIPhone ? "carta-ios enter" : "card pad-lg enter"}>
       {vinculo && (
         <div style={{ marginBottom: 14 }}>
           <span className="tag donacion">{t("cartas.vinculadaA", { folio: vinculo })}</span>
         </div>
       )}
+      {enIPhone ? (
+        <>
+          {/* El aviso del membrete, como fila tocable que lleva a Ajustes. La
+              caja amarilla con un "→" dentro parecía enlace sin serlo: en
+              táctil no se sabía qué parte se toca. La condición no cambia. */}
+          {faltanDatos && (
+            <Section footer={t("cartas.faltanDatosDetalle")}>
+              <Link to="/configuracion" className="ios-field ios-field--link ios-field--aviso">
+                <span className="ios-field-label">{t("cartas.faltanDatosCorto")}</span>
+                <IosChevron />
+              </Link>
+            </Section>
+          )}
+
+          <Section header={t("cartas.secDocumento")}>
+            <IOSPickerField label={t("cartas.filaTipo")} options={opcTipoCarta} value={tipo} onSelect={(v) => marcar(setTipo)(v)} />
+            <div className="ios-field">
+              <span className="ios-field-label">{t("cartas.filaNumero")}</span>
+              <span className="ios-field-value">{carta?.folio ?? t("cartas.folioPendiente")}</span>
+            </div>
+            <FilaNativa label={t("cartas.filaEmision")} tipo="date" valor={fechaEmision} onChange={(v) => marcar(setFechaEmision)(v)} />
+            <IOSFilaTexto
+              label={t("cartas.filaLugar")}
+              title={t("cartas.lugarEmision")}
+              valor={lugarEmision}
+              vacio={t("common.opcional")}
+              onChange={(v) => marcar(setLugarEmision)(v)}
+            />
+          </Section>
+
+          <Section header={t("cartas.secDestinatario")}>
+            <IOSPickerField label={t("cartas.filaTipo")} options={opcDestinatario} value={destTipo} onSelect={(v) => marcar(setDestTipo)(v)} />
+            {destTipo === "miembro" ? (
+              <IOSPickerField
+                label={t("cartas.filaMiembro")}
+                options={opcMiembros}
+                value={memberId === null ? "" : String(memberId)}
+                placeholder={t("cartas.eligeMiembro")}
+                onSelect={(v) => marcar(setMemberId)(v ? Number(v) : null)}
+              />
+            ) : (
+              <IOSFilaTexto
+                label={t("cartas.filaNombre")}
+                title={t("cartas.nombreDestinatario")}
+                valor={destNombre}
+                vacio={t("common.ninguno")}
+                onChange={(v) => marcar(setDestNombre)(v)}
+              />
+            )}
+            <IOSFilaTexto
+              label={t("cartas.filaDireccion")}
+              title={t("cartas.direccionDestinatario")}
+              valor={destDireccion}
+              vacio={t("common.opcional")}
+              multilinea
+              onChange={(v) => marcar(setDestDireccion)(v)}
+            />
+          </Section>
+
+          <Section header={t("cartas.secContenido")}>
+            {(plantillas ?? []).length > 0 && (
+              <IOSPickerField
+                label={t("cartas.filaPlantilla")}
+                sheetTitle={t("plantillas.usarPlantilla")}
+                options={opcPlantillas}
+                value=""
+                placeholder={t("plantillas.elegirPlantilla")}
+                onSelect={(v) => {
+                  const pl = (plantillas ?? []).find((x) => x.id === Number(v));
+                  if (pl) pedirAplicarPlantilla(pl);
+                }}
+              />
+            )}
+            <IOSFilaTexto label={t("cartas.asunto")} valor={asunto} vacio={t("common.opcional")} onChange={(v) => marcar(setAsunto)(v)} />
+            <IOSFilaTexto
+              label={t("cartas.saludo")}
+              valor={saludo}
+              vacio={t("cartas.saludoPlaceholder")}
+              placeholder={t("cartas.saludoPlaceholder")}
+              onChange={(v) => marcar(setSaludo)(v)}
+            />
+            <IOSFilaTexto label={t("cartas.despedida")} valor={despedida} vacio={t("cartas.despedidaPlaceholder")} placeholder={t("cartas.despedidaPlaceholder")} onChange={(v) => marcar(setDespedida)(v)} />
+          </Section>
+
+          {/* El cuerpo se LEE aquí y se edita en su pantalla. Las variables
+              van en el color de acento para que se distingan del texto. */}
+          <Section header={t("cartas.cuerpo")}>
+            <div className="ios-field ios-field--stacked ios-cuerpo-vista">
+              {cuerpoVista.trim()
+                ? <p className="ios-cuerpo-texto">{resaltarVariables(cuerpoVista)}</p>
+                : <p className="ios-cuerpo-texto ios-cuerpo-vacio">{t("cartas.cuerpoVacio")}</p>}
+            </div>
+            <ActionField label={t("cartas.editarCuerpo")} onPress={() => setCuerpoAbierto(true)} />
+            {iaHabilitada && (
+              <ActionField label={t("cartas.ia.boton")} onPress={() => { setIaError(null); setIaAbierta(true); }} />
+            )}
+          </Section>
+
+          <Section header={t("cartas.secFirmas")} footer={t("cartas.firmasPie")}>
+            {ROLES_FIRMA.map((rol) => {
+              const f = firmas.find((x) => x.rol === rol);
+              if (!f) {
+                return (
+                  <button key={rol} type="button" className="ios-field ios-field--action" onClick={() => toggleFirma(rol)}>
+                    {t("cartas.agregarFirmante", { rol: t(`cartas.firmaRol.${rol}`) })}
+                  </button>
+                );
+              }
+              return (
+                <button key={rol} type="button" className="ios-field ios-field--link" onClick={() => setFirmaAbierta(rol)}>
+                  <span className="ios-buscador-texto">
+                    <span className="ios-field-label">{f.nombre || t(`cartas.firmaRol.${rol}`)}</span>
+                    <span className="ios-buscador-sub">{f.cargo}</span>
+                  </span>
+                  <span className={`ios-insignia ${f.firmado ? "es-firmado" : "es-pendiente"}`}>
+                    {f.firmado ? t("cartas.firmado") : t("cartas.pendienteFirma")}
+                  </span>
+                  <IosChevron />
+                </button>
+              );
+            })}
+          </Section>
+
+          <Section header={t("cartas.secEstado")}>
+            <IOSPickerField label={t("cartas.filaEstado")} options={opcEstadoCarta} value={estado} onSelect={(v) => marcar(setEstado)(v)} />
+            {estado === "entregada" && (
+              <>
+                <IOSFilaTexto label={t("cartas.filaEntregadaA")} title={t("cartas.entregadaA")} valor={entregadaA} vacio={t("common.ninguno")} onChange={(v) => marcar(setEntregadaA)(v)} />
+                <FilaNativa label={t("cartas.filaFechaEntrega")} tipo="date" valor={fechaEntrega} min={fechaEmision} onChange={(v) => marcar(setFechaEntrega)(v)} />
+              </>
+            )}
+            <IOSFilaTexto
+              label={t("cartas.filaNotas")}
+              title={t("cartas.observaciones")}
+              valor={observaciones}
+              vacio={t("common.opcional")}
+              multilinea
+              onChange={(v) => marcar(setObservaciones)(v)}
+            />
+          </Section>
+          <p className="ios-section-footer ios-pie-suelto">{t("cartas.noSeImprime")}</p>
+
+          {error && <p className="nm-aviso" role="alert"><IconWarn size={14} /> {error}</p>}
+
+          <Section>
+            <ActionField label={t("cartas.vistaPrevia")} onPress={verPrevia} />
+            <ActionField label={t("cartas.imprimirPdf")} onPress={imprimir} />
+            <ActionField
+              label={saving ? t("common.guardando") : carta ? t("common.guardarCambios") : t("cartas.guardarBorrador")}
+              onPress={() => guardar()}
+              disabled={saving}
+            />
+          </Section>
+        </>
+      ) : (
+        <>
       {faltanDatos && (
         <div className="form-warning" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
           <IconWarn size={15} />
@@ -618,6 +843,9 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
           {saving ? t("common.guardando") : carta ? t("common.guardarCambios") : t("cartas.guardarBorrador")}
         </button>
       </div>
+        </>
+      )}
+
 
       {preview && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPreview(null); }}>
@@ -695,6 +923,128 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
           onCancel={() => setIaConfirmarDescartar(false)}
         />
       )}
+
+
+      {/* ---- La pantalla del cuerpo, y por qué está SIEMPRE montada ----
+          `generarHtml()` y `guardar()` leen el cuerpo de `cuerpoRef.current
+          .innerHTML`, o sea del DOM vivo del `contentEditable`. Si esta
+          pantalla se montara solo al abrirla, al cerrarla el ref quedaría en
+          null y el `?? ""` de esas dos funciones dejaría el PDF SIN CUERPO,
+          en silencio y justo en el documento que la iglesia entrega firmado.
+
+          Así que se monta siempre y solo se esconde. `ios-oculta` pone
+          `display: none` con su propia regla: el atributo `hidden` de HTML no
+          serviría, porque `.ios-sheet-overlay` declara `display: flex` y eso
+          gana al `display: none` del navegador.
+
+          A cambio, `generarHtml` no se ha tocado ni una línea. */}
+      {enIPhone && (
+        <Portal>
+          <div className={`ios-sheet-overlay${cuerpoAbierto ? "" : " ios-oculta"}`}>
+            <div className="ios-sheet" role="dialog" aria-label={t("cartas.cuerpo")}>
+              <div className="ios-nav">
+                <span className="ios-back" />
+                <h1 className="ios-nav-title">{t("cartas.cuerpo")}</h1>
+                <span className="ios-nav-status">
+                  <button
+                    type="button"
+                    className="ios-nav-action"
+                    onClick={() => { sincronizarVista(); setCuerpoAbierto(false); }}
+                  >
+                    {t("common.listo")}
+                  </button>
+                </span>
+              </div>
+              <div className="ios-cuerpo-barra">
+                <button type="button" className="ios-cuerpo-btn" onClick={() => cmd("bold")} aria-label={t("cartas.negrita")}><b>B</b></button>
+                <button type="button" className="ios-cuerpo-btn" onClick={() => cmd("italic")} aria-label={t("cartas.cursiva")}><i>I</i></button>
+                <button type="button" className="ios-cuerpo-btn" onClick={() => cmd("insertUnorderedList")} aria-label={t("cartas.lista")}>•—</button>
+                <button type="button" className="ios-cuerpo-btn" onClick={() => cmd("insertOrderedList")} aria-label={t("cartas.listaNum")}>1.—</button>
+                <span className="ios-cuerpo-insertar">
+                  <IOSPickerInput
+                    ariaLabel={t("cartas.insertarDato")}
+                    options={opcInsertar}
+                    value=""
+                    placeholder={t("cartas.insertarDato")}
+                    onSelect={(v) => { if (v) insertarDato(v); }}
+                  />
+                </span>
+              </div>
+              <div
+                ref={cuerpoRef}
+                contentEditable
+                role="textbox"
+                aria-multiline="true"
+                aria-label={t("cartas.cuerpo")}
+                className="ios-sheet-body ios-cuerpo-editable"
+                onInput={() => setDirty(true)}
+              />
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* Una hoja por firmante, en vez de tres columnas estrujadas en 390 px.
+          El pie dice de dónde salen el nombre y el cargo por omisión, que hoy
+          no se explicaba en ninguna parte. */}
+      {firmaAbierta && (() => {
+        const f = firmas.find((x) => x.rol === firmaAbierta);
+        if (!f) return null;
+        const cerrar = () => setFirmaAbierta(null);
+        return (
+          <Portal>
+            <div className="ios-sheet-overlay" onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
+              <div className="ios-sheet" role="dialog" aria-label={t(`cartas.firmaRol.${f.rol}`)}>
+                <div className="ios-nav">
+                  <span className="ios-back" />
+                  <h1 className="ios-nav-title">{t(`cartas.firmaRol.${f.rol}`)}</h1>
+                  <span className="ios-nav-status">
+                    <button type="button" className="ios-nav-action" onClick={cerrar}>{t("common.listo")}</button>
+                  </span>
+                </div>
+                <div className="ios-sheet-body">
+                  <Section header={t("cartas.quienFirma")} footer={t("cartas.firmantePie")}>
+                    <IOSFilaTexto
+                      label={t("usuarios.colNombre")}
+                      valor={f.nombre}
+                      vacio={t("common.ninguno")}
+                      onChange={(v) => setFirma(f.rol, { nombre: v })}
+                    />
+                    <IOSFilaTexto
+                      label={t("tesorero.cargo")}
+                      valor={f.cargo}
+                      vacio={t("common.ninguno")}
+                      onChange={(v) => setFirma(f.rol, { cargo: v })}
+                    />
+                  </Section>
+                  <Section header={t("cartas.firma")}>
+                    <SwitchField
+                      label={t("cartas.yaFirmo")}
+                      checked={f.firmado}
+                      onChange={(v) => setFirma(f.rol, { firmado: v })}
+                    />
+                    {f.firmado && (
+                      <FilaNativa
+                        label={t("cartas.fechaFirma")}
+                        tipo="date"
+                        valor={f.fecha ?? ""}
+                        onChange={(v) => setFirma(f.rol, { fecha: v || null })}
+                      />
+                    )}
+                  </Section>
+                  <Section>
+                    <ActionField
+                      label={t("cartas.quitarFirmante")}
+                      destructive
+                      onPress={() => { toggleFirma(f.rol as RolFirma); cerrar(); }}
+                    />
+                  </Section>
+                </div>
+              </div>
+            </div>
+          </Portal>
+        );
+      })()}
 
       {confirmEntrega && (
         <ConfirmDialog
