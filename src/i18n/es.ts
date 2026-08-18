@@ -40,6 +40,8 @@ export const es = {
     descartarCambiosTitulo: "¿Descartar cambios?",
     descartarCambiosMensaje: "Lo que escribiste se perderá.",
     descartarCambiosBtn: "Descartar",
+    ninguno: "Ninguno",
+    sinResultados: "Sin resultados",
   },
 
   fechas: {
@@ -367,6 +369,7 @@ export const es = {
     segGasto: "Gasto",
     segMiembro: "Miembro",
     constanciaCorta: "Emitir constancia",
+    anotarVisitante: "Anotar «{{nombre}}» como visitante",
     miembroFila: "Miembro",
     buscarMiembroCorto: "Nombre o visitante",
     seccionDetalle: "Detalle",

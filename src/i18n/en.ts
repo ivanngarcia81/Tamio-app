@@ -46,6 +46,8 @@ export const en: Resources = {
     camposOpcionales: "Fields marked as optional can be filled in later.",
     montoInvalido: "Enter a valid amount greater than zero.",
     conceptoObligatorio: "The description is required.",
+    ninguno: "None",
+    sinResultados: "No results",
   },
 
   fechas: {
@@ -373,6 +375,7 @@ export const en: Resources = {
     segGasto: "Expense",
     segMiembro: "Member",
     constanciaCorta: "Issue receipt",
+    anotarVisitante: "Record “{{nombre}}” as a visitor",
     miembroFila: "Member",
     buscarMiembroCorto: "Name or visitor",
     seccionDetalle: "Details",

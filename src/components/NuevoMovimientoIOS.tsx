@@ -25,6 +25,7 @@ import Portal from "./Portal";
 import IOSSegmented from "./ios/IOSSegmented";
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { ActionField, Section, SwitchField, TextField } from "./ios/FormularioIOS";
+import { IOSBuscadorField } from "./ios/IOSBuscadorSheet";
 import {
   METODOS_PAGO, catNombre, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
   mesesPendientesRecurrente, metodoNombre,
@@ -69,7 +70,7 @@ export default function NuevoMovimientoIOS({
     tab, setTab, saving, error, isEdit, pestanaBloqueada, titulo,
     categoria, setCategoria, subcategoria, setSubcategoria, concepto, setConcepto,
     fecha, setFecha, hora, setHora, monto, setMonto, metodo, setMetodo,
-    aportanteQuery, setAportanteQuery, setAportanteId, sugerencias,
+    aportanteQuery, setAportanteQuery, aportanteId, setAportanteId,
     beneficiario, setBeneficiario, beneficiarioRfc, setBeneficiarioRfc,
     constancia, setConstancia, marcarPendiente, setMarcarPendiente,
     esRecurrente, setEsRecurrente, recDesde, setRecDesde,
@@ -175,25 +176,29 @@ export default function NuevoMovimientoIOS({
 
             {tab === "ingreso" ? (
               <Section header={t("recordModal.aportante")} footer={t("recordModal.aportanteHint")}>
-                {/* El buscador se queda como estaba: cambiarlo por una hoja
-                    con búsqueda es una pieza propia y va en su tarea. */}
-                <TextField
+                {/* Fila que abre el buscador del padrón. El aportante no es
+                    "elegir uno de una lista": puede ser un visitante que no
+                    está registrado, y entonces lo que se guarda es el nombre
+                    escrito (`aportanteId` en null). La hoja resuelve las dos
+                    cosas — ver IOSBuscadorSheet. */}
+                <IOSBuscadorField
                   label={t("recordModal.miembroFila")}
-                  value={aportanteQuery}
-                  onChange={(v) => { setAportanteQuery(v); setAportanteId(null); }}
+                  valor={aportanteQuery}
+                  vacio={t("common.ninguno")}
+                  title={t("recordModal.aportante")}
                   placeholder={t("recordModal.buscarMiembroCorto")}
+                  opciones={h.members.map((m) => ({
+                    id: String(m.id),
+                    titulo: m.nombre,
+                    sub: m.rfc || m.email || null,
+                  }))}
+                  seleccionado={aportanteId === null ? null : String(aportanteId)}
+                  textoInicial={aportanteQuery}
+                  onElegir={(o) => { setAportanteId(Number(o.id)); setAportanteQuery(o.titulo); }}
+                  onTextoLibre={(tx) => { setAportanteId(null); setAportanteQuery(tx); }}
+                  etiquetaTextoLibre={(tx) => t("recordModal.anotarVisitante", { nombre: tx })}
+                  onLimpiar={() => { setAportanteId(null); setAportanteQuery(""); }}
                 />
-                {sugerencias.length > 0 && sugerencias.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className="ios-field ios-field--link nm-sugerencia"
-                    onClick={() => { setAportanteId(m.id); setAportanteQuery(m.nombre); }}
-                  >
-                    <span className="ios-field-label">{m.nombre}</span>
-                    <span className="ios-field-value">{m.rfc || m.email || ""}</span>
-                  </button>
-                ))}
                 <SwitchField
                   label={t("recordModal.constanciaCorta")}
                   checked={constancia}
