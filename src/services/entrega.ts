@@ -64,10 +64,24 @@ export async function entregarArchivo(bytes: Uint8Array, fileName: string): Prom
 
   // PDFs en iPad/iPhone: primero se VE el documento en el visor de la app
   // (en iOS no hay Vista Previa); su botón Compartir abre la hoja nativa.
+  //
+  // Si el visor no carga, NO se cancela la entrega: se cae a la hoja de
+  // compartir, que es de donde iOS ya sabe previsualizar, imprimir y guardar
+  // en Archivos. Antes cualquier fallo aquí dejaba al usuario con un aviso
+  // de error y sin PDF, teniendo a mano un camino que sí funciona.
+  //
+  // El visor arrastra `pdfjs-dist`, que pide iOS bastante reciente
+  // (`Promise.withResolvers` es de iOS 17.4; los bloques `static {}`, de
+  // Safari 16.4). En un iPhone más viejo el módulo ni siquiera parsea y
+  // Safari lo reporta como "Importing a module script failed".
   if (extension(fileName) === "pdf") {
-    const { mostrarPdf } = await import("./visorPdf");
-    mostrarPdf(bytes, fileName, async () => { await compartirMovil(bytes, fileName); });
-    return true;
+    try {
+      const { mostrarPdf } = await import("./visorPdf");
+      mostrarPdf(bytes, fileName, async () => { await compartirMovil(bytes, fileName); });
+      return true;
+    } catch (e) {
+      console.warn("El visor de PDF no cargó; se comparte directo:", e);
+    }
   }
 
   return compartirMovil(bytes, fileName);
