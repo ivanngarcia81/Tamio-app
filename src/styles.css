@@ -9251,3 +9251,241 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    las letras `tabular-nums` no cambia nada. */
 :root.mac .data-table .th,
 :root.mac .data-table .td { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   VERSIÓN MAC — Paquete 2: Ajustes
+
+   Todo el bloque vive dentro de `@media (min-width: 761px)`, que es el ancho
+   a partir del cual Ajustes tiene sus dos columnas. Por debajo, el shell ya
+   se turna índice y detalle con su botón "Volver" (regla ~3196), y estas
+   reglas —más específicas y más abajo en el archivo— le ganarían dejando la
+   barra de pestañas y el formulario encajonados en una ventana estrecha. Es
+   el mismo tropiezo que la rejilla de `.app` del paquete 1.
+   ============================================================ */
+@media (min-width: 761px) {
+  /* ---- Una sola navegación: la barra de pestañas ----
+     El sidebar ya dice "Ajustes"; una segunda columna de 240 px dentro
+     repite esa jerarquía. En macOS esto son pestañas horizontales sobre el
+     contenido (Ajustes de Safari, de Xcode). El marcado no cambia: la misma
+     `.settings-nav` con sus botones, puesta en fila y con el icono encima
+     del nombre. */
+  :root.mac .settings-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  :root.mac .settings-nav {
+    width: auto;
+    position: static;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 10px 0 14px;
+    border-bottom: 1px solid var(--mac-separator);
+    margin-bottom: 20px;
+  }
+  :root.mac .settings-nav-item {
+    flex-direction: column;
+    gap: 3px;
+    width: 76px;
+    padding: 6px 4px;
+    border-radius: var(--mac-radius);
+    font-size: var(--mac-fs-small);
+    font-weight: 400;
+    color: var(--mac-secondary);
+    text-align: center;
+  }
+  :root.mac .settings-nav-item:hover { background: var(--mac-hover); }
+  /* Nunca negro: el acento del sistema, igual que la selección del sidebar. */
+  :root.mac .settings-nav-item.activo {
+    background: var(--mac-accent);
+    color: var(--mac-accent-text);
+    font-weight: 400;
+  }
+  :root.mac .settings-nav-icono { color: var(--mac-secondary); }
+  :root.mac .settings-nav-item.activo .settings-nav-icono { color: inherit; }
+  :root.mac .settings-nav-nombre {
+    flex: 0 0 auto;
+    width: 100%;
+    line-height: 14px;
+    /* Dos líneas como mucho ("Tesorero y pastor", "Acceso y áreas"): sin
+       esto una pestaña de nombre largo estiraba la fila entera. */
+    overflow-wrap: break-word;
+  }
+  :root.mac .settings-nav-flecha { display: none; }
+  /* El botón "Volver" es del modo de una columna; con pestañas no hay a
+     dónde volver. */
+  :root.mac .settings-detail-volver { display: none; }
+
+  /* ---- Un solo nivel de caja ----
+     Hoy son tres: la zona es una tarjeta gris, dentro hay una tarjeta blanca
+     por bloque y dentro los campos. En macOS el formulario se apoya
+     directamente en el fondo de la ventana. */
+  :root.mac .settings-detail {
+    width: 100%;
+    max-width: 580px;
+    margin-inline: auto;
+    gap: 0;
+  }
+  :root.mac .settings-zona {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 0;
+  }
+  /* La cabecera de zona repite lo que ya dice la pestaña activa. */
+  :root.mac .settings-zona-head { display: none; }
+  :root.mac .settings-masonry {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    margin-bottom: 0;
+  }
+  :root.mac .settings-card,
+  :root.mac .settings-detail .card {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    animation: none;
+  }
+  :root.mac .settings-card:hover,
+  :root.mac .settings-detail .card:hover {
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+  /* Encabezado de bloque: 13 px semibold y nada más. Fuera el icono en
+     recuadro —decoración de web— y el subtítulo explicativo, que en un
+     formulario de macOS va como pie del campo que le toca, no bajo el
+     título. El título SÍ se queda: hay pestañas con dos bloques (Membrete y
+     Secretaría, Tesorero y Pastor) y sin él no se sabría dónde acaba uno. */
+  :root.mac .settings-detail .card-icon { display: none; }
+  :root.mac .settings-detail .card-title-sub { display: none; }
+  :root.mac .settings-detail .card-title-lg {
+    font-size: var(--mac-fs-headline);
+    font-weight: 600;
+    letter-spacing: normal;
+  }
+  :root.mac .settings-detail .card-head { margin-bottom: 12px; }
+  :root.mac .settings-detail .card-head-left { gap: 0; }
+
+  /* ---- Formulario alineado ----
+     Etiqueta a la derecha en una columna de 140 px y campo de 22 px con el
+     ancho del DATO, no del contenedor: un código postal no necesita 580 px.
+     Es la diferencia más visible entre un formulario de macOS y uno de web
+     (o del teléfono, que es de donde salía este: etiqueta encima y campo de
+     44 px a todo el ancho). */
+  :root.mac .settings-detail .form-group {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 10px;
+    margin-bottom: 8px;
+  }
+  :root.mac .settings-detail .form-label {
+    grid-column: 1;
+    text-align: right;
+    font-size: var(--mac-fs-body);
+    font-weight: 400;
+    color: var(--mac-label);
+  }
+  /* Los dos puntos van en CSS y no en las cien cadenas de i18n. */
+  :root.mac .settings-detail .form-label::after { content: ":"; }
+  :root.mac .settings-detail .form-label .opt { color: var(--mac-tertiary); }
+  :root.mac .settings-detail .form-group > :not(.form-label) { grid-column: 2; }
+  /* La rejilla de dos campos por fila desalinearía la columna de etiquetas:
+     en un formulario alineado todo baja en una sola columna. */
+  :root.mac .settings-detail .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-bottom: 0;
+  }
+  :root.mac .settings-detail .form-input,
+  :root.mac .settings-detail .form-select,
+  :root.mac .settings-detail .form-textarea {
+    height: var(--mac-control-h);
+    min-height: 0;
+    padding: 0 7px;
+    border-radius: 5px;
+    border-color: var(--mac-card-border);
+    background: var(--mac-card);
+    font-size: var(--mac-fs-body);
+    /* Ancho según el dato: el campo llega hasta 320 px y no hasta el borde
+       del formulario. */
+    max-width: 320px;
+  }
+  :root.mac .settings-detail .form-textarea { height: auto; padding: 5px 7px; }
+  /* Texto de ayuda: 11 px bajo el control y alineado con ÉL, no con la
+     etiqueta. */
+  :root.mac .settings-detail .form-hint,
+  :root.mac .settings-detail .field-error {
+    grid-column: 2;
+    font-size: var(--mac-fs-small);
+    color: var(--mac-secondary);
+    margin-top: 0;
+  }
+  :root.mac .settings-detail .field-error { color: var(--mac-red); }
+}
+
+@media (min-width: 761px) {
+  /* Logo y firma: la misma fila alineada que los campos —etiqueta a la
+     derecha, contenido en la segunda columna— en vez de un bloque suelto
+     encima del formulario. La miniatura baja de 64 a 44 px (medida de avatar
+     de macOS) y la firma de 208×104 a 132×66, que sigue dejando ver el
+     trazo. La firma además muestra su ESTADO: sin este pie no había forma de
+     saber si había una cargada o no sin abrir el PDF. */
+  :root.mac .settings-detail .church-logo-row,
+  :root.mac .settings-detail .signature-row {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    align-items: start;
+    gap: 4px 10px;
+    margin-bottom: 12px;
+  }
+  :root.mac .settings-detail .church-logo-preview,
+  :root.mac .settings-detail .church-logo-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    grid-column: 2;
+  }
+  :root.mac .settings-detail .signature-preview,
+  :root.mac .settings-detail .signature-placeholder {
+    width: 132px;
+    height: 66px;
+    border-radius: 6px;
+    grid-column: 2;
+  }
+  /* Botón + pie, pegados bajo la miniatura y no a su derecha: así el bloque
+     entero ocupa la misma columna que los campos. */
+  :root.mac .settings-detail .signature-actions {
+    grid-column: 2;
+    min-width: 0;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  :root.mac .settings-detail .signature-actions-row { gap: 6px; }
+  :root.mac .settings-detail .card .btn {
+    height: var(--mac-control-h);
+    min-height: 0;
+    padding: 0 9px;
+    border-radius: var(--mac-radius);
+    border: 1px solid var(--mac-card-border);
+    background: var(--mac-card);
+    color: var(--mac-label);
+    font-size: var(--mac-fs-body);
+    font-weight: 400;
+    box-shadow: none;
+  }
+  :root.mac .settings-detail .card .btn:hover { background: var(--mac-hover); }
+  :root.mac .settings-detail .card .btn.primary {
+    background: var(--mac-accent);
+    border-color: transparent;
+    color: var(--mac-accent-text);
+    font-weight: 500;
+  }
+}
