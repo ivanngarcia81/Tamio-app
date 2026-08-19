@@ -271,7 +271,9 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                 </div>
                 <RowMenu
                   onEdit={() => setModal({ open: true, acta: a })}
-                  extraItems={[{ label: t("common.imprimir"), onClick: () => { if (imprimiendo === null) imprimir(a); } }]}
+                  /* En el teléfono NO se pasa: imprimir vive ahora en el modal
+                      del acta, así que RowMenu esconde los "···". */
+                  extraItems={enIPhone ? undefined : [{ label: t("common.imprimir"), onClick: () => { if (imprimiendo === null) imprimir(a); } }]}
                   onDelete={() => setPendingDelete(a)}
                 />
               </div>
@@ -342,6 +344,8 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
           acta={modal.acta}
           onClose={() => setModal({ open: false, acta: null })}
           onSaved={onChanged}
+          /* Solo en el teléfono: en Mac imprimir sigue en el menú de la fila. */
+          onImprimir={enIPhone && modal.acta ? () => { if (imprimiendo === null) imprimir(modal.acta!); } : undefined}
         />
       )}
 

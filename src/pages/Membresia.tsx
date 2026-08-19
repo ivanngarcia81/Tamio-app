@@ -346,7 +346,9 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                     onEdit={() => onEdit(m)}
                     onDelete={() => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))}
                     deleteLabel={m.activo === 1 ? t("membresia.darDeBaja") : t("membresia.reactivar")}
-                    extraItems={[{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
+                    /* En el teléfono NO se pasa: sin acciones de más, RowMenu esconde
+                       los "···" y queda solo el gesto. Fusionar vive en la ficha. */
+                    extraItems={enIPhone ? undefined : [{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
                   />
                 </div>
               );
@@ -445,6 +447,8 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           member={ficha}
           onClose={() => setFicha(null)}
           onSaved={onChanged}
+          /* Solo en el teléfono: en Mac fusionar sigue en el menú de la fila. */
+          onFusionar={enIPhone ? () => { const m = ficha; setFicha(null); setFusionando(m); } : undefined}
         />
       )}
 

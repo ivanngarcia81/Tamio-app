@@ -7,7 +7,7 @@ import {
   type Acta, type ActaAcuerdo, type ActaMocion, type Church, type NewActa,
 } from "../db";
 import { ChipGroup, Seccion, SwitchRow } from "./FichaMiembroModal";
-import { IconClose, IconPlus, IconSparkles } from "../icons";
+import { IconClose, IconPlus, IconPrinter, IconSparkles } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -59,9 +59,13 @@ interface Props {
   acta: Acta | null;
   onClose: () => void;
   onSaved: () => void;
+  /** Imprimir esta acta. Opcional y solo lo pasa Actas en el teléfono, donde
+   *  los "···" de la fila se fueron: el deslizamiento da Editar y Eliminar, e
+   *  imprimir se quedaría sin ninguna forma de llegar. */
+  onImprimir?: () => void;
 }
 
-export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
+export default function ActaModal({ church, acta, onClose, onSaved, onImprimir }: Props) {
   const { t, i18n } = useTranslation();
   const enIPhone = esIPhone();
   useEscapeClose(onClose);
@@ -407,7 +411,11 @@ export default function ActaModal({ church, acta, onClose, onSaved }: Props) {
         </div>
 
         <div className="modal-footer">
-          <span />
+          {acta && onImprimir ? (
+            <button className="btn secondary" onClick={onImprimir}>
+              <IconPrinter size={13} /> {t("common.imprimir")}
+            </button>
+          ) : <span />}
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
             <button className="btn primary" onClick={guardar} disabled={saving}>

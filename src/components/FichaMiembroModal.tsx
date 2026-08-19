@@ -208,13 +208,18 @@ interface Props {
   member: Member | null;
   onClose: () => void;
   onSaved: () => void;
+  /** Fusionar este miembro con otro. Opcional y solo lo pasa Membresía en el
+   *  teléfono: ahí los "···" de la fila desaparecieron —el deslizamiento ya
+   *  da Editar y Eliminar— y fusionar se quedaría sin ninguna forma de
+   *  llegar. En Mac la acción sigue en el menú de la fila y esto no se pasa. */
+  onFusionar?: () => void;
 }
 
 /** Ficha completa del miembro: datos de membresía, vida espiritual y servicio.
  *  En modo edición los datos personales se editan aparte (botón Editar); en
  *  modo alta (member === null) se incluyen aquí para no tener que completarlos
  *  después. */
-export default function FichaMiembroModal({ church, member, onClose, onSaved }: Props) {
+export default function FichaMiembroModal({ church, member, onClose, onSaved, onFusionar }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
   const crear = member === null;
@@ -684,12 +689,17 @@ export default function FichaMiembroModal({ church, member, onClose, onSaved }: 
 
         <div className="modal-footer">
           {crear ? <div /> : (
-            <button
-              className="btn secondary"
-              onClick={() => printInformeIndividual(church, member!).catch((e) => showToast(t("common.noSePudoImprimir", { error: String(e) })))}
-            >
-              <IconPrinter size={13} /> {t("ficha.generarInforme")}
-            </button>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                className="btn secondary"
+                onClick={() => printInformeIndividual(church, member!).catch((e) => showToast(t("common.noSePudoImprimir", { error: String(e) })))}
+              >
+                <IconPrinter size={13} /> {t("ficha.generarInforme")}
+              </button>
+              {onFusionar && (
+                <button className="btn secondary" onClick={onFusionar}>{t("fusion.accion")}</button>
+              )}
+            </div>
           )}
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
