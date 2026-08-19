@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone, esMac, textoCorto } from "../movil";
 import { MacBuscador, MacSegmentado } from "../components/mac/MacFiltros";
@@ -48,6 +48,11 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  // Buscador de iPhone: en reposo lupa y texto van centrados; al enfocarlo se
+  // van a la izquierda y aparece "Cancelar". Mismo bloque que Actas y
+  // Membresía.
+  const [buscando, setBuscando] = useState(false);
+  const refBuscar = useRef<HTMLInputElement>(null);
   const [recurrentes, setRecurrentes] = useState<MovimientoRecurrente[]>([]);
   const [pendingDeleteRec, setPendingDeleteRec] = useState<MovimientoRecurrente | null>(null);
   const [pendingDeleteSerie, setPendingDeleteSerie] = useState<{ def: MovimientoRecurrente; generados: number } | null>(null);
@@ -157,6 +162,11 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const buscados = txs.filter(coincide);
   const visibles = filtroCat ? buscados.filter((t) => t.categoria === filtroCat) : buscados;
   const conteo = (id: string) => buscados.filter((t) => t.categoria === id).length;
+  /* Las categorías que se ofrecen para filtrar: EXACTAMENTE la misma lista que
+     ya calculaban los chips —solo las que tienen movimientos, más la activa
+     aunque quede en cero, para que no desaparezca bajo el dedo al filtrar—.
+     Aquí solo se le pone nombre para poder reutilizarla en las dos formas. */
+  const catsVisibles = categorias.filter((c) => conteo(c.id) > 0 || filtroCat === c.id);
 
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -366,7 +376,98 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               </div>
             )}
 
-            {!enMac && (
+            {enIPhone ? (
+              /* Campo de 36 px con relleno gris y sin borde, y las categorías
+                 DEBAJO a todo el ancho: el patrón de la barra de alcance de
+                 Mail. El borde de 1 px del campo de escritorio es lo que más
+                 lo delataba como web, y los chips al lado dejaban el activo
+                 como una pastilla negra. */
+              <div className="ios-buscar-bloque">
+                <div className={`ios-buscar${buscando ? " es-activo" : ""}`}>
+                  <label className="ios-buscar-campo">
+                    <IconSearch size={15} strokeWidth={2} />
+                    <input
+                      ref={refBuscar}
+                      value={query}
+                      placeholder={t("common.buscarCorto")}
+                      onChange={(e) => setQuery(e.target.value)}
+                      onFocus={() => setBuscando(true)}
+                      aria-label={t("mov.buscarPlaceholder")}
+                    />
+                  </label>
+                  {buscando && (
+                    <button
+                      type="button"
+                      className="ios-buscar-cancelar"
+                      onClick={() => { setQuery(""); setBuscando(false); refBuscar.current?.blur(); }}
+                    >
+                      {t("common.cancelar")}
+                    </button>
+                  )}
+                </div>
+
+                {/* Mismo criterio que Actas: con dos casillas o menos —"Todos"
+                    y una sola categoría— no hay elección que ofrecer; a partir
+                    de cinco el segmentado no cabe en 390 px sin bajar el texto
+                    de 13 px, y se vuelve a la fila que se desliza. La lista de
+                    categorías es la MISMA que ya se calculaba, sin cambiar el
+                    criterio de cuáles salen. */}
+                {catsVisibles.length >= 2 && (
+                  catsVisibles.length <= 3 ? (
+                    <div className="ios-alcance" role="tablist">
+                      <span
+                        className="ios-alcance-pulgar"
+                        style={{
+                          width: `calc((100% - 4px) / ${catsVisibles.length + 1})`,
+                          transform: `translateX(${(filtroCat === null ? 0 : catsVisibles.findIndex((c) => c.id === filtroCat) + 1) * 100}%)`,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={filtroCat === null}
+                        className="ios-alcance-opcion"
+                        onClick={() => setFiltroCat(null)}
+                      >
+                        {t("common.todos")}
+                      </button>
+                      {catsVisibles.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={filtroCat === c.id}
+                          className="ios-alcance-opcion"
+                          onClick={() => setFiltroCat(c.id)}
+                        >
+                          {catNombre(c.id)}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="ios-filtros">
+                      <button
+                        type="button"
+                        className={`chip${filtroCat === null ? " active" : ""}`}
+                        onClick={() => setFiltroCat(null)}
+                      >
+                        {t("common.todos")}
+                      </button>
+                      {catsVisibles.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`chip${filtroCat === c.id ? " active" : ""}`}
+                          onClick={() => setFiltroCat(filtroCat === c.id ? null : c.id)}
+                        >
+                          {catNombre(c.id)}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
+            ) : !enMac ? (
             <div className="tx-head" style={{ marginBottom: 10 }}>
               <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
                 <IconSearch size={15} strokeWidth={2} />
@@ -378,7 +479,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 />
               </div>
             </div>
-            )}
+            ) : null}
 
             <div className="tx-head">
               <div className="tx-title">{esIngreso ? t("mov.todosIngresos") : t("mov.todosGastos")}</div>
@@ -397,6 +498,11 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       .map((c) => ({ id: c.id, label: <>{catNombre(c.id)} <span className="mac-seg-n">{conteo(c.id)}</span></> })),
                   ]}
                 />
+              ) : enIPhone ? (
+                /* En el teléfono los filtros se mudaron ARRIBA, bajo el
+                   buscador, como barra de alcance. Dejarlos también aquí
+                   sería el mismo filtro dos veces. */
+                null
               ) : (
               <div className="tx-filters">
                 <div
