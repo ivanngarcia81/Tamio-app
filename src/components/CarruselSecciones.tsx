@@ -95,6 +95,68 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
     return () => clearTimeout(t);
   }, [pathname]);
 
+  /* El desenfoque del carrusel de Copilot: las secciones se difuminan, se
+     apagan y encogen conforme se alejan del centro, y el nombre que está bajo
+     la píldora es el único nítido. No es adorno: es lo que hace que la tira se
+     lea como una rueda con profundidad y no como una fila de pastillas.
+
+     Se calcula desde la POSICIÓN REAL del scroll en cada fotograma, no con una
+     transición de CSS. El diseño de referencia mueve la tira con un
+     `translateX` de JavaScript y anima el desenfoque en 520 ms; aquí quien
+     manda es el dedo sobre un contenedor con scroll nativo, y una transición
+     de medio segundo dejaría el desenfoque medio segundo por detrás del dedo.
+     Sin transición, el valor sigue al gesto exactamente, que es justo lo que
+     lo hace sentir nativo. Al tocar una sección el salto es instantáneo
+     —`scrollIntoView` ya usa "instant" a propósito, ver arriba— y el
+     desenfoque salta con él, en el mismo fotograma.
+
+     Cada ítem recibe `--d` (0 en el centro, 1 en el borde) y el CSS decide qué
+     hacer con él. Son seis secciones como mucho, así que el coste por
+     fotograma es despreciable incluso con `filter`. */
+  useEffect(() => {
+    const el = pista.current;
+    if (!el) return;
+    let pendiente = 0;
+
+    function pintar() {
+      pendiente = 0;
+      const caja = el!.getBoundingClientRect();
+      /* La misma fórmula del diseño: `d` NO es la distancia al centro —eso
+         emborronaría al vecino de al lado, que en el diseño se lee nítido—,
+         sino cuánto ASOMA el nombre más allá de la banda franca de los
+         bordes. Un nombre que cabe entero en pantalla no se difumina nada;
+         solo se emborrona lo que se está escapando por los lados, que es
+         donde la máscara ya lo está desvaneciendo. */
+      const bordeSeguro = 22;
+      const rampa = 96;
+      const izq = caja.left + bordeSeguro;
+      const der = caja.right - bordeSeguro;
+      for (const nodo of items.current.values()) {
+        const r = nodo.getBoundingClientRect();
+        const asoma = Math.max(0, r.right - der, izq - r.left);
+        const d = Math.min(1, asoma / rampa);
+        nodo.style.setProperty("--d", d.toFixed(3));
+      }
+    }
+
+    function alFotograma() {
+      if (pendiente) return;
+      pendiente = requestAnimationFrame(pintar);
+    }
+
+    pintar();
+    el.addEventListener("scroll", alFotograma, { passive: true });
+    window.addEventListener("resize", alFotograma);
+    return () => {
+      el.removeEventListener("scroll", alFotograma);
+      window.removeEventListener("resize", alFotograma);
+      if (pendiente) cancelAnimationFrame(pendiente);
+    };
+    // `pathname` entra en las dependencias para repintar tras cada navegación:
+    // el efecto que centra la sección corre en el mismo commit y deja las
+    // distancias nuevas.
+  }, [pathname, secciones.length]);
+
   // Al soltar el dedo, qué sección quedó bajo el selector fijo del centro —
   // esa es la que se abre. Se calcula al ASENTARSE el scroll (con una espera
   // corta sin eventos nuevos), no en cada fotograma del gesto.

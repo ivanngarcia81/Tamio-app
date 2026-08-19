@@ -8786,6 +8786,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        cualquier texto se siga leyendo mientras cruza. */
     background: color-mix(in srgb, var(--brand, #059669) 14%, transparent);
     border: 1.5px solid color-mix(in srgb, var(--brand, #059669) 55%, transparent);
+    /* Halo del diseño: un anillo casi imperceptible que despega la píldora
+       del fondo sin añadir otra línea dura. */
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand, #059669) 5%, transparent);
     pointer-events: none;
     z-index: 0;
     transition: width var(--dur) ease;
@@ -8803,8 +8806,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     /* Difuminado en los bordes: la sección que asoma a medias en el borde de
        la tira se desvanece en vez de cortarse en seco — el relleno de los
        lados (abajo) ya deja hueco de sitio, esto es solo la lectura visual. */
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+    /* El degradado del diseño de referencia: mucho más largo que los 28 px
+       que había (26 % del ancho) y con un escalón intermedio al 25 % de
+       opacidad. Junto con el desenfoque de abajo es lo que da la sensación
+       de rueda con profundidad en vez de fila recortada. */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.25) 6%, #000 26%, #000 74%, rgba(0, 0, 0, 0.25) 94%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.25) 6%, #000 26%, #000 74%, rgba(0, 0, 0, 0.25) 94%, transparent 100%);
   }
   .carrusel-pista::-webkit-scrollbar { display: none; }
   /* Relleno a cada lado: sin esto, la primera y la última sección no pueden
@@ -8828,7 +8835,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-size: var(--fs-body); font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
+    /* `--d` lo escribe CarruselSecciones.tsx en cada fotograma del gesto: 0
+       para el nombre que está bajo la píldora, 1 para el del borde. De ahí
+       salen las tres cosas del efecto —desenfoque, opacidad y tamaño—, que
+       así siguen al dedo sin transición ninguna. Ver el comentario largo del
+       componente sobre por qué NO se anima.
+
+       La curva es continua a propósito. El diseño de referencia da un salto
+       en el activo (opacidad 0,62 → 1) porque allí la tira solo se mueve a
+       saltos de una pestaña; con un contenedor de scroll el nombre cruza el
+       centro poco a poco y ese salto se vería como un parpadeo. */
+    --d: 0;
+    filter: blur(calc(var(--d) * 7px));
+    opacity: calc(1 - var(--d) * 0.8);
+    transform: scale(calc(1 - var(--d) * 0.05));
+    will-change: filter, opacity, transform;
     transition: background-color var(--dur) ease, color var(--dur) ease;
+  }
+  /* Con movimiento reducido, ni desenfoque ni escala: solo el apagado, que
+     es la única de las tres señales que no depende de que algo se mueva. */
+  @media (prefers-reduced-motion: reduce) {
+    .carrusel-item { filter: none; transform: none; will-change: auto; }
   }
   /* Sin fondo propio: el resalte lo pone la píldora fija de detrás. Solo
      cambia el color del texto, que es lo que la píldora hace legible. */
