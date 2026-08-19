@@ -9,6 +9,7 @@
  */
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import Portal from "../Portal";
 
 const BackChevron = () => (
   <svg viewBox="0 0 11 19" aria-hidden="true">
@@ -48,6 +49,30 @@ export function IOSNavBar({
           de la grilla y mantener el título de verdad centrado. */}
       <span className="ios-nav-status">{action}</span>
     </div>
+  );
+}
+
+/** Una pantalla empujada por encima de una hoja: cubre la anterior con su
+ *  propia nav bar de volver, que es como iOS entra en cualquier sublista. Se
+ *  monta en su propio portal, así que el orden del documento la deja por
+ *  encima de la hoja que la abrió sin tener que inventar un z-index nuevo. */
+export function IOSPantalla({ titulo, volverA, onVolver, accion, children }: {
+  titulo: string;
+  /** Nombre de la pantalla anterior, junto al chevron de volver. */
+  volverA: string;
+  onVolver: () => void;
+  accion?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Portal>
+      <div className="ios-sheet-overlay">
+        <div className="ios-sheet" role="dialog" aria-label={titulo}>
+          <IOSNavBar backLabel={volverA} title={titulo} onBack={onVolver} action={accion} />
+          <div className="ios-sheet-body">{children}</div>
+        </div>
+      </div>
+    </Portal>
   );
 }
 

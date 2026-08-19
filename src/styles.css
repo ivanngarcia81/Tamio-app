@@ -11023,3 +11023,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--brand-soft, rgba(16, 185, 129, 0.14));
   color: var(--brand);
 }
+
+/* ---------------- El acta en iPhone (NuevaActaIOS) ----------------
+   El campo de puntos de la IA: un área de varias líneas dentro de una fila
+   apilada, con el mismo relleno gris que el resto y sin el borde de 1 px que
+   delata a la web. Alto fijo modesto — son viñetas, no un ensayo. */
+:root.iphone .ios-ia-campo {
+  min-height: 132px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.12);
+  font-size: 16px;
+  line-height: 1.45;
+  resize: none;
+}
+:root[data-theme="dark"].iphone .ios-ia-campo { background: rgba(118, 118, 128, 0.24); }

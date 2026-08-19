@@ -66,6 +66,9 @@ export interface PropsActa {
   onImprimir?: () => void;
 }
 
+/** Los cuatro campos que pueden bloquear el guardado. */
+export type CampoActa = "titulo" | "fecha" | "preside" | "secretario";
+
 export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
   const { t, i18n } = useTranslation();
   const [saving, setSaving] = useState(false);
@@ -74,6 +77,10 @@ export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
   const [iaGenerando, setIaGenerando] = useState(false);
   const [iaError, setIaError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /* Qué campo disparó el error, para que el iPhone pueda poner el aviso al pie
+     de SU sección en vez de todo junto al final. Mac sigue leyendo `error` y
+     no se entera de esto. */
+  const [campoError, setCampoError] = useState<CampoActa | null>(null);
 
   const [tipo, setTipo] = useState(acta?.tipo ?? "administrativa");
   const [titulo, setTitulo] = useState(acta?.titulo ?? "");
@@ -129,14 +136,15 @@ export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
   }
 
   async function guardar() {
-    setError(null);
-    if (!titulo.trim()) { setError(t("actas.tituloObligatorio")); return; }
-    if (!fecha) { setError(t("actas.fechaObligatoria")); return; }
+    setError(null); setCampoError(null);
+    const falla = (campo: CampoActa, msg: string) => { setCampoError(campo); setError(msg); };
+    if (!titulo.trim()) { falla("titulo", t("actas.tituloObligatorio")); return; }
+    if (!fecha) { falla("fecha", t("actas.fechaObligatoria")); return; }
     // Un acta aprobada/corregida es un documento formal: sin quién presidió y
     // quién levantó el acta no puede pasar de borrador.
     if (estado === "aprobada" || estado === "corregida") {
-      if (!preside.trim()) { setError(t("actas.presideObligatorio", { estado: t(`actas.estado.${estado}`) })); return; }
-      if (!secretario.trim()) { setError(t("actas.secretarioObligatorio", { estado: t(`actas.estado.${estado}`) })); return; }
+      if (!preside.trim()) { falla("preside", t("actas.presideObligatorio", { estado: t(`actas.estado.${estado}`) })); return; }
+      if (!secretario.trim()) { falla("secretario", t("actas.secretarioObligatorio", { estado: t(`actas.estado.${estado}`) })); return; }
     }
     setSaving(true);
     try {
@@ -176,7 +184,7 @@ export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
   }
 
   return {
-    saving, error, setError, muestraAprobacion,
+    saving, error, setError, campoError, muestraAprobacion,
     iaAbierta, setIaAbierta, iaPuntos, setIaPuntos, iaGenerando, iaError, setIaError, generarActaIA,
     tipo, setTipo, titulo, setTitulo, fecha, setFecha,
     horaInicio, setHoraInicio, horaCierre, setHoraCierre, lugar, setLugar,

@@ -27,7 +27,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
-import { ActionField, FilaNativa, IOSNavBar, IosChevron, Section, SwitchField, TextField } from "./ios/FormularioIOS";
+import { ActionField, FilaNativa, IOSPantalla, IosChevron, Section, SwitchField, TextField } from "./ios/FormularioIOS";
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { IOSFilaTexto } from "./ios/IOSPantallaTexto";
 import { ChipGroup, CARGOS, HABILIDADES, INSTRUMENTOS, MINISTERIOS } from "./FichaMiembroModal";
@@ -178,26 +178,6 @@ function FilaBloque({ titulo, bloque, h, onPress }: {
   );
 }
 
-/** El bloque a pantalla completa. Se edita EN VIVO sobre el formulario, sin
- *  copia ni "Listo": es una pantalla empujada dentro del mismo formulario,
- *  no un diálogo aparte, y quien quiera descartar todo tiene "Cancelar" en la
- *  hoja —hasta ahí no se ha escrito nada en la base. */
-function PantallaBloque({ titulo, onVolver, children }: {
-  titulo: string; onVolver: () => void; children: React.ReactNode;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Portal>
-      <div className="ios-sheet-overlay">
-        <div className="ios-sheet" role="dialog" aria-label={titulo}>
-          <IOSNavBar backLabel={t("recordModal.nuevoMiembro")} title={titulo} onBack={onVolver} />
-          <div className="ios-sheet-body">{children}</div>
-        </div>
-      </div>
-    </Portal>
-  );
-}
-
 /* ============================================================
    La hoja
    ============================================================ */
@@ -320,19 +300,19 @@ export default function NuevoMiembroIOS({ onClose, h }: { onClose: () => void; h
       </div>
 
       {bloque === "espiritual" && (
-        <PantallaBloque titulo={t("ficha.iosVidaEspiritual")} onVolver={() => setBloque(null)}>
+        <IOSPantalla volverA={titulo} titulo={t("ficha.iosVidaEspiritual")} onVolver={() => setBloque(null)}>
           <BloqueEspiritual h={h} />
-        </PantallaBloque>
+        </IOSPantalla>
       )}
       {bloque === "servicio" && (
-        <PantallaBloque titulo={t("ficha.secServicio")} onVolver={() => setBloque(null)}>
+        <IOSPantalla volverA={titulo} titulo={t("ficha.secServicio")} onVolver={() => setBloque(null)}>
           <BloqueServicio h={h} />
-        </PantallaBloque>
+        </IOSPantalla>
       )}
       {bloque === "personales" && (
-        <PantallaBloque titulo={t("ficha.iosMasPersonales")} onVolver={() => setBloque(null)}>
+        <IOSPantalla volverA={titulo} titulo={t("ficha.iosMasPersonales")} onVolver={() => setBloque(null)}>
           <BloquePersonales h={h} />
-        </PantallaBloque>
+        </IOSPantalla>
       )}
     </Portal>
   );

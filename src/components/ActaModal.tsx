@@ -6,6 +6,7 @@ import { IconClose, IconPlus, IconPrinter, IconSparkles } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 import { iaHabilitada } from "../ia";
 import { useActa, type PropsActa } from "./acta";
+import NuevaActaIOS from "./NuevaActaIOS";
 
 export const TIPOS_ACTA = [
   "administrativa", "lideres", "asamblea", "pastoral", "eleccion", "nombramiento",
@@ -13,6 +14,10 @@ export const TIPOS_ACTA = [
 ] as const;
 
 export const ESTADOS_ACTA = ["borrador", "pendiente", "aprobada", "corregida", "archivada"] as const;
+
+/** Constante de módulo, no una lambda nueva por render: `useEscapeClose` lleva
+ *  la función en las dependencias de su efecto. */
+const NO_HACE_NADA = () => {};
 
 /* Reexportados desde `acta.ts`: `printActa` los importa desde aquí desde antes
    de que el estado se mudara, y no hay razón para que ese import cambie. */
@@ -22,7 +27,7 @@ export default function ActaModal(props: PropsActa) {
   const { acta, onClose, onImprimir } = props;
   const { t } = useTranslation();
   const enIPhone = esIPhone();
-  useEscapeClose(onClose);
+  useEscapeClose(enIPhone ? NO_HACE_NADA : onClose);
   const h = useActa(props);
   const {
     saving, error, muestraAprobacion,
@@ -36,6 +41,13 @@ export default function ActaModal(props: PropsActa) {
     estado, setEstado, confidencial, setConfidencial, fechaAprobacion, setFechaAprobacion,
     guardar,
   } = h;
+
+  // En el teléfono el acta entera se va a su propia hoja: es el formulario más
+  // largo de la app y en una columna de cajas de 46 px no cabe ni la primera
+  // sección.
+  if (enIPhone) {
+    return <NuevaActaIOS acta={acta} onClose={onClose} onImprimir={onImprimir} h={h} tipos={TIPOS_ACTA} estados={ESTADOS_ACTA} />;
+  }
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

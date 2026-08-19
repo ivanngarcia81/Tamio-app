@@ -77,12 +77,15 @@ export function IOSPantallaTexto({
 /** Fila que abre la pantalla de arriba. El valor se resume a una línea: en
  *  una lista, un texto de tres renglones desalinea todo lo demás. */
 export function IOSFilaTexto({
-  label, valor, vacio, title, placeholder, multilinea, onChange,
+  label, valor, vacio, resumen, title, placeholder, multilinea, onChange,
 }: {
   label: string;
   valor: string;
   /** Qué enseñar cuando está vacío ("Opcional", "Ninguno"…). */
   vacio: string;
+  /** Qué enseñar EN VEZ del texto cuando lo útil no es el principio sino una
+   *  cuenta ("4 puntos"). Solo cuando hay valor; vacío sigue mandando `vacio`. */
+  resumen?: string;
   title?: string;
   placeholder?: string;
   multilinea?: boolean;
@@ -94,7 +97,7 @@ export function IOSFilaTexto({
     <>
       <button type="button" className="ios-field ios-field--link" onClick={() => setAbierta(true)}>
         <span className="ios-field-label">{label}</span>
-        <span className="ios-field-value ios-field-value--resumen">{valor.trim() || vacio}</span>
+        <span className="ios-field-value ios-field-value--resumen">{valor.trim() ? resumen ?? valor : vacio}</span>
         <span className="ios-chevron" aria-hidden="true">
           <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
         </span>
