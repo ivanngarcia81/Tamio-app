@@ -488,6 +488,14 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               {
                 items: [
                   { label: t("miembros.importarCsv"), icon: <IconUpload size={13} />, onClick: () => setImportOpen(true) },
+                  /* El reporte anual vive AQUÍ, con Imprimir, porque es lo
+                     mismo que hace: producir un documento. Antes era la mitad
+                     derecha de un control segmentado "Mensual | Reporte
+                     anual" cuya mitad izquierda estaba `active` y `disabled`
+                     para siempre — o sea, un adorno. Un segmentado promete
+                     dos formas de ver lo mismo, y tocarlo sacaba una hoja de
+                     compartir. En Mac ya estaba en el menú de "Más". */
+                  { label: exporting === "anual" ? t("common.generando") : t("anual.boton"), icon: <IconFileText size={13} />, disabled: exporting !== null, onClick: handleAnnual },
                   { label: exporting === "print" ? t("common.preparando") : t("common.imprimir"), icon: <IconPrinter size={14} />, disabled: exporting !== null, onClick: handlePrint },
                 ],
               },
@@ -507,12 +515,6 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             >
               <IconChevronRight size={16} />
             </span>
-          </div>
-          <div className="segmented">
-            <button type="button" className="segmented-item active" disabled>{t("common.mensual")}</button>
-            <button type="button" className="segmented-item" onClick={handleAnnual} disabled={exporting !== null}>
-              {exporting === "anual" ? t("common.generando") : t("anual.boton")}
-            </button>
           </div>
         </div>
       </div>

@@ -99,4 +99,10 @@ if (sinTraducir.length) {
 }
 if (!soloEs.length && !soloEn.length && !sinTraducir.length) {
   console.log("✔ Los dos idiomas están sincronizados y todas las claves usadas existen.");
+} else {
+  // Salir con 1, no con 0. Antes este script IMPRIMÍA los problemas y se iba
+  // en verde, así que cualquier comprobación que mirase el código de salida
+  // —la mía incluida— lo daba por bueno. Una clave sin traducir se ve como
+  // "agenda.repetir" en pantalla; eso no puede pasar por un aviso.
+  process.exitCode = 1;
 }

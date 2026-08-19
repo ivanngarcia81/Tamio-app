@@ -1023,30 +1023,6 @@ html.vibrancy .main { background: var(--surface); }
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
-.segmented {
-  display: inline-flex;
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 2px;
-  gap: 2px;
-}
-.segmented-item {
-  border: none;
-  background: none;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color var(--dur) ease, color var(--dur) ease;
-}
-.segmented-item:disabled { cursor: default; }
-.segmented-item.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 2px rgba(0,0,0,.08);
-}
 .search {
   display: flex; align-items: center; gap: var(--space-2);
   color: var(--text-2);
@@ -7460,8 +7436,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Interruptor de vista (Agenda: Lista/Calendario; Informes: pestañas) como
    segmented control: antes eran chips sueltos con su propio fondo activo
    negro; ahora comparten una pista gris y la opción activa es una píldora
-   clara — mismo lenguaje visual que el Mensual/Anual de Reportes
-   (Prioridad 2, .segmented). Los chips de filtro por categoría (Ingresos/
+   clara (Prioridad 2). El precedente era el "Mensual | Reporte anual" de
+   Reportes, que ya no existe: aquello no era un selector de vista sino un
+   botón de exportar disfrazado —su mitad izquierda estaba `active` y
+   `disabled` para siempre— y se mudó al menú de acciones.
+   Los chips de filtro por categoría (Ingresos/
    Gastos) NO entran aquí a propósito: son una lista larga y desplazable,
    no un selector de 2-4 opciones fijas — forzarlos a segmented control los
    habría roto en cuanto hubiera más categorías que ancho de pantalla. */
