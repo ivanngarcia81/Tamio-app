@@ -18,19 +18,22 @@
  *   apagarla en la barra, el mensaje de error deja de hacer falta —aunque se
  *   sigue pintando si llegara, porque quitar la última red de un guardado no
  *   se compensa con nada.
- * - **Los tres bloques de "Completar ahora" se montan con el mismo JSX tanto
- *   en la lista como en su pantalla.** Están escritos una sola vez, abajo:
- *   si se duplicaran, el día que se añada un campo entraría en una de las dos
- *   y no en la otra, y nadie se enteraría hasta echarlo de menos.
+ * - **Las tres pantallas de "Completar ahora" editan en vivo, sin copia.** Son
+ *   pantallas empujadas dentro del mismo formulario, no diálogos aparte: quien
+ *   quiera descartar todo tiene "Cancelar" en la hoja, y hasta ahí no se ha
+ *   escrito nada en la base. Una copia con "Listo" obligaría además a decidir
+ *   qué pasa con lo escrito en las otras dos.
  */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
-import { ActionField, FilaNativa, Section, SwitchField, TextField } from "./ios/FormularioIOS";
+import { ActionField, FilaNativa, IOSNavBar, IosChevron, Section, SwitchField, TextField } from "./ios/FormularioIOS";
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { IOSFilaTexto } from "./ios/IOSPantallaTexto";
 import { ChipGroup, CARGOS, HABILIDADES, INSTRUMENTOS, MINISTERIOS } from "./FichaMiembroModal";
 import { ESTADOS_REGISTRO, type useFichaMiembro } from "./fichaMiembro";
 import { IconWarn } from "../icons";
+import { useEscapeClose } from "../hooks/useEscapeClose";
 
 type Ficha = ReturnType<typeof useFichaMiembro>;
 
@@ -54,10 +57,7 @@ function SeccionChips({ titulo, children }: { titulo: string; children: React.Re
 export function BloqueEspiritual({ h }: { h: Ficha }) {
   const { t } = useTranslation();
   return (
-    <Section
-      header={t("ficha.iosVidaEspiritual")}
-      footer={h.bautizadoEspiritu ? t("ficha.fechaAproximada") : undefined}
-    >
+    <Section footer={h.bautizadoEspiritu ? t("ficha.fechaAproximada") : undefined}>
       <SwitchField label={t("ficha.bautizadoAgua")} checked={h.bautizadoAgua} onChange={h.setBautizadoAgua} />
       {/* La fecha va pegada a su switch y solo cuando está encendido: es el
           mismo par que en Mac, y `guardar()` la anula si el switch se apaga. */}
@@ -109,7 +109,7 @@ export function BloqueServicio({ h }: { h: Ficha }) {
 export function BloquePersonales({ h }: { h: Ficha }) {
   const { t } = useTranslation();
   return (
-    <Section header={t("ficha.iosMasPersonales")} footer={t("recordModal.rfcMiembroHint")}>
+    <Section footer={t("recordModal.rfcMiembroHint")}>
       <IOSFilaTexto
         label={t("recordModal.rfc")}
         valor={h.rfc}
@@ -137,6 +137,68 @@ export function BloquePersonales({ h }: { h: Ficha }) {
 }
 
 /* ============================================================
+   Las tres filas y sus pantallas
+   ============================================================ */
+
+type Bloque = "espiritual" | "servicio" | "personales";
+
+/** Cuántos campos tiene cada bloque y cuántos llevan ya algo escrito.
+ *
+ *  El total sale de contar los campos que hay dentro —no de una constante
+ *  suelta— y el "con dato" es el mismo criterio que usa el resumen de la
+ *  sección plegable de Mac: enseñar lo que hay guardado dentro para no
+ *  esconderlo en silencio, que es media razón de que estas pantallas existan. */
+function cuentaBloque(b: Bloque, h: Ficha): { total: number; conDato: number } {
+  const campos: unknown[] =
+    b === "espiritual"
+      ? [h.bautizadoAgua, h.bautizadoEspiritu, h.cursoMembresia]
+      : b === "servicio"
+        ? [h.ministerios.length, h.cargos.length, h.ministeriosInteres.length,
+           h.instrumentos.length, h.habilidades.length, h.disponibilidad.trim(), h.interesServir]
+        : [h.rfc.trim(), h.notas.trim(), h.iglesiaAnterior.trim(), h.fechaIngreso];
+  return { total: campos.length, conDato: campos.filter(Boolean).length };
+}
+
+/** Fila que abre un bloque, con el número de campos que hay dentro. Cuando ya
+ *  hay algo escrito, el número pasa a "3 de 7" y se tiñe: sin eso, un bloque
+ *  relleno se ve igual que uno vacío. */
+function FilaBloque({ titulo, bloque, h, onPress }: {
+  titulo: string; bloque: Bloque; h: Ficha; onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const { total, conDato } = cuentaBloque(bloque, h);
+  return (
+    <button type="button" className="ios-field ios-field--link" onClick={onPress}>
+      <span className="ios-field-label">{titulo}</span>
+      <span className="ios-cuenta" data-lleno={conDato > 0}>
+        {conDato > 0 ? t("ficha.iosConDato", { n: conDato, total }) : total}
+      </span>
+      <IosChevron />
+    </button>
+  );
+}
+
+/** El bloque a pantalla completa. Se edita EN VIVO sobre el formulario, sin
+ *  copia ni "Listo": es una pantalla empujada dentro del mismo formulario,
+ *  no un diálogo aparte, y quien quiera descartar todo tiene "Cancelar" en la
+ *  hoja —hasta ahí no se ha escrito nada en la base. */
+function PantallaBloque({ titulo, onVolver, children }: {
+  titulo: string; onVolver: () => void; children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Portal>
+      <div className="ios-sheet-overlay">
+        <div className="ios-sheet" role="dialog" aria-label={titulo}>
+          <IOSNavBar backLabel={t("recordModal.nuevoMiembro")} title={titulo} onBack={onVolver} />
+          <div className="ios-sheet-body">{children}</div>
+        </div>
+      </div>
+    </Portal>
+  );
+}
+
+/* ============================================================
    La hoja
    ============================================================ */
 
@@ -144,6 +206,12 @@ export default function NuevoMiembroIOS({ onClose, h }: { onClose: () => void; h
   const { t } = useTranslation();
   const titulo = t("recordModal.nuevoMiembro");
   const sinNombre = !h.nombre.trim();
+  const [bloque, setBloque] = useState<Bloque | null>(null);
+
+  // Con una pantalla abierta, Escape la cierra a ella y no la hoja entera:
+  // salir del formulario desde dentro de un bloque tiraría lo escrito en los
+  // otros dos sin avisar.
+  useEscapeClose(bloque ? () => setBloque(null) : onClose);
 
   // Aviso, no bloqueo: normalmente alguien se congrega ANTES de ser recibido
   // como miembro. Al revés suele ser un dedo equivocado. Va en el pie de
@@ -228,9 +296,11 @@ export default function NuevoMiembroIOS({ onClose, h }: { onClose: () => void; h
               />
             </Section>
 
-            <BloqueEspiritual h={h} />
-            <BloqueServicio h={h} />
-            <BloquePersonales h={h} />
+            <Section header={t("ficha.iosCompletar")} footer={t("ficha.iosCompletarPie")}>
+              <FilaBloque titulo={t("ficha.iosVidaEspiritual")} bloque="espiritual" h={h} onPress={() => setBloque("espiritual")} />
+              <FilaBloque titulo={t("ficha.secServicio")} bloque="servicio" h={h} onPress={() => setBloque("servicio")} />
+              <FilaBloque titulo={t("ficha.iosMasPersonales")} bloque="personales" h={h} onPress={() => setBloque("personales")} />
+            </Section>
 
             {h.error && (
               <p className="nm-aviso" role="alert">
@@ -248,6 +318,22 @@ export default function NuevoMiembroIOS({ onClose, h }: { onClose: () => void; h
           </div>
         </div>
       </div>
+
+      {bloque === "espiritual" && (
+        <PantallaBloque titulo={t("ficha.iosVidaEspiritual")} onVolver={() => setBloque(null)}>
+          <BloqueEspiritual h={h} />
+        </PantallaBloque>
+      )}
+      {bloque === "servicio" && (
+        <PantallaBloque titulo={t("ficha.secServicio")} onVolver={() => setBloque(null)}>
+          <BloqueServicio h={h} />
+        </PantallaBloque>
+      )}
+      {bloque === "personales" && (
+        <PantallaBloque titulo={t("ficha.iosMasPersonales")} onVolver={() => setBloque(null)}>
+          <BloquePersonales h={h} />
+        </PantallaBloque>
+      )}
     </Portal>
   );
 }

@@ -1063,6 +1063,10 @@ export const es = {
     iosMembresiaPie: "Con esto ya queda en el directorio. Lo demás se puede completar cuando lo sepas.",
     iosVidaEspiritual: "Vida espiritual",
     iosMasPersonales: "Más datos personales",
+    iosCompletar: "Completar ahora (opcional)",
+    iosCompletarPie: "El ID fiscal, las notas, la iglesia anterior y la fecha en que se le recibió están aquí dentro.",
+    /* En la fila de un bloque: cuántos de sus campos llevan ya algo escrito. */
+    iosConDato: "{{n}} de {{total}}",
     fechaCongregacion: "Comenzó a congregarse",
     fechaIngreso: "Recibido como miembro",
     avisoFechasInvertidas: "«Recibido como miembro» es anterior a «Comenzó a congregarse». Normalmente alguien se congrega antes de ser recibido: revisa las dos fechas. Se puede guardar igual.",

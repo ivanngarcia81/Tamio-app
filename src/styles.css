@@ -11000,3 +11000,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root[data-theme="dark"].iphone .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
 :root.iphone .ios-chips .btn.secondary { font-size: 15px; }
+
+/* La cuenta de la fila de un bloque: "3" cuando está vacío —cuántos campos
+   hay dentro— y "1 de 3" en cuanto hay algo escrito. El tinte es lo que
+   distingue un bloque relleno de uno vacío sin tener que entrar. */
+:root.iphone .ios-cuenta {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+:root[data-theme="dark"].iphone .ios-cuenta { background: rgba(118, 118, 128, 0.24); }
+/* Después de la regla oscura a propósito: misma especificidad, así que manda
+   el orden y el bloque relleno se tiñe en los dos temas. */
+:root.iphone .ios-cuenta[data-lleno="true"] {
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+}
