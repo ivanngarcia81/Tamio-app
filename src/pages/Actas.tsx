@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone, textoCorto, esMac } from "../movil";
 import { MacBuscador } from "../components/mac/MacFiltros";
@@ -55,6 +55,13 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   const enIPhone = esIPhone();
   const [actas, setActas] = useState<Acta[]>([]);
   const [query, setQuery] = useState("");
+  /* Enfoque del buscador del teléfono: en reposo la lupa y el texto van
+     centrados, y al entrar se van a la izquierda y sale "Cancelar". Es estado
+     de React y no `:focus-within` a secas porque "Cancelar" tiene que seguir
+     existiendo mientras se toca —si el campo pierde el foco al pulsarlo, el
+     botón desaparece antes del clic. */
+  const [buscando, setBuscando] = useState(false);
+  const refBuscar = useRef<HTMLInputElement>(null);
   const [filtro, setFiltro] = useState<FiltroEstado>("todas");
   const [modal, setModal] = useState<{ open: boolean; acta: Acta | null }>({ open: false, acta: null });
   useAbrirCrearDesdeMas(() => setModal({ open: true, acta: null }));
@@ -128,28 +135,103 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
       </div>
 
       <div className="content">
-        <div className="tx-head">
-          <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
-            <IconSearch size={15} strokeWidth={2} />
-            <input
-              className="form-input"
-              placeholder={textoCorto(t("common.buscarCorto"), t("actas.buscarPlaceholder"))}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {/* Mismo criterio que en Movimientos: solo los estados que tienen
-                documentos, más el activo aunque se haya quedado en cero (para
-                poder salir de él). Con dos actas, cinco chips en cero eran
-                ruido. */}
-            {(["todas", ...ESTADOS_FILTRO.filter((f) => f === filtro || actas.some((a) => a.estado === f))] as FiltroEstado[]).map((f) => (
-              <button key={f} className={`chip${filtro === f ? " active" : ""}`} onClick={() => setFiltro(f)}>
-                {f === "todas" ? t("actas.filtroTodas") : t(`actas.estado.${f}`)}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Mismo criterio que en Movimientos, y NO se toca: solo los estados
+            que tienen documentos, más el activo aunque se haya quedado en cero
+            (para poder salir de él). Con dos actas, cinco chips en cero eran
+            ruido. Se calcula una vez y lo consumen las dos plataformas. */}
+        {(() => {
+          const estados = ["todas", ...ESTADOS_FILTRO.filter((f) => f === filtro || actas.some((a) => a.estado === f))] as FiltroEstado[];
+          const etiqueta = (f: FiltroEstado) => (f === "todas" ? t("actas.filtroTodas") : t(`actas.estado.${f}`));
+
+          if (!enIPhone) {
+            return (
+              <div className="tx-head">
+                <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input
+                    className="form-input"
+                    placeholder={textoCorto(t("common.buscarCorto"), t("actas.buscarPlaceholder"))}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {estados.map((f) => (
+                    <button key={f} className={`chip${filtro === f ? " active" : ""}`} onClick={() => setFiltro(f)}>
+                      {etiqueta(f)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="ios-buscar-bloque">
+              {/* Campo arriba y categorías DEBAJO, a todo el ancho: el patrón
+                  de la barra de alcance de Mail. Al lado del campo, "Todas"
+                  quedaba como un círculo negro y el otro estado como una
+                  pastilla de distinto ancho. */}
+              <div className={`ios-buscar${buscando ? " es-activo" : ""}`}>
+                <label className="ios-buscar-campo">
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input
+                    ref={refBuscar}
+                    value={query}
+                    placeholder={t("common.buscarCorto")}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setBuscando(true)}
+                    aria-label={t("actas.buscarPlaceholder")}
+                  />
+                </label>
+                {buscando && (
+                  <button
+                    type="button"
+                    className="ios-buscar-cancelar"
+                    onClick={() => { setQuery(""); setBuscando(false); refBuscar.current?.blur(); }}
+                  >
+                    {t("common.cancelar")}
+                  </button>
+                )}
+              </div>
+
+              {/* Con dos o menos no se enseña nada: una sola categoría además
+                  de "Todas" no es una elección. A partir de cinco el
+                  segmentado no cabe en 390 px y se vuelve a una fila que se
+                  desliza — ahí sí, porque la alternativa es texto ilegible. */}
+              {estados.length >= 3 && (
+                estados.length <= 4 ? (
+                  <div className="ios-alcance" role="tablist">
+                    <span
+                      className="ios-alcance-pulgar"
+                      style={{ width: `calc((100% - 4px) / ${estados.length})`, transform: `translateX(${estados.indexOf(filtro) * 100}%)` }}
+                    />
+                    {estados.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        role="tab"
+                        aria-selected={filtro === f}
+                        className="ios-alcance-opcion"
+                        onClick={() => setFiltro(f)}
+                      >
+                        {etiqueta(f)}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="ios-filtros">
+                    {estados.map((f) => (
+                      <button key={f} className={`chip${filtro === f ? " active" : ""}`} onClick={() => setFiltro(f)}>
+                        {etiqueta(f)}
+                      </button>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          );
+        })()}
 
         {loading ? (
           <LoadingState />

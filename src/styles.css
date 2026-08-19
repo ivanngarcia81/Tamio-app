@@ -4398,6 +4398,111 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Pie suelto, sin grupo encima (la nota de "no se imprime"). */
 :root.iphone .ios-pie-suelto { margin-top: -4px; }
 
+/* ---------------- Buscador con barra de alcance (Actas, iPhone) ----------------
+   Campo arriba y categorías DEBAJO, a todo el ancho — el patrón de Mail. Al
+   lado del campo, "Todas" quedaba como un círculo negro y el otro estado como
+   una pastilla de distinto ancho.
+
+   Clases NUEVAS a propósito: `tx-head` la usan diez archivos y
+   `search-input-wrap` otros diez. Tocar sus reglas base para arreglar una
+   pantalla habría movido las otras diecinueve. */
+:root.iphone .ios-buscar-bloque { margin: 2px 0 12px; }
+
+:root.iphone .ios-buscar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+:root.iphone .ios-buscar-campo {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  /* Centrado en reposo: lupa y texto al medio, como en Ajustes. Al enfocar
+     se van a la izquierda, que es donde escribe el cursor. */
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  /* 36, no 46. Junto con el relleno gris sin borde, son las dos medidas que
+     más separan un buscador de iOS de una caja de formulario web. */
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--text-3);
+}
+:root.iphone .ios-buscar.es-activo .ios-buscar-campo { justify-content: flex-start; }
+:root.iphone .ios-buscar-campo input {
+  flex: 0 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  /* 17 px: por debajo de 16, iOS hace zoom al enfocar el campo. */
+  font-size: 17px;
+}
+:root.iphone .ios-buscar.es-activo .ios-buscar-campo input { flex: 1 1 auto; }
+:root.iphone .ios-buscar-campo input:focus { outline: none; }
+:root.iphone .ios-buscar-campo input::placeholder { color: var(--text-3); }
+:root.iphone .ios-buscar-cancelar {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  color: var(--brand);
+  font-size: 17px;
+}
+:root[data-theme="dark"].iphone .ios-buscar-campo { background: rgba(118, 118, 128, 0.24); }
+
+/* La barra de alcance: mismo pulgar deslizante que `IOSSegmented`, pero a
+   todo el ancho y con las categorías que esta pantalla calcula. */
+:root.iphone .ios-alcance {
+  position: relative;
+  display: flex;
+  margin-top: 10px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.12);
+}
+:root.iphone .ios-alcance-pulgar {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  bottom: 2px;
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform 0.22s ease;
+}
+:root.iphone .ios-alcance-opcion {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  /* 13 es el suelo: por debajo, las etiquetas dejan de leerse. */
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .ios-alcance-opcion[aria-selected="true"] { font-weight: 600; }
+:root[data-theme="dark"].iphone .ios-alcance { background: rgba(118, 118, 128, 0.24); }
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .ios-alcance-pulgar { transition: none; }
+}
+/* Vuelta atrás a partir de cinco categorías: el segmentado no cabe en 390 px
+   sin bajar el texto de 13 px, así que se recurre a la fila que se desliza.
+   Pero el chip activo de esa fila es NEGRO, que es justo lo que esta tarea
+   venía a quitar — así que aquí lleva el tinte de marca. Acotado a este
+   bloque: `.chip` la usan muchas pantallas y su regla base no se toca. */
+:root.iphone .ios-buscar-bloque .chip.active {
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+  border-color: transparent;
+}
+
 /* ---------------- Informes de membresía en iPhone ----------------
    Antes había tres barras apiladas antes del primer dato —periodo, vista y
    filtros—, unos 260 px de mandos. Y la de filtros se deslizaba en
