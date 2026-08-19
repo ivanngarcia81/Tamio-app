@@ -27,7 +27,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
 import {
-  ActionField, FilaNativa, IOSPantalla, IosChevron, Section, SwitchField, TextField,
+  ActionField, FilaConteo, FilaNativa, IOSPantalla, IosChevron, Section, SwitchField, TextField,
 } from "./ios/FormularioIOS";
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { IOSFilaTexto, IOSPantallaTexto } from "./ios/IOSPantallaTexto";
@@ -38,36 +38,6 @@ import { RAZONES_AUSENCIA, VISITANTE_VACIO, type RosterState, type useServicio }
 import type { Servicio, ServicioVisitante } from "../db";
 
 type Hoja = ReturnType<typeof useServicio>;
-
-/** Fila de conteo: la cifra y un −/+ pegado a ella. El teclado numérico para
- *  subir de uno en uno es el control equivocado — contar asistentes es tocar
- *  "+" doce veces, no escribir "12" y volver a cerrar el teclado. */
-function FilaConteo({ label, valor, onChange }: {
-  label: string; valor: number; onChange: (v: number) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div className="ios-field">
-      <span className="ios-field-label">{label}</span>
-      <span className="ios-conteo">
-        <span className="ios-conteo-cifra">{valor}</span>
-        <span className="ios-stepper">
-          <button
-            type="button"
-            aria-label={t("servicios.restar")}
-            disabled={valor <= 0}
-            onClick={() => onChange(Math.max(0, valor - 1))}
-          >
-            −
-          </button>
-          <button type="button" aria-label={t("servicios.sumar")} onClick={() => onChange(valor + 1)}>
-            +
-          </button>
-        </span>
-      </span>
-    </div>
-  );
-}
 
 /** Fila con el nombre a la izquierda y el check a la derecha. Marcar quién
  *  vino es selección múltiple: el interruptor es para ajustes que se quedan

@@ -3825,6 +3825,46 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding-top: 2px;
 }
 
+/* Aclaración bajo una fila apilada. No es el pie de la sección: pertenece a
+   ESA fila —"un recordatorio solo se ve aquí, no llega ningún correo"— y al
+   pie de la sección quedaría a cuatro filas de distancia. */
+:root.iphone .ios-field-pie {
+  font-size: 13px;
+  line-height: 17px;
+  color: var(--text-2);
+  padding-top: 2px;
+}
+
+/* Pastillas de selección múltiple dentro de una tarjeta agrupada (los días de
+   la repetición, los avisos). El chip de escritorio se pinta de `--ink`
+   —negro, el acento de un panel— al activarse; en iOS lo que marca la
+   selección es el tinte de marca, el mismo del "+" y de las acciones. Y sube
+   a 34 px de alto: 30 es cómodo con un ratón y corto con un pulgar. */
+:root.iphone .ios-field--stacked .dias-toggle { gap: 8px; padding-top: 2px; }
+:root.iphone .dia-chip {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 15px;
+  /* Peso normal sin marcar y 600 al marcar, como el segmentado: en iOS la
+     negrita ES la marca de selección, no la decoración de la pastilla. En
+     escritorio van todas en 600 y el color hace el trabajo. */
+  font-weight: 400;
+  border-radius: 17px;
+  background: rgba(118, 118, 128, 0.12);
+  border-color: transparent;
+  color: var(--text);
+}
+:root.iphone .dia-chip.active {
+  background: var(--brand, #059669);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+:root[data-theme="dark"].iphone .dia-chip { background: rgba(118, 118, 128, 0.24); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]).iphone .dia-chip { background: rgba(118, 118, 128, 0.24); }
+}
+
 :root.iphone .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
 /* Acción no disponible (invitar sin correo, sincronizar mientras sincroniza):
    se apaga a gris, NO a un acento translúcido — un verde a media opacidad se

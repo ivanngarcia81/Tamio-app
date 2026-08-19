@@ -226,6 +226,81 @@ export function FilaNativa({
   );
 }
 
+/** Fila de conteo: la cifra y un −/+ pegado a ella. El teclado numérico para
+ *  subir de uno en uno es el control equivocado — contar asistentes es tocar
+ *  "+" doce veces, no escribir "12" y volver a cerrar el teclado; y lo mismo
+ *  vale para "cada N semanas" o "termina después de N veces".
+ *
+ *  (Nació dentro de "Nuevo culto"; se sacó aquí cuando la Agenda necesitó el
+ *  mismo control para la repetición.) */
+export function FilaConteo({
+  label, valor, min = 0, onChange,
+}: {
+  label: string;
+  valor: number;
+  /** Tope inferior. 0 para un conteo de asistentes, 1 para "cada N semanas". */
+  min?: number;
+  onChange: (v: number) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="ios-field">
+      <span className="ios-field-label">{label}</span>
+      <span className="ios-conteo">
+        <span className="ios-conteo-cifra">{valor}</span>
+        <span className="ios-stepper">
+          <button
+            type="button"
+            aria-label={t("servicios.restar")}
+            disabled={valor <= min}
+            onClick={() => onChange(Math.max(min, valor - 1))}
+          >
+            −
+          </button>
+          <button type="button" aria-label={t("servicios.sumar")} onClick={() => onChange(valor + 1)}>
+            +
+          </button>
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** Fila de selección múltiple con pastillas: etiqueta arriba, chips debajo.
+ *  Para conjuntos cortos y fijos —los siete días de la semana, los cuatro
+ *  avisos— donde llevárselos a otra pantalla costaría más toques que
+ *  resolverlos aquí mismo. */
+export function FilaChips({
+  label, opciones, activos, onToggle, pie,
+}: {
+  label: string;
+  opciones: { valor: number; etiqueta: string }[];
+  activos: number[];
+  onToggle: (v: number) => void;
+  /** Aclaración bajo los chips (qué hace y qué no hace un recordatorio). */
+  pie?: string;
+}) {
+  return (
+    <div className="ios-field ios-field--stacked">
+      <span className="ios-field-label">{label}</span>
+      <div className="dias-toggle">
+        {opciones.map((o) => (
+          <button
+            key={o.valor}
+            type="button"
+            aria-pressed={activos.includes(o.valor)}
+            className={`dia-chip${activos.includes(o.valor) ? " active" : ""}`}
+            onClick={() => onToggle(o.valor)}
+          >
+            {o.etiqueta}
+          </button>
+        ))}
+      </div>
+      {pie && <span className="ios-field-pie">{pie}</span>}
+    </div>
+  );
+}
+
 /** Fila que abre un selector (hoja u otra pantalla): etiqueta, valor gris y chevron. */
 export function PickerField({
   label,
