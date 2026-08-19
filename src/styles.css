@@ -1768,6 +1768,12 @@ html.vibrancy .main { background: var(--surface); }
 .empty-state .empty-accion {
   margin-top: 14px;
 }
+/* Vacío de una parte que se cambia a menudo (el día elegido del calendario
+   del teléfono): mismo dibujo, un tercio del alto. Con el relleno de siempre
+   la tarjeta medía 255 px para decir que ese día no hay nada, y se toca un
+   día tras otro. */
+.empty-state.compacto { padding: 24px 20px; }
+.empty-state.compacto .empty-icon { width: 40px; height: 40px; }
 /* Vacío que ocupa toda la pantalla: crece con el contenedor (Mensajes) o al
    menos reserva media pantalla (Bandeja), y centra el mensaje en vertical. */
 .empty-state.pagina {
@@ -5037,10 +5043,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .agenda-contexto-ios {
   display: flex;
   align-items: center;
+  /* El mes a la izquierda y los controles pegados al borde derecho: primero
+     dónde estás, después con qué te mueves. Sin `space-between` el título
+     quedaba detrás de las flechas, que es al revés de como lo hace iOS. */
+  justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
+/* Con el título delante ya no necesita empujarse: era el hueco que lo
+   separaba de un grupo de flechas que iba primero. */
+:root.iphone .agenda-contexto-ios .agenda-mes-titulo { margin: 0; }
 
 /* ---------------- Calendario de la Agenda (iPhone) ----------------
    La tabla de escritorio no cabe: en 390 px las siete columnas miden 53 px y
@@ -5667,6 +5680,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    vez de acciones sueltas: scroll propio (una lista de monedas no cabe
    entera) y cada fila puede llevar una marca de check a la derecha. */
 .action-sheet-opciones--lista { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* Variante con CAMPOS dentro (el rango de fechas de la Agenda) en vez de
+   acciones. Las filas son `.ios-field` de las de siempre, así que solo hay
+   que quitarles el fondo propio y dejar que la línea de separación la ponga
+   la hoja. */
+:root.iphone .ios-rango-campos .ios-field { background: none; padding-left: 18px; padding-right: 18px; }
+:root.iphone .ios-rango-campos .ios-field:not(:last-child)::after { left: 18px; right: 18px; }
 /* Punto de color de una opción (categorías): mismo tamaño en la fila del
    formulario y en la hoja que abre, para que se lean como la misma cosa. */
 .ios-picker-dot {

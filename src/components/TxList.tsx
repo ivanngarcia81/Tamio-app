@@ -9,7 +9,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 
-export function EmptyState({ titulo, sub, icon, accion, pagina, duplicaCrear }: {
+export function EmptyState({ titulo, sub, icon, accion, pagina, duplicaCrear, compacto }: {
   titulo: string;
   sub: string;
   icon?: ReactNode;
@@ -28,9 +28,14 @@ export function EmptyState({ titulo, sub, icon, accion, pagina, duplicaCrear }: 
    *  atajo — Miembros en /miembros, por ejemplo, no lo tiene, y no debe
    *  llevar esta marca. */
   duplicaCrear?: boolean;
+  /** Vacío de una PARTE de la pantalla que se cambia a menudo — el día
+   *  elegido del calendario del teléfono, que se toca decenas de veces
+   *  seguidas. Con el relleno de siempre (56 px arriba y abajo) la tarjeta
+   *  mide 255 px: media pantalla para decir que ese día no hay nada. */
+  compacto?: boolean;
 }) {
   return (
-    <div className={`empty-state${pagina ? " pagina" : ""}`}>
+    <div className={`empty-state${pagina ? " pagina" : ""}${compacto ? " compacto" : ""}`}>
       <div className="empty-icon">{icon ?? <IconReportes size={22} strokeWidth={1.6} />}</div>
       <div className="empty-title">{titulo}</div>
       <div className="empty-sub">{sub}</div>

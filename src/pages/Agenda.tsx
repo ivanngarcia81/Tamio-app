@@ -24,6 +24,7 @@ import CountUp from "../components/CountUp";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import IOSSegmented from "../components/ios/IOSSegmented";
 import CalendarioIOS from "../components/ios/CalendarioIOS";
+import IOSRangoFechas from "../components/ios/IOSRangoFechas";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 /** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
@@ -730,11 +731,14 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 <IOSPickerChip label={t("agenda.filtrarResponsable")} options={opcResponsable} value={filtros.responsable}
                   onSelect={(v) => setFiltros((f) => ({ ...f, responsable: v }))} />
               )}
-              {/* Las fechas siguen siendo `input type=date`: iOS ya abre su
-                  propio selector de rueda, que ES el control nativo correcto
-                  — el problema era solo el doble chevron del `select`. */}
-              <input type="date" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
-              <input type="date" aria-label={t("agenda.rangoHasta")} value={filtros.hasta} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value }))} />
+              {/* Un solo chip para las dos fechas. Sueltas se pintaban
+                  idénticas y sin etiqueta —dos pastillas que decían la misma
+                  fecha— y no había forma de saber cuál era el principio. */}
+              <IOSRangoFechas
+                desde={filtros.desde}
+                hasta={filtros.hasta}
+                onCambiar={({ desde, hasta }) => setFiltros((f) => ({ ...f, desde, hasta }))}
+              />
               <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
                 ★ {t("agenda.soloImportantes")}
               </button>
@@ -799,13 +803,16 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             {/* Fila 2: solo lo que depende de la vista. Colapsa del todo
                 cuando no hay nada que poner (Lista), sin dejar hueco. */}
             {(vista === "mes" || vista === "semana") && (
+              /* El mes a la izquierda y los controles a la derecha, que es el
+                 orden de iOS: primero dónde estás, después con qué te mueves.
+                 En Mac e iPad se queda como estaba. */
               <div className="agenda-contexto-ios">
+                <span className="agenda-mes-titulo">{titulo}</span>
                 <div className="agenda-nav-group">
                   <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={15} /></button>
                   <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
                   <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={15} /></button>
                 </div>
-                <span className="agenda-mes-titulo">{titulo}</span>
               </div>
             )}
             {vista === "historial" && (
@@ -882,7 +889,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               <span>{t("agenda.diaActividades", { count: delDia.length })}</span>
             </div>
             {delDia.length === 0 ? (
-              <EmptyState icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.diaVacioTitulo")} sub={t("agenda.diaVacioSub")} />
+              <EmptyState compacto icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.diaVacioTitulo")} sub={t("agenda.diaVacioSub")} />
             ) : (
               <div className="ios-listcard">
                 {delDia.map((a) => (
