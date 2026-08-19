@@ -1,97 +1,40 @@
-import { useState } from "react";
+/**
+ * SolicitudModal.tsx — la solicitud de carta en Mac e iPad: el diálogo
+ * centrado de siempre, con sus dos secciones y su rejilla de dos columnas.
+ *
+ * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevaSolicitudIOS`) se
+ * lleva el formulario entero. Lo que comparten es `useSolicitud`, así que las
+ * dos vistas escriben el MISMO registro con las MISMAS validaciones.
+ */
 import { useTranslation } from "react-i18next";
 import { esIPhone } from "../movil";
-import { IOSPickerInput } from "./ios/IOSPickerField";
-import {
-  insertSolicitud, updateSolicitud,
-  type Church, type Member, type NewSolicitud, type Solicitud,
-} from "../db";
 import { TIPOS_CARTA } from "./CartaEditor";
 import { Seccion } from "./FichaMiembroModal";
 import { IconClose } from "../icons";
-import { showToast } from "../toast";
-import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import NuevaSolicitudIOS from "./NuevaSolicitudIOS";
+import {
+  ESTADOS_SOLICITUD, MEDIOS_ENTREGA, PRIORIDADES,
+  useSolicitud, type PropsSolicitud,
+} from "./solicitud";
 
-export const PRIORIDADES = ["normal", "importante", "urgente"] as const;
-export const ESTADOS_SOLICITUD = ["nueva", "revision", "preparacion", "firma", "lista", "entregada", "cancelada"] as const;
-const MEDIOS_ENTREGA = ["impresa", "email", "mensajeria", "recoge", "otro"] as const;
+export { ESTADOS_SOLICITUD, PRIORIDADES };
 
-function hoyLocal(): string {
-  const d = new Date();
-  const p = (x: number) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-interface Props {
-  church: Church;
-  solicitud: Solicitud | null;
-  members: Member[];
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-export default function SolicitudModal({ church, solicitud, members, onClose, onSaved }: Props) {
+export default function SolicitudModal(props: PropsSolicitud) {
   const { t } = useTranslation();
-  const enIPhone = esIPhone();
-  /** Un catálogo de claves + su prefijo de i18n -> opciones del picker.
-   *  Las mismas listas alimentan los `<option>` de Mac, así que el
-   *  catálogo sigue estando una sola vez. */
+  const { solicitud, onClose } = props;
+  const h = useSolicitud(props);
+  const enHoja = esIPhone();
+  /** La hoja registra su propio Escape (y sus pantallas internas se lo quitan
+   *  mientras están abiertas). Un `() => {}` estable evita que este efecto se
+   *  vuelva a suscribir en cada render. */
+  useEscapeClose(enHoja ? NO_HACE_NADA : onClose);
+
+  /** Un catálogo de claves + su prefijo de i18n -> `option`s del desplegable. */
   const opc = (claves: readonly string[], pref: string) =>
     claves.map((k) => ({ value: k, label: t(`${pref}.${k}`) }));
-  useEscapeClose(onClose);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const [esMiembro, setEsMiembro] = useState(solicitud ? solicitud.member_id !== null : true);
-  const [memberId, setMemberId] = useState<number | null>(solicitud?.member_id ?? null);
-  const [externo, setExterno] = useState(solicitud?.solicitante_externo ?? "");
-  const [tipoCarta, setTipoCarta] = useState(solicitud?.tipo_carta ?? "recomendacion");
-  const [motivo, setMotivo] = useState(solicitud?.motivo ?? "");
-  const [fechaSolicitud, setFechaSolicitud] = useState(solicitud?.fecha_solicitud ?? hoyLocal());
-  const [fechaRequerida, setFechaRequerida] = useState(solicitud?.fecha_requerida ?? "");
-  const [medio, setMedio] = useState(solicitud?.medio_entrega ?? "impresa");
-  const [responsable, setResponsable] = useState(solicitud?.responsable ?? church.secretaria_nombre ?? "");
-  const [prioridad, setPrioridad] = useState(solicitud?.prioridad ?? "normal");
-  const [estado, setEstado] = useState(solicitud?.estado ?? "nueva");
-  const [observaciones, setObservaciones] = useState(solicitud?.observaciones ?? "");
-
-  async function guardar() {
-    setError(null);
-    const nombreSolicitante = esMiembro
-      ? members.find((m) => m.id === memberId)?.nombre
-      : externo.trim();
-    if (!nombreSolicitante) { setError(t("solicitudes.solicitanteObligatorio")); return; }
-    if (!fechaSolicitud) { setError(t("solicitudes.fechaObligatoria")); return; }
-    if (fechaRequerida && fechaRequerida < fechaSolicitud) { setError(t("solicitudes.requeridaAntes")); return; }
-    setSaving(true);
-    try {
-      const payload: NewSolicitud = {
-        member_id: esMiembro ? memberId : null,
-        solicitante_externo: esMiembro ? null : externo.trim() || null,
-        tipo_carta: tipoCarta,
-        motivo: motivo.trim() || null,
-        fecha_solicitud: fechaSolicitud,
-        fecha_requerida: fechaRequerida || null,
-        medio_entrega: medio,
-        responsable: responsable.trim() || null,
-        prioridad,
-        estado,
-        observaciones: observaciones.trim() || null,
-      };
-      if (solicitud) {
-        await updateSolicitud(solicitud.id, church.id, payload, solicitud.estado);
-      } else {
-        await insertSolicitud(church.id, payload);
-      }
-      playSound("guardado");
-      showToast(t("solicitudes.toastGuardada"));
-      onSaved();
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  }
+  if (enHoja) return <NuevaSolicitudIOS solicitud={solicitud} onClose={onClose} h={h} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -109,53 +52,39 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
         <div className="modal-body">
           <Seccion titulo={t("solicitudes.secSolicitante")}>
             <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-              <button type="button" className={`chip${esMiembro ? " active" : ""}`} onClick={() => setEsMiembro(true)}>
+              <button type="button" className={`chip${h.esMiembro ? " active" : ""}`} onClick={() => h.setEsMiembro(true)}>
                 {t("cartas.miembro")}
               </button>
-              <button type="button" className={`chip${!esMiembro ? " active" : ""}`} onClick={() => setEsMiembro(false)}>
+              <button type="button" className={`chip${!h.esMiembro ? " active" : ""}`} onClick={() => h.setEsMiembro(false)}>
                 {t("cartas.destinatario.externo")}
               </button>
             </div>
             <div className="form-grid">
-              {esMiembro ? (
+              {h.esMiembro ? (
                 <div className="form-group">
                   <label className="form-label">{t("cartas.miembro")}</label>
-                  {enIPhone ? (
-                    <IOSPickerInput
-                      ariaLabel={t("cartas.miembro")}
-                      options={[{ value: "", label: t("cartas.eligeMiembro") }, ...members.map((m) => ({ value: String(m.id), label: m.nombre }))]}
-                      value={memberId === null ? "" : String(memberId)}
-                      placeholder={t("cartas.eligeMiembro")}
-                      onSelect={(v) => setMemberId(v ? Number(v) : null)}
-                    />
-                  ) : (
-                    <select className="form-input" value={memberId ?? ""} onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}>
-                      <option value="">{t("cartas.eligeMiembro")}</option>
-                      {members.map((m) => (
-                        <option key={m.id} value={m.id}>{m.nombre}</option>
-                      ))}
-                    </select>
-                  )}
+                  <select className="form-input" value={h.memberId ?? ""} onChange={(e) => h.setMemberId(e.target.value ? Number(e.target.value) : null)}>
+                    <option value="">{t("cartas.eligeMiembro")}</option>
+                    {h.members.map((m) => (
+                      <option key={m.id} value={m.id}>{m.nombre}</option>
+                    ))}
+                  </select>
                 </div>
               ) : (
                 <div className="form-group">
                   <label className="form-label">{t("solicitudes.personaExterna")}</label>
-                  <input className="form-input" value={externo} onChange={(e) => setExterno(e.target.value)} />
+                  <input className="form-input" value={h.externo} onChange={(e) => h.setExterno(e.target.value)} />
                 </div>
               )}
               <div className="form-group">
                 <label className="form-label">{t("cartas.tipoCarta")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput ariaLabel={t("cartas.tipoCarta")} options={opc(TIPOS_CARTA, "cartas.tipoDoc")} value={tipoCarta} onSelect={setTipoCarta} />
-                ) : (
-                  <select className="form-input" value={tipoCarta} onChange={(e) => setTipoCarta(e.target.value)}>
-                    {opc(TIPOS_CARTA, "cartas.tipoDoc").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                )}
+                <select className="form-input" value={h.tipoCarta} onChange={(e) => h.setTipoCarta(e.target.value)}>
+                  {opc(TIPOS_CARTA, "cartas.tipoDoc").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("solicitudes.motivo")}</label>
-                <textarea className="form-textarea" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                <textarea className="form-textarea" rows={2} value={h.motivo} onChange={(e) => h.setMotivo(e.target.value)} />
               </div>
             </div>
           </Seccion>
@@ -164,62 +93,50 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.fechaSolicitud")}</label>
-                <input type="date" className="form-input" value={fechaSolicitud} onChange={(e) => setFechaSolicitud(e.target.value)} />
+                <input type="date" className="form-input" value={h.fechaSolicitud} onChange={(e) => h.setFechaSolicitud(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.fechaRequerida")} <span className="opt">{t("common.opcional")}</span></label>
-                <input type="date" className="form-input" min={fechaSolicitud} value={fechaRequerida} onChange={(e) => setFechaRequerida(e.target.value)} />
+                <input type="date" className="form-input" min={h.fechaSolicitud} value={h.fechaRequerida} onChange={(e) => h.setFechaRequerida(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.medioEntrega")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput ariaLabel={t("solicitudes.medioEntrega")} options={opc(MEDIOS_ENTREGA, "solicitudes.medio")} value={medio} onSelect={setMedio} />
-                ) : (
-                  <select className="form-input" value={medio} onChange={(e) => setMedio(e.target.value)}>
-                    {opc(MEDIOS_ENTREGA, "solicitudes.medio").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                )}
+                <select className="form-input" value={h.medio} onChange={(e) => h.setMedio(e.target.value)}>
+                  {opc(MEDIOS_ENTREGA, "solicitudes.medio").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.responsable")}</label>
-                <input className="form-input" value={responsable} onChange={(e) => setResponsable(e.target.value)} />
+                <input className="form-input" value={h.responsable} onChange={(e) => h.setResponsable(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.prioridad")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput ariaLabel={t("solicitudes.prioridad")} options={opc(PRIORIDADES, "solicitudes.prioridadOpcion")} value={prioridad} onSelect={setPrioridad} />
-                ) : (
-                  <select className="form-input" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
-                    {opc(PRIORIDADES, "solicitudes.prioridadOpcion").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                )}
+                <select className="form-input" value={h.prioridad} onChange={(e) => h.setPrioridad(e.target.value)}>
+                  {opc(PRIORIDADES, "solicitudes.prioridadOpcion").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">{t("membresia.colEstado")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput ariaLabel={t("membresia.colEstado")} options={opc(ESTADOS_SOLICITUD, "solicitudes.estado")} value={estado} onSelect={setEstado} />
-                ) : (
-                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
-                    {opc(ESTADOS_SOLICITUD, "solicitudes.estado").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                )}
+                <select className="form-input" value={h.estado} onChange={(e) => h.setEstado(e.target.value)}>
+                  {opc(ESTADOS_SOLICITUD, "solicitudes.estado").map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("cartas.observaciones")}</label>
-                <textarea className="form-textarea" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
+                <textarea className="form-textarea" rows={2} value={h.observaciones} onChange={(e) => h.setObservaciones(e.target.value)} />
               </div>
             </div>
           </Seccion>
 
-          {error && <div className="field-error">{error}</div>}
+          {h.error && <div className="field-error">{h.error}</div>}
         </div>
 
         <div className="modal-footer">
           <span />
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
-            <button className="btn primary" onClick={guardar} disabled={saving}>
-              {saving ? t("common.guardando") : t("common.guardar")}
+            <button className="btn primary" onClick={h.guardar} disabled={h.saving}>
+              {h.saving ? t("common.guardando") : t("common.guardar")}
             </button>
           </div>
         </div>
@@ -227,3 +144,5 @@ export default function SolicitudModal({ church, solicitud, members, onClose, on
     </div>
   );
 }
+
+const NO_HACE_NADA = () => {};

@@ -158,6 +158,40 @@ export function TextField({
   );
 }
 
+/** Fila de texto largo EN LA PROPIA FILA: etiqueta arriba, área de escritura
+ *  debajo. Es la otra forma de meter texto libre en una lista agrupada; la
+ *  primera es `IOSFilaTexto`, que se lo lleva a su propia pantalla.
+ *
+ *  Cuál usar no es gusto: depende del largo. Un motivo o una observación son
+ *  una o dos frases y caben aquí, donde se leen sin salir del formulario. El
+ *  resumen de un acta es un documento y necesita la pantalla entera. */
+export function TextAreaField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <label className="ios-field ios-field--stacked">
+      <span className="ios-field-label">{label}</span>
+      <textarea
+        className="ios-field-input ios-field-area"
+        value={value}
+        rows={rows}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
 /** Fila con un control nativo del sistema a la derecha (fecha, hora, mes). El
  *  `input` se queda: en WKWebView ES la rueda de iOS, y sustituirlo por una
  *  hoja propia sería cambiar un control nativo por uno peor.

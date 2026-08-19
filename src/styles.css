@@ -3784,6 +3784,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-field--stacked .ios-field-label { font-size: 13px; color: var(--text-2); }
 :root.iphone .ios-field--stacked .ios-field-input { text-align: left; }
 
+/* Texto largo dentro de la propia fila. `resize: none` porque el tirador de
+   redimensionar es de escritorio: en un teléfono no hay puntero con el que
+   agarrarlo y solo estorba en la esquina. */
+:root.iphone .ios-field-area {
+  resize: none;
+  line-height: 22px;
+  min-height: 66px;
+}
+
 :root.iphone .ios-field-error {
   flex-basis: 100%;
   font-size: 13px;
@@ -4197,6 +4206,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .nm-hoja .ios-nav { padding-top: 12px; }
 
 :root.iphone .nm-tipo { padding: 14px 16px 0; }
+/* Miembro / persona externa, arriba del todo de la hoja de solicitud. Sin
+   sangría lateral: `.ios-segmented` ya trae la suya (`margin: 0 16px`), y
+   repetirla aquí lo metería 32 px. */
+:root.iphone .sol-tipo { padding: 14px 0 4px; }
 
 /* El importe: lo primero que se teclea y lo único que se lee de lejos.
    Centrado y grande como en Wallet, con la moneda, la categoría y el método
