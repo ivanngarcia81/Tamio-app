@@ -3807,6 +3807,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    lee como "así es su color", no como "ahora no". La fila conserva su alto. */
 :root.iphone .ios-field--action:disabled { color: var(--text-3); cursor: default; }
 :root.iphone .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: 17px; cursor: pointer; }
+/* Fila de estado consumado, no de acción: "Miembro creado y vinculado". Verde
+   de semáforo (--pos) y no de marca, por lo mismo que las insignias: es un
+   éxito, no un elemento de identidad. */
+:root.iphone .ios-field--pos { justify-content: center; color: var(--pos); font-size: 17px; }
 
 /* ---------------- Logo / avatar ---------------- */
 :root.iphone .ios-avatar {

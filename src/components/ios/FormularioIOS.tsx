@@ -199,11 +199,15 @@ export function TextAreaField({
  *  (La clase `nm-nativo` es de cuando esto vivía solo en "Nuevo ingreso";
  *  el nombre quedó, la regla —alinear a la derecha— siempre fue genérica.) */
 export function FilaNativa({
-  label, tipo, valor, max, onChange,
+  label, tipo, valor, min, max, onChange,
 }: {
   label: string;
   tipo: "date" | "time" | "month";
   valor: string;
+  /** Tope inferior del control nativo (la recepción de una carta no puede ser
+   *  anterior a su emisión). No sustituye a la validación: el `min` guía la
+   *  rueda, pero quien teclea la fecha a mano se la salta. */
+  min?: string;
   max?: string;
   onChange: (v: string) => void;
 }) {
@@ -214,6 +218,7 @@ export function FilaNativa({
         className="ios-field-input nm-nativo"
         type={tipo}
         value={valor}
+        min={min}
         max={max}
         onChange={(e) => onChange(e.target.value)}
       />
