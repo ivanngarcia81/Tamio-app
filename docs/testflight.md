@@ -1,7 +1,7 @@
 # Subir Tamio a TestFlight
 
-_Escrito el 19 de agosto de 2026. La 1.1.0 se subió ese mismo día; esta nota
-se quedó para la 1.1.1 y las que vengan._
+_Escrito el 19 de agosto de 2026, después de que la versión se escapara dos
+veces. La 1.1.0 y la 1.1.1 ya están subidas._
 
 ## Los cinco sitios que llevan la versión
 
@@ -51,9 +51,10 @@ en las tres fuentes:
 | Subida | `version` en las tres fuentes |
 |---|---|
 | 18 ago | 1.1.0 |
-| esta | 1.1.1 |
-| un arreglo de esta misma | 1.1.2 |
-| la siguiente tanda | 1.2.0 |
+| 19 ago | 1.1.1 |
+| esta | **1.1.2** |
+| la siguiente | 1.1.3 |
+| cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
 previously uploaded version"*, es esto: sube el tercer número en
