@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { esIPhone, textoCorto, esMac } from "../movil";
@@ -82,6 +82,11 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MembresiaStats | null>(null);
   const [query, setQuery] = useState("");
+  /* Igual que en Actas: el foco del buscador es estado de React y no
+     `:focus-within`, porque con el selector "Cancelar" desaparecía al tocarlo
+     —el campo perdía el foco antes de que llegara el clic. */
+  const [buscando, setBuscando] = useState(false);
+  const refBuscar = useRef<HTMLInputElement>(null);
   const [filtro, setFiltro] = useState<Filtro>("activos");
   const [pendingBaja, setPendingBaja] = useState<Member | null>(null);
   const [ofrecerTraslado, setOfrecerTraslado] = useState<Member | null>(null);
@@ -223,6 +228,57 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           </div>
         )}
 
+        {enIPhone ? (
+          /* Campo arriba y categorías DEBAJO, a todo el ancho — la barra de
+             alcance de Mail. Al lado del campo, el chip activo se pintaba en
+             negro entre dos blancos.
+
+             Aquí el segmentado es FIJO de tres: los filtros de esta pantalla
+             están escritos a mano (activos, bajas, todos), no calculados como
+             los de Actas, así que siempre son tres y siempre caben. */
+          <div className="ios-buscar-bloque">
+            <div className={`ios-buscar${buscando ? " es-activo" : ""}`}>
+              <label className="ios-buscar-campo">
+                <IconSearch size={15} strokeWidth={2} />
+                <input
+                  ref={refBuscar}
+                  value={query}
+                  placeholder={t("common.buscarCorto")}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => setBuscando(true)}
+                  aria-label={t("miembros.buscarPlaceholder")}
+                />
+              </label>
+              {buscando && (
+                <button
+                  type="button"
+                  className="ios-buscar-cancelar"
+                  onClick={() => { setQuery(""); setBuscando(false); refBuscar.current?.blur(); }}
+                >
+                  {t("common.cancelar")}
+                </button>
+              )}
+            </div>
+            <div className="ios-alcance" role="tablist">
+              <span
+                className="ios-alcance-pulgar"
+                style={{ width: "calc((100% - 4px) / 3)", transform: `translateX(${["activos", "bajas", "todos"].indexOf(filtro) * 100}%)` }}
+              />
+              {(["activos", "bajas", "todos"] as Filtro[]).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  role="tab"
+                  aria-selected={filtro === f}
+                  className="ios-alcance-opcion"
+                  onClick={() => setFiltro(f)}
+                >
+                  {t(`membresia.filtro.${f}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
         <div className="tx-head">
           <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
             <IconSearch size={15} strokeWidth={2} />
@@ -245,6 +301,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             ))}
           </div>
         </div>
+        )}
 
         {loading ? (
           <LoadingState />
