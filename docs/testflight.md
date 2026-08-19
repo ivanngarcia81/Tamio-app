@@ -3,18 +3,36 @@
 _Escrito el 19 de agosto de 2026. La 1.1.0 se subió ese mismo día; esta nota
 se quedó para la 1.1.1 y las que vengan._
 
-## Los cuatro sitios que llevan la versión
+## Los cinco sitios que llevan la versión
 
-Tienen que decir lo mismo. **El bump a la 1.1.0 se dejó uno fuera** —
-`project.yml` se quedó en 1.0.8, una versión ya publicada que App Store
-Connect rechaza de plano — así que aquí quedan los cuatro anotados:
+Tienen que decir lo mismo, y hay que entender cuáles son FUENTE y cuáles son
+GENERADOS, porque es lo que explica que una versión editada a mano "vuelva"
+sola al compilar.
 
-| Archivo | Clave | Qué es |
-|---|---|---|
-| `package.json` | `version` | La del proyecto |
-| `src-tauri/tauri.conf.json` | `version` | La que Tauri pone en el bundle |
-| `src-tauri/gen/apple/tesoreria_iOS/Info.plist` | `CFBundleShortVersionString` | La que ve el usuario |
-| `src-tauri/gen/apple/project.yml` | `CFBundleShortVersionString` | La entrada de XcodeGen: **si el proyecto se regenera, de aquí sale el Info.plist** |
+### Fuentes — se editan a mano
+
+| Archivo | Clave |
+|---|---|
+| `package.json` | `version` |
+| `src-tauri/tauri.conf.json` | `version` |
+| `src-tauri/Cargo.toml` | `version` |
+
+### Generados — Tauri los reescribe al compilar para iOS
+
+| Archivo | Clave |
+|---|---|
+| `src-tauri/gen/apple/project.yml` | `CFBundleShortVersionString`, `CFBundleVersion` |
+| `src-tauri/gen/apple/tesoreria_iOS/Info.plist` | `CFBundleShortVersionString`, `CFBundleVersion` |
+
+**`src-tauri/gen/` es una carpeta generada.** Está en el repo para que el
+proyecto de Xcode viaje con la firma y los iconos, pero `tauri ios build` la
+vuelve a escribir a partir de las fuentes de arriba. Por eso cambiar el
+Info.plist a mano NO basta: al compilar vuelve el número viejo.
+
+> Ya ha pasado dos veces. El bump a la 1.1.0 tocó `package.json`,
+> `tauri.conf.json` y el `Info.plist`, y dejó fuera `project.yml` (1.0.8) y
+> `Cargo.toml` (1.0.8, que no se había movido desde la 1.0.8 de verdad).
+> Con las tres fuentes de acuerdo esto deja de poder pasar.
 
 ## El número de compilación es otra cosa
 
