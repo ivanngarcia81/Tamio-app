@@ -8731,7 +8731,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     right: 0;
     height: var(--carrusel-h);
     z-index: 95;
-    padding: 10px 0;
+    /* 7 y no 10: la banda mide 58 px y el contenido pasa de 38 a 44, que es
+       el alto de píldora y de fila del diseño. La banda NO cambia de alto,
+       así que nada de fuera del carrusel se mueve. */
+    padding: 7px 0;
     box-sizing: border-box;
     /* Ancla de la píldora de vidrio, que va posicionada contra este bloque. */
     --ancho-selector: 120px;
@@ -8774,11 +8777,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      Solo cambia de ANCHO, para ajustarse a la sección que toca. */
   .carrusel-selector {
     position: absolute;
-    top: 10px;
+    top: 7px;
     left: 50%;
     transform: translateX(-50%);
     width: var(--ancho-selector);
-    height: 38px;
+    height: 44px;
     border-radius: 999px;
     /* Vidrio, no un bloque de color sólido: durante el deslizamiento pasan
        nombres NO activos por debajo, y sobre un relleno sólido de marca se
@@ -8826,13 +8829,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     flex: 0 0 auto;
     scroll-snap-align: center;
     display: inline-flex; align-items: center; gap: 6px;
-    min-height: 38px;
+    min-height: 44px;
     padding: 0 16px;
     border: none;
     border-radius: 999px;
     background: transparent;
     color: var(--text-2);
-    font-size: var(--fs-body); font-weight: 600;
+    /* 19 px, no `--fs-body` (17): a 17 el nombre centrado apenas destacaba
+       sobre los difuminados de al lado, y el desenfoque lucía menos de lo que
+       puede. El interletrado negativo es el del diseño. */
+    font-size: 19px; letter-spacing: -0.5px; font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
     /* `--d` lo escribe CarruselSecciones.tsx en cada fotograma del gesto: 0
