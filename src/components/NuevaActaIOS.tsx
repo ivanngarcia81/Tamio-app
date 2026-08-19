@@ -16,7 +16,7 @@
  *   empujadas dentro del mismo formulario; quien quiera descartar todo tiene
  *   "Cancelar" en la hoja, y hasta ahí no se ha escrito nada en la base.
  */
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
 import {
@@ -24,12 +24,13 @@ import {
 } from "./ios/FormularioIOS";
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { IOSFilaTexto } from "./ios/IOSPantallaTexto";
-import { ChipGroup } from "./FichaMiembroModal";
+import { CARGOS, etiquetaCatalogo } from "./FichaMiembroModal";
+import { IOSNombresSheet, type MiembroNombre } from "./ios/IOSBuscadorSheet";
 import { IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 import { iaHabilitada } from "../ia";
-import type { CampoActa, useActa } from "./acta";
-import type { Acta } from "../db";
+import { parseNombres, type CampoActa, type useActa } from "./acta";
+import { listMembers, type Acta, type Member } from "../db";
 
 type Hoja = ReturnType<typeof useActa>;
 
@@ -58,17 +59,6 @@ function FilaConteo({ label, conteo, vacio, onPress }: {
   );
 }
 
-/** Un grupo de nombres con su etiqueta encima. `ChipGroup` no cabe en una fila
- *  de lista, así que la etiqueta pasa a encabezado de sección. */
-function SeccionChips({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <section className="ios-section">
-      <h2 className="ios-section-header">{titulo}</h2>
-      <div className="ios-chips">{children}</div>
-    </section>
-  );
-}
-
 /* ============================================================
    Los bloques que viven en su propia pantalla
    ============================================================ */
@@ -80,17 +70,6 @@ export function BloqueHorario({ h }: { h: Hoja }) {
       <FilaNativa label={t("actas.horaInicio")} tipo="time" valor={h.horaInicio} onChange={h.setHoraInicio} />
       <FilaNativa label={t("actas.horaCierre")} tipo="time" valor={h.horaCierre} onChange={h.setHoraCierre} />
     </Section>
-  );
-}
-
-export function BloqueNombres({ titulo, valores, onChange }: {
-  titulo: string; valores: string[]; onChange: (v: string[]) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <SeccionChips titulo={titulo}>
-      <ChipGroup catalogo={[]} prefijo="actas" valores={valores} onChange={onChange} placeholder={t("actas.agregarNombre")} />
-    </SeccionChips>
   );
 }
 
@@ -195,11 +174,13 @@ function HojaIA({ h, onCerrar }: { h: Hoja; onCerrar: () => void }) {
    La hoja
    ============================================================ */
 
-type Pantalla = "horario" | "presentes" | "ausentes" | "invitados" | "mociones" | "acuerdos";
+type Pantalla = "horario" | "mociones" | "acuerdos";
+type Lista = "presentes" | "ausentes" | "invitados";
 
 export default function NuevaActaIOS({
-  acta, onClose, onImprimir, h, tipos, estados,
+  churchId, acta, onClose, onImprimir, h, tipos, estados,
 }: {
+  churchId: number;
   acta: Acta | null;
   onClose: () => void;
   onImprimir?: () => void;
@@ -210,11 +191,49 @@ export default function NuevaActaIOS({
   const { t } = useTranslation();
   const titulo = acta ? acta.folio : t("actas.nuevaActa");
   const [pantalla, setPantalla] = useState<Pantalla | null>(null);
+  const [lista, setLista] = useState<Lista | null>(null);
+
+  /* El padrón, para poder marcar nombres en vez de teclearlos. Se pide aquí y
+     no en el hook a propósito: Mac no lo necesita —allí los nombres siguen
+     siendo fichas de texto libre— y no tiene por qué pagar la consulta. */
+  const [miembros, setMiembros] = useState<Member[]>([]);
+  useEffect(() => {
+    let cancelado = false;
+    listMembers(churchId)
+      .then((ms) => { if (!cancelado) setMiembros(ms); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [churchId]);
+
+  /* "Oficial" = quien tiene algún cargo en su ficha. Es el único criterio que
+     existe en los datos, y es el mismo que usa el informe de membresía. */
+  const nombres: MiembroNombre[] = useMemo(
+    () => miembros.map((m) => {
+      const cargos = parseNombres(m.cargos);
+      return { nombre: m.nombre, cargo: cargos.map((c) => etiquetaCatalogo(t, "ficha.cargo", c, CARGOS)).join(" · ") || null };
+    }),
+    [miembros, t]
+  );
+  const oficiales = useMemo(
+    () => miembros.filter((m) => parseNombres(m.cargos).length > 0).map((m) => m.nombre),
+    [miembros]
+  );
+
+  const listas: Record<Lista, { titulo: string; valores: string[]; set: (v: string[]) => void }> = {
+    presentes: { titulo: t("actas.presentes"), valores: h.presentes, set: h.setPresentes },
+    ausentes: { titulo: t("actas.ausentes"), valores: h.ausentes, set: h.setAusentes },
+    invitados: { titulo: t("actas.invitados"), valores: h.invitados, set: h.setInvitados },
+  };
 
   // Con una pantalla abierta, Escape la cierra a ella y no la hoja entera:
   // salir del formulario desde dentro de una lista tiraría lo escrito en el
   // resto sin avisar.
-  useEscapeClose(pantalla ? () => setPantalla(null) : h.iaAbierta ? () => h.setIaAbierta(false) : onClose);
+  useEscapeClose(
+    pantalla ? () => setPantalla(null)
+      : lista ? () => setLista(null)
+      : h.iaAbierta ? () => h.setIaAbierta(false)
+      : onClose
+  );
 
   /** El aviso de validación, al pie de la sección donde está el campo que falta. */
   const avisoDe = (...campos: CampoActa[]) =>
@@ -271,9 +290,9 @@ export default function NuevaActaIOS({
             <Section header={t("actas.secQuien")} footer={avisoDe("preside", "secretario")}>
               <TextField label={t("actas.filaPreside")} value={h.preside} onChange={h.setPreside} />
               <TextField label={t("actas.filaRedacto")} value={h.secretario} onChange={h.setSecretario} />
-              <FilaConteo label={t("actas.filaPresentes")} conteo={h.presentes.length} vacio={t("common.ninguno")} onPress={() => setPantalla("presentes")} />
-              <FilaConteo label={t("actas.filaAusentes")} conteo={h.ausentes.length} vacio={t("common.ninguno")} onPress={() => setPantalla("ausentes")} />
-              <FilaConteo label={t("actas.filaInvitados")} conteo={h.invitados.length} vacio={t("common.ninguno")} onPress={() => setPantalla("invitados")} />
+              <FilaConteo label={t("actas.filaPresentes")} conteo={h.presentes.length} vacio={t("common.ninguno")} onPress={() => setLista("presentes")} />
+              <FilaConteo label={t("actas.filaAusentes")} conteo={h.ausentes.length} vacio={t("common.ninguno")} onPress={() => setLista("ausentes")} />
+              <FilaConteo label={t("actas.filaInvitados")} conteo={h.invitados.length} vacio={t("common.ninguno")} onPress={() => setLista("invitados")} />
               <SwitchField label={t("actas.filaQuorum")} checked={h.quorum} onChange={h.setQuorum} />
             </Section>
 
@@ -344,21 +363,6 @@ export default function NuevaActaIOS({
           <BloqueHorario h={h} />
         </IOSPantalla>
       )}
-      {pantalla === "presentes" && (
-        <IOSPantalla titulo={t("actas.filaPresentes")} volverA={titulo} onVolver={() => setPantalla(null)}>
-          <BloqueNombres titulo={t("actas.presentes")} valores={h.presentes} onChange={h.setPresentes} />
-        </IOSPantalla>
-      )}
-      {pantalla === "ausentes" && (
-        <IOSPantalla titulo={t("actas.filaAusentes")} volverA={titulo} onVolver={() => setPantalla(null)}>
-          <BloqueNombres titulo={t("actas.ausentes")} valores={h.ausentes} onChange={h.setAusentes} />
-        </IOSPantalla>
-      )}
-      {pantalla === "invitados" && (
-        <IOSPantalla titulo={t("actas.filaInvitados")} volverA={titulo} onVolver={() => setPantalla(null)}>
-          <BloqueNombres titulo={t("actas.invitados")} valores={h.invitados} onChange={h.setInvitados} />
-        </IOSPantalla>
-      )}
       {pantalla === "mociones" && (
         <IOSPantalla titulo={t("actas.secMociones")} volverA={titulo} onVolver={() => setPantalla(null)}>
           <BloqueMociones h={h} />
@@ -368,6 +372,18 @@ export default function NuevaActaIOS({
         <IOSPantalla titulo={t("actas.secAcuerdos")} volverA={titulo} onVolver={() => setPantalla(null)}>
           <BloqueAcuerdos h={h} />
         </IOSPantalla>
+      )}
+      {lista && (
+        <IOSNombresSheet
+          title={listas[lista].titulo}
+          valores={listas[lista].valores}
+          miembros={nombres}
+          /* El atajo solo en presentes: en ausentes y en invitados no
+             significa nada. */
+          oficiales={lista === "presentes" ? oficiales : []}
+          onListo={(v) => { listas[lista].set(v); setLista(null); }}
+          onCancel={() => setLista(null)}
+        />
       )}
       {h.iaAbierta && <HojaIA h={h} onCerrar={() => h.setIaAbierta(false)} />}
     </Portal>

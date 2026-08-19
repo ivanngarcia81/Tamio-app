@@ -46,7 +46,7 @@ export default function ActaModal(props: PropsActa) {
   // largo de la app y en una columna de cajas de 46 px no cabe ni la primera
   // sección.
   if (enIPhone) {
-    return <NuevaActaIOS acta={acta} onClose={onClose} onImprimir={onImprimir} h={h} tipos={TIPOS_ACTA} estados={ESTADOS_ACTA} />;
+    return <NuevaActaIOS churchId={props.church.id} acta={acta} onClose={onClose} onImprimir={onImprimir} h={h} tipos={TIPOS_ACTA} estados={ESTADOS_ACTA} />;
   }
 
   return (
