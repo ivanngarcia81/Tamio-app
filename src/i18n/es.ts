@@ -1313,6 +1313,8 @@ export const es = {
        encabezado es de 13 px y el pie una sola línea: el párrafo de
        `conteoHint` no cabe, así que se parte en los dos pies que explican
        cada registro por separado. */
+    resumenPadron: "{{presentes}} presentes · {{ausentes}} ausentes de {{total}} en el padrón.",
+    motivoFila: "Motivo",
     secConteo: "Conteo del culto",
     conteoPie: "Cifra que aparece en el registro de cultos y en los informes del mes. El total se calcula solo.",
     secAsistenciaMiembro: "Asistencia por miembro",

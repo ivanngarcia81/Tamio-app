@@ -56,12 +56,15 @@ export function IOSNavBar({
  *  propia nav bar de volver, que es como iOS entra en cualquier sublista. Se
  *  monta en su propio portal, así que el orden del documento la deja por
  *  encima de la hoja que la abrió sin tener que inventar un z-index nuevo. */
-export function IOSPantalla({ titulo, volverA, onVolver, accion, children }: {
+export function IOSPantalla({ titulo, volverA, onVolver, accion, bajoBarra, children }: {
   titulo: string;
   /** Nombre de la pantalla anterior, junto al chevron de volver. */
   volverA: string;
   onVolver: () => void;
   accion?: ReactNode;
+  /** Fijo bajo la barra, fuera del área que desplaza: un buscador dentro de la
+   *  lista se va de la pantalla en cuanto se escriben tres letras. */
+  bajoBarra?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -69,6 +72,7 @@ export function IOSPantalla({ titulo, volverA, onVolver, accion, children }: {
       <div className="ios-sheet-overlay">
         <div className="ios-sheet" role="dialog" aria-label={titulo}>
           <IOSNavBar backLabel={volverA} title={titulo} onBack={onVolver} action={accion} />
+          {bajoBarra}
           <div className="ios-sheet-body">{children}</div>
         </div>
       </div>

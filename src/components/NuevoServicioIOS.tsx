@@ -27,14 +27,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
 import {
-  ActionField, FilaNativa, IOSPantalla, IosChevron, Section, TextField,
+  ActionField, FilaNativa, IOSPantalla, IosChevron, Section, SwitchField, TextField,
 } from "./ios/FormularioIOS";
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { IOSFilaTexto, IOSPantallaTexto } from "./ios/IOSPantallaTexto";
 import ConfirmDialog from "./ConfirmDialog";
 import { IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
-import { VISITANTE_VACIO, type useServicio } from "./servicio";
+import { RAZONES_AUSENCIA, VISITANTE_VACIO, type RosterState, type useServicio } from "./servicio";
 import type { Servicio, ServicioVisitante } from "../db";
 
 type Hoja = ReturnType<typeof useServicio>;
@@ -150,6 +150,164 @@ function PantallaVisitante({ v, volverA, onCambiar, onQuitar, onPadron, onVolver
         <ActionField label={t("common.eliminar")} destructive onPress={onQuitar} />
       </Section>
     </IOSPantalla>
+  );
+}
+
+/** El motivo de una ausencia, en su propia pantalla: razón, "otra" cuando
+ *  hace falta y seguimiento no caben en una fila de 44 px, y meterlos dentro
+ *  convertiría la lista en un acordeón justo cuando la tarea es recorrerla. */
+function PantallaMotivo({ e, volverA, onRazon, onRazonOtra, onSeguimiento, onVolver }: {
+  e: RosterState;
+  volverA: string;
+  onRazon: (v: string) => void;
+  onRazonOtra: (v: string) => void;
+  onSeguimiento: (v: boolean) => void;
+  onVolver: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <IOSPantalla titulo={e.nombre} volverA={volverA} onVolver={onVolver}>
+      <Section header={t("servicios.razonAusencia")}>
+        <IOSPickerField
+          label={t("servicios.motivoFila")}
+          sheetTitle={t("servicios.razonAusencia")}
+          options={[
+            { value: "", label: t("servicios.sinRazon") },
+            ...RAZONES_AUSENCIA.map((r) => ({ value: r, label: t(`servicios.razon.${r}`) })),
+          ]}
+          value={e.razon}
+          placeholder={t("servicios.sinRazon")}
+          onSelect={onRazon}
+        />
+        {e.razon === "otra" && (
+          <TextField
+            label={t("servicios.razon.otra")}
+            value={e.razonOtra}
+            onChange={onRazonOtra}
+            placeholder={t("servicios.razonOtraPlaceholder")}
+            autoFocus
+          />
+        )}
+      </Section>
+      <Section>
+        <SwitchField label={t("servicios.seguimiento")} checked={e.seguimiento} onChange={onSeguimiento} />
+      </Section>
+    </IOSPantalla>
+  );
+}
+
+/** El padrón, fuera del formulario. Una sola lista alfabética con check a la
+ *  derecha — no dos grupos de presentes y ausentes: en el teléfono cada toque
+ *  haría saltar la fila de un grupo al otro y se perdería el sitio.
+ *
+ *  Marcar y desmarcar a todos siguen operando sobre lo VISIBLE, o sea sobre lo
+ *  que filtra el buscador, que es lo que hacían los dos botones de Mac. Y
+ *  desmarcar sigue pidiendo confirmación. */
+function PantallaMiembros({ h, guardado, volverA, onVolver }: {
+  h: Hoja;
+  /** Culto ya guardado: el roster vacío entonces significa "se guardó antes
+   *  del pase de lista", no "no hay miembros". Son dos mensajes distintos y
+   *  solo uno ofrece cargar el padrón. */
+  guardado: boolean;
+  volverA: string;
+  onVolver: () => void;
+}) {
+  const { t } = useTranslation();
+  const [motivo, setMotivo] = useState<number | null>(null);
+  const enMotivo = motivo !== null ? h.roster.get(motivo) : undefined;
+
+  const resumen = (e: RosterState) => {
+    if (e.presente) return null;
+    const partes = [];
+    if (e.razon) partes.push(e.razon === "otra" ? e.razonOtra.trim() || t("servicios.razon.otra") : t(`servicios.razon.${e.razon}`));
+    if (e.seguimiento) partes.push(t("servicios.seguimiento"));
+    return partes.join(" · ") || null;
+  };
+
+  return (
+    <>
+      <IOSPantalla
+        titulo={t("servicios.presentes")}
+        volverA={volverA}
+        onVolver={onVolver}
+        accion={<button type="button" className="ios-nav-action" onClick={onVolver}>{t("common.listo")}</button>}
+        bajoBarra={
+          <div className="ios-buscador">
+            <input
+              className="ios-buscador-campo"
+              type="search"
+              value={h.busqueda}
+              onChange={(ev) => h.setBusqueda(ev.target.value)}
+              placeholder={t("servicios.buscarMiembro")}
+              aria-label={t("servicios.buscarMiembro")}
+            />
+          </div>
+        }
+      >
+        {h.roster.size === 0 && guardado ? (
+          <Section footer={t("servicios.servicioSinRoster")}>
+            <ActionField label={t("servicios.cargarActivos")} onPress={() => void h.cargarActivos()} />
+          </Section>
+        ) : h.roster.size === 0 ? (
+          <Section>
+            <div className="ios-field ios-buscador-vacio">{t("servicios.sinMiembrosActivos")}</div>
+          </Section>
+        ) : h.visibles.length === 0 ? (
+          <Section footer={t("servicios.rosterSinResultados")}>
+            <div className="ios-field ios-buscador-vacio">{t("common.sinResultados")}</div>
+          </Section>
+        ) : (
+          <Section>
+            {h.visibles.map(([id, e]) => (
+              <FilaMiembro
+                key={id}
+                nombre={e.nombre}
+                presente={e.presente}
+                etiqueta={e.estadoMiembro && e.estadoMiembro !== "activo" ? t(`membresia.estado.${e.estadoMiembro}`) : null}
+                sub={h.anotarAusencias ? resumen(e) : null}
+                onToggle={() => h.toggle(id)}
+                onDetalle={h.anotarAusencias && !e.presente ? () => setMotivo(id) : undefined}
+              />
+            ))}
+          </Section>
+        )}
+
+        <Section
+          footer={t("servicios.resumenPadron", {
+            presentes: h.totalPresentes,
+            ausentes: h.roster.size - h.totalPresentes,
+            total: h.roster.size,
+          })}
+        >
+          <ActionField
+            label={t("servicios.marcarTodos")}
+            disabled={h.ausentesVisibles.length === 0}
+            onPress={() => h.marcarVisibles(true)}
+          />
+          <ActionField
+            label={t("servicios.desmarcarTodos")}
+            disabled={h.presentesVisibles.length === 0}
+            onPress={() => h.setConfirmDesmarcar(true)}
+          />
+          {/* Al crear, los motivos nacen apagados: todos arrancan ausentes y
+              quince controles serían una pared. Esta fila los enciende. */}
+          {!h.anotarAusencias && h.ausentesVisibles.length > 0 && (
+            <ActionField label={t("servicios.anotarMotivos")} onPress={() => h.setAnotarAusencias(true)} />
+          )}
+        </Section>
+      </IOSPantalla>
+
+      {enMotivo && (
+        <PantallaMotivo
+          e={enMotivo}
+          volverA={t("servicios.presentes")}
+          onRazon={(v) => h.setRazon(motivo!, v)}
+          onRazonOtra={(v) => h.setRazonOtra(motivo!, v)}
+          onSeguimiento={(v) => h.setSeguimiento(motivo!, v)}
+          onVolver={() => setMotivo(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -369,19 +527,7 @@ export default function NuevoServicioIOS({
       )}
 
       {miembrosAbierto && (
-        <IOSPantalla titulo={t("servicios.presentes")} volverA={titulo} onVolver={() => setMiembrosAbierto(false)}>
-          <Section footer={t("servicios.asistenciaPie")}>
-            {h.visibles.map(([id, e]) => (
-              <FilaMiembro
-                key={id}
-                nombre={e.nombre}
-                presente={e.presente}
-                etiqueta={e.estadoMiembro && e.estadoMiembro !== "activo" ? t(`membresia.estado.${e.estadoMiembro}`) : null}
-                onToggle={() => h.toggle(id)}
-              />
-            ))}
-          </Section>
-        </IOSPantalla>
+        <PantallaMiembros h={h} guardado={servicio !== null} volverA={titulo} onVolver={() => { h.setBusqueda(""); setMiembrosAbierto(false); }} />
       )}
 
       {h.confirmVacio && (

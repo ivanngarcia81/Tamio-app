@@ -1286,6 +1286,8 @@ export const en: Resources = {
     sinResultados: "No results",
     sinResultadosSub: "Try another search term.",
     secServicio: "Service information",
+    resumenPadron: "{{presentes}} present · {{ausentes}} absent of {{total}} on the roll.",
+    motivoFila: "Reason",
     secConteo: "Service count",
     conteoPie: "The figure that appears in the service log and in the monthly reports. The total is worked out for you.",
     secAsistenciaMiembro: "Attendance by member",
