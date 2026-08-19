@@ -1,16 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone } from "../movil";
 import { IOSPickerInput } from "./ios/IOSPickerField";
-import {
-  fmtFechaCorta, insertMemberConFicha, memberAsistenciaStats, memberDocs, updateMemberFicha,
-  type Church, type Member, type MemberAsistenciaStats, type MemberDoc, type MemberFicha, type NewMember,
-} from "../db";
+import { fmtFechaCorta } from "../db";
 import { IconCalendar, IconChevronDown, IconClose, IconMail, IconPrinter } from "../icons";
 import { showToast } from "../toast";
-import { playSound } from "../sound";
 import { printInformeIndividual } from "../services/informes/printInforme";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import { ESTADOS_REGISTRO, useFichaMiembro, type PropsFicha } from "./fichaMiembro";
 
 export const MINISTERIOS = [
   "musica", "ujieres", "ensenanza", "evangelismo", "ninos", "jovenes",
@@ -29,8 +26,6 @@ export const CARGOS = [
   "liderCaballeros", "ujierJefe", "misionero",
 ] as const;
 
-const ESTADOS_REGISTRO = ["activo", "inactivo", "visitante", "enProceso"] as const;
-
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 
 function inicialesFicha(nombre: string): string {
@@ -45,15 +40,6 @@ function IconPhoneFicha() {
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
     </svg>
   );
-}
-
-function parseLista(json: string): string[] {
-  try {
-    const v = JSON.parse(json);
-    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
 }
 
 /** Etiqueta de un valor de catálogo: clave conocida → traducción; texto libre → tal cual. */
@@ -201,136 +187,33 @@ export function SwitchRow({ label, value, onChange }: { label: string; value: bo
   );
 }
 
-interface Props {
-  church: Church;
-  /** Miembro existente (editar su ficha) o null para dar de alta uno nuevo con
-   *  toda la ficha de una vez (datos personales + espiritual + servicio). */
-  member: Member | null;
-  onClose: () => void;
-  onSaved: () => void;
-  /** Fusionar este miembro con otro. Opcional y solo lo pasa Membresía en el
-   *  teléfono: ahí los "···" de la fila desaparecieron —el deslizamiento ya
-   *  da Editar y Eliminar— y fusionar se quedaría sin ninguna forma de
-   *  llegar. En Mac la acción sigue en el menú de la fila y esto no se pasa. */
-  onFusionar?: () => void;
-}
-
 /** Ficha completa del miembro: datos de membresía, vida espiritual y servicio.
  *  En modo edición los datos personales se editan aparte (botón Editar); en
  *  modo alta (member === null) se incluyen aquí para no tener que completarlos
- *  después. */
-export default function FichaMiembroModal({ church, member, onClose, onSaved, onFusionar }: Props) {
+ *  después.
+ *
+ *  Esta es la versión de ESCRITORIO, y también la del iPhone al EDITAR: la
+ *  ficha completa —las siete secciones— sigue siendo la misma en las dos
+ *  plataformas. Solo el ALTA en el teléfono se va a su propia hoja. */
+export default function FichaMiembroModal(props: PropsFicha) {
+  const { church, member, onClose, onFusionar } = props;
   const { t } = useTranslation();
+  const h = useFichaMiembro(props);
+  const {
+    crear, esBaja, saving, error,
+    nombre, setNombre, email, setEmail, telefono, setTelefono, rfc, setRfc, notas, setNotas,
+    estado, setEstado, fechaCongregacion, setFechaCongregacion, fechaIngreso, setFechaIngreso,
+    iglesiaAnterior, setIglesiaAnterior,
+    bautizadoAgua, setBautizadoAgua, fechaBautismoAgua, setFechaBautismoAgua,
+    bautizadoEspiritu, setBautizadoEspiritu, fechaBautismoEspiritu, setFechaBautismoEspiritu,
+    cursoMembresia, setCursoMembresia,
+    ministerios, setMinisterios, cargos, setCargos, ministeriosInteres, setMinisteriosInteres,
+    instrumentos, setInstrumentos, habilidades, setHabilidades,
+    disponibilidad, setDisponibilidad, interesServir, setInteresServir,
+    asistencia, docs, guardar,
+  } = h;
+
   useEscapeClose(onClose);
-  const crear = member === null;
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Datos personales (solo se editan aquí en el alta).
-  const [nombre, setNombre] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [rfc, setRfc] = useState("");
-  const [notas, setNotas] = useState("");
-
-  const [estado, setEstado] = useState(
-    ESTADOS_REGISTRO.includes(member?.estado_membresia as (typeof ESTADOS_REGISTRO)[number])
-      ? (member?.estado_membresia ?? "activo")
-      : "activo"
-  );
-  const [fechaCongregacion, setFechaCongregacion] = useState(member?.fecha_congregacion ?? "");
-  // Ninguna de las dos fechas se prellena: "Recibido como miembro" casi nunca
-  // es hoy (se recibe a gente que ya venía congregándose), y un prellenado
-  // que casi siempre está mal se guarda sin que nadie lo mire.
-  const [fechaIngreso, setFechaIngreso] = useState(member?.fecha_ingreso ?? "");
-  const [iglesiaAnterior, setIglesiaAnterior] = useState(member?.iglesia_anterior ?? "");
-  const [bautizadoAgua, setBautizadoAgua] = useState(member?.bautizado_agua === 1);
-  const [fechaBautismoAgua, setFechaBautismoAgua] = useState(member?.fecha_bautismo_agua ?? "");
-  const [bautizadoEspiritu, setBautizadoEspiritu] = useState(member?.bautizado_espiritu === 1);
-  const [fechaBautismoEspiritu, setFechaBautismoEspiritu] = useState(member?.fecha_bautismo_espiritu ?? "");
-  const [cursoMembresia, setCursoMembresia] = useState(member?.curso_membresia === 1);
-  const [ministerios, setMinisterios] = useState<string[]>(() => parseLista(member?.ministerios ?? "[]"));
-  const [cargos, setCargos] = useState<string[]>(() => parseLista(member?.cargos ?? "[]"));
-  const [ministeriosInteres, setMinisteriosInteres] = useState<string[]>(() => parseLista(member?.ministerios_interes ?? "[]"));
-  const [instrumentos, setInstrumentos] = useState<string[]>(() => parseLista(member?.instrumentos ?? "[]"));
-  const [habilidades, setHabilidades] = useState<string[]>(() => parseLista(member?.habilidades ?? "[]"));
-  const [disponibilidad, setDisponibilidad] = useState(member?.disponibilidad ?? "");
-  const [interesServir, setInteresServir] = useState(member?.interes_servir === 1);
-
-  const esBaja = member?.activo === 0;
-
-  // Estadísticas de asistencia: derivadas de los servicios guardados
-  // (snapshots), nunca almacenadas por separado.
-  const [asistencia, setAsistencia] = useState<MemberAsistenciaStats | null>(null);
-  const [docs, setDocs] = useState<MemberDoc[] | null>(null);
-  useEffect(() => {
-    if (!member) return;
-    let cancelado = false;
-    memberAsistenciaStats(member.id, church.id)
-      .then((s) => { if (!cancelado) setAsistencia(s); })
-      .catch(console.error);
-    memberDocs(member.id, church.id)
-      .then((d) => { if (!cancelado) setDocs(d); })
-      .catch(console.error);
-    return () => { cancelado = true; };
-  }, [member, church.id]);
-
-  /** Deja el formulario de alta limpio para registrar otro miembro sin cerrar. */
-  function limpiarParaOtro() {
-    setNombre(""); setEmail(""); setTelefono(""); setRfc(""); setNotas("");
-    setEstado("activo");
-    setFechaCongregacion(""); setFechaIngreso(""); setIglesiaAnterior("");
-    setBautizadoAgua(false); setFechaBautismoAgua("");
-    setBautizadoEspiritu(false); setFechaBautismoEspiritu("");
-    setCursoMembresia(false);
-    setMinisterios([]); setCargos([]); setMinisteriosInteres([]); setInstrumentos([]); setHabilidades([]);
-    setDisponibilidad(""); setInteresServir(false);
-    setError(null);
-  }
-
-  async function guardar(cerrar = true) {
-    if (crear && !nombre.trim()) { setError(t("validacion.nombreObligatorio")); return; }
-    setSaving(true);
-    try {
-      const ficha: MemberFicha = {
-        estado_membresia: estado,
-        cargos,
-        fecha_congregacion: fechaCongregacion || null,
-        fecha_ingreso: fechaIngreso || null,
-        iglesia_anterior: iglesiaAnterior.trim() || null,
-        bautizado_agua: bautizadoAgua,
-        fecha_bautismo_agua: bautizadoAgua ? fechaBautismoAgua || null : null,
-        bautizado_espiritu: bautizadoEspiritu,
-        fecha_bautismo_espiritu: bautizadoEspiritu ? fechaBautismoEspiritu || null : null,
-        curso_membresia: cursoMembresia,
-        ministerios,
-        ministerios_interes: ministeriosInteres,
-        instrumentos,
-        habilidades,
-        disponibilidad: disponibilidad.trim() || null,
-        interes_servir: interesServir,
-      };
-      if (crear) {
-        const nuevo: NewMember = {
-          nombre: nombre.trim(),
-          email: email.trim() || null,
-          telefono: telefono.trim() || null,
-          rfc: rfc.trim() || null,
-          notas: notas.trim() || null,
-          fecha_ingreso: fechaIngreso || null,
-        };
-        await insertMemberConFicha(church.id, nuevo, ficha);
-      } else {
-        await updateMemberFicha(member!.id, church.id, ficha);
-      }
-      playSound("guardado");
-      showToast(crear ? t("toast.miembroGuardado") : t("ficha.toastGuardada"));
-      onSaved();
-      if (crear && !cerrar) limpiarParaOtro(); else onClose();
-    } finally {
-      setSaving(false);
-    }
-  }
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
