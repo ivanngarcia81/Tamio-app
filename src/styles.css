@@ -8581,6 +8581,43 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     :root[data-dir-nav] .main .header, :root[data-dir-nav] .main .content { animation: none; }
   }
 
+  /* La página acompaña al dedo mientras se arrastra el carrusel: se desplaza y
+     se apaga en la misma proporción que los nombres, de modo que un solo gesto
+     mueve las dos cosas. `--nav-p` (−1..1) lo publica CarruselSecciones.tsx en
+     cada fotograma; al soltar, la sección encaja, `p` vuelve a 0 y toma el
+     relevo la animación de entrada de arriba.
+
+     El selector va contra `[data-nav-arrastre]` y no solo contra la variable:
+     un `transform` distinto de `none` —aunque valga `translateX(0)`— vuelve al
+     elemento bloque contenedor de sus descendientes `position: fixed`. Puesto
+     solo mientras dura el gesto, no queda nada aplicado después.
+
+     Y por esa misma razón **la cabecera no se desplaza, solo se apaga**: el
+     botón de compartir de varias páginas es `position: fixed` y vive DENTRO de
+     `.header`. Con un `transform` en la cabecera queda atrapado y salta de la
+     fila fija de arriba al borde del `.header` — medido, de top 0 a top 114.
+     Es el mismo bug que documenta el bloque de `fill-mode` de arriba. La
+     opacidad no crea bloque contenedor, así que la cabecera sí puede apagarse
+     y el gesto se sigue leyendo entero.
+
+     El desplazamiento es del 14 % y no del 100 %: la página vecina todavía no
+     está montada, así que lo que se ve al lado es el fondo. Con un recorrido
+     corto y el apagado, el gesto se lee como "esta página se está yendo" en
+     vez de como un hueco. */
+  :root.iphone[data-nav-arrastre] .main .header,
+  :root.iphone[data-nav-arrastre] .main .content {
+    opacity: calc(1 - var(--nav-pa, 0) * 0.6);
+    will-change: opacity;
+  }
+  :root.iphone[data-nav-arrastre] .main .content {
+    transform: translateX(calc(var(--nav-p, 0) * 14%));
+    will-change: transform, opacity;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root.iphone[data-nav-arrastre] .main .header,
+    :root.iphone[data-nav-arrastre] .main .content { transform: none; opacity: 1; }
+  }
+
   .app { padding-top: env(safe-area-inset-top); }
   /* Bug corregido: `.header` Y `.content` llevaban CADA UNO su propia
      compensación de navrow-h — dos gastos del mismo hueco, uno detrás del

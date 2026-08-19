@@ -137,6 +137,53 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
         const d = Math.min(1, asoma / rampa);
         nodo.style.setProperty("--d", d.toFixed(3));
       }
+      publicarDesvio(caja.left + caja.width / 2);
+    }
+
+    /* La página acompaña al carrusel: mientras el dedo arrastra la tira, el
+       contenido de debajo se desplaza y se apaga en la MISMA proporción, de
+       modo que el gesto mueve las dos cosas a la vez en vez de mover los
+       nombres y cambiar la página de golpe al soltar.
+
+       `--nav-p` va de −1 a 1: 0 con la sección activa centrada, ±1 cuando la
+       vecina ya ocupó el centro. El signo es el mismo que el del arrastre, así
+       que la página va hacia donde va el dedo. */
+    function publicarDesvio(centro: number) {
+      const raiz = document.documentElement;
+      const orden = secciones.map((sx) => items.current.get(sx.ruta)).filter(Boolean) as HTMLElement[];
+      const activo = items.current.get(pathname);
+      let p = 0;
+      if (activo && orden.length > 1) {
+        const ra = activo.getBoundingClientRect();
+        const cx = ra.left + ra.width / 2;
+        const desvio = cx - centro;
+        const i = orden.indexOf(activo);
+        // La vecina hacia la que se está arrastrando: si el activo se fue a la
+        // izquierda del centro, la que viene es la siguiente.
+        const vecina = desvio < 0 ? orden[i + 1] : orden[i - 1];
+        if (vecina) {
+          const rv = vecina.getBoundingClientRect();
+          const paso = Math.abs(rv.left + rv.width / 2 - cx);
+          if (paso > 1) p = Math.max(-1, Math.min(1, desvio / paso));
+        }
+      }
+      /* El `transform` SOLO existe mientras se arrastra, y por eso hay un
+         atributo además de la variable. Un `transform` distinto de `none`
+         —aunque sea `translateX(0)`— convierte al elemento en bloque
+         contenedor de sus descendientes `position: fixed`: dejarlo puesto
+         siempre repetiría el bug que documenta styles.css sobre `fill-mode`,
+         donde el botón de compartir de la cabecera dejaba de posicionarse
+         contra la ventana. Al volver a cero se quita y `transform` vuelve a
+         `none`. */
+      if (Math.abs(p) < 0.004) {
+        raiz.removeAttribute("data-nav-arrastre");
+        raiz.style.removeProperty("--nav-p");
+        raiz.style.removeProperty("--nav-pa");
+      } else {
+        raiz.dataset.navArrastre = "";
+        raiz.style.setProperty("--nav-p", p.toFixed(3));
+        raiz.style.setProperty("--nav-pa", Math.abs(p).toFixed(3));
+      }
     }
 
     function alFotograma() {
@@ -151,6 +198,12 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
       el.removeEventListener("scroll", alFotograma);
       window.removeEventListener("resize", alFotograma);
       if (pendiente) cancelAnimationFrame(pendiente);
+      // Fuera del carrusel no hay arrastre que acompañar: si quedara puesto,
+      // la página siguiente nacería desplazada y medio apagada.
+      const raiz = document.documentElement;
+      raiz.removeAttribute("data-nav-arrastre");
+      raiz.style.removeProperty("--nav-p");
+      raiz.style.removeProperty("--nav-pa");
     };
     // `pathname` entra en las dependencias para repintar tras cada navegación:
     // el efecto que centra la sección corre en el mismo commit y deja las
