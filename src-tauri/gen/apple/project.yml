@@ -57,10 +57,12 @@ targets:
         # archivo se quedó en 1.0.8 — una versión YA PUBLICADA, que App Store
         # Connect rechaza de plano. Los dos archivos tienen que decir lo mismo.
         CFBundleShortVersionString: 1.1.1
-        # El número de COMPILACIÓN, no la versión. Tiene que ser único y subir
-        # en cada subida a TestFlight de la misma 1.1.0: 2, 3, 4… Un entero
-        # deja la regla clara; "1.1.0" como build se agota en la primera.
-        CFBundleVersion: "1"
+        # Tauri PISA este valor con la versión de `tauri.conf.json` en cada
+        # `ios build` (comprobado: puse "2" y el build lo dejó en "1.1.0").
+        # Así que aquí va la versión, igual que arriba: poner otra cosa solo
+        # consigue que el archivo salga modificado después de cada build. Para
+        # subir dos veces, lo que se sube es la VERSIÓN.
+        CFBundleVersion: "1.1.1"
         ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: tesoreria_iOS/tesoreria_iOS.entitlements

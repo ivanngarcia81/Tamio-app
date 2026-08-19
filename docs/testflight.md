@@ -34,30 +34,35 @@ Info.plist a mano NO basta: al compilar vuelve el número viejo.
 > `Cargo.toml` (1.0.8, que no se había movido desde la 1.0.8 de verdad).
 > Con las tres fuentes de acuerdo esto deja de poder pasar.
 
-## El número de compilación es otra cosa
+## El número de compilación NO se controla desde el repo
 
-`CFBundleVersion` (en el Info.plist Y en `project.yml`) **no** es la versión:
-es el número de compilación, y tiene que ser **único y mayor** en cada subida
-de la misma versión. Va en enteros: 2, 3, 4…
+`CFBundleVersion` (el número de compilación) **lo pisa Tauri en cada
+`ios build` con la versión de `tauri.conf.json`**. Está comprobado: se dejó
+`"2"` en el `Info.plist`, se compiló, y el build lo devolvió a `"1.1.0"`.
 
-- Versión (`1.1.1`): cambia cuando cambia lo que la gente ve.
-- Compilación (`1`): sube **cada vez** que se sube algo a TestFlight con la
-  MISMA versión, aunque sea el mismo código con un arreglo de una línea.
-  **Al cambiar la versión vuelve a empezar en 1**, porque el número solo tiene
-  que ser único dentro de su versión.
+Consecuencia práctica: **no hay un número de compilación independiente**. Lo
+que Apple ve como versión y como compilación es el mismo número.
 
-Ejemplo de cómo va la cuenta:
+### Entonces, ¿cómo se sube dos veces?
 
-| Subida | Versión | Compilación |
-|---|---|---|
-| 18 ago | 1.1.0 | 1.1.0 |
-| hoy | **1.1.1** | **1** |
-| un arreglo de esta misma | 1.1.1 | 2 |
-| la siguiente tanda | 1.2.0 | 1 |
+**Subiendo la versión.** Cada subida a TestFlight necesita su propia versión
+en las tres fuentes:
+
+| Subida | `version` en las tres fuentes |
+|---|---|
+| 18 ago | 1.1.0 |
+| esta | 1.1.1 |
+| un arreglo de esta misma | 1.1.2 |
+| la siguiente tanda | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
-previously uploaded version"*, es esto: sube `CFBundleVersion` en los dos
-archivos y vuelve a compilar.
+previously uploaded version"*, es esto: sube el tercer número en
+`package.json`, `src-tauri/tauri.conf.json` y `src-tauri/Cargo.toml`, y
+vuelve a compilar.
+
+> Se puede fijar un número de compilación aparte editándolo en Xcode antes de
+> archivar, pero entonces deja de estar en el repo y se olvida. Subir la
+> versión es una línea en tres archivos y no tiene forma de fallar.
 
 ## La orden
 
