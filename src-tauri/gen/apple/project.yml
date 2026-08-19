@@ -51,8 +51,16 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 1.0.8
-        CFBundleVersion: "1.0.8"
+        # Estos dos NO son adorno: `project.yml` es la entrada de XcodeGen,
+        # así que si el proyecto de Xcode se regenera, de aquí sale el
+        # Info.plist. Cuando el bump a la 1.1.0 tocó solo el Info.plist, este
+        # archivo se quedó en 1.0.8 — una versión YA PUBLICADA, que App Store
+        # Connect rechaza de plano. Los dos archivos tienen que decir lo mismo.
+        CFBundleShortVersionString: 1.1.0
+        # El número de COMPILACIÓN, no la versión. Tiene que ser único y subir
+        # en cada subida a TestFlight de la misma 1.1.0: 2, 3, 4… Un entero
+        # deja la regla clara; "1.1.0" como build se agota en la primera.
+        CFBundleVersion: "2"
         ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: tesoreria_iOS/tesoreria_iOS.entitlements
