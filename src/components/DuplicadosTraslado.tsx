@@ -26,7 +26,7 @@ export default function DuplicadosTraslado({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay modal-overlay--confirm">
       <div className="confirm-card">
         <div className="confirm-title">{t("traslados.duplicadoTitulo")}</div>
         <div className="confirm-message">{t("traslados.duplicadoMensaje", { nombre })}</div>

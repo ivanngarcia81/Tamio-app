@@ -25,7 +25,12 @@ export default function ConfirmDialog({
   // (Configuración) este overlay se veía pero no recibía clics en Mac.
   return (
     <Portal>
-      <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      {/* `--confirm` no es decorativo: sube este telón al plano de las hojas de
+          iOS. Sin él, un "¿Eliminar?" abierto DESDE una hoja se pintaba a
+          z-index 150, debajo de la hoja (300): la pregunta existía, se podía
+          leer con las herramientas, y en el teléfono no se veía ni se podía
+          contestar. */}
+      <div className="modal-overlay modal-overlay--confirm" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
         <div className="confirm-card">
           <div className="confirm-title">{title}</div>
           <div className="confirm-message">{message}</div>

@@ -2064,6 +2064,18 @@ html.vibrancy .main { background: var(--surface); }
   padding: 40px;
   animation: overlayIn .15s ease both;
 }
+/* Un diálogo de confirmación sube al MISMO plano que las hojas de iOS (300),
+   no a uno menos. Es la misma trampa que ya está documentada en
+   `.action-sheet-overlay`: a 150 quedaba debajo de la hoja que lo abrió, así
+   que en el teléfono el "¿Eliminar?" del adjunto, el "¿Descartar cambios?"
+   del culto y el aviso de posible duplicado se pintaban invisibles y sin
+   recibir los toques.
+   Empatados a 300 decide el orden del documento —cada diálogo se cuelga de
+   <body> en su propio portal al abrirse, así que lo último abierto queda
+   encima—, que es justo lo que hace falta.
+   Solo en iPhone: en Mac no hay hojas, y subirlo allí lo pondría por encima
+   del visor de PDF (240), que sí debe tapar a quien lo abrió. */
+:root.iphone .modal-overlay--confirm { z-index: 300; }
 .modal-card {
   background: var(--surface);
   width: 640px;
@@ -7277,6 +7289,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--brand, #059669);
   color: #fff;
 }
+/* …pero el destructivo NO. La regla de arriba tiene más peso que
+   `.btn.primary.danger` (cuatro clases contra tres), así que en el móvil el
+   botón de "Eliminar" de todos los diálogos de confirmación salía del verde
+   de marca: la acción que borra se veía igual que la que guarda, y en un
+   teléfono eso se toca sin leer. Rojo de iOS, que además cambia solo en
+   modo oscuro. */
+:root.movil .btn.primary.danger { background: var(--ios-red, #dc2626); color: #fff; }
 
 /* Interruptor de vista (Agenda: Lista/Calendario; Informes: pestañas) como
    segmented control: antes eran chips sueltos con su propio fondo activo
