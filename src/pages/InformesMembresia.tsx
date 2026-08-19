@@ -29,7 +29,7 @@ import { IconCheck, IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, I
 import { ShareIcon } from "../components/icons/IOSIcons";
 import Portal from "../components/Portal";
 import { useEscapeClose } from "../hooks/useEscapeClose";
-import { ActionField, IosChevron, Section, SwitchField } from "../components/ios/FormularioIOS";
+import { ActionField, FilaNativa, IosChevron, Section, SwitchField } from "../components/ios/FormularioIOS";
 import { IOSPickerField } from "../components/ios/IOSPickerField";
 import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
@@ -193,23 +193,6 @@ function IOSHojaControl({
         </div>
       </div>
     </Portal>
-  );
-}
-
-/** Fila de lista con un control nativo del sistema a la derecha. */
-function FilaNativa({
-  label, tipo, valor, onChange,
-}: {
-  label: string;
-  tipo: "date" | "month";
-  valor: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="ios-field">
-      <span className="ios-field-label">{label}</span>
-      <input className="ios-field-input nm-nativo" type={tipo} value={valor} onChange={(e) => onChange(e.target.value)} />
-    </label>
   );
 }
 

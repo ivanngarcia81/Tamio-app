@@ -1055,6 +1055,14 @@ export const es = {
     secMembresia: "Información de membresía",
     secEspiritual: "Información espiritual",
     secServicio: "Servicio y habilidades",
+    /* Encabezados del alta en iPhone: ahí las secciones se leen como
+       preguntas cortas, no como títulos de expediente. Los campos de dentro
+       conservan su nombre de siempre. */
+    iosQuienEs: "Quién es",
+    iosMembresia: "Membresía",
+    iosMembresiaPie: "Con esto ya queda en el directorio. Lo demás se puede completar cuando lo sepas.",
+    iosVidaEspiritual: "Vida espiritual",
+    iosMasPersonales: "Más datos personales",
     fechaCongregacion: "Comenzó a congregarse",
     fechaIngreso: "Recibido como miembro",
     avisoFechasInvertidas: "«Recibido como miembro» es anterior a «Comenzó a congregarse». Normalmente alguien se congrega antes de ser recibido: revisa las dos fechas. Se puede guardar igual.",

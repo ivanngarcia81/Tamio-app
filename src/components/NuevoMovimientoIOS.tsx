@@ -24,7 +24,7 @@ import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
 import IOSSegmented from "./ios/IOSSegmented";
 import { IOSPickerField } from "./ios/IOSPickerField";
-import { ActionField, Section, SwitchField, TextField } from "./ios/FormularioIOS";
+import { ActionField, FilaNativa, Section, SwitchField, TextField } from "./ios/FormularioIOS";
 import { IOSBuscadorField } from "./ios/IOSBuscadorSheet";
 import {
   METODOS_PAGO, catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
@@ -36,31 +36,6 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { IconWarn } from "../icons";
 import { iaHabilitada } from "../ia";
 import { fileNameFromPath, parseMonto, type Props, type useNuevoMovimiento } from "./nuevoMovimiento";
-
-/** Fila de lista con un control nativo del sistema a la derecha (fecha, hora,
- *  mes). El `input` se queda: es el que abre la rueda de iOS. */
-function FilaNativa({
-  label, tipo, valor, max, onChange,
-}: {
-  label: string;
-  tipo: "date" | "time" | "month";
-  valor: string;
-  max?: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="ios-field">
-      <span className="ios-field-label">{label}</span>
-      <input
-        className="ios-field-input nm-nativo"
-        type={tipo}
-        value={valor}
-        max={max}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </label>
-  );
-}
 
 export default function NuevoMovimientoIOS({
   church, mode, onClose, h,

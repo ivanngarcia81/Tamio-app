@@ -8,6 +8,12 @@ import { showToast } from "../toast";
 import { printInformeIndividual } from "../services/informes/printInforme";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 import { ESTADOS_REGISTRO, useFichaMiembro, type PropsFicha } from "./fichaMiembro";
+import NuevoMiembroIOS from "./NuevoMiembroIOS";
+
+/** Constante de módulo, no una lambda nueva por render: `useEscapeClose`
+ *  lleva la función en las dependencias de su efecto, y una lambda inline
+ *  volvería a colgar y descolgar el listener en cada pulsación de tecla. */
+const NO_HACE_NADA = () => {};
 
 export const MINISTERIOS = [
   "musica", "ujieres", "ensenanza", "evangelismo", "ninos", "jovenes",
@@ -213,7 +219,11 @@ export default function FichaMiembroModal(props: PropsFicha) {
     asistencia, docs, guardar,
   } = h;
 
-  useEscapeClose(onClose);
+  // El ALTA en el teléfono se va a su propia hoja; la EDICIÓN no, que ahí la
+  // ficha completa es justamente lo que se viene a ver.
+  const enHoja = esIPhone() && crear;
+  useEscapeClose(enHoja ? NO_HACE_NADA : onClose);
+  if (enHoja) return <NuevoMiembroIOS onClose={onClose} h={h} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

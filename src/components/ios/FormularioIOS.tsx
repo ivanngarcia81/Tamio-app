@@ -129,6 +129,35 @@ export function TextField({
   );
 }
 
+/** Fila con un control nativo del sistema a la derecha (fecha, hora, mes). El
+ *  `input` se queda: en WKWebView ES la rueda de iOS, y sustituirlo por una
+ *  hoja propia sería cambiar un control nativo por uno peor.
+ *
+ *  (La clase `nm-nativo` es de cuando esto vivía solo en "Nuevo ingreso";
+ *  el nombre quedó, la regla —alinear a la derecha— siempre fue genérica.) */
+export function FilaNativa({
+  label, tipo, valor, max, onChange,
+}: {
+  label: string;
+  tipo: "date" | "time" | "month";
+  valor: string;
+  max?: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="ios-field">
+      <span className="ios-field-label">{label}</span>
+      <input
+        className="ios-field-input nm-nativo"
+        type={tipo}
+        value={valor}
+        max={max}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
 /** Fila que abre un selector (hoja u otra pantalla): etiqueta, valor gris y chevron. */
 export function PickerField({
   label,

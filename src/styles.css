@@ -10964,3 +10964,39 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .main:has(.rep-fila) .content {
   padding-bottom: calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom));
 }
+
+/* ---------------- Alta de miembro en iPhone (NuevoMiembroIOS) ----------------
+   Al crear, la ficha se pedía entera: cinco cajas de 46 px llenaban la
+   pantalla y quedaban tres secciones más debajo. Ahora se piden cinco datos
+   y el resto vive a un toque. Casi todo se apoya en el vocabulario que ya
+   existe —`.ios-sheet`, `.ios-section`, `.ios-group`, `.ios-field`—; lo único
+   nuevo es el sitio donde caben los chips, que no es una fila de lista. */
+
+/* Un grupo de chips no cabe en `.ios-group`: sus filas son de una línea y
+   aquí hay hasta once opciones que se envuelven. Misma tarjeta, mismo margen
+   y mismo radio que el grupo, pero con relleno en vez de filas. */
+:root.iphone .ios-chips {
+  background: var(--surface);
+  border-radius: 10px;
+  margin: 0 16px;
+  padding: 12px 14px;
+}
+:root.iphone .ios-chips .chip { font-size: 14px; padding: 7px 13px; }
+/* El chip activo de la regla base es NEGRO. Acotado a este bloque: `.chip` la
+   usan muchas pantallas y su regla base no se toca. */
+:root.iphone .ios-chips .chip.active {
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+  border-color: transparent;
+}
+/* El campo de "otro ministerio…" y su botón: mismo relleno gris sin borde que
+   el resto de campos del teléfono. 16 px de fuente no es capricho — por
+   debajo de eso, iOS hace zoom sobre el campo al enfocarlo. */
+:root.iphone .ios-chips .form-input {
+  height: 36px;
+  border: 0;
+  background: rgba(118, 118, 128, 0.12);
+  font-size: 16px;
+}
+:root[data-theme="dark"].iphone .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
+:root.iphone .ios-chips .btn.secondary { font-size: 15px; }
