@@ -7043,6 +7043,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .app::before {
   display: none !important;
 }
+/* Y la rejilla se queda en UNA columna, aquí y no dentro de una consulta de
+   ancho. Esta regla de arriba esconde el sidebar POR CLASE —a cualquier
+   ancho, que era justo su motivo: un iPhone apaisado no es un iPad angosto—,
+   pero `.app` seguía en `260px 1fr` por encima de 1023 px, donde no llega
+   ninguna de las dos consultas que la ponen en `1fr`. Sin sidebar que ocupe
+   la primera pista, `.main` caía dentro de ella: la app entera dibujada en
+   260 px con el resto de la ventana en blanco.
+   No se ve en un teléfono —ninguno llega a 1024 px— pero sí en cuanto la app
+   de iOS corre en ventana: un Mac con Apple Silicon, el simulador, o un iPad
+   en Stage Manager. Medido a 2000 px: antes `.main` medía 260 px; ahora 2000. */
+:root.iphone .app { grid-template-columns: 1fr; }
 /* Sin el sidebar ni su barra del ☰ (58px), el resto del layout del
    rango de iPad —pensado para dejarles sitio— se queda con hueco de
    sobra arriba. Estas reglas repiten los valores que ya usa el rango
