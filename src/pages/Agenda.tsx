@@ -23,6 +23,7 @@ import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import IOSSegmented from "../components/ios/IOSSegmented";
+import CalendarioIOS from "../components/ios/CalendarioIOS";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 /** Traducción tipo de actividad → tipo de servicio de la Bitácora, para el
@@ -139,12 +140,16 @@ function badgeClaseAgendaIOS(estado: string): string {
  *  ocurrencias de `expandirTodas`, y dos filas parecidas se separan al
  *  primer retoque. `nombreResponsable` puede devolver siempre null cuando
  *  la pantalla que la usa no carga los miembros. */
-export function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }: {
+export function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t, sinFecha = false }: {
   a: OcurrenciaVista;
   onOpen: () => void;
   etiquetaTipo: (x: Actividad) => string;
   nombreResponsable: (x: Actividad) => string | null;
   t: TFunction;
+  /** Omite la fecha de la segunda línea. Lo usa la lista de un día del
+   *  calendario del teléfono, donde el encabezado ya dice "Miércoles 19" y
+   *  repetirla en cada fila gasta el espacio que necesita el lugar. */
+  sinFecha?: boolean;
 }) {
   if (esIPhone()) {
     const hora = a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ? `${a.hora_inicio}${a.hora_fin ? `–${a.hora_fin}` : ""}` : "—");
@@ -156,7 +161,7 @@ export function FilaActividad({ a, onOpen, etiquetaTipo, nombreResponsable, t }:
             <span className="truncate">{a.nombre}</span>
           </div>
           <div className="tx-secundaria-movil">
-            {fmtFechaCorta(a.fecha)} · {hora} · {etiquetaTipo(a)}
+            {!sinFecha && `${fmtFechaCorta(a.fecha)} · `}{hora} · {etiquetaTipo(a)}
             {a.lugar && ` · ${a.lugar}`}
             {nombreResponsable(a) && ` · ${nombreResponsable(a)}`}
           </div>
@@ -365,6 +370,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
 
   // ---- Navegación / título ----
   const semanaDias = useMemo(() => diasDeSemana(cursor), [cursor]);
+  /** Lo del día elegido. Solo lo usa el calendario del teléfono, donde tocar
+   *  un día lo elige y la lista de abajo enseña lo que tiene. */
+  const delDia = porFecha.get(cursor) ?? [];
   const diasSemana = t("agenda.diasSemana", { returnObjects: true }) as string[];
   const titulo = useMemo(() => (
     vista === "semana"
@@ -500,7 +508,11 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   function abrirNueva(fecha: string | null) {
     setModal({ actividad: null, duplicarDe: null, fecha, mostrarRecurrencia: true });
   }
-  useAbrirCrearDesdeMas(() => abrirNueva(null));
+  /* El "+" crea en el día ELEGIDO cuando el calendario del teléfono está a la
+     vista: es lo que promete el estado vacío ("Toca ＋ para añadir una
+     actividad a este día"). En Lista/Historial y en escritorio no hay día
+     elegido y sigue creando sin fecha. */
+  useAbrirCrearDesdeMas(() => abrirNueva(enIPhone && (vista === "mes" || vista === "semana") ? cursor : null));
 
   function abrirEditor(v: OcurrenciaVista) {
     setDetalle(null);
@@ -849,6 +861,36 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             <EmptyState pagina icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.vacioTitulo")} sub={t("agenda.vacioSub")} />
             <button className="btn primary" onClick={() => abrirNueva(null)}>{t("agenda.crearPrimera")}</button>
           </div>
+        ) : enIPhone && (vista === "mes" || vista === "semana") ? (
+          /* En el teléfono el calendario NO es la tabla de escritorio: el día
+             solo dice si tiene algo, y lo que tiene se lee entero en la lista
+             de abajo. El porqué —medido— está en `CalendarioIOS`.
+             Aquí tocar un día lo ELIGE; crear es el "+" de la cabecera, que
+             ya usa el día elegido. */
+          <>
+            <CalendarioIOS
+              dias={vista === "mes" ? matrizMes(mesCursor) : semanaDias}
+              diasSemana={diasSemana}
+              seleccion={cursor}
+              hoy={hoy}
+              tiene={(f) => (porFecha.get(f)?.length ?? 0) > 0}
+              onElegir={setCursor}
+              tira={vista === "semana"}
+            />
+            <div className="ios-dia-cab">
+              <h2>{`${fmtFecha(cursor).nombreDia} ${fmtFecha(cursor).dia}`}</h2>
+              <span>{t("agenda.diaActividades", { count: delDia.length })}</span>
+            </div>
+            {delDia.length === 0 ? (
+              <EmptyState icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.diaVacioTitulo")} sub={t("agenda.diaVacioSub")} />
+            ) : (
+              <div className="ios-listcard">
+                {delDia.map((a) => (
+                  <FilaActividad key={`${a._master.id}:${a._fechaOriginal}`} a={a} onOpen={() => setDetalle(a)} etiquetaTipo={etiquetaTipo} nombreResponsable={nombreResponsable} t={t} sinFecha />
+                ))}
+              </div>
+            )}
+          </>
         ) : vista === "mes" ? (
           <div className="agenda-cal card">
             <div className="agenda-dow">{diasSemana.map((d, i) => <div key={i} className="agenda-dow-cell">{d}</div>)}</div>

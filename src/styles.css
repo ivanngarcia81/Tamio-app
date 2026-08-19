@@ -5042,6 +5042,107 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin-bottom: 14px;
 }
 
+/* ---------------- Calendario de la Agenda (iPhone) ----------------
+   La tabla de escritorio no cabe: en 390 px las siete columnas miden 53 px y
+   la pastilla de un evento se queda en 40, con el nombre dibujado a CERO
+   píxeles de ancho. Aquí el día solo dice "hay o no hay" —número y punto— y
+   lo que hay se lee entero en la lista de abajo, como en el Calendario de
+   iOS. Mac e iPad siguen con `.agenda-cal`, que ahí sí cabe. */
+:root.iphone .ios-cal {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 8px 6px 10px;
+  margin-bottom: 18px;
+}
+:root.iphone .ios-cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding-bottom: 4px;
+  border-bottom: 0.5px solid var(--line-soft);
+  margin: 0 6px 4px;
+}
+:root.iphone .ios-cal-dow span {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text-3);
+}
+:root.iphone .ios-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
+:root.iphone .ios-cal-hueco { display: block; }
+:root.iphone .ios-cal-dia {
+  /* 44 de alto: el mínimo de un objetivo táctil en iOS. El círculo mide 32 y
+     el resto es el margen de error del pulgar, no aire decorativo. */
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 0 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-cal-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  letter-spacing: -0.3px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+/* Hoy manda sobre elegido: el relleno oscuro ya se lee como "el día en que
+   estamos" y teñirlo de marca además lo confundiría con la selección. */
+:root.iphone .ios-cal-num--hoy { background: var(--ink); color: var(--ink-contrast); font-weight: 600; }
+:root.iphone .ios-cal-num--sel {
+  background: color-mix(in srgb, var(--brand, #059669) 14%, transparent);
+  color: var(--brand, #059669);
+  font-weight: 600;
+}
+/* El punto se pinta SIEMPRE (transparente cuando no hay nada): así los
+   números de todas las filas quedan a la misma altura, con eventos o sin
+   ellos. */
+:root.iphone .ios-cal-punto {
+  width: 5px;
+  height: 5px;
+  border-radius: 3px;
+  background: transparent;
+}
+:root.iphone .ios-cal-punto--on { background: var(--brand, #059669); }
+
+/* Tira de una semana: la inicial va dentro de cada celda. */
+:root.iphone .ios-cal--tira { padding: 10px 6px; }
+:root.iphone .ios-cal--tira .ios-cal-dia { gap: 3px; padding-top: 0; }
+:root.iphone .ios-cal-dow-celda {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text-3);
+}
+:root.iphone .ios-cal--tira .ios-cal-num { width: 34px; height: 34px; border-radius: 17px; }
+
+/* Cabecera de la lista del día elegido: qué día es y cuántas cosas tiene. */
+:root.iphone .ios-dia-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 4px 8px;
+}
+:root.iphone .ios-dia-cab h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+:root.iphone .ios-dia-cab span { font-size: 13px; color: var(--text-2); flex: 0 0 auto; }
+
 :root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
 :root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
 
