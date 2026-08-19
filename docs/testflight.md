@@ -1,6 +1,7 @@
 # Subir Tamio a TestFlight
 
-_Escrito el 19 de agosto de 2026, con la 1.1.0 lista para su primera subida._
+_Escrito el 19 de agosto de 2026. La 1.1.0 se subió ese mismo día; esta nota
+se quedó para la 1.1.1 y las que vengan._
 
 ## Los cuatro sitios que llevan la versión
 
@@ -21,9 +22,20 @@ Connect rechaza de plano — así que aquí quedan los cuatro anotados:
 es el número de compilación, y tiene que ser **único y mayor** en cada subida
 de la misma versión. Va en enteros: 2, 3, 4…
 
-- Versión (`1.1.0`): cambia cuando cambia lo que la gente ve.
-- Compilación (`2`): sube **cada vez** que se sube algo a TestFlight, aunque
-  sea el mismo código con un arreglo de una línea.
+- Versión (`1.1.1`): cambia cuando cambia lo que la gente ve.
+- Compilación (`1`): sube **cada vez** que se sube algo a TestFlight con la
+  MISMA versión, aunque sea el mismo código con un arreglo de una línea.
+  **Al cambiar la versión vuelve a empezar en 1**, porque el número solo tiene
+  que ser único dentro de su versión.
+
+Ejemplo de cómo va la cuenta:
+
+| Subida | Versión | Compilación |
+|---|---|---|
+| 18 ago | 1.1.0 | 1.1.0 |
+| hoy | **1.1.1** | **1** |
+| un arreglo de esta misma | 1.1.1 | 2 |
+| la siguiente tanda | 1.2.0 | 1 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
 previously uploaded version"*, es esto: sube `CFBundleVersion` en los dos
