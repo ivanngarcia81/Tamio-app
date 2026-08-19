@@ -3254,6 +3254,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 0 32px 6px;
   margin: 0;
 }
+/* La primera sección de una hoja pegaba contra la barra: 0 px de aire, y su
+   encabezado se leía como parte de ella en vez de como el título de la
+   primera tarjeta.
+   El hueco va DENTRO de la sección y no en el cuerpo que desplaza, a
+   propósito: así se va con ella al primer arrastre —que es lo que hace iOS—
+   en vez de quedarse como una franja fija bajo la barra. Y va en la sección y
+   no en el encabezado para que también respiren las hojas cuya primera
+   sección no lleva título (la de editar una categoría).
+   `:first-child` deja fuera solas a las hojas que ya resolvían el aire con su
+   propio bloque arriba (el segmentado de la solicitud, el importe de Nuevo
+   ingreso); ahí una regla más sumaría 20 px sobre algo que ya respiraba. */
+:root.iphone .ios-sheet-body > .ios-section:first-child { padding-top: 20px; }
 :root.iphone .ios-section-footer {
   font-size: 13px;
   line-height: 18px;
