@@ -349,6 +349,12 @@ export const es = {
     duplicado: "Ya existe un depósito registrado con esta misma fecha, monto y cuenta bancaria. Revisa que no sea un duplicado.",
     excedeEfectivo: "El monto ({{monto}}) supera el efectivo estimado disponible en caja a esa fecha ({{disponible}}). Revisa el monto o vuelve a pulsar Guardar para registrarlo de todos modos.",
     seleccionarComprobante: "Seleccionar comprobante",
+    heroPie: "a la cuenta de la iglesia",
+    secDeposito: "Depósito",
+    periodoPie: "El período es el mes al que se le carga este depósito en los libros.",
+    cuentaBuscar: "Buscar o escribir la cuenta",
+    cuentaNueva: "Usar \"{{texto}}\"",
+    cuentaElegir: "Elegir",
     guardarDeposito: "Guardar depósito",
   },
 

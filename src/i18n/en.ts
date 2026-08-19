@@ -355,6 +355,12 @@ export const en: Resources = {
     duplicado: "A deposit with this same date, amount and bank account already exists. Check that it is not a duplicate.",
     excedeEfectivo: "The amount ({{monto}}) exceeds the estimated cash available on hand as of that date ({{disponible}}). Review the amount, or press Save again to record it anyway.",
     seleccionarComprobante: "Select receipt",
+    heroPie: "into the church's bank account",
+    secDeposito: "Deposit",
+    periodoPie: "The period is the month this deposit is recorded against in the books.",
+    cuentaBuscar: "Search or type the account",
+    cuentaNueva: "Use \"{{texto}}\"",
+    cuentaElegir: "Choose",
     guardarDeposito: "Save deposit",
   },
 
