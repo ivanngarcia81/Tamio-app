@@ -1309,6 +1309,22 @@ export const es = {
     sinResultados: "Sin resultados",
     sinResultadosSub: "Prueba con otro término de búsqueda.",
     secServicio: "Información del servicio",
+    /* Encabezados y pies cortos del iPhone. En una lista agrupada el
+       encabezado es de 13 px y el pie una sola línea: el párrafo de
+       `conteoHint` no cabe, así que se parte en los dos pies que explican
+       cada registro por separado. */
+    secConteo: "Conteo del culto",
+    conteoPie: "Cifra que aparece en el registro de cultos y en los informes del mes. El total se calcula solo.",
+    secAsistenciaMiembro: "Asistencia por miembro",
+    asistenciaPie: "Alimenta el informe por persona y el seguimiento de ausencias. Se puede completar después.",
+    secEscuelaVisitantes: "Escuela bíblica y visitantes",
+    secParticipaciones: "Cantos y participaciones",
+    deTotal: "{{n}} de {{total}}",
+    anadirParticipacion: "Añadir participación",
+    participacion: "Participación",
+    restar: "Restar uno",
+    sumar: "Sumar uno",
+    visitante: "Visitante",
     secMensaje: "Mensaje",
     secEscuela: "Escuela bíblica",
     secAsistencia: "Asistencia",

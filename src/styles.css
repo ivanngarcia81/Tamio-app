@@ -11040,3 +11040,95 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   resize: none;
 }
 :root[data-theme="dark"].iphone .ios-ia-campo { background: rgba(118, 118, 128, 0.24); }
+
+/* ---------------- El culto en iPhone (NuevoServicioIOS) ----------------
+   El padrón embebido hacía el formulario interminable —cuarenta miembros en
+   línea, y hay iglesias con trescientos— y marcar quién vino se hacía con
+   interruptores, que son para ajustes que se quedan encendidos. Ahora el
+   padrón vive fuera del formulario y se marca con check. */
+
+/* Conteo: la cifra y su −/+. Contar asistentes es tocar "+" doce veces, no
+   escribir "12" y volver a cerrar el teclado. */
+:root.iphone .ios-conteo { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; margin-left: auto; }
+:root.iphone .ios-conteo-cifra {
+  min-width: 26px;
+  text-align: right;
+  font-size: 17px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .ios-stepper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(118, 118, 128, 0.12);
+}
+:root.iphone .ios-stepper button {
+  width: 44px;
+  height: 31px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+:root.iphone .ios-stepper button:first-child { border-right: 0.5px solid rgba(60, 60, 67, 0.15); }
+:root.iphone .ios-stepper button:active { background: rgba(118, 118, 128, 0.2); }
+:root.iphone .ios-stepper button:disabled { color: var(--text-3); cursor: default; }
+:root[data-theme="dark"].iphone .ios-stepper { background: rgba(118, 118, 128, 0.24); }
+
+/* El total: se calcula, no se escribe. Fondo apenas teñido y peso 600 para
+   que se lea como cierre de la sección y no como un campo más. */
+:root.iphone .ios-total { background: rgba(118, 118, 128, 0.06); }
+:root.iphone .ios-total .ios-field-label,
+:root.iphone .ios-total .ios-field-value { font-weight: 600; color: var(--text); }
+:root[data-theme="dark"].iphone .ios-total { background: rgba(118, 118, 128, 0.12); }
+
+/* Fila de miembro: casi toda la fila es el área de marcar; el chevron de la
+   derecha, cuando lo hay, es un objetivo aparte que abre el motivo. */
+:root.iphone .ios-miembro { padding-right: 0; }
+:root.iphone .ios-miembro-marcar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 16px 0 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+:root.iphone .ios-miembro-marcar:active { opacity: 0.6; }
+:root.iphone .ios-miembro-detalle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+:root.iphone .ios-miembro-etiqueta {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--text-2);
+  font-size: 13px;
+}
+:root[data-theme="dark"].iphone .ios-miembro-etiqueta { background: rgba(118, 118, 128, 0.24); }
+:root.iphone .ios-check { flex: 0 0 auto; color: var(--brand); font-size: 17px; font-weight: 600; }
+
+/* Una fila que solo lleva etiqueta y chevron: sin el valor de por medio no
+   hay nada que empuje al chevron al borde derecho. */
+:root.iphone .ios-field--link > .ios-field-label + .ios-chevron { margin-left: auto; }
+
+/* Aviso dentro de un pie de sección: no es un error, es un descuadre entre el
+   conteo y la lista. Naranja, no rojo. */
+:root.iphone .ios-section-footer--aviso { display: block; margin-top: 6px; color: var(--warn, #b45309); }

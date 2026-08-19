@@ -400,6 +400,8 @@ export function useServicio({ church, servicio, prefill, onClose, onSaved }: Pro
   const totalConteo = ninos + jovenes + adultos;
 
   return {
+    /* El cierre sin más preguntas, para el "Descartar cambios" del diálogo. */
+    onCerrarDeVerdad: onClose,
     saving, error, setError, confirmClose, setConfirmClose,
     confirmDesmarcar, setConfirmDesmarcar, confirmVacio, setConfirmVacio,
     anotarAusencias, setAnotarAusencias,

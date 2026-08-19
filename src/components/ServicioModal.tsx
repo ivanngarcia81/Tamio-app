@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPhone } from "../movil";
+import NuevoServicioIOS from "./NuevoServicioIOS";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import { textoCorto } from "../movil";
 import { ChipGroup, Seccion } from "./FichaMiembroModal";
@@ -16,6 +17,10 @@ export const TIPOS_SERVICIO = [
   "dominical", "oracion", "estudio", "jovenes", "damas", "caballeros",
   "vigilia", "evangelistico", "especial", "otro",
 ] as const;
+
+/** Constante de módulo, no una lambda nueva por render: `useEscapeClose` lleva
+ *  la función en las dependencias de su efecto. */
+const NO_HACE_NADA = () => {};
 
 const RosterRow = memo(function RosterRow({ id, estado, conMotivo, onToggle, onRazon, onRazonOtra, onSeguimiento }: {
   id: number;
@@ -113,7 +118,13 @@ export default function ServicioModal(props: PropsServicio) {
     pedirCerrar, guardar,
   } = h;
 
-  useEscapeClose(pedirCerrar);
+  const enIPhone = esIPhone();
+  useEscapeClose(enIPhone ? NO_HACE_NADA : pedirCerrar);
+
+  // En el teléfono el culto se va a su propia hoja: el padrón embebido hace
+  // el formulario interminable con cuarenta miembros, y no digamos con
+  // trescientos.
+  if (enIPhone) return <NuevoServicioIOS servicio={servicio} h={h} tipos={TIPOS_SERVICIO} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) pedirCerrar(); }}>
