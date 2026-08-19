@@ -1685,6 +1685,7 @@ export const en: Resources = {
     },
     metodoEntrega: "Delivery method",
     confirmacionRecibida: "Confirmation received from the other church",
+    confirmacionCorta: "Confirmation received",
     fechaConfirmacion: "Confirmation date",
     fechaNacimiento: "Date of birth",
     iglesiaProcedencia: "Church of origin",

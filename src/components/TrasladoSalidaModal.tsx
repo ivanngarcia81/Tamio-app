@@ -1,208 +1,39 @@
-import { useState } from "react";
+/**
+ * TrasladoSalidaModal.tsx — el traslado de salida en Mac e iPad: el diálogo
+ * centrado de siempre, con sus tres secciones y su rejilla de dos columnas.
+ *
+ * En iPhone no se pinta nada de aquí: la hoja de iOS
+ * (`NuevoTrasladoSalidaIOS`) se lleva el formulario entero. Lo que comparten
+ * es `useTrasladoSalida`, así que las dos vistas escriben el MISMO registro
+ * con las MISMAS cuatro validaciones, y la generación de la carta vinculada
+ * existe una sola vez.
+ */
 import { useTranslation } from "react-i18next";
 import { esIPhone } from "../movil";
-import { IOSPickerInput } from "./ios/IOSPickerField";
-import {
-  darDeBajaMember, insertCarta, insertTrasladoSalida, memberTieneTrasladoActivo, updateTrasladoSalida,
-  type Church, type Member, type NewCarta, type NewTrasladoSalida, type TrasladoSalida,
-} from "../db";
 import { Seccion, SwitchRow } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
+import NuevoTrasladoSalidaIOS from "./NuevoTrasladoSalidaIOS";
 import { IconClose, IconFileText } from "../icons";
-import { showToast } from "../toast";
-import { playSound } from "../sound";
 import { useEscapeClose } from "../hooks/useEscapeClose";
+import {
+  ESTADOS_TS, METODOS_ENTREGA, useTrasladoSalida, type PropsTrasladoSalida,
+} from "./trasladoSalida";
 
-export const ESTADOS_TS = [
-  "borrador", "solicitud", "revision", "aprobacion", "aprobado", "cartaPreparacion",
-  "cartaEmitida", "cartaEntregada", "confirmacion", "completado", "cancelado",
-] as const;
+export { ESTADOS_TS };
 
-function hoyLocal(): string {
-  const d = new Date();
-  const p = (x: number) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-interface Props {
-  church: Church;
-  traslado: TrasladoSalida | null;
-  /** Miembros que pueden iniciar traslado (activos del registro). */
-  members: Member[];
-  /** Miembro preseleccionado (puente desde la baja por traslado en Membresía). */
-  preMemberId?: number | null;
-  onClose: () => void;
-  onSaved: () => void;
-  /** Abre la carta vinculada en el editor. */
-  onAbrirCarta: (cartaId: number) => void;
-}
-
-/** Método de entrega de la carta. Antes era texto libre y cada persona
- *  escribía lo suyo ("email", "Email", "correo", "en mano"), así que los
- *  valores no eran comparables y no se podía filtrar ni reportar por él. */
-const METODOS_ENTREGA = ["mano", "email", "postal", "tercero", "otro"] as const;
-
-export default function TrasladoSalidaModal({ church, traslado, members, preMemberId, onClose, onSaved, onAbrirCarta }: Props) {
+export default function TrasladoSalidaModal(props: PropsTrasladoSalida) {
   const { t } = useTranslation();
-  const enIPhone = esIPhone();
-  useEscapeClose(onClose);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
-  const [confirmTrasladado, setConfirmTrasladado] = useState<number | null>(null);
+  const { traslado, onAbrirCarta } = props;
+  const h = useTrasladoSalida(props);
+  const enHoja = esIPhone();
+  /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
+   *  efecto se vuelva a suscribir en cada render. */
+  useEscapeClose(enHoja ? NO_HACE_NADA : h.pedirCerrar);
 
-  const [memberId, setMemberId] = useState<number | null>(traslado?.member_id ?? preMemberId ?? null);
-  const [fechaSolicitud, setFechaSolicitud] = useState(traslado?.fecha_solicitud ?? hoyLocal());
-  const [motivo, setMotivo] = useState(traslado?.motivo ?? "");
-  const [iglesiaDestino, setIglesiaDestino] = useState(traslado?.iglesia_destino ?? "");
-  const [pastorReceptor, setPastorReceptor] = useState(traslado?.pastor_receptor ?? "");
-  const [direccion, setDireccion] = useState(traslado?.direccion ?? "");
-  const [ciudad, setCiudad] = useState(traslado?.ciudad ?? "");
-  const [region, setRegion] = useState(traslado?.region ?? "");
-  const [pais, setPais] = useState(traslado?.pais ?? "");
-  const [telefono, setTelefono] = useState(traslado?.telefono ?? "");
-  const [email, setEmail] = useState(traslado?.email ?? "");
-  const [fechaAprobacion, setFechaAprobacion] = useState(traslado?.fecha_aprobacion ?? "");
-  const [aprobadoPor, setAprobadoPor] = useState(traslado?.aprobado_por ?? "");
-  const [cartaId, setCartaId] = useState<number | null>(traslado?.carta_id ?? null);
-  const [fechaEntrega, setFechaEntrega] = useState(traslado?.fecha_entrega ?? "");
-  const [metodoEntrega, setMetodoEntrega] = useState(traslado?.metodo_entrega ?? "");
-  /* Mismo criterio que el desplegable de Mac: los traslados viejos
-     guardaban texto libre, así que si el valor guardado no es una de las
-     claves nuevas se ofrece tal cual para que abrir y guardar un registro
-     antiguo no lo borre. */
-  const opcMetodoEntrega = [
-    { value: "", label: "—" },
-    ...METODOS_ENTREGA.map((m) => ({ value: m, label: t(`traslados.entrega.${m}`) })),
-    ...(metodoEntrega && !METODOS_ENTREGA.includes(metodoEntrega as (typeof METODOS_ENTREGA)[number])
-      ? [{ value: metodoEntrega, label: metodoEntrega }]
-      : []),
-  ];
-  const [confirmacion, setConfirmacion] = useState(traslado ? traslado.confirmacion_recibida === 1 : false);
-  const [fechaConfirmacion, setFechaConfirmacion] = useState(traslado?.fecha_confirmacion ?? "");
-  const [observaciones, setObservaciones] = useState(traslado?.observaciones ?? "");
-  const [estado, setEstado] = useState(traslado?.estado ?? "borrador");
-
-  const miembro = members.find((m) => m.id === memberId) ?? null;
-  const puedeGenerarCarta = ["aprobado", "cartaPreparacion", "cartaEmitida", "cartaEntregada", "confirmacion", "completado"].includes(estado);
-
-  function payloadActual(): NewTrasladoSalida | null {
-    setError(null);
-    if (memberId === null) { setError(t("traslados.miembroObligatorio")); return null; }
-    if (!fechaSolicitud) { setError(t("traslados.fechaObligatoria")); return null; }
-    if (estado === "completado" && !iglesiaDestino.trim()) { setError(t("traslados.destinoObligatorio")); return null; }
-    if (fechaConfirmacion && fechaEntrega && fechaConfirmacion < fechaEntrega) {
-      setError(t("traslados.confirmacionAntes")); return null;
-    }
-    return {
-      member_id: memberId,
-      fecha_solicitud: fechaSolicitud,
-      motivo: motivo.trim() || null,
-      iglesia_destino: iglesiaDestino.trim() || null,
-      pastor_receptor: pastorReceptor.trim() || null,
-      direccion: direccion.trim() || null,
-      ciudad: ciudad.trim() || null,
-      region: region.trim() || null,
-      pais: pais.trim() || null,
-      telefono: telefono.trim() || null,
-      email: email.trim() || null,
-      fecha_aprobacion: fechaAprobacion || null,
-      aprobado_por: aprobadoPor.trim() || null,
-      carta_id: cartaId,
-      fecha_entrega: fechaEntrega || null,
-      metodo_entrega: metodoEntrega.trim() || null,
-      confirmacion_recibida: confirmacion ? 1 : 0,
-      fecha_confirmacion: confirmacion ? fechaConfirmacion || null : null,
-      observaciones: observaciones.trim() || null,
-      estado,
-    };
-  }
-
-  async function guardar() {
-    const payload = payloadActual();
-    if (!payload) return;
-    setSaving(true);
-    try {
-      // Advertencia (no bloqueo) si el miembro ya tiene otro traslado activo.
-      if (memberId !== null && (await memberTieneTrasladoActivo(memberId, church.id, traslado?.id))) {
-        setAviso(t("traslados.dosActivos"));
-      }
-      if (traslado) {
-        await updateTrasladoSalida(traslado.id, church.id, payload, traslado.estado);
-      } else {
-        await insertTrasladoSalida(church.id, payload);
-      }
-      playSound("guardado");
-      showToast(t("traslados.toastGuardado"));
-      onSaved();
-      // Al completar el traslado: ¿cambiar el estado del miembro a Trasladado?
-      // (Nunca se borra el expediente; solo sale de los registros ordinarios.)
-      if (payload.estado === "completado" && traslado?.estado !== "completado" && miembro && miembro.activo === 1) {
-        setConfirmTrasladado(memberId);
-        return;
-      }
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function marcarTrasladado() {
-    if (confirmTrasladado === null) return;
-    await darDeBajaMember(confirmTrasladado, church.id, fechaEntrega || hoyLocal(), "traslado");
-    playSound("guardado");
-    showToast(t("traslados.toastMiembroTrasladado"));
-    setConfirmTrasladado(null);
-    onSaved();
-    onClose();
-  }
-
-  /** Genera la carta de traslado con los datos del proceso y la vincula. */
-  async function generarCarta() {
-    const payload = payloadActual();
-    if (!payload || !miembro) return;
-    setSaving(true);
-    try {
-      const cuerpo =
-        `<p>${t("traslados.cartaCuerpo1", { nombre: miembro.nombre })}</p>` +
-        `<p>${t("traslados.cartaCuerpo2", { destino: iglesiaDestino.trim() || "—" })}</p>`;
-      const carta: NewCarta = {
-        tipo: "traslado",
-        fecha_emision: hoyLocal(),
-        lugar_emision: church.ciudad ?? null,
-        destinatario_tipo: "iglesia",
-        member_id: memberId,
-        destinatario_nombre: pastorReceptor.trim() || iglesiaDestino.trim() || t("traslados.iglesiaDestino"),
-        destinatario_direccion: [direccion, ciudad, region, pais].filter((x) => x.trim()).join(", ") || null,
-        asunto: t("traslados.cartaAsunto", { nombre: miembro.nombre }),
-        saludo: null,
-        cuerpo_html: cuerpo,
-        despedida: null,
-        firmas: [
-          ...(church.pastor_nombre ? [{ rol: "pastor", nombre: church.pastor_nombre, cargo: church.pastor_cargo ?? t("rol.pastor"), firmado: false, fecha: null }] : []),
-          ...(church.secretaria_nombre ? [{ rol: "secretaria", nombre: church.secretaria_nombre, cargo: church.secretaria_cargo ?? t("cartas.rolSecretaria"), firmado: false, fecha: null }] : []),
-        ],
-        observaciones: null,
-        estado: "preparacion",
-        entregada_a: null,
-        fecha_entrega: null,
-      };
-      const creada = await insertCarta(church.id, carta);
-      if (!creada || !traslado) return;
-      setCartaId(creada.id);
-      const nuevoEstado = estado === "aprobado" ? "cartaPreparacion" : estado;
-      setEstado(nuevoEstado);
-      await updateTrasladoSalida(traslado.id, church.id, { ...payload, carta_id: creada.id, estado: nuevoEstado }, traslado.estado);
-      playSound("guardado");
-      showToast(t("traslados.toastCartaGenerada", { folio: creada.folio }));
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
-  }
+  if (enHoja) return <NuevoTrasladoSalidaIOS traslado={traslado} onAbrirCarta={onAbrirCarta} h={h} />;
 
   return (
-    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) h.pedirCerrar(); }}>
       <div className="modal-card" style={{ width: 720 }}>
         <div className="modal-header">
           <div>
@@ -211,7 +42,7 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
             </div>
             <div className="modal-sub">{t("traslados.subSalida")}</div>
           </div>
-          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
+          <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={h.pedirCerrar}><IconClose /></button>
         </div>
 
         <div className="modal-body">
@@ -219,36 +50,25 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("cartas.miembro")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput
-                    ariaLabel={t("cartas.miembro")}
-                    options={[{ value: "", label: t("cartas.eligeMiembro") }, ...members.map((m) => ({ value: String(m.id), label: m.nombre }))]}
-                    value={memberId === null ? "" : String(memberId)}
-                    placeholder={t("cartas.eligeMiembro")}
-                    disabled={traslado !== null}
-                    onSelect={(v) => setMemberId(v ? Number(v) : null)}
-                  />
-                ) : (
-                  <select
-                    className="form-input"
-                    value={memberId ?? ""}
-                    disabled={traslado !== null}
-                    onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}
-                  >
-                    <option value="">{t("cartas.eligeMiembro")}</option>
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>{m.nombre}</option>
-                    ))}
-                  </select>
-                )}
+                <select
+                  className="form-input"
+                  value={h.memberId ?? ""}
+                  disabled={h.miembroFijo}
+                  onChange={(e) => h.setMemberId(e.target.value ? Number(e.target.value) : null)}
+                >
+                  <option value="">{t("cartas.eligeMiembro")}</option>
+                  {h.members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">{t("solicitudes.fechaSolicitud")}</label>
-                <input type="date" className="form-input" value={fechaSolicitud} onChange={(e) => setFechaSolicitud(e.target.value)} />
+                <input type="date" className="form-input" value={h.fechaSolicitud} onChange={(e) => h.setFechaSolicitud(e.target.value)} />
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("solicitudes.motivo")} <span className="opt">{t("common.opcional")}</span></label>
-                <input className="form-input" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                <input className="form-input" value={h.motivo} onChange={(e) => h.setMotivo(e.target.value)} />
               </div>
             </div>
           </Seccion>
@@ -257,35 +77,35 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("traslados.iglesiaDestino")}</label>
-                <input className="form-input" value={iglesiaDestino} onChange={(e) => setIglesiaDestino(e.target.value)} />
+                <input className="form-input" value={h.iglesiaDestino} onChange={(e) => h.setIglesiaDestino(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("traslados.pastorReceptor")}</label>
-                <input className="form-input" value={pastorReceptor} onChange={(e) => setPastorReceptor(e.target.value)} />
+                <input className="form-input" value={h.pastorReceptor} onChange={(e) => h.setPastorReceptor(e.target.value)} />
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("institucion.direccion")}</label>
-                <input className="form-input" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+                <input className="form-input" value={h.direccion} onChange={(e) => h.setDireccion(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("iglesia.ciudad")}</label>
-                <input className="form-input" value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
+                <input className="form-input" value={h.ciudad} onChange={(e) => h.setCiudad(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("institucion.region")}</label>
-                <input className="form-input" value={region} onChange={(e) => setRegion(e.target.value)} />
+                <input className="form-input" value={h.region} onChange={(e) => h.setRegion(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("iglesia.pais")}</label>
-                <input className="form-input" value={pais} onChange={(e) => setPais(e.target.value)} />
+                <input className="form-input" value={h.pais} onChange={(e) => h.setPais(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("tesorero.telefono")}</label>
-                <input className="form-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                <input className="form-input" value={h.telefono} onChange={(e) => h.setTelefono(e.target.value)} />
               </div>
               <div className="form-group full">
                 <label className="form-label">{t("tesorero.correo")}</label>
-                <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input className="form-input" type="email" value={h.email} onChange={(e) => h.setEmail(e.target.value)} />
               </div>
             </div>
           </Seccion>
@@ -294,33 +114,24 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("membresia.colEstado")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput
-                    ariaLabel={t("membresia.colEstado")}
-                    options={ESTADOS_TS.map((es) => ({ value: es, label: t(`traslados.estadoTS.${es}`) }))}
-                    value={estado}
-                    onSelect={setEstado}
-                  />
-                ) : (
-                  <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>
-                    {ESTADOS_TS.map((es) => (
-                      <option key={es} value={es}>{t(`traslados.estadoTS.${es}`)}</option>
-                    ))}
-                  </select>
-                )}
+                <select className="form-input" value={h.estado} onChange={(e) => h.setEstado(e.target.value)}>
+                  {ESTADOS_TS.map((es) => (
+                    <option key={es} value={es}>{t(`traslados.estadoTS.${es}`)}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">{t("actas.fechaAprobacion")}</label>
-                <input type="date" className="form-input" value={fechaAprobacion} onChange={(e) => setFechaAprobacion(e.target.value)} />
+                <input type="date" className="form-input" value={h.fechaAprobacion} onChange={(e) => h.setFechaAprobacion(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("traslados.aprobadoPor")}</label>
-                <input className="form-input" value={aprobadoPor} onChange={(e) => setAprobadoPor(e.target.value)} />
+                <input className="form-input" value={h.aprobadoPor} onChange={(e) => h.setAprobadoPor(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("traslados.cartaVinculada")}</label>
-                {cartaId ? (
-                  <button type="button" className="btn secondary" onClick={() => onAbrirCarta(cartaId)}>
+                {h.cartaId ? (
+                  <button type="button" className="btn secondary" onClick={() => onAbrirCarta(h.cartaId!)}>
                     {t("traslados.abrirCartaVinculada")}
                   </button>
                 ) : (
@@ -328,15 +139,15 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
                     <button
                       type="button"
                       className="btn secondary"
-                      disabled={!puedeGenerarCarta || !traslado || saving}
-                      onClick={generarCarta}
+                      disabled={!h.puedeGenerarCarta || !traslado || h.saving}
+                      onClick={h.generarCarta}
                     >
                       <IconFileText size={14} /> {t("traslados.generarCarta")}
                     </button>
                     {/* El motivo vivía en un title, y en una pantalla táctil
                         no hay puntero que lo revele: el botón se veía apagado
                         sin ninguna explicación. Ahora se dice en pantalla. */}
-                    {(!traslado || !puedeGenerarCarta) && (
+                    {(!traslado || !h.puedeGenerarCarta) && (
                       <div className="form-hint" style={{ marginTop: 6 }}>
                         {!traslado ? t("traslados.guardaPrimero") : t("traslados.generarRequiereAprobado")}
                       </div>
@@ -346,74 +157,77 @@ export default function TrasladoSalidaModal({ church, traslado, members, preMemb
               </div>
               <div className="form-group">
                 <label className="form-label">{t("cartas.fechaEntrega")}</label>
-                <input type="date" className="form-input" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} />
+                <input type="date" className="form-input" value={h.fechaEntrega} onChange={(e) => h.setFechaEntrega(e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">{t("traslados.metodoEntrega")}</label>
-                {enIPhone ? (
-                  <IOSPickerInput
-                    ariaLabel={t("traslados.metodoEntrega")}
-                    options={opcMetodoEntrega}
-                    value={metodoEntrega}
-                    placeholder="—"
-                    onSelect={setMetodoEntrega}
-                  />
-                ) : (
-                  <select className="form-select" value={metodoEntrega} onChange={(e) => setMetodoEntrega(e.target.value)}>
-                  <option value="">—</option>
-                  {METODOS_ENTREGA.map((m) => (
-                    <option key={m} value={m}>{t(`traslados.entrega.${m}`)}</option>
-                  ))}
-                  {/* Los traslados anteriores guardaban texto libre. Si el
-                      valor no es una de las claves nuevas se ofrece tal cual,
-                      para que abrir y guardar un registro viejo no lo borre.
-                      Así no hace falta migrar nada. */}
-                  {metodoEntrega && !METODOS_ENTREGA.includes(metodoEntrega as (typeof METODOS_ENTREGA)[number]) && (
-                    <option value={metodoEntrega}>{metodoEntrega}</option>
-                  )}
-                </select>
+                <select className="form-select" value={h.metodoEntrega} onChange={(e) => h.setMetodoEntrega(e.target.value)}>
+                <option value="">—</option>
+                {METODOS_ENTREGA.map((m) => (
+                  <option key={m} value={m}>{t(`traslados.entrega.${m}`)}</option>
+                ))}
+                {/* Los traslados anteriores guardaban texto libre. Si el
+                    valor no es una de las claves nuevas se ofrece tal cual,
+                    para que abrir y guardar un registro viejo no lo borre.
+                    Así no hace falta migrar nada. */}
+                {h.metodoEntrega && !METODOS_ENTREGA.includes(h.metodoEntrega as (typeof METODOS_ENTREGA)[number]) && (
+                  <option value={h.metodoEntrega}>{h.metodoEntrega}</option>
                 )}
+              </select>
               </div>
               <div className="form-group">
-                <SwitchRow label={t("traslados.confirmacionRecibida")} value={confirmacion} onChange={setConfirmacion} />
+                <SwitchRow label={t("traslados.confirmacionRecibida")} value={h.confirmacion} onChange={h.setConfirmacion} />
               </div>
-              {confirmacion && (
+              {h.confirmacion && (
                 <div className="form-group">
                   <label className="form-label">{t("traslados.fechaConfirmacion")}</label>
-                  <input type="date" className="form-input" min={fechaEntrega || undefined} value={fechaConfirmacion} onChange={(e) => setFechaConfirmacion(e.target.value)} />
+                  <input type="date" className="form-input" min={h.fechaEntrega || undefined} value={h.fechaConfirmacion} onChange={(e) => h.setFechaConfirmacion(e.target.value)} />
                 </div>
               )}
               <div className="form-group full">
                 <label className="form-label">{t("cartas.observaciones")}</label>
-                <textarea className="form-textarea" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />
+                <textarea className="form-textarea" rows={2} value={h.observaciones} onChange={(e) => h.setObservaciones(e.target.value)} />
               </div>
             </div>
           </Seccion>
 
-          {aviso && <div className="form-warning" style={{ marginBottom: 10 }}>{aviso}</div>}
-          {error && <div className="field-error">{error}</div>}
+          {h.aviso && <div className="form-warning" style={{ marginBottom: 10 }}>{h.aviso}</div>}
+          {h.error && <div className="field-error">{h.error}</div>}
         </div>
 
         <div className="modal-footer">
           <span />
           <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn secondary" onClick={onClose}>{t("common.cancelar")}</button>
-            <button className="btn primary" onClick={guardar} disabled={saving}>
-              {saving ? t("common.guardando") : t("common.guardar")}
+            <button className="btn secondary" onClick={h.pedirCerrar}>{t("common.cancelar")}</button>
+            <button className="btn primary" onClick={h.guardar} disabled={h.saving}>
+              {h.saving ? t("common.guardando") : t("common.guardar")}
             </button>
           </div>
         </div>
       </div>
 
-      {confirmTrasladado !== null && (
+      {h.confirmClose && (
+        <ConfirmDialog
+          title={t("common.descartarCambiosTitulo")}
+          message={t("common.descartarCambiosMensaje")}
+          confirmLabel={t("common.descartarCambiosBtn")}
+          danger
+          onConfirm={h.onCerrarDeVerdad}
+          onCancel={() => h.setConfirmClose(false)}
+        />
+      )}
+
+      {h.confirmTrasladado !== null && (
         <ConfirmDialog
           title={t("traslados.trasladadoTitulo")}
-          message={t("traslados.trasladadoMensaje", { nombre: miembro?.nombre ?? "" })}
+          message={t("traslados.trasladadoMensaje", { nombre: h.miembro?.nombre ?? "" })}
           confirmLabel={t("traslados.cambiarATrasladado")}
-          onConfirm={marcarTrasladado}
-          onCancel={() => { setConfirmTrasladado(null); onClose(); }}
+          onConfirm={h.marcarTrasladado}
+          onCancel={() => { h.setConfirmTrasladado(null); h.onCerrarDeVerdad(); }}
         />
       )}
     </div>
   );
 }
+
+const NO_HACE_NADA = () => {};

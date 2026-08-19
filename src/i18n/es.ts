@@ -1714,6 +1714,7 @@ export const es = {
     },
     metodoEntrega: "Método de entrega",
     confirmacionRecibida: "Confirmación recibida de la otra iglesia",
+    confirmacionCorta: "Confirmación recibida",
     fechaConfirmacion: "Fecha de confirmación",
     fechaNacimiento: "Fecha de nacimiento",
     iglesiaProcedencia: "Iglesia de procedencia",
