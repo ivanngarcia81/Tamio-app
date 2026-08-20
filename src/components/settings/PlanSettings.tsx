@@ -65,83 +65,87 @@ export default function PlanSettings({ church, onSaved }: Props) {
   ].filter(Boolean).join(" · ");
 
   return (
-    <div className="card pad-lg settings-card">
-      <div className="card-head">
-        <div className="card-head-left">
-          <div className="card-icon"><IconIdBadge size={16} /></div>
-          <div className="card-head-titles">
-            <div className="card-title-lg">{soloLectura ? t("plan.titulo") : t("plan.tituloAreas")}</div>
-            <div className="card-title-sub">{soloLectura ? t("plan.subNube") : t("plan.subAreas")}</div>
+    /* El pie de nota explica el bloque entero, así que vive FUERA de la caja
+       —es lo que hace Ajustes del Sistema— y por eso hay un envoltorio: la
+       tarjeta es la raíz del componente y sin él la nota no podría ser su
+       hermana. Ver `.settings-bloque` en styles.css. */
+    <div className="settings-bloque">
+      <div className="card pad-lg settings-card">
+        <div className="card-head">
+          <div className="card-head-left">
+            <div className="card-icon"><IconIdBadge size={16} /></div>
+            <div className="card-head-titles">
+              <div className="card-title-lg">{soloLectura ? t("plan.titulo") : t("plan.tituloAreas")}</div>
+              <div className="card-title-sub">{soloLectura ? t("plan.subNube") : t("plan.subAreas")}</div>
+            </div>
           </div>
+          {!soloLectura && <GuardadoChip estado={estado} />}
         </div>
-        {!soloLectura && <GuardadoChip estado={estado} />}
-      </div>
 
-      {soloLectura ? (
-        <>
-          {/* Vista informativa: qué plan tiene la iglesia hoy, sin controles. */}
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label className="form-label">{t("plan.plan")}</label>
-            <div className="form-valor">{t(`plan.nombre.${planVista}`)}</div>
-          </div>
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label className="form-label">{t("plan.estado")}</label>
-            <div className="form-valor">{t(`plan.estadoNombre.${estadoVista}`)}</div>
-          </div>
-          {venceVista && estadoVista !== "cortesia" && (
+        {soloLectura ? (
+          <>
+            {/* Vista informativa: qué plan tiene la iglesia hoy, sin controles. */}
             <div className="form-group" style={{ marginBottom: 12 }}>
-              <label className="form-label">{t("plan.vence")}</label>
-              <div className="form-valor">{venceVista}</div>
+              <label className="form-label">{t("plan.plan")}</label>
+              <div className="form-valor">{t(`plan.nombre.${planVista}`)}</div>
             </div>
-          )}
-        </>
-      ) : (
-        /* Modo local: solo el selector de áreas. */
-        <>
-          <label className="form-label">{t("plan.areas")}</label>
-          <div className="tabs-segmented" style={{ marginBottom: 12 }}>
-            {PLANES.map((p) => (
-              <button type="button" key={p} className={`seg${plan === p ? " active" : ""}`} aria-pressed={plan === p} onClick={() => void elegir(p)}>
-                {t(`plan.nombre.${p}`)}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Vigencia y áreas: en solo lectura son FILAS del formulario, como Plan
-          y Suscripción, y no pies de texto. Eran datos con la misma
-          importancia que los de arriba escritos en gris pequeño detrás de dos
-          puntos, y la pestaña entera se leía a dos alturas distintas. */}
-      {soloLectura ? (
-        <>
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            <label className="form-label">{t("plan.resumenEstado")}</label>
-            <div className="form-valor" style={{ color: vig.activa ? "var(--pos)" : "var(--neg)" }}>
-              {vig.activa ? t("plan.vigente") : t("plan.noVigente")}
-              {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
-              {estadoVista === "cortesia" && ` — ${t("plan.esCortesia")}`}
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">{t("plan.estado")}</label>
+              <div className="form-valor">{t(`plan.estadoNombre.${estadoVista}`)}</div>
             </div>
-          </div>
-          <div className="form-group" style={{ marginBottom: 12 }}>
-            {/* `plan.areas` ("Áreas en uso") y no `resumenAreas` ("Verá"):
-                el segundo es un fragmento de frase que funcionaba como pie
-                —"Verá: Tesorería · Secretaría"— pero como etiqueta de fila,
-                al lado de Plan y Suscripción, no dice qué es el dato. */}
+            {venceVista && estadoVista !== "cortesia" && (
+              <div className="form-group" style={{ marginBottom: 12 }}>
+                <label className="form-label">{t("plan.vence")}</label>
+                <div className="form-valor">{venceVista}</div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Modo local: solo el selector de áreas. */
+          <>
             <label className="form-label">{t("plan.areas")}</label>
-            <div className="form-valor">{areas || t("plan.ninguna")}</div>
-          </div>
-          <div className="form-hint">{t("plan.nubeManda")}</div>
-        </>
-      ) : (
-        <div className="form-hint" style={{ marginBottom: 12 }}>
-          {t("plan.resumenAreas")}: <b>{areas || t("plan.ninguna")}</b>
-        </div>
-      )}
+            <div className="tabs-segmented" style={{ marginBottom: 12 }}>
+              {PLANES.map((p) => (
+                <button type="button" key={p} className={`seg${plan === p ? " active" : ""}`} aria-pressed={plan === p} onClick={() => void elegir(p)}>
+                  {t(`plan.nombre.${p}`)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-      {!soloLectura && (
-        <div className="form-hint">{t("plan.seGuardaSolo")}</div>
-      )}
+        {/* Vigencia y áreas: en solo lectura son FILAS del formulario, como Plan
+            y Suscripción, y no pies de texto. Eran datos con la misma
+            importancia que los de arriba escritos en gris pequeño detrás de dos
+            puntos, y la pestaña entera se leía a dos alturas distintas. */}
+        {soloLectura ? (
+          <>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label className="form-label">{t("plan.resumenEstado")}</label>
+              <div className="form-valor" style={{ color: vig.activa ? "var(--pos)" : "var(--neg)" }}>
+                {vig.activa ? t("plan.vigente") : t("plan.noVigente")}
+                {vig.enGracia && ` — ${t("plan.enGracia", { dias: vig.diasGracia ?? 0 })}`}
+                {estadoVista === "cortesia" && ` — ${t("plan.esCortesia")}`}
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              {/* `plan.areas` ("Áreas en uso") y no `resumenAreas` ("Verá"):
+                  el segundo es un fragmento de frase que funcionaba como pie
+                  —"Verá: Tesorería · Secretaría"— pero como etiqueta de fila,
+                  al lado de Plan y Suscripción, no dice qué es el dato. */}
+              <label className="form-label">{t("plan.areas")}</label>
+              <div className="form-valor">{areas || t("plan.ninguna")}</div>
+            </div>
+          </>
+        ) : (
+          <div className="form-hint" style={{ marginBottom: 12 }}>
+            {t("plan.resumenAreas")}: <b>{areas || t("plan.ninguna")}</b>
+          </div>
+        )}
+
+      </div>
+      {soloLectura && <p className="settings-nota">{t("plan.nubeManda")}</p>}
+      {!soloLectura && <p className="settings-nota">{t("plan.seGuardaSolo")}</p>}
     </div>
   );
 }

@@ -5771,6 +5771,30 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .as-barra-monto { width: 110px; font-variant-numeric: tabular-nums; opacity: .9; }
 .asamblea-pie { position: absolute; bottom: 22px; font-size: var(--fs-secondary); opacity: .4; }
 
+/* Un bloque de Ajustes: la caja y, DEBAJO, su pie de nota. El envoltorio
+   existe porque cada componente de Ajustes tiene la tarjeta como raíz, así que
+   sin él la nota no puede ser hermana de la caja; y es un `div` normal y no un
+   fragmento porque `.settings-masonry` es una rejilla y en el iPad son DOS
+   columnas — con un fragmento la nota se iría a la celda de al lado. Así el
+   ítem de la rejilla es el bloque entero y la nota cae bajo SU tarjeta. */
+.settings-bloque {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* El texto que explica el grupo entero. Distinto de `.form-hint`, que es la
+   ayuda de UN campo y sigue viviendo bajo su control (eso también lo hace
+   macOS; la maqueta directamente no tiene ayuda por campo). */
+.settings-nota {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-3);
+  text-wrap: pretty;
+}
+
 /* Lista de usuarios de Ajustes (UsersSettings.tsx): círculo con iniciales,
    nombre y correo, el rol en un desplegable de la propia fila, y el lápiz que
    abre la ficha completa. Era una tabla de tres columnas; de las tres, solo el
@@ -5846,10 +5870,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
 }
 .settings-pie-btn:disabled { color: var(--text-3); cursor: default; }
-/* En el teléfono el desplegable de rol baja a su propia línea. A 393 px, un
-   `<select>` que dice "Consejo administrativo" se lleva todo el ancho y dejaba
-   el nombre y el correo en cero y el lápiz recortado por el borde. */
-:root.iphone .settings-lista-fila {
+/* Fuera del Mac, el desplegable de rol baja a su propia línea. Un `<select>`
+   que dice "Consejo administrativo" mide más de 200 px, y en una columna
+   estrecha se lleva todo el ancho: el nombre y el correo quedaban en cero y el
+   lápiz recortado por el borde. Pasa a 393 px en el teléfono y también en el
+   iPad, donde el mosaico de Ajustes son DOS columnas de 356 px. El Mac es el
+   único que pone esta lista en una columna ancha de una sola pieza. */
+:root:not(.mac) .settings-lista-fila {
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr) 28px;
   grid-template-areas:
@@ -5858,10 +5885,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 6px 12px;
   align-items: center;
 }
-:root.iphone .settings-lista-avatar { grid-area: avatar; align-self: start; }
-:root.iphone .settings-lista-texto { grid-area: texto; }
-:root.iphone .settings-lista-rol { grid-area: rol; justify-self: start; max-width: 100%; }
-:root.iphone .settings-lista-fila > .row-icon-btn { grid-area: lapiz; }
+:root:not(.mac) .settings-lista-avatar { grid-area: avatar; align-self: start; }
+:root:not(.mac) .settings-lista-texto { grid-area: texto; }
+:root:not(.mac) .settings-lista-rol { grid-area: rol; justify-self: start; max-width: 100%; }
+:root:not(.mac) .settings-lista-fila > .row-icon-btn { grid-area: lapiz; }
 
 /* Fila de acción de la zona sensible (FilaAccion.tsx): tile de color, qué es
    y el botón que la dispara. El mismo dibujo en las tres plataformas — una
@@ -11050,6 +11077,53 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.mac .settings-detail .card > .settings-lista {
     padding: 0;
   }
+  :root.mac .settings-detail .settings-bloque { gap: 6px; }
+  :root.mac .settings-nota {
+    font-size: var(--mac-fs-small);
+    color: var(--mac-secondary);
+  }
+
+  /* ---- Los pies de las zonas de caja fundida ----
+     En Zona sensible las cuatro tarjetas están fundidas en UNA sola caja (la
+     pone el mosaico), así que un pie no puede quedar fuera de ella sin deshacer
+     esa fusión. Lo que sí se arregla —que es el problema de verdad— es que
+     dejen de partir la lista: con `display: contents` las tarjetas desaparecen
+     como caja y sus hijos pasan a ser filas del mosaico, y ahí un `order`
+     recoge todos los pies al final del grupo.
+
+     Preferencias NO entra: ahí cada pie explica el control que tiene justo
+     encima y está en su sitio. Lo que se movía en Zona sensible era otra cosa
+     —párrafos que partían una lista de siete acciones iguales en trozos— y esa
+     es la única razón para moverlos.
+
+     Antes, en Zona sensible, el párrafo del respaldo caía entre "Exportar
+     miembros" y "Restaurar", y el de compactar entre "Compactar" y "Borrar
+     todos los registros": siete acciones iguales partidas en trozos. */
+  :root.mac .settings-zona--delicada .settings-masonry > .card {
+    display: contents;
+  }
+  :root.mac .settings-zona--delicada .settings-masonry > .card > .form-hint {
+    order: 1;
+    /* `grid-column: 1` a la fuerza: con `display: contents` estos pies pasan a
+       ser ítems del mosaico, y el bloque de "formulario alineado" les da
+       `grid-column: 2` para colocarlos bajo el control de su campo. Ahí ya no
+       hay campo, y esa columna 2 le inventaba al mosaico una segunda columna
+       implícita: las siete acciones salían en DOS columnas. */
+    grid-column: 1;
+    padding: 8px 16px;
+    box-shadow: none;
+    font-size: var(--mac-fs-small);
+    color: var(--mac-tertiary);
+  }
+  /* Los pies recogidos van SIN filo entre ellos: son un solo párrafo largo, no
+     cuatro filas. La raya que los separa de la última acción la pone esa
+     última acción, que en estas dos zonas conserva su filo de abajo — la
+     excepción de "el último de la caja no lleva filo" deja de valer aquí,
+     porque ya no es el último: debajo van los pies. */
+  :root.mac .settings-zona--delicada .settings-masonry > .card:last-child > :last-child {
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+  }
+
   /* Dentro de la caja de Ajustes la lista no lleva caja propia: sería un
      borde dentro de otro a 1 px de distancia. */
   :root.mac .settings-detail .settings-lista {
