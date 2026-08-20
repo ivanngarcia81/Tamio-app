@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { categoriaInfo, deleteTx, fmtFecha, fmtFechaCorta, fmtMoney, undeleteTx, metodoAbr, metodoNombre, METODOS_PAGO, type Tx } from "../db";
 import { IconArrowDown, IconArrowUp, IconClip, IconEdit, IconRepeat } from "../icons";
-import { esIPhone } from "../movil";
+import { esIPhone, esMac } from "../movil";
 import RowMenu from "./RowMenu";
 import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
 import ComprobantePreview from "./ComprobantePreview";
@@ -23,14 +23,32 @@ interface Props {
 const COLS_INGRESO = "110px 1fr 140px 170px 150px 168px 110px 104px";
 const COLS_GASTO = COLS_INGRESO;
 
+/* En el Mac, columnas más estrechas — y esto NO es cosmético.
+   Las de arriba suman 952 px de ancho FIJO. Medido con Playwright: en una
+   ventana de 1240 px la tabla mide 954, así que a la columna elástica —el
+   concepto, que es lo que identifica la fila— le quedan 2 px, y el texto se
+   dibuja con CERO. La app te decía que hubo un gasto de $3,450 y nunca de
+   qué. Solo se recupera por encima de ~1400 px de ventana.
+   Es el mismo fallo que ya se corrigió en la Agenda del iPhone, donde el
+   nombre del evento salía a 0 px.
+   Con este reparto (780 px fijos) el concepto se queda en 176 px a 1240.
+   El mínimo de 160 px es el que impide que el fallo vuelva en ventanas más
+   chicas: por debajo de ~1210 px ya no hay holgura que repartir, y sin suelo
+   la columna volvería a cerrarse a cero. Con él, la tabla se desplaza en
+   horizontal —que para eso lleva `overflow-x: auto` desde siempre— en vez de
+   esconder el dato. 160 y no 180 porque a 1240, que es una ventana muy
+   corriente, 176 px de holgura entran justos y así no aparece una barra de
+   desplazamiento que no hace falta. */
+const COLS_MAC = "92px minmax(160px, 1fr) 124px 148px 126px 128px 86px 76px";
+
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const { abrirMenu, menu } = useContextMenu();
   const esIngreso = tipo === "ingreso";
-  const cols = esIngreso ? COLS_INGRESO : COLS_GASTO;
   const enIPhone = esIPhone();
+  const cols = esMac() ? COLS_MAC : esIngreso ? COLS_INGRESO : COLS_GASTO;
 
   function itemsDe(tx: Tx): CtxMenuItem[] {
     const items: CtxMenuItem[] = [{ label: t("common.editar"), onClick: () => onEdit(tx) }];

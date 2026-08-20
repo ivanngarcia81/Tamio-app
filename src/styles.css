@@ -9673,7 +9673,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   --mac-lh-body: 16px;
 
   --mac-row-h: 28px;
-  --mac-table-row-h: 26px;
+  --mac-table-row-h: 34px;
   --mac-control-h: 22px;
   --mac-toolbar-h: 52px;
   --mac-radius: 6px;
@@ -10093,9 +10093,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 0 8px;
   font-size: var(--mac-fs-body);
 }
+/* Los encabezados, a 11. La regla de arriba los metía en el mismo saco que
+   las celdas y salían a 13, del mismo tamaño que los datos: el `.thead` sí
+   pedía 11 px, pero se lo pisaba en los hijos. En macOS el encabezado de
+   columna es siempre el escalón pequeño. */
+:root.mac .data-table .th { font-size: var(--mac-fs-small); }
 :root.mac .data-table .thead {
-  min-height: 22px;
-  background: transparent;
+  min-height: 24px;
+  /* Gris apenas separado del blanco de la tabla. Estaba transparente y la
+     fila de encabezados solo se distinguía por el peso de la letra; en las
+     listas de macOS (Finder en vista de lista, Mail) el encabezado tiene su
+     propio fondo, que es lo que lo despega del primer registro. */
+  background: var(--mac-content-bg-soft);
   color: var(--mac-secondary);
   font-size: var(--mac-fs-small);
   font-weight: 600;
@@ -10103,10 +10112,46 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   letter-spacing: normal;
   border-bottom: 1px solid var(--mac-separator);
 }
+/* 34 y no 26: estas filas llevan DOS líneas (fecha + hora, concepto +
+   detalle), así que su alto natural ya era 33 px y el mínimo de 26 no ataba
+   nada. Fijarlo en 34 iguala las tablas de una línea —Depósitos, Actas,
+   Cartas— con las de dos, que es lo que impide que la app se lea como si
+   cada pantalla hubiera decidido su propia densidad. */
 :root.mac .data-table .tr {
   min-height: var(--mac-table-row-h);
   border-bottom: 1px solid var(--mac-separator);
 }
+/* La abreviatura del método pierde el color. No es capricho: la fila ya
+   lleva UN color con significado —el chip de categoría— y el segundo, más
+   saturado todavía (naranja para cheque, azul para transferencia), se comía
+   la atención que le toca al importe. Medido en la captura: era lo más
+   llamativo del renglón. Aquí queda como lo que es, una etiqueta gris de
+   dos letras, y el color se lo queda la categoría. */
+:root.mac .method .m-badge {
+  min-width: 22px;
+  padding: 0 4px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 9px;
+  letter-spacing: normal;
+  background: var(--mac-hover);
+  color: var(--mac-secondary);
+}
+:root.mac .m-badge.efectivo,
+:root.mac .m-badge.transferencia,
+:root.mac .m-badge.tarjeta,
+:root.mac .m-badge.cheque { background: var(--mac-hover); }
+
+/* La flecha roja/verde que iba pegada al importe se va del Mac. `TxTable`
+   recibe el tipo como prop y solo lo usa Movimientos, así que en la tabla de
+   Gastos TODAS las filas son gastos: una flecha que apunta abajo en las
+   veinticuatro no distingue ninguna de las otras. El signo y el color del
+   importe ya lo dicen. En la captura era, junto con la abreviatura de
+   método, lo más llamativo del renglón — y lo que menos informaba. */
+:root.mac .data-table .td-monto .tx-icon { display: none; }
 :root.mac .data-table .tr:nth-child(even) { background: transparent; }
 :root.mac .data-table .tr:hover { background: var(--mac-hover); box-shadow: none; }
 /* Cifras con ancho fijo en toda la tabla: una columna de dinero que baila al
