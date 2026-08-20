@@ -10229,6 +10229,253 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .barra-estado-sync:hover:not(:disabled) { background: var(--mac-hover); color: var(--mac-secondary); }
 :root.mac .sidebar .sync-indicator { display: none; }
 
+/* ---- Modales ----
+
+   Hasta aquí los modales no tenían NI UNA regla de Mac: heredaban el diálogo
+   genérico de escritorio, con su cabecera de 20/24, sus campos de 10/12 y su
+   radio de 10. Al lado de una toolbar de 52 px y unas filas de 34, se abría
+   una ventana de otra app.
+
+   La forma es la del diseño y coincide con la que ya tenía el marcado
+   (`.modal-card > .modal-header + .modal-body + .modal-footer`), así que esto
+   es CSS y nada más: ninguno de los siete modales cambia de estructura.
+
+   LO QUE NO SE COPIA: el mockup pinta el cuerpo en gris con los campos
+   agrupados en tarjetas blancas. Aquí el cuerpo se queda blanco. El gris solo
+   funciona cuando TODOS los grupos son tarjetas, y nuestros modales mezclan
+   `.form-group` sueltos con `.form-grid` de dos columnas y algún
+   `.form-subcard`: pintar el fondo gris sin reagrupar el marcado dejaría los
+   campos flotando sobre un gris que no agrupa nada. Reagruparlos es trabajo
+   de marcado en siete modales, no de hoja de estilos, y va aparte. */
+:root.mac .modal-overlay {
+  /* Más claro y sin desenfoque: en macOS una hoja modal oscurece apenas lo de
+     detrás, no lo esconde — se sigue viendo de qué ventana salió. */
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: none;
+  padding: 24px;
+}
+:root.mac .modal-card {
+  border-radius: 10px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  max-height: min(85vh, 756px);
+}
+:root.mac .modal-header {
+  padding: 13px 16px;
+  align-items: flex-start;
+  background: var(--mac-content-bg-soft);
+  border-bottom: 1px solid var(--mac-separator);
+}
+:root.mac .modal-title {
+  font-size: var(--mac-fs-title);
+  font-weight: 600;
+  letter-spacing: normal;
+}
+:root.mac .modal-sub {
+  font-size: var(--mac-fs-small);
+  color: var(--mac-secondary);
+  text-wrap: pretty;
+}
+:root.mac .modal-close {
+  width: 22px;
+  height: 22px;
+  background: var(--mac-hover);
+  flex-shrink: 0;
+}
+:root.mac .modal-close svg { width: 11px; height: 11px; }
+:root.mac .modal-close:active { transform: none; }
+:root.mac .modal-body { padding: 14px 16px; }
+:root.mac .modal-footer {
+  padding: 10px 16px;
+  gap: 8px;
+  background: var(--mac-content-bg-soft);
+  border-top: 1px solid var(--mac-separator);
+}
+:root.mac .modal-hint-icon { width: 17px; height: 17px; background: var(--mac-hover); color: var(--mac-secondary); }
+
+/* Los campos, a la métrica de macOS: etiqueta de 11 px sobre un control de
+   22, borde fino y radio 5. La base de escritorio los pinta a 10/12 con radio
+   10, que en una ventana con filas de 34 px se lee como un formulario web. */
+:root.mac .form-label { font-size: var(--mac-fs-small); color: var(--mac-secondary); }
+:root.mac .form-input,
+:root.mac .form-select,
+:root.mac .form-textarea {
+  padding: 0 8px;
+  height: var(--mac-control-h);
+  border-radius: 5px;
+  border-color: var(--field-border);
+  font-size: var(--mac-fs-body);
+}
+/* El área de texto no tiene alto fijo: `height` la dejaría de una línea. */
+:root.mac .form-textarea {
+  height: auto;
+  min-height: 48px;
+  padding: 5px 8px;
+  line-height: 1.4;
+}
+:root.mac .form-input:focus,
+:root.mac .form-select:focus,
+:root.mac .form-textarea:focus {
+  /* El anillo de foco de macOS es el color de acento del sistema, delgado. */
+  border-color: var(--mac-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mac-accent) 28%, transparent);
+}
+:root.mac .form-group { gap: 5px; margin-bottom: 0; }
+:root.mac .form-grid { gap: 12px; margin-bottom: 0; }
+/* Con los márgenes de los grupos a cero, quien separa es el cuerpo. Una sola
+   rejilla en vez de catorce `margin-bottom` sueltos: así los huecos son
+   iguales caiga lo que caiga entre dos campos. */
+:root.mac .modal-body {
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 13px;
+  align-content: start;
+}
+:root.mac .form-subcard {
+  border: 1px solid var(--mac-card-border);
+  border-radius: var(--mac-card-radius);
+  padding: 10px 12px;
+  background: var(--mac-card);
+}
+:root.mac .form-hint { font-size: var(--mac-fs-small); color: var(--mac-tertiary); text-wrap: pretty; }
+
+/* Los botones del pie, a los 22 px de la toolbar. Se repite el bloque en vez
+   de compartir selector con ella porque el de la toolbar cuelga de
+   `.header[data-tauri-drag-region]`, que aquí no existe. */
+:root.mac .modal-footer .btn {
+  height: var(--mac-control-h);
+  min-height: 0;
+  padding: 0 10px;
+  border-radius: var(--mac-radius);
+  font-size: 12px;
+  font-weight: 500;
+}
+/* El botón que confirma va del color de acento del sistema, igual que el de
+   la toolbar. Estaba en `--ink` (negro): dos botones principales del mismo
+   producto, uno negro y otro del acento, según si estás en la ventana o en un
+   modal. */
+:root.mac .modal-footer .btn.primary {
+  padding: 0 12px;
+  background: var(--mac-accent);
+  border-color: transparent;
+  color: var(--mac-accent-text);
+}
+:root.mac .modal-footer .btn.primary:hover { background: var(--mac-accent); filter: brightness(1.07); }
+/* Rojo del sistema para el destructivo, que es lo que espera un usuario de
+   Mac en un diálogo de borrado. */
+:root.mac .modal-footer .btn.primary.danger { background: var(--mac-red); }
+
+/* El diálogo de confirmación no comparte marcado con los demás (`.confirm-card`,
+   no `.modal-card`), así que necesita sus propias reglas. Y es el modal que
+   más se ve: cada borrado pasa por él. La alerta de macOS es estrecha, con el
+   texto centrado y los botones abajo a la derecha. */
+:root.mac .confirm-card {
+  width: 320px;
+  padding: 18px 20px 14px;
+  border-radius: 10px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+:root.mac .confirm-title { font-size: var(--mac-fs-body); font-weight: 600; letter-spacing: normal; margin-bottom: 5px; }
+:root.mac .confirm-message { font-size: var(--mac-fs-small); color: var(--mac-secondary); line-height: 1.45; margin-bottom: 16px; }
+:root.mac .confirm-actions { gap: 8px; }
+:root.mac .confirm-actions .btn {
+  height: var(--mac-control-h);
+  min-height: 0;
+  padding: 0 12px;
+  border-radius: var(--mac-radius);
+  font-size: 12px;
+  font-weight: 500;
+}
+:root.mac .confirm-actions .btn.primary { background: var(--mac-accent); border-color: transparent; color: var(--mac-accent-text); }
+:root.mac .confirm-actions .btn.primary.danger { background: var(--mac-red); }
+
+/* ---- Los controles de DENTRO del modal ----
+
+   La cáscara ya era de macOS y el contenido seguía siendo de web: medido en
+   la captura, el segmentado ocupaba 52 px de alto, las pastillas de categoría
+   34 con el nombre EN MAYÚSCULAS y las de método 40. Al lado de unos campos
+   de 22 px, el formulario se leía como dos formularios pegados. */
+
+/* Segmentado: la pista de macOS es una ranura gris de 26 px con la pastilla
+   blanca dentro, no un bloque negro de 52. */
+:root.mac .tabs-segmented {
+  padding: 2px;
+  gap: 3px;
+  border-radius: 7px;
+  margin-bottom: 0;
+}
+:root.mac .tabs-segmented .seg {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 5px;
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  gap: 6px;
+}
+:root.mac .tabs-segmented .seg svg { width: 13px; height: 13px; }
+:root.mac .tabs-segmented .seg:active { transform: none; }
+/* La elegida es una pastilla BLANCA con sombra, no el color de tinta. Es la
+   diferencia entre un segmentado de macOS y un grupo de botones. */
+:root.mac .tabs-segmented .seg.active {
+  background: var(--mac-card);
+  color: var(--mac-label);
+  font-weight: 500;
+  box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.16);
+}
+:root.mac .tabs-segmented .seg.active:hover { opacity: 1; }
+
+/* Categorías: una fila que envuelve, con chips del tamaño del texto. La
+   rejilla de cuatro columnas estiraba cada pastilla al ancho de la columna,
+   así que "Varios" ocupaba lo mismo que "Mantenimiento" y la lista se leía
+   como un teclado. Y sin MAYÚSCULAS: son nombres propios de la iglesia, no
+   encabezados. */
+:root.mac .category-grid,
+:root.mac .type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+:root.mac .category-grid .cat-pill,
+:root.mac .type-grid .cat-pill {
+  width: auto;
+  min-height: 0;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--mac-radius);
+  border-width: 1px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+/* Método de pago: la misma altura que un campo. */
+:root.mac .method-choice {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--mac-radius);
+  border-width: 1px;
+  font-size: var(--mac-fs-body);
+  font-weight: 400;
+  gap: 7px;
+}
+:root.mac .method-choice:active { transform: none; }
+:root.mac .method-choice .m-dot { width: 8px; height: 8px; }
+
+/* Interruptor: 34×20, que es el de macOS. El de 42×24 es el de iOS, y ahí
+   sigue — esta regla no lo toca. */
+:root.mac .switch { width: 34px; height: 20px; }
+:root.mac .switch::after { width: 14px; height: 14px; top: 3px; left: 3px; }
+:root.mac .switch.on::after { transform: translateX(14px); }
+
+:root.mac .check-row {
+  padding: 8px 10px;
+  border-radius: var(--mac-card-radius);
+  font-size: var(--mac-fs-body);
+}
+:root.mac .check-row input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--mac-accent); }
+
 /* ============================================================
    VERSIÓN MAC — Paquete 2: Ajustes
 
