@@ -7600,6 +7600,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .page-title {
   opacity: calc(1 - var(--progreso-titulo, 0));
 }
+/* La copia fija del Large Title es SOLO del iPhone y el iPad: en el Mac el
+   título vive en la toolbar y esta copia no pinta nada.
+   Sin este `display: none` no desaparecía — se quedaba como un `<div>` normal,
+   y ahí está el problema: es hijo directo de `.app`, que es una REJILLA, así
+   que ocupaba una celda entera. En el Mac la rejilla tiene una fila `1fr`
+   (más la de la barra de estado), o sea que ese div vacío se llevaba TODO el
+   alto sobrante y empujaba `.main` a la fila de abajo. Medido en una ventana
+   de 1440×940: `.titulo-fijo` 608 px de alto y `.main` empezando en y=608.
+   Se veía como un hueco enorme sobre la toolbar que cambiaba de tamaño según
+   la página — cuanto más contenido, menos hueco, porque la fila de `.main` se
+   dimensiona por su contenido y la de arriba se queda con el resto.
+   El `:root.movil` de aquí abajo le devuelve el `display: flex`. */
+.titulo-fijo { display: none; }
 :root.movil .titulo-fijo {
   position: fixed;
   left: 96px; right: 132px;
