@@ -49,15 +49,14 @@ app**: la maqueta dibuja una ventana propia de macOS —con sus semáforos, la
 identidad de la iglesia y el pie de versión— pero eso ya lo lleva la barra
 lateral, así que se tomó su lenguaje visual y no su cáscara.
 
-Lo que queda de esa pantalla, y por qué:
+El directorio de usuarios también se convirtió: lista con avatar,
+nombre/correo, el rol en un desplegable de la propia fila y pie "+ / −".
+Ojo con una cosa que la maqueta da por supuesta y no es así — dibuja el
+desplegable con los roles de PERMISO de la app (Administrador / Tesorero /
+Secretaria), pero ese directorio no controla el acceso y sus roles son los de
+`ROLES_USUARIO`: tesorero, pastor, secretario, auditor, consejo, otro.
 
-**El directorio de usuarios como lista con pie "+ / −".** La maqueta pinta
-cada usuario como una fila con avatar, nombre/correo y un `<select>` de rol, y
-un pie de tabla donde el "+" absorbe la tarjeta de Invitar. No se hizo porque
-no es maquetación: hoy el rol se cambia en un modal (`UsuarioModal`) y el
-select en línea necesitaría una ruta de guardado que no existe. La tarjeta
-actual (tabla + botón "Agregar usuario" + tarjeta de Invitar) sí quedó dentro
-de la caja del rediseño.
+Lo único que queda de esa pantalla:
 
 **Los pies de nota fuera de la caja.** La maqueta pone un texto de 11 px bajo
 cada grupo; los nuestros son por campo y viven dentro de su fila. Moverlos
