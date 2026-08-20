@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { borrarDatosIglesia, reinicioDeFabrica, type Church } from "../../db";
-import { IconWarn } from "../../icons";
+import { IconTrash, IconWarn } from "../../icons";
+import FilaAccion from "./FilaAccion";
 import Portal from "../Portal";
 import { useHojaDeslizable } from "../../hooks/useHojaDeslizable";
 
@@ -62,21 +63,23 @@ export default function DangerZoneSettings({ church }: Props) {
         </div>
       </div>
 
-      <div className="danger-row">
-        <div style={{ minWidth: 0 }}>
-          <div className="danger-row-title">{t("reset.borrarDatosTitulo")}</div>
-          <div className="form-hint">{t("reset.borrarDatosDesc")}</div>
-        </div>
+      <FilaAccion
+        icono={<IconTrash size={12} />}
+        tinte="var(--ios-red)"
+        titulo={t("reset.borrarDatosTitulo")}
+        nota={t("reset.borrarDatosDesc")}
+      >
         <button type="button" className="btn danger-btn" onClick={() => abrir("datos")}>{t("reset.borrarDatosBtn")}</button>
-      </div>
+      </FilaAccion>
 
-      <div className="danger-row">
-        <div style={{ minWidth: 0 }}>
-          <div className="danger-row-title">{t("reset.fabricaTitulo")}</div>
-          <div className="form-hint">{t("reset.fabricaDesc")}</div>
-        </div>
+      <FilaAccion
+        icono={<IconWarn size={12} />}
+        tinte="var(--ios-red)"
+        titulo={t("reset.fabricaTitulo")}
+        nota={t("reset.fabricaDesc")}
+      >
         <button type="button" className="btn danger-btn" onClick={() => abrir("fabrica")}>{t("reset.fabricaBtn")}</button>
-      </div>
+      </FilaAccion>
 
       {accion && (
         <Portal>

@@ -564,6 +564,9 @@ export const en: Resources = {
   },
 
   respaldo: {
+    accion: "Save…",
+    copiaBdNota: "Database, receipts, attachments, logo and signatures",
+    exportarNota: "Ready to import back into the app",
     titulo: "Backup",
     sub: "Export your data or save a backup copy",
     exportarMovimientos: "Export transactions (CSV)",

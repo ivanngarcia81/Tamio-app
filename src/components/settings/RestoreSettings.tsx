@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
+import FilaAccion from "./FilaAccion";
 import ConfirmDialog from "../ConfirmDialog";
 import {
   cancelarRestauracion, confirmarRestauracion, pausarSyncPorRestauracion,
   prepararRestauracion, reiniciarApp, type ResumenRespaldo,
 } from "../../services/restaurar";
-import { IconUpload, IconWarn } from "../../icons";
+import { IconRefreshCw, IconWarn } from "../../icons";
 
 /**
  * Restaurar un respaldo.
@@ -88,19 +89,18 @@ export default function RestoreSettings() {
 
   return (
     <div className="card pad-lg settings-card">
-      <div className="card-head">
-        <div className="card-head-left">
-          <div className="card-icon"><IconUpload size={16} /></div>
-          <div className="card-head-titles">
-            <div className="card-title-lg">{t("restaurar.titulo")}</div>
-            <div className="card-title-sub">{t("restaurar.sub")}</div>
-          </div>
-        </div>
-      </div>
-
-      <button type="button" className="btn secondary" onClick={elegir} disabled={trabajando}>
-        <IconUpload size={13} /> {trabajando ? t("common.preparando") : t("restaurar.boton")}
-      </button>
+      {/* Sin cabecera de tarjeta: la fila de abajo ya dice el título y el
+          subtítulo, y con las dos cosas salía el mismo texto dos veces. */}
+      <FilaAccion
+        icono={<IconRefreshCw size={12} />}
+        tinte="var(--ios-orange)"
+        titulo={t("restaurar.titulo")}
+        nota={t("restaurar.sub")}
+      >
+        <button type="button" className="btn secondary" onClick={elegir} disabled={trabajando}>
+          {trabajando ? t("common.preparando") : t("restaurar.boton")}
+        </button>
+      </FilaAccion>
 
       <div className="form-hint" style={{ marginTop: "var(--space-3)" }}>{t("restaurar.hint")}</div>
       {/* Sello de compilación: una captura de esta tarjeta basta para saber

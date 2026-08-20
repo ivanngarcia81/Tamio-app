@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../../db";
 import { backupDatabase, exportMiembrosCsv, exportMovimientosCsv, type BackupResult } from "../../services/backup";
-import { IconCheck, IconDownload, IconWarn } from "../../icons";
+import { IconCheck, IconDownload, IconFileText, IconWarn } from "../../icons";
+import FilaAccion from "./FilaAccion";
 
 type Accion = "movimientos" | "miembros" | "bd";
 
@@ -36,11 +37,17 @@ export default function BackupSettings({ church }: Props) {
     }
   }
 
-  const boton = (accion: Accion, label: string, fn: () => Promise<BackupResult>) => (
-    <button type="button" className="btn secondary" onClick={() => run(accion, fn)} disabled={working !== null}>
-      {done === accion ? <IconCheck size={13} /> : <IconDownload size={13} />}{" "}
-      {working === accion ? t("common.generando") : label}
-    </button>
+  /* Una fila por acción, como el resto de la zona sensible: tile de color,
+     qué hace y el botón. El icono de estado (✓ mientras dura el "guardado")
+     se queda en el BOTÓN y no en el tile: el tile dice de qué es la fila y no
+     debe cambiar de dibujo cada vez que se exporta algo. */
+  const fila = (accion: Accion, titulo: string, nota: string, icono: ReactNode, tinte: string, fn: () => Promise<BackupResult>) => (
+    <FilaAccion icono={icono} tinte={tinte} titulo={titulo} nota={nota}>
+      <button type="button" className="btn secondary" onClick={() => run(accion, fn)} disabled={working !== null}>
+        {done === accion && <IconCheck size={13} />}{" "}
+        {working === accion ? t("common.generando") : t("respaldo.accion")}
+      </button>
+    </FilaAccion>
   );
 
   return (
@@ -55,11 +62,9 @@ export default function BackupSettings({ church }: Props) {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-        {boton("movimientos", t("respaldo.exportarMovimientos"), () => exportMovimientosCsv(church.id))}
-        {boton("miembros", t("respaldo.exportarMiembros"), () => exportMiembrosCsv(church.id))}
-        {boton("bd", t("respaldo.copiaBd"), backupDatabase)}
-      </div>
+      {fila("bd", t("respaldo.copiaBd"), t("respaldo.copiaBdNota"), <IconDownload size={12} />, "var(--ios-green)", backupDatabase)}
+      {fila("movimientos", t("respaldo.exportarMovimientos"), t("respaldo.exportarNota"), <IconFileText size={12} />, "var(--ios-blue)", () => exportMovimientosCsv(church.id))}
+      {fila("miembros", t("respaldo.exportarMiembros"), t("respaldo.exportarNota"), <IconFileText size={12} />, "var(--ios-blue)", () => exportMiembrosCsv(church.id))}
 
       <div className="form-hint">{t("respaldo.hint")}</div>
 

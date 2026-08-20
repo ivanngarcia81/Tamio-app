@@ -4,6 +4,7 @@ import type { Church } from "../../db";
 import { compactarBase, contarPurgables } from "../../sync";
 import { showToast } from "../../toast";
 import { IconCheck, IconRefreshCw, IconWarn } from "../../icons";
+import FilaAccion from "./FilaAccion";
 
 interface Props {
   church: Church;
@@ -56,36 +57,28 @@ export default function CompactSettings({ church }: Props) {
 
   return (
     <div className="card pad-lg settings-card">
-      <div className="card-head">
-        <div className="card-head-left">
-          <div className="card-icon"><IconRefreshCw size={16} /></div>
-          <div className="card-head-titles">
-            <div className="card-title-lg">{t("compactar.titulo")}</div>
-            <div className="card-title-sub">{t("compactar.sub")}</div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-        <span style={{ fontSize: 13, color: "var(--text-2)" }}>
-          {purgables === null
-            ? "—"
-            : hayQue
-              ? t("compactar.pendientes", { count: purgables })
-              : (<span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--pos)" }}>
-                  <IconCheck size={13} /> {t("compactar.estaCompacta")}
-                </span>)}
-        </span>
-        <button
-          type="button"
-          className="btn secondary"
-          onClick={compactar}
-          disabled={trabajando || !hayQue}
-          style={{ marginLeft: "auto" }}
-        >
+      {/* Sin cabecera de tarjeta: la fila de abajo ya dice el título y el
+          subtítulo, y con las dos cosas salía el mismo texto dos veces. */}
+      {/* El estado —cuántas lápidas quedan, o que ya está compacta— es la NOTA
+          de la fila: es exactamente lo que explica por qué el botón está o no
+          disponible, y como línea suelta al lado del botón se leía como otra
+          cosa. */}
+      <FilaAccion
+        icono={<IconRefreshCw size={12} />}
+        tinte="var(--ios-gray)"
+        titulo={t("compactar.titulo")}
+        nota={purgables === null
+          ? "—"
+          : hayQue
+            ? t("compactar.pendientes", { count: purgables })
+            : (<span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--pos)" }}>
+                <IconCheck size={12} /> {t("compactar.estaCompacta")}
+              </span>)}
+      >
+        <button type="button" className="btn secondary" onClick={compactar} disabled={trabajando || !hayQue}>
           {trabajando ? t("compactar.compactando") : t("compactar.boton")}
         </button>
-      </div>
+      </FilaAccion>
 
       <div className="form-hint">{t("compactar.hint")}</div>
 

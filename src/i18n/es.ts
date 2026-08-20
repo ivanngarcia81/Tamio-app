@@ -558,6 +558,9 @@ export const es = {
   },
 
   respaldo: {
+    accion: "Guardar…",
+    copiaBdNota: "Base de datos, comprobantes, adjuntos, logo y firmas",
+    exportarNota: "Listo para volver a importar en la app",
     titulo: "Respaldo",
     sub: "Exporta tus datos o guarda una copia de seguridad",
     exportarMovimientos: "Exportar movimientos (CSV)",

@@ -3245,13 +3245,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    aparte solo los habría desincronizado el día que alguno de los dos
    cambiara. Los únicos tokens NUEVOS son los tintes de los tiles de
    icono, que no tenían ningún equivalente previo. */
-/* También `:root.mac`: el rediseño de macOS de Ajustes pinta el mismo tile
-   tintado en el índice de zonas y en el encabezado, con LOS MISMOS colores
-   —son los colores de sistema de Apple, iguales en las dos plataformas— y
-   duplicarlos con otro nombre solo habría servido para que se separaran.
-   El nombre `--ios-*` se queda: renombrar cien usos del iPhone para que la
-   etiqueta encaje no compra nada. */
-:root.iphone, :root.mac {
+/* En `:root` y no solo en `:root.iphone`: el rediseño de macOS de Ajustes
+   pinta el mismo tile tintado en el índice de zonas, en el encabezado y en las
+   filas de la zona sensible, con LOS MISMOS colores —son los colores de
+   sistema de Apple, iguales en todas sus plataformas—, y `FilaAccion` los pasa
+   como estilo en línea, así que en el iPad (que no es `.iphone` ni `.mac`) un
+   token sin definir dejaba el glifo blanco sobre nada. El nombre `--ios-*` se
+   queda: renombrar cien usos del iPhone para que la etiqueta encaje no compra
+   nada. */
+:root {
   --ios-red: #ff3b30;
   --ios-green: #34c759;
   --ios-blue: #007aff;
@@ -5768,6 +5770,53 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 @keyframes asBarra { from { transform: scaleX(0); } }
 .as-barra-monto { width: 110px; font-variant-numeric: tabular-nums; opacity: .9; }
 .asamblea-pie { position: absolute; bottom: 22px; font-size: var(--fs-secondary); opacity: .4; }
+
+/* Fila de acción de la zona sensible (FilaAccion.tsx): tile de color, qué es
+   y el botón que la dispara. El mismo dibujo en las tres plataformas — una
+   fila con icono, texto y botón se lee igual de bien en un teléfono.
+
+   `settings-accion` y NO `fila-accion`: ese nombre ya es de los botones que
+   asoman al deslizar una fila en el iPhone (más abajo en este archivo), y con
+   la clase repetida esta fila heredaba su `flex-direction: column` y salía
+   con el icono, el texto y el botón apilados y centrados. */
+.settings-accion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+}
+.settings-accion-icono {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.settings-accion-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.settings-accion-titulo { font-size: 13px; }
+.settings-accion-nota { font-size: 11px; color: var(--text-3); text-wrap: pretty; }
+/* El botón no encoge: el texto de al lado es el que cede. */
+.settings-accion > .btn { flex-shrink: 0; white-space: nowrap; }
+/* En el teléfono el botón baja: en 393 px, con un botón de "Elegir archivo de
+   respaldo…" (más de 200 px) al lado, al texto le quedaban unos 100 y el
+   título partía en cuatro líneas. Icono y texto arriba, botón debajo y
+   alineado con el texto — que además es como lo hace iOS. */
+:root.iphone .settings-accion {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: start;
+}
+:root.iphone .settings-accion > .btn { grid-column: 2; justify-self: start; }
 
 .settings-card {
   animation: fadeInUp .3s cubic-bezier(.22,1,.36,1) both;
@@ -11272,6 +11321,42 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 @media (min-width: 761px) {
+  /* Las cuatro tarjetas de la zona sensible son, en el rediseño, las filas de
+     UNA sola caja: respaldar, exportar dos veces, restaurar, compactar,
+     borrar y reiniciar son siete acciones del mismo tipo, y repartirlas en
+     cuatro cajas con cuatro formas distintas era lo que hacía que la pantalla
+     no se leyera de un vistazo. Mismo recurso que en Preferencias: la caja la
+     pone el mosaico y cada tarjeta se queda sin la suya. */
+  :root.mac .settings-zona--delicada .settings-masonry {
+    background: var(--mac-card);
+    border: 1px solid var(--mac-card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    gap: 0;
+  }
+  :root.mac .settings-zona--delicada .settings-masonry > .card {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    box-shadow: none;
+  }
+  /* Los títulos de las cuatro tarjetas sobran: cada fila ya dice qué hace. */
+  :root.mac .settings-zona--delicada .card-head { display: none; }
+  :root.mac .settings-zona--delicada .settings-accion {
+    padding: 8px 16px;
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+  }
+  /* Los textos de ayuda largos de cada tarjeta pasan a pie de grupo: 11 px,
+     gris, y sin filo — no son una acción más. */
+  :root.mac .settings-zona--delicada .settings-masonry > .card > .form-hint {
+    padding: 8px 16px;
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+    font-size: var(--mac-fs-small);
+    color: var(--mac-tertiary);
+  }
+  :root.mac .settings-zona--delicada .settings-masonry > .card:last-child > :last-child { box-shadow: none; }
+
   /* ---- Zona sensible ----
      Fuera la caja roja: encerrar lo destructivo en un marco rojo es
      convención de web (la "danger zone" de GitHub), no de macOS. Aquí lo

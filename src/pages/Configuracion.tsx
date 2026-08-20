@@ -990,13 +990,17 @@ export default function Configuracion({
                 <div className="settings-zona-sub">{t("config.zona.delicadaSub")}</div>
               </div>
               <div className="settings-masonry">
-                {/* Por filas: respaldo │ zona de peligro, restaurar │
-                    compactar. Emparejadas por tamaño: las dos altas arriba y
-                    las dos bajas abajo, para que ninguna fila cojee. */}
+                {/* De menos a más grave: guardar, restaurar, mantener y, al
+                    final, lo que no tiene vuelta atrás. Antes iban emparejadas
+                    por tamaño (respaldo │ peligro, restaurar │ compactar) para
+                    que ninguna fila del mosaico de dos columnas cojeara; desde
+                    que las cuatro son filas iguales (`FilaAccion`) esa razón
+                    ya no existe, y dejar el borrado en medio de la lista era
+                    ponerlo donde nadie lo busca. */}
                 <BackupSettings church={church} />
-                <DangerZoneSettings church={church} />
                 <RestoreSettings />
                 <CompactSettings church={church} />
+                <DangerZoneSettings church={church} />
                 {/* Solo se pinta si hay algo que recuperar; si no, devuelve
                     null y no ocupa celda. Va al final para no descolocar las
                     parejas de arriba. */}
