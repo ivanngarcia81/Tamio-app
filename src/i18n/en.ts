@@ -2574,6 +2574,7 @@ export const en: Resources = {
     colNombre: "Name",
     colRol: "Role",
     colContacto: "Contact",
+    hintLista: "One click selects a row and the footer's \"−\" removes it; double-click or the pencil opens the full record. The role changes right in the row.",
     hintSinLogin: "This directory does not control access to the app yet — it lays the groundwork for a future sign-in system.",
     eliminarTitulo: "Delete user",
     eliminarMensaje: "Delete \"{{nombre}}\" from the directory? This action cannot be undone.",

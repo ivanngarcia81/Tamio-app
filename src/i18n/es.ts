@@ -2643,6 +2643,7 @@ export const es = {
     colNombre: "Nombre",
     colRol: "Rol",
     colContacto: "Contacto",
+    hintLista: "Un clic selecciona una fila y el \"−\" del pie la quita; doble clic o el lápiz abren la ficha completa. El rol se cambia sin abrir nada.",
     hintSinLogin: "Este directorio todavía no controla el acceso a la app — es la base para cuando exista un sistema de inicio de sesión.",
     eliminarTitulo: "Eliminar usuario",
     eliminarMensaje: "¿Eliminar a \"{{nombre}}\" del directorio? Esta acción no se puede deshacer.",

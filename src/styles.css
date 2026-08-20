@@ -5771,6 +5771,98 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .as-barra-monto { width: 110px; font-variant-numeric: tabular-nums; opacity: .9; }
 .asamblea-pie { position: absolute; bottom: 22px; font-size: var(--fs-secondary); opacity: .4; }
 
+/* Lista de usuarios de Ajustes (UsersSettings.tsx): círculo con iniciales,
+   nombre y correo, el rol en un desplegable de la propia fila, y el lápiz que
+   abre la ficha completa. Era una tabla de tres columnas; de las tres, solo el
+   nombre necesitaba columna propia. */
+.settings-lista {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.settings-lista-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft, var(--line));
+  cursor: default;
+}
+.settings-lista-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 600;
+}
+.settings-lista-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.settings-lista-nombre {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-lista-sub {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.settings-lista-rol { flex-shrink: 0; width: auto; }
+.settings-lista-vacio {
+  padding: 16px 12px;
+  color: var(--text-3);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+/* Pie de tabla editable de macOS: "+" añade y "−" quita la fila seleccionada.
+   Comparte las reglas de `.cat-pie` (la tabla de categorías, en el bloque de
+   Mac de más abajo) en vez de copiarlas: es el mismo control. */
+.settings-pie {
+  display: flex;
+  border-top: 1px solid var(--line);
+}
+.settings-pie-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: none;
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.settings-pie-btn:disabled { color: var(--text-3); cursor: default; }
+/* En el teléfono el desplegable de rol baja a su propia línea. A 393 px, un
+   `<select>` que dice "Consejo administrativo" se lleva todo el ancho y dejaba
+   el nombre y el correo en cero y el lápiz recortado por el borde. */
+:root.iphone .settings-lista-fila {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 28px;
+  grid-template-areas:
+    "avatar texto lapiz"
+    "avatar rol   rol";
+  gap: 6px 12px;
+  align-items: center;
+}
+:root.iphone .settings-lista-avatar { grid-area: avatar; align-self: start; }
+:root.iphone .settings-lista-texto { grid-area: texto; }
+:root.iphone .settings-lista-rol { grid-area: rol; justify-self: start; max-width: 100%; }
+:root.iphone .settings-lista-fila > .row-icon-btn { grid-area: lapiz; }
+
 /* Fila de acción de la zona sensible (FilaAccion.tsx): tile de color, qué es
    y el botón que la dispara. El mismo dibujo en las tres plataformas — una
    fila con icono, texto y botón se lee igual de bien en un teléfono.
@@ -10951,12 +11043,50 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     margin: 8px 16px;
     box-shadow: none;
   }
-  /* Una TABLA como hijo directo llega de borde a borde, igual que la de
-     categorías: su cabecera y sus filas ya traen su propio relleno. */
+  /* Una TABLA o una LISTA como hijo directo llega de borde a borde, igual que
+     la de categorías: sus filas ya traen su propio relleno. */
   :root.mac .settings-detail .card > .data-table,
-  :root.mac .settings-detail .card > .cat-tabla {
+  :root.mac .settings-detail .card > .cat-tabla,
+  :root.mac .settings-detail .card > .settings-lista {
     padding: 0;
   }
+  /* Dentro de la caja de Ajustes la lista no lleva caja propia: sería un
+     borde dentro de otro a 1 px de distancia. */
+  :root.mac .settings-detail .settings-lista {
+    border: 0;
+    border-radius: 0;
+  }
+  :root.mac .settings-lista-fila {
+    height: 44px;
+    padding: 0 16px;
+    border-bottom: 0;
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+  }
+  :root.mac .settings-lista-fila.sel {
+    background: var(--mac-accent);
+    color: var(--mac-accent-text);
+  }
+  /* Sobre el acento, el gris del correo y el del círculo desaparecen. */
+  :root.mac .settings-lista-fila.sel .settings-lista-sub { color: inherit; opacity: .75; }
+  :root.mac .settings-lista-fila.sel .settings-lista-avatar {
+    background: rgba(255, 255, 255, 0.22);
+    color: inherit;
+  }
+  :root.mac .settings-lista-nombre { font-size: var(--mac-fs-body); }
+  :root.mac .settings-lista-sub { font-size: var(--mac-fs-small); color: var(--mac-secondary); }
+  :root.mac .settings-lista-vacio {
+    padding: 14px 16px;
+    font-size: var(--mac-fs-body);
+    color: var(--mac-secondary);
+  }
+  /* El desplegable de rol se dimensiona por su contenido, no por la fila: el
+     `max-width: 320px` de los campos del formulario lo estiraba. */
+  :root.mac .settings-detail .settings-lista-rol {
+    max-width: none;
+    font-size: var(--mac-fs-small);
+  }
+  :root.mac .settings-lista-fila .row-icon-btn { flex-shrink: 0; }
+  :root.mac .settings-pie { border-top: 1px solid var(--mac-separator); }
   /* Los 44 px son de las filas de CAMPO. Una botonera o un texto de ayuda
      miden lo que midan. */
   :root.mac .settings-detail .card .form-group,
@@ -11518,14 +11648,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.mac .cat-paleta-fija { display: flex; gap: 3px; }
   :root.mac .cat-paleta-fija .cat-muestra { width: 11px; height: 11px; }
   /* Pie "+ / −", el patrón de macOS para editar una lista. */
-  :root.mac .cat-pie {
+  :root.mac .cat-pie,
+  :root.mac .settings-pie {
     display: flex;
     gap: 0;
     height: 22px;
     border-top: 1px solid var(--mac-separator);
     background: var(--mac-hover);
   }
-  :root.mac .cat-pie-btn {
+  :root.mac .cat-pie-btn,
+  :root.mac .settings-pie-btn {
     width: 26px;
     height: 100%;
     border: 0;
@@ -11536,8 +11668,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     place-items: center;
     cursor: pointer;
   }
-  :root.mac .cat-pie-btn:hover:not(:disabled) { background: var(--mac-hover); }
-  :root.mac .cat-pie-btn:disabled { color: var(--mac-tertiary); cursor: default; }
+  :root.mac .cat-pie-btn:hover:not(:disabled),
+  :root.mac .settings-pie-btn:hover:not(:disabled) { background: var(--mac-hover); }
+  :root.mac .cat-pie-btn:disabled,
+  :root.mac .settings-pie-btn:disabled { color: var(--mac-tertiary); cursor: default; }
 }
 
 @media (min-width: 761px) {
