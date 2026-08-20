@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
+import { esIPhone } from "../movil";
 import { areaDeRuta, seccionesVisibles, type Contador } from "../navegacion";
 import type { Role } from "../role";
 
@@ -9,6 +10,10 @@ interface Props {
   memberCount: number;
   pendingCount: number;
   unreadCount: number;
+  /** Qué sección se está asomando por el lado mientras se arrastra, o null.
+   *  Se llama SOLO cuando cambia —no en cada fotograma—, porque del otro lado
+   *  hay un `setState` que redibuja el shell. */
+  onVecina?: (ruta: string | null) => void;
 }
 
 /**
@@ -26,7 +31,7 @@ interface Props {
  * Fuera de las áreas —Inicio, Mensajes, Ayuda, Ajustes— no se pinta nada. Esas
  * pantallas no tienen hermanas, y una tira con un solo elemento es ruido.
  */
-export default function CarruselSecciones({ role, memberCount, pendingCount, unreadCount }: Props) {
+export default function CarruselSecciones({ role, memberCount, pendingCount, unreadCount, onVecina }: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -40,6 +45,12 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   const propio = useRef(false);
   /** Posición de la sección anterior, para saber hacia qué lado se viaja. */
   const indiceAnterior = useRef<number | null>(null);
+  /** La última vecina anunciada, para no repetir el aviso en cada fotograma. */
+  const vecinaActual = useRef<string | null>(null);
+  /* El callback en una ref: cambia de identidad en cada render del shell y no
+     debe reiniciar el efecto del scroll por eso. */
+  const avisar = useRef(onVecina);
+  avisar.current = onVecina;
 
   const area = areaDeRuta(pathname);
   const secciones = area ? seccionesVisibles(area, role) : [];
@@ -153,6 +164,7 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
       const orden = secciones.map((sx) => items.current.get(sx.ruta)).filter(Boolean) as HTMLElement[];
       const activo = items.current.get(pathname);
       let p = 0;
+      let rutaVecina: string | null = null;
       if (activo && orden.length > 1) {
         const ra = activo.getBoundingClientRect();
         const cx = ra.left + ra.width / 2;
@@ -160,11 +172,13 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
         const i = orden.indexOf(activo);
         // La vecina hacia la que se está arrastrando: si el activo se fue a la
         // izquierda del centro, la que viene es la siguiente.
-        const vecina = desvio < 0 ? orden[i + 1] : orden[i - 1];
+        const j = desvio < 0 ? i + 1 : i - 1;
+        const vecina = orden[j];
         if (vecina) {
           const rv = vecina.getBoundingClientRect();
           const paso = Math.abs(rv.left + rv.width / 2 - cx);
           if (paso > 1) p = Math.max(-1, Math.min(1, desvio / paso));
+          rutaVecina = secciones[j]?.ruta ?? null;
         }
       }
       /* El `transform` SOLO existe mientras se arrastra, y por eso hay un
@@ -179,10 +193,35 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
         raiz.removeAttribute("data-nav-arrastre");
         raiz.style.removeProperty("--nav-p");
         raiz.style.removeProperty("--nav-pa");
+        raiz.style.removeProperty("--nav-vecina");
       } else {
         raiz.dataset.navArrastre = "";
         raiz.style.setProperty("--nav-p", p.toFixed(3));
         raiz.style.setProperty("--nav-pa", Math.abs(p).toFixed(3));
+        /* Dónde va la vecina: entra desde el lado contrario y llega al centro
+           justo cuando la actual acaba de salir. `p − signo(p)` vale ∓1 con el
+           gesto sin empezar y 0 con la vecina ya centrada. */
+        raiz.style.setProperty("--nav-vecina", (p - Math.sign(p)).toFixed(3));
+      }
+
+      /* Montar la vecina cuesta: correr sus consultas (Reportes hace ocho).
+         Por eso no se monta con cualquier roce, sino cuando el arrastre ya
+         pasó de un umbral — y se avisa SOLO al cambiar, que del otro lado hay
+         un `setState`.
+         Con "reducir movimiento" no se monta nunca: el CSS ya la esconde, y
+         montarla para no enseñarla sería pagar sus consultas a cambio de
+         nada. Se consulta aquí y no una vez al principio para que el cambio
+         de ajuste surta efecto sin recargar.
+         Y solo en el iPhone: el carrusel también aparece si se estrecha la
+         ventana del Mac por debajo de 600 px (es una media query, no depende
+         de la plataforma), pero la maquetación de la vecina es
+         `:root.iphone`. Sin esta guarda, esa ventana estrecha montaría una
+         segunda página sin posicionar, colgando debajo de la primera. */
+      const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const anunciar = esIPhone() && !quieto && Math.abs(p) >= 0.06 ? rutaVecina : null;
+      if (anunciar !== vecinaActual.current) {
+        vecinaActual.current = anunciar;
+        avisar.current?.(anunciar);
       }
     }
 
@@ -204,6 +243,11 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
       raiz.removeAttribute("data-nav-arrastre");
       raiz.style.removeProperty("--nav-p");
       raiz.style.removeProperty("--nav-pa");
+      raiz.style.removeProperty("--nav-vecina");
+      if (vecinaActual.current !== null) {
+        vecinaActual.current = null;
+        avisar.current?.(null);
+      }
     };
     // `pathname` entra en las dependencias para repintar tras cada navegación:
     // el efecto que centra la sección corre en el mismo commit y deja las

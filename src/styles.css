@@ -8539,7 +8539,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    no conviven con ella.
    ============================================================ */
 
-.barra-inferior, .btn-crear, .carrusel-secciones { display: none; }
+.barra-inferior, .btn-crear, .carrusel-secciones, .pager-vecina { display: none; }
 
 /* El botón de crear es de TODO lo táctil, iPad incluido: crear un movimiento
    en una tablet cuesta los mismos toques que en un teléfono. En el Mac no
@@ -8752,10 +8752,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      elemento) pero no queda nada aplicado al terminar. Medido con
      Playwright: el botón pasaba de top:0 a top:114 (el propio borde
      superior de `.header`) en cuanto `data-dir-nav` se ponía. */
-  :root[data-dir-nav="der"] .main .header,
-  :root[data-dir-nav="der"] .main .content { animation: entradaDer .22s ease backwards; }
-  :root[data-dir-nav="izq"] .main .header,
-  :root[data-dir-nav="izq"] .main .content { animation: entradaIzq .22s ease backwards; }
+  /* Con `>` y no descendiente: la vecina que se asoma durante el arrastre
+     (`.pager-vecina`) también cuelga de `.main`, y esta animación le pisaba el
+     `transform` con el suyo —una animación gana a una declaración normal—, así
+     que la vecina se quedaba clavada en el centro en vez de entrar por el
+     lado. Las páginas de verdad pintan `.header` y `.content` como hijos
+     DIRECTOS de `<main>`, así que el `>` las sigue cogiendo a todas. */
+  :root[data-dir-nav="der"] .main > .header,
+  :root[data-dir-nav="der"] .main > .content { animation: entradaDer .22s ease backwards; }
+  :root[data-dir-nav="izq"] .main > .header,
+  :root[data-dir-nav="izq"] .main > .content { animation: entradaIzq .22s ease backwards; }
   @keyframes entradaDer {
     from { transform: translateX(28px); opacity: 0; }
     to { transform: none; opacity: 1; }
@@ -8765,7 +8771,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     to { transform: none; opacity: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
-    :root[data-dir-nav] .main .header, :root[data-dir-nav] .main .content { animation: none; }
+    :root[data-dir-nav] .main > .header, :root[data-dir-nav] .main > .content { animation: none; }
   }
 
   /* La página acompaña al dedo mientras se arrastra el carrusel: se desplaza y
@@ -8791,18 +8797,76 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      está montada, así que lo que se ve al lado es el fondo. Con un recorrido
      corto y el apagado, el gesto se lee como "esta página se está yendo" en
      vez de como un hueco. */
-  :root.iphone[data-nav-arrastre] .main .header,
-  :root.iphone[data-nav-arrastre] .main .content {
-    opacity: calc(1 - var(--nav-pa, 0) * 0.6);
+  /* La página SALIENTE. Recorrido completo, no un 14 %: ahora la vecina está
+     montada de verdad y ocupa el hueco que deja, así que ya no hay ningún
+     agujero que disimular. */
+  :root.iphone[data-nav-arrastre] .main > .content {
+    transform: translateX(calc(var(--nav-p, 0) * 100%));
+    will-change: transform;
+  }
+  /* La cabecera se APAGA, no se desplaza, y esto no es un descuido: el botón
+     de compartir de varias páginas es `position: fixed` y vive DENTRO de
+     `.header`; con un `transform` encima queda atrapado y salta de la fila
+     fija de arriba al borde del `.header` — medido, de top 0 a top 114. La
+     opacidad no crea bloque contenedor. Por eso las cabeceras se funden en
+     vez de deslizarse, y solo el cuerpo pagina.
+     El apagado va al DOBLE de velocidad: llega a cero en la mitad del gesto,
+     que es exactamente donde la de la vecina empieza a encenderse. Con un
+     fundido cruzado normal las dos se veían a la vez al 50 %, y como no
+     dicen lo mismo —"agosto 2026" contra "2026"— el resultado era un
+     amasijo ilegible: se leía "ago2026026". Así nunca hay dos. */
+  :root.iphone[data-nav-arrastre] .main > .header {
+    opacity: clamp(0, calc(1 - var(--nav-pa, 0) * 2), 1);
     will-change: opacity;
   }
-  :root.iphone[data-nav-arrastre] .main .content {
-    transform: translateX(calc(var(--nav-p, 0) * 14%));
-    will-change: transform, opacity;
+
+  /* La vecina: la MISMA página, montada aparte y sin tocar el router. Se
+     apila sobre el área con scroll y entra desde el lado contrario. */
+  :root.iphone .pager-vecina {
+    /* La regla base la apaga para todo lo demás: el carrusel también sale al
+       estrechar la ventana del Mac (es una media query, no la plataforma), y
+       ahí esta maquetación no existe. */
+    display: block;
+    position: absolute;
+    inset: 0;
+    /* `.main` es `position: static`, así que esto se ancla a la ventana, no a
+       `.main` — y `.main` lleva 114 px de `padding-top` (fila de navegación +
+       carrusel). Sin copiarlo, la vecina nacía 114 px más arriba que la
+       página actual: dos títulos grandes a distinta altura cruzándose. Se
+       hereda en vez de repetir el número porque ese relleno cambia con el
+       hueco de la muesca y con si hay carrusel o no. */
+    padding: inherit;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
   }
+  :root.iphone .pager-vecina .content {
+    transform: translateX(calc(var(--nav-vecina, 1) * 100%));
+    will-change: transform;
+  }
+  /* Sin NINGUNA animación de entrada. La vecina no está "llegando": está
+     asomándose, y quien manda en dónde está es el dedo. Hace falta decirlo
+     porque `routeIn` (la de arriba del archivo, `.main .header/.content`) la
+     alcanza por ser descendiente de `.main`, y una animación de `transform`
+     gana a un `transform` declarado — medido: la vecina se quedaba clavada en
+     x=0 durante sus 180 ms y solo empezaba a moverse al acabar. Es la misma
+     familia de bug que ya obligó a poner `>` en entradaDer/entradaIzq. */
+  :root.iphone .pager-vecina .header,
+  :root.iphone .pager-vecina .content { animation: none; }
+  /* Su cabecera entra en la SEGUNDA mitad del gesto, cuando la de la actual
+     ya se apagó del todo. Ver la nota de arriba: el relevo es en posta, no
+     un fundido cruzado. */
+  :root.iphone .pager-vecina .header { opacity: clamp(0, calc(var(--nav-pa, 0) * 2 - 1), 1); }
+  /* Pero NO sus botones fijos: son `position: fixed` y se pondrían encima de
+     los de la página actual, dos "compartir" y dos "···" superpuestos. */
+  :root.iphone .pager-vecina .btn-compartir-cabecera,
+  :root.iphone .pager-vecina .btn-header-menu-icono,
+  :root.iphone .pager-vecina .btn-crear { display: none; }
+
   @media (prefers-reduced-motion: reduce) {
-    :root.iphone[data-nav-arrastre] .main .header,
-    :root.iphone[data-nav-arrastre] .main .content { transform: none; opacity: 1; }
+    :root.iphone[data-nav-arrastre] .main > .header,
+    :root.iphone[data-nav-arrastre] .main > .content { transform: none; opacity: 1; }
+    :root.iphone .pager-vecina { display: none; }
   }
 
   .app { padding-top: env(safe-area-inset-top); }

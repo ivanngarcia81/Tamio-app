@@ -364,6 +364,160 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     }
   }
 
+  /* Las rutas, en una variable, porque las pintan DOS <Routes>: el de la
+     página actual y el de la vecina que se asoma mientras se arrastra el
+     carrusel. Antes vivían en línea; sacarlas no cambia nada de lo que hacen,
+     solo permite que el mismo juego se case contra otra ruta sin navegar. */
+  const rutas = (
+    <>
+      <Route
+        path="/"
+        element={role === "secretaria"
+          ? (incluyeSecretaria(church.plan)
+              ? <InicioSecretaria church={church} refreshKey={refreshKey} />
+              // Secretaria en plan "solo Tesorería": su área no está
+              // contratada; solo le queda el reporte de Tesorería.
+              : <HomeSinArea area="secretaria" verReportes={incluyeTesoreria(church.plan)} />)
+          : incluyeTesoreria(church.plan)
+            ? <Dashboard
+                church={church}
+                refreshKey={refreshKey}
+                memberCount={memberCount}
+                onEditTx={openEditTx}
+                onChanged={onChanged}
+                onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
+              />
+            // Plan "solo Secretaría": el administrador aterriza en el
+            // inicio de Secretaría; el tesorero no tiene área contratada.
+            : role === "administrador"
+              ? <InicioSecretaria church={church} refreshKey={refreshKey} />
+              : <HomeSinArea area="tesoreria" verReportes={false} />
+        }
+      />
+      <Route
+        path="/ingresos"
+        element={guard("/ingresos",
+          <Movimientos
+            church={church}
+            tipo="ingreso"
+            refreshKey={refreshKey}
+            onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
+            onEditTx={openEditTx}
+            onChanged={onChanged}
+          />
+        )}
+      />
+      <Route
+        path="/gastos"
+        element={guard("/gastos",
+          <Movimientos
+            church={church}
+            tipo="gasto"
+            refreshKey={refreshKey}
+            onNew={() => setModalMode({ kind: "create", tab: "gasto" })}
+            onEditTx={openEditTx}
+            onChanged={onChanged}
+          />
+        )}
+      />
+      <Route
+        path="/miembros"
+        element={guard("/miembros",
+          <Miembros
+            church={church}
+            refreshKey={refreshKey}
+            puedeCrear={puedeCrearMiembros(role, church.plan)}
+            onEdit={openEditMember}
+            onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
+            onChanged={onChanged}
+          />
+        )}
+      />
+      <Route
+        path="/reportes"
+        element={guard("/reportes", <Reportes church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
+      />
+      <Route
+        path="/depositos"
+        element={guard("/depositos", <Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
+      />
+      <Route
+        path="/membresia"
+        element={guard("/membresia",
+          <Membresia
+            church={church}
+            refreshKey={refreshKey}
+            onEdit={openEditMember}
+            onChanged={onChanged}
+          />
+        )}
+      />
+      <Route
+        path="/actas"
+        element={guard("/actas", <Actas church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
+      />
+      <Route
+        path="/servicios"
+        element={guard("/servicios", <Servicios church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
+      />
+      <Route
+        path="/cartas"
+        element={guard("/cartas", <Cartas church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
+      />
+      <Route
+        path="/reporte-miembros"
+        element={guard("/reporte-miembros",
+          <InformesMembresia
+            church={church}
+            refreshKey={refreshKey}
+            onEdit={openEditMember}
+            onChanged={onChanged}
+          />
+        )}
+      />
+      <Route path="/agenda" element={guard("/agenda", <Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />)} />
+      <Route
+        path="/inbox"
+        element={<Mensajes church={church} role={role} refreshKey={refreshKey} onChanged={onChanged} />}
+      />
+      <Route
+        path="/bandeja"
+        element={guard("/bandeja",
+          <Bandeja church={church} refreshKey={refreshKey} onEditTx={openEditTx} onChanged={onChanged} />
+        )}
+      />
+      <Route path="/ayuda" element={<Ayuda role={role} />} />
+      <Route
+        path="/configuracion"
+        element={
+          <Configuracion
+            church={church}
+            onChurchUpdated={onChurchUpdated}
+            themePref={themePref}
+            onThemePrefChange={setThemePref}
+            acento={acento}
+            onAcentoChange={setAcento}
+            langPref={langPref}
+            onLangPrefChange={setLangPref}
+            role={role}
+            onRoleChange={onRoleChange}
+            authActivo={authHabilitado}
+            sesionEmail={authEstado.email}
+            sesionNombre={authEstado.nombre}
+            sesionFoto={authEstado.foto}
+            onEditarPerfil={() => setPerfilAbierto(true)}
+            onSalir={salir}
+          />
+        }
+      />
+    </>
+  );
+
+  /* Qué sección se está asomando por el lado, o null. Lo publica el carrusel
+     y SOLO cuando cambia (no en cada fotograma del gesto), para que esto no
+     redibuje el shell sesenta veces por segundo. */
+  const [vecina, setVecina] = useState<string | null>(null);
+
   return (
     <div className={`app${menuAbierto ? " menu-abierto" : ""}`}>
       {/* Franja para arrastrar la ventana con la barra de título integrada.
@@ -417,7 +571,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           que arrastrar para revelarlo. Ahora es HERMANO de <main>, fijo de
           verdad (position:fixed en el CSS), igual que esa fila: nav bar →
           carrusel → recién ahí el área con scroll. */}
-      <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} />
+      <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} onVecina={setVecina} />
       {/* Copia acoplada del Large Title: vive siempre fija en la fila del
           "+", con el mismo texto que `.page-title` (el efecto de scroll de
           arriba la mantiene sincronizada). En reposo es invisible
@@ -429,148 +583,21 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         <UpdateBanner />
         <SyncPausadoBanner />
         {authHabilitado && <SubBanner church={church} />}
-        <Routes>
-          <Route
-            path="/"
-            element={role === "secretaria"
-              ? (incluyeSecretaria(church.plan)
-                  ? <InicioSecretaria church={church} refreshKey={refreshKey} />
-                  // Secretaria en plan "solo Tesorería": su área no está
-                  // contratada; solo le queda el reporte de Tesorería.
-                  : <HomeSinArea area="secretaria" verReportes={incluyeTesoreria(church.plan)} />)
-              : incluyeTesoreria(church.plan)
-                ? <Dashboard
-                    church={church}
-                    refreshKey={refreshKey}
-                    memberCount={memberCount}
-                    onEditTx={openEditTx}
-                    onChanged={onChanged}
-                    onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
-                  />
-                // Plan "solo Secretaría": el administrador aterriza en el
-                // inicio de Secretaría; el tesorero no tiene área contratada.
-                : role === "administrador"
-                  ? <InicioSecretaria church={church} refreshKey={refreshKey} />
-                  : <HomeSinArea area="tesoreria" verReportes={false} />
-            }
-          />
-          <Route
-            path="/ingresos"
-            element={guard("/ingresos",
-              <Movimientos
-                church={church}
-                tipo="ingreso"
-                refreshKey={refreshKey}
-                onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
-                onEditTx={openEditTx}
-                onChanged={onChanged}
-              />
-            )}
-          />
-          <Route
-            path="/gastos"
-            element={guard("/gastos",
-              <Movimientos
-                church={church}
-                tipo="gasto"
-                refreshKey={refreshKey}
-                onNew={() => setModalMode({ kind: "create", tab: "gasto" })}
-                onEditTx={openEditTx}
-                onChanged={onChanged}
-              />
-            )}
-          />
-          <Route
-            path="/miembros"
-            element={guard("/miembros",
-              <Miembros
-                church={church}
-                refreshKey={refreshKey}
-                puedeCrear={puedeCrearMiembros(role, church.plan)}
-                onEdit={openEditMember}
-                onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
-                onChanged={onChanged}
-              />
-            )}
-          />
-          <Route
-            path="/reportes"
-            element={guard("/reportes", <Reportes church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
-          />
-          <Route
-            path="/depositos"
-            element={guard("/depositos", <Depositos church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
-          />
-          <Route
-            path="/membresia"
-            element={guard("/membresia",
-              <Membresia
-                church={church}
-                refreshKey={refreshKey}
-                onEdit={openEditMember}
-                onChanged={onChanged}
-              />
-            )}
-          />
-          <Route
-            path="/actas"
-            element={guard("/actas", <Actas church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
-          />
-          <Route
-            path="/servicios"
-            element={guard("/servicios", <Servicios church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
-          />
-          <Route
-            path="/cartas"
-            element={guard("/cartas", <Cartas church={church} refreshKey={refreshKey} onChanged={onChanged} />)}
-          />
-          <Route
-            path="/reporte-miembros"
-            element={guard("/reporte-miembros",
-              <InformesMembresia
-                church={church}
-                refreshKey={refreshKey}
-                onEdit={openEditMember}
-                onChanged={onChanged}
-              />
-            )}
-          />
-          <Route path="/agenda" element={guard("/agenda", <Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />)} />
-          <Route
-            path="/inbox"
-            element={<Mensajes church={church} role={role} refreshKey={refreshKey} onChanged={onChanged} />}
-          />
-          <Route
-            path="/bandeja"
-            element={guard("/bandeja",
-              <Bandeja church={church} refreshKey={refreshKey} onEditTx={openEditTx} onChanged={onChanged} />
-            )}
-          />
-          <Route path="/ayuda" element={<Ayuda role={role} />} />
-          <Route
-            path="/configuracion"
-            element={
-              <Configuracion
-                church={church}
-                onChurchUpdated={onChurchUpdated}
-                themePref={themePref}
-                onThemePrefChange={setThemePref}
-                acento={acento}
-                onAcentoChange={setAcento}
-                langPref={langPref}
-                onLangPrefChange={setLangPref}
-                role={role}
-                onRoleChange={onRoleChange}
-                authActivo={authHabilitado}
-                sesionEmail={authEstado.email}
-                sesionNombre={authEstado.nombre}
-                sesionFoto={authEstado.foto}
-                onEditarPerfil={() => setPerfilAbierto(true)}
-                onSalir={salir}
-              />
-            }
-          />
-        </Routes>
+        <Routes>{rutas}</Routes>
+        {/* La vecina del carrusel, asomando durante el arrastre. Es el MISMO
+            juego de <Route>: `<Routes location=…>` casa contra una ruta que no
+            es la actual sin navegar a ella. Por eso no hubo que partir el
+            router en dos ni duplicar una sola pantalla.
+
+            `inert` y `aria-hidden` porque es una vista previa: no recibe
+            toques ni la anuncia el lector de pantalla. Y se monta solo cuando
+            el arrastre ya pasó de un umbral, no en cada roce: montar una
+            página corre sus consultas (Reportes hace ocho). */}
+        {vecina && (
+          <div className="pager-vecina" aria-hidden="true" inert>
+            <Routes location={vecina}>{rutas}</Routes>
+          </div>
+        )}
       </main>
 
       <BarraInferior
