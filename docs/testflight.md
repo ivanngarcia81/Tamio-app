@@ -60,8 +60,9 @@ en las tres fuentes:
 | 18 ago | 1.1.0 |
 | 19 ago | 1.1.1 |
 | 19 ago | 1.1.2 |
-| esta | **1.1.3** |
-| la siguiente | 1.1.4 |
+| 20 ago | 1.1.3 — **rota**, ver abajo |
+| esta | **1.1.4** |
+| la siguiente | 1.1.5 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
@@ -98,7 +99,10 @@ npm run verificar-centavos
 
 `verificar-hooks` se añadió después de que la 1.1.3 saliera con un `useState`
 por debajo de la puerta de autenticación de `App.tsx`: React aborta con el
-error #310 y la app se queda en blanco justo al terminar de cargar la sesión.
-`tsc` no lo ve y el proyecto no usa ESLint, así que nada lo cazaba.
+error #310 y la app se queda en blanco justo al terminar de cargar la sesión —
+con sesión en la nube, que es cuando esa puerta existe. `tsc` no lo ve y el
+proyecto no usa ESLint, así que nada lo cazaba.
+
+**No distribuyas la 1.1.3.** La 1.1.4 es la misma tanda con ese arreglo.
 
 Las cinco pasan en verde en el commit que dejó esta nota.
