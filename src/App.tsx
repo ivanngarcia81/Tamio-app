@@ -128,6 +128,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // Cajón lateral en pantallas angostas (iPhone): la sidebar se oculta y se
   // abre con el botón de menú; navegar la cierra sola.
   const [menuAbierto, setMenuAbierto] = useState(false);
+  /* Qué sección se está asomando por el lado mientras se arrastra el carrusel,
+     o null. Lo publica el carrusel y SOLO cuando cambia (no en cada fotograma
+     del gesto), para que esto no redibuje el shell sesenta veces por segundo.
+
+     Vive AQUÍ ARRIBA, con los demás `useState`, y no junto al JSX que lo usa:
+     más abajo está la puerta de autenticación, que devuelve pronto en cuatro
+     casos (cargando, sin sesión, sin rol, suscripción vencida). Un hook
+     declarado después de ella se salta en esos renders y se ejecuta en los
+     demás, y React aborta con el error #310 ("se renderizaron más hooks que
+     en el render anterior"). Pasó: la app se caía al terminar de cargar la
+     sesión, que es justo cuando se cruza esa puerta. */
+  const [vecina, setVecina] = useState<string | null>(null);
   const location = useLocation();
   useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
@@ -513,11 +525,6 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       />
     </>
   );
-
-  /* Qué sección se está asomando por el lado, o null. Lo publica el carrusel
-     y SOLO cuando cambia (no en cada fotograma del gesto), para que esto no
-     redibuje el shell sesenta veces por segundo. */
-  const [vecina, setVecina] = useState<string | null>(null);
 
   return (
     <div className={`app${menuAbierto ? " menu-abierto" : ""}`}>

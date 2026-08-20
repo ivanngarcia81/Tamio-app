@@ -90,9 +90,15 @@ Después, Xcode → Organizer → Distribute → TestFlight.
 
 ```sh
 npm run verificar-csp
+npm run verificar-hooks
 npm run verificar-traducciones
 npm run verificar-navegacion
 npm run verificar-centavos
 ```
 
-Las cuatro pasan en verde en el commit que dejó esta nota.
+`verificar-hooks` se añadió después de que la 1.1.3 saliera con un `useState`
+por debajo de la puerta de autenticación de `App.tsx`: React aborta con el
+error #310 y la app se queda en blanco justo al terminar de cargar la sesión.
+`tsc` no lo ve y el proyecto no usa ESLint, así que nada lo cazaba.
+
+Las cinco pasan en verde en el commit que dejó esta nota.
