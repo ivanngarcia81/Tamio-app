@@ -24,6 +24,13 @@ siguiente compilación— pero si no se toca a la vez, el árbol queda sucio
 justo cuando estás archivando en Xcode, que es el peor momento para
 preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 
+> ⚠️ **En el `Cargo.lock` no vale buscar y reemplazar.** El número de Tamio no
+> es el único que aparece: en el bump a la 1.1.5, `version = "1.1.4"` salía
+> **tres veces** —las otras dos eran los crates `aho-corasick` y `rustix`, que
+> por casualidad iban en esa misma versión— y cambiarlas todas rompe el
+> lockfile. Hay que buscar la línea `name = "tesoreria"` y tocar la de justo
+> debajo.
+
 ### Generados — Tauri los reescribe al compilar para iOS
 
 | Archivo | Clave |
@@ -61,8 +68,9 @@ en las tres fuentes:
 | 19 ago | 1.1.1 |
 | 19 ago | 1.1.2 |
 | 20 ago | 1.1.3 — **rota**, ver abajo |
-| esta | **1.1.4** |
-| la siguiente | 1.1.5 |
+| 20 ago | 1.1.4 |
+| esta | **1.1.5** |
+| la siguiente | 1.1.6 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
@@ -103,6 +111,9 @@ error #310 y la app se queda en blanco justo al terminar de cargar la sesión �
 con sesión en la nube, que es cuando esa puerta existe. `tsc` no lo ve y el
 proyecto no usa ESLint, así que nada lo cazaba.
 
-**No distribuyas la 1.1.3.** La 1.1.4 es la misma tanda con ese arreglo.
+**No distribuyas la 1.1.3.** La 1.1.4 fue la misma tanda con ese arreglo.
 
-Las cinco pasan en verde en el commit que dejó esta nota.
+Las cinco pasan en verde en el commit que dejó esta nota, y también en el de
+la 1.1.5 — donde además pasaron los doce `verificar-*` del proyecto y un build
+con `VITE_CANAL=appstore` que confirma las dos guardas de Apple (sin
+manifiesto de versiones, sin enlaces de pago).
