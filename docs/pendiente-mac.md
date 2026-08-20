@@ -56,11 +56,15 @@ desplegable con los roles de PERMISO de la app (Administrador / Tesorero /
 Secretaria), pero ese directorio no controla el acceso y sus roles son los de
 `ROLES_USUARIO`: tesorero, pastor, secretario, auditor, consejo, otro.
 
-Lo único que queda de esa pantalla:
+Los pies de nota también se hicieron, y no todos igual: donde hay una caja por
+bloque (Acceso, Categorías) salen fuera, como en la maqueta; en Zona sensible,
+donde las cuatro tarjetas están fundidas en una sola caja, se recogen al final
+del grupo para que dejen de partir la lista de siete acciones; y en
+Preferencias se quedan donde están, porque ahí cada uno explica el control que
+tiene justo encima. Las tres ayudas de CAMPO de Iglesia (logo, EIN, saldo de
+apertura) siguen bajo su control, que es lo que hace macOS.
 
-**Los pies de nota fuera de la caja.** La maqueta pone un texto de 11 px bajo
-cada grupo; los nuestros son por campo y viven dentro de su fila. Moverlos
-sería reagrupar marcado en veinte componentes para ganar poco.
+De esa pantalla ya no queda nada pendiente.
 
 ### El cuerpo gris de los modales
 
