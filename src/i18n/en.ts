@@ -2432,6 +2432,9 @@ export const en: Resources = {
   },
 
   config: {
+    buscar: "Search",
+    atras: "Back",
+    adelante: "Forward",
     revisaCampos: "Check the highlighted fields.",
     titulo: "Settings",
     sub: "Church and treasurer information",

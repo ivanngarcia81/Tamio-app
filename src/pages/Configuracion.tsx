@@ -46,7 +46,7 @@ import PlanSettings from "../components/settings/PlanSettings";
 import type { Role } from "../role";
 import {
   IconChurch, IconLlave, IconFileText, IconSignature, IconUser, IconTag, IconMonitor, IconWarn,
-  IconChevronLeft, IconChevronRight, IconTamio,
+  IconChevronLeft, IconChevronRight, IconTamio, IconSearch,
 } from "../icons";
 import { IOSNavBar } from "../components/ios/FormularioIOS";
 import { useSwipeBack } from "../hooks/useSwipeBack";
@@ -90,6 +90,24 @@ interface Props {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s()-]{7,20}$/;
 
+/** En una pantalla angosta (teléfono) se arranca sin zona elegida, mostrando
+ *  solo el índice — hay que tocar una para ver su contenido. En Mac/iPad, que
+ *  sí tienen sitio para las dos columnas, se arranca en "Iglesia" para no
+ *  dejar la mitad de la pantalla vacía al entrar.
+ *
+ *  Está fuera del componente porque lo leen DOS estados (la zona activa y la
+ *  pila del historial de atrás/adelante) y tienen que arrancar de acuerdo. */
+function zonaDeArranque(): string | null {
+  if (typeof window === "undefined") return "iglesia";
+  return window.matchMedia("(max-width: 760px)").matches ? null : "iglesia";
+}
+
+/** Sin acentos, sin mayúsculas y sin espacios de sobra: lo que hace falta
+ *  para que el buscador del índice case "categorias" con "Categorías". */
+function normalizar(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
 export default function Configuracion({
   church, onChurchUpdated, themePref, onThemePrefChange, acento, onAcentoChange,
   langPref, onLangPrefChange, role, onRoleChange,
@@ -114,6 +132,11 @@ export default function Configuracion({
   // cerrar sesión. En iPad/Mac el sidebar sigue igual, así que aquí no
   // hace falta repetir nada.
   const enIPhone = esIPhone();
+  /* El rediseño de macOS de Ajustes (índice en columna con iconos
+     tintados, buscador, atrás/adelante y encabezado de zona con hero) es
+     solo del Mac: el iPad conserva su columna de siempre y el iPhone su
+     lista agrupada. */
+  const enMac = esMac();
 
   // Ajustes con índice (13 ago 2026, idea de "Proyecto B" en plan-1-1.md):
   // una columna de zonas a la izquierda, una a la vez a la derecha, en vez de
@@ -121,32 +144,37 @@ export default function Configuracion({
   // contenido — cada <section> sigue siendo exactamente la misma de antes,
   // solo se oculta con CSS cuando no es la zona activa. Así el guardado
   // automático y sus temporizadores (más abajo) no se enteran del cambio.
+  /* `Icono` es el COMPONENTE, no un elemento ya creado: el mismo glifo se
+     pinta a 16 px en el índice y a 30 px en el encabezado de zona del Mac
+     (`.settings-hero`), y con un elemento fijo habría que declararlo dos
+     veces y arriesgarse a que se desincronicen. */
   const ZONAS = [
-    { key: "cuenta", icono: <IconUser size={16} />, titulo: t("config.zona.cuenta"), visible: enIPhone },
-    { key: "iglesia", icono: <IconChurch size={16} />, titulo: t("config.zona.iglesia"), visible: true },
+    { key: "cuenta", Icono: IconUser, titulo: t("config.zona.cuenta"), visible: enIPhone },
+    { key: "iglesia", Icono: IconChurch, titulo: t("config.zona.iglesia"), visible: true },
     /* Llave, no `IconIdBadge`: ese glifo significa MEMBRESÍA en toda la app
        —el sidebar, los accesos rápidos del inicio de secretaría, el RFC de la
        ficha— y repetirlo aquí lo hacía decir dos cosas distintas. */
-    { key: "acceso", icono: <IconLlave size={16} />, titulo: t("config.zona.acceso"), visible: true },
-    { key: "institucion", icono: <IconFileText size={16} />, titulo: t("config.zona.institucion"), visible: true },
+    { key: "acceso", Icono: IconLlave, titulo: t("config.zona.acceso"), visible: true },
+    { key: "institucion", Icono: IconFileText, titulo: t("config.zona.institucion"), visible: true },
     /* Firma y no `IconUser`: "Cuenta" ya usaba ese mismo glifo dos filas más
        arriba, y dos iconos idénticos en una lista de ocho es lo que la hace
        parecer genérica. La rúbrica además dice de qué va la pantalla — los
        nombres, cargos y firmas que salen en los PDF. */
-    { key: "personas", icono: <IconSignature size={16} />, titulo: t("config.zona.personas"), visible: true },
-    { key: "categorias", icono: <IconTag size={16} />, titulo: t("config.zona.categorias"), visible: verTesoreria },
-    { key: "preferencias", icono: <IconMonitor size={16} />, titulo: t("config.zona.preferencias"), visible: true },
-    { key: "delicada", icono: <IconWarn size={16} />, titulo: t("config.zona.delicada"), visible: esAdmin },
+    { key: "personas", Icono: IconSignature, titulo: t("config.zona.personas"), visible: true },
+    { key: "categorias", Icono: IconTag, titulo: t("config.zona.categorias"), visible: verTesoreria },
+    { key: "preferencias", Icono: IconMonitor, titulo: t("config.zona.preferencias"), visible: true },
+    { key: "delicada", Icono: IconWarn, titulo: t("config.zona.delicada"), visible: esAdmin },
   ] as const;
   type ZonaKey = (typeof ZONAS)[number]["key"];
   const ZONAS_POR_KEY = Object.fromEntries(ZONAS.map((z) => [z.key, z])) as Record<ZonaKey, (typeof ZONAS)[number]>;
 
-  // Lista agrupada estilo iOS (enIPhone, ver más abajo): mismas zonas,
-  // iconos y guardas de rol que ZONAS de arriba — una sola fuente de
-  // verdad para qué existe y quién lo ve — más el tinte del icono, el
-  // valor secundario (nombre de iglesia/tesorero) y en qué tarjeta cae
-  // cada una. En Mac/iPad no se usa: ahí sigue el índice de siempre.
-  const TINTE_IOS: Record<ZonaKey, string> = {
+  // El tinte del tile de icono de cada zona. Nació para la lista agrupada
+  // del iPhone y lo usa también el Mac (el índice en columna y el encabezado
+  // de zona del rediseño de macOS): son los colores de sistema de Apple, los
+  // mismos en las dos plataformas, y tenerlos dos veces era pedir que se
+  // desincronizaran. Los tokens `--ios-*` se definen para `:root.iphone` y
+  // `:root.mac` en styles.css.
+  const TINTE: Record<ZonaKey, string> = {
     cuenta: "var(--ios-gray)",
     iglesia: "var(--ios-green)",
     acceso: "var(--ios-blue)",
@@ -176,9 +204,40 @@ export default function Configuracion({
   // solo el índice — hay que tocar una para ver su contenido. En Mac/iPad,
   // que sí tienen sitio para las dos columnas, arranca en "Iglesia" para no
   // dejar la mitad de la pantalla vacía al entrar.
-  const [zonaActiva, setZonaActiva] = useState<string | null>(() => (
-    typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? null : "iglesia"
-  ));
+  const [zonaActiva, setZonaActiva] = useState<string | null>(zonaDeArranque);
+  /* Atrás y adelante del Mac, los dos galones de la cabecera. Las zonas no
+     son rutas —`zonaActiva` es estado y nada más—, así que el historial del
+     navegador no sabe de ellas y hay que llevarlo a mano: una pila y un
+     índice dentro de ella. Ir a una zona nueva CORTA lo que hubiera hacia
+     adelante, igual que en cualquier navegador. Repetir la zona en la que ya
+     estás no apila nada (si no, pulsar dos veces la misma pestaña llenaba la
+     pila de duplicados y "atrás" no llevaba a ningún sitio visible). */
+  const [hist, setHist] = useState<{ pila: string[]; i: number }>(() => {
+    const z = zonaDeArranque();
+    return z ? { pila: [z], i: 0 } : { pila: [], i: -1 };
+  });
+  function irAZona(key: string) {
+    setZonaActiva(key);
+    setHist((h) => (h.pila[h.i] === key ? h : { pila: [...h.pila.slice(0, h.i + 1), key], i: h.i + 1 }));
+  }
+  function moverHistorial(paso: -1 | 1) {
+    setHist((h) => {
+      const destino = h.i + paso;
+      if (destino < 0 || destino >= h.pila.length) return h;
+      setZonaActiva(h.pila[destino]);
+      return { ...h, i: destino };
+    });
+  }
+  /* El buscador del índice. Filtra por NOMBRE de zona, que es lo que el
+     índice contiene: buscar por campo ("saldo de apertura") pediría indexar
+     las etiquetas de los treinta y tantos controles repartidos en veinte
+     componentes, y eso es otra tarea. Sin acentos y sin mayúsculas para que
+     "categorias" encuentre "Categorías". */
+  const [busqueda, setBusqueda] = useState("");
+  const filtro = normalizar(busqueda);
+  const zonasVisibles = ZONAS.filter(
+    (z) => z.visible && (!enMac || !filtro || normalizar(z.titulo).includes(filtro)),
+  );
   // `settings-zona--<key>`: gancho por zona para las reglas de Mac que no
   // valen para todas (Preferencias alinea sus tarjetas como filas de
   // formulario, Zona sensible pinta sus botones en rojo). Sin él habría que
@@ -520,7 +579,15 @@ export default function Configuracion({
         />
       )}
 
-      <div className="content" ref={contentRef as React.RefObject<HTMLDivElement>}>
+      {/* `content-ajustes`, y NO el `content-lienzo` de las demás pantallas del
+          Mac: el gris de fondo es el mismo (y hace falta, porque el rediseño
+          agrupa los campos en cajas blancas que sobre blanco no se verían),
+          pero `content-lienzo` arrastra otras once reglas pensadas para
+          pantallas de lista —relleno de tarjeta 12/14, cabeceras de tabla,
+          tiras de resumen, gráficas— y Ajustes no es una de ésas. Ya pasó una
+          vez con `:has(.summary-4)`: un gancho compartido que se cuela en
+          pantallas que nadie miró. El CSS lo apaga fuera del Mac. */}
+      <div className="content content-ajustes" ref={contentRef as React.RefObject<HTMLDivElement>}>
         <div className={`settings-shell${zonaActiva ? " zona-abierta" : ""}`}>
           {enIPhone ? (
             <nav className="ios-lista" aria-label={t("config.titulo")}>
@@ -536,9 +603,9 @@ export default function Configuracion({
                           type="button"
                           key={z.key}
                           className={`ios-row${z.key === "delicada" ? " ios-row--destructive" : ""}`}
-                          onClick={() => setZonaActiva(z.key)}
+                          onClick={() => irAZona(z.key)}
                         >
-                          <span className="ios-icon" style={{ background: TINTE_IOS[z.key] }}>{z.icono}</span>
+                          <span className="ios-icon" style={{ background: TINTE[z.key] }}><z.Icono size={16} /></span>
                           <span className="ios-row-label">{z.titulo}</span>
                           {VALOR_IOS[z.key] && <span className="ios-row-value">{VALOR_IOS[z.key]}</span>}
                           <IosChevron />
@@ -553,18 +620,46 @@ export default function Configuracion({
             </nav>
           ) : (
             <nav className="settings-nav">
-              {ZONAS.filter((z) => z.visible).map((z) => (
+              {/* El buscador del índice, solo en Mac: es el campo de Ajustes
+                  del Sistema y no tiene sitio en la barra de pestañas del
+                  iPad, que ya va apretada. Filtra por nombre de zona. */}
+              {enMac && (
+                <label className="settings-buscar">
+                  <IconSearch size={12} />
+                  <input
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder={t("config.buscar")}
+                    aria-label={t("config.buscar")}
+                  />
+                </label>
+              )}
+              {zonasVisibles.map((z) => (
                 <button
                   key={z.key}
                   type="button"
                   className={`settings-nav-item${zonaActiva === z.key ? " activo" : ""}`}
-                  onClick={() => setZonaActiva(z.key)}
+                  onClick={() => irAZona(z.key)}
                 >
-                  <span className="settings-nav-icono">{z.icono}</span>
+                  {/* El tile tintado es del rediseño de macOS; en iPad el CSS
+                      le quita el fondo y deja el glifo suelto de siempre. En
+                      la fila activa NO se pinta: sobre el relleno del acento,
+                      dos colores saturados uno dentro de otro se pelean, y
+                      ahí manda la regla del CSS con su velo claro. */}
+                  <span
+                    className="settings-nav-icono"
+                    style={enMac && zonaActiva !== z.key ? { background: TINTE[z.key] } : undefined}
+                  >
+                    <z.Icono size={16} />
+                  </span>
                   <span className="settings-nav-nombre">{z.titulo}</span>
                   <span className="settings-nav-flecha"><IconChevronRight size={13} /></span>
                 </button>
               ))}
+              {enMac && zonasVisibles.length === 0 && (
+                <p className="settings-buscar-vacio">{t("common.sinResultados")}</p>
+              )}
             </nav>
           )}
 
@@ -579,6 +674,52 @@ export default function Configuracion({
               <button type="button" className="settings-detail-volver" onClick={() => setZonaActiva(null)}>
                 <IconChevronLeft size={14} /> {t("common.volver")}
               </button>
+            )}
+
+            {/* Cabecera del Mac: los dos galones de historial a la izquierda
+                y el chip de guardado a la derecha, que hasta ahora vivía
+                dentro de cada tarjeta y con el rediseño se sube aquí —
+                mismas tres zonas que ya sabía marcar (ESTADOS_POR_ZONA). */}
+            {enMac && zonaActivaInfo && (
+              <div className="settings-barra">
+                <button
+                  type="button"
+                  className="settings-hist"
+                  onClick={() => moverHistorial(-1)}
+                  disabled={hist.i <= 0}
+                  title={t("config.atras")}
+                  aria-label={t("config.atras")}
+                >
+                  <IconChevronLeft size={11} />
+                </button>
+                <button
+                  type="button"
+                  className="settings-hist"
+                  onClick={() => moverHistorial(1)}
+                  disabled={hist.i >= hist.pila.length - 1}
+                  title={t("config.adelante")}
+                  aria-label={t("config.adelante")}
+                >
+                  <IconChevronRight size={11} />
+                </button>
+                <span className="settings-barra-hueco" />
+                {estadoNavBar.tipo !== "oculto" && <GuardadoChip estado={estadoNavBar} />}
+              </div>
+            )}
+
+            {/* Encabezado de zona del Mac: el glifo de la zona en grande sobre
+                su tinte, el nombre y la frase que lo explica. Es el mismo par
+                título/subtítulo que `.settings-zona-head` lleva dentro de cada
+                sección — pero UNA vez y arriba del todo, en vez de repetido en
+                siete secciones de las que seis están ocultas. */}
+            {enMac && zonaActivaInfo && (
+              <div className="settings-hero">
+                <span className="settings-hero-icono" style={{ background: TINTE[zonaActivaInfo.key] }}>
+                  <zonaActivaInfo.Icono size={30} />
+                </span>
+                <span className="settings-hero-titulo">{zonaActivaInfo.titulo}</span>
+                <span className="settings-hero-sub">{t(`config.zona.${zonaActivaInfo.key}Sub`)}</span>
+              </div>
             )}
 
           {enIPhone && (

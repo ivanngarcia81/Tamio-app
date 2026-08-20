@@ -3245,7 +3245,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    aparte solo los habría desincronizado el día que alguno de los dos
    cambiara. Los únicos tokens NUEVOS son los tintes de los tiles de
    icono, que no tenían ningún equivalente previo. */
-:root.iphone {
+/* También `:root.mac`: el rediseño de macOS de Ajustes pinta el mismo tile
+   tintado en el índice de zonas y en el encabezado, con LOS MISMOS colores
+   —son los colores de sistema de Apple, iguales en las dos plataformas— y
+   duplicarlos con otro nombre solo habría servido para que se separaran.
+   El nombre `--ios-*` se queda: renombrar cien usos del iPhone para que la
+   etiqueta encaje no compra nada. */
+:root.iphone, :root.mac {
   --ios-red: #ff3b30;
   --ios-green: #34c759;
   --ios-blue: #007aff;
@@ -3254,7 +3260,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   --ios-orange: #ff9500;
   --ios-gray: #8e8e93;
 }
+/* En oscuro Apple sube el brillo de estos mismos colores para que aguanten
+   sobre un fondo negro (son los "vibrant" de la paleta del sistema). El
+   iPhone solo tenía cambiado el rojo; el Mac los quiere todos, que es lo que
+   pinta la maqueta. */
 :root.iphone[data-theme="dark"] { --ios-red: #ff453a; }
+:root.mac[data-theme="dark"] {
+  --ios-red: #ff453a;
+  --ios-blue: #0a84ff;
+  --ios-indigo: #5e5ce6;
+  --ios-orange: #ff9f0a;
+}
 
 :root.iphone .settings-shell.zona-abierta .ios-lista { display: none; }
 
@@ -10595,70 +10611,228 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    el mismo tropiezo que la rejilla de `.app` del paquete 1.
    ============================================================ */
 @media (min-width: 761px) {
-  /* ---- Una sola navegación: la barra de pestañas ----
-     El sidebar ya dice "Ajustes"; una segunda columna de 240 px dentro
-     repite esa jerarquía. En macOS esto son pestañas horizontales sobre el
-     contenido (Ajustes de Safari, de Xcode). El marcado no cambia: la misma
-     `.settings-nav` con sus botones, puesta en fila y con el icono encima
-     del nombre. */
+  /* ---- El índice, en columna y con los tiles tintados ----
+     El lenguaje de Ajustes del Sistema de macOS (Ventura en adelante), que
+     es lo que pide el rediseño: una columna de zonas a la izquierda, cada
+     una con su glifo sobre un cuadradito de color, y la activa rellena del
+     acento del sistema.
+
+     Esto SUSTITUYE a la barra de pestañas horizontal que había aquí, y el
+     motivo por el que aquella existía sigue siendo cierto a medias: sí, el
+     sidebar de la app ya dice "Ajustes", y sí, esta es una segunda columna
+     de navegación. La diferencia es que las siete zonas no son pestañas de
+     un panel —son secciones de una app dentro de la app, con su propio
+     historial— y con el tile de color se leen de un vistazo, que es lo que
+     una fila de pestañas grises de 76 px no conseguía. */
   :root.mac .settings-shell {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    align-items: start;
     gap: 0;
+  }
+  /* El filo entre las dos columnas va pintado en el CONTENEDOR y no como
+     `border-right` del índice: la columna de zonas mide lo que miden sus
+     siete filas, así que su borde se cortaba a media página y dejaba el
+     panel flotando. Como fondo de la rejilla llega siempre abajo del todo. */
+  :root.mac .settings-shell {
+    background: linear-gradient(var(--mac-separator), var(--mac-separator)) 220px 0 / 1px 100% no-repeat;
   }
   :root.mac .settings-nav {
     width: auto;
-    position: static;
-    flex-direction: row;
-    justify-content: center;
-    flex-wrap: wrap;
+    position: sticky;
+    /* Pegada arriba: la columna de zonas no se desplaza con el formulario,
+       igual que en Ajustes del Sistema. El 0 es contra `.main`, que ya
+       despeja la toolbar con su propio relleno. */
+    top: 0;
+    flex-direction: column;
     gap: 2px;
-    padding: 10px 0 14px;
-    border-bottom: 1px solid var(--mac-separator);
-    margin-bottom: 20px;
+    padding: 0 10px 12px;
+    margin-bottom: 0;
+  }
+  /* El buscador, encima de la lista. `type="search"` para que el propio
+     WebKit ponga la crucecita de limpiar. */
+  :root.mac .settings-buscar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 26px;
+    margin: 0 2px 12px;
+    padding: 0 8px;
+    border-radius: 7px;
+    background: var(--mac-hover);
+    color: var(--mac-tertiary);
+  }
+  :root.mac .settings-buscar input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: none;
+    outline: none;
+    font: inherit;
+    font-size: var(--mac-fs-small);
+    color: var(--mac-label);
+  }
+  :root.mac .settings-buscar-vacio {
+    margin: 8px 10px;
+    font-size: var(--mac-fs-small);
+    color: var(--mac-tertiary);
   }
   :root.mac .settings-nav-item {
-    flex-direction: column;
-    gap: 3px;
-    width: 76px;
-    padding: 6px 4px;
-    border-radius: var(--mac-radius);
-    font-size: var(--mac-fs-small);
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: auto;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
+    font-size: var(--mac-fs-body);
     font-weight: 400;
-    color: var(--mac-secondary);
-    text-align: center;
+    color: var(--mac-label);
+    text-align: left;
   }
   :root.mac .settings-nav-item:hover { background: var(--mac-hover); }
   /* Nunca negro: el acento del sistema, igual que la selección del sidebar. */
   :root.mac .settings-nav-item.activo {
     background: var(--mac-accent);
     color: var(--mac-accent-text);
-    font-weight: 400;
+    font-weight: 500;
   }
-  :root.mac .settings-nav-icono { color: var(--mac-secondary); }
-  :root.mac .settings-nav-item.activo .settings-nav-icono { color: inherit; }
+  /* El tile de color. El fondo lo pone Configuracion.tsx desde `TINTE` (los
+     mismos colores de sistema que usa la lista del iPhone); aquí solo va la
+     forma y el glifo en blanco. */
+  :root.mac .settings-nav-icono {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  :root.mac .settings-nav-icono svg { width: 13px; height: 13px; }
+  /* En la fila activa el tile pierde su color: sobre el acento, dos colores
+     saturados uno dentro de otro se pelean. Se queda un velo claro, como
+     hace Ajustes del Sistema con la selección. */
+  :root.mac .settings-nav-item.activo .settings-nav-icono {
+    background: rgba(255, 255, 255, 0.22);
+    color: inherit;
+  }
   :root.mac .settings-nav-nombre {
-    flex: 0 0 auto;
-    width: 100%;
-    line-height: 14px;
-    /* Dos líneas como mucho ("Tesorero y pastor", "Acceso y áreas"): sin
-       esto una pestaña de nombre largo estiraba la fila entera. */
-    overflow-wrap: break-word;
+    flex: 1;
+    min-width: 0;
+    line-height: normal;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   :root.mac .settings-nav-flecha { display: none; }
-  /* El botón "Volver" es del modo de una columna; con pestañas no hay a
-     dónde volver. */
+  /* El botón "Volver" es del modo de una columna; con el índice al lado no
+     hay a dónde volver. */
   :root.mac .settings-detail-volver { display: none; }
 
-  /* ---- Un solo nivel de caja ----
-     Hoy son tres: la zona es una tarjeta gris, dentro hay una tarjeta blanca
-     por bloque y dentro los campos. En macOS el formulario se apoya
-     directamente en el fondo de la ventana. */
+  /* ---- La barra del panel: historial y estado de guardado ----
+     Los dos galones son el atrás/adelante entre zonas (Configuracion.tsx
+     lleva la pila a mano: las zonas son estado, no rutas, así que el
+     historial del navegador no sabe de ellas). El chip de guardado se sube
+     aquí desde las tarjetas — sigue siendo el mismo estado combinado de las
+     tres zonas que guardan solas. */
+  :root.mac .settings-barra {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    margin-bottom: 6px;
+  }
+  :root.mac .settings-barra-hueco { flex: 1; }
+  :root.mac .settings-hist {
+    width: 28px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: var(--mac-radius);
+    background: var(--mac-hover);
+    color: var(--mac-secondary);
+    cursor: default;
+  }
+  :root.mac .settings-hist:disabled {
+    opacity: .4;
+    background: color-mix(in srgb, var(--mac-hover) 55%, transparent);
+  }
+  :root.mac .settings-hist:not(:disabled):hover { background: var(--mac-separator); }
+  :root.mac .settings-hist svg { stroke-width: 3; }
+
+  /* ---- Encabezado de zona ----
+     El glifo en grande sobre su tinte, el nombre y la frase que lo explica.
+     Antes esto era `.settings-zona-head` (título + subtítulo alineados a la
+     izquierda) repetido dentro de CADA sección; ahora va una sola vez, lo
+     pinta el panel y las cabeceras de sección siguen ocultas. */
+  :root.mac .settings-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    padding: 20px 26px 22px;
+    border-radius: 12px;
+    background: var(--mac-card);
+    border: 1px solid var(--mac-card-border);
+    margin-bottom: 16px;
+  }
+  :root.mac .settings-hero-icono {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  }
+  :root.mac .settings-hero-icono svg { stroke-width: 1.7; }
+  /* 22 px y no un token: la escala de macOS de este archivo (11/13/15/26)
+     está pensada para tablas y tarjetas, y el título de un panel de Ajustes
+     no es ninguna de las dos cosas — 15 px se pierde bajo un glifo de 56 y
+     26 px grita en un panel de 660. Es el valor que trae la maqueta. */
+  :root.mac .settings-hero-titulo {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--mac-label);
+  }
+  :root.mac .settings-hero-sub {
+    max-width: 470px;
+    text-align: center;
+    font-size: var(--mac-fs-body);
+    line-height: 1.45;
+    color: var(--mac-secondary);
+    text-wrap: pretty;
+  }
+
+  /* El gris de macOS bajo las cajas de Ajustes. Es el mismo tono que el
+     lienzo de las pantallas de lista, pero con su propio gancho: ver el
+     comentario de `content-ajustes` en Configuracion.tsx. */
+  :root.mac .main:has(.content-ajustes) { background: var(--mac-content-bg-soft); }
+  :root.mac .content-ajustes { padding-left: 16px; padding-right: 16px; }
+
+  /* ---- Grupos de filas ----
+     El bloque anterior de este archivo dejaba el formulario SIN caja, apoyado
+     directamente en el fondo de la ventana: es el macOS de Monterrey, y era
+     lo correcto mientras el fondo era blanco. El rediseño trae el de Ventura
+     en adelante —Ajustes del Sistema— donde los campos se agrupan en cajas
+     blancas sobre un lienzo gris, con una fila por campo y un filo de 1 px
+     entre filas. Por eso esta pantalla pide ahora `content-lienzo`: sin el
+     gris debajo, las cajas no se distinguirían del papel. */
+  /* Ya no va centrado a 580 px: con el índice al lado es la segunda columna
+     de la rejilla, y se le da su propio aire por dentro. El tope de 720 px es
+     para que en una ventana ancha el formulario no se estire hasta perder la
+     línea de lectura. */
   :root.mac .settings-detail {
     width: 100%;
-    max-width: 580px;
-    margin-inline: auto;
+    max-width: 720px;
+    margin-inline: 0;
+    padding: 0 20px 28px;
     gap: 0;
   }
   :root.mac .settings-zona {
@@ -10677,18 +10851,60 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.mac .settings-card,
   :root.mac .settings-detail .card {
-    background: none;
-    border: 0;
-    border-radius: 0;
+    background: var(--mac-card);
+    border: 1px solid var(--mac-card-border);
+    border-radius: 12px;
     box-shadow: none;
+    /* Relleno cero: el aire lo pone cada FILA con su propio `padding`, que es
+       lo que permite que el filo entre filas llegue de borde a borde de la
+       caja en vez de quedarse corto por los lados. */
     padding: 0;
+    /* `overflow: hidden` para que la primera y la última fila se recorten
+       contra el radio de la caja. */
+    overflow: hidden;
     animation: none;
   }
+  /* Sin realce al pasar el ratón: una caja de formulario no es un botón, y el
+     `translateY` de la tarjeta web hacía saltar el campo bajo el cursor. */
   :root.mac .settings-card:hover,
   :root.mac .settings-detail .card:hover {
-    border-color: transparent;
+    border-color: var(--mac-card-border);
     box-shadow: none;
     transform: none;
+  }
+
+  /* CADA HIJO DIRECTO de la caja es una fila: relleno propio y un filo abajo.
+     Se hace por posición y no enumerando clases —`.form-group`, `.danger-row`,
+     `.church-logo-row`…— porque las veinte tarjetas de Ajustes meten también
+     botoneras, avisos y textos de ayuda sueltos, y con una lista de clases
+     ésos se quedaban pegados al borde de la caja sin un pixel de aire
+     (medido: los tres botones de Respaldo arrancaban en el mismo x que el
+     borde). */
+  :root.mac .settings-detail .card > *,
+  :root.mac .settings-detail .card > .form-grid > * {
+    padding: 8px 16px;
+    margin: 0;
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+  }
+  /* `.form-grid` no es una fila: es el envoltorio de varias. No pinta nada
+     propio para no cobrar el relleno dos veces ni doblar el filo. */
+  :root.mac .settings-detail .card > .form-grid {
+    padding: 0;
+    box-shadow: none;
+  }
+  /* Los 44 px son de las filas de CAMPO. Una botonera o un texto de ayuda
+     miden lo que midan. */
+  :root.mac .settings-detail .card .form-group,
+  :root.mac .settings-detail .card .form-row,
+  :root.mac .settings-detail .card .church-logo-row,
+  :root.mac .settings-detail .card .signature-row {
+    min-height: 44px;
+  }
+  /* El último de cada caja no lleva filo: se sumaría al borde de la caja y se
+     vería una raya doble. */
+  :root.mac .settings-detail .card > :last-child,
+  :root.mac .settings-detail .card > .form-grid:last-child > :last-child {
+    box-shadow: none;
   }
   /* Encabezado de bloque: 13 px semibold y nada más. Fuera el icono en
      recuadro —decoración de web— y el subtítulo explicativo, que en un
@@ -10714,8 +10930,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-weight: 600;
     letter-spacing: normal;
   }
-  :root.mac .settings-detail .card-head { margin-bottom: 12px; }
+  /* La cabecera del bloque pasa a ser la primera FILA de la caja, con su
+     filo como cualquier otra. Antes era un título suelto encima de un
+     formulario sin caja; con caja tiene que estar dentro o el radio superior
+     se come el texto. */
+  :root.mac .settings-detail .card-head {
+    margin-bottom: 0;
+    padding: 7px 16px;
+    background: var(--mac-content-bg-soft, var(--mac-hover));
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+  }
   :root.mac .settings-detail .card-head-left { gap: 0; }
+  /* Zona de una sola caja: el encabezado de la pantalla (`.settings-hero`) ya
+     dice de qué va, y repetirlo aquí es decir dos veces lo mismo con dos
+     palabras distintas ("Iglesia" / "Información de la iglesia"). Donde hay
+     VARIAS cajas sí se queda: es lo único que separa "Tesorero" de "Pastor". */
+  :root.mac .settings-masonry.una-tarjeta .card-head { display: none; }
 
   /* ---- Formulario alineado ----
      Etiqueta a la derecha en una columna de 140 px y campo de 22 px con el
@@ -10725,7 +10955,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      44 px a todo el ancho). */
   :root.mac .settings-detail .form-group {
     display: grid;
-    grid-template-columns: 160px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
     align-items: baseline;
     gap: 4px 10px;
     margin-bottom: 8px;
@@ -10785,7 +11015,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.mac .settings-detail .church-logo-row,
   :root.mac .settings-detail .signature-row {
     display: grid;
-    grid-template-columns: 160px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
     align-items: start;
     gap: 4px 10px;
     margin-bottom: 12px;
@@ -10966,21 +11196,75 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      de sonidos), conserva su título como encabezado de sección y cada fila
      lleva su propia etiqueta. Al revés, "Juego de sonidos" se perdería
      detrás de un "Sonido:" que no dice lo mismo. */
-  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) {
+  /* Preferencias es la única zona cuyas tarjetas son de UN control cada una
+     (apariencia, idioma, acento, sonido). Con el rediseño, esas cuatro
+     tarjetas se pintan como las cuatro FILAS de una sola caja: es lo que
+     dibuja la maqueta y lo que hace Ajustes del Sistema, y evita cuatro cajas
+     de una fila cada una con más borde que contenido. La caja la pone el
+     mosaico; cada tarjeta se queda sin la suya y hace de fila. */
+  :root.mac .settings-zona--preferencias .settings-masonry {
+    background: var(--mac-card);
+    border: 1px solid var(--mac-card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    gap: 0;
+  }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card {
     display: grid;
-    grid-template-columns: 160px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
     align-items: baseline;
     gap: 4px 10px;
+    min-height: 44px;
+    padding: 8px 16px;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
   }
-  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) .card-head {
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:last-child { box-shadow: none; }
+  /* Los hijos de la tarjeta ya NO son filas —la fila es la tarjeta entera—,
+     así que se les quita el relleno y el filo que les da la regla general. */
+  :root.mac .settings-zona--preferencias .settings-masonry > .card > *,
+  :root.mac .settings-zona--preferencias .settings-masonry > .card > .form-grid > * {
+    padding: 0;
+    box-shadow: none;
+  }
+  /* El título de la tarjeta hace de etiqueta de la fila: a la derecha, en la
+     primera columna y con sus dos puntos, como cualquier otro campo. */
+  :root.mac .settings-zona--preferencias .card-head {
     grid-column: 1;
     display: block;
     margin: 0;
+    background: none;
     text-align: right;
   }
-  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) .card-head-left { display: block; }
-  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) .card-title-lg::after { content: ":"; }
-  :root.mac .settings-zona--preferencias .settings-card:not(:has(.form-group)) > :not(.card-head) { grid-column: 2; }
+  :root.mac .settings-zona--preferencias .card-head-left { display: block; }
+  :root.mac .settings-zona--preferencias .card-title-lg::after { content: ":"; }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card > :not(.card-head) { grid-column: 2; }
+  /* Sonido es la excepción: trae DOS campos, cada uno con su etiqueta. Ahí no
+     hace de fila la tarjeta entera —su título diría "Sonido:" justo encima de
+     un campo que ya se llama "Sonido"— sino cada uno de sus campos, como en
+     el resto de las zonas. La zona queda con cinco filas seguidas, que es la
+     forma que dibuja la maqueta. */
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:has(.form-group) {
+    display: block;
+    padding: 0;
+  }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:has(.form-group) > .card-head { display: none; }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:has(.form-group) > * {
+    padding: 8px 16px;
+    box-shadow: inset 0 -1px 0 var(--mac-separator);
+  }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:has(.form-group) > :last-child { box-shadow: none; }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:has(.form-group) .form-group {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 4px 10px;
+    min-height: 44px;
+  }
+  :root.mac .settings-zona--preferencias .settings-masonry > .card:has(.form-group) .form-label { text-align: right; }
   /* Los controles se pegan al inicio de su columna en vez de estirarse a lo
      ancho de la rejilla: un segmentado de tres opciones no mide 410 px. */
   :root.mac .settings-zona--preferencias .tabs-segmented,
@@ -11045,18 +11329,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      categoría que ya no existe. Ahora se edita en su sitio con
      `updateCategoriaCustom`, que ya aceptaba nombre, color y tipo — no hizo
      falta operación nueva en la base. */
+  /* La tabla ES el contenido de la caja de la zona, no otra caja dentro: sin
+     esto quedaban dos bordes concéntricos y la tabla, con su tope de 520 px,
+     dejaba media caja vacía a la derecha. */
   :root.mac .cat-tabla {
-    border: 1px solid var(--mac-card-border);
-    border-radius: var(--mac-card-radius);
+    border: 0;
+    border-radius: 0;
     overflow: hidden;
     background: var(--mac-card);
-    max-width: 520px;
+    max-width: none;
   }
+  :root.mac .settings-detail .card > .cat-tabla { padding: 0; }
   :root.mac .cat-thead,
   :root.mac .cat-tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 90px 74px 90px;
+    /* Las medidas de la maqueta, ahora que la tabla ocupa la caja entera. */
+    grid-template-columns: minmax(0, 1fr) 120px 64px 96px;
     align-items: center;
+    padding: 0 8px;
   }
   :root.mac .cat-thead {
     height: 22px;
@@ -11155,7 +11445,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      nombre), así que entra en la misma rejilla alineada. */
   :root.mac .settings-detail .form-row {
     display: grid;
-    grid-template-columns: 160px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr);
     align-items: baseline;
     gap: 4px 10px;
     margin-bottom: 8px;
@@ -11180,13 +11470,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      encoge: sirve para COMPROBAR el membrete, no para ocupar media pantalla.
      Se queda como una tarjeta pequeña alineada con los campos, en la misma
      columna que ellos. */
+  /* La vista previa es una caja más de la zona, con el mismo ancho que las
+     demás: el `margin-left: 170px` con el que se alineaba a la columna de
+     controles del formulario plano la dejaba, ya con caja propia, colgando
+     medio panel a la derecha. El papel se centra dentro. */
   :root.mac .settings-detail .pdf-preview-card {
-    margin-left: 170px;
-    max-width: 320px;
-    border: 1px solid var(--mac-card-border);
-    border-radius: var(--mac-card-radius);
-    padding: 10px;
+    margin-left: 0;
+    max-width: none;
+    padding: 0;
   }
+  :root.mac .settings-detail .pdf-preview-stage { justify-content: center; }
   :root.mac .settings-detail .pdf-preview-stage { padding: 10px; border-radius: 6px; }
   :root.mac .settings-detail .pdf-preview-hint { margin-bottom: 8px; }
   :root.mac .settings-detail .pdf-sheet { transform: scale(.62); transform-origin: top center; }

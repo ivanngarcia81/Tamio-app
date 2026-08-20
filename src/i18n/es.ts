@@ -2490,6 +2490,9 @@ export const es = {
   },
 
   config: {
+    buscar: "Buscar",
+    atras: "Atrás",
+    adelante: "Adelante",
     revisaCampos: "Revisa los campos marcados.",
     titulo: "Configuración",
     sub: "Datos de la iglesia y del tesorero",
