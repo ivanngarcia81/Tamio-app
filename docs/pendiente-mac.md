@@ -41,18 +41,27 @@ escondida. Se corre de 232 a 78 px para dejarlos pasar, y 78 sale de dónde los
 dibuja el sistema (x≈20/40/60) — si tu macOS los pinta en otro sitio, ese
 número es el que hay que mover.
 
-### Ajustes
+### ~~Ajustes~~ — hecho el 20 de agosto
 
-Queda fuera a propósito — se acordó que iba aparte. El handoff trae DOS
-diseños para esto:
+Se eligió `Configuración v2` (el handoff volvió con ese archivo crecido de
+16 a 43 KB, los otros tres sin tocar), y se acordó hacerla **dentro de la
+app**: la maqueta dibuja una ventana propia de macOS —con sus semáforos, la
+identidad de la iglesia y el pie de versión— pero eso ya lo lleva la barra
+lateral, así que se tomó su lenguaje visual y no su cáscara.
 
-- `Tamio Mac - App completa.dc.html`, bloque `esAjustes` (~300 líneas):
-  índice de zonas a la izquierda, una zona a la vez a la derecha.
-- `Tamio Mac - Configuración v2.dc.html` (16 KB): la segunda versión, con el
-  lenguaje de Ajustes del Sistema de macOS — barra lateral con buscador e
-  iconos tintados, y filas agrupadas en el panel derecho.
+Lo que queda de esa pantalla, y por qué:
 
-**Hay que elegir cuál**, no son compatibles entre sí.
+**El directorio de usuarios como lista con pie "+ / −".** La maqueta pinta
+cada usuario como una fila con avatar, nombre/correo y un `<select>` de rol, y
+un pie de tabla donde el "+" absorbe la tarjeta de Invitar. No se hizo porque
+no es maquetación: hoy el rol se cambia en un modal (`UsuarioModal`) y el
+select en línea necesitaría una ruta de guardado que no existe. La tarjeta
+actual (tabla + botón "Agregar usuario" + tarjeta de Invitar) sí quedó dentro
+de la caja del rediseño.
+
+**Los pies de nota fuera de la caja.** La maqueta pone un texto de 11 px bajo
+cada grupo; los nuestros son por campo y viven dentro de su fila. Moverlos
+sería reagrupar marcado en veinte componentes para ganar poco.
 
 ### El cuerpo gris de los modales
 
