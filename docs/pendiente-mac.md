@@ -32,12 +32,14 @@ es por ahí.
 
 ## 2. Falta por hacer
 
-### Botón de ocultar la barra lateral
+### ~~Botón de ocultar la barra lateral~~ — hecho el 20 de agosto
 
-El diseño lo pone como primer control de la toolbar, a la izquierda del
-título. Hoy no existe: en el Mac la barra lateral **nunca** se oculta (es una
-decisión tomada, ver `styles.css` en el bloque `@media (min-width: 601px) and
-(max-width: 1023px)`). Añadirlo es trabajo de shell, no de una pantalla.
+Está en el shell (`App.tsx`, clase `.btn-sidebar`), con ⌃⌘S y la preferencia
+guardada por dispositivo. Lo único que conviene comprobar en la Mac de verdad:
+**que el botón no se meta debajo de los semáforos** cuando la barra está
+escondida. Se corre de 232 a 78 px para dejarlos pasar, y 78 sale de dónde los
+dibuja el sistema (x≈20/40/60) — si tu macOS los pinta en otro sitio, ese
+número es el que hay que mover.
 
 ### Ajustes
 
