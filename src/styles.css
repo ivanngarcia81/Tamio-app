@@ -1190,6 +1190,13 @@ html.vibrancy .main { background: var(--surface); }
   flex-direction: column;
   gap: var(--space-3);
 }
+/* La pastilla de categoría dentro de una tarjeta de cifra NO se estira. El
+   marcado ya lo pedía —`style={{ justifySelf: "start" }}` en Dashboard— pero
+   `justify-self` no hace nada en un contenedor flex: la tarjeta es una columna
+   flex, así que el `align-items: stretch` por omisión llevaba la pastilla de
+   "Mantenimiento" de lado a lado de la tarjeta. Esta regla es lo que aquella
+   línea quería decir. */
+.stat-card > .tag { align-self: flex-start; }
 .stat-head {
   display: flex;
   align-items: center;
@@ -11333,7 +11340,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    una tira de tarjetas: `.summary-4` la usan ONCE pantallas, y encenderlas
    todas de golpe sería cambiar nueve que todavía no se han mirado. Cada una
    se apunta cuando le toque su conversión. */
-:root.mac .content-lienzo {
+:root.mac .content-lienzo,
+:root.mac .content-inicio {
   padding-left: 16px;
   padding-right: 16px;
   /* 12 y no 24: `.content` es una columna flex y su hueco base separaba cada
@@ -11344,11 +11352,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* El gris va en `.main`, no en `.content`: `.content` mide lo que mide su
    contenido, así que con una tabla corta el gris se cortaba a media ventana y
    debajo quedaba un rectángulo blanco. */
-:root.mac .main:has(.content-lienzo) { background: var(--mac-content-bg-soft); }
+:root.mac .main:has(.content-lienzo),
+:root.mac .main:has(.content-inicio) { background: var(--mac-content-bg-soft); }
 /* El panel deja de ser panel: las tarjetas caen directamente sobre el gris.
    Acotado al lienzo: `.dash-canvas` lo usan DIEZ pantallas y quitarle el
    fondo a todas de golpe sería cambiar ocho sin haberlas mirado. */
-:root.mac .content-lienzo .dash-canvas {
+:root.mac .content-lienzo .dash-canvas,
+:root.mac .content-inicio .dash-canvas {
   background: none;
   padding: 0;
   box-shadow: none;
@@ -11421,7 +11431,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    pegan a la tabla como su cabecera, que es de donde no debieron salir. Son
    hermanos en el marcado, así que basta cerrar el de arriba por abajo y abrir
    la tabla por arriba. */
-:root.mac .content-lienzo .tx-head {
+/* Solo la cabecera que TIENE título se pinta como tal. Miembros monta un
+   `.tx-head` cuyo único hijo es el buscador, y en Mac el buscador se muda a la
+   toolbar: quedaba una franja blanca de 17 px con borde y nada dentro, encima
+   de la tabla. Sin título no es una cabecera, así que se va. */
+:root.mac .content-lienzo .tx-head:not(:has(.tx-title)) { display: none; }
+:root.mac .content-lienzo .tx-head:has(.tx-title) {
   margin-bottom: 0;
   padding: 8px 14px;
   background: var(--mac-card);
@@ -11429,7 +11444,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-bottom: 0;
   border-radius: var(--mac-card-radius) var(--mac-card-radius) 0 0;
 }
-:root.mac .content-lienzo .tx-head + .data-table {
+/* El `+` sigue casando aunque el hermano esté oculto, así que este ajuste
+   también se ata al que sí es cabecera: si no, la tabla de Miembros subía 12
+   px y se pegaba a las tarjetas. */
+:root.mac .content-lienzo .tx-head:has(.tx-title) + .data-table {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   /* Cancela el hueco de la columna SOLO en esta unión: cabecera y tabla son
@@ -11438,6 +11456,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 /* Las dos gráficas de Reportes, con el mismo hueco que el resto del lienzo. */
 :root.mac .content-lienzo .charts { gap: 12px; }
+
+/* Las tarjetas de dentro del lienzo: 12/14 en vez de 18/20/14. El relleno de
+   escritorio, sumado a un panel de 28 px alrededor, dejaba las gráficas de
+   Inicio con 62 px de margen antes de empezar a dibujar. */
+:root.mac .content-lienzo .card,
+:root.mac .content-inicio .card { padding: 12px 14px; }
+/* Sin versalitas, igual que la pastilla del modal y el chip de la tabla: en
+   Mac el nombre de una categoría se escribe como se escribe. */
+:root.mac .stat-card > .tag {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--mac-fs-small);
+  padding: 1px 7px;
+  border-radius: 5px;
+}
+:root.mac .content-lienzo .charts,
+:root.mac .content-inicio .charts { gap: 12px; }
 
 /* El estado financiero: una tarjeta más, no un documento. Llevaba 40/44 px de
    relleno y un título de 24, con el aire de una hoja impresa — y no lo es: el

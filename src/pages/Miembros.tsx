@@ -219,7 +219,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
         )}
       </div>
 
-      <div className="content">
+      <div className="content content-lienzo">
         {!loading && (
           enIPhone ? (
             <div className="ios-panel">
