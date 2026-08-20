@@ -11297,6 +11297,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-transform: none;
   -webkit-text-fill-color: var(--mac-label);
 }
+/* Los chips de una tabla NO parten en dos renglones: si lo hacen, esa fila
+   crece y la tabla deja de tener filas iguales. Medido en Actas: "Pendiente de
+   aprobación" necesitaba 158 px con su punto y tenía 152, y por esos seis
+   píxeles la primera fila medía 54 en vez de 34. Con `nowrap` el peor caso es
+   un nombre cortado con puntos suspensivos, que es un problema mucho menor que
+   una tabla con filas de dos alturas. */
+:root.mac .data-table .tag {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 :root.mac .data-table .tag::before {
   content: "";
   flex: 0 0 auto;
@@ -11431,12 +11442,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    pegan a la tabla como su cabecera, que es de donde no debieron salir. Son
    hermanos en el marcado, así que basta cerrar el de arriba por abajo y abrir
    la tabla por arriba. */
-/* Solo la cabecera que TIENE título se pinta como tal. Miembros monta un
-   `.tx-head` cuyo único hijo es el buscador, y en Mac el buscador se muda a la
-   toolbar: quedaba una franja blanca de 17 px con borde y nada dentro, encima
-   de la tabla. Sin título no es una cabecera, así que se va. */
-:root.mac .content-lienzo .tx-head:not(:has(.tx-title)) { display: none; }
-:root.mac .content-lienzo .tx-head:has(.tx-title) {
+/* La cabecera de la tabla deja de flotar sobre el fondo: se pega a la tabla
+   como su cabecera, que es de donde no debió salir. Son hermanos en el
+   marcado, así que basta cerrar el de arriba por abajo y abrir la tabla por
+   arriba.
+
+   La que se queda SIN NADA desaparece: Miembros monta un `.tx-head` cuyo único
+   hijo es el buscador, y en Mac el buscador se muda a la toolbar. Estaba vacío
+   desde siempre y no se notaba; con fondo de cabecera salía como una franja
+   blanca de 17 px con borde encima de la tabla.
+
+   La condición es "su único hijo es el buscador" y no "no tiene título":
+   Actas monta un `.tx-head` de chips de estado sin título, y Servicios usa
+   `.card-title` en vez de `.tx-title`. Preguntar por el título dejaba fuera a
+   los dos. */
+:root.mac .content-lienzo .tx-head:has(> .search-input-wrap:only-child) { display: none; }
+:root.mac .content-lienzo .tx-head:not(:has(> .search-input-wrap:only-child)) {
   margin-bottom: 0;
   padding: 8px 14px;
   background: var(--mac-card);
@@ -11444,10 +11465,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-bottom: 0;
   border-radius: var(--mac-card-radius) var(--mac-card-radius) 0 0;
 }
-/* El `+` sigue casando aunque el hermano esté oculto, así que este ajuste
-   también se ata al que sí es cabecera: si no, la tabla de Miembros subía 12
-   px y se pegaba a las tarjetas. */
-:root.mac .content-lienzo .tx-head:has(.tx-title) + .data-table {
+/* El `+` de CSS casa aunque el hermano esté oculto, así que este ajuste se ata
+   a la misma condición: si no, la tabla de Miembros subía 12 px y se pegaba a
+   las tarjetas. */
+:root.mac .content-lienzo .tx-head:not(:has(> .search-input-wrap:only-child)) + .data-table {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   /* Cancela el hueco de la columna SOLO en esta unión: cabecera y tabla son

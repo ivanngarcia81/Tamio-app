@@ -17,6 +17,13 @@ import { IconFileText, IconPlus, IconPrinter, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
 const COLS = "110px 1.8fr 110px 1fr 130px 72px";
+/* En Mac, la columna de Estado sube de 130 a 168 px. Medido: "Pendiente de
+   aprobación" no cabe en 130 con la letra de 13 px, así que se partía en dos
+   renglones y esa fila crecía 20 px — una tabla en la que unas filas miden más
+   que otras según lo largo que sea su estado. Los estados del diseño son de
+   una palabra ("Pendiente"); los nuestros son la frase completa, que es la que
+   de verdad se entiende. */
+const COLS_MAC = "110px minmax(160px, 1.8fr) 104px minmax(0, 1fr) 184px 60px";
 const PAGE_SIZE = 25;
 
 /** El orden del ciclo de vida del acta; los chips lo respetan. Incluye
@@ -54,6 +61,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   // El carrusel de secciones ya muestra "Actas" como pastilla activa (ver
   // Cartas.tsx/Movimientos.tsx/Miembros.tsx) — el título grande sobra ahí.
   const enIPhone = esIPhone();
+  const cols = esMac() ? COLS_MAC : COLS;
   const [actas, setActas] = useState<Acta[]>([]);
   const [query, setQuery] = useState("");
   /* Enfoque del buscador del teléfono: en reposo la lupa y el texto van
@@ -142,7 +150,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
-      <div className="content">
+      <div className="content content-lienzo">
         {/* Mismo criterio que en Movimientos, y NO se toca: solo los estados
             que tienen documentos, más el activo aunque se haya quedado en cero
             (para poder salir de él). Con dos actas, cinco chips en cero eran
@@ -289,7 +297,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
           </div>
         ) : (
           <div className="data-table roomy tabla-actas">
-            <div className="thead" style={{ gridTemplateColumns: COLS }}>
+            <div className="thead" style={{ gridTemplateColumns: cols }}>
               <div className="th">{t("actas.colFolio")}</div>
               <div className="th">{t("actas.colTitulo")}</div>
               <div className="th">{t("tx.colFecha")}</div>
@@ -301,7 +309,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
               <div
                 className="tr" data-fila
                 key={a.id}
-                style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
+                style={{ gridTemplateColumns: cols, cursor: "pointer" }}
                 onClick={() => setModal({ open: true, acta: a })}
               >
                 <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>

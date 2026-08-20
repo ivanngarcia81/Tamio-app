@@ -131,7 +131,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
-      <div className="content">
+      <div className="content content-lienzo">
         {enIPhone ? (
           <div className="ios-panel">
             <div className="ios-panel-head"><h2>{t("servicios.seccionResumen")}</h2></div>
