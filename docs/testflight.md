@@ -1,7 +1,8 @@
 # Subir Tamio a TestFlight
 
 _Escrito el 19 de agosto de 2026, después de que la versión se escapara dos
-veces. La 1.1.0 y la 1.1.1 ya están subidas._
+veces. Al día de hoy (20 de agosto) están subidas la 1.1.0, la 1.1.1 y la
+1.1.2._
 
 ## Los cinco sitios que llevan la versión
 
@@ -16,6 +17,12 @@ sola al compilar.
 | `package.json` | `version` |
 | `src-tauri/tauri.conf.json` | `version` |
 | `src-tauri/Cargo.toml` | `version` |
+
+Y con `Cargo.toml` va **`src-tauri/Cargo.lock`**, que repite la versión del
+paquete `tesoreria`. No es una fuente —`cargo` la reescribe sola en la
+siguiente compilación— pero si no se toca a la vez, el árbol queda sucio
+justo cuando estás archivando en Xcode, que es el peor momento para
+preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -52,8 +59,9 @@ en las tres fuentes:
 |---|---|
 | 18 ago | 1.1.0 |
 | 19 ago | 1.1.1 |
-| esta | **1.1.2** |
-| la siguiente | 1.1.3 |
+| 19 ago | 1.1.2 |
+| esta | **1.1.3** |
+| la siguiente | 1.1.4 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
