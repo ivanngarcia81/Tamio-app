@@ -11436,6 +11436,134 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      una pieza, y `gap` no sabe de excepciones. */
   margin-top: -12px;
 }
+/* Las dos gráficas de Reportes, con el mismo hueco que el resto del lienzo. */
+:root.mac .content-lienzo .charts { gap: 12px; }
+
+/* El estado financiero: una tarjeta más, no un documento. Llevaba 40/44 px de
+   relleno y un título de 24, con el aire de una hoja impresa — y no lo es: el
+   PDF se genera con jsPDF a partir de los datos, no capturando este DOM (lo
+   dice la nota de `.report-preview`). En pantalla el resultado era que había
+   que desplazar dos veces para llegar al resumen mensual. */
+:root.mac .report-preview {
+  padding: 0;
+  border-radius: var(--mac-card-radius);
+  border-color: var(--mac-card-border);
+  box-shadow: none;
+}
+:root.mac .report-preview .r-head {
+  padding: 14px 16px 10px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--mac-separator);
+}
+:root.mac .report-preview .r-title-lg { font-size: var(--mac-fs-title); font-weight: 600; letter-spacing: normal; }
+:root.mac .report-preview .r-church { font-size: 12px; color: var(--mac-secondary); }
+:root.mac .report-preview .r-period { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+/* Todo lo que va bajo la cabecera recupera el margen lateral que perdió la
+   tarjeta al quedarse sin relleno. */
+:root.mac .report-preview > *:not(.r-head) { margin-inline: 16px; }
+:root.mac .report-preview .r-section-title {
+  font-size: var(--mac-fs-small);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--mac-secondary);
+  margin: 12px 0 6px;
+}
+:root.mac .report-preview .r-row { padding: 5px 0; font-size: var(--mac-fs-body); }
+:root.mac .report-preview .r-row.total { padding-top: 8px; margin-top: 4px; }
+:root.mac .report-preview .r-summary {
+  gap: 16px;
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--mac-card-radius);
+  background: var(--mac-content-bg-soft);
+}
+:root.mac .report-preview .r-summary .k {
+  font-size: var(--mac-fs-small);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--mac-secondary);
+}
+:root.mac .report-preview .r-summary .v { font-size: var(--mac-fs-title); font-weight: 600; margin-top: 2px; }
+:root.mac .report-preview .r-summary .r-nota { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+
+/* ---- Por revisar ----
+
+   Esta pantalla NO lleva lienzo gris: en el diseño las fichas van sobre el
+   fondo normal. Lo que cambia es la escala. Medido antes: fichas de 97 px de
+   alto con 24 de separación, icono de 38 y radio de 14 — tres pendientes
+   llenaban la ventana entera. El diseño las deja en la mitad, que es lo que
+   permite ver de un vistazo cuánto trabajo hay. */
+:root.mac .content:has(.inbox-list) { padding-left: 16px; padding-right: 16px; gap: 8px; }
+:root.mac .inbox-list { gap: 8px; }
+:root.mac .inbox-item {
+  padding: 11px 14px;
+  border-radius: var(--mac-card-radius);
+  border-color: var(--mac-card-border);
+  gap: 12px;
+}
+:root.mac .inbox-icon { width: 30px; height: 30px; border-radius: var(--mac-card-radius); }
+:root.mac .inbox-icon svg { width: 16px; height: 16px; }
+/* Etiqueta de sección: sin versalitas ni tracking. En macOS ese recurso es de
+   encabezado de columna; aquí es un rótulo. */
+:root.mac .inbox-section-label {
+  font-size: var(--mac-fs-small);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--mac-secondary);
+  margin: 0;
+}
+/* La hora deja de irse al otro extremo de la ficha. Iba con
+   `justify-content: space-between`, así que en una ventana ancha el tipo de
+   movimiento quedaba a la izquierda y su fecha a 900 px de distancia, sin
+   nada en medio: dos datos de la misma cosa que había que leer por separado. */
+:root.mac .inbox-title-row { justify-content: flex-start; gap: 8px; margin-bottom: 3px; }
+/* Y el tipo pasa de texto suelto en versalitas a pastilla, que es como se
+   pintan los estados en el resto de la app. */
+:root.mac .inbox-type-tag {
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: var(--mac-fs-small);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+:root.mac .inbox-type-tag.warn { background: var(--warn-bg); }
+:root.mac .inbox-type-tag.info { background: #dbeafe; }
+:root.mac .inbox-type-tag.invite { background: #ede9fe; }
+:root.mac .inbox-type-tag.done { background: var(--mac-hover); }
+:root.mac .inbox-time { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
+:root.mac .inbox-desc { font-size: var(--mac-fs-body); line-height: 1.35; }
+:root.mac .inbox-amount { font-size: var(--mac-fs-title); font-weight: 600; }
+:root.mac .inbox-side { gap: 7px; }
+:root.mac .inbox-actions { gap: 7px; }
+:root.mac .inbox-actions .btn {
+  height: var(--mac-control-h);
+  min-height: 0;
+  padding: 0 10px;
+  border-radius: var(--mac-radius);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ---- El botón principal, del color de acento en TODA la ventana ----
+
+   Ya lo hacían la toolbar y el pie de los modales, cada uno por su cuenta.
+   Dentro del contenido seguía en `--ink` (negro), así que "Marcar revisado"
+   en Por revisar salía negro mientras "Nuevo gasto", tres centímetros más
+   arriba, salía del acento. Es el mismo botón. */
+:root.mac .btn.primary {
+  background: var(--mac-accent);
+  border-color: transparent;
+  color: var(--mac-accent-text);
+}
+:root.mac .btn.primary:hover { background: var(--mac-accent); filter: brightness(1.07); }
+/* El destructivo conserva el rojo del sistema: esta regla va DESPUÉS porque
+   empata en especificidad con la de arriba y, sin ella, "Eliminar" se habría
+   vuelto del color de acento. */
+:root.mac .btn.primary.danger { background: var(--mac-red); color: #fff; }
+:root.mac .btn.primary.danger:hover { background: var(--mac-red); filter: brightness(1.07); opacity: 1; }
 
 /* ---- Agenda ----
    La celda del calendario baja de 104 a 62 px. En una ventana de 900×600

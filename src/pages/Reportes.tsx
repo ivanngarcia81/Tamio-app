@@ -530,7 +530,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
-      <div className="content">
+      <div className="content content-lienzo">
         {loading ? <LoadingState /> : <>
         {enIPhone ? (
           <>
