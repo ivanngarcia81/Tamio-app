@@ -655,7 +655,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
-      <div className="content">
+      <div className="content content-lienzo">
         {enIPhone ? (
           <div className="ios-panel">
             <div className="ios-panel-head"><h2>{t("agenda.seccionResumen")}</h2></div>

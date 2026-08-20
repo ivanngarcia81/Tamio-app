@@ -646,7 +646,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
-      <div className="content">
+      <div className="content content-lienzo">
         {loading ? (
           <LoadingState />
         ) : tab === "resumen" ? (

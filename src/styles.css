@@ -9975,6 +9975,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-wrap: nowrap;
   gap: 6px;
   row-gap: 0;
+  /* Sin esto el grupo conserva `min-width: auto` y no encoge por debajo de su
+     contenido, así que en vez de apretarse se DESBORDA: medido en Agenda a
+     1024 px, 864 px de controles dentro de 804, con el botón saliéndose de la
+     ventana. Con `min-width: 0` la presión llega a sus hijos y quien cede es
+     el buscador, que es el único que sigue sirviendo a la mitad de ancho. */
+  min-width: 0;
 }
 
 /* Controles de la toolbar: 22 px, radio 6, borde de 1 px. Uno solo primario
@@ -9982,6 +9988,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .header[data-tauri-drag-region] .btn {
   height: var(--mac-control-h);
   min-height: 0;
+  /* La etiqueta NO parte en dos. Medido en Agenda a 1240 px: "Nueva
+     actividad" se partía en dos renglones dentro de un botón de 22 px de
+     alto, así que la segunda línea se salía por debajo. La toolbar de Agenda
+     es la más cargada (título, hoy, mes, cuatro vistas, buscador, filtros y el
+     botón), y es la primera en quedarse sin sitio. Con `nowrap` quien cede es
+     el buscador, que sí sabe encoger. */
+  white-space: nowrap;
+  flex-shrink: 0;
   padding: 0 9px;
   gap: 5px;
   border-radius: var(--mac-radius);
@@ -11214,6 +11228,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  /* El campo lleva un `width: 180` en línea, y un ítem flex con ancho no
+     encoge por debajo de su contenido mientras `min-width` sea `auto`. En la
+     toolbar de Agenda —la más cargada: título, hoy, mes, cuatro vistas,
+     buscador, filtros y el botón— eso hacía que a 1024 px la fila se
+     desbordara 80 px y el botón se saliera de la ventana. Quien tiene que
+     ceder es el buscador, que sigue siendo usable a la mitad de ancho. */
+  min-width: 0;
+  flex-shrink: 1;
   height: var(--mac-control-h);
   padding: 0 8px;
   border: 1px solid var(--mac-card-border);
@@ -11383,15 +11405,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    hueco a la derecha del mismo tamaño que una tarjeta.
    Solo a partir de 1024 px: por debajo, el reparto elástico que envuelve
    sigue siendo el correcto — cuatro tarjetas en 480 px no se leen.
-   Y solo dentro del lienzo: el Informe de miembros tiene OCHO tarjetas en
-   esta misma clase, y ocho en una fila salen a 123 px cada una. */
+   Y solo hasta cuatro tarjetas: ver la nota de la regla hermana. */
 @media (min-width: 1024px) {
-  :root.mac .content-lienzo .summary-4 {
+  :root.mac .content-lienzo .summary-4:not(:has(> :nth-child(5))) {
     grid-template-columns: none;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 12px;
   }
+  /* Con CINCO o más se deja envolver. El Informe de miembros trae OCHO en
+     esta misma clase, y ocho en una fila salen a 123 px cada una: no cabe ni
+     "Traslados completados". */
+  :root.mac .content-lienzo .summary-4:has(> :nth-child(5)) { gap: 12px; }
 }
 /* El hueco de la columna ya separa; el margen propio se sumaba encima. */
 :root.mac .content-lienzo .card-fijos { margin-bottom: 0; }
@@ -11457,7 +11482,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    `.card-title` en vez de `.tx-title`. Preguntar por el título dejaba fuera a
    los dos. */
 :root.mac .content-lienzo .tx-head:has(> .search-input-wrap:only-child) { display: none; }
-:root.mac .content-lienzo .tx-head:not(:has(> .search-input-wrap:only-child)) {
+/* …y solo cuando LA TABLA VA JUSTO DEBAJO. En el Informe de miembros el
+   `.tx-head` lleva el selector de año y lo siguiente son los chips de vista,
+   no la tabla: pintarlo como cabecera dejaba una caja blanca con las esquinas
+   de arriba redondeadas, el borde de abajo abierto y nada a lo que pegarse.
+   `:has(+ .data-table)` es la pregunta correcta. */
+:root.mac .content-lienzo .tx-head:has(+ .data-table):not(:has(> .search-input-wrap:only-child)) {
   margin-bottom: 0;
   padding: 8px 14px;
   background: var(--mac-card);
@@ -11468,7 +11498,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* El `+` de CSS casa aunque el hermano esté oculto, así que este ajuste se ata
    a la misma condición: si no, la tabla de Miembros subía 12 px y se pegaba a
    las tarjetas. */
-:root.mac .content-lienzo .tx-head:not(:has(> .search-input-wrap:only-child)) + .data-table {
+/* Las DOS condiciones: que la tabla vaya debajo y que la cabecera no sea la
+   vacía de Miembros. El `+` casa aunque el hermano esté oculto, así que sin la
+   segunda la tabla subía 12 px y se pegaba a las tarjetas — que es justo lo
+   que se acababa de arreglar. */
+:root.mac .content-lienzo .tx-head:has(+ .data-table):not(:has(> .search-input-wrap:only-child)) + .data-table {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   /* Cancela el hueco de la columna SOLO en esta unión: cabecera y tabla son
@@ -11477,6 +11511,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 /* Las dos gráficas de Reportes, con el mismo hueco que el resto del lienzo. */
 :root.mac .content-lienzo .charts { gap: 12px; }
+
+/* Mensajes no lleva lienzo —es UNA tarjeta, y un gris detrás de una sola
+   pieza no agrupa nada— pero sí el mismo relleno que las demás pantallas. */
+:root.mac .content:has(> .msg-card) { padding-left: 16px; padding-right: 16px; }
 
 /* Las tarjetas de dentro del lienzo: 12/14 en vez de 18/20/14. El relleno de
    escritorio, sumado a un panel de 28 px alrededor, dejaba las gráficas de

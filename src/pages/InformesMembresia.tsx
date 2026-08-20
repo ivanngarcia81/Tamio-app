@@ -638,7 +638,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         </div>
       </div>
 
-      <div className="content">
+      <div className="content content-lienzo">
         {/* En el teléfono, UNA fila de control en vez de las dos barras de
             arriba (periodo y vista). Eran unos 260 px de mandos antes del
             primer dato, y la de filtros —que se deslizaba— escondía lo puesto
