@@ -117,6 +117,42 @@ function HomeSinArea({ area, verReportes }: { area: "tesoreria" | "secretaria"; 
   );
 }
 
+/** Dónde empieza de verdad la página dentro de `<main>`, en coordenadas de la
+ *  ventana y como si el scroll estuviera a cero.
+ *
+ *  Existe para la vecina del carrusel (`.pager-vecina`), que es
+ *  `position: absolute` sobre un `.main` SIN posicionar — así que se ancla a la
+ *  ventana, no a `.main`. En el escritorio eso daba igual; en el iPhone la
+ *  vecina salía más ARRIBA que la página real por dos motivos que se suman:
+ *
+ *  1. `.app` lleva `padding-top: env(safe-area-inset-top)` (styles.css). Eso
+ *     baja `.main` entero —59 px con isla dinámica, 47/48 con muesca— y la
+ *     vecina, anclada a la ventana, ni se enteraba. Como en Chromium ese `env`
+ *     vale 0, el arnés de Playwright las daba alineadas y el desnivel solo
+ *     aparecía en el aparato.
+ *  2. Los banners (actualización, sync en pausa, suscripción) van DENTRO de
+ *     `<main>`, en flujo normal y por delante de `<Routes>`. Empujan a la
+ *     página real hacia abajo; a la vecina, absoluta, se la saltan.
+ *
+ *  Medido con la muesca simulada a 59 px: la cabecera de la vecina caía 60 px
+ *  por encima de la real sin banners, y 112 px con un banner de 44 px. Con este
+ *  ancla, 0 en los dos casos.
+ *
+ *  Se cuentan también los márgenes: `.main` es `display: flex` en columna, así
+ *  que no colapsan. Y se para en el primer trozo de página (`.header` /
+ *  `.content`) o en la vecina misma. */
+function techoDeLaPagina(main: HTMLElement): number {
+  let y = main.getBoundingClientRect().top;
+  for (const hijo of Array.from(main.children)) {
+    const clases = hijo.classList;
+    if (clases.contains("header") || clases.contains("content") || clases.contains("pager-vecina")) break;
+    const estilo = getComputedStyle(hijo);
+    y += hijo.getBoundingClientRect().height
+      + parseFloat(estilo.marginTop) + parseFloat(estilo.marginBottom);
+  }
+  return y;
+}
+
 function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (c: Church) => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -149,8 +185,14 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
      declarado después de ella se salta en esos renders y se ejecuta en los
      demás, y React aborta con el error #310 ("se renderizaron más hooks que
      en el render anterior"). Pasó: la app se caía al terminar de cargar la
-     sesión, que es justo cuando se cruza esa puerta. */
-  const [vecina, setVecina] = useState<string | null>(null);
+     sesión, que es justo cuando se cruza esa puerta.
+
+     Va con su `top`, medido en el mismo instante en que se anuncia: la vecina
+     se ancla a la ventana y hay que decirle dónde empieza la página de verdad
+     (ver `techoDeLaPagina` arriba). Se guarda junto a la ruta y no aparte para
+     que las dos cosas entren en el MISMO render: con dos estados sueltos había
+     un fotograma con la ruta nueva y el ancla vieja. */
+  const [vecina, setVecina] = useState<{ ruta: string; top: number } | null>(null);
   /* Barra lateral escondida (solo Mac). Aquí arriba por lo mismo que `vecina`:
      más abajo está la puerta de autenticación con sus cuatro `return`. */
   const [sidebarOculta, setSidebarOculta] = useState(initialSidebarOculta);
@@ -627,7 +669,15 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           que arrastrar para revelarlo. Ahora es HERMANO de <main>, fijo de
           verdad (position:fixed en el CSS), igual que esa fila: nav bar →
           carrusel → recién ahí el área con scroll. */}
-      <CarruselSecciones role={role} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} onVecina={setVecina} />
+      <CarruselSecciones
+        role={role}
+        memberCount={memberCount}
+        pendingCount={pendingCount}
+        unreadCount={unreadCount}
+        onVecina={(ruta) => setVecina(
+          ruta && mainRef.current ? { ruta, top: techoDeLaPagina(mainRef.current) } : null,
+        )}
+      />
       {/* Copia acoplada del Large Title: vive siempre fija en la fila del
           "+", con el mismo texto que `.page-title` (el efecto de scroll de
           arriba la mantiene sincronizada). En reposo es invisible
@@ -650,8 +700,8 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             el arrastre ya pasó de un umbral, no en cada roce: montar una
             página corre sus consultas (Reportes hace ocho). */}
         {vecina && (
-          <div className="pager-vecina" aria-hidden="true" inert>
-            <Routes location={vecina}>{rutas}</Routes>
+          <div className="pager-vecina" aria-hidden="true" inert style={{ top: vecina.top }}>
+            <Routes location={vecina.ruta}>{rutas}</Routes>
           </div>
         )}
       </main>

@@ -8854,12 +8854,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: block;
     position: absolute;
     inset: 0;
-    /* `.main` es `position: static`, así que esto se ancla a la ventana, no a
-       `.main` — y `.main` lleva 114 px de `padding-top` (fila de navegación +
-       carrusel). Sin copiarlo, la vecina nacía 114 px más arriba que la
-       página actual: dos títulos grandes a distinta altura cruzándose. Se
-       hereda en vez de repetir el número porque ese relleno cambia con el
-       hueco de la muesca y con si hay carrusel o no. */
+    /* OJO: `top` lo pisa App.tsx con un número medido (`techoDeLaPagina`), y
+       tiene que seguir siendo así. El `inset: 0` de aquí es solo el resto de
+       lados; el 0 de arriba está MAL en el iPhone y el porqué está en el
+       comentario largo de esa función: `.main` es `position: static`, así que
+       esto se ancla a la VENTANA, y entre la ventana y el principio de la
+       página hay dos cosas que el CSS no puede sumar solo — el hueco de la
+       muesca (`.app { padding-top: env(safe-area-inset-top) }`, 59 px con isla
+       dinámica) y el alto de los banners, que van dentro de `<main>` y en
+       flujo. Medido: 60 px de desnivel sin banners, 112 px con uno. */
+    /* `.main` lleva 114 px de `padding-top` (fila de navegación + carrusel).
+       Sin copiarlo, la vecina nacía otros 114 px más arriba todavía: dos
+       títulos grandes a distinta altura cruzándose. Se hereda en vez de
+       repetir el número porque ese relleno cambia con el hueco de la muesca y
+       con si hay carrusel o no. Y se DEJA heredado —en vez de ponerlo a cero y
+       meterlo en el número medido— para que las dos cajas tengan exactamente
+       el mismo relleno: así la cabecera de la vecina cae en el mismo sitio que
+       la real hasta el subpíxel. */
     padding: inherit;
     z-index: 1;
     pointer-events: none;
