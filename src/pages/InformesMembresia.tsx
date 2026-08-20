@@ -20,6 +20,7 @@ import { CARGOS, INSTRUMENTOS, MINISTERIOS } from "../components/FichaMiembroMod
 import FichaMiembroModal from "../components/FichaMiembroModal";
 import SeguimientoModal from "../components/SeguimientoModal";
 import { EmptyState } from "../components/TxList";
+import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../components/mac/MacFiltros";
 import Pagination from "../components/Pagination";
@@ -357,6 +358,14 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
   const hayFiltros = query || tarjeta !== "todos" || filtroEstado !== "todos" || filtroMinisterio !== "todos" ||
     filtroCargo !== "todos" || filtroInstrumento !== "todos" || soloRacha || soloIncompletos;
+
+  /* Pie de ventana (solo Mac). Se reutilizan las claves que ya escribe el
+     control de iPhone (`informes.conteoFiltrado` / `conteoTotal`): es
+     exactamente el mismo recuento, y dos textos distintos para el mismo
+     número acabarían diciendo cosas distintas. */
+  useBarraEstado(hayFiltros && vista === "miembros"
+    ? t("informes.conteoFiltrado", { visibles: filas.length, total: miembros.length })
+    : t("informes.conteoTotal", { count: vista === "miembros" ? filas.length : miembros.length }));
 
   // Catálogos de los filtros, en un solo sitio: los consumen tanto los
   // `<option>` de Mac como los chips de iPhone. Aquí el centinela de "sin

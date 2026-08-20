@@ -10117,6 +10117,73 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .data-table .th,
 :root.mac .data-table .td { font-variant-numeric: tabular-nums; }
 
+/* ---- Barra de estado (pie de ventana) ----
+
+   Existe SOLO en el Mac, y por eso la clase nace apagada: el componente se
+   monta siempre (BarraEstado.tsx) y es esta regla la que decide. Así el shell
+   no lleva un `esMac()` más.
+
+   Recupera lo que se perdió al pasar a la toolbar de 52 px: nueve pantallas
+   apagaron su `page-sub` en Mac porque la frase no cabe en un renglón
+   compartido con los botones. Aquí vuelve, en el sitio donde macOS pone ese
+   resumen desde siempre (Finder cuenta elementos y espacio libre; Mail, los
+   sin leer). */
+.barra-estado { display: none; }
+:root.mac .barra-estado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 26px;
+  padding: 0 14px;
+  /* Gris de cáscara, no blanco de contenido: es lo que la separa de la tabla
+     que tiene encima sin necesidad de una línea más gruesa. En Inicio el
+     contenido ya es este mismo gris y ahí la separa el borde. */
+  background: var(--mac-content-bg-soft);
+  border-top: 1px solid var(--mac-separator);
+  font-size: var(--mac-fs-small);
+  color: var(--mac-tertiary);
+  user-select: none;
+  /* Última columna de la rejilla: con `-2 / -1` cae en la segunda cuando hay
+     sidebar y en la única cuando no lo hay (por debajo de 1024 px el sidebar
+     pasa a cajón fijo y `.app` se queda en una columna). Sin esto habría que
+     repetir la regla en cada tramo. */
+  grid-column: -2 / -1;
+}
+/* La fila extra solo cuando la barra existe: en el iPhone y el iPad `.app`
+   sigue siendo una sola fila de altura completa. */
+:root.mac .app {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+/* El sidebar cruza las dos filas: la barra de estado es del área de
+   contenido, igual que en el diseño, no del ancho entero de la ventana. */
+:root.mac .app > .sidebar { grid-row: 1 / -1; }
+
+:root.mac .barra-estado-resumen {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* El estado de sincronización es un BOTÓN —clic para sincronizar ya—, no una
+   etiqueta: es la misma acción que tenía el indicador del sidebar, que en Mac
+   se apaga (abajo) para no dejar dos lecturas del mismo dato a 300 px una de
+   otra. */
+:root.mac .barra-estado-sync {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  height: 18px;
+  border-radius: 4px;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+  white-space: nowrap;
+}
+:root.mac .barra-estado-sync:hover:not(:disabled) { background: var(--mac-hover); color: var(--mac-secondary); }
+:root.mac .sidebar .sync-indicator { display: none; }
+
 /* ============================================================
    VERSIÓN MAC — Paquete 2: Ajustes
 

@@ -5,6 +5,7 @@ import {
   type Church, type Mensaje,
 } from "../db";
 import type { Role } from "../role";
+import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { EmptyState } from "../components/TxList";
@@ -29,6 +30,9 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
   const [enviando, setEnviando] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Mensaje | null>(null);
   const finRef = useRef<HTMLDivElement | null>(null);
+
+  /* Pie de ventana (solo Mac). */
+  useBarraEstado(t("barraEstado.mensajes", { count: mensajes.length }));
 
   useEffect(() => {
     let cancelado = false;

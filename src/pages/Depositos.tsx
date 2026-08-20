@@ -8,6 +8,7 @@ import {
 import { EmptyState } from "../components/TxList";
 import DepositoTable from "../components/DepositoTable";
 import DepositoModal from "../components/DepositoModal";
+import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
 import { IconBank, IconClock, IconPlus } from "../icons";
@@ -35,6 +36,14 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const mes = currentMonth();
+
+  /* Pie de ventana (solo Mac): los del mes y su suma. `conteoMes` y
+     `totalMes` ya venían calculados para las tarjetas de arriba. */
+  useBarraEstado(t("barraEstado.depositos", {
+    count: conteoMes,
+    mes: mesLegible(mes),
+    total: `${fmtMoney(totalMes)} ${church.moneda}`,
+  }));
 
   useEffect(() => {
     let cancelado = false;

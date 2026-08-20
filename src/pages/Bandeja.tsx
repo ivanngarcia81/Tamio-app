@@ -6,6 +6,7 @@ import {
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
+import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -61,6 +62,12 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   }
 
   const total = pendientes.length + archivados.length;
+
+  /* Pie de ventana (solo Mac): el mismo par que ya llevaba `page-sub`, que
+     aquí sí cabe entero. */
+  useBarraEstado(total === 0
+    ? t("bandeja.sinPendientes")
+    : `${t("bandeja.porRevisar", { count: pendientes.length })} · ${t("bandeja.archivados", { count: archivados.length })}`);
   const totalPagPendientes = Math.max(1, Math.ceil(pendientes.length / PAGE_SIZE));
   const totalPagArchivados = Math.max(1, Math.ceil(archivados.length / PAGE_SIZE));
   const paginaPendientes = pendientes.slice((pagPendientes - 1) * PAGE_SIZE, pagPendientes * PAGE_SIZE);

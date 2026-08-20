@@ -594,6 +594,9 @@ export const es = {
     hint: "Piloto: por ahora sincroniza solo la lista de miembros con la nube (Supabase). Sube tus cambios y baja los de las otras computadoras de tu iglesia. Requiere haber iniciado sesión y tener conexión a internet.",
     hintAuto: "Se sincroniza sola: al abrir, al guardar, al reconectar y cada pocos minutos. Aquí puedes forzarla a mano. Piloto: por ahora solo la lista de miembros. Requiere sesión iniciada e internet.",
     ultimaVez: "Última sincronización: {{hora}}",
+    /* Pie de ventana en Mac. El "cuándo" lo pone `Intl.RelativeTimeFormat`,
+       que ya trae las reglas de plural de cada idioma hechas. */
+    actualizado: "Actualizado {{cuando}}",
     estado: {
       /* `SyncIndicator` deja este estado sin texto a propósito (no pinta nada
          en el sidebar), pero la fila de Ajustes sí necesita un valor: un
@@ -616,6 +619,43 @@ export const es = {
     errorGeneral: "No se pudo sincronizar. Intenta de nuevo.",
   },
 
+  /* Pie de ventana en Mac (BarraEstado.tsx). Cada pantalla publica el recuento
+     de LO QUE SE ESTÁ VIENDO, filtros incluidos — que es lo que cuenta el pie
+     de Finder. NO es la frase que explica la pantalla: esa se apagó al pasar a
+     la toolbar de 52 px y no vuelve aquí, porque un texto que dice lo mismo en
+     todas las visitas deja de leerse a la tercera. */
+  barraEstado: {
+    ingresos_one: "{{count}} ingreso en {{mes}} · {{total}}",
+    ingresos_other: "{{count}} ingresos en {{mes}} · {{total}}",
+    gastos_one: "{{count}} gasto en {{mes}} · {{total}}",
+    gastos_other: "{{count}} gastos en {{mes}} · {{total}}",
+    depositos_one: "{{count}} depósito en {{mes}} · {{total}}",
+    depositos_other: "{{count}} depósitos en {{mes}} · {{total}}",
+    miembros_one: "{{count}} miembro · {{aportaron}} aportaron en {{anio}}",
+    miembros_other: "{{count}} miembros · {{aportaron}} aportaron en {{anio}}",
+    membresia_one: "{{count}} miembro en el padrón",
+    membresia_other: "{{count}} miembros en el padrón",
+    actas_one: "{{count}} acta",
+    actas_other: "{{count}} actas",
+    /* Con un filtro puesto el total suelto engañaría: dice cuántas hay en la
+       lista y cuántas hay en realidad. */
+    actasFiltradas: "{{count}} de {{total}} actas",
+    servicios_one: "{{count}} servicio registrado",
+    servicios_other: "{{count}} servicios registrados",
+    cartas_one: "{{count}} carta · {{solicitudes}} solicitudes",
+    cartas_other: "{{count}} cartas · {{solicitudes}} solicitudes",
+    agenda_one: "{{count}} compromiso en la vista",
+    agenda_other: "{{count}} compromisos en la vista",
+    informes_one: "{{count}} miembro en el informe",
+    informes_other: "{{count}} miembros en el informe",
+    /* Sin "sin leer": esta pantalla los marca leídos al abrirse, así que ese
+       número sería siempre cero y solo ocuparía sitio. */
+    mensajes_one: "{{count}} mensaje en el hilo",
+    mensajes_other: "{{count}} mensajes en el hilo",
+    inicio: "{{miembros}} miembros · {{movimientos}} movimientos en {{mes}}",
+    reportes: "{{mes}} · {{meses}} meses de histórico",
+    ayuda: "Tamio {{version}}",
+  },
   paginacion: {
     anterior: "Página anterior",
     siguiente: "Página siguiente",

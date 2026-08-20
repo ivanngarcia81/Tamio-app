@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useBarraEstado } from "../components/BarraEstado";
 import { invoke } from "@tauri-apps/api/core";
 import {
   catNombre, categoriaInfo, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
@@ -104,6 +105,19 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const ingresos = totales?.ingresos ?? CERO;
   const gastos = totales?.gastos ?? CERO;
   const balance = restar(ingresos, gastos);
+
+  /* Pie de ventana (solo Mac). El conteo de movimientos del mes sale de
+     `conteoCategoria*`, que `monthTotals` ya trae: `txs` de arriba está
+     limitado a 30 para la lista de recientes y contarlo daría 30 siempre. */
+  const movimientosMes = useMemo(() => {
+    const suma = (r?: Record<string, number>) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
+    return suma(totales?.conteoCategoriaIngreso) + suma(totales?.conteoCategoriaGasto);
+  }, [totales]);
+  useBarraEstado(t("barraEstado.inicio", {
+    miembros: memberCount,
+    movimientos: movimientosMes,
+    mes: mesLegible(mes),
+  }));
 
   // Refleja el balance del mes en el menú de la barra de menús de macOS,
   // para verlo de un vistazo sin abrir la ventana.

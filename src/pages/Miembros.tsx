@@ -12,6 +12,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import MemberDetailModal from "../components/MemberDetailModal";
 import LoadingState from "../components/LoadingState";
+import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -146,6 +147,15 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
     }
     return { total: members.length, diezmadores, aportaron, totalAnio };
   }, [members, stats]);
+
+  /* Pie de ventana (solo Mac). "Aportaron" y no "diezmaron": el primero es el
+     total de gente que dio algo, que es el número que importa cuando se está
+     mirando el padrón entero. El desglose lo tienen las tarjetas. */
+  useBarraEstado(t("barraEstado.miembros", {
+    count: resumen.total,
+    aportaron: resumen.aportaron,
+    anio: currentYear(),
+  }));
 
   const q = query.trim().toLowerCase();
   const visibles = q

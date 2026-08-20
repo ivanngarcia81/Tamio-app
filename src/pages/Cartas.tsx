@@ -16,6 +16,7 @@ import {
 import { asegurarPlantillasIniciales } from "../services/cartas/plantillas";
 import { EmptyState } from "../components/TxList";
 import RowMenu, { type RowMenuItem } from "../components/RowMenu";
+import { useBarraEstado } from "../components/BarraEstado";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA, type CartaPrefill } from "../components/CartaEditor";
 import ActionSheet, { type ActionSheetOption } from "../components/ActionSheet";
@@ -532,6 +533,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     );
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /* Pie de ventana (solo Mac). Esta pantalla tiene siete pestañas y el pie es
+     el único sitio donde se ve de un vistazo que además de cartas hay
+     solicitudes esperando. */
+  useBarraEstado(t("barraEstado.cartas", { count: cartas.length, solicitudes: solicitudes.length }));
 
   // Catálogos de los filtros del Archivo, en un solo sitio: los consumen
   // tanto los `<option>` de Mac como los chips de iPhone. Aquí el centinela

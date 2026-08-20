@@ -7,6 +7,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import Sidebar from "./components/Sidebar";
 import SubBanner from "./components/SubBanner";
 import UpdateBanner from "./components/UpdateBanner";
+import BarraEstadoProvider from "./components/BarraEstado";
 import BarraInferior from "./components/BarraInferior";
 import BotonCrear from "./components/BotonCrear";
 import CarruselSecciones from "./components/CarruselSecciones";
@@ -520,6 +521,12 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   return (
     <div className={`app${menuAbierto ? " menu-abierto" : ""}`}>
+      {/* El proveedor no pinta ningún nodo propio: envuelve el shell entero
+          para que cualquier pantalla pueda publicar su resumen con
+          `useBarraEstado`, y deja la franja como ÚLTIMO hijo de `.app` —que
+          es donde la rejilla la coloca. Se monta siempre; el CSS la apaga
+          fuera del Mac. */}
+      <BarraEstadoProvider>
       {/* Franja para arrastrar la ventana con la barra de título integrada.
           Además del atributo data-tauri-drag-region (que en macOS con ventana
           transparente a veces no engancha), se llama startDragging() a mano:
@@ -648,6 +655,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       )}
 
       <ToastHost />
+      </BarraEstadoProvider>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { EmptyState } from "../components/TxList";
 import ConfirmDialog from "../components/ConfirmDialog";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
+import { useBarraEstado } from "../components/BarraEstado";
 import EditRecurrenteModal from "../components/EditRecurrenteModal";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -122,6 +123,15 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     ? totales?.porCategoriaIngreso ?? {}
     : totales?.porCategoriaGasto ?? {};
   const totalMes = esIngreso ? totales?.ingresos ?? CERO : totales?.gastos ?? CERO;
+
+  /* Pie de ventana (solo Mac): cuántos movimientos hay en el mes que se está
+     mirando y cuánto suman. Es el dato que la toolbar de 52 px ya no puede
+     enseñar entero — ahí solo cabe "18 registrados". */
+  useBarraEstado(t(esIngreso ? "barraEstado.ingresos" : "barraEstado.gastos", {
+    count: txs.length,
+    mes: mesLegible(mes),
+    total: `${fmtMoney(totalMes)} ${church.moneda}`,
+  }));
 
   // Las tarjetas de resumen muestran las categorías CON movimiento, de mayor
   // a menor. Antes tomaban las tres primeras del catálogo, así que podían

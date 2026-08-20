@@ -10,6 +10,7 @@ import {
 } from "../db";
 import { expandirTodas, normalizarLugar, solapanHorario, type OcurrenciaVista } from "../services/agenda/recurrencia";
 import { EmptyState } from "../components/TxList";
+import { useBarraEstado } from "../components/BarraEstado";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ActividadModal, { type ConflictoAgenda } from "../components/ActividadModal";
 import ActividadDetalle from "../components/ActividadDetalle";
@@ -309,6 +310,12 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const filtradas = useMemo(() => ocurrencias.filter(pasaFiltros),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ocurrencias, filtros, soloImportantes, miembros]);
+
+  /* Pie de ventana (solo Mac): lo que hay EN LA VISTA, no en la base. Esta
+     pantalla cambia de ventana temporal (mes, semana, lista, historial) y de
+     filtros, así que un total absoluto no diría nada del que se está
+     mirando. */
+  useBarraEstado(t("barraEstado.agenda", { count: filtradas.length }));
 
   // Catálogos de los filtros, en un solo sitio: los consumen tanto los
   // `<option>` de Mac como los chips de iPhone. Cada lista lleva de primera

@@ -8,6 +8,7 @@ import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ActaModal from "../components/ActaModal";
 import LoadingState from "../components/LoadingState";
+import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -114,6 +115,13 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
     );
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /* Pie de ventana (solo Mac). Con un filtro puesto se dicen los DOS números:
+     un "3 actas" a secas, con seis en la base, se lee como que se perdieron
+     tres. */
+  useBarraEstado(visibles.length === actas.length
+    ? t("barraEstado.actas", { count: actas.length })
+    : t("barraEstado.actasFiltradas", { count: visibles.length, total: actas.length }));
 
   return (
     <>

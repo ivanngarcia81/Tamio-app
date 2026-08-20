@@ -8,6 +8,7 @@ import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ServicioModal from "../components/ServicioModal";
 import LoadingState from "../components/LoadingState";
+import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -110,6 +111,9 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
   );
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /* Pie de ventana (solo Mac). */
+  useBarraEstado(t("barraEstado.servicios", { count: visibles.length }));
 
   return (
     <>

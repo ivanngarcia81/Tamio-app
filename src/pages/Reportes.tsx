@@ -14,6 +14,7 @@ import { exportAnnualReportPdf } from "../services/print/printAnnual";
 import Delta from "../components/Delta";
 import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
+import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
 import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconSparkles, IconUpload } from "../icons";
@@ -176,6 +177,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
   const esMesActual = mes >= currentMonth();
   const mesStr = mesLegible(mes);
+
+  /* Pie de ventana (solo Mac): el mes del reporte y cuánta historia hay
+     detrás, que es lo que decide si el resumen mensual tiene algo que
+     comparar. */
+  useBarraEstado(t("barraEstado.reportes", { mes: mesStr, meses: historial.length }));
   const mesAnterior = prevMonth(mes);
 
   useEffect(() => {

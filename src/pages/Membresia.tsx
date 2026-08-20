@@ -14,6 +14,7 @@ import BajaMemberModal from "../components/BajaMemberModal";
 import FichaMiembroModal from "../components/FichaMiembroModal";
 import FusionarMiembroModal from "../components/FusionarMiembroModal";
 import LoadingState from "../components/LoadingState";
+import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -150,6 +151,11 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
     );
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /* Pie de ventana (solo Mac): los que se están viendo, no los que hay. Con
+     un filtro o una búsqueda puestos, el total del padrón contradice a la
+     lista que tienes delante. */
+  useBarraEstado(t("barraEstado.membresia", { count: visibles.length }));
 
   return (
     <>
