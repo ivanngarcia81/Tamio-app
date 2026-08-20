@@ -130,6 +130,15 @@ export const IconChevronDown = ({ size = 14, strokeWidth = 2 }: IconProps) => (
   <svg {...base(size, strokeWidth)}><polyline points="6 9 12 15 18 9" /></svg>
 );
 
+/** Barra lateral: el rectángulo de la ventana con la columna marcada. Es el
+ *  mismo glifo que usa la toolbar de macOS para "Ocultar barra lateral". */
+export const IconSidebar = ({ size = 16, strokeWidth = 1.7 }: IconProps) => (
+  <svg {...base(size, strokeWidth)}>
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="M9.5 5v14" />
+  </svg>
+);
+
 export const IconChevronLeft = ({ size = 14, strokeWidth = 2 }: IconProps) => (
   <svg {...base(size, strokeWidth)}><polyline points="15 18 9 12 15 6" /></svg>
 );

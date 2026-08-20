@@ -10268,6 +10268,64 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .barra-estado-sync:hover:not(:disabled) { background: var(--mac-hover); color: var(--mac-secondary); }
 :root.mac .sidebar .sync-indicator { display: none; }
 
+/* ---- Botón de esconder la barra lateral ----
+
+   El primer control de la toolbar en el diseño, y el que faltaba de la
+   cáscara. Nace apagado: solo existe en el Mac (en el iPhone la barra lateral
+   ya es un cajón con su propio botón ☰, y en el iPad es la columna fija de un
+   split view).
+
+   Es `position: fixed` y va ENCIMA de la toolbar de cada pantalla, que le
+   reserva el sitio con su `padding-left`. La alternativa era meterlo en las
+   dieciséis `.header`, o sea dieciséis copias del mismo botón que habría que
+   mantener a la vez. */
+.btn-sidebar { display: none; }
+:root.mac .btn-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  /* 15 = (52 − 22) / 2: centrado en la fila de la toolbar. */
+  top: 15px;
+  left: calc(220px + 12px);
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--mac-secondary);
+  cursor: default;
+  /* 42 y no menos: `.titlebar-drag` es fija, cubre los 28 px de arriba de toda
+     la ventana y vive en 40; la toolbar sube a 41 por lo mismo. Por debajo, la
+     mitad de arriba del botón no recibiría el clic. */
+  z-index: 42;
+  transition: background-color var(--dur) ease;
+}
+:root.mac .btn-sidebar:hover { background: var(--mac-hover); color: var(--mac-label); }
+/* El hueco que la toolbar le reserva: 12 de su relleno + 26 del botón + 8 de
+   aire. Sin esto el botón se pintaría encima del título. */
+:root.mac .header[data-tauri-drag-region] { padding-left: 46px; }
+
+/* ---- Con la barra lateral escondida ---- */
+:root.mac .app[data-sidebar-oculta] { grid-template-columns: 1fr; }
+:root.mac .app[data-sidebar-oculta] > .sidebar { display: none; }
+/* El botón se corre a la derecha de los semáforos. Con la barra puesta caen
+   sobre ella (220 px de ancho) y no estorban; al esconderla, el contenido
+   empieza en x=0 y los tres botones de la ventana quedan flotando encima. Los
+   dibuja el sistema alrededor de x=20/40/60, así que el nuestro arranca en 78
+   y la toolbar reserva 78 + 26 + 8. */
+:root.mac .app[data-sidebar-oculta] .btn-sidebar { left: 78px; }
+:root.mac .app[data-sidebar-oculta] .header[data-tauri-drag-region] { padding-left: 112px; }
+
+/* Por debajo de 601 px la barra lateral ya está escondida por el ancho (ver
+   el bloque de la cáscara móvil), así que el botón no tendría nada que
+   alternar: un control que no hace nada es peor que no tenerlo. */
+@media (max-width: 600px) {
+  :root.mac .btn-sidebar { display: none; }
+  :root.mac .header[data-tauri-drag-region] { padding-left: 12px; }
+}
+
 /* ---- Modales ----
 
    Hasta aquí los modales no tenían NI UNA regla de Mac: heredaban el diálogo

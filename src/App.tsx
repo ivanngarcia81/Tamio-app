@@ -45,6 +45,8 @@ import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role
 import { areaDeRuta, seccionesVisibles } from "./navegacion";
 import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { esMac } from "./movil";
+import { IconSidebar } from "./icons";
 import { authHabilitado } from "./supabase";
 import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync, SYNC_HABILITADO } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
@@ -66,6 +68,15 @@ function initialAcento(): Acento {
     if (saved && (ACENTOS as readonly string[]).includes(saved)) return saved as Acento;
   } catch { /* noop */ }
   return "neutro";
+}
+
+/** ¿Arranca con la barra lateral escondida? Preferencia de este dispositivo,
+ *  igual que el tema y el acento: es una decisión sobre ESTA ventana, no sobre
+ *  la iglesia, así que no viaja por la sincronización. */
+function initialSidebarOculta(): boolean {
+  try {
+    return localStorage.getItem("tamio-sidebar-oculta") === "1";
+  } catch { return false; }
 }
 
 function systemPrefersDark(): boolean {
@@ -140,6 +151,9 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
      en el render anterior"). Pasó: la app se caía al terminar de cargar la
      sesión, que es justo cuando se cruza esa puerta. */
   const [vecina, setVecina] = useState<string | null>(null);
+  /* Barra lateral escondida (solo Mac). Aquí arriba por lo mismo que `vecina`:
+     más abajo está la puerta de autenticación con sus cuatro `return`. */
+  const [sidebarOculta, setSidebarOculta] = useState(initialSidebarOculta);
   const location = useLocation();
   useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
@@ -261,7 +275,15 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     return iniciarAutoSync();
   }, [church.id, authEstado.autenticado, authEstado.sinRol]);
 
-  // Cmd/Ctrl+N abre "Nuevo registro"; Cmd/Ctrl+K abre la paleta de comandos.
+  // La preferencia se guarda en cuanto cambia, no al cerrar: si la app se cae
+  // o se reinicia, la ventana vuelve como el usuario la dejó.
+  useEffect(() => {
+    try { localStorage.setItem("tamio-sidebar-oculta", sidebarOculta ? "1" : "0"); } catch { /* noop */ }
+  }, [sidebarOculta]);
+
+  // Cmd/Ctrl+N abre "Nuevo registro"; Cmd/Ctrl+K abre la paleta de comandos;
+  // ⌃⌘S esconde o enseña la barra lateral, que es el atajo que macOS usa para
+  // eso en Finder, Notas y Mail.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
@@ -271,6 +293,10 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCmdOpen((v) => !v);
+      }
+      if (e.metaKey && e.ctrlKey && e.key.toLowerCase() === "s" && esMac()) {
+        e.preventDefault();
+        setSidebarOculta((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -527,7 +553,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   );
 
   return (
-    <div className={`app${menuAbierto ? " menu-abierto" : ""}`}>
+    <div className={`app${menuAbierto ? " menu-abierto" : ""}`} data-sidebar-oculta={sidebarOculta || undefined}>
       {/* El proveedor no pinta ningún nodo propio: envuelve el shell entero
           para que cualquier pantalla pueda publicar su resumen con
           `useBarraEstado`, y deja la franja como ÚLTIMO hijo de `.app` —que
@@ -577,6 +603,22 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></svg>
       </button>
       {menuAbierto && <div className="menu-telon" onClick={() => setMenuAbierto(false)} />}
+      {/* Esconder la barra lateral, el primer control de la toolbar en el
+          diseño. Vive AQUÍ y no dentro de cada `.header` por lo mismo que
+          `.titulo-fijo`: es cáscara, no contenido de la página, y meterlo en
+          las dieciséis pantallas sería dieciséis copias del mismo botón. Va
+          fijo encima de la toolbar, que le reserva el hueco con su
+          `padding-left` (ver styles.css). El CSS lo apaga fuera del Mac. */}
+      <button
+        type="button"
+        className="btn-sidebar"
+        aria-pressed={sidebarOculta}
+        title={`${sidebarOculta ? t("nav.mostrarSidebar") : t("nav.ocultarSidebar")} (⌃⌘S)`}
+        aria-label={sidebarOculta ? t("nav.mostrarSidebar") : t("nav.ocultarSidebar")}
+        onClick={() => setSidebarOculta((v) => !v)}
+      >
+        <IconSidebar />
+      </button>
       <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
       {/* Bug de teléfono: el carrusel vivía DENTRO de <main> (el área con
           scroll) y se posicionaba con position:sticky para no desplazarse —

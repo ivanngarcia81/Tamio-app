@@ -967,6 +967,8 @@ export const es = {
     // "Por revisar" se cortaba en pantallas angostas.
     porRevisarCorto: "Pendientes",
     configuracion: "Configuración",
+    ocultarSidebar: "Ocultar la barra lateral",
+    mostrarSidebar: "Mostrar la barra lateral",
     abrirMenu: "Abrir menú",
     ayuda: "Ayuda",
   },

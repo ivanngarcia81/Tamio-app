@@ -941,6 +941,8 @@ export const en: Resources = {
     porRevisar: "Pending review",
     porRevisarCorto: "Pending",
     configuracion: "Settings",
+    ocultarSidebar: "Hide Sidebar",
+    mostrarSidebar: "Show Sidebar",
     abrirMenu: "Open menu",
     ayuda: "Help",
   },
