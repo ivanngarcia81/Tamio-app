@@ -1518,6 +1518,24 @@ html.vibrancy .main { background: var(--surface); }
   letter-spacing: -0.01em;
 }
 .tx-filters { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* Fila de un movimiento fijo mensual (Ingresos/Gastos). Antes era un flexbox
+   declarado en línea en el JSX: cada celda medía lo que medía su texto, así
+   que "Transferencia" en una fila y "Cheque" en la siguiente no empezaban en
+   el mismo sitio. Con columnas fijas las dos filas se leen como una tabla. */
+.recurrente-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+.rec-concepto { flex: 1; font-weight: 600; font-size: 13px; }
+.rec-quien { font-weight: 400; color: var(--text-3); margin-left: 8px; font-size: 12px; }
+.rec-dia { font-size: 12px; color: var(--text-3); }
+.rec-metodo { font-size: 12.5px; color: var(--text-2); }
+.rec-monto { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+.card-fijos { margin-bottom: 18px; }
 .chip {
   padding: 6px 12px;
   border-radius: 999px;
@@ -11302,6 +11320,122 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Encabezado de la tabla: título a la izquierda, segmentado a la derecha. */
 :root.mac .tx-head { align-items: center; gap: 10px; margin-bottom: 8px; }
 :root.mac .tx-title { font-size: var(--mac-fs-headline); font-weight: 600; }
+
+/* ---- Ingresos, Gastos y Depósitos: la página como lienzo gris ----
+
+   El diseño de macOS pone las tarjetas y las tablas como piezas blancas sobre
+   un fondo gris, que es lo que las agrupa. Aquí el contenido era blanco sobre
+   blanco y quien agrupaba era un panel redondeado (`.dash-canvas`) con 28 px
+   de relleno alrededor de las tarjetas: una caja dentro de otra caja.
+
+   El gris se enciende por INVITACIÓN de la página, con `content-lienzo` —el
+   mismo patrón que ya usaba Inicio con `content-inicio`—, y no por detectar
+   una tira de tarjetas: `.summary-4` la usan ONCE pantallas, y encenderlas
+   todas de golpe sería cambiar nueve que todavía no se han mirado. Cada una
+   se apunta cuando le toque su conversión. */
+:root.mac .content-lienzo {
+  padding-left: 16px;
+  padding-right: 16px;
+  /* 12 y no 24: `.content` es una columna flex y su hueco base separaba cada
+     bloque con el doble del aire del diseño — medido, 24 px entre la tira de
+     tarjetas y los fijos, y 36 hasta la tabla. */
+  gap: 12px;
+}
+/* El gris va en `.main`, no en `.content`: `.content` mide lo que mide su
+   contenido, así que con una tabla corta el gris se cortaba a media ventana y
+   debajo quedaba un rectángulo blanco. */
+:root.mac .main:has(.content-lienzo) { background: var(--mac-content-bg-soft); }
+/* El panel deja de ser panel: las tarjetas caen directamente sobre el gris.
+   Acotado al lienzo: `.dash-canvas` lo usan DIEZ pantallas y quitarle el
+   fondo a todas de golpe sería cambiar ocho sin haberlas mirado. */
+:root.mac .content-lienzo .dash-canvas {
+  background: none;
+  padding: 0;
+  box-shadow: none;
+  gap: 12px;
+}
+/* Las tarjetas del resumen, TODAS en una fila y repartidas a partes iguales.
+   `auto-fit` con un mínimo de 240 px daba tres en una ventana de 1240 y la
+   cuarta caía sola a una segunda fila con medio ancho de aire al lado.
+   `grid-auto-flow: column` y no `repeat(4, …)` porque la tira no siempre
+   tiene cuatro: Depósitos trae tres, y con cuatro columnas fijas dejaba un
+   hueco a la derecha del mismo tamaño que una tarjeta.
+   Solo a partir de 1024 px: por debajo, el reparto elástico que envuelve
+   sigue siendo el correcto — cuatro tarjetas en 480 px no se leen.
+   Y solo dentro del lienzo: el Informe de miembros tiene OCHO tarjetas en
+   esta misma clase, y ocho en una fila salen a 123 px cada una. */
+@media (min-width: 1024px) {
+  :root.mac .content-lienzo .summary-4 {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+/* El hueco de la columna ya separa; el margen propio se sumaba encima. */
+:root.mac .content-lienzo .card-fijos { margin-bottom: 0; }
+
+/* Las filas de fijos mensuales, en columnas fijas. Ver `.recurrente-fila`:
+   el reparto elástico dejaba el método y el día bailando de una fila a otra. */
+:root.mac .recurrente-fila {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr) 150px 118px 132px 24px 24px;
+  gap: 12px;
+  align-items: center;
+  padding: 0;
+  min-height: 34px;
+  border-top: 1px solid var(--mac-separator);
+}
+:root.mac .rec-concepto { font-weight: 500; }
+:root.mac .rec-dia,
+:root.mac .rec-metodo { font-size: 12px; }
+:root.mac .rec-monto { text-align: right; font-weight: 600; }
+/* El chip de categoría, igual que en la tabla: punto de color y nombre en
+   caja baja, no una pastilla en versalitas. Sin esto la misma categoría se
+   leía de dos maneras a diez píxeles de distancia. */
+:root.mac .recurrente-fila .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-size: var(--mac-fs-body);
+  color: var(--mac-secondary);
+}
+:root.mac .recurrente-fila .tag::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* El título de la tabla y su segmentado dejan de flotar sobre el fondo: se
+   pegan a la tabla como su cabecera, que es de donde no debieron salir. Son
+   hermanos en el marcado, así que basta cerrar el de arriba por abajo y abrir
+   la tabla por arriba. */
+:root.mac .content-lienzo .tx-head {
+  margin-bottom: 0;
+  padding: 8px 14px;
+  background: var(--mac-card);
+  border: 1px solid var(--mac-card-border);
+  border-bottom: 0;
+  border-radius: var(--mac-card-radius) var(--mac-card-radius) 0 0;
+}
+:root.mac .content-lienzo .tx-head + .data-table {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  /* Cancela el hueco de la columna SOLO en esta unión: cabecera y tabla son
+     una pieza, y `gap` no sabe de excepciones. */
+  margin-top: -12px;
+}
 
 /* ---- Agenda ----
    La celda del calendario baja de 104 a 62 px. En una ventana de 900×600

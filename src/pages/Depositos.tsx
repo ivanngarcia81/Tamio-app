@@ -100,7 +100,11 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
         {!enIPhone && (
           <div>
             <div className="page-title">{t("depositos.titulo")}</div>
-            <div className="page-sub">{t("depositos.sub")}</div>
+            {/* En Mac el subtítulo comparte renglón con los botones, así que
+                lleva un DATO corto y no la frase que explica la pantalla —esa
+                se fue al pie de la ventana, junto al recuento (BarraEstado).
+                Mismo criterio que las otras nueve pantallas convertidas. */}
+            <div className="page-sub">{esMac() ? mesLegible(mes) : t("depositos.sub")}</div>
           </div>
         )}
         {/* El botón se queda: `.btn-nuevo-cabecera` ya lo oculta en el
@@ -114,7 +118,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
-      <div className="content">
+      <div className="content content-lienzo">
         {enIPhone ? (
           /* Sin la franja de color de `.stat-card accent` ni el icono en
              recuadro: en una tarjeta de la mitad del ancho compiten con la

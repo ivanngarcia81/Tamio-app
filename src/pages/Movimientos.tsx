@@ -268,7 +268,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         </div>
       )}
 
-      <div className="content">
+      <div className="content content-lienzo">
         {loading ? (
           <LoadingState />
         ) : (
@@ -337,7 +337,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
             )}
 
             {recurrentes.length > 0 && (
-              <div className="card" style={{ marginBottom: 18 }}>
+              <div className="card card-fijos">
                 <div className="card-head">
                   <span className="card-title" style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
                     <IconRepeat size={14} strokeWidth={2} /> {t("recurrente.titulo")}
@@ -347,23 +347,21 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                 {recurrentes.map((r) => {
                   const cat = categoriaInfo(tipo, r.categoria);
                   return (
-                    <div
-                      key={r.id}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 12,
-                        padding: "9px 0", borderTop: "1px solid var(--line)",
-                      }}
-                    >
+                    /* Las columnas se declaran en CSS y no aquí en línea: eran
+                       un flexbox, así que cada celda medía lo que medía su
+                       texto y "Transferencia" y "Cheque" no empezaban en el
+                       mismo sitio de una fila a otra. Con una rejilla se
+                       alinean, que es lo que hace que dos filas se lean como
+                       una tabla y no como dos frases. */
+                    <div key={r.id} className="recurrente-fila">
                       <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
-                      <span className="truncate" style={{ flex: 1, fontWeight: 600, fontSize: 13 }} title={r.concepto}>
+                      <span className="truncate rec-concepto" title={r.concepto}>
                         {r.concepto}
-                        {r.beneficiario && (
-                          <span style={{ fontWeight: 400, color: "var(--text-3)", marginLeft: 8, fontSize: 12 }}>{r.beneficiario}</span>
-                        )}
+                        {r.beneficiario && <span className="rec-quien">{r.beneficiario}</span>}
                       </span>
-                      <span style={{ fontSize: 12, color: "var(--text-3)" }}>{t("recurrente.diaDeCadaMes", { dia: r.dia })}</span>
-                      <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>{metodoNombre(r.metodo_pago)}</span>
-                      <span style={{ fontWeight: 700, fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
+                      <span className="rec-dia">{t("recurrente.diaDeCadaMes", { dia: r.dia })}</span>
+                      <span className="rec-metodo">{metodoNombre(r.metodo_pago)}</span>
+                      <span className="rec-monto">
                         {t("recurrente.porMes", { monto: fmtMoney(r.monto) })}
                       </span>
                       <span
