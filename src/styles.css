@@ -10941,6 +10941,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 0;
     box-shadow: none;
   }
+  /* Un CONTROL suelto como hijo directo de la caja (el "Enviar invitación" de
+     Invitar, por ejemplo) no es una fila: el relleno de la regla de arriba se
+     lo comía él, quedaba a todo el ancho y con la etiqueta descolocada. Se le
+     da el mismo aire, pero por fuera. */
+  :root.mac .settings-detail .card > .btn {
+    width: auto;
+    padding: 0 9px;
+    margin: 8px 16px;
+    box-shadow: none;
+  }
+  /* Una TABLA como hijo directo llega de borde a borde, igual que la de
+     categorías: su cabecera y sus filas ya traen su propio relleno. */
+  :root.mac .settings-detail .card > .data-table,
+  :root.mac .settings-detail .card > .cat-tabla {
+    padding: 0;
+  }
   /* Los 44 px son de las filas de CAMPO. Una botonera o un texto de ayuda
      miden lo que midan. */
   :root.mac .settings-detail .card .form-group,
@@ -11424,7 +11440,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--mac-card);
     max-width: none;
   }
-  :root.mac .settings-detail .card > .cat-tabla { padding: 0; }
   :root.mac .cat-thead,
   :root.mac .cat-tr {
     display: grid;
