@@ -10197,6 +10197,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-width: 0;
 }
 
+/* ---- Ningún control de alto FIJO parte su texto ----
+   En el Mac todos los controles miden lo que miden: 22 px un botón, 26 un
+   segmento. Si su etiqueta parte en dos renglones, la segunda se sale por
+   abajo y la recorta el borde de lo que sea que lo contenga. No es una
+   posibilidad teórica: pasó dos veces en dos sitios distintos —"Nueva
+   actividad" en la toolbar de Agenda y "Annual statement (PDF)" en el pie de
+   la ficha del miembro— y las dos veces se arregló a mano SOLO en ese sitio.
+   Esto lo cierra de una vez para todos.
+
+   Barrido del 20 de agosto, con las barras montadas a 380 px y etiquetas
+   largas en inglés: seguían partiendo el botón de "+" de una cabecera de
+   tarjeta, los dos de un diálogo de confirmación, los de la bandeja de
+   mensajes y los segmentos de Apariencia — este último se salía ya, 28 px de
+   texto en un hueco de 26.
+
+   Que no parta significa que el botón conserva su ancho, así que quien tiene
+   que ceder es el texto de al lado; eso ya lo llevan `.header-actions` y el
+   pie de los modales con su `min-width: 0`. */
+:root.mac .btn,
+:root.mac .chip,
+:root.mac .seg { white-space: nowrap; }
+
 /* Controles de la toolbar: 22 px, radio 6, borde de 1 px. Uno solo primario
    por pantalla, relleno con el acento. */
 :root.mac .header[data-tauri-drag-region] .btn {
@@ -10667,8 +10689,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: var(--mac-radius);
   font-size: 12px;
   font-weight: 500;
-  white-space: nowrap;
 }
+/* El `nowrap` que necesita este botón lo pone ya la regla general de arriba.
+   Lo de aquí es la otra mitad: el grupo no encoge y quien cede es el texto de
+   ayuda de la izquierda, que sí puede ocupar dos líneas. */
 :root.mac .modal-footer > :last-child { flex-shrink: 0; }
 :root.mac .modal-footer .form-hint { min-width: 0; }
 /* El botón que confirma va del color de acento del sistema, igual que el de
