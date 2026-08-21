@@ -8887,8 +8887,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        ellos el título flota sobre el lienzo y la barra no se lee como
        barra. El gris es el del sidebar, un punto más claro que el `--bg`
        del contenido — la misma relación que en el diseño (#f7f7f9 sobre
-       #f2f2f7) y la que usa cualquier split view de iPadOS. */
-    background: var(--sidebar-bg);
+       #f2f2f7) y la que usa cualquier split view de iPadOS.
+
+       Y es MATERIAL, no color sólido: el mismo desenfoque translúcido de
+       las barras del iPhone (.app::after, saturate 180 + blur 20), que es
+       la parte de Liquid Glass que un WebView puede dar de verdad. Para
+       que el material signifique algo el contenido tiene que pasar por
+       DEBAJO, así que la barra además se queda pegada arriba —sticky,
+       igual que la toolbar del Mac (~10567): quien desplaza es `.main`, y
+       sin esto la barra se iba con el contenido en toda página sin
+       maestro-detalle (Inicio, Reportes, Ajustes). En las páginas partidas
+       nada le pasa por debajo (las columnas empiezan bajo ella) y el mismo
+       material se ve simplemente como su tinte — consistente, no fingido. */
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--sidebar-bg) 85%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 0.5px solid var(--line);
   }
   /* `order: -1` subía las acciones por encima del título: era el orden del
@@ -9028,7 +9044,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     top: 0;
     z-index: 2;
     padding: 8px 16px 4px;
-    background: var(--sidebar-bg);
+    /* También material: es la única superficie del partido bajo la que el
+       contenido SÍ pasa (las filas se deslizan por debajo del rótulo
+       pegado), así que aquí el desenfoque se ve de verdad — como las
+       cabeceras de sección pegadas de una lista de iOS. Blur más corto que
+       el de la barra: la franja mide 24px y con 20 de radio el texto de la
+       fila de abajo sangraba el rótulo entero. */
+    background: color-mix(in srgb, var(--sidebar-bg) 80%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.5px;
