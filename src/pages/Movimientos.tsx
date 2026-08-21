@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMac, textoCorto } from "../movil";
+import { esIPad, esIPhone, esMac, textoCorto } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { MacBuscador, MacSegmentado } from "../components/mac/MacFiltros";
 import {
-  catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTxDeSerie, fmtMoney,
-  getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
-  listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth,
+  catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTx, deleteTxDeSerie,
+  fmtFecha, fmtMoney, getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
+  listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth, undeleteTx,
   type Church, type MovimientoRecurrente, type MonthTotals, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
+import DetalleMovimiento from "../components/DetalleMovimiento";
+import ComprobantePreview from "../components/ComprobantePreview";
 import ConfirmDialog from "../components/ConfirmDialog";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
@@ -45,6 +48,16 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   // tiene equivalente en el carrusel ni en la barra inferior.
   const enIPhone = esIPhone();
   const enMac = esMac();
+  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): a partir de 1024px la
+     página se parte en lista + detalle. Con 1150px o más caben las dos
+     columnas a la vez; entre 1024 y 1149 (el iPad de 13" en vertical) el
+     detalle EMPUJA a la lista, como un push de navegación de iOS. La media
+     query vive en un hook y no en un `innerWidth` leído una vez porque el
+     giro del iPad cruza el umbral con la página ya montada. */
+  const anchoPartido = useMediaQuery("(min-width: 1024px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
   const [txs, setTxs] = useState<Tx[]>([]);
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [filtroCat, setFiltroCat] = useState<string | null>(null);
@@ -62,6 +75,40 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const esMesActual = mes >= currentMonth();
+
+  /* La fila abierta en el maestro-detalle. Se guarda el ID y no el objeto:
+     así, cuando una edición recarga `txs`, el detalle se re-busca y enseña lo
+     recién guardado en vez de una copia congelada — y si la fila se borró,
+     desaparece sola. `ultimoSel` conserva el último objeto REAL para que en
+     el modo de empuje el panel no se vacíe a mitad de la animación de salida
+     (al cerrar, `sel` ya es null pero el panel aún se ve mientras se va). */
+  const [selId, setSelId] = useState<number | null>(null);
+  const sel = selId != null ? txs.find((x) => x.id === selId) ?? null : null;
+  const ultimoSel = useRef<Tx | null>(null);
+  if (sel) ultimoSel.current = sel;
+  const [pendingDeleteSel, setPendingDeleteSel] = useState<Tx | null>(null);
+  const [previewSel, setPreviewSel] = useState<string | null>(null);
+  // Cambiar de página (Ingresos↔Gastos) o de mes cierra el detalle: la fila
+  // abierta ya no está en la lista que se ve. Buscar o filtrar NO lo cierra.
+  useEffect(() => setSelId(null), [tipo, mes]);
+
+  /** El mismo borrado con "Deshacer" de TxTable, para el botón Eliminar del
+   *  panel de detalle (que no pasa por TxTable). Borrado suave: deshacer
+   *  restaura la MISMA fila, con su mismo uid. */
+  async function borrarSelConDeshacer(borrado: Tx) {
+    setPendingDeleteSel(null);
+    setSelId(null);
+    await deleteTx(borrado.id, borrado.church_id);
+    onChanged();
+    playSound("eliminar");
+    showToast(t("deshacer.movimientoEliminado"), {
+      actionLabel: t("deshacer.accion"),
+      onAction: async () => {
+        await undeleteTx(borrado.id, borrado.church_id);
+        onChanged();
+      },
+    });
+  }
 
   useEffect(() => {
     let cancelado = false;
@@ -209,6 +256,136 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     }
   }
 
+  /* ---- Piezas que se pintan en más de un sitio ----
+     El resumen del mes y la tarjeta de recurrentes salen en el layout de
+     siempre Y en el maestro-detalle del iPad (en columnas viven en el panel
+     derecho mientras no hay fila abierta; en el modo de empuje, arriba de la
+     lista). Extraídos a constantes para que sean EL MISMO marcado y no dos
+     copias que divergen. */
+  const resumenEscritorio = (
+    <div className="dash-canvas">
+      <div className="summary-4 enter">
+        <div className="stat-card">
+          <div className="stat-head">
+            <span className="stat-label">{t("mov.totalDelMes")}</span>
+          </div>
+          <div className="stat-value md">
+            <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+          </div>
+        </div>
+        {tarjetasCategoria.map((c) => {
+          const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
+          return (
+            <div className="stat-card" key={c.id}>
+              <div className="stat-head">
+                <span className="stat-label">{c.nombre}</span>
+                <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
+              </div>
+              <div className="stat-value md">
+                <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+              </div>
+              <div className="stat-bar">
+                <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
+              </div>
+              <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const tarjetaRecurrentes = recurrentes.length > 0 && (
+    <div className="card card-fijos">
+      <div className="card-head">
+        <span className="card-title" style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+          <IconRepeat size={14} strokeWidth={2} /> {t("recurrente.titulo")}
+        </span>
+        <span className="card-meta">{t("recurrente.sub")}</span>
+      </div>
+      {recurrentes.map((r) => {
+        const cat = categoriaInfo(tipo, r.categoria);
+        return (
+          /* Las columnas se declaran en CSS y no aquí en línea: eran un
+             flexbox, así que cada celda medía lo que medía su texto y
+             "Transferencia" y "Cheque" no empezaban en el mismo sitio de una
+             fila a otra. Con una rejilla se alinean, que es lo que hace que
+             dos filas se lean como una tabla y no como dos frases. */
+          <div key={r.id} className="recurrente-fila">
+            <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
+            <span className="truncate rec-concepto" title={r.concepto}>
+              {r.concepto}
+              {r.beneficiario && <span className="rec-quien">{r.beneficiario}</span>}
+            </span>
+            <span className="rec-dia">{t("recurrente.diaDeCadaMes", { dia: r.dia })}</span>
+            <span className="rec-metodo">{metodoNombre(r.metodo_pago)}</span>
+            <span className="rec-monto">
+              {t("recurrente.porMes", { monto: fmtMoney(r.monto) })}
+            </span>
+            <span
+              className="row-icon-btn"
+              title={t("common.editar")}
+              onClick={() => setEditingRec(r)}
+            >
+              <IconEdit size={12} strokeWidth={2.2} />
+            </span>
+            <span
+              className="row-icon-btn"
+              title={t("recurrente.eliminarTitulo")}
+              onClick={() => setPendingDeleteRec(r)}
+            >
+              <IconClose size={12} strokeWidth={2.2} />
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const estadoVacio = (
+    <EmptyState
+      titulo={
+        q && buscados.length === 0
+          ? t("mov.sinResultadosBusqueda")
+          : txs.length > 0
+          ? t("mov.sinResultadosFiltro")
+          : esMesActual
+            ? (esIngreso ? t("mov.aunNoHayIngresos") : t("mov.aunNoHayGastos"))
+            : t(esIngreso ? "mov.sinIngresosEn" : "mov.sinGastosEn", { mes: mesLegible(mes) })
+      }
+      sub={
+        q && buscados.length === 0
+          ? t("mov.pruebaOtroTermino")
+          : txs.length > 0
+          ? t("mov.pruebaOtraCategoria")
+          : esMesActual
+            ? (esIngreso ? t("mov.registraPrimerIngreso") : t("mov.registraPrimerGasto"))
+            : t("mov.pruebaOtroMes")
+      }
+      icon={esIngreso ? <IconIngreso size={22} strokeWidth={1.6} /> : <IconGasto size={22} strokeWidth={1.6} />}
+      accion={txs.length === 0 && esMesActual
+        ? { label: esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto"), onClick: onNew }
+        : undefined}
+      duplicaCrear
+    />
+  );
+
+  /* Los grupos por día de la lista del maestro-detalle. La misma cuenta que
+     hace TxList; aquí sobre `visibles` (ya buscados y filtrados) y sin
+     paginar: la lista es una columna continua que se desplaza, como la app
+     de Mail, y el pie ya dice cuántos son. */
+  const gruposDia: { dia: string; items: Tx[] }[] = [];
+  if (partido) {
+    for (const tx of visibles) {
+      const dia = tx.fecha.slice(0, 10);
+      const ultimo = gruposDia[gruposDia.length - 1];
+      if (ultimo && ultimo.dia === dia) ultimo.items.push(tx);
+      else gruposDia.push({ dia, items: [tx] });
+    }
+  }
+  const ahora = new Date();
+  const hoyISO = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`;
+
   return (
     <>
       {/* En Mac esta cabecera ES la toolbar de la ventana: el atributo la
@@ -268,6 +445,167 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         </div>
       )}
 
+      {/* ---- Maestro-detalle (iPad a partir de 1024px) ----
+          La página se parte en dos: lista de movimientos a la izquierda,
+          detalle a la derecha. En columnas (≥1150px) conviven; en el modo
+          angosto (el 13" en vertical) el detalle empuja a la lista, y el
+          resumen del mes baja a la cabeza de la propia lista para no quedar
+          inalcanzable detrás del panel. */}
+      {partido ? (
+        <div className={`md-mov${selId != null ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista">
+                <div className="md-filtros">
+                  <label className="md-buscar">
+                    <IconSearch size={15} strokeWidth={2} />
+                    <input
+                      value={query}
+                      placeholder={t("mov.buscarPlaceholder")}
+                      onChange={(e) => setQuery(e.target.value)}
+                      aria-label={t("mov.buscarPlaceholder")}
+                    />
+                  </label>
+                  {catsVisibles.length >= 2 && (
+                    <div className="md-chips">
+                      <button
+                        type="button"
+                        className={`chip${filtroCat === null ? " active" : ""}`}
+                        onClick={() => setFiltroCat(null)}
+                      >
+                        {t("common.todos")} <span className="count">{buscados.length}</span>
+                      </button>
+                      {catsVisibles.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`chip${filtroCat === c.id ? " active" : ""}`}
+                          onClick={() => setFiltroCat(filtroCat === c.id ? null : c.id)}
+                        >
+                          {catNombre(c.id)} <span className="count">{conteo(c.id)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="md-filas">
+                  {angosto && (
+                    <div className="md-extra">
+                      {resumenEscritorio}
+                      {tarjetaRecurrentes}
+                    </div>
+                  )}
+                  {visibles.length === 0 ? (
+                    <div className="md-filas-vacio">{estadoVacio}</div>
+                  ) : (
+                    gruposDia.map((g) => {
+                      const f = fmtFecha(g.items[0].fecha);
+                      const esHoy = g.dia === hoyISO;
+                      return (
+                        <div key={g.dia}>
+                          <div className="md-dia">
+                            {esHoy ? `${t("mov.hoy")} · ` : ""}{f.nombreDia} {f.dia}
+                          </div>
+                          {g.items.map((tx) => {
+                            const cat = categoriaInfo(tx.tipo, tx.categoria);
+                            const metodo = metodoNombre(tx.metodo_pago);
+                            const hora = fmtFecha(tx.fecha).hora;
+                            const persona = tx.member_nombre ?? tx.beneficiario;
+                            const conceptoRedundante =
+                              tx.concepto.trim().toLowerCase() === cat.nombre.trim().toLowerCase();
+                            /* Titular al estilo del diseño de iPad:
+                               "Diezmo · María Hernández" en ingresos,
+                               "Mantenimiento · Pintura del anexo" en gastos.
+                               La categoría abre porque es lo que agrupa; el
+                               resto baja a la línea secundaria. */
+                            const titular = esIngreso
+                              ? persona ? `${cat.nombre} · ${persona}` : tx.concepto
+                              : conceptoRedundante ? cat.nombre : `${cat.nombre} · ${tx.concepto}`;
+                            const sub = (esIngreso
+                              ? [persona && !conceptoRedundante ? tx.concepto : null, !persona ? cat.nombre : null, metodo, hora || null]
+                              : [tx.beneficiario, metodo, hora || null]
+                            ).filter(Boolean).join(" · ");
+                            return (
+                              <div
+                                key={tx.id}
+                                className={`md-fila${selId === tx.id ? " sel" : ""}`}
+                                onClick={() => setSelId(tx.id)}
+                              >
+                                {!esIngreso && (
+                                  <span
+                                    className="md-cat-dot"
+                                    style={{ background: colorCategoria(tipo, tx.categoria) }}
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <span className="md-fila-textos">
+                                  <span className="md-fila-titular">
+                                    {tx.recurrente_id != null && (
+                                      <span className="md-fila-rec" title={t("recurrente.marcaEnTabla")}>
+                                        <IconRepeat size={12} strokeWidth={2.2} />
+                                      </span>
+                                    )}
+                                    <span className="truncate">{titular}</span>
+                                    {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
+                                  </span>
+                                    {sub && <span className="md-fila-sub truncate">{sub}</span>}
+                                </span>
+                                <span className="md-fila-monto">{fmtMoney(tx.monto)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="md-pie">
+                  <span>{t("mov.registrados", { count: visibles.length })}</span>
+                  <span className="md-pie-total">
+                    {fmtMoney(sumar(...visibles.map((x) => x.monto)))} {church.moneda}
+                  </span>
+                </div>
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  /* En el modo de empuje el panel conserva el último detalle
+                     mientras se desliza fuera; en columnas, al no haber
+                     animación de salida, cerrar vuelve directo al resumen. */
+                  const detTx = angosto ? sel ?? ultimoSel.current : sel;
+                  if (detTx) {
+                    return (
+                      <DetalleMovimiento
+                        tx={detTx}
+                        tituloLista={titulo}
+                        onVolver={() => setSelId(null)}
+                        onEditar={onEditTx}
+                        onEliminar={setPendingDeleteSel}
+                        onVerComprobante={setPreviewSel}
+                      />
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{t("mov.eligeMovimiento")}</h3>
+                        <p>{t("mov.eligeMovimientoSub")}</p>
+                      </div>
+                      {resumenEscritorio}
+                      {tarjetaRecurrentes}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {loading ? (
           <LoadingState />
@@ -303,86 +641,9 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   })}
                 </div>
               </div>
-            ) : (
-              <div className="dash-canvas">
-              <div className="summary-4 enter">
-                <div className="stat-card">
-                  <div className="stat-head">
-                    <span className="stat-label">{t("mov.totalDelMes")}</span>
-                  </div>
-                  <div className="stat-value md">
-                    <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                  </div>
-                </div>
-                {tarjetasCategoria.map((c) => {
-                  const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
-                  return (
-                    <div className="stat-card" key={c.id}>
-                      <div className="stat-head">
-                        <span className="stat-label">{c.nombre}</span>
-                        <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
-                      </div>
-                      <div className="stat-value md">
-                        <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                      </div>
-                      <div className="stat-bar">
-                        <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
-                      </div>
-                      <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              </div>
-            )}
+            ) : resumenEscritorio}
 
-            {recurrentes.length > 0 && (
-              <div className="card card-fijos">
-                <div className="card-head">
-                  <span className="card-title" style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-                    <IconRepeat size={14} strokeWidth={2} /> {t("recurrente.titulo")}
-                  </span>
-                  <span className="card-meta">{t("recurrente.sub")}</span>
-                </div>
-                {recurrentes.map((r) => {
-                  const cat = categoriaInfo(tipo, r.categoria);
-                  return (
-                    /* Las columnas se declaran en CSS y no aquí en línea: eran
-                       un flexbox, así que cada celda medía lo que medía su
-                       texto y "Transferencia" y "Cheque" no empezaban en el
-                       mismo sitio de una fila a otra. Con una rejilla se
-                       alinean, que es lo que hace que dos filas se lean como
-                       una tabla y no como dos frases. */
-                    <div key={r.id} className="recurrente-fila">
-                      <span className={`tag ${cat.tagClass}`} title={cat.nombre}>{cat.nombre}</span>
-                      <span className="truncate rec-concepto" title={r.concepto}>
-                        {r.concepto}
-                        {r.beneficiario && <span className="rec-quien">{r.beneficiario}</span>}
-                      </span>
-                      <span className="rec-dia">{t("recurrente.diaDeCadaMes", { dia: r.dia })}</span>
-                      <span className="rec-metodo">{metodoNombre(r.metodo_pago)}</span>
-                      <span className="rec-monto">
-                        {t("recurrente.porMes", { monto: fmtMoney(r.monto) })}
-                      </span>
-                      <span
-                        className="row-icon-btn"
-                        title={t("common.editar")}
-                        onClick={() => setEditingRec(r)}
-                      >
-                        <IconEdit size={12} strokeWidth={2.2} />
-                      </span>
-                      <span
-                        className="row-icon-btn"
-                        title={t("recurrente.eliminarTitulo")}
-                        onClick={() => setPendingDeleteRec(r)}
-                      >
-                        <IconClose size={12} strokeWidth={2.2} />
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {tarjetaRecurrentes}
 
             {enIPhone ? (
               /* Campo de 36 px con relleno gris y sin borde, y las categorías
@@ -544,33 +805,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
               )}
             </div>
 
-            {visibles.length === 0 ? (
-              <EmptyState
-                titulo={
-                  q && buscados.length === 0
-                    ? t("mov.sinResultadosBusqueda")
-                    : txs.length > 0
-                    ? t("mov.sinResultadosFiltro")
-                    : esMesActual
-                      ? (esIngreso ? t("mov.aunNoHayIngresos") : t("mov.aunNoHayGastos"))
-                      : t(esIngreso ? "mov.sinIngresosEn" : "mov.sinGastosEn", { mes: mesLegible(mes) })
-                }
-                sub={
-                  q && buscados.length === 0
-                    ? t("mov.pruebaOtroTermino")
-                    : txs.length > 0
-                    ? t("mov.pruebaOtraCategoria")
-                    : esMesActual
-                      ? (esIngreso ? t("mov.registraPrimerIngreso") : t("mov.registraPrimerGasto"))
-                      : t("mov.pruebaOtroMes")
-                }
-                icon={esIngreso ? <IconIngreso size={22} strokeWidth={1.6} /> : <IconGasto size={22} strokeWidth={1.6} />}
-                accion={txs.length === 0 && esMesActual
-                  ? { label: esIngreso ? t("mov.nuevoIngreso") : t("mov.nuevoGasto"), onClick: onNew }
-                  : undefined}
-                duplicaCrear
-              />
-            ) : (
+            {visibles.length === 0 ? estadoVacio : (
               <>
                 <TxTable tipo={tipo} txs={pagina} onEdit={onEditTx} onChanged={onChanged} />
                 <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
@@ -579,6 +814,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           </>
         )}
       </div>
+      )}
 
       {pendingDeleteRec && (
         <ConfirmDialog
@@ -601,6 +837,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           onCancel={() => void eliminarSerie(false)}
         />
       )}
+
+      {pendingDeleteSel && (
+        <ConfirmDialog
+          title={t("tx.eliminarTitulo")}
+          message={t("tx.eliminarMensaje", { concepto: pendingDeleteSel.concepto, monto: `${fmtMoney(pendingDeleteSel.monto)} ${pendingDeleteSel.moneda}` })}
+          confirmLabel={t("common.eliminar")}
+          danger
+          onConfirm={() => void borrarSelConDeshacer(pendingDeleteSel)}
+          onCancel={() => setPendingDeleteSel(null)}
+        />
+      )}
+
+      {previewSel && <ComprobantePreview path={previewSel} onClose={() => setPreviewSel(null)} />}
 
       {editingRec && (
         <EditRecurrenteModal

@@ -187,6 +187,10 @@ export const en: Resources = {
     otrasCategorias: "Other ({{count}})",
     registrados_one: "{{count}} transaction recorded",
     registrados_other: "{{count}} transactions recorded",
+    // Maestro-detalle del iPad ancho (ver docs/ipad-rediseno.md).
+    hoy: "Today",
+    eligeMovimiento: "Select a transaction",
+    eligeMovimientoSub: "Tap a row on the list to see its full detail here.",
     mesAnterior: "Previous month",
     mesSiguiente: "Next month",
     nuevoIngreso: "New income",

@@ -90,15 +90,27 @@ Se eligió empujar. Consecuencias para quien lo implemente:
 
 ## 3. Lo que falta, por orden
 
-1. **El panel de detalle** (el grueso, ~70% de lo que queda). No existe
-   componente: hoy tocar una fila abre `MemberDetailModal` o el modal de
-   edición. Hay que sacar ese contenido a un panel que viva en columna y
-   que en vertical empuje.
-2. **Maestro-detalle en Ingresos/Gastos**: columna de lista de 400px con el
-   segmentado Ingreso/Gasto, buscador, chips de filtro, filas de 64px
-   agrupadas por día y un pie de 44px con conteo y total.
+1. ~~El panel de detalle~~ **Hecho** (21 ago): `DetalleMovimiento.tsx` +
+   el partido en `Movimientos.tsx`. Las tres consecuencias de §2 están
+   cumplidas y verificadas con Playwright: el detalle es estado de pantalla
+   (`selId`, un ID re-buscado en cada recarga, no una copia congelada), el
+   giro con una fila abierta la deja abierta en los dos sentidos, y la
+   entrada es el push de iOS (la lista se corre un cuarto a la izquierda
+   mientras el panel entra). El corte columnas/empuje es **1150px**: a 1024
+   (13" vertical) la lista se queda con todo el ancho, el resumen del mes
+   baja a su cabeza (`.md-extra`) y el panel entra por encima con
+   "‹ Ingresos"; de 1150 en adelante conviven 400px + el resto. En columnas,
+   el panel sin fila abierta enseña el resumen del mes y los recurrentes —
+   los mismos nodos, extraídos a constantes, no una copia.
+2. ~~Maestro-detalle en Ingresos/Gastos~~ **Hecho** (21 ago): columna de
+   400px con buscador relleno, chips con conteo, filas de 64px agrupadas
+   por día con cabeceras pegajosas ("HOY · VIERNES 21") y pie de 44px con
+   conteo y suma de lo VISIBLE (obedece búsqueda y filtro). Sin el
+   segmentado Ingreso/Gasto del prototipo: aquí son dos entradas del
+   sidebar, y un segundo conmutador diría lo mismo dos veces.
 3. **Maestro-detalle en Miembros**: lo mismo con 378px, secciones por
-   inicial y filtro Activos/Bajas/Todos.
+   inicial y filtro Activos/Bajas/Todos. El detalle sale de
+   `MemberDetailModal`.
 4. **Sidebar superpuesto con velo en vertical para el iPad de 13".** Los
    demás iPads en vertical (820, 834, 744) ya caen en 601–1023 y ya tienen
    cajón; el de 12.9"/13" mide exactamente 1024 y se queda fuera por un

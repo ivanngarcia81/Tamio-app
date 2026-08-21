@@ -181,6 +181,10 @@ export const es = {
     otrasCategorias: "Otras ({{count}})",
     registrados_one: "{{count}} movimiento registrado",
     registrados_other: "{{count}} movimientos registrados",
+    // Maestro-detalle del iPad ancho (ver docs/ipad-rediseno.md).
+    hoy: "Hoy",
+    eligeMovimiento: "Elige un movimiento",
+    eligeMovimientoSub: "Toca una fila de la lista para verlo aquí con todo su detalle.",
     mesAnterior: "Mes anterior",
     mesSiguiente: "Mes siguiente",
     nuevoIngreso: "Nuevo ingreso",

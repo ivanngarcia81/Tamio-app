@@ -8939,6 +8939,259 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .btn-compartir-cabecera .btn-compartir-texto { display: inline; }
   :root.ipad .btn-compartir-cabecera .solo-movil { display: none; }
   :root.ipad .btn-compartir-cabecera .solo-escritorio { display: inline-flex; }
+
+  /* ------------------------------------------------------------
+     Maestro-detalle de Ingresos/Gastos (.md-*) y su panel (.dm-*)
+     ------------------------------------------------------------
+     La estructura del split view de iPadOS: una columna de lista sobre el
+     gris del sidebar y un panel de detalle sobre el lienzo. Comparte umbral
+     con la barra de 56px de aquí arriba a propósito — donde hay barra hay
+     split, donde hay cajón no hay ninguno de los dos. */
+
+  /* El main deja de desplazar: aquí desplazan las columnas, cada una lo
+     suyo, como en Mail. flex y no grid porque en el modo de empuje el panel
+     sale del flujo (absolute) y la lista debe reocupar el ancho sola. */
+  :root.ipad .main:has(.md-mov) { display: flex; flex-direction: column; overflow: hidden; }
+  :root.ipad .md-mov { flex: 1; min-height: 0; display: flex; position: relative; }
+
+  :root.ipad .md-lista {
+    width: 400px;
+    flex: 0 0 400px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 0.5px solid var(--line);
+    background: var(--sidebar-bg);
+  }
+  :root.ipad .md-filtros {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  /* Campo relleno sin borde, como el buscador de una barra lateral de iOS.
+     El gris sale del texto y no de un token de superficie para que funcione
+     igual sobre el sidebar claro (#f7…) y el oscuro. */
+  :root.ipad .md-buscar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+    color: var(--text-2);
+  }
+  :root.ipad .md-buscar input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    outline: none;
+    font: inherit;
+    font-size: 15px;
+    color: var(--text);
+  }
+  :root.ipad .md-chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  :root.ipad .md-chips::-webkit-scrollbar { display: none; }
+  :root.ipad .md-chips .chip { white-space: nowrap; flex: 0 0 auto; }
+
+  :root.ipad .md-filas {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* El resumen y los recurrentes cuando bajan a la cabeza de la lista (modo
+     de empuje): desplazan CON las filas, debajo del buscador fijo. */
+  :root.ipad .md-extra {
+    padding: 14px 16px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  :root.ipad .md-filas-vacio { padding: 24px 16px; }
+  :root.ipad .md-dia {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 8px 16px 4px;
+    background: var(--sidebar-bg);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .md-fila {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 6px 16px;
+    border-bottom: 0.5px solid var(--line-soft);
+    cursor: pointer;
+  }
+  /* Sombra interior y no border-left: un borde entra en el layout y correría
+     el contenido 3px al seleccionar. */
+  :root.ipad .md-fila.sel {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    box-shadow: inset 3px 0 0 var(--ink);
+  }
+  :root.ipad .md-cat-dot { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 3px; }
+  :root.ipad .md-fila-textos {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  :root.ipad .md-fila-titular {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    font-size: 15.5px;
+    font-weight: 500;
+  }
+  :root.ipad .md-fila.sel .md-fila-titular { font-weight: 600; }
+  :root.ipad .md-fila-rec { color: var(--text-3); display: inline-flex; flex-shrink: 0; }
+  :root.ipad .md-fila-sub { font-size: 12.5px; color: var(--text-2); }
+  /* Cifras neutras y sin signo: la lista es de UN tipo (Ingresos o Gastos
+     son páginas distintas), así que el signo no distingue nada — al revés
+     que en el iPhone, donde la fila convive con las dos direcciones. */
+  :root.ipad .md-fila-monto {
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  :root.ipad .md-pie {
+    height: 44px;
+    flex: 0 0 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-top: 0.5px solid var(--line);
+    font-size: 12.5px;
+    color: var(--text-2);
+  }
+  :root.ipad .md-pie-total { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  :root.ipad .md-detalle {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 28px 32px 40px;
+    background: var(--bg);
+  }
+  :root.ipad .md-vacio { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
+  :root.ipad .md-vacio-hint h3 { margin: 0; font-size: 17px; font-weight: 600; }
+  :root.ipad .md-vacio-hint p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-2); }
+  /* En el panel el resumen es una columna de ~650px: en 2×2 las tarjetas
+     respiran; el auto-fit de 240px las apretaba en tres. */
+  :root.ipad .md-detalle .summary-4 { grid-template-columns: 1fr 1fr; }
+
+  :root.ipad .dm { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
+  /* El botón de volver existe solo en el modo de empuje; lo enciende la
+     media query de abajo. */
+  :root.ipad .dm-volver {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    align-self: flex-start;
+    margin: -8px 0 -6px -10px;
+    padding: 6px 12px 6px 4px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  :root.ipad .dm-volver:active { opacity: 0.3; }
+  :root.ipad .dm-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  :root.ipad .dm-chip-rec {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  :root.ipad .dm-monto {
+    margin: 10px 0 0;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -1.2px;
+    font-variant-numeric: tabular-nums;
+  }
+  :root.ipad .dm-monto.positive { color: var(--pos); }
+  :root.ipad .dm-monto.negative { color: var(--neg); }
+  :root.ipad .dm-moneda { margin-left: 8px; font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--text-3); }
+  :root.ipad .dm-sub { margin: 6px 0 0; font-size: 14.5px; color: var(--text-2); }
+  :root.ipad .dm-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  :root.ipad .dm-eliminar { color: var(--neg); }
+  :root.ipad .dm-ficha {
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  :root.ipad .dm-campo {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 52px;
+    padding: 14px 16px;
+  }
+  :root.ipad .dm-campo + .dm-campo { border-top: 0.5px solid var(--line-soft); }
+  :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: 15px; color: var(--text-2); }
+  :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+}
+
+/* El modo de empuje: solo el 13" en vertical cae aquí (1024×1366). El panel
+   entra desde la derecha COMO un push de navegación —la lista se corre un
+   cuarto a la izquierda, igual que la vista que queda debajo en iOS— y el
+   botón "‹ Ingresos" aparece. La lista, mientras tanto, ocupa todo el ancho
+   y el resumen del mes baja a su cabeza (ver .md-extra). */
+@media (min-width: 1024px) and (max-width: 1149.98px) {
+  :root.ipad .md-lista {
+    width: auto;
+    flex: 1 1 auto;
+    border-right: 0;
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  :root.ipad .md-mov.md-abierto .md-lista { transform: translateX(-25%); }
+  :root.ipad .md-detalle {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  /* La sombra solo con el panel abierto: cerrada sobresaldría 12px por el
+     borde derecho de la pantalla, una tira flotando sobre la lista. */
+  :root.ipad .md-mov.md-abierto .md-detalle {
+    transform: none;
+    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.14);
+  }
+  :root.ipad .dm-volver { display: inline-flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.ipad .md-lista,
+  :root.ipad .md-detalle { transition: none; }
 }
 
 @media (max-width: 600px) {
