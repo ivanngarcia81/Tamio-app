@@ -14,6 +14,15 @@ export function esIPhone(): boolean {
   return document.documentElement.classList.contains("iphone");
 }
 
+/** iPad específicamente (ni iPhone ni Mac). Es `.movil` sin `.iphone`, pero
+ *  con nombre propio: el iPad tiene decisiones suyas —la barra de la cabecera,
+ *  el ancho del sidebar, el maestro-detalle— que no son las del teléfono ni
+ *  las del escritorio, y una condición en positivo se lee mejor que
+ *  `esMovil() && !esIPhone()` repetida en cada componente. */
+export function esIPad(): boolean {
+  return document.documentElement.classList.contains("ipad");
+}
+
 /** Escritorio (ni iPad ni iPhone). La clase la pone main.tsx antes de montar
  *  React, igual que las otras dos, así que leerla al renderizar es seguro.
  *  `!esMovil()` diría lo mismo hoy, pero el nombre positivo es el que se lee

@@ -8798,6 +8798,107 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .content { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
 }
 
+/* ============================================================
+   iPad con la barra lateral fija (`:root.ipad` a partir de 1024px)
+   ------------------------------------------------------------
+   Hasta aquí el iPad se describía por lo que NO es: cogía las reglas de
+   `:root.movil` —pensadas mirando un iPhone— y encima el layout de
+   escritorio. El resultado era una cabecera con forma de teléfono en una
+   pantalla de 1366: fila de glifos fijos arriba, Large Title de 34px debajo
+   y el título viajero atado al scroll. Medido en el arnés a 1366×1024:
+   `.header` de 157px (12 de padding + 34 de acciones + 24 de hueco + 65 de
+   título + 22), o sea 157px de cabecera para decir "Ingresos".
+
+   Un iPad con barra lateral es un split view, y en un split view la columna
+   de detalle lleva BARRA, no Large Title: 56px, título y subtítulo apilados
+   a la izquierda, acciones a la derecha. Es lo que hacen Mail, Notas y
+   Archivos en horizontal, y es lo que separa esta versión de la del Mac
+   (que usa toolbar de 52px con arrastre de ventana) y de la del iPhone
+   (que sí es Large Title, porque ahí no hay columna que titular).
+
+   El umbral es 1024px A PROPÓSITO: es el mismo que separa el cajón lateral
+   (601–1023, `.app::before` con el ☰) de la barra fija. Atado al mismo
+   número, la barra de 56px y el sidebar fijo no pueden discrepar nunca —
+   un iPad en Split View angosto se queda EXACTAMENTE como hoy, con su
+   cajón, su ☰ y su fila de glifos, que ahí sí es la forma correcta.
+   ============================================================ */
+@media (min-width: 1024px) {
+  /* 318px, no 260. El diseño de iPad los pide y el motivo se ve en la
+     lista: los nombres de dos apellidos ("Familia Ruvalcaba", "Lucía
+     Márquez Peña") y las etiquetas de grupo en versalitas caben sin
+     recortarse. El Mac se queda en 220 —ratón, texto de 13px— y este
+     ancho no lo alcanza: la regla empieza por `:root.ipad`. */
+  :root.ipad .app { grid-template-columns: 318px minmax(0, 1fr); }
+
+  /* La barra. `min-height` y no `height`: la cabecera de Reportes lleva
+     más acciones de las que caben en una línea y el `flex-wrap` de la
+     regla base (línea ~918) tiene que poder seguir funcionando — que
+     crezca es correcto, que recorte no. */
+  :root.ipad .header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 56px;
+    padding: 0 20px;
+    /* Fondo y línea son lo que la vuelve CHROME en vez de contenido: sin
+       ellos el título flota sobre el lienzo y la barra no se lee como
+       barra. El gris es el del sidebar, un punto más claro que el `--bg`
+       del contenido — la misma relación que en el diseño (#f7f7f9 sobre
+       #f2f2f7) y la que usa cualquier split view de iPadOS. */
+    background: var(--sidebar-bg);
+    border-bottom: 0.5px solid var(--line);
+  }
+  /* `order: -1` subía las acciones por encima del título: era el orden del
+     teléfono, donde la fila de glifos va arriba del todo. En una barra van
+     a la derecha, que es su sitio en el marcado. */
+  :root.ipad .header-actions { order: 0; }
+  /* 17px es el título de barra de iOS, el mismo que ya usa `.titulo-fijo`
+     cuando aterriza. `opacity: 1` anula el atado a `--progreso-titulo`
+     (línea ~7600): aquí el título no viaja a ningún sitio, siempre está. */
+  :root.ipad .page-title {
+    font-size: 17px;
+    line-height: 22px;
+    letter-spacing: -0.022em;
+    opacity: 1;
+  }
+  :root.ipad .page-sub { font-size: 12px; margin-top: 1px; }
+
+  /* Con barra propia, la fila fija de glifos sobra entera: el "+" vuelve a
+     ser el botón "Nuevo ingreso" con su texto, y el título viajero no tiene
+     adónde viajar. `.app::after` es el difuminado de esa fila; sin fila, es
+     una franja translúcida sobre nada.
+     Esto además quita un solape real en el iPad de 13": a partir de 1024 la
+     barra del ☰ no existe (`.app::before` muere en 1023), pero el "+" seguía
+     clavado en `top: 58px` por la regla de `min-width: 601px` de aquí
+     arriba — o sea flotando sobre el Large Title, que empieza en y=70. */
+  :root.ipad .btn-crear,
+  :root.ipad .titulo-fijo,
+  :root.ipad .app::after { display: none; }
+  :root.ipad .btn-nuevo-cabecera { display: inline-flex; }
+
+  /* Imprimir y "···" vuelven al flujo de la barra como botones normales.
+     Se les deshace una por una la conversión a glifo fijo de `:root.movil`
+     (posición, tamaño, borde, fondo, color) en vez de un `all: unset`, que
+     se llevaría por delante lo que sí heredan de `.btn`. */
+  :root.ipad .btn-compartir-cabecera,
+  :root.ipad .btn-header-menu-icono {
+    position: static;
+    width: auto; height: auto;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-2, 8px);
+    background: var(--surface);
+    color: var(--text);
+    z-index: auto;
+  }
+  /* Y con sitio en la barra, el botón se explica con palabras: el glifo de
+     compartir de iOS es para una fila de 44px sin espacio para texto. */
+  :root.ipad .btn-compartir-cabecera .btn-compartir-texto { display: inline; }
+  :root.ipad .btn-compartir-cabecera .solo-movil { display: none; }
+  :root.ipad .btn-compartir-cabecera .solo-escritorio { display: inline-flex; }
+}
+
 @media (max-width: 600px) {
   /* La barra lateral y su cajón desaparecen del todo. No se adaptan: la
      navegación entera pasa a la barra de abajo y al carrusel. */

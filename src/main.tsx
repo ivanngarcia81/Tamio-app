@@ -22,6 +22,18 @@ if (esIOS) document.documentElement.classList.add("movil");
 const esIPhone = /iPhone|iPod/.test(navigator.userAgent);
 if (esIPhone) document.documentElement.classList.add("iphone");
 
+// Y el iPad, que hasta ahora no tenía nombre propio: era `.movil` sin ser
+// `.iphone`, es decir, se describía por lo que NO es. Eso bastaba mientras el
+// iPad se conformara con el layout de escritorio más las superficies de iOS,
+// pero deja de bastar en cuanto tiene decisiones suyas —barra de 56px en vez
+// de la cabecera apilada del teléfono, sidebar de 318px, la hoja de "Nuevo"—
+// que no valen ni para el iPhone (demasiado ancho) ni para el Mac (dedo, no
+// ratón). Con `:root.ipad` esas reglas se escriben una vez y no alcanzan a
+// nadie más. Un iPad es un `.movil` que no es `.iphone`: la misma cuenta que
+// hacía `esMovil() && !esIPhone()` repartida por los componentes.
+const esIPad = esIOS && !esIPhone;
+if (esIPad) document.documentElement.classList.add("ipad");
+
 // Y la tercera: escritorio. Hasta ahora "Mac" era la AUSENCIA de `.movil`, y
 // eso servía mientras el CSS de escritorio fuera el de partida. Deja de
 // servir en cuanto el escritorio tiene reglas PROPIAS: escribirlas sin
