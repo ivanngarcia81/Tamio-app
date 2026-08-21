@@ -11663,6 +11663,49 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--mac-card);
     max-width: none;
   }
+  /* ---- La fila de persona: avatar + nombre + correo ----
+     La usan Contribuyentes, Membresía y la columna de miembro de
+     Ingresos/Gastos. No tenía NINGUNA regla de Mac, así que se quedaba con las
+     medidas del móvil: un avatar de 32 px con un aro blanco de 2 px, o sea
+     36 px de huella dentro de una fila de 38 — un pixel de aire por lado.
+     Eso es lo que se veía como "los círculos son muy grandes" y "está muy
+     apretado", que son la misma cosa.
+
+     24 px es la medida de avatar de una lista de macOS (Contactos, Mensajes),
+     y sin aro: el aro existe para separar avatares SUPERPUESTOS en una pila,
+     y aquí no hay pila. */
+  :root.mac .mini-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: normal;
+    box-shadow: none;
+  }
+  :root.mac .person { gap: 9px; }
+  :root.mac .person .p-name {
+    font-size: var(--mac-fs-body);
+    font-weight: 500;
+    line-height: var(--mac-lh-body);
+  }
+  /* 14 y no 16 de interlínea: son 11 px de texto secundario, y con el
+     interlineado del cuerpo las dos líneas sumaban 32 px justos en una fila de
+     38. */
+  :root.mac .person .p-mail {
+    font-size: var(--mac-fs-small);
+    line-height: 14px;
+  }
+  /* Una fila con avatar y DOS líneas de texto es más alta que una de un dato
+     suelto — en macOS también (Contactos, Mail). 44 le deja 7 px de aire al
+     texto y 10 al avatar; con los 38 de las tablas normales quedaba en 4 y 7.
+
+     El gancho es `.p-mail` y NO `.person`: la columna de miembro de
+     Ingresos/Gastos también usa `.person`, pero con UNA sola línea, y con el
+     gancho ancho las filas que traen miembro habrían medido 44 y las demás 38
+     — o sea, la tabla a saltos otra vez, que es justo lo que se acaba de
+     quitar. `.p-mail` solo existe donde hay nombre Y correo. */
+  :root.mac .data-table .tr:has(.p-mail) { min-height: 44px; }
+
   /* La fecha NUNCA parte en dos líneas: si un idioma trae un mes más largo de
      lo previsto, que se recorte con puntos suspensivos antes que estirar la
      fila. Partirla era lo que apretaba la tabla y lo que hacía que unas filas
