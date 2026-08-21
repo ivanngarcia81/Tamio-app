@@ -153,6 +153,39 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    prop `onBuscar`), que abre esa misma paleta. En táctil la paleta sube
    sus filas a 44px y esconde el pie de atajos de teclado.
 
+6. **Las otras siete pantallas de maestro-detalle.** Corrección del 21 de
+   agosto: al cerrar los puntos 1–5 se dijo por escrito que el handoff
+   "solo maquetó dos pantallas como maestro-detalle". **Es falso.** Contadas
+   sobre el propio archivo del handoff —buscando la firma de la columna
+   maestra, `width:NNNpx;flex:0 0 NNNpx`— son NUEVE, más Configuración:
+
+   | Pantalla | Columna | Estado |
+   |---|---|---|
+   | Ingresos · Gastos | 400px | hecho |
+   | Aportantes | 378px | hecho |
+   | Configuración | 298px | ya existía (`.settings-shell`) |
+   | Reportes | 330px | **falta** |
+   | Depósito bancario | 378px | **falta** |
+   | Por revisar (bandeja) | 400px | **falta** |
+   | Actas | 358px | **falta** |
+   | Registro de servicios | 358px | **falta** |
+   | Cartas y traslados | 338px | **falta** |
+   | Agenda y calendario | 318px | **falta** |
+
+   Solo Inicio y Membresía son de una columna en el diseño.
+
+   El error vino acompañado de un argumento inventado —"Reportes y Agenda no
+   son listas, no ganan nada partiéndose"— cuando el handoff las parte las
+   dos: Reportes con su columna de informes y la vista previa al lado, y
+   Agenda con 318px. **La lección: contar sobre el archivo, no sobre el
+   recuerdo de haberlo leído**; el comando que da la cuenta buena está en §5.
+
+   La infraestructura ya está hecha: `.md-split`, `.md-lista`,
+   `.md-detalle`, el modo de empuje, `useMediaQuery` y el patrón de "el
+   detalle es un ID que se re-busca, no una copia congelada". Cada pantalla
+   nueva es sobre todo decidir qué va en la fila y qué en el panel, no
+   volver a construir el andamio.
+
 Lo que **no** hay que hacer: nada de Configuración. `.settings-shell` +
 `.settings-nav` + `.settings-detail` ya corren como índice + columna en
 Mac y iPad, y el diseño pide 298px + 680px — que es lo que ya hacemos.
@@ -181,6 +214,18 @@ Mac y iPad, y el diseño pide 298px + 680px — que es lo que ya hacemos.
 El arnés de Playwright de siempre, con la clase puesta a mano en la raíz y
 estos ocho tamaños. Los cinco marcados como "no debe cambiar" son la red:
 si uno se mueve, el cambio se salió del iPad.
+
+**Cuántas pantallas del handoff son maestro-detalle.** La columna maestra
+siempre se declara igual (`width:NNNpx` seguido de `flex:0 0 NNNpx`), así que
+se cuentan con un `grep` sobre el archivo del handoff en vez de a ojo — que es
+como se coló el error de "solo dos":
+
+```
+grep -o 'width:[0-9]\{3\}px;flex:0 0 [0-9]\{3\}px' "Tamio iPad.dc.html" | sort -u
+```
+
+Para saber a QUÉ pantalla pertenece cada una, partir el archivo por sus
+`<sc-if value="{{ es_… }}">` y buscar esa firma dentro de cada trozo.
 
 **Los ocho iPads a pantalla completa** — los ocho deben dar el diseño nuevo
 (barra de 56px, título de 17px, material y maestro-detalle). Son los anchos
