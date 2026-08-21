@@ -30,6 +30,11 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > por casualidad iban en esa misma versión— y cambiarlas todas rompe el
 > lockfile. Hay que buscar la línea `name = "tesoreria"` y tocar la de justo
 > debajo.
+>
+> Que en un bump concreto solo aparezca una vez **no es motivo para relajar la
+> regla**: en el de la 1.1.6, `version = "1.1.5"` salía sola, pero eso depende
+> de qué versiones lleven ese día las 400 dependencias del árbol — es una
+> casualidad, no una garantía. Se ancla siempre en `name = "tesoreria"`.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -69,8 +74,9 @@ en las tres fuentes:
 | 19 ago | 1.1.2 |
 | 20 ago | 1.1.3 — **rota**, ver abajo |
 | 20 ago | 1.1.4 |
-| esta | **1.1.5** |
-| la siguiente | 1.1.6 |
+| 21 ago | 1.1.5 |
+| esta | **1.1.6** — el rediseño de iPad |
+| la siguiente | 1.1.7 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
@@ -117,3 +123,10 @@ Las cinco pasan en verde en el commit que dejó esta nota, y también en el de
 la 1.1.5 — donde además pasaron los doce `verificar-*` del proyecto y un build
 con `VITE_CANAL=appstore` que confirma las dos guardas de Apple (sin
 manifiesto de versiones, sin enlaces de pago).
+
+Lo mismo en la 1.1.6: `tsc`, los doce `verificar-*` y el build del canal
+`appstore` con sus dos guardas confirmadas. Además se comprobó que el
+rediseño de iPad viajaba de verdad en el bundle (`:root.ipad`, `md-split`,
+`sidebar-buscar` y `backdrop-filter` presentes en el CSS construido) — el
+número de versión y el código son cosas distintas, y subir una versión nueva
+con el bundle viejo es un fallo silencioso.
