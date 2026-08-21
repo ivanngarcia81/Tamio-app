@@ -39,7 +39,17 @@ const COLS_GASTO = COLS_INGRESO;
    esconder el dato. 160 y no 180 porque a 1240, que es una ventana muy
    corriente, 176 px de holgura entran justos y así no aparece una barra de
    desplazamiento que no hace falta. */
-const COLS_MAC = "92px minmax(160px, 1fr) 124px 148px 126px 128px 86px 76px";
+/* 104 y no 92 en la fecha: "Aug 15, 2026" mide 78 px con el peso 600 de esa
+   celda, y con los 8+8 de relleno pedía 94 — o sea que la columna se quedaba
+   DOS píxeles corta y la fecha partía en dos líneas. Eso hacía dos cosas a la
+   vez: apretaba el texto contra los bordes de la fila y, en las filas que
+   además traen hora, la estiraba a 49 px mientras las demás medían 34. Con
+   104 la fecha entra de una línea en los dos idiomas ("30 sept 2026" mide 76)
+   y TODAS las filas miden lo mismo. Los 12 px salen de la columna elástica:
+   medido, a 1240 px de ventana pasa de 208 a 194, y a 1100 —el mínimo de la
+   ventana— toca su suelo de 160 exacto, que es el que impide que el concepto
+   vuelva a cerrarse a cero. */
+const COLS_MAC = "104px minmax(160px, 1fr) 124px 148px 126px 128px 86px 76px";
 
 export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
@@ -196,7 +206,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           );
           const celdaFecha = (
             <div className="td">
-              <div style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
+              <div className="tx-fecha" style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
               <div className="solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
             </div>
           );

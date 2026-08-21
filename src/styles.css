@@ -9906,7 +9906,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   --mac-lh-body: 16px;
 
   --mac-row-h: 28px;
-  --mac-table-row-h: 34px;
+  /* 38 y no 34: la fila de Ingresos/Gastos lleva DOS líneas cuando el
+     movimiento trae hora —fecha arriba, hora debajo, 16 + 16 px— y en 34 no
+     quedaba un pixel de aire arriba ni abajo. Con 38 respiran las de dos
+     líneas y las de una quedan con 11 px por lado, que es el aire de una lista
+     de macOS. Va en el token y no en la tabla porque lo comparten también la
+     de categorías, la de miembros y la del informe de membresía. */
+  --mac-table-row-h: 38px;
   --mac-control-h: 22px;
   --mac-toolbar-h: 52px;
   --mac-radius: 6px;
@@ -11657,6 +11663,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--mac-card);
     max-width: none;
   }
+  /* La fecha NUNCA parte en dos líneas: si un idioma trae un mes más largo de
+     lo previsto, que se recorte con puntos suspensivos antes que estirar la
+     fila. Partirla era lo que apretaba la tabla y lo que hacía que unas filas
+     midieran 34 y otras 49. */
+  :root.mac .tx-fecha {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   :root.mac .cat-thead,
   :root.mac .cat-tr {
     display: grid;
