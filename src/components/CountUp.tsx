@@ -32,19 +32,26 @@ export default function CountUp<T extends number>({ value, format, duracion = 65
     const desde = desdeRef.current;
     const inicio = performance.now();
     cancelAnimationFrame(rafRef.current);
-    const paso = (ahora: number) => {
+    /* `cuadro`, no `paso`: la función del rAF se llamaba igual que el prop y
+       lo SOMBREABA, así que `Number(paso)` era `Number(función)` — NaN. El
+       redondeo intermedio salía NaN en cada cuadro con t<1, y toda cifra
+       animada de la app decía "$NaN" durante los 650ms de la cuenta antes de
+       aterrizar en el valor bueno (medido: $NaN a los 300ms, $4,600.00 a los
+       900). El aterrizaje final nunca falló porque a t=1 se pinta `value`
+       directo — por eso el bug sobrevivió: en cualquier captura tardía todo
+       se ve bien. */
+    const cuadro = (ahora: number) => {
       const t = Math.min(1, (ahora - inicio) / duracion);
       const ease = 1 - Math.pow(1 - t, 3); // ease-out cúbico
-      // Durante la cuenta se muestran enteros (sin centavos parpadeando);
-      // al terminar aterriza en el valor exacto.
+      // Durante la cuenta se muestran múltiplos de `paso` (sin centavos
+      // parpadeando); al terminar aterriza en el valor exacto.
       const objetivo = Number(value);
-      const paso1 = Number(paso);
-      const intermedio = Math.round((desde + (objetivo - desde) * ease) / paso1) * paso1;
+      const intermedio = Math.round((desde + (objetivo - desde) * ease) / paso) * paso;
       setMostrado(t < 1 ? (intermedio as T) : value);
-      if (t < 1) rafRef.current = requestAnimationFrame(paso);
+      if (t < 1) rafRef.current = requestAnimationFrame(cuadro);
       else desdeRef.current = value;
     };
-    rafRef.current = requestAnimationFrame(paso);
+    rafRef.current = requestAnimationFrame(cuadro);
     return () => cancelAnimationFrame(rafRef.current);
   }, [value, duracion, paso]);
 
