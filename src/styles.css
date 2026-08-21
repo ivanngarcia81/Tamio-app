@@ -12280,8 +12280,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    PDF se genera con jsPDF a partir de los datos, no capturando este DOM (lo
    dice la nota de `.report-preview`). En pantalla el resultado era que había
    que desplazar dos veces para llegar al resumen mensual. */
-:root.mac .report-preview {
+/* `.content-lienzo` y `.content-inicio` en el selector, y no por gusto: la
+   regla de más arriba que le da 12/14 de relleno a las tarjetas del lienzo es
+   MÁS específica que un `.report-preview` a secas, así que se lo devolvía.
+   El resultado era relleno doble —los 14 de la tarjeta más los 16 de
+   `margin-inline` de cada sección, 30 px de sangría— y, sobre todo, una banda
+   blanca vacía de 41 px al final: 12 del relleno del panel gris del resumen,
+   16 de su margen inferior y 12 más del relleno de la tarjeta. En la maqueta
+   la tarjeta termina justo después del panel.
+   Esta tarjeta NO lleva relleno propio a propósito: su cabecera y cada sección
+   ponen el suyo, que es lo que permite que la cabecera vaya de borde a borde
+   con su línea debajo. */
+:root.mac .report-preview,
+:root.mac .content-lienzo .report-preview,
+:root.mac .content-inicio .report-preview {
   padding: 0;
+  /* El panel de totales llega a los bordes: sin esto, sus esquinas de abajo
+     asomarían por fuera de la curva de la tarjeta. */
+  overflow: hidden;
   border-radius: var(--mac-card-radius);
   border-color: var(--mac-card-border);
   box-shadow: none;
@@ -12306,11 +12322,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.mac .report-preview .r-row { padding: 5px 0; font-size: var(--mac-fs-body); }
 :root.mac .report-preview .r-row.total { padding-top: 8px; margin-top: 4px; }
+/* El panel de totales es la ÚLTIMA FILA de la tarjeta y va de borde a borde,
+   con su filo arriba — como en la maqueta, donde es el último hijo con
+   `padding: 12px 16px` y un `border-top`, sin márgenes.
+   Antes llevaba margen propio por los cuatro lados y radio, así que flotaba
+   dentro de la tarjeta y dejaba debajo una banda blanca vacía. Con el relleno
+   de la tarjeta ya a cero (ver arriba) esa banda medía 29 px; con el relleno
+   duplicado que había antes, 41. */
 :root.mac .report-preview .r-summary {
   gap: 16px;
-  margin: 14px 0 16px;
-  padding: 12px 14px;
-  border-radius: var(--mac-card-radius);
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  border-radius: 0;
+  border-top: 1px solid var(--mac-separator);
   background: var(--mac-content-bg-soft);
 }
 :root.mac .report-preview .r-summary .k {
