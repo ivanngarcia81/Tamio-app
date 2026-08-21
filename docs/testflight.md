@@ -75,8 +75,9 @@ en las tres fuentes:
 | 20 ago | 1.1.3 — **rota**, ver abajo |
 | 20 ago | 1.1.4 |
 | 21 ago | 1.1.5 |
-| esta | **1.1.6** — el rediseño de iPad |
-| la siguiente | 1.1.7 |
+| 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
+| esta | **1.1.7** — el rediseño de iPad + el punto negro del calendario |
+| la siguiente | 1.1.8 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
@@ -124,9 +125,22 @@ la 1.1.5 — donde además pasaron los doce `verificar-*` del proyecto y un buil
 con `VITE_CANAL=appstore` que confirma las dos guardas de Apple (sin
 manifiesto de versiones, sin enlaces de pago).
 
-Lo mismo en la 1.1.6: `tsc`, los doce `verificar-*` y el build del canal
-`appstore` con sus dos guardas confirmadas. Además se comprobó que el
-rediseño de iPad viajaba de verdad en el bundle (`:root.ipad`, `md-split`,
-`sidebar-buscar` y `backdrop-filter` presentes en el CSS construido) — el
-número de versión y el código son cosas distintas, y subir una versión nueva
-con el bundle viejo es un fallo silencioso.
+Lo mismo en la 1.1.6 y en la 1.1.7: `tsc`, los doce `verificar-*` y el build
+del canal `appstore` con sus dos guardas confirmadas. Además se comprobó que
+el rediseño de iPad viajaba de verdad en el bundle (`:root.ipad`,
+`md-split`, `sidebar-buscar` y `backdrop-filter` presentes en el CSS
+construido) — el número de versión y el código son cosas distintas, y subir
+una versión nueva con el bundle viejo es un fallo silencioso.
+
+**La 1.1.6 se quedó sin distribuir**: se preparó, y antes de archivarla
+apareció el número invisible de "hoy" en el calendario de la Mac. Se arregló
+y se subió a la 1.1.7 en vez de distribuir una versión con un fallo
+conocido. No es la 1.1.3 (aquella sí llegó a subirse rota); esta murió en la
+Mac de Iván.
+
+> ⚠️ **`npm run verificar-canal` suelto no dice nada útil.** Está pensado
+> para correr al final de `npm run build`, comparando el bundle contra el
+> canal que se pidió. Lanzado solo, sin `VITE_CANAL`, asume "descarga" y
+> juzga con esa vara el `dist/` que haya — si el último build fue de App
+> Store, "falla" sin que nada esté mal. La comprobación de verdad es
+> `VITE_CANAL=appstore npm run build`, que lo corre con el canal correcto.
