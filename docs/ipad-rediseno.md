@@ -166,7 +166,7 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    | Configuración | 298px | hecho (21 ago, ver abajo) |
    | Reportes | 330px | **falta** |
    | Depósito bancario | 378px | **falta** |
-   | Por revisar (bandeja) | 400px | **falta** |
+   | Por revisar (bandeja) | 400px | hecho (21 ago) |
    | Actas | 358px | **falta** |
    | Registro de servicios | 358px | **falta** |
    | Cartas y traslados | 338px | **falta** |
@@ -220,6 +220,29 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    decisión que el modo de EMPUJE del maestro-detalle: cuando no caben dos
    cosas, se enseña una. Sus filas sí subieron a 44px, que venían de la
    regla base de ratón.
+
+8. ~~Por revisar~~ **Hecho** (21 ago). La primera pantalla que no construye
+   panel nuevo: `DetalleMovimiento` y `DetalleMiembro` ganaron una prop
+   `acciones?: ReactNode` que sustituye su fila de botones, y la Bandeja los
+   monta con las suyas. Aquí un movimiento se mira para APROBARLO —Editar ·
+   Marcar revisado, sin Eliminar— y un miembro archivado solo se Restaura.
+   La ficha (importe, campos, comprobante, aportes del año) es la misma que
+   en Ingresos y Aportantes: quien ya usó esas dos no aprende una tercera.
+
+   La columna maestra junta los dos grupos que la página ya tenía en una
+   lista con dos cabeceras. La selección guarda `{tipo, id}` y no solo el
+   id, porque la lista es **heterogénea** —un movimiento pendiente y un
+   miembro archivado no son lo mismo— y de ahí sale qué panel se pinta.
+   Resolver un asunto lo saca de su lista y cierra el panel solo.
+
+   **Lo que el handoff maquetaba aquí no existe.** Traía una taxonomía de
+   alertas —"duplicado probable", "categoría vacía", "miembro no
+   encontrado", "recurrente vencido"— y acciones como "Aprobar sin
+   comprobante" o "Devolver al tesorero". En la app, `listPendingTx` da
+   movimientos en estado pendiente y `listArchivedMembers` da miembros
+   archivados: dos listas, y ya. Se tomó la ESTRUCTURA del diseño (columna
+   de 400px + panel), no sus datos inventados — el mismo criterio que con el
+   "Rastro de auditoría" de §4.
 
 ---
 
