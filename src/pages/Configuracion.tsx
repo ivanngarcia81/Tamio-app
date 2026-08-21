@@ -707,12 +707,19 @@ export default function Configuracion({
               </div>
             )}
 
-            {/* Encabezado de zona del Mac: el glifo de la zona en grande sobre
-                su tinte, el nombre y la frase que lo explica. Es el mismo par
+            {/* Encabezado de zona: el glifo en grande sobre su tinte, el
+                nombre y la frase que lo explica. Es el mismo par
                 título/subtítulo que `.settings-zona-head` lleva dentro de cada
                 sección — pero UNA vez y arriba del todo, en vez de repetido en
-                siete secciones de las que seis están ocultas. */}
-            {enMac && zonaActivaInfo && (
+                siete secciones de las que seis están ocultas.
+
+                `!enIPhone` y no `enMac`: el handoff de iPad trae esta cabecera
+                en sus seis pantallas de Configuración, así que cruza. Lo que
+                NO cruza —y por eso los dos bloques de arriba siguen en
+                `enMac`— son el buscador de zonas y los galones de historial:
+                el diseño de iPad no los dibuja, son de Ajustes del Sistema de
+                macOS. En el teléfono no hay columna que encabezar. */}
+            {!enIPhone && zonaActivaInfo && (
               <div className="settings-hero">
                 <span className="settings-hero-icono" style={{ background: TINTE[zonaActivaInfo.key] }}>
                   <zonaActivaInfo.Icono size={30} />

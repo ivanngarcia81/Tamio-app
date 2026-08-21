@@ -163,7 +163,7 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    |---|---|---|
    | Ingresos · Gastos | 400px | hecho |
    | Aportantes | 378px | hecho |
-   | Configuración | 298px | ya existía (`.settings-shell`) |
+   | Configuración | 298px | hecho (21 ago, ver abajo) |
    | Reportes | 330px | **falta** |
    | Depósito bancario | 378px | **falta** |
    | Por revisar (bandeja) | 400px | **falta** |
@@ -186,9 +186,40 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    nueva es sobre todo decidir qué va en la fila y qué en el panel, no
    volver a construir el andamio.
 
-Lo que **no** hay que hacer: nada de Configuración. `.settings-shell` +
-`.settings-nav` + `.settings-detail` ya corren como índice + columna en
-Mac y iPad, y el diseño pide 298px + 680px — que es lo que ya hacemos.
+7. ~~Configuración~~ **Hecho** (21 ago). Aquí quedó escrito antes que "no
+   hay que hacer nada, ya corre como índice + columna en Mac y iPad". Era
+   falso, y lo cazó Iván mirándolo: *"veo el diseño viejo en configuración"*.
+   Las dos columnas sí existían, pero eran las de ANTES del rediseño de
+   Ajustes — ese se escribió entero bajo `:root.mac` (87 de las 92 reglas de
+   `.settings-detail`), así que el iPad se quedó con la versión anterior.
+   Medido: índice de 240px en vez de 298, y sin ninguna pieza nueva.
+
+   No se copió el bloque de Mac: sus medidas son de ratón (filas de 32px,
+   texto de 13, radio 8). Se escribió un bloque `:root.ipad` con las del
+   handoff — índice de 298 con filo propio y fondo de sidebar, filas de 40px
+   a 15px con radio 10, activa con relleno tintado (`color-mix` del ink al
+   10%, el mismo de `.md-fila.sel`) en vez del acento sólido, y panel con
+   columna de lectura de 680px centrada.
+
+   **Lo que el handoff NO trae al iPad**, y por eso siguen en `enMac`: el
+   buscador de zonas y los galones de historial. Son de Ajustes del Sistema
+   de macOS; el diseño de iPad no los dibuja. Lo que sí cruza es la cabecera
+   de zona (`.settings-hero`), presente en sus seis pantallas — su gate pasó
+   de `enMac` a `!enIPhone`.
+
+   Dos cosas que solo se ven midiendo, y que el Mac ya resolvía: con la
+   cabecera arriba, el `.settings-zona-head` de dentro repite título y
+   subtítulo dos dedos más abajo (apagado), y `.settings-zona` trae fondo,
+   borde y radio 18 de cuando era la caja de una pestaña — envolviendo a
+   tarjetas que ya son cajas, un marco dentro de otro (aplanada).
+
+   El umbral de esta pantalla son **761px, no los 700 del resto**, y es
+   deliberado: con 298 de índice, al mini en vertical (744) le quedarían 446
+   para el panel y los formularios de dos columnas no caben. Ahí se queda el
+   modo apilado —lista de zonas, eliges una, la ves sola—, que es la misma
+   decisión que el modo de EMPUJE del maestro-detalle: cuando no caben dos
+   cosas, se enseña una. Sus filas sí subieron a 44px, que venían de la
+   regla base de ratón.
 
 ---
 

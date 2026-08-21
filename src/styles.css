@@ -7917,6 +7917,150 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    atajos de teclado, que en un dedo no explica nada. */
 :root.movil .cmdk-item { min-height: 44px; }
 :root.movil .cmdk-pie { display: none; }
+
+/* ============================================================
+   Configuración en el iPad (`es_config` del handoff)
+   ------------------------------------------------------------
+   Aquí NO se trata de construir un split: las dos columnas existen desde
+   siempre (`.settings-shell` + `.settings-nav` + `.settings-detail`). Lo que
+   pasaba es que el rediseño de Ajustes se escribió entero bajo `:root.mac`
+   —87 de las 92 reglas de `.settings-detail`— así que el iPad se quedó
+   viendo la versión ANTERIOR a ese rediseño. Medido: índice de 240px (el
+   diseño pide 298) y ninguna de las piezas nuevas.
+
+   Y no se copia el bloque de Mac tal cual, por dos razones. Una, las medidas
+   son de ratón (filas de 32px, texto de 13, radio 8) y aquí van de dedo. Y
+   dos —esto solo se ve leyendo el handoff— **el diseño de iPad no lleva ni
+   el buscador de zonas ni los galones de historial**: son de Ajustes del
+   Sistema de macOS y allí se quedan. Lo que sí cruza es la cabecera de zona
+   (`.settings-hero`), que en el handoff está en las seis pantallas.
+   ============================================================ */
+@media (min-width: 761px) {
+  /* Columna a 298px con filo propio, no la rejilla con gradiente que usa el
+     Mac: allí el truco existe porque el índice mide lo que miden sus filas y
+     su borde se cortaba a media página. Aquí el índice desplaza por su
+     cuenta y llega abajo del todo, así que un `border-right` de verdad
+     basta — y es lo que pide el diseño. */
+  :root.ipad .settings-shell {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-height: 0;
+  }
+  :root.ipad .settings-nav {
+    width: 298px;
+    flex: 0 0 298px;
+    position: static;
+    gap: 2px;
+    padding: 14px 12px;
+    border-right: 0.5px solid var(--line);
+    background: var(--sidebar-bg);
+  }
+  /* Fila de 40px y texto de 15: los dos números del handoff, y los dos por
+     encima del mínimo táctil cómodo. El glifo va suelto, SIN el cuadradito
+     tintado del Mac — el diseño de iPad lo dibuja así, y con el tinte el
+     índice competía con el sidebar de la app, que está a 12px de distancia. */
+  :root.ipad .settings-nav-item {
+    min-height: 40px;
+    padding: 0 12px;
+    gap: 11px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  /* Relleno tintado, no el acento sólido de la regla base: sobre el gris del
+     índice, una pastilla negra a ancho completo pesa demasiado para lo que
+     es —una zona elegida, no una sección de la app—. Es el mismo
+     `color-mix` que marca la fila abierta del maestro-detalle. */
+  :root.ipad .settings-nav-item.activo {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  :root.ipad .settings-nav-item.activo .settings-nav-icono { color: var(--ink); }
+
+  /* El panel: columna de lectura de 680px centrada, como el handoff. */
+  :root.ipad .settings-detail {
+    padding: 26px 24px 40px;
+    gap: var(--space-6);
+    overflow-y: auto;
+  }
+  :root.ipad .settings-detail > * { width: 100%; max-width: 680px; margin-inline: auto; }
+
+  /* La cabecera de zona, lo único del rediseño de Mac que el handoff sí
+     trae al iPad (con sus 22px/700, no los del Mac). El glifo conserva su
+     tinte: aquí no compite con nada, es el único color de la cabecera.
+
+     En REJILLA y no en flex porque los tres —glifo, título y subtítulo— son
+     hermanos en el marcado (Configuracion.tsx), sin un div que agrupe el par
+     de texto. Con dos filas y el glifo ocupando las dos, el par se apila
+     solo y las dos plataformas siguen compartiendo el mismo JSX. */
+  :root.ipad .settings-hero {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 2px;
+    margin-bottom: 2px;
+  }
+  :root.ipad .settings-hero-icono {
+    grid-row: 1 / 3;
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  :root.ipad .settings-hero-titulo {
+    grid-area: 1 / 2;
+    align-self: end;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+  }
+  :root.ipad .settings-hero-sub {
+    grid-area: 2 / 2;
+    align-self: start;
+    font-size: 13.5px;
+    color: var(--text-2);
+  }
+
+  /* Con la cabecera arriba, el `.settings-zona-head` de dentro de la sección
+     dice exactamente lo mismo dos dedos más abajo — el mismo título y el
+     mismo subtítulo. Se apaga, igual que hace el Mac (~11756). */
+  :root.ipad .settings-zona-head { display: none; }
+
+  /* Y la propia `.settings-zona` se aplana, también como el Mac (~11749).
+     La regla base le da fondo, borde de 1px y radio 18 porque nació siendo
+     la caja de una pestaña; con el índice al lado, esa caja envuelve a las
+     tarjetas que ya son cajas — un marco dentro de otro marco, medido:
+     `.settings-zona` con radio 18 conteniendo una `.card` con radio 12. */
+  :root.ipad .settings-zona {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 0;
+  }
+}
+
+/* El iPad mini en vertical (744) cae por DEBAJO de los 761 de este bloque, y
+   se queda con el modo apilado: la lista de zonas a todo el ancho y, al
+   elegir una, el detalle solo. El umbral no se baja a los 700 del resto del
+   rediseño a propósito — con 298 de índice al mini le quedarían 446 para el
+   panel, y los formularios de dos columnas de Ajustes no caben ahí. Apilado
+   es la misma decisión que el modo de EMPUJE del maestro-detalle: cuando no
+   caben dos cosas, se enseña una.
+   Lo que sí necesita es medida de dedo: las filas venían de la regla base,
+   pensada para ratón (36px medidos). */
+@media (max-width: 760.98px) {
+  :root.ipad .settings-nav-item { min-height: 44px; font-size: 15px; }
+  :root.ipad .settings-nav-flecha { color: var(--text-3); }
+}
 :root.movil .content,
 :root.movil .header { padding-top: calc(12px + env(safe-area-inset-top)); }
 /* El padding-bottom que compensa la barra inferior + el botón "+" NO va
