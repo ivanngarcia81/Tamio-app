@@ -11,8 +11,9 @@ import SyncIndicator from "./SyncIndicator";
 import {
   IconBandeja, IconBank, IconBookOpen, IconCalendar, IconChevronDown, IconChevronRight,
   IconClipboardList, IconConfig, IconFileText, IconGasto, IconHelp,
-  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconTamio, IconUser,
+  IconHome, IconIdBadge, IconIngreso, IconLogout, IconMail, IconMiembros, IconReportes, IconSearch, IconTamio, IconUser,
 } from "../icons";
+import { esIPad } from "../movil";
 
 interface Props {
   church: Church;
@@ -27,6 +28,10 @@ interface Props {
   sesionFoto?: string | null;
   onEditarPerfil?: () => void;
   onSalir?: () => void;
+  /** Abre la paleta de búsqueda (⌘K). Solo se pinta la puerta en el iPad:
+   *  en el Mac la paleta ya se abre con el atajo y el menú de la app, y el
+   *  iPhone no tiene sidebar. */
+  onBuscar?: () => void;
 }
 
 function uint8ToBase64(bytes: Uint8Array): string {
@@ -90,7 +95,7 @@ function Grupo({ abierto, etiqueta, onToggle, children }: {
   );
 }
 
-export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir, onBuscar }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -187,6 +192,19 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
         </div>
         <span className="church-chevron"><IconChevronRight size={16} /></span>
       </button>
+
+      {/* "Buscar en Tamio": la puerta táctil a la paleta que el Mac abre con
+          ⌘K. No es un campo de verdad — un input aquí duplicaría la lógica
+          de la paleta — sino el patrón de iPadOS y de cualquier app con
+          command-K: una pastilla que ABRE la búsqueda real. El chip ⌘K se
+          queda porque muchos iPads viven con teclado, y es el mismo atajo. */}
+      {esIPad() && onBuscar && (
+        <button type="button" className="sidebar-buscar" onClick={onBuscar}>
+          <IconSearch size={15} strokeWidth={2} />
+          <span className="sidebar-buscar-texto">{t("cmdk.buscarEnTamio")}</span>
+          <kbd className="sidebar-buscar-kbd">⌘K</kbd>
+        </button>
+      )}
 
       <nav className="nav">
         <Item to="/" icon={<IconHome />} label={t("nav.inicio")} />

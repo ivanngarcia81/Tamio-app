@@ -2293,6 +2293,7 @@ export const en: Resources = {
   },
 
   cmdk: {
+    buscarEnTamio: "Search Tamio",
     titulo: "Command palette",
     placeholder: "Search page, action, or member…",
     sinResultados: "No results",

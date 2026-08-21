@@ -2347,6 +2347,7 @@ export const es = {
   },
 
   cmdk: {
+    buscarEnTamio: "Buscar en Tamio",
     titulo: "Paleta de comandos",
     placeholder: "Buscar página, acción o miembro…",
     sinResultados: "Sin resultados",

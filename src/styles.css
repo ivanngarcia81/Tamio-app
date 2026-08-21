@@ -7870,6 +7870,53 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Respeta notch/isla dinámica y el home indicator. */
 :root.movil .sidebar { padding-top: calc(14px + env(safe-area-inset-top)); }
+
+/* "Buscar en Tamio" (solo iPad, ver Sidebar.tsx): la pastilla que abre la
+   paleta de ⌘K. El mismo campo relleno del maestro-detalle (.md-buscar) —
+   gris sacado del texto para servir igual en claro y oscuro — pero como
+   BOTÓN, porque no se escribe aquí: se escribe en la paleta. */
+:root.ipad .sidebar-buscar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  height: 36px;
+  /* Ítem de la columna flex del sidebar: sin esto, en ventanas bajas la
+     lista de navegación lo COMPRIMÍA (36 → 32 medidos a 1366×1024) — el
+     campo no es quien debe ceder cuando falta alto. */
+  flex-shrink: 0;
+  padding: 0 10px;
+  margin: 2px 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+:root.ipad .sidebar-buscar:active { opacity: 0.4; }
+:root.ipad .sidebar-buscar-texto {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .sidebar-buscar-kbd {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--text-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+/* La paleta en táctil: filas de 44px (venían de ratón, ~30) y sin el pie de
+   atajos de teclado, que en un dedo no explica nada. */
+:root.movil .cmdk-item { min-height: 44px; }
+:root.movil .cmdk-pie { display: none; }
 :root.movil .content,
 :root.movil .header { padding-top: calc(12px + env(safe-area-inset-top)); }
 /* El padding-bottom que compensa la barra inferior + el botón "+" NO va
@@ -8882,7 +8929,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: space-between;
     gap: 16px;
     min-height: 56px;
-    padding: 0 20px;
+    /* La zona segura va DENTRO de la barra: pegada en top:0, su material
+       tiene que extenderse por debajo de la barra de estado del iPad (24px)
+       y el contenido de la barra empezar después — como cualquier barra de
+       iOS. En el arnés env() es 0 y no cambia nada. */
+    padding: env(safe-area-inset-top) 20px 0;
     /* Fondo y línea son lo que la vuelve CHROME en vez de contenido: sin
        ellos el título flota sobre el lienzo y la barra no se lee como
        barra. El gris es el del sidebar, un punto más claro que el `--bg`
@@ -9201,6 +9252,71 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    regla, con su especificidad extra, pisaría el `width: auto` de abajo. */
 @media (min-width: 1150px) {
   :root.ipad .md-split.md-miembros .md-lista { width: 378px; flex-basis: 378px; }
+}
+
+/* ============================================================
+   Cajón con velo para el iPad de 13" en vertical (1024–1149)
+   ------------------------------------------------------------
+   El único iPad con barra fija cuyo ancho no da para sidebar de 318 MÁS el
+   contenido: en vertical la lista del maestro-detalle quedaba en 706px y
+   toda página normal perdía un tercio del ancho por un menú que se consulta
+   dos veces por sesión. Es lo que hace el diseño (`anchoAmplio` solo en
+   horizontal) y lo que hace iPadOS: en vertical el sidebar se SUPERPONE con
+   velo en vez de convivir. Los demás iPads en vertical (820, 834, 744) ya
+   caían en el rango del cajón de siempre (601–1023); el 13" se quedaba
+   fuera por un píxel. El botón ☰ y el velo ya viven en App.tsx montados
+   siempre — esto solo los enciende para este rango, igual que hace el
+   bloque de 601–1023. */
+@media (min-width: 1024px) and (max-width: 1149.98px) {
+  :root.ipad .app { grid-template-columns: 1fr; }
+  :root.ipad .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 318px;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0.35, 1);
+    z-index: 120;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.22);
+  }
+  :root.ipad .app.menu-abierto .sidebar { transform: none; }
+  :root.ipad .menu-telon {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 11, 0.38);
+    z-index: 110;
+  }
+  /* El ☰ como glifo de barra, no como la ficha flotante con borde y sombra
+     del rango 601–1023: aquí SÍ hay una barra de 56px que lo acoge, así que
+     se pinta desnudo sobre ella, como el botón de sidebar de la toolbar del
+     Mac. z-index 40: encima de la barra pegada (30), debajo del velo (110)
+     — con el cajón abierto se cierra tocando el velo, no el ☰. */
+  :root.ipad .menu-hamburguesa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top));
+    left: 10px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    box-shadow: none;
+    color: var(--ink);
+    cursor: pointer;
+    z-index: 40;
+  }
+  :root.ipad .menu-hamburguesa:active { opacity: 0.3; }
+  /* La barra le reserva el hueco al ☰, el mismo trato que la toolbar del
+     Mac con .btn-sidebar. */
+  :root.ipad .header { padding-left: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.ipad .sidebar { transition: none; }
 }
 
 /* El modo de empuje: solo el 13" en vertical cae aquí (1024×1366). El panel

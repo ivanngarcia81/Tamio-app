@@ -661,7 +661,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       >
         <IconSidebar />
       </button>
-      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} onBuscar={() => setCmdOpen(true)} />
       {/* Bug de teléfono: el carrusel vivía DENTRO de <main> (el área con
           scroll) y se posicionaba con position:sticky para no desplazarse —
           pero seguía siendo contenido desplazable, así que al entrar a la

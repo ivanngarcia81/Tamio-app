@@ -119,12 +119,22 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    filtro Activos/Bajas/Todos del prototipo NO se puso: esta página
    (Aportantes, tesorería) es solo de activos por diseño del dominio — las
    bajas viven en Membresía, de secretaría.
-4. **Sidebar superpuesto con velo en vertical para el iPad de 13".** Los
-   demás iPads en vertical (820, 834, 744) ya caen en 601–1023 y ya tienen
-   cajón; el de 12.9"/13" mide exactamente 1024 y se queda fuera por un
-   píxel. Es mover un umbral, no escribir un cajón.
-5. **Buscador global en el sidebar con ⌘K.** No existe hoy en ninguna
-   plataforma; es función nueva, no maquetación.
+4. ~~Sidebar superpuesto con velo en vertical para el iPad de 13"~~
+   **Hecho** (21 ago): rango propio 1024–1149, solo `:root.ipad` (una
+   ventana de Mac de ese ancho no se inmuta). El sidebar pasa a cajón fijo
+   de 318px con velo, el ☰ de App.tsx —que ya se montaba siempre— se
+   enciende como glifo desnudo sobre la barra de 56px (que le reserva 56px
+   de padding, el trato de `.btn-sidebar` en el Mac), y la lista del
+   maestro-detalle gana el ancho completo: 706 → 1024. La barra además
+   ganó `padding-top: env(safe-area-inset-top)`, que le faltaba para el
+   iPad real.
+5. ~~Buscador global en el sidebar con ⌘K~~ **Hecho** (21 ago) — y costó
+   poco porque la paleta YA EXISTÍA: `CmdPalette.tsx` (⌘K y el menú de la
+   app) con navegación, acciones rápidas y búsqueda de miembros,
+   consciente de rol y plan. Lo que faltaba era la puerta táctil: la
+   pastilla "Buscar en Tamio ⌘K" del sidebar (solo iPad, `esIPad()` +
+   prop `onBuscar`), que abre esa misma paleta. En táctil la paleta sube
+   sus filas a 44px y esconde el pie de atajos de teclado.
 
 Lo que **no** hay que hacer: nada de Configuración. `.settings-shell` +
 `.settings-nav` + `.settings-detail` ya corren como índice + columna en
