@@ -76,8 +76,9 @@ en las tres fuentes:
 | 20 ago | 1.1.4 |
 | 21 ago | 1.1.5 |
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
-| esta | **1.1.7** — el rediseño de iPad + el punto negro del calendario |
-| la siguiente | 1.1.8 |
+| 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
+| esta | **1.1.8** — el rediseño llega a TODOS los iPads, no solo al de 13" |
+| la siguiente | 1.1.9 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the

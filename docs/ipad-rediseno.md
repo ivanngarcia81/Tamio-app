@@ -44,11 +44,27 @@ De paso arregló un solape real del iPad de 13": pasados los 1024px la barra
 del ☰ no existe, pero el "+" seguía clavado en `top: 58px`, flotando sobre
 el Large Title, que empieza en y=70.
 
-> **El umbral es 1024px y no es negociable.** Es el mismo que separa el cajón
-> lateral (601–1023) de la barra fija, así que la barra de 56px y el sidebar
-> fijo no pueden discrepar. Un iPad en Split View angosto se queda como
-> estaba —cajón, ☰, fila de glifos, Large Title— y eso es correcto: ahí es
-> un tamaño compacto, no una tablet.
+> **El umbral son 700px** — y la primera versión puso 1024, que estaba mal.
+> El razonamiento de entonces ("que coincida con el rango del cajón lateral,
+> 601–1023, para que no puedan discrepar") sonaba sólido y era falso: ese
+> rango se escribió pensando en **ventanas de Mac angostas**, no en lo que
+> iPadOS considera compacto.
+>
+> **Un iPad a pantalla completa tiene clase de ancho REGULAR en todos sus
+> tamaños**, el mini en vertical incluido. Lo compacto es solo el Split View
+> y el Slide Over. Con 1024, medido en el arnés, el mini (744), el 10.9"
+> (820) y el 11"/Air (834) se quedaban **en vertical con la UI vieja entera**
+> —cabecera de 135px, Large Title de 34px, sin maestro-detalle— y solo el Pro
+> de 13" veía el rediseño sin girar el aparato. Lo reportó Iván al probarlo:
+> *"sigue en su mayoría con la vieja UI"*.
+>
+> Con 700 entran los ocho tamaños de iPad a pantalla completa (el más chico
+> es el mini con 744) y siguen fuera los repartos angostos: media pantalla en
+> el 13" son ~678, en el 11" ~590, y el Slide Over ~320. Ahí sí corresponde
+> la forma compacta.
+>
+> **La lección**: un umbral de iPad se justifica por las clases de tamaño de
+> iPadOS, no por reutilizar un breakpoint que existía para otra cosa.
 
 ### La hoja de "Nuevo ingreso/gasto"
 
@@ -96,10 +112,11 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    (`selId`, un ID re-buscado en cada recarga, no una copia congelada), el
    giro con una fila abierta la deja abierta en los dos sentidos, y la
    entrada es el push de iOS (la lista se corre un cuarto a la izquierda
-   mientras el panel entra). El corte columnas/empuje es **1150px**: a 1024
-   (13" vertical) la lista se queda con todo el ancho, el resumen del mes
-   baja a su cabeza (`.md-extra`) y el panel entra por encima con
-   "‹ Ingresos"; de 1150 en adelante conviven 400px + el resto. En columnas,
+   mientras el panel entra). El corte columnas/empuje es **1150px**: por debajo
+   —todo iPad en vertical, más el mini en horizontal (1133)— la lista se
+   queda con todo el ancho, el resumen del mes baja a su cabeza
+   (`.md-extra`) y el panel entra por encima con "‹ Ingresos"; de 1150 en
+   adelante conviven 400px + el resto. En columnas,
    el panel sin fila abierta enseña el resumen del mes y los recurrentes —
    los mismos nodos, extraídos a constantes, no una copia.
 2. ~~Maestro-detalle en Ingresos/Gastos~~ **Hecho** (21 ago): columna de
@@ -120,7 +137,7 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    (Aportantes, tesorería) es solo de activos por diseño del dominio — las
    bajas viven en Membresía, de secretaría.
 4. ~~Sidebar superpuesto con velo en vertical para el iPad de 13"~~
-   **Hecho** (21 ago): rango propio 1024–1149, solo `:root.ipad` (una
+   **Hecho** (21 ago): rango propio 700–1149, solo `:root.ipad` (una
    ventana de Mac de ese ancho no se inmuta). El sidebar pasa a cajón fijo
    de 318px con velo, el ☰ de App.tsx —que ya se montaba siempre— se
    enciende como glifo desnudo sobre la barra de 56px (que le reserva 56px
@@ -165,13 +182,31 @@ El arnés de Playwright de siempre, con la clase puesta a mano en la raíz y
 estos ocho tamaños. Los cinco marcados como "no debe cambiar" son la red:
 si uno se mueve, el cambio se salió del iPad.
 
+**Los ocho iPads a pantalla completa** — los ocho deben dar el diseño nuevo
+(barra de 56px, título de 17px, material y maestro-detalle). Son los anchos
+reales en puntos CSS, y la tabla existe porque con el umbral en 1024 las
+cuatro primeras filas fallaban y nadie lo vio hasta probarlo en el aparato:
+
+| Tamaño | Qué es |
+|---|---|
+| 744×1133 | mini 8.3" vertical |
+| 820×1180 | iPad 10.9" vertical |
+| 834×1194 | Air / Pro 11" vertical |
+| 1024×1366 | Pro 13" vertical |
+| 1133×744 | mini horizontal |
+| 1180×820 | 10.9" horizontal |
+| 1194×834 | 11" horizontal |
+| 1366×1024 | 13" horizontal |
+
+**La red de seguridad** — estos NO deben tocar el diseño de iPad:
+
 | Clase | Tamaño | Qué es |
 |---|---|---|
-| `mac` | 1440×900 | Mac — no debe cambiar |
-| `mac` | 1024×900 | Mac angosto — no debe cambiar |
-| `movil ipad` | 1366×1024 | iPad 13" horizontal |
-| `movil ipad` | 1024×1366 | iPad 13" vertical |
-| `movil ipad` | 1180×820 | iPad 10.9" horizontal |
-| `movil ipad` | 820×1180 | iPad 10.9" vertical — cajón, no debe cambiar |
-| `movil ipad` | 744×1133 | iPad mini vertical — cajón, no debe cambiar |
-| `movil iphone` | 390×844 | iPhone — no debe cambiar |
+| `mac` | 1440×900 | Mac |
+| `mac` | 1024×900 | Mac angosto |
+| `mac` | 800×700 | Mac muy angosto (cajón de siempre) |
+| `movil iphone` | 390×844 | iPhone vertical |
+| `movil iphone` | 844×390 | iPhone horizontal |
+| `movil ipad` | 507×1194 | Split View ½ en 11" — compacto |
+| `movil ipad` | 678×1024 | Split View ½ en 13" — compacto |
+| `movil ipad` | 320×1194 | Slide Over — compacto |

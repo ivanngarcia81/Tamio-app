@@ -8905,13 +8905,31 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    (que usa toolbar de 52px con arrastre de ventana) y de la del iPhone
    (que sí es Large Title, porque ahí no hay columna que titular).
 
-   El umbral es 1024px A PROPÓSITO: es el mismo que separa el cajón lateral
-   (601–1023, `.app::before` con el ☰) de la barra fija. Atado al mismo
-   número, la barra de 56px y el sidebar fijo no pueden discrepar nunca —
-   un iPad en Split View angosto se queda EXACTAMENTE como hoy, con su
-   cajón, su ☰ y su fila de glifos, que ahí sí es la forma correcta.
+   El umbral son 700px, y la primera versión de esto se equivocó poniendo
+   1024. El razonamiento de entonces —"que coincida con el rango del cajón
+   lateral (601–1023) para que no puedan discrepar"— sonaba bien y era falso:
+   ese rango se escribió pensando en VENTANAS DE MAC angostas, no en lo que
+   iPadOS considera compacto. Un iPad a pantalla completa tiene clase de
+   ancho REGULAR en todos sus tamaños, el mini en vertical incluido; lo
+   compacto es solo el Split View y el Slide Over. Con 1024, medido en el
+   arnés, el mini (744), el 10.9" (820) y el 11" (834) se quedaban en
+   VERTICAL con la cabecera de 135px y el Large Title de 34px — la UI vieja
+   entera — y solo el Pro de 13" veía el rediseño sin girar el aparato.
+
+   Con 700 entran todos los iPads a pantalla completa (el más chico es el
+   mini con 744) y siguen fuera los repartos angostos: media pantalla en el
+   13" son ~678, en el 11" ~590, y el Slide Over ~320. Ahí sí corresponde la
+   forma compacta.
    ============================================================ */
-@media (min-width: 1024px) {
+@media (min-width: 700px) {
+  /* Lo que sobra del rango 601–1023 cuando el iPad entra aquí. Ese bloque
+     da por hecho que arriba hay una barra del ☰ de 58px con la fila de
+     glifos colgando debajo; el iPad ya no tiene ninguna de las dos, tiene
+     su barra de 56px. Sin anular esto, el contenido arrancaba 102px más
+     abajo de donde empieza la barra: un hueco enorme bajo el título. */
+  :root.ipad .app::before { display: none; }
+  :root.ipad .main { padding-top: 0; }
+
   /* 318px, no 260. El diseño de iPad los pide y el motivo se ve en la
      lista: los nombres de dos apellidos ("Familia Ruvalcaba", "Lucía
      Márquez Peña") y las etiquetas de grupo en versalitas caben sin
@@ -9262,12 +9280,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    toda página normal perdía un tercio del ancho por un menú que se consulta
    dos veces por sesión. Es lo que hace el diseño (`anchoAmplio` solo en
    horizontal) y lo que hace iPadOS: en vertical el sidebar se SUPERPONE con
-   velo en vez de convivir. Los demás iPads en vertical (820, 834, 744) ya
-   caían en el rango del cajón de siempre (601–1023); el 13" se quedaba
-   fuera por un píxel. El botón ☰ y el velo ya viven en App.tsx montados
-   siempre — esto solo los enciende para este rango, igual que hace el
-   bloque de 601–1023. */
-@media (min-width: 1024px) and (max-width: 1149.98px) {
+   velo en vez de convivir. Aquí caen TODOS los iPads en vertical —744, 820,
+   834 y 1024— y también el mini en horizontal (1133), que con 318 de
+   sidebar más 400 de lista se quedaría sin sitio para el detalle. El botón
+   ☰ y el velo ya viven en App.tsx montados siempre; esto solo los enciende
+   para este rango. */
+@media (min-width: 700px) and (max-width: 1149.98px) {
   :root.ipad .app { grid-template-columns: 1fr; }
   :root.ipad .sidebar {
     position: fixed;
@@ -9319,12 +9337,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .sidebar { transition: none; }
 }
 
-/* El modo de empuje: solo el 13" en vertical cae aquí (1024×1366). El panel
-   entra desde la derecha COMO un push de navegación —la lista se corre un
-   cuarto a la izquierda, igual que la vista que queda debajo en iOS— y el
-   botón "‹ Ingresos" aparece. La lista, mientras tanto, ocupa todo el ancho
-   y el resumen del mes baja a su cabeza (ver .md-extra). */
-@media (min-width: 1024px) and (max-width: 1149.98px) {
+/* El modo de empuje: todo iPad en vertical (744, 820, 834, 1024) y el mini
+   en horizontal. El panel entra desde la derecha COMO un push de navegación
+   —la lista se corre un cuarto a la izquierda, igual que la vista que queda
+   debajo en iOS— y el botón "‹ Ingresos" aparece. La lista, mientras tanto,
+   ocupa todo el ancho y el resumen del mes baja a su cabeza (.md-extra). */
+@media (min-width: 700px) and (max-width: 1149.98px) {
   :root.ipad .md-lista {
     width: auto;
     flex: 1 1 auto;

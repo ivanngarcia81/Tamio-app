@@ -48,13 +48,15 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   // tiene equivalente en el carrusel ni en la barra inferior.
   const enIPhone = esIPhone();
   const enMac = esMac();
-  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): a partir de 1024px la
+  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): a partir de 700px la
      página se parte en lista + detalle. Con 1150px o más caben las dos
-     columnas a la vez; entre 1024 y 1149 (el iPad de 13" en vertical) el
-     detalle EMPUJA a la lista, como un push de navegación de iOS. La media
-     query vive en un hook y no en un `innerWidth` leído una vez porque el
-     giro del iPad cruza el umbral con la página ya montada. */
-  const anchoPartido = useMediaQuery("(min-width: 1024px)");
+     columnas a la vez; entre 700 y 1149 —todo iPad en vertical, más el mini
+     en horizontal— el detalle EMPUJA a la lista, como un push de navegación
+     de iOS. La media query vive en un hook y no en un `innerWidth` leído una
+     vez porque el giro del iPad cruza el umbral con la página ya montada.
+     Los 700 son el mismo número que el CSS: el iPad más chico a pantalla
+     completa es el mini con 744, y por debajo ya es Split View angosto. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
   const anchoColumnas = useMediaQuery("(min-width: 1150px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
