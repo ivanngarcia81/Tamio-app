@@ -13021,11 +13021,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    referencia, no un dato— y los chips de actividad a 16, con su barra de
    color a la izquierda, que ya la tenían. */
 :root.mac .agenda-cell { min-height: 62px; padding: 3px 4px 4px; gap: 1px; }
+/* La GEOMETRÍA del número sí es de todas las celdas, hoy incluido: el círculo
+   de hoy mide lo mismo que los demás días. */
 :root.mac .agenda-cell-num {
   width: 17px;
   height: 17px;
   font-size: var(--mac-fs-small);
   font-weight: 400;
+}
+/* El COLOR, en cambio, solo de los días en reposo — y por eso el `:not`.
+   Sin él esta regla empataba en especificidad (0,3,0) con
+   `.agenda-cell.today .agenda-cell-num` (~6663) y, por ir después en el
+   archivo, le ganaba el `color`… pero no el `background`. O sea que el número
+   de hoy quedaba del MISMO color que su propio círculo: medido en el arnés,
+   fondo rgb(15,15,15) con texto rgba(0,0,0,.55) en claro —el "punto negro"—
+   y fondo rgb(245,245,245) con texto rgba(255,255,255,.6) en oscuro, un punto
+   blanco igual de ilegible. Solo pasaba en Mac: el iPad y el iPhone no tienen
+   override y conservaban su blanco sobre negro. */
+:root.mac .agenda-cell:not(.today) .agenda-cell-num {
   color: var(--mac-secondary);
 }
 :root.mac .agenda-dow-cell {
