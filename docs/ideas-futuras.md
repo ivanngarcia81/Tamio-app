@@ -604,6 +604,9 @@ trabajo del 990-EZ, son de la 2.0. El 4 no se hace.
 
 ### 7. Conciliación bancaria (Plaid en solo lectura) — idea para la 2.0
 
+> → **Plan de implementación detallado:** `docs/plan-plaid.md` · **Prompt de
+> diseño para maquetas:** `docs/prompt-diseno-plaid.md` (21 ago 2026).
+
 **Idea (Iván, 29 jul 2026):** que los depósitos y movimientos del banco aparezcan
 solos en Tamio, para que el presupuesto refleje lo que de verdad hay en la cuenta
 y la tesorera no trabaje a ciegas. **Solo lectura**: leer transacciones y saldos,
