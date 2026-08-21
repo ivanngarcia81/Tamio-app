@@ -10652,6 +10652,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Los botones del pie, a los 22 px de la toolbar. Se repite el bloque en vez
    de compartir selector con ella porque el de la toolbar cuelga de
    `.header[data-tauri-drag-region]`, que aquí no existe. */
+/* El botón del pie mide 22 px de alto FIJO, así que su texto no puede partir
+   en dos líneas: se sale del botón por abajo. Pasaba con "Annual statement
+   (PDF)" en la ficha del miembro — medido, el texto pedía 31 px dentro de una
+   caja de 20.
+   Y para que no parta hay que darle sitio: el grupo de botones no encoge y
+   quien cede es el texto de ayuda de la izquierda, que sí puede ocupar dos
+   líneas sin que se rompa nada. Es el mismo arreglo que ya llevó la toolbar de
+   Agenda, donde "Nueva actividad" se salía igual. */
 :root.mac .modal-footer .btn {
   height: var(--mac-control-h);
   min-height: 0;
@@ -10659,7 +10667,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: var(--mac-radius);
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
 }
+:root.mac .modal-footer > :last-child { flex-shrink: 0; }
+:root.mac .modal-footer .form-hint { min-width: 0; }
 /* El botón que confirma va del color de acento del sistema, igual que el de
    la toolbar. Estaba en `--ink` (negro): dos botones principales del mismo
    producto, uno negro y otro del acento, según si estás en la ventana o en un
