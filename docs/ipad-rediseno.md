@@ -108,9 +108,17 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    conteo y suma de lo VISIBLE (obedece búsqueda y filtro). Sin el
    segmentado Ingreso/Gasto del prototipo: aquí son dos entradas del
    sidebar, y un segundo conmutador diría lo mismo dos veces.
-3. **Maestro-detalle en Miembros**: lo mismo con 378px, secciones por
-   inicial y filtro Activos/Bajas/Todos. El detalle sale de
-   `MemberDetailModal`.
+3. ~~Maestro-detalle en Miembros~~ **Hecho** (21 ago): lista de 378px con
+   secciones por inicial (sin acentos: "Ángel" cae en la A), avatar de 38px
+   cuyo color sale del `id % 8` —el mismo cálculo que la ficha, así lista y
+   panel pintan igual a la misma persona— y total del año en la fila. La
+   ficha del panel es LA MISMA del modal de Mac/iPhone: `MemberDetailModal`
+   quedó partido en `useFichaMiembro` + `IdentidadMiembro` +
+   `CuerpoFichaMiembro`, y el modal y `DetalleMiembro.tsx` son dos
+   cascarones sobre esas piezas (el trato de `useNuevoMovimiento`). El
+   filtro Activos/Bajas/Todos del prototipo NO se puso: esta página
+   (Aportantes, tesorería) es solo de activos por diseño del dominio — las
+   bajas viven en Membresía, de secretaría.
 4. **Sidebar superpuesto con velo en vertical para el iPad de 13".** Los
    demás iPads en vertical (820, 834, 744) ya caen en 601–1023 y ya tienen
    cajón; el de 12.9"/13" mide exactamente 1024 y se queda fuera por un

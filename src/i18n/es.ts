@@ -237,6 +237,9 @@ export const es = {
     seccionResumen: "Resumen",
     activos_one: "{{count}} persona registrada",
     activos_other: "{{count}} personas registradas",
+    // Maestro-detalle del iPad ancho (ver docs/ipad-rediseno.md).
+    eligeMiembro: "Elige un aportante",
+    eligeMiembroSub: "Toca una fila de la lista para ver su ficha aquí, con sus aportes del año y su constancia.",
     importarCsv: "Importar CSV",
     padronSecretaria: "El padrón lo administra Secretaría: las altas e importaciones se hacen desde Membresía.",
     nuevo: "Nuevo miembro",

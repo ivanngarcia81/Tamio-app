@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto, esMac } from "../movil";
+import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import DetalleMiembro from "../components/DetalleMiembro";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
   insertMember, listMembers, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
@@ -68,6 +70,13 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   // (ver Cartas.tsx/Movimientos.tsx) — el título grande de aquí abajo sobra
   // ahí.
   const enIPhone = esIPhone();
+  /* Maestro-detalle del iPad, el mismo trato que Movimientos.tsx: partido a
+     partir de 1024px, columnas desde 1150, y entre medias (el 13" en
+     vertical) la ficha EMPUJA a la lista. Ver docs/ipad-rediseno.md. */
+  const anchoPartido = useMediaQuery("(min-width: 1024px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
   const [query, setQuery] = useState("");
@@ -77,6 +86,16 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const { abrirMenu, menu } = useContextMenu();
+
+  /* La fila abierta en el maestro-detalle: un ID re-buscado en cada recarga,
+     no una copia congelada — una edición refresca la ficha en sitio y un
+     borrado la cierra solo. `ultimoSel` conserva el último objeto real para
+     que en el modo de empuje el panel no se vacíe a mitad de la animación de
+     salida. Mismo patrón, mismos motivos que Movimientos.tsx. */
+  const [selId, setSelId] = useState<number | null>(null);
+  const sel = selId != null ? members.find((m) => m.id === selId) ?? null : null;
+  const ultimoSel = useRef<Member | null>(null);
+  if (sel) ultimoSel.current = sel;
 
   useEffect(() => {
     let cancelado = false;
@@ -111,6 +130,9 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   async function confirmDelete() {
     if (!pendingDelete) return;
     const { member, hasHistory } = pendingDelete;
+    // Si lo borrado era la ficha abierta del maestro-detalle, se cierra: un
+    // panel enseñando a alguien que ya no está en la lista es mentira.
+    setSelId((id) => (id === member.id ? null : id));
     if (hasHistory) {
       await archiveMember(member.id, church.id);
       setPendingDelete(null);
@@ -175,6 +197,63 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   });
   const cols = hayEtiquetas ? MEMBER_COLS : MEMBER_COLS_SIN_ETIQUETAS;
 
+  /* ---- Piezas que se pintan en más de un sitio ----
+     El resumen sale en el layout de siempre Y en el maestro-detalle del iPad
+     (columnas: en el panel mientras no hay ficha abierta; empuje: en la
+     cabeza de la lista). La misma extracción, por los mismos motivos, que en
+     Movimientos.tsx: un solo marcado, no copias que divergen. */
+  const resumenEscritorio = (
+    <div className="dash-canvas">
+      <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+        <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+          <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
+          <div className="stat-value md"><CountUp value={resumen.total} format={String} /></div>
+        </div>
+        <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+          <div className="stat-head"><span className="stat-label">{t("miembros.statDiezmadores")}</span></div>
+          <div className="stat-value md"><CountUp value={resumen.diezmadores} format={String} /></div>
+        </div>
+        <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
+          <div className="stat-head"><span className="stat-label">{t("miembros.statAportaronAnio")}</span></div>
+          <div className="stat-value md"><CountUp value={resumen.aportaron} format={String} /></div>
+        </div>
+        <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
+          <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
+          <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const estadoVacio = (
+    <EmptyState
+      pagina
+      titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
+      sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
+      icon={<IconPlus size={20} strokeWidth={1.8} />}
+      accion={members.length === 0 && puedeCrear
+        ? { label: t("miembros.nuevo"), onClick: onNew }
+        : undefined}
+      duplicaCrear
+    />
+  );
+
+  /* Los grupos por inicial de la lista del maestro-detalle, como la app de
+     Contactos. Sin acentos al agrupar ("Ángel" cae en la A) — la misma
+     normalización que el buscador de Ajustes. Sobre `visibles` y sin
+     paginar: la lista es una columna continua que se desplaza. */
+  const gruposLetra: { letra: string; items: Member[] }[] = [];
+  if (partido) {
+    for (const m of visibles) {
+      const letra = (m.nombre.trim()[0] ?? "#")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      const ultimo = gruposLetra[gruposLetra.length - 1];
+      if (ultimo && ultimo.letra === letra) ultimo.items.push(m);
+      else gruposLetra.push({ letra, items: [m] });
+    }
+  }
+  const totalVisibles = sumar(...visibles.map((m) => stats[m.id]?.totalAnio ?? CERO));
+
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
@@ -219,6 +298,102 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
         )}
       </div>
 
+      {/* ---- Maestro-detalle (iPad a partir de 1024px) ---- */}
+      {partido ? (
+        <div className={`md-split md-miembros${selId != null ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista">
+                <div className="md-filtros">
+                  <label className="md-buscar">
+                    <IconSearch size={15} strokeWidth={2} />
+                    <input
+                      value={query}
+                      placeholder={t("miembros.buscarPlaceholder")}
+                      onChange={(e) => setQuery(e.target.value)}
+                      aria-label={t("miembros.buscarPlaceholder")}
+                    />
+                  </label>
+                </div>
+
+                <div className="md-filas">
+                  {angosto && <div className="md-extra">{resumenEscritorio}</div>}
+                  {visibles.length === 0 ? (
+                    <div className="md-filas-vacio">{estadoVacio}</div>
+                  ) : (
+                    gruposLetra.map((g) => (
+                      <div key={g.letra}>
+                        <div className="md-grupo">{g.letra}</div>
+                        {g.items.map((m) => {
+                          const stat = stats[m.id];
+                          return (
+                            <div
+                              key={m.id}
+                              className={`md-fila${selId === m.id ? " sel" : ""}`}
+                              onClick={() => setSelId(m.id)}
+                            >
+                              {/* El color sale del id, no de la posición: así
+                                  no cambia al filtrar y coincide con el de la
+                                  ficha del panel, que ya usaba id % 8. */}
+                              <div className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]}`}>
+                                {initials(m.nombre)}
+                              </div>
+                              <span className="md-fila-textos">
+                                <span className="md-fila-titular"><span className="truncate">{m.nombre}</span></span>
+                                <span className="md-fila-sub truncate">{m.email ?? t("miembros.sinCorreoRegistrado")}</span>
+                              </span>
+                              {stat?.totalAnio ? (
+                                <span className="md-fila-monto">{fmtMoney(stat.totalAnio)}</span>
+                              ) : (
+                                <span className="md-fila-monto" style={{ color: "var(--text-3)", fontWeight: 400 }}>—</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="md-pie">
+                  <span>{t("miembros.activos", { count: visibles.length })}</span>
+                  <span className="md-pie-total">{fmtMoney(totalVisibles)} {church.moneda}</span>
+                </div>
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  const detM = angosto ? sel ?? ultimoSel.current : sel;
+                  if (detM) {
+                    return (
+                      <DetalleMiembro
+                        church={church}
+                        member={detM}
+                        tituloLista={t("miembros.titulo")}
+                        onVolver={() => setSelId(null)}
+                        onEditar={onEdit}
+                        onEliminar={(m) => void requestDelete(m)}
+                      />
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{t("miembros.eligeMiembro")}</h3>
+                        <p>{t("miembros.eligeMiembroSub")}</p>
+                      </div>
+                      {resumenEscritorio}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {!loading && (
           enIPhone ? (
@@ -243,28 +418,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="dash-canvas">
-              <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
-                  <div className="stat-head"><span className="stat-label">{t("miembros.statTotal")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.total} format={String} /></div>
-                </div>
-                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
-                  <div className="stat-head"><span className="stat-label">{t("miembros.statDiezmadores")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.diezmadores} format={String} /></div>
-                </div>
-                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-4)" } as CSSProperties}>
-                  <div className="stat-head"><span className="stat-label">{t("miembros.statAportaronAnio")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.aportaron} format={String} /></div>
-                </div>
-                <div className="stat-card accent" style={{ "--accent-color": "var(--accent-5)" } as CSSProperties}>
-                  <div className="stat-head"><span className="stat-label">{t("miembros.statTotalAnio")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-                </div>
-              </div>
-            </div>
-          )
+          ) : resumenEscritorio
         )}
 
         <div className="tx-head">
@@ -281,18 +435,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
 
         {loading ? (
           <LoadingState />
-        ) : visibles.length === 0 ? (
-          <EmptyState
-            pagina
-            titulo={members.length === 0 ? t("miembros.aunNoHay") : t("miembros.sinResultados")}
-            sub={members.length === 0 ? t("miembros.agregaPrimero") : t("miembros.pruebaOtroTermino")}
-            icon={<IconPlus size={20} strokeWidth={1.8} />}
-            accion={members.length === 0 && puedeCrear
-              ? { label: t("miembros.nuevo"), onClick: onNew }
-              : undefined}
-            duplicaCrear
-          />
-        ) : (
+        ) : visibles.length === 0 ? estadoVacio : (
           <div className={enIPhone ? "ios-listcard" : "data-table roomy tabla-miembros"}>
             {!enIPhone && (
               <div className="thead" style={{ gridTemplateColumns: cols }}>
@@ -419,6 +562,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+      )}
 
       {menu}
 

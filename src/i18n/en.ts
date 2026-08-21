@@ -243,6 +243,9 @@ export const en: Resources = {
     seccionResumen: "Overview",
     activos_one: "{{count}} person on file",
     activos_other: "{{count}} people on file",
+    // Maestro-detalle del iPad ancho (ver docs/ipad-rediseno.md).
+    eligeMiembro: "Select a contributor",
+    eligeMiembroSub: "Tap a row on the list to see their record here, with this year's giving and their statement.",
     importarCsv: "Import CSV",
     padronSecretaria: "The membership roll is managed by the Secretariat: new members and imports are done from Membership.",
     nuevo: "New member",

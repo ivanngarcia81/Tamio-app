@@ -452,7 +452,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           resumen del mes baja a la cabeza de la propia lista para no quedar
           inalcanzable detrás del panel. */}
       {partido ? (
-        <div className={`md-mov${selId != null ? " md-abierto" : ""}`}>
+        <div className={`md-split md-movimientos${selId != null ? " md-abierto" : ""}`}>
           {loading ? (
             <LoadingState />
           ) : (
@@ -506,7 +506,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       const esHoy = g.dia === hoyISO;
                       return (
                         <div key={g.dia}>
-                          <div className="md-dia">
+                          <div className="md-grupo">
                             {esHoy ? `${t("mov.hoy")} · ` : ""}{f.nombreDia} {f.dia}
                           </div>
                           {g.items.map((tx) => {
