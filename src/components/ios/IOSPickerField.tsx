@@ -1,5 +1,5 @@
 /**
- * IOSPickerField.tsx — Reemplazo del `select` nativo en iPhone
+ * IOSPickerField.tsx — Reemplazo del `select` nativo en pantallas táctiles
  *
  * (En los comentarios de este archivo "select" va SIN los signos de menor/
  * mayor a propósito: el criterio de aceptación de esta tarea cuenta las
@@ -15,12 +15,21 @@
  *   <IOSPickerChip>   chip de barra de filtros: "Tipo ⌄"
  *
  * REGLA QUE NO SE PUEDE ROMPER: en Mac el `select` está BIEN. Un popup
- * button es el control correcto de escritorio. Esto es solo para iPhone, así
- * que todo uso va detrás de `esIPhone()`:
+ * button es el control correcto de escritorio, y este archivo no tiene nada
+ * que hacer ahí. Todo uso va detrás de una condición de plataforma:
  *
  *   {esIPhone()
  *     ? <IOSPickerField label={…} value={…} options={…} onSelect={…} />
  *     : (el desplegable nativo de siempre)}
+ *
+ * La condición NO siempre es `esIPhone()`. Desde que la hoja de "Nuevo
+ * ingreso/gasto" corre también en el iPad (`NewRecordModal` la elige con
+ * `esMovil()`), este control se pinta ahí dentro igual que en el teléfono:
+ * una fila de 44px con chevron es el control correcto de cualquier pantalla
+ * que se toca con el dedo, no solo de una de 390px. Lo que decide es de qué
+ * pantalla cuelga el uso — `esIPhone()` para lo que solo existe en el
+ * teléfono, `esMovil()` para lo que comparten teléfono y tablet. Lo único
+ * que no cambia es que en Mac no aparece.
  */
 
 import { useState } from "react";

@@ -3276,10 +3276,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.iphone .settings-shell.zona-abierta .ios-lista { display: none; }
 
-:root.iphone .ios-section { margin-bottom: 35px; }
-:root.iphone .ios-section:last-of-type { margin-bottom: 24px; }
+:root.movil .ios-section { margin-bottom: 35px; }
+:root.movil .ios-section:last-of-type { margin-bottom: 24px; }
 
-:root.iphone .ios-section-header {
+:root.movil .ios-section-header {
   font-size: 13px;
   line-height: 18px;
   /* El elemento es un `<h2>` y traía la negrita del navegador: la regla
@@ -3302,8 +3302,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    `:first-child` deja fuera solas a las hojas que ya resolvían el aire con su
    propio bloque arriba (el segmentado de la solicitud, el importe de Nuevo
    ingreso); ahí una regla más sumaría 20 px sobre algo que ya respiraba. */
-:root.iphone .ios-sheet-body > .ios-section:first-child { padding-top: 20px; }
-:root.iphone .ios-section-footer {
+:root.movil .ios-sheet-body > .ios-section:first-child { padding-top: 20px; }
+:root.movil .ios-section-footer {
   font-size: 13px;
   line-height: 18px;
   color: var(--text-2);
@@ -3311,7 +3311,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin: 0;
 }
 
-:root.iphone .ios-group {
+:root.movil .ios-group {
   background: var(--surface);
   border-radius: 10px;
   margin: 0 16px;
@@ -3409,8 +3409,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 
-:root.iphone .ios-chevron { flex: 0 0 auto; width: 7px; height: 12px; color: var(--text-3); }
-:root.iphone .ios-chevron svg {
+:root.movil .ios-chevron { flex: 0 0 auto; width: 7px; height: 12px; color: var(--text-3); }
+:root.movil .ios-chevron svg {
   width: 100%; height: 100%;
   stroke: currentColor; stroke-width: 2.5; fill: none;
   stroke-linecap: round; stroke-linejoin: round;
@@ -3519,7 +3519,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Ahora las pantallas empujadas de Ajustes se comportan igual que el
    resto del teléfono: nada arriba en reposo, un solo vidrio y una sola
    línea al hacer scroll. */
-:root.iphone .ios-nav {
+:root.movil .ios-nav {
   position: fixed;
   top: env(safe-area-inset-top, 0px);
   left: 0;
@@ -3534,7 +3534,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: transparent;
   border-bottom: 0;
 }
-:root.iphone .ios-nav-title {
+:root.movil .ios-nav-title {
   font-size: 17px;
   font-weight: 600;
   letter-spacing: -0.41px;
@@ -3546,7 +3546,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin: 0;
 }
 /* Botón de volver: chevron + nombre de la pantalla ANTERIOR. */
-:root.iphone .ios-back {
+:root.movil .ios-back {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -3562,8 +3562,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   justify-self: start;
   max-width: 100%;
 }
-:root.iphone .ios-back:active { opacity: .35; }
-:root.iphone .ios-back svg {
+:root.movil .ios-back:active { opacity: .35; }
+:root.movil .ios-back svg {
   width: 11px;
   height: 19px;
   flex: 0 0 auto;
@@ -3573,9 +3573,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-:root.iphone .ios-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root.movil .ios-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-:root.iphone .ios-nav-action {
+:root.movil .ios-nav-action {
   justify-self: end;
   height: var(--navrow-h);
   padding: 0 8px;
@@ -3587,21 +3587,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--brand, #059669);
   cursor: pointer;
 }
-:root.iphone .ios-nav-action:disabled { color: var(--text-3); cursor: default; }
+:root.movil .ios-nav-action:disabled { color: var(--text-3); cursor: default; }
 
 /* Hueco de acción de `.ios-nav`: reserva la columna derecha (título de
    verdad centrado) y, cuando lleva el indicador de guardado automático
    (GuardadoChip), lo mantiene compacto — el hueco es angosto y comparte
    fila con el título. */
-:root.iphone .ios-nav-status {
+:root.movil .ios-nav-status {
   justify-self: end;
   display: flex;
   align-items: center;
   min-width: 0;
   max-width: 130px;
 }
-:root.iphone .ios-nav-status .form-hint,
-:root.iphone .ios-nav-status .settings-saved-pill {
+:root.movil .ios-nav-status .form-hint,
+:root.movil .ios-nav-status .settings-saved-pill {
   font-size: 13px;
   max-width: 100%;
   overflow: hidden;
@@ -3633,7 +3633,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* ---------------- Fila de campo ---------------- */
-:root.iphone .ios-field {
+:root.movil .ios-field {
   position: relative;
   display: flex;
   align-items: center;
@@ -3647,7 +3647,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font: inherit;
   color: var(--text);
 }
-:root.iphone .ios-field:not(:last-child)::after {
+:root.movil .ios-field:not(:last-child)::after {
   content: "";
   position: absolute;
   left: 16px;
@@ -3658,15 +3658,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   transform-origin: bottom;
   background: var(--line-soft);
 }
-:root.iphone .ios-field-label {
+:root.movil .ios-field-label {
   flex: 0 0 auto;
   font-size: 17px;
   letter-spacing: -0.41px;
   line-height: 22px;
 }
-:root.iphone .ios-field-optional { color: var(--text-2); }
+:root.movil .ios-field-optional { color: var(--text-2); }
 
-:root.iphone .ios-field-input {
+:root.movil .ios-field-input {
   flex: 1 1 auto;
   min-width: 0;
   border: 0;
@@ -3678,10 +3678,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-align: right;
   padding: 0;
 }
-:root.iphone .ios-field-input::placeholder { color: var(--text-3); }
-:root.iphone .ios-field-input:focus { outline: none; }
+:root.movil .ios-field-input::placeholder { color: var(--text-3); }
+:root.movil .ios-field-input:focus { outline: none; }
 
-:root.iphone .ios-field-value {
+:root.movil .ios-field-value {
   flex: 1 1 auto;
   min-width: 0;
   font-size: 17px;
@@ -3701,7 +3701,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Piezas sueltas del pie de sección, cuando lleva más de una línea: el aviso
    de error en rojo y el detalle técnico del sync en monoespaciada. Van como
    bloques para que cada una ocupe su renglón. */
-:root.iphone .ios-section-footer > span { display: block; margin-top: 6px; }
+:root.movil .ios-section-footer > span { display: block; margin-top: 6px; }
 :root.iphone .ios-section-footer--error { color: var(--ios-red); }
 :root.iphone .ios-section-footer--tecnico {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -3711,13 +3711,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   word-break: break-word;
 }
 
-:root.iphone .ios-field--link { cursor: pointer; transition: background-color 0.08s ease; }
-:root.iphone .ios-field--link:active { background: var(--line); }
+:root.movil .ios-field--link { cursor: pointer; transition: background-color 0.08s ease; }
+:root.movil .ios-field--link:active { background: var(--line); }
 /* Una fila de picker deshabilitada (p. ej. el municipio antes de elegir
    estado) no puede verse igual que una que sí abre: sin esto el toque no
    hacía nada y no había forma de saber por qué. */
-:root.iphone .ios-field--link:disabled { cursor: default; opacity: 0.45; }
-:root.iphone .ios-field--link:disabled:active { background: transparent; }
+:root.movil .ios-field--link:disabled { cursor: default; opacity: 0.45; }
+:root.movil .ios-field--link:disabled:active { background: transparent; }
 
 /* ---------------- Chip de filtro (IOSPickerChip) ----------------
    Sustituye al `<select>` nativo SOLO en iPhone — en Mac el desplegable
@@ -3739,7 +3739,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .ios-filtros::-webkit-scrollbar { display: none; }
 
-:root.iphone .ios-picker-chip {
+:root.movil .ios-picker-chip {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -3770,7 +3770,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Disparador con pinta de `.form-input` (IOSPickerInput): hereda todo el
    aspecto de sus vecinos de la rejilla `.form-group` y solo añade el
    reparto interno y el chevron simple. */
-:root.iphone .ios-picker-input {
+:root.movil .ios-picker-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3778,18 +3778,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-align: left;
   cursor: pointer;
 }
-:root.iphone .ios-picker-input > span {
+:root.movil .ios-picker-input > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-:root.iphone .ios-picker-input svg { flex: 0 0 auto; opacity: 0.45; }
-:root.iphone .ios-picker-input-vacio { color: var(--text-3); }
-:root.iphone .ios-picker-input:disabled { opacity: 0.5; cursor: default; }
+:root.movil .ios-picker-input svg { flex: 0 0 auto; opacity: 0.45; }
+:root.movil .ios-picker-input-vacio { color: var(--text-3); }
+:root.movil .ios-picker-input:disabled { opacity: 0.5; cursor: default; }
 
-:root.iphone .ios-picker-chip:active { opacity: 0.6; }
-:root.iphone .ios-picker-chip:disabled { opacity: 0.4; cursor: default; }
-:root.iphone .ios-picker-chip svg { flex: 0 0 auto; opacity: 0.5; }
+:root.movil .ios-picker-chip:active { opacity: 0.6; }
+:root.movil .ios-picker-chip:disabled { opacity: 0.4; cursor: default; }
+:root.movil .ios-picker-chip svg { flex: 0 0 auto; opacity: 0.5; }
 
 /* Filtro puesto: relleno con el acento. Así se ve de un vistazo cuáles
    están filtrando, algo que un <select> gris no comunica. --brand (el
@@ -3797,12 +3797,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    --ink-contrast, no un verde fijo: el paquete traía
    `var(--verde, #1e8e5a)`, token inexistente aquí, y con él un acento
    ámbar o azul elegido en Ajustes habría seguido pintando chips verdes. */
-:root.iphone .ios-picker-chip[data-activo="true"] {
+:root.movil .ios-picker-chip[data-activo="true"] {
   background: var(--brand, #059669);
   color: var(--ink-contrast, #fff);
   font-weight: 600;
 }
-:root.iphone .ios-picker-chip[data-activo="true"] svg { opacity: 0.85; }
+:root.movil .ios-picker-chip[data-activo="true"] svg { opacity: 0.85; }
 
 /* Campos de fecha en la barra de filtros: que no midan 44 px de alto ni
    ocupen todo el ancho, para que convivan con los chips. */
@@ -3823,26 +3823,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* Etiqueta arriba, campo abajo — solo cuando el valor no cabe en una línea. */
-:root.iphone .ios-field--stacked {
+:root.movil .ios-field--stacked {
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
   padding-top: 11px;
   padding-bottom: 11px;
 }
-:root.iphone .ios-field--stacked .ios-field-label { font-size: 13px; color: var(--text-2); }
-:root.iphone .ios-field--stacked .ios-field-input { text-align: left; }
+:root.movil .ios-field--stacked .ios-field-label { font-size: 13px; color: var(--text-2); }
+:root.movil .ios-field--stacked .ios-field-input { text-align: left; }
 
 /* Texto largo dentro de la propia fila. `resize: none` porque el tirador de
    redimensionar es de escritorio: en un teléfono no hay puntero con el que
    agarrarlo y solo estorba en la esquina. */
-:root.iphone .ios-field-area {
+:root.movil .ios-field-area {
   resize: none;
   line-height: 22px;
   min-height: 66px;
 }
 
-:root.iphone .ios-field-error {
+:root.movil .ios-field-error {
   flex-basis: 100%;
   font-size: 13px;
   line-height: 16px;
@@ -3853,7 +3853,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Aclaración bajo una fila apilada. No es el pie de la sección: pertenece a
    ESA fila —"un recordatorio solo se ve aquí, no llega ningún correo"— y al
    pie de la sección quedaría a cuatro filas de distancia. */
-:root.iphone .ios-field-pie {
+:root.movil .ios-field-pie {
   font-size: 13px;
   line-height: 17px;
   color: var(--text-2);
@@ -3865,7 +3865,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    —negro, el acento de un panel— al activarse; en iOS lo que marca la
    selección es el tinte de marca, el mismo del "+" y de las acciones. Y sube
    a 34 px de alto: 30 es cómodo con un ratón y corto con un pulgar. */
-:root.iphone .ios-field--stacked .dias-toggle { gap: 8px; padding-top: 2px; }
+:root.movil .ios-field--stacked .dias-toggle { gap: 8px; padding-top: 2px; }
 :root.iphone .dia-chip {
   min-height: 34px;
   padding: 6px 12px;
@@ -3890,12 +3890,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root:not([data-theme="light"]).iphone .dia-chip { background: rgba(118, 118, 128, 0.24); }
 }
 
-:root.iphone .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
+:root.movil .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
 /* Acción no disponible (invitar sin correo, sincronizar mientras sincroniza):
    se apaga a gris, NO a un acento translúcido — un verde a media opacidad se
    lee como "así es su color", no como "ahora no". La fila conserva su alto. */
-:root.iphone .ios-field--action:disabled { color: var(--text-3); cursor: default; }
-:root.iphone .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: 17px; cursor: pointer; }
+:root.movil .ios-field--action:disabled { color: var(--text-3); cursor: default; }
+:root.movil .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: 17px; cursor: pointer; }
 /* Fila de estado consumado, no de acción: "Miembro creado y vinculado". Verde
    de semáforo (--pos) y no de marca, por lo mismo que las insignias: es un
    éxito, no un elemento de identidad. */
@@ -3917,7 +3917,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-field--avatar { min-height: 58px; }
 
 /* ---------------- Switch nativo ---------------- */
-:root.iphone .ios-switch {
+:root.movil .ios-switch {
   flex: 0 0 auto;
   margin-left: auto;
   position: relative;
@@ -3930,7 +3930,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   transition: background-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
-:root.iphone .ios-switch::after {
+:root.movil .ios-switch::after {
   content: "";
   position: absolute;
   top: 2px;
@@ -3942,14 +3942,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s ease;
 }
-:root.iphone .ios-switch[aria-checked="true"] { background: var(--brand, #059669); }
-:root.iphone .ios-switch[aria-checked="true"]::after { transform: translateX(20px); }
+:root.movil .ios-switch[aria-checked="true"] { background: var(--brand, #059669); }
+:root.movil .ios-switch[aria-checked="true"]::after { transform: translateX(20px); }
 /* `.ios-field-label` por defecto no encoge (`flex:0 0 auto`): le sirve a
    TextField, donde el campo de al lado sí se encoge. SwitchField no tiene
    ese campo — con una etiqueta larga ("Sonido al guardar o borrar") el
    switch (también fijo, con margin-left:auto) se salía de la tarjeta.
    Aquí sí encoge y trunca; el switch conserva su tamaño de 51×31. */
-:root.iphone .ios-field:has(.ios-switch) .ios-field-label {
+:root.movil .ios-field:has(.ios-switch) .ios-field-label {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -3958,9 +3958,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root.iphone .ios-switch,
-  :root.iphone .ios-switch::after,
-  :root.iphone .ios-field--link {
+  :root.movil .ios-switch,
+  :root.movil .ios-switch::after,
+  :root.movil .ios-field--link {
     transition: none;
   }
 }
@@ -4181,7 +4181,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* ---------------- Segmentado de 2 opciones ---------------- */
-:root.iphone .ios-segmented {
+:root.movil .ios-segmented {
   position: relative;
   display: flex;
   margin: 0 16px;
@@ -4190,7 +4190,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 9px;
   height: 32px;
 }
-:root.iphone .ios-segmented-thumb {
+:root.movil .ios-segmented-thumb {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -4206,7 +4206,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
-:root.iphone .ios-segmented-opcion {
+:root.movil .ios-segmented-opcion {
   position: relative;
   z-index: 1;
   flex: 1 1 0;
@@ -4220,11 +4220,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  :root.iphone .ios-segmented-thumb { transition: none; }
+  :root.movil .ios-segmented-thumb { transition: none; }
 }
 
 /* ---------------- Hoja de formulario de pantalla completa ---------------- */
-:root.iphone .ios-sheet-overlay {
+:root.movil .ios-sheet-overlay {
   position: fixed;
   inset: 0;
   z-index: 300;
@@ -4233,7 +4233,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: flex-end;
   animation: overlayIn 0.15s ease both;
 }
-:root.iphone .ios-sheet {
+:root.movil .ios-sheet {
   width: 100%;
   height: 92%;
   margin-top: auto;
@@ -4263,16 +4263,58 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    que la deja transparente. Opaca, no translúcida: la barra es hermana de
    `.ios-sheet-body` en un flex en columna, así que nada pasa nunca por
    debajo de ella. */
-:root.iphone .ios-sheet .ios-nav {
+:root.movil .ios-sheet .ios-nav {
   position: static;
   border-radius: 12px 12px 0 0;
   background: var(--surface);
   border-bottom: 0.5px solid var(--line);
 }
-:root.iphone .ios-sheet-cancelar { font-weight: 400; }
-:root.iphone .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+:root.movil .ios-sheet-cancelar { font-weight: 400; }
+:root.movil .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 @media (prefers-reduced-motion: reduce) {
-  :root.iphone .ios-sheet-overlay, :root.iphone .ios-sheet { animation: none; }
+  :root.movil .ios-sheet-overlay, :root.movil .ios-sheet { animation: none; }
+}
+
+/* ---- La misma hoja, en el iPad: `.formSheet` de UIKit ----
+   Arriba está la hoja del teléfono, que sube desde abajo, ocupa el ancho
+   entero y se queda a un 92% de alto — la forma correcta cuando la pantalla
+   mide 390px y la hoja ES la pantalla. En un iPad de 1366 esa misma hoja
+   sería una sábana: 1366px de ancho para un formulario cuya columna de
+   campos no pasa de 600. UIKit lo resuelve con `.formSheet` desde el iPad
+   original: la hoja se despega de los bordes, se centra y se queda en un
+   ancho de lectura. Es lo que pide el diseño de iPad (600px, 82% de alto,
+   radio 16) y lo que hacen Calendario o Contactos al crear algo.
+
+   Solo cambia la GEOMETRÍA. El formulario de dentro —secciones agrupadas,
+   filas de 44px, selectores que empujan subpágina— es el mismo objeto, con
+   el mismo estado (`useNuevoMovimiento`), y por eso esto son diez líneas y
+   no una segunda hoja que mantener. */
+:root.ipad .ios-sheet-overlay {
+  align-items: center;
+  justify-content: center;
+}
+:root.ipad .ios-sheet {
+  width: 600px;
+  /* 92vw es el suelo para el iPad mini en vertical (744px), donde 600 fijos
+     dejarían 72px por lado y la hoja se leería como pegada a los bordes. */
+  max-width: 92vw;
+  height: auto;
+  max-height: 82%;
+  margin-top: 0;
+  border-radius: 16px;
+  /* `modalIn` y no `hojaEntra`: una hoja centrada que se desliza desde el
+     borde inferior de la pantalla contradice dónde acaba. Aparece donde
+     va a quedarse, como el modal del Mac. */
+  animation: modalIn 0.18s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+:root.ipad .ios-sheet .ios-nav { border-radius: 16px 16px 0 0; }
+/* El tirador es la afordancia de "arrastra para cerrar" de una hoja pegada
+   al borde inferior. Una hoja centrada no se arrastra: se cierra con
+   Cancelar o tocando fuera, y el tirador solo prometería un gesto que no
+   existe. */
+:root.ipad .nm-tirador { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root.ipad .ios-sheet { animation: none; }
 }
 
 /* ---------------- Nuevo ingreso / gasto (NuevoMovimientoIOS) ----------------
@@ -4283,8 +4325,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    El tirador va aquí y no en `IOSFormSheet` a propósito: ese componente lo usa
    hoy Categorías, y añadírselo le cambiaría el aspecto a una pantalla que
    nadie pidió tocar. */
-:root.iphone .nm-hoja { position: relative; }
-:root.iphone .nm-tirador {
+:root.movil .nm-hoja { position: relative; }
+:root.movil .nm-tirador {
   position: absolute;
   top: 6px;
   left: 50%;
@@ -4296,9 +4338,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   z-index: 1;
 }
 /* La barra deja sitio al tirador; sin esto el título le queda debajo. */
-:root.iphone .nm-hoja .ios-nav { padding-top: 12px; }
+:root.movil .nm-hoja .ios-nav { padding-top: 12px; }
 
-:root.iphone .nm-tipo { padding: 14px 16px 0; }
+:root.movil .nm-tipo { padding: 14px 16px 0; }
 /* Miembro / persona externa, arriba del todo de la hoja de solicitud. Sin
    sangría lateral: `.ios-segmented` ya trae la suya (`margin: 0 16px`), y
    repetirla aquí lo metería 32 px. */
@@ -4308,8 +4350,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Centrado y grande como en Wallet, con la moneda, la categoría y el método
    debajo en pequeño — así el resumen de lo que se va a guardar está a la
    vista sin desplazar. */
-:root.iphone .nm-monto { padding: 18px 16px 6px; text-align: center; }
-:root.iphone .nm-monto-campo {
+:root.movil .nm-monto { padding: 18px 16px 6px; text-align: center; }
+:root.movil .nm-monto-campo {
   width: 100%;
   border: 0;
   background: none;
@@ -4323,9 +4365,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-variant-numeric: tabular-nums;
   padding: 0;
 }
-:root.iphone .nm-monto-campo:focus { outline: none; }
-:root.iphone .nm-monto-campo::placeholder { color: var(--text-3); }
-:root.iphone .nm-monto-pie {
+:root.movil .nm-monto-campo:focus { outline: none; }
+:root.movil .nm-monto-campo::placeholder { color: var(--text-3); }
+:root.movil .nm-monto-pie {
   margin-top: 6px;
   font-size: 13px;
   color: var(--text-2);
@@ -4334,18 +4376,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Fecha, hora y mes: el control del sistema, alineado a la derecha como el
    valor de cualquier otra fila. No se sustituye por una hoja propia — en
    WKWebView este `input` ES la rueda nativa de iOS. */
-:root.iphone .nm-nativo {
+:root.movil .nm-nativo {
   text-align: right;
   color: var(--text-2);
 }
 :root.iphone .nm-sugerencia .ios-field-label { font-weight: 400; }
-:root.iphone .nm-nota,
-:root.iphone .nm-aviso {
+:root.movil .nm-nota,
+:root.movil .nm-aviso {
   margin: -4px 16px 12px;
   font-size: 13px;
   line-height: 1.4;
 }
-:root.iphone .nm-nota { color: var(--text-2); }
+:root.movil .nm-nota { color: var(--text-2); }
 
 /* ---------------- Hoja con buscador (IOSBuscadorSheet) ----------------
    El campo de búsqueda va FUERA del área que desplaza: es hermano de
@@ -4353,13 +4395,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    fijo bajo la barra mientras la lista corre por debajo. Con el buscador
    dentro de la lista, escribir tres letras lo empujaba fuera de la pantalla
    justo cuando hace falta verlo. */
-:root.iphone .ios-buscador {
+:root.movil .ios-buscador {
   flex: 0 0 auto;
   padding: 8px 16px 10px;
   background: var(--surface);
   border-bottom: 0.5px solid var(--line);
 }
-:root.iphone .ios-buscador-campo {
+:root.movil .ios-buscador-campo {
   width: 100%;
   height: 36px;
   padding: 0 12px;
@@ -4369,16 +4411,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text);
   font-size: 17px; /* menos de 16 y iOS hace zoom al enfocar */
 }
-:root.iphone .ios-buscador-campo:focus { outline: none; }
-:root.iphone .ios-buscador-campo::placeholder { color: var(--text-3); }
+:root.movil .ios-buscador-campo:focus { outline: none; }
+:root.movil .ios-buscador-campo::placeholder { color: var(--text-3); }
 /* La "x" que WebKit añade a `type="search"` se queda: es la forma nativa de
    borrar la búsqueda y ahorra un botón propio. */
 
-:root.iphone .ios-buscador-grupo { margin: 12px 16px 0; }
+:root.movil .ios-buscador-grupo { margin: 12px 16px 0; }
 /* Dos líneas por fila: nombre arriba, el dato que desempata debajo. La fila
    base de iOS es de una línea, así que el alto se deja crecer. */
-:root.iphone .ios-buscador-fila { align-items: center; }
-:root.iphone .ios-buscador-texto {
+:root.movil .ios-buscador-fila { align-items: center; }
+:root.movil .ios-buscador-texto {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -4386,14 +4428,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex: 1 1 auto;
   text-align: left;
 }
-:root.iphone .ios-buscador-sub {
+:root.movil .ios-buscador-sub {
   font-size: 13px;
   color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-:root.iphone .ios-buscador-vacio {
+:root.movil .ios-buscador-vacio {
   color: var(--text-2);
   justify-content: center;
 }
@@ -4407,12 +4449,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    comentario largo en CartaEditor.tsx). Hace falta esta regla y no el
    atributo `hidden`: `.ios-sheet-overlay` declara `display: flex`, que gana
    al `display: none` que el navegador aplica a `[hidden]`. */
-:root.iphone .ios-sheet-overlay.ios-oculta { display: none; }
+:root.movil .ios-sheet-overlay.ios-oculta { display: none; }
 
 /* Valor de una fila que resume un texto largo: una línea, con puntos
    suspensivos. Sin esto, una dirección de tres renglones desalinea la lista
    entera. */
-:root.iphone .ios-field-value--resumen {
+:root.movil .ios-field-value--resumen {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4421,8 +4463,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Pantalla de un texto largo: el campo ocupa todo, sin caja ni borde — lo que
    se edita es el texto, no un formulario. */
-:root.iphone .ios-texto-cuerpo { padding: 0; }
-:root.iphone .ios-texto-campo {
+:root.movil .ios-texto-cuerpo { padding: 0; }
+:root.movil .ios-texto-campo {
   width: 100%;
   min-height: 100%;
   box-sizing: border-box;
@@ -4435,8 +4477,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 16px;
   resize: none;
 }
-:root.iphone .ios-texto-campo--linea { min-height: 0; }
-:root.iphone .ios-texto-campo:focus { outline: none; }
+:root.movil .ios-texto-campo--linea { min-height: 0; }
+:root.movil .ios-texto-campo:focus { outline: none; }
 
 /* Aviso del membrete: la fila lleva el naranja de aviso, no el azul de enlace
    — es una advertencia que además navega, y el color lo dice antes que el
@@ -4723,7 +4765,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    valor se queda con el ancho, que es el dato que se consulta. */
 :root.iphone .carta-ios .ios-field-label { flex: 0 1 auto; min-width: 0; }
 :root.iphone .carta-ios .ios-field-value { flex: 1 1 auto; }
-:root.iphone .nm-aviso {
+:root.movil .nm-aviso {
   display: flex;
   align-items: flex-start;
   gap: 6px;
@@ -5080,29 +5122,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    píxeles de ancho. Aquí el día solo dice "hay o no hay" —número y punto— y
    lo que hay se lee entero en la lista de abajo, como en el Calendario de
    iOS. Mac e iPad siguen con `.agenda-cal`, que ahí sí cabe. */
-:root.iphone .ios-cal {
+:root.movil .ios-cal {
   background: var(--surface);
   border-radius: 16px;
   padding: 8px 6px 10px;
   margin-bottom: 18px;
 }
-:root.iphone .ios-cal-dow {
+:root.movil .ios-cal-dow {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   padding-bottom: 4px;
   border-bottom: 0.5px solid var(--line-soft);
   margin: 0 6px 4px;
 }
-:root.iphone .ios-cal-dow span {
+:root.movil .ios-cal-dow span {
   text-align: center;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.2px;
   color: var(--text-3);
 }
-:root.iphone .ios-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
-:root.iphone .ios-cal-hueco { display: block; }
-:root.iphone .ios-cal-dia {
+:root.movil .ios-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
+:root.movil .ios-cal-hueco { display: block; }
+:root.movil .ios-cal-dia {
   /* 44 de alto: el mínimo de un objetivo táctil en iOS. El círculo mide 32 y
      el resto es el margen de error del pulgar, no aire decorativo. */
   min-height: 44px;
@@ -5116,7 +5158,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-:root.iphone .ios-cal-num {
+:root.movil .ios-cal-num {
   width: 32px;
   height: 32px;
   border-radius: 16px;
@@ -5130,8 +5172,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 /* Hoy manda sobre elegido: el relleno oscuro ya se lee como "el día en que
    estamos" y teñirlo de marca además lo confundiría con la selección. */
-:root.iphone .ios-cal-num--hoy { background: var(--ink); color: var(--ink-contrast); font-weight: 600; }
-:root.iphone .ios-cal-num--sel {
+:root.movil .ios-cal-num--hoy { background: var(--ink); color: var(--ink-contrast); font-weight: 600; }
+:root.movil .ios-cal-num--sel {
   background: color-mix(in srgb, var(--brand, #059669) 14%, transparent);
   color: var(--brand, #059669);
   font-weight: 600;
@@ -5139,24 +5181,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* El punto se pinta SIEMPRE (transparente cuando no hay nada): así los
    números de todas las filas quedan a la misma altura, con eventos o sin
    ellos. */
-:root.iphone .ios-cal-punto {
+:root.movil .ios-cal-punto {
   width: 5px;
   height: 5px;
   border-radius: 3px;
   background: transparent;
 }
-:root.iphone .ios-cal-punto--on { background: var(--brand, #059669); }
+:root.movil .ios-cal-punto--on { background: var(--brand, #059669); }
 
 /* Tira de una semana: la inicial va dentro de cada celda. */
-:root.iphone .ios-cal--tira { padding: 10px 6px; }
-:root.iphone .ios-cal--tira .ios-cal-dia { gap: 3px; padding-top: 0; }
-:root.iphone .ios-cal-dow-celda {
+:root.movil .ios-cal--tira { padding: 10px 6px; }
+:root.movil .ios-cal--tira .ios-cal-dia { gap: 3px; padding-top: 0; }
+:root.movil .ios-cal-dow-celda {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.2px;
   color: var(--text-3);
 }
-:root.iphone .ios-cal--tira .ios-cal-num { width: 34px; height: 34px; border-radius: 17px; }
+:root.movil .ios-cal--tira .ios-cal-num { width: 34px; height: 34px; border-radius: 17px; }
 
 /* Cabecera de la lista del día elegido: qué día es y cuántas cosas tiene. */
 :root.iphone .ios-dia-cab {
@@ -5703,8 +5745,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    acciones. Las filas son `.ios-field` de las de siempre, así que solo hay
    que quitarles el fondo propio y dejar que la línea de separación la ponga
    la hoja. */
-:root.iphone .ios-rango-campos .ios-field { background: none; padding-left: 18px; padding-right: 18px; }
-:root.iphone .ios-rango-campos .ios-field:not(:last-child)::after { left: 18px; right: 18px; }
+:root.movil .ios-rango-campos .ios-field { background: none; padding-left: 18px; padding-right: 18px; }
+:root.movil .ios-rango-campos .ios-field:not(:last-child)::after { left: 18px; right: 18px; }
 /* Punto de color de una opción (categorías): mismo tamaño en la fila del
    formulario y en la hoja que abre, para que se lean como la misma cosa. */
 .ios-picker-dot {
@@ -12924,16 +12966,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Un grupo de chips no cabe en `.ios-group`: sus filas son de una línea y
    aquí hay hasta once opciones que se envuelven. Misma tarjeta, mismo margen
    y mismo radio que el grupo, pero con relleno en vez de filas. */
-:root.iphone .ios-chips {
+:root.movil .ios-chips {
   background: var(--surface);
   border-radius: 10px;
   margin: 0 16px;
   padding: 12px 14px;
 }
-:root.iphone .ios-chips .chip { font-size: 14px; padding: 7px 13px; }
+:root.movil .ios-chips .chip { font-size: 14px; padding: 7px 13px; }
 /* El chip activo de la regla base es NEGRO. Acotado a este bloque: `.chip` la
    usan muchas pantallas y su regla base no se toca. */
-:root.iphone .ios-chips .chip.active {
+:root.movil .ios-chips .chip.active {
   background: var(--brand-soft, rgba(16, 185, 129, 0.14));
   color: var(--brand);
   border-color: transparent;
@@ -12941,14 +12983,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* El campo de "otro ministerio…" y su botón: mismo relleno gris sin borde que
    el resto de campos del teléfono. 16 px de fuente no es capricho — por
    debajo de eso, iOS hace zoom sobre el campo al enfocarlo. */
-:root.iphone .ios-chips .form-input {
+:root.movil .ios-chips .form-input {
   height: 36px;
   border: 0;
   background: rgba(118, 118, 128, 0.12);
   font-size: 16px;
 }
 :root[data-theme="dark"].iphone .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
-:root.iphone .ios-chips .btn.secondary { font-size: 15px; }
+:root.movil .ios-chips .btn.secondary { font-size: 15px; }
 
 /* La cuenta de la fila de un bloque: "3" cuando está vacío —cuántos campos
    hay dentro— y "1 de 3" en cuanto hay algo escrito. El tinte es lo que
@@ -12998,22 +13040,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Conteo: la cifra y su −/+. Contar asistentes es tocar "+" doce veces, no
    escribir "12" y volver a cerrar el teclado. */
-:root.iphone .ios-conteo { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; margin-left: auto; }
-:root.iphone .ios-conteo-cifra {
+:root.movil .ios-conteo { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; margin-left: auto; }
+:root.movil .ios-conteo-cifra {
   min-width: 26px;
   text-align: right;
   font-size: 17px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-:root.iphone .ios-stepper {
+:root.movil .ios-stepper {
   display: grid;
   grid-template-columns: 1fr 1fr;
   border-radius: 8px;
   overflow: hidden;
   background: rgba(118, 118, 128, 0.12);
 }
-:root.iphone .ios-stepper button {
+:root.movil .ios-stepper button {
   width: 44px;
   height: 31px;
   border: 0;
@@ -13023,9 +13065,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 1;
   cursor: pointer;
 }
-:root.iphone .ios-stepper button:first-child { border-right: 0.5px solid rgba(60, 60, 67, 0.15); }
-:root.iphone .ios-stepper button:active { background: rgba(118, 118, 128, 0.2); }
-:root.iphone .ios-stepper button:disabled { color: var(--text-3); cursor: default; }
+:root.movil .ios-stepper button:first-child { border-right: 0.5px solid rgba(60, 60, 67, 0.15); }
+:root.movil .ios-stepper button:active { background: rgba(118, 118, 128, 0.2); }
+:root.movil .ios-stepper button:disabled { color: var(--text-3); cursor: default; }
 :root[data-theme="dark"].iphone .ios-stepper { background: rgba(118, 118, 128, 0.24); }
 
 /* El total: se calcula, no se escribe. Fondo apenas teñido y peso 600 para
@@ -13076,7 +13118,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Una fila que solo lleva etiqueta y chevron: sin el valor de por medio no
    hay nada que empuje al chevron al borde derecho. */
-:root.iphone .ios-field--link > .ios-field-label + .ios-chevron { margin-left: auto; }
+:root.movil .ios-field--link > .ios-field-label + .ios-chevron { margin-left: auto; }
 
 /* Aviso dentro de un pie de sección: no es un error, es un descuadre entre el
    conteo y la lista. Naranja, no rojo. */

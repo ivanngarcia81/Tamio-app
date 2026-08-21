@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
-import { IOSPickerInput } from "./ios/IOSPickerField";
+import { esMovil } from "../movil";
 import { textoCorto } from "../movil";
 import { fmtMoney, catNombre, metodoNombre, METODOS_PAGO, getCategoriasGasto, getCategoriasIngreso, currentMonth, mesesPendientesRecurrente } from "../db";
 import { IconArrowDown, IconArrowUp, IconCheck, IconClose, IconRepeat, IconSparkles, IconWarn } from "../icons";
@@ -15,11 +14,13 @@ import NuevoMovimientoIOS from "./NuevoMovimientoIOS";
 export type { ModalTab, ModalMode } from "./nuevoMovimiento";
 
 /**
- * "Nuevo ingreso / gasto / miembro" en Mac y iPad: el modal centrado de
- * siempre, sin un cambio.
+ * "Nuevo ingreso / gasto / miembro" en el Mac: el modal centrado de siempre,
+ * sin un cambio.
  *
- * En el iPhone la misma información se enseña como hoja de iOS
- * (`NuevoMovimientoIOS`). Las dos ramas leen el MISMO estado, el de
+ * En TODO lo táctil —iPhone e iPad— la misma información se enseña como hoja
+ * de iOS (`NuevoMovimientoIOS`), a pantalla completa en el teléfono y como
+ * hoja de formulario centrada de 600px en la tablet, que es lo que hace
+ * UIKit con un `.formSheet`. Las dos ramas leen el MISMO estado, el de
  * `useNuevoMovimiento`, así que no hay dos formularios que mantener: hay uno
  * con dos pieles. La pestaña de miembro se queda con el modal en las tres
  * plataformas — es otro formulario y no entró en el rediseño.
@@ -100,7 +101,7 @@ export default function NewRecordModal(props: Props) {
     guardar,
   } = h;
 
-  if (esIPhone() && h.tab !== "miembro") return <NuevoMovimientoIOS {...props} h={h} />;
+  if (esMovil() && h.tab !== "miembro") return <NuevoMovimientoIOS {...props} h={h} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -231,20 +232,15 @@ export default function NewRecordModal(props: Props) {
                 <div className="form-group">
                   <label className="form-label">{t("recordModal.moneda")}</label>
                   {/* Una sola opción y deshabilitado: no despliega nada, pero
-                      WebKit le pinta igual el doble chevron. */}
-                  {esIPhone() ? (
-                    <IOSPickerInput
-                      ariaLabel={t("iglesia.moneda")}
-                      options={[{ value: church.moneda, label: currencyLabel(church.moneda, i18n.language) }]}
-                      value={church.moneda}
-                      disabled
-                      onSelect={() => {}}
-                    />
-                  ) : (
-                    <select className="form-select" value={church.moneda} disabled>
-                      <option value={church.moneda}>{currencyLabel(church.moneda, i18n.language)}</option>
-                    </select>
-                  )}
+                      WebKit le pinta igual el doble chevron.
+                      Aquí había además una rama con `IOSPickerInput` para el
+                      iPhone. Ya no puede alcanzarse: este bloque vive dentro
+                      de `tab !== "miembro"`, y con esa condición lo táctil
+                      sale arriba por la hoja de iOS. Lo que queda es la rama
+                      de escritorio, la única que llega. */}
+                  <select className="form-select" value={church.moneda} disabled>
+                    <option value={church.moneda}>{currencyLabel(church.moneda, i18n.language)}</option>
+                  </select>
                 </div>
               </div>
 
