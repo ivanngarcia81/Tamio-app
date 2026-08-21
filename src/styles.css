@@ -9292,6 +9292,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      no a los 32 de las tablas — la fila de 64 lo pide y es la medida del
      diseño (y la de una celda de Contactos). */
   :root.ipad .md-fila .mini-avatar { width: 38px; height: 38px; font-size: 13.5px; }
+
+  /* ---- Por revisar (.md-bandeja) ----
+     Su lista junta dos grupos que no son lo mismo, así que las cabeceras
+     tienen que separar de verdad; el resto es la misma fila de siempre. */
+  /* El punto de los pendientes: redondo y ámbar, no el cuadradito de
+     categoría de Gastos. Aquí no clasifica —dice "esto espera algo"— y es
+     el mismo ámbar de `--warn` que ya usa la insignia de pendiente. */
+  :root.ipad .md-punto-aviso { border-radius: 50%; background: var(--warn); }
+  /* Separación entre el bloque de pendientes y el de archivados. El primer
+     rótulo no la lleva: pegado a la barra ya está donde debe. */
+  :root.ipad .md-bandeja .md-grupo + * ~ .md-grupo,
+  :root.ipad .md-bandeja .md-grupo-vacio + .md-grupo { margin-top: 18px; }
+  :root.ipad .md-grupo-vacio {
+    padding: 10px 16px 14px;
+    font-size: 13px;
+    color: var(--text-3);
+  }
+  /* La etiqueta "Archivado" de la fila: no hay importe que alinear a la
+     derecha, y sin `flex-shrink: 0` la pastilla se comprimía con nombres
+     largos hasta partir su texto. */
+  :root.ipad .md-bandeja .md-fila .tag { flex-shrink: 0; }
   :root.ipad .md-fila-textos {
     flex: 1;
     min-width: 0;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   categoriaInfo, fmtFecha, fmtFechaCorta, fmtMoney, listArchivedMembers, listPendingTx,
@@ -10,7 +10,11 @@ import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
-import { esIPhone, esMac } from "../movil";
+import { esIPad, esIPhone, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import DetalleMovimiento from "../components/DetalleMovimiento";
+import DetalleMiembro from "../components/DetalleMiembro";
+import ComprobantePreview from "../components/ComprobantePreview";
 import { IconCheck, IconRefreshCw } from "../icons";
 
 interface Props {
@@ -25,6 +29,13 @@ const PAGE_SIZE = 15;
 export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Props) {
   const { t } = useTranslation();
   const enIPhone = esIPhone();
+  /* Maestro-detalle del iPad, los mismos dos umbrales que Movimientos y
+     Aportantes (docs/ipad-rediseno.md): partido desde 700, columnas desde
+     1150, y entre medias el detalle empuja. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
   const [pendientes, setPendientes] = useState<Tx[]>([]);
   const [archivados, setArchivados] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +58,22 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
 
   useEffect(() => { setPagPendientes(1); setPagArchivados(1); }, [refreshKey]);
 
+  /* El asunto abierto. Aquí la lista es HETEROGÉNEA —un movimiento pendiente
+     y un miembro archivado no son lo mismo— así que la selección guarda el
+     tipo además del id, y de ahí sale qué panel se pinta. Como en las otras
+     dos pantallas se guarda el ID y no el objeto: al resolver un asunto la
+     recarga lo saca de su lista y el panel se cierra solo. */
+  const [sel, setSel] = useState<{ tipo: "tx" | "miembro"; id: number } | null>(null);
+  const selTx = sel?.tipo === "tx" ? pendientes.find((x) => x.id === sel.id) ?? null : null;
+  const selMiembro = sel?.tipo === "miembro" ? archivados.find((m) => m.id === sel.id) ?? null : null;
+  const ultimoSel = useRef<{ tx: Tx | null; miembro: Member | null }>({ tx: null, miembro: null });
+  if (selTx) ultimoSel.current = { tx: selTx, miembro: null };
+  if (selMiembro) ultimoSel.current = { tx: null, miembro: selMiembro };
+  const [previewSel, setPreviewSel] = useState<string | null>(null);
+
   async function handleReviewed(tx: Tx) {
+    // Resuelto el asunto, deja de estar en la bandeja: el panel se cierra.
+    setSel((s) => (s?.tipo === "tx" && s.id === tx.id ? null : s));
     await markTxReviewed(tx.id, church.id);
     showToast(t("toast.marcadoRevisado"));
     playSound("guardado");
@@ -55,6 +81,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   }
 
   async function handleRestore(m: Member) {
+    setSel((s) => (s?.tipo === "miembro" && s.id === m.id ? null : s));
     await restoreMember(m.id, church.id);
     showToast(t("toast.miembroRestaurado"));
     playSound("guardado");
@@ -88,6 +115,144 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
         )}
       </div>
 
+      {/* ---- Maestro-detalle (iPad) ----
+          La columna maestra junta los dos grupos que la página ya tenía
+          —movimientos pendientes y miembros archivados— en una sola lista
+          con dos cabeceras. El panel reutiliza los MISMOS componentes de
+          Ingresos y Aportantes, cambiándoles solo los botones: aquí un
+          movimiento se mira para aprobarlo, no para borrarlo.
+
+          El handoff maquetaba esta pantalla con una taxonomía de alertas
+          ("duplicado probable", "categoría vacía", "recurrente vencido")
+          que NO existe en la app: `listPendingTx` da movimientos en estado
+          pendiente y `listArchivedMembers` da miembros archivados, y eso es
+          todo. Se toma la estructura del diseño, no sus datos inventados. */}
+      {partido ? (
+        <div className={`md-split md-bandeja${sel ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista">
+                <div className="md-filas">
+                  {total === 0 ? (
+                    <div className="md-filas-vacio">
+                      <EmptyState pagina titulo={t("bandeja.sinPendientes")} sub={t("bandeja.emptySub")} />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="md-grupo">{t("bandeja.pendientesRevision")}</div>
+                      {pendientes.length === 0 ? (
+                        <div className="md-grupo-vacio">{t("bandeja.noMovsRevisar")}</div>
+                      ) : pendientes.map((tx) => {
+                        const cat = categoriaInfo(tx.tipo, tx.categoria);
+                        const sub = [
+                          tx.tipo === "ingreso" ? t("tx.ingreso") : t("tx.gasto"),
+                          cat.nombre,
+                          fmtFechaCorta(tx.fecha),
+                        ].join(" · ");
+                        return (
+                          <div
+                            key={`tx-${tx.id}`}
+                            className={`md-fila${sel?.tipo === "tx" && sel.id === tx.id ? " sel" : ""}`}
+                            onClick={() => setSel({ tipo: "tx", id: tx.id })}
+                          >
+                            <span className="md-cat-dot md-punto-aviso" aria-hidden="true" />
+                            <span className="md-fila-textos">
+                              <span className="md-fila-titular"><span className="truncate">{tx.concepto}</span></span>
+                              <span className="md-fila-sub truncate">{sub}</span>
+                            </span>
+                            <span className="md-fila-monto">{fmtMoney(tx.monto)}</span>
+                          </div>
+                        );
+                      })}
+
+                      <div className="md-grupo">{t("bandeja.miembrosArchivadosLabel")}</div>
+                      {archivados.length === 0 ? (
+                        <div className="md-grupo-vacio">{t("bandeja.noMiembrosArchivados")}</div>
+                      ) : archivados.map((m) => (
+                        <div
+                          key={`m-${m.id}`}
+                          className={`md-fila${sel?.tipo === "miembro" && sel.id === m.id ? " sel" : ""}`}
+                          onClick={() => setSel({ tipo: "miembro", id: m.id })}
+                        >
+                          <span className="md-fila-textos">
+                            <span className="md-fila-titular"><span className="truncate">{m.nombre}</span></span>
+                            <span className="md-fila-sub truncate">
+                              {m.email ?? m.rfc ?? t("bandeja.sinCorreoRegistrado")}
+                            </span>
+                          </span>
+                          <span className="tag rol-otro">{t("bandeja.archivado")}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+
+                <div className="md-pie">
+                  <span>{t("bandeja.porRevisar", { count: pendientes.length })}</span>
+                  <span className="md-pie-total">{t("bandeja.archivados", { count: archivados.length })}</span>
+                </div>
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  const tx = angosto ? selTx ?? ultimoSel.current.tx : selTx;
+                  const miembro = angosto ? selMiembro ?? ultimoSel.current.miembro : selMiembro;
+                  if (tx) {
+                    return (
+                      <DetalleMovimiento
+                        tx={tx}
+                        tituloLista={t("bandeja.titulo")}
+                        onVolver={() => setSel(null)}
+                        onEditar={onEditTx}
+                        onEliminar={() => {}}
+                        onVerComprobante={setPreviewSel}
+                        acciones={
+                          <>
+                            <button type="button" className="btn secondary" onClick={() => onEditTx(tx)}>
+                              {t("common.editar")}
+                            </button>
+                            <button type="button" className="btn primary" onClick={() => void handleReviewed(tx)}>
+                              <IconCheck size={14} strokeWidth={2.4} /> {t("bandeja.marcarRevisado")}
+                            </button>
+                          </>
+                        }
+                      />
+                    );
+                  }
+                  if (miembro) {
+                    return (
+                      <DetalleMiembro
+                        church={church}
+                        member={miembro}
+                        tituloLista={t("bandeja.titulo")}
+                        onVolver={() => setSel(null)}
+                        onEditar={() => {}}
+                        onEliminar={() => {}}
+                        acciones={
+                          <button type="button" className="btn primary" onClick={() => void handleRestore(miembro)}>
+                            <IconRefreshCw size={14} strokeWidth={2.2} /> {t("bandeja.restaurar")}
+                          </button>
+                        }
+                      />
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{total === 0 ? t("bandeja.todoAlDia") : t("bandeja.eligeAsunto")}</h3>
+                        <p>{total === 0 ? t("bandeja.emptySub") : t("bandeja.eligeAsuntoSub")}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content">
         {loading ? (
           <LoadingState />
@@ -294,6 +459,9 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
           </>
         )}
       </div>
+      )}
+
+      {previewSel && <ComprobantePreview path={previewSel} onClose={() => setPreviewSel(null)} />}
     </>
   );
 }

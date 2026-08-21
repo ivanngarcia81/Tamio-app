@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Church, Member } from "../db";
 import { CuerpoFichaMiembro, IdentidadMiembro, useFichaMiembro } from "./MemberDetailModal";
@@ -12,6 +13,10 @@ interface Props {
   onVolver: () => void;
   onEditar: (m: Member) => void;
   onEliminar: (m: Member) => void;
+  /** Sustituye Editar/Eliminar por otras. En la Bandeja el miembro está
+   *  archivado y la única acción que tiene sentido es "Restaurar"; imprimir
+   *  la constancia se queda, que es del cuerpo de la ficha. */
+  acciones?: ReactNode;
 }
 
 /**
@@ -24,7 +29,7 @@ interface Props {
  * los botones (Editar y Eliminar acompañan a Imprimir/Constancia, porque en
  * el panel no hay fila de tabla con lápiz al lado) y el botón de volver.
  */
-export default function DetalleMiembro({ church, member, tituloLista, onVolver, onEditar, onEliminar }: Props) {
+export default function DetalleMiembro({ church, member, tituloLista, onVolver, onEditar, onEliminar, acciones }: Props) {
   const { t } = useTranslation();
   const f = useFichaMiembro(church, member);
 
@@ -37,12 +42,16 @@ export default function DetalleMiembro({ church, member, tituloLista, onVolver, 
       <div className="dm-cab">
         <IdentidadMiembro member={member} />
         <div className="dm-acciones">
-          <button type="button" className="btn secondary" onClick={() => onEditar(member)}>
-            <IconEdit size={14} strokeWidth={2} /> {t("common.editar")}
-          </button>
-          <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(member)}>
-            <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
-          </button>
+          {acciones ?? (
+            <>
+              <button type="button" className="btn secondary" onClick={() => onEditar(member)}>
+                <IconEdit size={14} strokeWidth={2} /> {t("common.editar")}
+              </button>
+              <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(member)}>
+                <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
+              </button>
+            </>
+          )}
           <button type="button" className="btn secondary" onClick={f.handlePrint} disabled={f.exporting !== null || f.aportes.length === 0}>
             <IconPrinter size={14} /> {f.exporting === "print" ? t("common.preparando") : t("common.imprimir")}
           </button>

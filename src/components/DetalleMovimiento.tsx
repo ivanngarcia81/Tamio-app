@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   categoriaInfo, fmtFecha, fmtFechaCorta, fmtMoney, metodoNombre, METODOS_PAGO, type Tx,
@@ -14,6 +15,13 @@ interface Props {
   onEditar: (tx: Tx) => void;
   onEliminar: (tx: Tx) => void;
   onVerComprobante: (path: string) => void;
+  /** Sustituye la fila de botones por otra. Lo usa la Bandeja, donde el
+   *  mismo movimiento se mira para APROBARLO, no para editarlo o borrarlo:
+   *  ahí las acciones son "Marcar revisado" y "Editar", y "Eliminar" no
+   *  pinta nada. La ficha —importe, campos, comprobante— es la misma, que
+   *  es justo el motivo de reutilizar este componente en vez de escribir un
+   *  segundo panel que enseñe lo mismo con otro código. */
+  acciones?: ReactNode;
 }
 
 /**
@@ -29,7 +37,7 @@ interface Props {
  * `transactions` no guarda quién creó ni un historial de cambios, y una ficha
  * que inventa datos es peor que una que no está (docs/ipad-rediseno.md §4).
  */
-export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar, onEliminar, onVerComprobante }: Props) {
+export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar, onEliminar, onVerComprobante, acciones }: Props) {
   const { t } = useTranslation();
   const esIngreso = tx.tipo === "ingreso";
   const cat = categoriaInfo(tx.tipo, tx.categoria);
@@ -79,12 +87,16 @@ export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar,
               <IconClip size={14} strokeWidth={2} /> {t("tx.verComprobante")}
             </button>
           )}
-          <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(tx)}>
-            <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
-          </button>
-          <button type="button" className="btn primary" onClick={() => onEditar(tx)}>
-            <IconEdit size={14} strokeWidth={2} /> {t("common.editar")}
-          </button>
+          {acciones ?? (
+            <>
+              <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(tx)}>
+                <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
+              </button>
+              <button type="button" className="btn primary" onClick={() => onEditar(tx)}>
+                <IconEdit size={14} strokeWidth={2} /> {t("common.editar")}
+              </button>
+            </>
+          )}
         </div>
       </div>
 

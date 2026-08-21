@@ -211,6 +211,10 @@ export const es = {
   },
 
   bandeja: {
+    // Maestro-detalle del iPad ancho (ver docs/ipad-rediseno.md).
+    eligeAsunto: "Elige un asunto",
+    eligeAsuntoSub: "Toca un movimiento pendiente o un miembro archivado para verlo aquí y resolverlo.",
+    todoAlDia: "Todo al día",
     titulo: "Por revisar",
     sinPendientes: "No tienes pendientes",
     porRevisar_one: "{{count}} movimiento por revisar",

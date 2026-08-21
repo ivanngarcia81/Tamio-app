@@ -217,6 +217,10 @@ export const en: Resources = {
   },
 
   bandeja: {
+    // Maestro-detalle del iPad ancho (ver docs/ipad-rediseno.md).
+    eligeAsunto: "Select an item",
+    eligeAsuntoSub: "Tap a pending transaction or an archived member to review it here.",
+    todoAlDia: "All caught up",
     titulo: "Pending review",
     sinPendientes: "Nothing pending",
     porRevisar_one: "{{count}} transaction to review",
