@@ -139,6 +139,34 @@ no se reconoce. Es esto.
 > done
 > ```
 
+### Quién puede borrar una rama (y quién no)
+
+**Una sesión de Claude Code en el contenedor no puede.** Comprobado el 22 de
+agosto al intentar borrar `design-review-execution-can5gv` ya fusionada: sus
+credenciales **crean y actualizan** refs —ese mismo día empujaron `main` y la
+rama de la 1.2.0 sin problema— pero **borrar** una devuelve 403:
+
+```
+error: RPC failed; HTTP 403 curl 22 The requested URL returned error: 403
+send-pack: unexpected disconnect while reading sideband packet
+```
+
+Las dos sintaxis dan lo mismo (`git push origin --delete X` y
+`git push origin :X`), y el servidor MCP de GitHub tiene `create_branch` y
+`list_branches` pero **no** un borrado de ramas. No es el 403 del token de
+arriba: aquel denegaba TODA escritura; este solo el borrado.
+
+Así que el borrado es de Iván, desde su Mac:
+
+```sh
+git push origin --delete claude/design-review-execution-can5gv
+git fetch --prune origin      # para que deje de aparecer en `git branch -r`
+```
+
+O desde GitHub: *Branches* → la papelera al lado del nombre. Si se borra por
+error, GitHub la ofrece con *Restore* durante un tiempo, y el commit
+`a8abf3c` sigue siendo la punta de `main`.
+
 ## La regla, para no volver aquí
 
 Una rama se borra **en cuanto su trabajo llega a `main`**, no meses después.
