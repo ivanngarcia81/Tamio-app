@@ -78,7 +78,7 @@ en las tres fuentes:
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
 | 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
-| esta | **1.1.9** — el rediseño completo: las diez pantallas, Inicio, Configuración y los formularios como hoja |
+| 22 ago | **1.1.9** — el rediseño completo: las diez pantallas, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight |
 | la siguiente | 1.1.10 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
