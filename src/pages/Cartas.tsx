@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto, esMac } from "../movil";
+import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { MacBuscador, MacFiltros, type CampoFiltro } from "../components/mac/MacFiltros";
 import {
   deleteCarta, deletePlantilla, deleteSolicitud, deleteTrasladoEntrada, deleteTrasladoSalida,
@@ -9,6 +10,7 @@ import {
   listCartas, listMembersRegistro, listPlantillas, listSolicitudes, listTrasladosEntrada,
   listTrasladosSalida, updateCarta, updatePlantilla, updateSolicitud, updateTrasladoEntrada,
   updateTrasladoSalida, vincularCartaSolicitud,
+  mesLegible,
   type Carta, type Church, type Member, type NewCarta, type NewPlantilla, type NewSolicitud,
   type NewTrasladoEntrada, type NewTrasladoSalida, type Plantilla, type Solicitud,
   type TrasladoEntrada, type TrasladoSalida,
@@ -19,6 +21,7 @@ import RowMenu, { type RowMenuItem } from "../components/RowMenu";
 import { useBarraEstado } from "../components/BarraEstado";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CartaEditor, { ESTADOS_CARTA, TIPOS_CARTA, type CartaPrefill } from "../components/CartaEditor";
+import DetalleCarta from "../components/DetalleCarta";
 import ActionSheet, { type ActionSheetOption } from "../components/ActionSheet";
 import SolicitudModal from "../components/SolicitudModal";
 import TrasladoSalidaModal from "../components/TrasladoSalidaModal";
@@ -181,6 +184,15 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   // nombre de la sección activa, así que el título grande de aquí abajo
   // sobra ahí — igual que en Ajustes (ver Configuracion.tsx/enIPhone).
   const enIPhone = esIPhone();
+  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): mismos dos umbrales que
+     Movimientos — partido desde 700, columnas desde 1150 (lista de 338px);
+     entre medias el detalle EMPUJA a la lista. Solo cubre el estado de
+     HOJEAR (resumen y archivo): el editor, las solicitudes, los traslados y
+     las plantillas siguen siendo pantallas completas. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
   const [cartas, setCartas] = useState<Carta[]>([]);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -534,6 +546,31 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  /* La carta abierta del maestro-detalle: un ID que se re-busca en cada
+     recarga (guardar en el editor refresca el documento del panel; eliminar
+     lo cierra solo). `ultimoSel` conserva el último objeto real para que el
+     panel no se vacíe a mitad de la animación de salida del empuje. */
+  const [selId, setSelId] = useState<number | null>(null);
+  const selCarta = selId != null ? cartas.find((c) => c.id === selId) ?? null : null;
+  const ultimoSel = useRef<Carta | null>(null);
+  if (selCarta) ultimoSel.current = selCarta;
+
+  /* Chips de estado de la columna maestra: solo los estados con cartas, más
+     el activo aunque quede en cero — el criterio de Movimientos/Actas. */
+  const estadosPresentes = ["todas", ...ESTADOS_CARTA.filter((es) => es === filtroEstado || cartas.some((c) => c.estado === es))];
+
+  /* Los grupos por mes de emisión de la lista del maestro-detalle, sobre
+     `visibles` (ya buscadas y filtradas) y sin paginar. */
+  const gruposMes: { mes: string; items: Carta[] }[] = [];
+  if (partido) {
+    for (const c of visibles) {
+      const m = c.fecha_emision.slice(0, 7);
+      const ultimoGrupo = gruposMes[gruposMes.length - 1];
+      if (ultimoGrupo && ultimoGrupo.mes === m) ultimoGrupo.items.push(c);
+      else gruposMes.push({ mes: m, items: [c] });
+    }
+  }
+
   /* Pie de ventana (solo Mac). Esta pantalla tiene siete pestañas y el pie es
      el único sitio donde se ve de un vistazo que además de cartas hay
      solicitudes esperando. */
@@ -616,6 +653,43 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     onClick: () => { setHojaCrearAbierta(false); item.onPress(); },
   }));
 
+  /* Las cuatro tarjetas del resumen, extraídas para pintarse en el layout de
+     siempre Y en el maestro-detalle del iPad (panel sin carta abierta /
+     cabeza de la lista en el modo de empuje) sin ser dos copias. */
+  const tarjetasResumen = (
+    <div className="dash-canvas">
+    <div className="summary-4 enter">
+      <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
+        <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
+        <div className="stat-value md"><CountUp value={resumen.enPreparacion} format={String} /></div>
+      </button>
+      <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={() => irAArchivoFiltrado("firma")}>
+        <div className="stat-head"><span className="stat-label">{t("cartas.cardFirma")}</span></div>
+        <div className="stat-value md"><CountUp value={resumen.esperandoFirma} format={String} /></div>
+      </button>
+      <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={() => irAArchivoFiltrado("lista")}>
+        <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
+        <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
+      </button>
+      {/* Cuatro tarjetas que cuentan una sola historia, y todas son
+          colas de trabajo: en preparación → esperando firma → listas
+          para entregar, más los traslados en curso. */}
+      <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
+        <div className="stat-head"><span className="stat-label">{t("traslados.cardEnProceso")}</span></div>
+        <div className="stat-value md">
+          <CountUp
+            value={
+              trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
+              trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
+            }
+            format={String}
+          />
+        </div>
+      </button>
+    </div>
+    </div>
+  );
+
   return (
     <>
       {!enIPhone && (
@@ -646,6 +720,123 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
+      {/* ---- Maestro-detalle (iPad) ----
+          Solo para HOJEAR (resumen y archivo): lista de 338px con las cartas
+          agrupadas por mes de emisión y el documento al lado, tal como va a
+          imprimirse. El editor y las demás pestañas siguen a pantalla
+          completa. */}
+      {partido && (tab === "resumen" || tab === "archivo") ? (
+        <div className={`md-split md-cartas${selId != null ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista">
+                <div className="md-filtros">
+                  <label className="md-buscar">
+                    <IconSearch size={15} strokeWidth={2} />
+                    <input
+                      value={query}
+                      placeholder={t("cartas.buscarPlaceholder")}
+                      onChange={(e) => setQuery(e.target.value)}
+                      aria-label={t("cartas.buscarPlaceholder")}
+                    />
+                  </label>
+                  {estadosPresentes.length >= 3 && (
+                    <div className="md-chips">
+                      {estadosPresentes.map((es) => (
+                        <button
+                          key={es}
+                          className={`chip${filtroEstado === es ? " active" : ""}`}
+                          onClick={() => setFiltroEstado(es)}
+                        >
+                          {es === "todas" ? t("cartas.filtroTodosEstados") : t(`cartas.estado.${es}`)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="md-filas">
+                  {angosto && <div className="md-extra">{tarjetasResumen}</div>}
+                  {visibles.length === 0 ? (
+                    <div className="md-filas-vacio">
+                      <EmptyState
+                        titulo={cartas.length === 0 ? t("cartas.aunNoHay") : t("cartas.sinResultados")}
+                        sub={cartas.length === 0 ? t("cartas.agregaPrimera") : t("cartas.sinResultadosSub")}
+                        icon={<IconMail size={20} strokeWidth={1.8} />}
+                      />
+                    </div>
+                  ) : (
+                    gruposMes.map((g) => (
+                      <div key={g.mes}>
+                        <div className="md-grupo">{mesLegible(g.mes)}</div>
+                        {g.items.map((c) => (
+                          <div
+                            key={c.id}
+                            className={`md-fila${selId === c.id ? " sel" : ""}`}
+                            onClick={() => setSelId(c.id)}
+                          >
+                            <span className="md-fila-textos">
+                              <span className="md-fila-titular"><span className="truncate">{c.destinatario_nombre}</span></span>
+                              <span className="md-fila-sub truncate">
+                                {[t(`cartas.tipoDoc.${c.tipo}`), c.folio, fmtFechaCorta(c.fecha_emision)].join(" · ")}
+                              </span>
+                            </span>
+                            <span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="md-pie">
+                  <span>{t("barraEstado.cartas", { count: cartas.length, solicitudes: solicitudes.length })}</span>
+                </div>
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  const detCarta = angosto ? selCarta ?? ultimoSel.current : selCarta;
+                  if (detCarta) {
+                    return (
+                      <DetalleCarta
+                        church={church}
+                        carta={detCarta}
+                        tituloLista={t("nav.cartasCorto")}
+                        onVolver={() => setSelId(null)}
+                        onEditar={abrirCarta}
+                        onImprimir={imprimir}
+                        onDuplicar={duplicarCarta}
+                        onEntregar={(c) => setConfirmAction({ tipo: "entregar", carta: c })}
+                        onEliminarOArchivar={(c) => (c.estado === "borrador" ? setPendingDelete(c) : void archivarCarta(c))}
+                      />
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{t("cartas.eligeCarta")}</h3>
+                        <p>{t("cartas.eligeCartaSub")}</p>
+                      </div>
+                      {tarjetasResumen}
+                      <div className="ios-navcards">
+                        <button type="button" className="ios-navcard" onClick={() => cambiarTab("plantillas")}>
+                          <span className="ios-navcard-icon"><TemplateIcon /></span>
+                          <span className="ios-navcard-label">{t("cartas.tab.plantillas")}</span>
+                          <IosChevron />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {loading ? (
           <LoadingState />
@@ -681,41 +872,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="dash-canvas">
-              <div className="summary-4 enter">
-                <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
-                  <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.enPreparacion} format={String} /></div>
-                </button>
-                <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={() => irAArchivoFiltrado("firma")}>
-                  <div className="stat-head"><span className="stat-label">{t("cartas.cardFirma")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.esperandoFirma} format={String} /></div>
-                </button>
-                <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={() => irAArchivoFiltrado("lista")}>
-                  <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
-                </button>
-                {/* Cuatro tarjetas que cuentan una sola historia, y todas son
-                    colas de trabajo: en preparación → esperando firma → listas
-                    para entregar, más los traslados en curso. Antes eran seis
-                    (con "Emitidas este mes", puro dato, y los traslados
-                    separados en dos) y la sexta rompía la fila sola. */}
-                <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
-                  <div className="stat-head"><span className="stat-label">{t("traslados.cardEnProceso")}</span></div>
-                  <div className="stat-value md">
-                    <CountUp
-                      value={
-                        trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
-                        trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
-                      }
-                      format={String}
-                    />
-                  </div>
-                </button>
-              </div>
-              </div>
-            )}
+            ) : tarjetasResumen}
 
             {/* Las dos cajas de "Registrar traslado" vivían aquí — ya están
                 en el menú del "+". Este mismo sitio ahora es Plantillas y
@@ -1288,6 +1445,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           </>
         )}
       </div>
+      )}
 
       {pendingDelete && (
         <ConfirmDialog

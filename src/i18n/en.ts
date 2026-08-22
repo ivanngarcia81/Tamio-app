@@ -323,6 +323,13 @@ export const en: Resources = {
     resumenMensual: "Monthly summary",
     colMes: "Month",
     colVariacion: "Change",
+    // La columna de informes del iPad (maestro-detalle).
+    informeEstadoSub: "Income, expenses, and balance for the month",
+    informeCategorias: "Breakdown by category",
+    informeCategoriasSub: "Expenses and income with charts",
+    informeResumenSub: "The last six months, with change",
+    informeAnualSub: "All twelve months on one page",
+    sinResumenMensual: "No months with activity to compare yet.",
   },
 
   depositos: {
@@ -337,6 +344,10 @@ export const en: Resources = {
     ultimoDeposito: "Last deposit",
     sinDepositos: "No deposits yet",
     historial: "Deposit history",
+    registrados_one: "{{count}} deposit recorded",
+    registrados_other: "{{count}} deposits recorded",
+    eligeDeposito: "Choose a deposit",
+    eligeDepositoSub: "Tap a row in the history to see its full detail here.",
     emptyTitulo: "No deposits recorded yet",
     emptySub: "Record your first bank deposit with the button above.",
     colCuenta: "Account / bank",
@@ -946,7 +957,11 @@ export const en: Resources = {
     membresia: "Membership",
     actas: "Board minutes",
     servicios: "Service log",
+    // Corta, para el botón de volver del maestro-detalle del iPad.
+    serviciosCorto: "Services",
     cartas: "Certificates & transfers",
+    // Corta, mismo motivo que serviciosCorto.
+    cartasCorto: "Letters",
     reporteMiembros: "Membership reports",
     agenda: "Agenda & calendar",
     agendaCorto: "Agenda",
@@ -1207,6 +1222,10 @@ export const en: Resources = {
     colTitulo: "Minutes",
     aunNoHay: "No minutes yet",
     agregaPrimera: "Record the first meeting minutes with the New minutes button.",
+    nAcuerdos_one: "{{count}} resolution",
+    nAcuerdos_other: "{{count}} resolutions",
+    eligeActa: "Choose minutes",
+    eligeActaSub: "Tap a row in the list to read it here as a document.",
     sinResultados: "No results",
     sinResultadosSub: "Try another term or change the status filter.",
     secBasica: "Basic information",
@@ -1333,6 +1352,8 @@ export const en: Resources = {
     statAsistenciaPromedio: "Average attendance this month",
     statVisitantesMes: "Visitors this month",
     seccionResumen: "Overview",
+    eligeServicio: "Choose a service",
+    eligeServicioSub: "Tap a row in the log to see the service record here.",
     historialCompleto: "Full history",
     aunNoHay: "No services recorded yet",
     agregaPrimero: "Record the first service with the New service button.",
@@ -1462,6 +1483,8 @@ export const en: Resources = {
 
   cartas: {
     tab: { resumen: "Overview", nueva: "New letter", solicitudes: "Requests", salida: "Outgoing transfer", entrada: "Incoming transfer", plantillas: "Templates", archivo: "Archive" },
+    eligeCarta: "Choose a letter",
+    eligeCartaSub: "Tap a row in the list to read it here exactly as it will print.",
     nuevaCarta: "New letter",
     nuevaCartaMenu: "New recommendation letter",
     guardarBorrador: "Save draft",
@@ -2110,6 +2133,8 @@ export const en: Resources = {
     diaActividades_other: "{{count}} activities",
     diaVacioTitulo: "Nothing scheduled",
     diaVacioSub: "Tap ＋ to add an activity to this day.",
+    // La del iPad no menciona el "+" flotante del iPhone.
+    diaVacioSubIPad: "Add an activity to this day with the button below.",
     horario: "Time",
     sufijoCopia: "(copy)",
     fechaImportanteBadge: "Important date",

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMac, textoCorto } from "../movil";
+import { esIPad, esIPhone, esMac, textoCorto } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { TFunction } from "i18next";
 import {
   ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, agregarExcepcionAgenda, deleteActividad, fmtFecha, fmtFechaCorta,
@@ -206,7 +207,19 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   // el título grande sobra ahí.
   const enIPhone = esIPhone();
   const enMac = esMac();
+  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): aquí el "maestro" es el
+     CALENDARIO y el detalle es la columna del día elegido (318px, la medida
+     del diseño), pegada a la derecha como en la app de Calendario. Solo en
+     las vistas de mes y semana: Lista e Historial ya son listas y se quedan
+     a lo ancho. En el modo de empuje (700–1149) tocar un día trae la columna
+     por encima, con su "‹ Agenda". */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const enIPadPartido = esIPad() && anchoPartido;
   const [actividades, setActividades] = useState<Actividad[]>([]);
+  /* Si la columna del día está "abierta" (solo pesa en el modo de empuje: en
+     columnas siempre está a la vista). El día elegido es `cursor`, que ya
+     sobrevive al giro por ser estado de pantalla. */
+  const [diaAbierto, setDiaAbierto] = useState(false);
   const [miembros, setMiembros] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState<Vista>("mes");
@@ -605,6 +618,176 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     setVista("lista");
   }
 
+  /** Elegir un día en el calendario del iPad: la columna de la derecha pasa
+   *  a enseñar lo suyo (y en el modo de empuje, se abre encima). */
+  function abrirDia(fecha: string) {
+    setCursor(fecha);
+    setDiaAbierto(true);
+  }
+
+  /* ---- Piezas que se pintan en el flujo de siempre Y dentro del
+     maestro-detalle del iPad, extraídas para no ser dos copias. ---- */
+  const tarjetasStats = (
+    <div className="dash-canvas">
+    <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+      <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={irASemanaDeHoy}>
+        <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
+        <div className="stat-value md"><CountUp value={stats.deHoy} format={String} /></div>
+      </button>
+      <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={irASemanaDeHoy}>
+        <div className="stat-head"><span className="stat-label">{t("agenda.statSemana")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
+        <div className="stat-value md"><CountUp value={stats.deSemana} format={String} /></div>
+      </button>
+      <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={irALista}>
+        <div className="stat-head"><span className="stat-label">{t("agenda.statProximas")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
+        <div className="stat-value md"><CountUp value={stats.proximas} format={String} /></div>
+      </button>
+      <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={irALista}>
+        <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
+        <div className="stat-value md"><CountUp value={stats.porConfirmar} format={String} /></div>
+      </button>
+    </div>
+    </div>
+  );
+
+  const bloqueRecordatorios = !loading && !vacio && recordatorios.length > 0 && (
+    <div className="agenda-recordatorios">
+      <div className="agenda-rec-head"><IconClock size={14} strokeWidth={1.9} /> {t("agenda.recordatoriosTitulo")} <span className="agenda-grupo-n">{recordatorios.length}</span></div>
+      <div className="agenda-rec-lista">
+        {recordatorios.map((o) => (
+          <button key={`${o._master.id}:${o._fechaOriginal}`} className="agenda-rec-item" onClick={() => setDetalle(o)}>
+            <span className="agenda-rec-cuando">{etiquetaFaltan(o.fecha)}</span>
+            <span className="agenda-rec-nombre">{o.nombre}</span>
+            <span className="agenda-rec-fecha">{fmtFechaCorta(o.fecha)}{!o.dia_completo && o.hora_inicio ? ` · ${o.hora_inicio}` : ""}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const bloqueFiltros = !vacio && (
+    <div className="agenda-filtros">
+      <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
+        <IconSearch size={15} strokeWidth={2} />
+        <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
+      </div>
+      <select className="form-input sm" aria-label={t("agenda.filtrarTipo")} value={filtros.tipo} onChange={(e) => setFiltros((f) => ({ ...f, tipo: e.target.value }))}>
+        {opcTipo.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <select className="form-input sm" aria-label={t("agenda.filtrarEstado")} value={filtros.estado} onChange={(e) => setFiltros((f) => ({ ...f, estado: e.target.value }))}>
+        {opcEstado.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {ministeriosPresentes.length > 0 && (
+        <select className="form-input sm" aria-label={t("agenda.filtrarMinisterio")} value={filtros.ministerio} onChange={(e) => setFiltros((f) => ({ ...f, ministerio: e.target.value }))}>
+          {opcMinisterio.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      {responsablesPresentes.length > 0 && (
+        <select className="form-input sm" aria-label={t("agenda.filtrarResponsable")} value={filtros.responsable} onChange={(e) => setFiltros((f) => ({ ...f, responsable: e.target.value }))}>
+          {opcResponsable.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      )}
+      <input type="date" className="form-input sm" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
+      <input type="date" className="form-input sm" aria-label={t("agenda.rangoHasta")} value={filtros.hasta} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value }))} />
+      <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
+        ★ {t("agenda.soloImportantes")}
+      </button>
+      {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
+    </div>
+  );
+
+  const bloqueToolbar = (
+    <div className="agenda-toolbar">
+      <div className="agenda-nav">
+        {(vista === "mes" || vista === "semana") && (
+          <>
+            <div className="agenda-nav-group">
+              <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={15} /></button>
+              <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+              <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={15} /></button>
+            </div>
+            <span className="agenda-mes-titulo">{titulo}</span>
+          </>
+        )}
+        {vista === "historial" && (
+          <>
+            <select className="form-input sm" aria-label={t("agenda.filtrarAnio")} value={anioHist} onChange={(e) => setAnioHist(e.target.value)}>
+              {opcAnioHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select className="form-input sm" aria-label={t("agenda.filtrarMes")} value={mesHist} onChange={(e) => setMesHist(e.target.value)}>
+              {opcMesHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </>
+        )}
+      </div>
+      <div className="chip-toggle" role="tablist" aria-label={t("agenda.cambiarVista")}>
+        {(["mes", "semana", "lista", "historial"] as Vista[]).map((v) => (
+          <button key={v} className={`chip ${vista === v ? "active" : ""}`} role="tab" aria-selected={vista === v} onClick={() => setVista(v)}>
+            {t(`agenda.vista${v === "mes" ? "Mes" : v === "semana" ? "Semana" : v === "lista" ? "Lista" : "Historial"}`)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  /* El calendario de mes y la semana, con UNA diferencia en el iPad partido:
+     tocar el día lo ELIGE (abre su columna) en vez de crear una actividad —
+     es lo que hace el diseño. Crear en ese día sigue a un toque: el "+" de
+     la columna del día. Los eventos de dentro siguen abriendo su detalle. */
+  const bloqueMes = (
+    <div className="agenda-cal card">
+      <div className="agenda-dow">{diasSemana.map((d, i) => <div key={i} className="agenda-dow-cell">{d}</div>)}</div>
+      <div className="agenda-grid">
+        {matrizMes(mesCursor).map((fecha, i) => {
+          if (!fecha) return <div key={i} className="agenda-cell empty" />;
+          const items = porFecha.get(fecha) ?? [];
+          const elegirDia = () => (enIPadPartido ? abrirDia(fecha) : abrirNueva(fecha));
+          return (
+            <div key={i} className={`agenda-cell${fecha === hoy ? " today" : ""}${enIPadPartido && fecha === cursor ? " sel" : ""}`} onClick={elegirDia}
+              role="button" tabIndex={0} aria-label={fmtFechaCorta(fecha)} onKeyDown={(e) => { if (e.key === "Enter") elegirDia(); }}>
+              <div className="agenda-cell-num">{Number(fecha.slice(8, 10))}</div>
+              <div className="agenda-cell-items">
+                {items.slice(0, 3).map((a) => (
+                  <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)}
+                    onClick={(e) => { e.stopPropagation(); setDetalle(a); }}>
+                    {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
+                    <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
+                  </button>
+                ))}
+                {items.length > 3 && <div className="agenda-mas">+{items.length - 3}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const bloqueSemana = (
+    <div className="agenda-semana card">
+      {semanaDias.map((fecha) => {
+        const items = porFecha.get(fecha) ?? [];
+        const f = fmtFecha(fecha);
+        return (
+          <div key={fecha} className={`agenda-sem-col${fecha === hoy ? " today" : ""}`}>
+            <button className="agenda-sem-head" onClick={() => (enIPadPartido ? abrirDia(fecha) : abrirNueva(fecha))}>
+              <span className="agenda-sem-dow">{f.nombreDia}</span>
+              <span className="agenda-sem-num">{f.dia}</span>
+            </button>
+            <div className="agenda-sem-body">
+              {items.length === 0 ? <div className="agenda-sem-vacio">·</div> : items.map((a) => (
+                <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)} onClick={() => setDetalle(a)}>
+                  {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
+                  <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
@@ -655,6 +838,61 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
+      {/* ---- Maestro-detalle (iPad, vistas de mes y semana) ----
+          El calendario a la izquierda y la columna del día elegido (318px) a
+          la derecha, como la app de Calendario. Tocar un día lo elige; sus
+          actividades se leen enteras en la columna, y el "+" de ahí crea en
+          ese día. En el modo de empuje la columna entra por encima. */}
+      {enIPadPartido && (vista === "mes" || vista === "semana") && !loading && !vacio ? (
+        <div className={`md-split md-agenda${diaAbierto ? " md-abierto" : ""}`}>
+          <div className="md-lista">
+            <div className="agenda-lienzo">
+              {tarjetasStats}
+              {bloqueRecordatorios}
+              {bloqueFiltros}
+              {bloqueToolbar}
+              {vista === "mes" ? bloqueMes : bloqueSemana}
+            </div>
+          </div>
+          <div className="md-detalle agenda-dia">
+            <div className="agenda-dia-cab">
+              <button type="button" className="dm-volver" onClick={() => setDiaAbierto(false)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {t("nav.agendaCorto")}
+              </button>
+              <div className="agenda-dia-titulo">{`${fmtFecha(cursor).nombreDia} ${fmtFecha(cursor).dia}`}</div>
+              <div className="agenda-dia-sub">{t("agenda.diaActividades", { count: delDia.length })}</div>
+            </div>
+            <div className="agenda-dia-lista">
+              {delDia.length === 0 ? (
+                <EmptyState compacto icon={<IconCalendar size={22} strokeWidth={1.6} />} titulo={t("agenda.diaVacioTitulo")} sub={t("agenda.diaVacioSubIPad")} />
+              ) : (
+                delDia.map((a) => {
+                  const hora = a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ? `${a.hora_inicio}${a.hora_fin ? `–${a.hora_fin}` : ""}` : "—");
+                  return (
+                    <button
+                      key={`${a._master.id}:${a._fechaOriginal}`}
+                      type="button"
+                      className={`agenda-dia-item${a.estado === "cancelada" ? " cancelada" : ""}`}
+                      onClick={() => setDetalle(a)}
+                    >
+                      <span className="agenda-dia-item-titulo">
+                        {a.es_fecha_importante === 1 && <span className="evt-star">★</span>}
+                        <span className="truncate">{a.nombre}</span>
+                      </span>
+                      <span className="agenda-dia-item-sub">
+                        {[hora, etiquetaTipo(a), a.lugar, nombreResponsable(a)].filter(Boolean).join(" · ")}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+              <button type="button" className="btn secondary agenda-dia-nueva" onClick={() => abrirNueva(cursor)}>
+                <IconPlus size={14} /> {t("agenda.nuevaActividad")}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {enIPhone ? (
           <div className="ios-panel">
@@ -678,43 +916,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               </button>
             </div>
           </div>
-        ) : (
-          <div className="dash-canvas">
-          <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-            <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={irASemanaDeHoy}>
-              <div className="stat-head"><span className="stat-label">{t("agenda.statHoy")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
-              <div className="stat-value md"><CountUp value={stats.deHoy} format={String} /></div>
-            </button>
-            <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={irASemanaDeHoy}>
-              <div className="stat-head"><span className="stat-label">{t("agenda.statSemana")}</span><div className="stat-icon neutral"><IconCalendar size={15} strokeWidth={1.8} /></div></div>
-              <div className="stat-value md"><CountUp value={stats.deSemana} format={String} /></div>
-            </button>
-            <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={irALista}>
-              <div className="stat-head"><span className="stat-label">{t("agenda.statProximas")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
-              <div className="stat-value md"><CountUp value={stats.proximas} format={String} /></div>
-            </button>
-            <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={irALista}>
-              <div className="stat-head"><span className="stat-label">{t("agenda.statPorConfirmar")}</span><div className="stat-icon neutral"><IconClock size={15} strokeWidth={1.8} /></div></div>
-              <div className="stat-value md"><CountUp value={stats.porConfirmar} format={String} /></div>
-            </button>
-          </div>
-          </div>
-        )}
+        ) : tarjetasStats}
 
-        {!loading && !vacio && recordatorios.length > 0 && (
-          <div className="agenda-recordatorios">
-            <div className="agenda-rec-head"><IconClock size={14} strokeWidth={1.9} /> {t("agenda.recordatoriosTitulo")} <span className="agenda-grupo-n">{recordatorios.length}</span></div>
-            <div className="agenda-rec-lista">
-              {recordatorios.map((o) => (
-                <button key={`${o._master.id}:${o._fechaOriginal}`} className="agenda-rec-item" onClick={() => setDetalle(o)}>
-                  <span className="agenda-rec-cuando">{etiquetaFaltan(o.fecha)}</span>
-                  <span className="agenda-rec-nombre">{o.nombre}</span>
-                  <span className="agenda-rec-fecha">{fmtFechaCorta(o.fecha)}{!o.dia_completo && o.hora_inicio ? ` · ${o.hora_inicio}` : ""}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {bloqueRecordatorios}
 
         {!vacio && (enIPhone ? (
           /* En iPhone la búsqueda se queda a lo ancho y los filtros bajan a
@@ -752,36 +956,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
             </div>
           </>
-        ) : enMac ? null : (
-          <div className="agenda-filtros">
-            <div className="search-input-wrap" style={{ flex: "1 1 240px", maxWidth: 340 }}>
-              <IconSearch size={15} strokeWidth={2} />
-              <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
-            </div>
-            <select className="form-input sm" aria-label={t("agenda.filtrarTipo")} value={filtros.tipo} onChange={(e) => setFiltros((f) => ({ ...f, tipo: e.target.value }))}>
-              {opcTipo.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <select className="form-input sm" aria-label={t("agenda.filtrarEstado")} value={filtros.estado} onChange={(e) => setFiltros((f) => ({ ...f, estado: e.target.value }))}>
-              {opcEstado.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            {ministeriosPresentes.length > 0 && (
-              <select className="form-input sm" aria-label={t("agenda.filtrarMinisterio")} value={filtros.ministerio} onChange={(e) => setFiltros((f) => ({ ...f, ministerio: e.target.value }))}>
-                {opcMinisterio.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            )}
-            {responsablesPresentes.length > 0 && (
-              <select className="form-input sm" aria-label={t("agenda.filtrarResponsable")} value={filtros.responsable} onChange={(e) => setFiltros((f) => ({ ...f, responsable: e.target.value }))}>
-                {opcResponsable.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            )}
-            <input type="date" className="form-input sm" aria-label={t("agenda.rangoDesde")} value={filtros.desde} onChange={(e) => setFiltros((f) => ({ ...f, desde: e.target.value }))} />
-            <input type="date" className="form-input sm" aria-label={t("agenda.rangoHasta")} value={filtros.hasta} onChange={(e) => setFiltros((f) => ({ ...f, hasta: e.target.value }))} />
-            <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
-              ★ {t("agenda.soloImportantes")}
-            </button>
-            {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
-          </div>
-        ))}
+        ) : enMac ? null : bloqueFiltros)}
 
         {enIPhone ? (
           /* Dos filas en vez de una. El selector va ARRIBA y a todo el ancho
@@ -832,41 +1007,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               </div>
             )}
           </>
-        ) : enMac ? null : (
-        <div className="agenda-toolbar">
-          <div className="agenda-nav">
-            {(vista === "mes" || vista === "semana") && (
-              <>
-                <div className="agenda-nav-group">
-                  <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={15} /></button>
-                  <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
-                  <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={15} /></button>
-                </div>
-                <span className="agenda-mes-titulo">{titulo}</span>
-              </>
-            )}
-            {/* Sin la rama de iPhone que había aquí: esta barra ya solo se
-                pinta cuando NO es iPhone, así que era un camino muerto. */}
-            {vista === "historial" && (
-              <>
-                <select className="form-input sm" aria-label={t("agenda.filtrarAnio")} value={anioHist} onChange={(e) => setAnioHist(e.target.value)}>
-                  {opcAnioHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <select className="form-input sm" aria-label={t("agenda.filtrarMes")} value={mesHist} onChange={(e) => setMesHist(e.target.value)}>
-                  {opcMesHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </>
-            )}
-          </div>
-          <div className="chip-toggle" role="tablist" aria-label={t("agenda.cambiarVista")}>
-            {(["mes", "semana", "lista", "historial"] as Vista[]).map((v) => (
-              <button key={v} className={`chip ${vista === v ? "active" : ""}`} role="tab" aria-selected={vista === v} onClick={() => setVista(v)}>
-                {t(`agenda.vista${v === "mes" ? "Mes" : v === "semana" ? "Semana" : v === "lista" ? "Lista" : "Historial"}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-        )}
+        ) : enMac ? null : bloqueToolbar}
 
         {loading ? (
           <LoadingState />
@@ -906,54 +1047,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             )}
           </>
         ) : vista === "mes" ? (
-          <div className="agenda-cal card">
-            <div className="agenda-dow">{diasSemana.map((d, i) => <div key={i} className="agenda-dow-cell">{d}</div>)}</div>
-            <div className="agenda-grid">
-              {matrizMes(mesCursor).map((fecha, i) => {
-                if (!fecha) return <div key={i} className="agenda-cell empty" />;
-                const items = porFecha.get(fecha) ?? [];
-                return (
-                  <div key={i} className={`agenda-cell${fecha === hoy ? " today" : ""}`} onClick={() => abrirNueva(fecha)}
-                    role="button" tabIndex={0} aria-label={fmtFechaCorta(fecha)} onKeyDown={(e) => { if (e.key === "Enter") abrirNueva(fecha); }}>
-                    <div className="agenda-cell-num">{Number(fecha.slice(8, 10))}</div>
-                    <div className="agenda-cell-items">
-                      {items.slice(0, 3).map((a) => (
-                        <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)}
-                          onClick={(e) => { e.stopPropagation(); setDetalle(a); }}>
-                          {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
-                          <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
-                        </button>
-                      ))}
-                      {items.length > 3 && <div className="agenda-mas">+{items.length - 3}</div>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          bloqueMes
         ) : vista === "semana" ? (
-          <div className="agenda-semana card">
-            {semanaDias.map((fecha) => {
-              const items = porFecha.get(fecha) ?? [];
-              const f = fmtFecha(fecha);
-              return (
-                <div key={fecha} className={`agenda-sem-col${fecha === hoy ? " today" : ""}`}>
-                  <button className="agenda-sem-head" onClick={() => abrirNueva(fecha)}>
-                    <span className="agenda-sem-dow">{f.nombreDia}</span>
-                    <span className="agenda-sem-num">{f.dia}</span>
-                  </button>
-                  <div className="agenda-sem-body">
-                    {items.length === 0 ? <div className="agenda-sem-vacio">·</div> : items.map((a) => (
-                      <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)} onClick={() => setDetalle(a)}>
-                        {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
-                        <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          bloqueSemana
         ) : vista === "lista" ? (
           (grupos.hoy.length + grupos.manana.length + grupos.semana.length + grupos.despues.length) === 0 ? (
             <EmptyState icon={<IconCalendar size={22} strokeWidth={1.6} />}
@@ -987,6 +1083,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           )
         )}
       </div>
+      )}
 
       {modal && (
         <ActividadModal

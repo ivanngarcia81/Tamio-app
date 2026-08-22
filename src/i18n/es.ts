@@ -317,6 +317,13 @@ export const es = {
     resumenMensual: "Resumen mensual",
     colMes: "Mes",
     colVariacion: "Variación",
+    // La columna de informes del iPad (maestro-detalle).
+    informeEstadoSub: "Ingresos, gastos y saldo del mes",
+    informeCategorias: "Distribución por categorías",
+    informeCategoriasSub: "Gastos e ingresos con gráfica",
+    informeResumenSub: "Los últimos seis meses, con variación",
+    informeAnualSub: "Los doce meses en una hoja",
+    sinResumenMensual: "Todavía no hay meses con movimientos que comparar.",
   },
 
   depositos: {
@@ -331,6 +338,10 @@ export const es = {
     ultimoDeposito: "Último depósito",
     sinDepositos: "Aún no hay depósitos",
     historial: "Historial de depósitos",
+    registrados_one: "{{count}} depósito registrado",
+    registrados_other: "{{count}} depósitos registrados",
+    eligeDeposito: "Elige un depósito",
+    eligeDepositoSub: "Toca una fila del historial para verlo aquí con todo su detalle.",
     emptyTitulo: "Aún no hay depósitos registrados",
     emptySub: "Registra tu primer depósito bancario con el botón de arriba.",
     colCuenta: "Cuenta / banco",
@@ -968,7 +979,12 @@ export const es = {
     membresia: "Membresía",
     actas: "Actas",
     servicios: "Registro de servicios",
+    // Corta, para el botón de volver del maestro-detalle del iPad:
+    // "‹ Registro de servicios" no cabe al lado del documento.
+    serviciosCorto: "Servicios",
     cartas: "Cartas y traslados",
+    // Corta, mismo motivo que serviciosCorto.
+    cartasCorto: "Cartas",
     reporteMiembros: "Informes de membresía",
     agenda: "Agenda y calendario",
     // Corta, mismo motivo: "Agenda y calendario" no cabía en el atajo.
@@ -1237,6 +1253,10 @@ export const es = {
     colTitulo: "Acta",
     aunNoHay: "Aún no hay actas",
     agregaPrimera: "Registra la primera acta de reunión con el botón Nueva acta.",
+    nAcuerdos_one: "{{count}} acuerdo",
+    nAcuerdos_other: "{{count}} acuerdos",
+    eligeActa: "Elige un acta",
+    eligeActaSub: "Toca una fila de la lista para leerla aquí como documento.",
     sinResultados: "Sin resultados",
     sinResultadosSub: "Prueba otro término o cambia el filtro de estado.",
     secBasica: "Información básica",
@@ -1367,6 +1387,8 @@ export const es = {
     statAsistenciaPromedio: "Asistencia promedio del mes",
     statVisitantesMes: "Visitantes este mes",
     seccionResumen: "Resumen",
+    eligeServicio: "Elige un servicio",
+    eligeServicioSub: "Toca una fila de la bitácora para ver aquí la ficha del culto.",
     historialCompleto: "Historial completo",
     aunNoHay: "Aún no hay servicios registrados",
     agregaPrimero: "Registra el primer culto con el botón Nuevo servicio.",
@@ -1500,6 +1522,8 @@ export const es = {
 
   cartas: {
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
+    eligeCarta: "Elige una carta",
+    eligeCartaSub: "Toca una fila de la lista para leerla aquí tal como va a imprimirse.",
     nuevaCarta: "Nueva carta",
     // Etiqueta larga para el menú del "+" (MenuAnchor) — "nuevaCarta" de
     // arriba es la corta, para la pestaña/botón de cabecera.
@@ -2150,6 +2174,9 @@ export const es = {
     diaActividades_other: "{{count}} actividades",
     diaVacioTitulo: "Nada programado",
     diaVacioSub: "Toca ＋ para añadir una actividad a este día.",
+    // La del iPad no menciona el "+" flotante del iPhone: ahí el botón de
+    // crear vive dentro de la propia columna del día.
+    diaVacioSubIPad: "Añade una actividad a este día con el botón de abajo.",
     horario: "Horario",
     sufijoCopia: "(copia)",
     fechaImportanteBadge: "Fecha importante",

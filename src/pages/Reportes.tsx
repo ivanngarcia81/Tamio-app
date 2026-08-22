@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMac } from "../movil";
+import { esIPad, esIPhone, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import {
   catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
@@ -29,6 +30,16 @@ import ActionSheet from "../components/ActionSheet";
 import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
 
 const RESUMEN_COLS = "1fr 150px 150px 150px 130px";
+const ANUAL_COLS = "1fr 150px 150px 150px";
+
+/** Las entradas de la columna de informes del iPad. Solo lo que EXISTE en la
+ *  pantalla: el estado financiero, la distribución con gráficas, el resumen
+ *  de seis meses y el reporte anual (`printAnnual.ts`). El diseño de
+ *  referencia listaba además "Aportantes" y "Depósitos del periodo" como
+ *  informes propios; esos documentos no existen — Aportantes tiene su propia
+ *  pantalla y los depósitos entran como renglón del estado financiero
+ *  (docs/ipad-rediseno.md §4). */
+type Informe = "estado" | "categorias" | "resumen" | "anual";
 
 /** Color de la fila "Otras", el mismo gris pizarra que ya usa el agrupado de
  *  Movimientos: no se inventa una convención nueva para lo mismo. */
@@ -144,6 +155,20 @@ interface Props {
 
 export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const { t, i18n } = useTranslation();
+  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): columna de informes de
+     330px (la medida del diseño) y el informe elegido al lado. En columnas
+     siempre hay uno a la vista (el estado financiero por defecto); en el
+     modo de empuje la lista va primero y el informe entra por encima. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
+  /* Cuál informe está abierto. Nullable a propósito: en el modo de empuje
+     `null` significa "en la lista", mientras que en columnas se enseña el
+     estado financiero por defecto. Sobrevive al giro por ser estado de
+     pantalla. */
+  const [informe, setInforme] = useState<Informe | null>(null);
+  const informeVisible: Informe | null = informe ?? (angosto ? null : "estado");
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
@@ -204,6 +229,19 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       .finally(() => { if (!cancelado) setLoading(false); });
     return () => { cancelado = true; };
   }, [church.id, refreshKey, mes, mesAnterior]);
+
+  /* Los doce meses del año, para el informe "Reporte anual" del iPad: la
+     misma consulta que alimenta su PDF, enseñada en pantalla en vez de a
+     ciegas. Solo se pide cuando ese informe está abierto. */
+  const [anualMeses, setAnualMeses] = useState<MonthSummary[] | null>(null);
+  useEffect(() => {
+    if (!partido || (informe ?? "estado") !== "anual") return;
+    let cancelado = false;
+    yearMonthlySummary(church.id, mes.slice(0, 4))
+      .then((nuevos) => { if (!cancelado) setAnualMeses(nuevos); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [partido, informe, church.id, mes, refreshKey]);
 
   /** Resumen del mes con IA. Regla de oro: la app CALCULA (aquí se arman las
    *  cifras ya listas) y la IA solo las narra — jamás inventa números. */
@@ -416,6 +454,218 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     }
   }
 
+  /* ---- Piezas que se pintan en el flujo de siempre Y en el maestro-detalle
+     del iPad, extraídas para no ser dos copias. ---- */
+  const tarjetasMes = (
+    <div className="summary-4 enter">
+      <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
+        <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
+      </div>
+      <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
+        <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
+      </div>
+      <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
+        <div className="stat-value md"><CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
+      </div>
+      <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
+        <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot">{mesLegible(mesAnterior)}</div>
+      </div>
+    </div>
+  );
+
+  const graficasDistribucion = (
+    <div className="charts enter">
+      <div className="card">
+        <div className="card-head">
+          <span className="card-title">{t("reportes.distGastos")}</span>
+          <span className="card-meta">{mesStr}</span>
+        </div>
+        {filasGasto.length === 0 ? (
+          <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinGastosEsteMes")}</div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <div className="donut-wrap" style={{ flexShrink: 0 }}>
+              <Donut
+                segments={filasGasto.map((c) => ({ color: c.color, pct: porcentaje(c.total, gastos) }))}
+                delayMs={0}
+              />
+              <div className="donut-center">
+                <div className="val">{fmtMoney(gastos)}</div>
+                <div className="lbl">{church.moneda}</div>
+              </div>
+            </div>
+            <div className="donut-legend" style={{ flex: 1 }}>
+              {filasGasto.slice(0, 5).map((c) => (
+                <div className="donut-legend-row" key={c.id}>
+                  <span className="sw" style={{ background: c.color }} />
+                  <span className="name">{catNombre(c.id)}</span>
+                  <span className="pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(0)}%` : "0%"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <span className="card-title">{t("reportes.distIngresos")}</span>
+          <span className="card-meta">{mesStr}</span>
+        </div>
+        {filasIngreso.length === 0 ? (
+          <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinIngresosEsteMes")}</div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <div className="donut-wrap" style={{ flexShrink: 0 }}>
+              <Donut
+                segments={filasIngreso.map((c) => ({ color: c.color, pct: porcentaje(c.total, ingresos) }))}
+                delayMs={150}
+              />
+              <div className="donut-center">
+                <div className="val">{fmtMoney(ingresos)}</div>
+                <div className="lbl">{church.moneda}</div>
+              </div>
+            </div>
+            <div className="donut-legend" style={{ flex: 1 }}>
+              {filasIngreso.map((c) => (
+                <div className="donut-legend-row" key={c.id}>
+                  <span className="sw" style={{ background: c.color }} />
+                  <span className="name">{catNombre(c.id)}</span>
+                  <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const estadoFinancieroDoc = (
+    <div className="report-preview">
+      <div className="r-head">
+        <div>
+          <div className="r-title-lg">{t("reportes.estadoFinanciero")}</div>
+          <div className="r-church">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+          <div className="r-period">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
+        </div>
+      </div>
+
+      <div className="r-section-title">{t("reportes.ingresosPeriodo")}</div>
+      {filasIngreso.length === 0 && (
+        <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+          {t("reportes.sinIngresosRegistrados")}
+        </div>
+      )}
+      {filasIngreso.map((c) => (
+        <div className="r-row" key={c.id}>
+          <span className="r-color" style={{ background: c.color }} />
+          <span>{catNombre(c.id)}</span>
+          <span className="r-amt">{fmtMoney(c.total)}</span>
+          <span className="r-pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(1)}%` : "—"}</span>
+        </div>
+      ))}
+      <div className="r-row total">
+        <span></span>
+        <span>{t("reportes.totalIngresos")}</span>
+        <span className="r-amt" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</span>
+        <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
+      </div>
+
+      <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
+      {filasGasto.length === 0 && (
+        <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+          {t("reportes.sinGastosRegistrados")}
+        </div>
+      )}
+      {filasGasto.map((c) => (
+        <div className="r-row" key={c.id}>
+          <span className="r-color" style={{ background: c.color }} />
+          <span>{catNombre(c.id)}</span>
+          <span className="r-amt">{fmtMoney(c.total)}</span>
+          <span className="r-pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(1)}%` : "—"}</span>
+        </div>
+      ))}
+      <div className="r-row total">
+        <span></span>
+        <span>{t("reportes.totalGastos")}</span>
+        <span className="r-amt" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</span>
+        <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
+      </div>
+
+      <div className="r-summary">
+        <div className="r-dup">
+          <div className="k">{t("reportes.totalIngresos")}</div>
+          <div className="v" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</div>
+        </div>
+        <div className="r-dup">
+          <div className="k">{t("reportes.totalGastos")}</div>
+          <div className="v" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</div>
+        </div>
+        <div>
+          <div className="k">{t("reportes.balanceNeto")}</div>
+          <div className="v">{fmtMoney(balance)}</div>
+        </div>
+        <div>
+          <div className="k">{t("reportes.depositosBancarios")}</div>
+          <div className="v">{fmtMoney(depositosMes)}</div>
+          {depositosMes > 0 && (
+            <div className="r-nota">{t("reportes.depositosNota")}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const resumenMensualTabla = (
+    <div className="data-table roomy tabla-resumen-mes">
+      <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
+        <div className="th">{t("reportes.colMes")}</div>
+        <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
+        <div className="th" style={{ textAlign: "right" }}>{t("charts.gastos")}</div>
+        <div className="th" style={{ textAlign: "right" }}>{t("pdfPreview.balance")}</div>
+        <div className="th" style={{ textAlign: "right" }}>{t("reportes.colVariacion")}</div>
+      </div>
+      {historial.map((h, i) => {
+        const bal = restar(h.ingresos, h.gastos);
+        const anterior = historial[i - 1];
+        const balAnt2 = anterior ? anterior.ingresos - anterior.gastos : null;
+        const variacion = balAnt2 === null ? null : pctChange(bal, balAnt2);
+        return (
+          <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
+            <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
+            <div className="td" data-label={t("charts.ingresos")} style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
+              {fmtMoney(h.ingresos)}
+            </div>
+            <div className="td" data-label={t("charts.gastos")} style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
+              {fmtMoney(h.gastos)}
+            </div>
+            <div className="td" data-label={t("pdfPreview.balance")} style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+              {fmtMoney(bal)}
+            </div>
+            <div className="td" data-label={t("reportes.colVariacion")} style={{ textAlign: "right" }}>
+              {variacion === null ? (
+                <span style={{ color: "var(--text-3)" }}>—</span>
+              ) : (
+                <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
+                  {variacion >= 0 ? "+" : ""}{variacion}%
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
@@ -530,6 +780,127 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
+      {/* ---- Maestro-detalle (iPad) ----
+          Columna de informes de 330px y el informe elegido al lado. Los
+          botones de generar (PDF, Imprimir, Reporte anual, Asamblea, IA)
+          siguen en la barra de 56px, que es donde viven en el resto de
+          pantallas. */}
+      {partido ? (
+        loading ? (
+          <div className="md-split md-reportes"><LoadingState /></div>
+        ) : (
+        <div className={`md-split md-reportes${informe != null ? " md-abierto" : ""}`}>
+          <div className="md-lista">
+            <div className="md-filas">
+              {(
+                [
+                  { id: "estado" as Informe, titulo: t("reportes.estadoFinanciero"), sub: t("reportes.informeEstadoSub") },
+                  { id: "categorias" as Informe, titulo: t("reportes.informeCategorias"), sub: t("reportes.informeCategoriasSub") },
+                  { id: "resumen" as Informe, titulo: t("reportes.resumenMensual"), sub: t("reportes.informeResumenSub") },
+                  { id: "anual" as Informe, titulo: t("anual.titulo"), sub: t("reportes.informeAnualSub") },
+                ]
+              ).map((fila) => (
+                <div
+                  key={fila.id}
+                  className={`md-fila${informeVisible === fila.id ? " sel" : ""}`}
+                  onClick={() => setInforme(fila.id)}
+                >
+                  <span className="md-fila-textos">
+                    <span className="md-fila-titular"><span className="truncate">{fila.titulo}</span></span>
+                    <span className="md-fila-sub truncate">{fila.sub}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="md-pie">
+              <span>{t("barraEstado.reportes", { mes: mesStr, meses: historial.length })}</span>
+            </div>
+          </div>
+
+          <div className="md-detalle">
+            {informeVisible != null && (
+              <div className="dm dm-doc">
+                <button type="button" className="dm-volver" onClick={() => setInforme(null)}>
+                  <IconChevronLeft size={17} strokeWidth={2.4} /> {t("reportes.titulo")}
+                </button>
+
+                {informeVisible === "estado" && (
+                  <>
+                    {tarjetasMes}
+                    {estadoFinancieroDoc}
+                  </>
+                )}
+
+                {informeVisible === "categorias" && graficasDistribucion}
+
+                {informeVisible === "resumen" && (
+                  historial.length > 0 ? (
+                    <>
+                      <div className="tx-head">
+                        <div className="tx-title">{t("reportes.resumenMensual")}</div>
+                      </div>
+                      {resumenMensualTabla}
+                    </>
+                  ) : (
+                    <div className="md-vacio-hint">
+                      <h3>{t("reportes.resumenMensual")}</h3>
+                      <p>{t("reportes.sinResumenMensual")}</p>
+                    </div>
+                  )
+                )}
+
+                {informeVisible === "anual" && (
+                  <>
+                    <div className="tx-head">
+                      <div className="tx-title">{t("anual.titulo")} · {mes.slice(0, 4)}</div>
+                      <button className="btn primary" onClick={handleAnnual} disabled={exporting !== null}>
+                        {exporting === "anual" ? t("common.generando") : "PDF"}
+                      </button>
+                    </div>
+                    {anualMeses === null ? (
+                      <LoadingState />
+                    ) : anualMeses.length === 0 ? (
+                      <div className="md-vacio-hint">
+                        <p>{t("anual.sinMovimientos", { anio: mes.slice(0, 4) })}</p>
+                      </div>
+                    ) : (
+                      <div className="data-table roomy">
+                        <div className="thead" style={{ gridTemplateColumns: ANUAL_COLS }}>
+                          <div className="th">{t("reportes.colMes")}</div>
+                          <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
+                          <div className="th" style={{ textAlign: "right" }}>{t("charts.gastos")}</div>
+                          <div className="th" style={{ textAlign: "right" }}>{t("pdfPreview.balance")}</div>
+                        </div>
+                        {anualMeses.map((h) => (
+                          <div className="tr" key={h.mes} style={{ gridTemplateColumns: ANUAL_COLS }}>
+                            <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
+                            <div className="td" style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>{fmtMoney(h.ingresos)}</div>
+                            <div className="td" style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>{fmtMoney(h.gastos)}</div>
+                            <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(restar(h.ingresos, h.gastos))}</div>
+                          </div>
+                        ))}
+                        <div className="tr" style={{ gridTemplateColumns: ANUAL_COLS }}>
+                          <div className="td" style={{ fontWeight: 700 }}>{t("anual.totalAnio")}</div>
+                          <div className="td" style={{ textAlign: "right", color: "var(--pos)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                            {fmtMoney(sumar(...anualMeses.map((h) => h.ingresos)))}
+                          </div>
+                          <div className="td" style={{ textAlign: "right", color: "var(--neg)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                            {fmtMoney(sumar(...anualMeses.map((h) => h.gastos)))}
+                          </div>
+                          <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                            {fmtMoney(restar(sumar(...anualMeses.map((h) => h.ingresos)), sumar(...anualMeses.map((h) => h.gastos))))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        )
+      ) : (
       <div className="content content-lienzo">
         {loading ? <LoadingState /> : <>
         {enIPhone ? (
@@ -594,94 +965,9 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         ) : (
         <>
         <div className="dash-canvas">
-        <div className="summary-4 enter">
-          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
-            <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
-          </div>
-          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
-            <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
-          </div>
-          <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
-            <div className="stat-value md"><CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
-          </div>
-          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
-            <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot">{mesLegible(mesAnterior)}</div>
-          </div>
-        </div>
+        {tarjetasMes}
 
-        <div className="charts enter">
-          <div className="card">
-            <div className="card-head">
-              <span className="card-title">{t("reportes.distGastos")}</span>
-              <span className="card-meta">{mesStr}</span>
-            </div>
-            {filasGasto.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinGastosEsteMes")}</div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                <div className="donut-wrap" style={{ flexShrink: 0 }}>
-                  <Donut
-                    segments={filasGasto.map((c) => ({ color: c.color, pct: porcentaje(c.total, gastos) }))}
-                    delayMs={0}
-                  />
-                  <div className="donut-center">
-                    <div className="val">{fmtMoney(gastos)}</div>
-                    <div className="lbl">{church.moneda}</div>
-                  </div>
-                </div>
-                <div className="donut-legend" style={{ flex: 1 }}>
-                  {filasGasto.slice(0, 5).map((c) => (
-                    <div className="donut-legend-row" key={c.id}>
-                      <span className="sw" style={{ background: c.color }} />
-                      <span className="name">{catNombre(c.id)}</span>
-                      <span className="pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(0)}%` : "0%"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="card">
-            <div className="card-head">
-              <span className="card-title">{t("reportes.distIngresos")}</span>
-              <span className="card-meta">{mesStr}</span>
-            </div>
-            {filasIngreso.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinIngresosEsteMes")}</div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                <div className="donut-wrap" style={{ flexShrink: 0 }}>
-                  <Donut
-                    segments={filasIngreso.map((c) => ({ color: c.color, pct: porcentaje(c.total, ingresos) }))}
-                    delayMs={150}
-                  />
-                  <div className="donut-center">
-                    <div className="val">{fmtMoney(ingresos)}</div>
-                    <div className="lbl">{church.moneda}</div>
-                  </div>
-                </div>
-                <div className="donut-legend" style={{ flex: 1 }}>
-                  {filasIngreso.map((c) => (
-                    <div className="donut-legend-row" key={c.id}>
-                      <span className="sw" style={{ background: c.color }} />
-                      <span className="name">{catNombre(c.id)}</span>
-                      <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {graficasDistribucion}
         </div>
         </>
         )}
@@ -783,82 +1069,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               )}
             </div>
           </>
-        ) : (
-        <div className="report-preview">
-          <div className="r-head">
-            <div>
-              <div className="r-title-lg">{t("reportes.estadoFinanciero")}</div>
-              <div className="r-church">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
-              <div className="r-period">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
-            </div>
-          </div>
-
-          <div className="r-section-title">{t("reportes.ingresosPeriodo")}</div>
-          {filasIngreso.length === 0 && (
-            <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
-              {t("reportes.sinIngresosRegistrados")}
-            </div>
-          )}
-          {filasIngreso.map((c) => (
-            <div className="r-row" key={c.id}>
-              <span className="r-color" style={{ background: c.color }} />
-              <span>{catNombre(c.id)}</span>
-              <span className="r-amt">{fmtMoney(c.total)}</span>
-              <span className="r-pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(1)}%` : "—"}</span>
-            </div>
-          ))}
-          <div className="r-row total">
-            <span></span>
-            <span>{t("reportes.totalIngresos")}</span>
-            <span className="r-amt" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</span>
-            <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
-          </div>
-
-          <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
-          {filasGasto.length === 0 && (
-            <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
-              {t("reportes.sinGastosRegistrados")}
-            </div>
-          )}
-          {filasGasto.map((c) => (
-            <div className="r-row" key={c.id}>
-              <span className="r-color" style={{ background: c.color }} />
-              <span>{catNombre(c.id)}</span>
-              <span className="r-amt">{fmtMoney(c.total)}</span>
-              <span className="r-pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(1)}%` : "—"}</span>
-            </div>
-          ))}
-          <div className="r-row total">
-            <span></span>
-            <span>{t("reportes.totalGastos")}</span>
-            <span className="r-amt" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</span>
-            <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
-          </div>
-
-          <div className="r-summary">
-            <div className="r-dup">
-              <div className="k">{t("reportes.totalIngresos")}</div>
-              <div className="v" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</div>
-            </div>
-            <div className="r-dup">
-              <div className="k">{t("reportes.totalGastos")}</div>
-              <div className="v" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</div>
-            </div>
-            <div>
-              <div className="k">{t("reportes.balanceNeto")}</div>
-              <div className="v">{fmtMoney(balance)}</div>
-            </div>
-            <div>
-              <div className="k">{t("reportes.depositosBancarios")}</div>
-              <div className="v">{fmtMoney(depositosMes)}</div>
-              {depositosMes > 0 && (
-                <div className="r-nota">{t("reportes.depositosNota")}</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        )}
+        ) : estadoFinancieroDoc}
 
         {historial.length > 0 && (
           <>
@@ -898,50 +1109,12 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                   );
                 })}
               </div>
-            ) : (
-            <div className="data-table roomy tabla-resumen-mes">
-              <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
-                <div className="th">{t("reportes.colMes")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("charts.gastos")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("pdfPreview.balance")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("reportes.colVariacion")}</div>
-              </div>
-              {historial.map((h, i) => {
-                const bal = restar(h.ingresos, h.gastos);
-                const anterior = historial[i - 1];
-                const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
-                const variacion = balAnt === null ? null : pctChange(bal, balAnt);
-                return (
-                  <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
-                    <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
-                    <div className="td" data-label={t("charts.ingresos")} style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoney(h.ingresos)}
-                    </div>
-                    <div className="td" data-label={t("charts.gastos")} style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoney(h.gastos)}
-                    </div>
-                    <div className="td" data-label={t("pdfPreview.balance")} style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoney(bal)}
-                    </div>
-                    <div className="td" data-label={t("reportes.colVariacion")} style={{ textAlign: "right" }}>
-                      {variacion === null ? (
-                        <span style={{ color: "var(--text-3)" }}>—</span>
-                      ) : (
-                        <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
-                          {variacion >= 0 ? "+" : ""}{variacion}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            )}
+            ) : resumenMensualTabla}
           </>
         )}
         </>}
       </div>
+      )}
 
       {importOpen && (
         <GenericCsvImportModal<NewTx>

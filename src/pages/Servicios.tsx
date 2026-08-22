@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto, esMac } from "../movil";
-import { currentMonth, deleteServicio, fmtFechaCorta, listServicios, type Church, type Servicio } from "../db";
+import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { currentMonth, deleteServicio, fmtFecha, fmtFechaCorta, listServicios, mesLegible, type Church, type Servicio } from "../db";
+import DetalleServicio from "../components/DetalleServicio";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -38,6 +40,13 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
   // El carrusel de secciones ya muestra "Servicios" como pastilla activa —
   // el título grande sobra ahí.
   const enIPhone = esIPhone();
+  /* Maestro-detalle del iPad (docs/ipad-rediseno.md): mismos dos umbrales que
+     Movimientos — partido desde 700, columnas desde 1150 (lista de 358px);
+     entre medias el detalle EMPUJA a la lista. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
   const location = useLocation();
   const navigate = useNavigate();
   const [servicios, setServicios] = useState<Servicio[]>([]);
@@ -115,6 +124,70 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
   /* Pie de ventana (solo Mac). */
   useBarraEstado(t("barraEstado.servicios", { count: visibles.length }));
 
+  /* La fila abierta del maestro-detalle: un ID que se re-busca en cada
+     recarga (editar refresca el panel en sitio; borrar lo cierra solo).
+     `ultimoSel` conserva el último objeto real para que el panel no se vacíe
+     a mitad de la animación de salida del modo de empuje. */
+  const [selId, setSelId] = useState<number | null>(null);
+  const sel = selId != null ? servicios.find((s) => s.id === selId) ?? null : null;
+  const ultimoSel = useRef<Servicio | null>(null);
+  if (sel) ultimoSel.current = sel;
+
+  /* Los grupos por mes de la lista del maestro-detalle, sobre `visibles`
+     (ya buscados) y sin paginar. */
+  const gruposMes: { mes: string; items: Servicio[] }[] = [];
+  if (partido) {
+    for (const s of visibles) {
+      const m = s.fecha.slice(0, 7);
+      const ultimoGrupo = gruposMes[gruposMes.length - 1];
+      if (ultimoGrupo && ultimoGrupo.mes === m) ultimoGrupo.items.push(s);
+      else gruposMes.push({ mes: m, items: [s] });
+    }
+  }
+
+  /* Las tres tarjetas del mes, extraídas para pintarse en el layout de
+     siempre Y en el maestro-detalle (panel sin fila abierta / cabeza de la
+     lista en el modo de empuje) sin ser dos copias. */
+  const resumenEscritorio = (
+    <div className="dash-canvas">
+    <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+      <div className="stat-card accent" style={accent("var(--accent-4)")}>
+        <div className="stat-head">
+          <span className="stat-label">{t("servicios.statServiciosMes")}</span>
+          <div className="stat-icon neutral"><IconBookOpen size={15} strokeWidth={1.8} /></div>
+        </div>
+        <div className="stat-value md"><CountUp value={statsMes.servicios} format={String} /></div>
+      </div>
+      <div className="stat-card accent" style={accent("var(--accent-2)")}>
+        <div className="stat-head">
+          <span className="stat-label">{t("servicios.statAsistenciaPromedio")}</span>
+          <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
+        </div>
+        <div className="stat-value md">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</div>
+      </div>
+      <div className="stat-card accent" style={accent("var(--accent-1)")}>
+        <div className="stat-head">
+          <span className="stat-label">{t("servicios.statVisitantesMes")}</span>
+          <div className="stat-icon neutral"><IconPlus size={15} strokeWidth={1.8} /></div>
+        </div>
+        <div className="stat-value md"><CountUp value={statsMes.visitantes} format={String} /></div>
+      </div>
+    </div>
+    </div>
+  );
+
+  const estadoVacio = (
+    <EmptyState
+      titulo={servicios.length === 0 ? t("servicios.aunNoHay") : t("servicios.sinResultados")}
+      sub={servicios.length === 0 ? t("servicios.agregaPrimero") : t("servicios.sinResultadosSub")}
+      icon={<IconBookOpen size={20} strokeWidth={1.8} />}
+      accion={servicios.length === 0
+        ? { label: t("servicios.nuevoServicio"), onClick: () => setModal({ open: true, servicio: null }) }
+        : undefined}
+      duplicaCrear
+    />
+  );
+
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
@@ -131,6 +204,99 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
+      {/* ---- Maestro-detalle (iPad) ----
+          Lista de 358px con la bitácora agrupada por mes —cada fila con su
+          bloque de fecha, como una celda de Calendario— y la ficha del culto
+          al lado. */}
+      {partido ? (
+        <div className={`md-split md-servicios${selId != null ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista">
+                <div className="md-filtros">
+                  <label className="md-buscar">
+                    <IconSearch size={15} strokeWidth={2} />
+                    <input
+                      value={query}
+                      placeholder={t("servicios.buscarPlaceholder")}
+                      onChange={(e) => setQuery(e.target.value)}
+                      aria-label={t("servicios.buscarPlaceholder")}
+                    />
+                  </label>
+                </div>
+
+                <div className="md-filas">
+                  {angosto && <div className="md-extra">{resumenEscritorio}</div>}
+                  {visibles.length === 0 ? (
+                    <div className="md-filas-vacio">{estadoVacio}</div>
+                  ) : (
+                    gruposMes.map((g) => (
+                      <div key={g.mes}>
+                        <div className="md-grupo">{mesLegible(g.mes)}</div>
+                        {g.items.map((s) => {
+                          const f = fmtFecha(s.fecha);
+                          const sub = [s.titulo_mensaje ?? s.predica, s.dirige].filter(Boolean).join(" · ");
+                          const n = totalPresentes(s);
+                          return (
+                            <div
+                              key={s.id}
+                              className={`md-fila${selId === s.id ? " sel" : ""}`}
+                              onClick={() => setSelId(s.id)}
+                            >
+                              <span className="md-fila-fecha">
+                                <span className="md-fila-fecha-dow">{f.nombreDia.slice(0, 3)}</span>
+                                <span className="md-fila-fecha-num">{f.dia}</span>
+                              </span>
+                              <span className="md-fila-textos">
+                                <span className="md-fila-titular"><span className="truncate">{t(`servicios.tipo.${s.tipo}`)}</span></span>
+                                {sub && <span className="md-fila-sub truncate">{sub}</span>}
+                              </span>
+                              {n > 0 && <span className="md-fila-monto">{n}</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="md-pie">
+                  <span>{t("barraEstado.servicios", { count: visibles.length })}</span>
+                </div>
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  const detSrv = angosto ? sel ?? ultimoSel.current : sel;
+                  if (detSrv) {
+                    return (
+                      <DetalleServicio
+                        servicio={detSrv}
+                        tituloLista={t("nav.serviciosCorto")}
+                        onVolver={() => setSelId(null)}
+                        onEditar={(s) => setModal({ open: true, servicio: s })}
+                        onEliminar={setPendingDelete}
+                      />
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{t("servicios.eligeServicio")}</h3>
+                        <p>{t("servicios.eligeServicioSub")}</p>
+                      </div>
+                      {resumenEscritorio}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {enIPhone ? (
           <div className="ios-panel">
@@ -150,33 +316,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="dash-canvas">
-          <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-            <div className="stat-card accent" style={accent("var(--accent-4)")}>
-              <div className="stat-head">
-                <span className="stat-label">{t("servicios.statServiciosMes")}</span>
-                <div className="stat-icon neutral"><IconBookOpen size={15} strokeWidth={1.8} /></div>
-              </div>
-              <div className="stat-value md"><CountUp value={statsMes.servicios} format={String} /></div>
-            </div>
-            <div className="stat-card accent" style={accent("var(--accent-2)")}>
-              <div className="stat-head">
-                <span className="stat-label">{t("servicios.statAsistenciaPromedio")}</span>
-                <div className="stat-icon neutral"><IconMiembros size={15} strokeWidth={1.8} /></div>
-              </div>
-              <div className="stat-value md">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</div>
-            </div>
-            <div className="stat-card accent" style={accent("var(--accent-1)")}>
-              <div className="stat-head">
-                <span className="stat-label">{t("servicios.statVisitantesMes")}</span>
-                <div className="stat-icon neutral"><IconPlus size={15} strokeWidth={1.8} /></div>
-              </div>
-              <div className="stat-value md"><CountUp value={statsMes.visitantes} format={String} /></div>
-            </div>
-          </div>
-          </div>
-        )}
+        ) : resumenEscritorio}
 
         {/* Las tarjetas de arriba cuentan SOLO el mes en curso; esta tabla es
             la bitácora entera y su buscador busca en todo lo registrado. Sin
@@ -276,6 +416,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+      )}
 
       {modal.open && (
         <ServicioModal

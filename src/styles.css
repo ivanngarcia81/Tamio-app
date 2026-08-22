@@ -9366,8 +9366,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-vacio-hint h3 { margin: 0; font-size: 17px; font-weight: 600; }
   :root.ipad .md-vacio-hint p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-2); }
   /* En el panel el resumen es una columna de ~650px: en 2×2 las tarjetas
-     respiran; el auto-fit de 240px las apretaba en tres. */
+     respiran; el auto-fit de 240px las apretaba en tres. Los dos donuts de
+     Reportes se apilan por el mismo motivo. */
   :root.ipad .md-detalle .summary-4 { grid-template-columns: 1fr 1fr; }
+  :root.ipad .md-detalle .charts { grid-template-columns: 1fr; }
 
   :root.ipad .dm { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
   /* El botón de volver existe solo en el modo de empuje; lo enciende la
@@ -9427,6 +9429,204 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-campo + .dm-campo { border-top: 0.5px solid var(--line-soft); }
   :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: 15px; color: var(--text-2); }
   :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+
+  /* El rótulo de sección del panel (Servicios y afines): el mismo idioma que
+     los encabezados de grupo de una lista de iOS, sobre cada tarjeta. */
+  :root.ipad .dm-seccion {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 8px;
+  }
+
+  /* La pastilla de estado como cola de la fila (Actas, Cartas): sin
+     `flex-shrink: 0` se comprimía con títulos largos hasta partir su texto —
+     el mismo arreglo que ya tenía la Bandeja, generalizado. */
+  :root.ipad .md-fila > .tag { flex-shrink: 0; }
+
+  /* El bloque de fecha de la fila de Servicios: día de la semana arriba y
+     número grande abajo, como una celda de Calendario. Es la medida del
+     diseño (36px) y deja que el resto de la fila sea la de siempre. */
+  :root.ipad .md-fila-fecha {
+    width: 36px;
+    flex: 0 0 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  :root.ipad .md-fila-fecha-dow {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .md-fila.sel .md-fila-fecha-dow { color: var(--ink); }
+  :root.ipad .md-fila-fecha-num { font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+  /* ---- Agenda partida (.md-agenda) ----
+     Aquí los papeles se invierten: el "maestro" es el calendario (flexible,
+     sobre el lienzo) y el "detalle" es la columna del día, de 318px sobre el
+     gris del sidebar — la anatomía de la app de Calendario. Las reglas del
+     modo de empuje (700–1149) de abajo le sirven tal cual: la columna del
+     día entra desde la derecha por encima del calendario. */
+  :root.ipad .md-split.md-agenda .md-lista {
+    width: auto;
+    flex: 1 1 auto;
+    border-right: 0;
+    background: var(--bg);
+  }
+  :root.ipad .md-split.md-agenda .md-detalle {
+    background: var(--sidebar-bg);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* El lienzo del calendario: el mismo aire que .content, desplazando él. */
+  :root.ipad .agenda-lienzo {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  :root.ipad .agenda-lienzo .agenda-cal { flex: 1; display: flex; flex-direction: column; min-height: 430px; }
+  :root.ipad .agenda-lienzo .agenda-grid { flex: 1; }
+  /* El día elegido en la cuadrícula: el mismo tinte que .md-fila.sel. */
+  :root.ipad .agenda-cell.sel {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--ink);
+  }
+  :root.ipad .agenda-dia-cab { padding: 16px 18px 10px; }
+  :root.ipad .agenda-dia-cab .dm-volver { margin: 0 0 4px -10px; }
+  :root.ipad .agenda-dia-titulo { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  :root.ipad .agenda-dia-sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  :root.ipad .agenda-dia-lista {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  :root.ipad .agenda-dia-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+    background: var(--surface);
+    border: 0;
+    border-radius: 12px;
+    padding: 13px 15px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    font: inherit;
+    color: var(--text);
+  }
+  :root.ipad .agenda-dia-item:active { opacity: 0.65; }
+  :root.ipad .agenda-dia-item.cancelada { opacity: 0.6; }
+  :root.ipad .agenda-dia-item.cancelada .agenda-dia-item-titulo { text-decoration: line-through; }
+  :root.ipad .agenda-dia-item-titulo {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  :root.ipad .agenda-dia-item-sub { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .agenda-dia-nueva { margin-top: 4px; align-self: flex-start; }
+
+  /* El documento de la carta en el panel: el MISMO HTML de imprimir, en un
+     iframe con alto de hoja carta. El marco recorta las esquinas y pone la
+     sombra; el fondo gris lo trae el propio documento. */
+  :root.ipad .dm-carta-marco {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+    background: #f0f0f0;
+  }
+  /* El tamaño y la escala los pone el componente (hoja real de 816×1056
+     reducida a lo que mida el marco); aquí solo lo que no varía. */
+  :root.ipad .dm-carta-doc {
+    display: block;
+    border: 0;
+    background: #f0f0f0;
+  }
+
+  /* ------------------------------------------------------------
+     El documento "papel" del panel (Actas y Cartas)
+     ------------------------------------------------------------
+     La hoja serif del diseño: fondo de papel CLARO en los dos temas (un
+     documento impreso no tiene modo oscuro; el diseño usa #fff / #f6f6f4),
+     texto tinta fija, radio corto y sombra de hoja apoyada. El título del
+     panel y las acciones viven fuera, en la cabecera .dm de siempre. */
+  :root.ipad .dm-doc { max-width: 760px; }
+  :root.ipad .dm-doc-titulo { margin: 4px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  :root.ipad .papel {
+    background: #fdfdfb;
+    color: #1b1b1d;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+    padding: 46px 52px;
+    font-family: ui-serif, "New York", Georgia, serif;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+  :root.ipad .papel-cabecera {
+    text-align: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  :root.ipad .papel-titulo { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; }
+  :root.ipad .papel-sub { font-size: 13px; color: #555; margin-top: 5px; }
+  :root.ipad .papel-rotulo {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin: 24px 0 8px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #333;
+  }
+  :root.ipad .papel-parrafo { margin: 0; white-space: pre-wrap; text-wrap: pretty; }
+  :root.ipad .papel-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 26px; }
+  :root.ipad .papel-dato { display: flex; gap: 10px; min-width: 0; }
+  /* La asistencia lista nombres largos: esas filas van a una columna. */
+  :root.ipad .papel-datos.una-col { grid-template-columns: 1fr; }
+  :root.ipad .papel-dato-k {
+    flex: 0 0 118px;
+    font-size: 12px;
+    color: #666;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    padding-top: 2px;
+  }
+  :root.ipad .papel-dato-v { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  :root.ipad .papel-lista { margin: 0; padding-left: 22px; }
+  :root.ipad .papel-lista li { margin-bottom: 9px; }
+  :root.ipad .papel-lista-meta {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin-top: 2px;
+  }
+  :root.ipad .papel-firmas {
+    display: flex;
+    gap: 50px;
+    margin-top: 64px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  :root.ipad .papel-firma { flex: 1; text-align: center; font-size: 12.5px; color: #555; }
+  :root.ipad .papel-firma-linea { border-top: 1px solid #999; margin-bottom: 6px; }
+  :root.ipad .papel-firma-nombre { font-weight: 600; color: #333; }
 }
 
 /* La lista de Aportantes mide 378px, la medida del diseño para una columna
@@ -9435,6 +9635,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    regla, con su especificidad extra, pisaría el `width: auto` de abajo. */
 @media (min-width: 1150px) {
   :root.ipad .md-split.md-miembros .md-lista { width: 378px; flex-basis: 378px; }
+  /* Cada pantalla con su medida del diseño (docs/ipad-rediseno.md §3.6):
+     Depósitos 378, Actas y Servicios 358, Cartas 338, Reportes 330. Solo en
+     columnas — en el modo de empuje la lista es todo el ancho. */
+  :root.ipad .md-split.md-depositos .md-lista { width: 378px; flex-basis: 378px; }
+  :root.ipad .md-split.md-actas .md-lista,
+  :root.ipad .md-split.md-servicios .md-lista { width: 358px; flex-basis: 358px; }
+  :root.ipad .md-split.md-cartas .md-lista { width: 338px; flex-basis: 338px; }
+  :root.ipad .md-split.md-reportes .md-lista { width: 330px; flex-basis: 330px; }
+  /* En la Agenda los papeles se invierten: el calendario (md-lista) es
+     flexible y la columna del DÍA (md-detalle) es la fija, de 318px con su
+     filo a la izquierda — la anatomía de la app de Calendario. */
+  :root.ipad .md-split.md-agenda .md-detalle {
+    flex: 0 0 318px;
+    width: 318px;
+    min-width: 318px;
+    border-left: 0.5px solid var(--line);
+  }
 }
 
 /* ============================================================
