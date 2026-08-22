@@ -1,17 +1,17 @@
 # Las ramas del repo, y qué hacer con ellas
 
-_Escrito el 22 de agosto de 2026, cuando eran doce y sobraban nueve._
+_Escrito el 22 de agosto de 2026, cuando eran doce y sobraban diez._
 
 ## Lo que hay
 
-Doce ramas en `origin`. Tres están vivas; las otras nueve son cadáveres de
+Doce ramas en `origin`. **Dos** están vivas; las otras diez son cadáveres de
 features que ya aterrizaron.
 
 | Rama | Estado |
 |---|---|
 | `main` | el tronco |
 | `claude/design-review-execution-can5gv` | el rediseño de iPad completo + la 1.1.9. Sin fusionar |
-| `claude/plaid-integration-planning-8hdyx0` | un commit con `docs/plan-plaid.md` y `docs/prompt-diseno-plaid.md`, que NO están en `main` |
+| `claude/plaid-integration-planning-8hdyx0` | su único commit ya viajó a la rama de hoy (22 ago). Borrable |
 | `actas-buscador` | su código ya está en `main` |
 | `cartas-iphone` | ídem |
 | `centavos` | ídem |
@@ -69,11 +69,15 @@ Comprobar que subieron **antes** de borrar nada:
 git ls-remote --tags origin
 ```
 
-Y entonces sí, las nueve:
+Y entonces sí, las diez:
 
 ```sh
-git push origin --delete actas-buscador cartas-iphone centavos coma-decimal ficha-iphone hoja-nuevo-movimiento informes-iphone solicitud-iphone claude/hello-9v3atw
+git push origin --delete actas-buscador cartas-iphone centavos coma-decimal ficha-iphone hoja-nuevo-movimiento informes-iphone solicitud-iphone claude/hello-9v3atw claude/plaid-integration-planning-8hdyx0
 ```
+
+La de Plaid entra en esta lista sin etiqueta de archivo: su único commit
+—los tres documentos— se trajo con `git cherry-pick -x` a la rama del
+rediseño, así que su contenido y su mensaje ya viven en la historia buena.
 
 Para limpiar también las copias locales:
 
@@ -81,25 +85,21 @@ Para limpiar también las copias locales:
 git fetch --prune origin
 ```
 
-Queda el repo en tres ramas y tres etiquetas (`v1.0.0` y las dos de
+Queda el repo en dos ramas y tres etiquetas (`v1.0.0` y las dos de
 archivo), con todo recuperable: `git checkout archivo/historia-pre-rediseno`
 devuelve el árbol completo de antes del rediseño.
 
-## Las dos vivas
+## La que queda viva
 
 - **`claude/design-review-execution-can5gv`** — fusionarla a `main` cuando la
   1.1.9 haya pasado la prueba en los iPads. Mientras no se fusione, la Mac
   tiene que compilar DESDE esta rama: compilar desde `main` produce la 1.1.8,
   que es el código del día 21. Es exactamente lo que pasó el 22 de agosto
   (ver la bitácora de ese día).
-- **`claude/plaid-integration-planning-8hdyx0`** — no es código, son tres
-  documentos de planificación de la conciliación bancaria. O entran a `main`
-  (son documentos, no hay riesgo de romper nada) o se quedan ahí como
-  borrador; lo que no conviene es olvidarlos, porque `main` no los tiene.
 
 ## La regla, para no volver aquí
 
 Una rama se borra **en cuanto su trabajo llega a `main`**, no meses después.
-Las nueve de esta lista sobrevivieron porque nadie las cerró al aterrizar, y
+Las diez de esta lista sobrevivieron porque nadie las cerró al aterrizar, y
 cuando `main` se re-fundó dejaron de poder detectarse con `--merged`: lo que
 era un `git branch -d` de un segundo se convirtió en esta investigación.
