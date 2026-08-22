@@ -8079,7 +8079,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Lo que sí necesita es medida de dedo: las filas venían de la regla base,
    pensada para ratón (36px medidos). */
 @media (max-width: 760.98px) {
-  :root.ipad .settings-nav-item { min-height: 44px; font-size: 15px; }
+  /* Y con tinta entera: la regla base pinta el índice en `--text-2` (gris de
+     apoyo) porque en Mac convive con el detalle y no es el protagonista.
+     Aquí ES la pantalla — con el gris, las siete filas parecían
+     deshabilitadas (cazado en la captura del mini a 744). */
+  :root.ipad .settings-nav-item { min-height: 44px; font-size: 15px; color: var(--text); font-weight: 500; }
   :root.ipad .settings-nav-flecha { color: var(--text-3); }
 }
 :root.movil .content,
@@ -8183,6 +8187,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     transform: translateX(-100%);
     transition: transform .28s cubic-bezier(.32,.72,.35,1);
     z-index: 120;
+  }
+  /* La sombra solo con el cajón abierto. Cerrado, el borde derecho queda en
+     x=0 y la sombra (12px de offset + 40 de difuminado) se proyectaba DENTRO
+     de la pantalla: una franja gris en el filo izquierdo de toda página del
+     rango — en el Mac angosto, el iPhone apaisado y el iPad por igual.
+     Cazada en la captura del mini a 744 del arnés del iPad. */
+  .app.menu-abierto .sidebar {
+    transform: none;
     box-shadow: 12px 0 40px rgba(0,0,0,.22);
   }
   :where(:root:not(.ipad-ancho)) .app.menu-abierto .sidebar { transform: none; }
@@ -9434,8 +9446,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-vacio-hint h3 { margin: 0; font-size: 17px; font-weight: 600; }
   :root.ipad .md-vacio-hint p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-2); }
   /* En el panel el resumen es una columna de ~650px: en 2×2 las tarjetas
-     respiran; el auto-fit de 240px las apretaba en tres. */
+     respiran; el auto-fit de 240px las apretaba en tres. Los dos donuts de
+     Reportes se apilan por el mismo motivo. */
   :root.ipad .md-detalle .summary-4 { grid-template-columns: 1fr 1fr; }
+  :root.ipad .md-detalle .charts { grid-template-columns: 1fr; }
 
   :root.ipad .dm { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
   /* El botón de volver existe solo en el modo de empuje; lo enciende la
@@ -9801,6 +9815,180 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   /* El día elegido se marca en la propia celda, no solo en el panel: si no,
      con el panel abierto no se sabe de qué día está hablando. */
+
+  /* "Ver ficha" al final de la fila del aportante (diseño de iPad): un
+     enlace, no un botón con caja — es navegación, no una acción. */
+  :root.ipad .dm-ver-ficha {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 4px 0 4px 12px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  :root.ipad .dm-ver-ficha:active { opacity: 0.3; }
+
+  /* El rótulo de sección del panel (Servicios y afines): el mismo idioma que
+     los encabezados de grupo de una lista de iOS, sobre cada tarjeta. */
+    /* ⚠️ SIN USAR desde la fusión del 22 ago 2026. Lo pedía el DetalleServicio de la otra rama (el mío usa .ds-seccion),
+     que no entró: ganó la otra implementación de la misma pantalla.
+     Se deja aquí, y no se borra en la fusión, para no meter una
+     poda de CSS en el mismo cambio que junta dos ramas. Si nadie
+     lo cablea, este bloque se puede quitar entero. */
+:root.ipad .dm-seccion {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 8px;
+  }
+
+  /* La pastilla de estado como cola de la fila (Actas, Cartas): sin
+     `flex-shrink: 0` se comprimía con títulos largos hasta partir su texto —
+     el mismo arreglo que ya tenía la Bandeja, generalizado. */
+  :root.ipad .md-fila > .tag { flex-shrink: 0; }
+
+  /* El bloque de fecha de la fila de Servicios: día de la semana arriba y
+     número grande abajo, como una celda de Calendario. Es la medida del
+     diseño (36px) y deja que el resto de la fila sea la de siempre. */
+  :root.ipad .md-fila-fecha {
+    width: 36px;
+    flex: 0 0 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  :root.ipad .md-fila-fecha-dow {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .md-fila.sel .md-fila-fecha-dow { color: var(--ink); }
+  :root.ipad .md-fila-fecha-num { font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+  /* ---- El Inicio del iPad (diseño del handoff) ----
+     El saludo como h1 de 34px en el contenido (la barra queda en sus 56px),
+     y las dos listas del pie —Últimos movimientos · Esta semana— a dos
+     columnas, con las filas de 56px del diseño. */
+  :root.ipad .dash-hero { margin-bottom: 4px; }
+  /* Los cuatro KPI del diseño en UNA fila (el auto-fit de la regla base los
+     partía en 3 + 1); por debajo del rango de columnas, en 2×2. */
+  :root.ipad .dash-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :root.ipad .dash-hero h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.6px; }
+  :root.ipad .dash-hero p { margin: 4px 0 0; font-size: 15px; color: var(--text-2); }
+  /* La tarjeta "Por revisar" es un Link: pierde el subrayado y hereda el
+     texto para verse EXACTAMENTE como sus tres vecinas. */
+  :root.ipad .stat-card--enlace { text-decoration: none; color: inherit; cursor: pointer; }
+  :root.ipad .stat-card--enlace:active { opacity: 0.7; }
+  :root.ipad .dash-abrir-bandeja { color: var(--ink); font-weight: 600; }
+  :root.ipad .dash-dos-listas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  :root.ipad .dash-lista-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .dash-lista-cab a {
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  :root.ipad .dash-lista-card {
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  :root.ipad .dash-fila {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 6px 16px;
+  }
+  :root.ipad .dash-fila + .dash-fila { border-top: 0.5px solid var(--line-soft); }
+  :root.ipad .dash-fila-icono {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  :root.ipad .dash-fila-icono.ing { background: color-mix(in srgb, var(--pos) 12%, transparent); color: var(--pos); }
+  :root.ipad .dash-fila-icono.gas { background: color-mix(in srgb, var(--neg) 12%, transparent); color: var(--neg); }
+  :root.ipad .dash-fila-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  :root.ipad .dash-fila-titular { font-size: 15px; font-weight: 500; }
+  :root.ipad .dash-fila-sub { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .dash-fila-monto {
+    font-size: 15.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  :root.ipad .dash-fila-monto.pos { color: var(--pos); }
+  :root.ipad .dash-fila-monto.neg { color: var(--neg); }
+  :root.ipad .dash-lista-vacia { padding: 18px 16px; font-size: 13.5px; color: var(--text-3); }
+
+  /* ---- Agenda partida (.md-agenda) ----
+     Aquí los papeles se invierten: el "maestro" es el calendario (flexible,
+     sobre el lienzo) y el "detalle" es la columna del día, de 318px sobre el
+     gris del sidebar — la anatomía de la app de Calendario. Las reglas del
+     modo de empuje (700–1149) de abajo le sirven tal cual: la columna del
+     día entra desde la derecha por encima del calendario. */
+  :root.ipad .md-split.md-agenda .md-lista {
+    width: auto;
+    flex: 1 1 auto;
+    border-right: 0;
+    background: var(--bg);
+  }
+  :root.ipad .md-split.md-agenda .md-detalle {
+    background: var(--sidebar-bg);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  /* El lienzo del calendario: el mismo aire que .content, desplazando él. */
+    /* ⚠️ SIN USAR desde la fusión del 22 ago 2026. Lo pedía la Agenda de la otra rama (la mía no envuelve el calendario),
+     que no entró: ganó la otra implementación de la misma pantalla.
+     Se deja aquí, y no se borra en la fusión, para no meter una
+     poda de CSS en el mismo cambio que junta dos ramas. Si nadie
+     lo cablea, este bloque se puede quitar entero. */
+:root.ipad .agenda-lienzo {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  :root.ipad .agenda-lienzo .agenda-cal { flex: 1; display: flex; flex-direction: column; min-height: 430px; }
+  :root.ipad .agenda-lienzo .agenda-grid { flex: 1; }
+  /* El día elegido en la cuadrícula: el mismo tinte que .md-fila.sel. */
   :root.ipad .agenda-cell.sel {
     background: color-mix(in srgb, var(--ink) 10%, transparent);
     box-shadow: inset 0 0 0 1.5px var(--ink);
@@ -10050,6 +10238,143 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      Esconder una celda de una rejilla no quita su vía, así que apagarla con
      `display: none` dejaba a las acciones ocupando la vía de Ministerio y un
      hueco muerto de 104px al final de cada fila. */
+
+    /* ⚠️ SIN USAR desde la fusión del 22 ago 2026. Lo pedía el panel del día de la otra rama (el mío usa .ag-dia-*),
+     que no entró: ganó la otra implementación de la misma pantalla.
+     Se deja aquí, y no se borra en la fusión, para no meter una
+     poda de CSS en el mismo cambio que junta dos ramas. Si nadie
+     lo cablea, el bloque .agenda-dia-* se puede quitar entero. */
+:root.ipad .agenda-dia-cab { padding: 16px 18px 10px; }
+  :root.ipad .agenda-dia-cab .dm-volver { margin: 0 0 4px -10px; }
+  :root.ipad .agenda-dia-titulo { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  :root.ipad .agenda-dia-sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  :root.ipad .agenda-dia-lista {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  :root.ipad .agenda-dia-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+    background: var(--surface);
+    border: 0;
+    border-radius: 12px;
+    padding: 13px 15px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    font: inherit;
+    color: var(--text);
+  }
+  :root.ipad .agenda-dia-item:active { opacity: 0.65; }
+  :root.ipad .agenda-dia-item.cancelada { opacity: 0.6; }
+  :root.ipad .agenda-dia-item.cancelada .agenda-dia-item-titulo { text-decoration: line-through; }
+  :root.ipad .agenda-dia-item-titulo {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  :root.ipad .agenda-dia-item-sub { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .agenda-dia-nueva { margin-top: 4px; align-self: flex-start; }
+
+  /* El documento de la carta en el panel: el MISMO HTML de imprimir, en un
+     iframe con alto de hoja carta. El marco recorta las esquinas y pone la
+     sombra; el fondo gris lo trae el propio documento. */
+  :root.ipad .dm-carta-marco {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+    background: #f0f0f0;
+  }
+  /* El tamaño y la escala los pone el componente (hoja real de 816×1056
+     reducida a lo que mida el marco); aquí solo lo que no varía. */
+  :root.ipad .dm-carta-doc {
+    display: block;
+    border: 0;
+    background: #f0f0f0;
+  }
+
+  /* ------------------------------------------------------------
+     El documento "papel" del panel (Actas y Cartas)
+     ------------------------------------------------------------
+     La hoja serif del diseño: fondo de papel CLARO en los dos temas (un
+     documento impreso no tiene modo oscuro; el diseño usa #fff / #f6f6f4),
+     texto tinta fija, radio corto y sombra de hoja apoyada. El título del
+     panel y las acciones viven fuera, en la cabecera .dm de siempre. */
+  :root.ipad .dm-doc { max-width: 760px; }
+  :root.ipad .dm-doc-titulo { margin: 4px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+    /* ⚠️ SIN USAR desde la fusión del 22 ago 2026. Lo pedía el DetalleActa de la otra rama (el mío usa .da-doc),
+     que no entró: ganó la otra implementación de la misma pantalla.
+     Se deja aquí, y no se borra en la fusión, para no meter una
+     poda de CSS en el mismo cambio que junta dos ramas. Si nadie
+     lo cablea, el bloque .papel-* se puede quitar entero. */
+:root.ipad .papel {
+    background: #fdfdfb;
+    color: #1b1b1d;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+    padding: 46px 52px;
+    font-family: ui-serif, "New York", Georgia, serif;
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+  :root.ipad .papel-cabecera {
+    text-align: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  :root.ipad .papel-titulo { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; }
+  :root.ipad .papel-sub { font-size: 13px; color: #555; margin-top: 5px; }
+  :root.ipad .papel-rotulo {
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin: 24px 0 8px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #333;
+  }
+  :root.ipad .papel-parrafo { margin: 0; white-space: pre-wrap; text-wrap: pretty; }
+  :root.ipad .papel-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 26px; }
+  :root.ipad .papel-dato { display: flex; gap: 10px; min-width: 0; }
+  /* La asistencia lista nombres largos: esas filas van a una columna. */
+  :root.ipad .papel-datos.una-col { grid-template-columns: 1fr; }
+  :root.ipad .papel-dato-k {
+    flex: 0 0 118px;
+    font-size: 12px;
+    color: #666;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    padding-top: 2px;
+  }
+  :root.ipad .papel-dato-v { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  :root.ipad .papel-lista { margin: 0; padding-left: 22px; }
+  :root.ipad .papel-lista li { margin-bottom: 9px; }
+  :root.ipad .papel-lista-meta {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin-top: 2px;
+  }
+  :root.ipad .papel-firmas {
+    display: flex;
+    gap: 50px;
+    margin-top: 64px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  :root.ipad .papel-firma { flex: 1; text-align: center; font-size: 12.5px; color: #555; }
+  :root.ipad .papel-firma-linea { border-top: 1px solid #999; margin-bottom: 6px; }
+  :root.ipad .papel-firma-nombre { font-weight: 600; color: #333; }
 }
 
 /* La lista de Aportantes mide 378px, la medida del diseño para una columna
@@ -10081,6 +10406,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-left: 0.5px solid var(--line);
     background: var(--sidebar-bg);
   }
+  /* De su rama: el `min-width` que ata la columna aunque el calendario pida
+     más, y la fila de cuatro KPI del Inicio, que su Dashboard necesita. */
+  :root.ipad .md-split.md-agenda .md-detalle { min-width: 318px; }
+  :root.ipad .dash-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* ============================================================
@@ -10107,9 +10436,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.32, 0.72, 0.35, 1);
     z-index: 120;
+    /* Explícito, no heredado: el rango 601–1023 del cajón viejo se solapa
+       con este (744–1023) y cualquier sombra que se le vuelva a poner ahí
+       reaparecería aquí por debajo. */
+    box-shadow: none;
+  }
+  /* La sombra solo con el cajón abierto: cerrado, su borde derecho queda en
+     x=0 y la sombra (12px de offset + 40 de difuminado) se proyectaba DENTRO
+     de la pantalla — una franja gris pintada en el filo izquierdo de todas
+     las páginas del rango. El mismo arreglo que ya tenía el panel del
+     maestro-detalle (~9740). Medido en la captura del mini a 744. */
+  :root.ipad .app.menu-abierto .sidebar {
+    transform: none;
     box-shadow: 12px 0 40px rgba(0, 0, 0, 0.22);
   }
-  :root.ipad .app.menu-abierto .sidebar { transform: none; }
   :root.ipad .menu-telon {
     display: block;
     position: fixed;
@@ -14242,7 +14582,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: rgba(118, 118, 128, 0.12);
   font-size: 16px;
 }
-:root[data-theme="dark"].iphone .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
 :root.movil .ios-chips .btn.secondary { font-size: 15px; }
 
 /* La cuenta de la fila de un bloque: "3" cuando está vacío —cuántos campos
@@ -14283,9 +14623,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 1.45;
   resize: none;
 }
-:root[data-theme="dark"].iphone .ios-ia-campo { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-ia-campo { background: rgba(118, 118, 128, 0.24); }
 
-/* ---------------- El culto en iPhone (NuevoServicioIOS) ----------------
+/* ---------------- El culto en su hoja (NuevoServicioIOS) ----------------
    El padrón embebido hacía el formulario interminable —cuarenta miembros en
    línea, y hay iglesias con trescientos— y marcar quién vino se hacía con
    interruptores, que son para ajustes que se quedan encendidos. Ahora el
@@ -14321,7 +14661,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-stepper button:first-child { border-right: 0.5px solid rgba(60, 60, 67, 0.15); }
 :root.movil .ios-stepper button:active { background: rgba(118, 118, 128, 0.2); }
 :root.movil .ios-stepper button:disabled { color: var(--text-3); cursor: default; }
-:root[data-theme="dark"].iphone .ios-stepper { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-stepper { background: rgba(118, 118, 128, 0.24); }
 
 /* El total: se calcula, no se escribe. Fondo apenas teñido y peso 600 para
    que se lea como cierre de la sección y no como un campo más. */

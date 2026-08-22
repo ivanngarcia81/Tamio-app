@@ -42,7 +42,7 @@ export default function ActaModal(props: PropsActa) {
     guardar,
   } = h;
 
-  // En el teléfono el acta entera se va a su propia hoja: es el formulario más
+  // En todo lo táctil el acta entera se va a su propia hoja: es el formulario más
   // largo de la app y en una columna de cajas de 46 px no cabe ni la primera
   // sección.
   if (enHoja) {

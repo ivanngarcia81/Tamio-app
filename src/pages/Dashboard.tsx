@@ -4,11 +4,12 @@ import { useTranslation } from "react-i18next";
 import { useBarraEstado } from "../components/BarraEstado";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  catNombre, categoriaInfo, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
-  fmtFechaCorta, fmtMoney, fmtRelativo, lastActivityAt, listTx, mesLegible, monthDepositos,
-  monthTotals, pctChange, prevMonth, yearTotals,
+  catNombre, categoriaInfo, countPendingTx, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
+  fmtFecha, fmtFechaCorta, fmtMoney, fmtRelativo, hoyISO, lastActivityAt, listActividades, listTx, mesLegible,
+  metodoNombre, monthDepositos, monthTotals, pctChange, prevMonth, yearTotals,
   type Church, type DailyPoint, type MonthTotals, type Tx, type YearTotals,
 } from "../db";
+import { expandirTodas, type OcurrenciaVista } from "../services/agenda/recurrencia";
 import TxList, { EmptyState } from "../components/TxList";
 import Delta from "../components/Delta";
 import CountUp from "../components/CountUp";
@@ -36,6 +37,14 @@ const IosChevron = () => (
 
 function accentStyle(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
+}
+
+/** Franja del día según la hora local, para el saludo del encabezado. */
+function franjaDelDia(): "manana" | "tarde" | "noche" {
+  const h = new Date().getHours();
+  if (h < 12) return "manana";
+  if (h < 19) return "tarde";
+  return "noche";
 }
 
 /** "15 ago" / "Aug 15" — la fecha del eje, sin año.
@@ -76,6 +85,9 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   // en el teléfono manda el idioma de panel. Mac no cambia.
   const enIPhone = esIPhone();
   const enMac = esMac();
+  /* El Inicio del iPad tiene diseño propio (handoff, docs/ipad-rediseno.md):
+     saludo grande en el contenido, fila de cuatro KPI con "Por revisar", y
+     "Últimos movimientos" y "Esta semana" a dos columnas. */
   const enIPad = esIPad();
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
@@ -94,6 +106,33 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     listTx(church.id, { limit: 30 }).then(setTxs).catch(console.error);
     lastActivityAt(church.id).then(setUltimaActividad).catch(console.error);
   }, [church.id, refreshKey, mes, mesAnterior]);
+
+  /* Lo que solo pide el Inicio del iPad: el conteo de la bandeja (la misma
+     consulta del badge del sidebar) y lo de la próxima semana de la Agenda
+     — las mismas ocurrencias reales de `expandirTodas`, no una copia. */
+  const [pendientes, setPendientes] = useState(0);
+  const [semana, setSemana] = useState<OcurrenciaVista[]>([]);
+  useEffect(() => {
+    if (!enIPad) return;
+    countPendingTx(church.id).then(setPendientes).catch(console.error);
+    listActividades(church.id)
+      .then((acts) => {
+        const desde = hoyISO();
+        const [y, m, d] = desde.split("-").map(Number);
+        const fin = new Date(y, m - 1, d + 6);
+        const p = (x: number) => String(x).padStart(2, "0");
+        const hasta = `${fin.getFullYear()}-${p(fin.getMonth() + 1)}-${p(fin.getDate())}`;
+        const ocurrencias = expandirTodas(acts, desde, hasta)
+          .filter((o) => o.estado !== "cancelada")
+          .sort((a, b) => (a.fecha === b.fecha
+            ? (a.hora_inicio ?? "").localeCompare(b.hora_inicio ?? "")
+            : a.fecha.localeCompare(b.fecha)));
+        setSemana(ocurrencias.slice(0, 4));
+      })
+      .catch(console.error);
+    // `enIPad` es constante durante la sesión (clase puesta antes de montar).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [church.id, refreshKey]);
 
   const ingresos = totales?.ingresos ?? CERO;
   const gastos = totales?.gastos ?? CERO;
@@ -235,6 +274,166 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     }
   }
 
+  /* ---- Piezas compartidas entre el layout de siempre y el Inicio del iPad,
+     extraídas para no ser dos copias. ---- */
+  const graficas = (
+    <div ref={chartsRef}>
+      <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
+    </div>
+  );
+
+  const distribucionEscritorio = (
+    <div className="card enter" ref={categoryChartRef}>
+      <div className="card-head">
+        <span className="card-title">{t("dashboard.distribucionGastos")}</span>
+        <span className="card-meta">{mesLegible(mes)}</span>
+      </div>
+      {topGastos.length === 0 ? (
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
+      ) : (
+        topGastos.map((g) => (
+          <div className="hbar-row" key={g.id}>
+            <span className="hbar-label">{g.nombre}</span>
+            <div className="hbar-track">
+              <div className="hbar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
+            </div>
+            <span className="hbar-val">{fmtMoney(g.monto)}</span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
+  /* ---- Lo propio del Inicio del iPad (diseño del handoff) ---- */
+  const fHoy = fmtFecha(hoyISO());
+  const hoyDate = new Date();
+  const diasParaCorte = new Date(hoyDate.getFullYear(), hoyDate.getMonth() + 1, 0).getDate() - hoyDate.getDate();
+  const registrosIngresoMes = Object.values(totales?.conteoCategoriaIngreso ?? {}).reduce((a, b) => a + b, 0);
+  const diezmosMes = totales?.conteoCategoriaIngreso?.["diezmo"] ?? 0;
+
+  const heroIPad = (
+    <div className="dash-hero">
+      <h1>{t(`dashboard.saludo.${franjaDelDia()}`)}</h1>
+      <p>
+        {`${fHoy.nombreDia} ${fHoy.dia}`} · {diasParaCorte === 0
+          ? t("dashboard.corteHoy")
+          : t("dashboard.corteDias", { count: diasParaCorte })}
+      </p>
+    </div>
+  );
+
+  const kpiIPad = (
+    <div className="summary-4 enter dash-kpi">
+      <div className="stat-card accent" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.balanceDelMesLabel")}</span></div>
+        <div className="stat-value md">
+          <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+        </div>
+        {pctChange(balance, balanceAnt) !== null && (
+          <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
+        )}
+      </div>
+      <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
+        <div className="stat-value md">
+          <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+        </div>
+        {/* El pie del diseño: cuántos registros son y cuántos diezmos —
+            los conteos que `monthTotals` ya trae. */}
+        <div className="stat-foot">{t("dashboard.subIngresos", { count: registrosIngresoMes, diezmos: diezmosMes })}</div>
+      </div>
+      <div className="stat-card accent" style={accentStyle("var(--accent-2)")}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
+        <div className="stat-value md">
+          <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+        </div>
+        {pctChange(gastos, gastosAnt) !== null && (
+          <div className="stat-foot"><Delta pct={pctChange(gastos, gastosAnt)} invert /> {t("dashboard.vsMesAnterior")}</div>
+        )}
+      </div>
+      {/* La cuarta tarjeta es una COLA de trabajo, no una cifra: lo que
+          espera en la bandeja, con su salto. El conteo es el mismo del
+          badge del sidebar (countPendingTx). */}
+      <Link to="/bandeja" className="stat-card accent stat-card--enlace" style={accentStyle("var(--accent-5)")}>
+        <div className="stat-head"><span className="stat-label">{t("nav.porRevisar")}</span></div>
+        <div className="stat-value md">
+          {pendientes}<span className="stat-cur">{t("dashboard.movimientosUnidad")}</span>
+        </div>
+        <div className="stat-foot dash-abrir-bandeja">{t("dashboard.abrirBandeja")}</div>
+      </Link>
+    </div>
+  );
+
+  const dosListasIPad = (
+    <div className="dash-dos-listas">
+      <div>
+        <div className="dash-lista-cab">
+          <span>{t("dashboard.ultimosMovimientos")}</span>
+          {txs.length > 0 && <Link to="/ingresos">{t("common.verTodo")}</Link>}
+        </div>
+        <div className="dash-lista-card">
+          {txs.length === 0 ? (
+            <div className="dash-lista-vacia">{t("dashboard.sinMovimientosRegistrados")}</div>
+          ) : (
+            txs.slice(0, 4).map((tx) => {
+              const esIng = tx.tipo === "ingreso";
+              const cat = categoriaInfo(tx.tipo, tx.categoria);
+              const persona = esIng ? tx.member_nombre ?? tx.beneficiario : tx.beneficiario;
+              /* El mismo titular que la lista del maestro-detalle de
+                 Ingresos/Gastos: la categoría abre porque es lo que agrupa. */
+              const conceptoRedundante = tx.concepto.trim().toLowerCase() === cat.nombre.trim().toLowerCase();
+              const titular = esIng
+                ? persona ? `${cat.nombre} · ${persona}` : tx.concepto
+                : conceptoRedundante ? cat.nombre : `${cat.nombre} · ${tx.concepto}`;
+              return (
+                <div className="dash-fila" key={tx.id}>
+                  <span className={`dash-fila-icono ${esIng ? "ing" : "gas"}`}>{cat.nombre[0]?.toUpperCase()}</span>
+                  <span className="dash-fila-textos">
+                    <span className="dash-fila-titular truncate">{titular}</span>
+                    <span className="dash-fila-sub truncate">
+                      {[fmtFechaCorta(tx.fecha), metodoNombre(tx.metodo_pago)].join(" · ")}
+                    </span>
+                  </span>
+                  <span className={`dash-fila-monto ${esIng ? "pos" : "neg"}`}>
+                    {esIng ? "+" : "−"}{fmtMoney(tx.monto)}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+      <div>
+        <div className="dash-lista-cab">
+          <span>{t("dashboard.estaSemana")}</span>
+          <Link to="/agenda">{t("nav.agendaCorto")}</Link>
+        </div>
+        <div className="dash-lista-card">
+          {semana.length === 0 ? (
+            <div className="dash-lista-vacia">{t("dashboard.semanaVacia")}</div>
+          ) : (
+            semana.map((o) => {
+              const f = fmtFecha(o.fecha);
+              const hora = o.dia_completo ? "" : o.hora_inicio ?? "";
+              return (
+                <div className="dash-fila" key={`${o._master.id}:${o._fechaOriginal}`}>
+                  <span className="md-fila-fecha">
+                    <span className="md-fila-fecha-dow">{f.nombreDia.slice(0, 3)}</span>
+                    <span className="md-fila-fecha-num">{f.dia}</span>
+                  </span>
+                  <span className="dash-fila-textos">
+                    <span className="dash-fila-titular truncate">{o.nombre}</span>
+                    <span className="dash-fila-sub truncate">{[hora, o.lugar].filter(Boolean).join(" · ")}</span>
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* En Mac la cabecera es la toolbar de la ventana: "Inicio" en 13
@@ -245,17 +444,17 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           `--mac-fs-large-title` — las cuatro tarjetas KPI usan 15. El saludo
           se va: en una barra de 52 px no cabe y no dice nada del dinero. */}
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        {/* En el iPad, título y subtítulo — como las otras quince pantallas.
-            El handoff de iPad titula esta barra "Inicio · Resumen de agosto
-            2026" y baja las cifras a las tarjetas, que es donde el saldo del
-            mes ya vive (la tarjeta consolidada de abajo). El bloque de héroe
-            del Mac y del iPhone mide 87px —saludo, cifra de 40 y pie— y en
-            una barra de 56 no cabe: se salía por debajo, con la cifra
-            partida por la línea de la barra. */}
         {enIPad ? (
+          /* En el iPad la cabecera es la barra de 56px de las demás páginas:
+             título y un DATO corto. El saludo grande baja al contenido (el
+             h1 de 34px del diseño) y la cifra del mes se queda a la vista
+             aquí, como subtítulo — antes el bloque del saludo + saldo de
+             34px hinchaba la barra a ~110px, un Large Title disfrazado. */
           <div>
             <div className="page-title">{t("nav.inicio")}</div>
-            <div className="page-sub">{t("dashboard.resumenDe", { mes: mesLegible(mes) })}</div>
+            <div className="page-sub">
+              {t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}: {fmtMoney(balance)} {church.moneda}
+            </div>
           </div>
         ) : (
         <div>
@@ -298,14 +497,18 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           lo que separa las tarjetas es su borde de 1 px; el gris solo se
           justifica aquí, donde se juntan dos gráficas y cuatro KPI. */}
       <div className="content content-inicio">
+        {/* El saludo del diseño de iPad: h1 de 34px EN el contenido, con la
+            fecha y cuánto falta para el corte de mes. En Mac y iPhone no
+            existe — ahí la cabecera ya dice lo suyo. */}
+        {enIPad && heroIPad}
         {/* Lienzo único: gráficas, métricas y desglose comparten un solo panel
-            gris claro para verse como un dashboard unificado. */}
+            gris claro para verse como un dashboard unificado. En el iPad el
+            orden es el del diseño: KPI primero, gráficas después. */}
         <div className="dash-canvas">
-        <div ref={chartsRef}>
-          <DashboardCharts weekly={weekly} balanceSeries={balanceSeries} moneda={church.moneda} />
-        </div>
+        {enIPad && kpiIPad}
+        {graficas}
 
-        {enIPhone ? (
+        {enIPad ? null : enIPhone ? (
           /* Los ocho indicadores en dos columnas. En Mac siguen siendo las
              dos filas de tarjetas de siempre; aquí la tarjeta consolidada
              "Balance del mes" se abre en sus tres cifras (saldo, ingresos,
@@ -542,7 +745,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           </>
         )}
 
-        {enIPhone ? (
+        {enIPhone && !enIPad ? (
           <div className="ios-panel" ref={categoryChartRef}>
             <div className="ios-panel-head">
               <h2>{t("dashboard.distribucionGastos")}</h2>
@@ -572,29 +775,14 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               </div>
             )}
           </div>
-        ) : (
-          <div className="card enter" ref={categoryChartRef}>
-            <div className="card-head">
-              <span className="card-title">{t("dashboard.distribucionGastos")}</span>
-              <span className="card-meta">{mesLegible(mes)}</span>
-            </div>
-            {topGastos.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
-            ) : (
-              topGastos.map((g) => (
-                <div className="hbar-row" key={g.id}>
-                  <span className="hbar-label">{g.nombre}</span>
-                  <div className="hbar-track">
-                    <div className="hbar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
-                  </div>
-                  <span className="hbar-val">{fmtMoney(g.monto)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        )}
+        ) : distribucionEscritorio}
         </div>
 
+        {/* En el iPad las dos listas del diseño (Últimos movimientos · Esta
+            semana) sustituyen a la lista larga de recientes; el "Ver todo"
+            lleva a Ingresos, que las tiene todas con sus filtros. */}
+        {enIPad ? dosListasIPad : (
+          <>
         <div className="tx-head">
           <div className="tx-title">{t("dashboard.movimientosRecientes")}</div>
           {/* La lista trae hasta 30; con más de 5 se ofrece el salto a la
@@ -615,6 +803,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           />
         ) : (
           <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} />
+        )}
+          </>
         )}
       </div>
     </>

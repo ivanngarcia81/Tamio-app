@@ -158,6 +158,16 @@ export const en: Resources = {
     ingresoMasFrecuente: "Most frequent income",
     movimientosUnidad: "transactions",
     sinIngresosEsteMes: "No income this month",
+    // El Inicio del iPad (diseño del handoff).
+    corteHoy: "the monthly close is today",
+    corteDias_one: "the monthly close is tomorrow",
+    corteDias_other: "the monthly close is in {{count}} days",
+    subIngresos_one: "{{count}} entry · {{diezmos}} tithes",
+    subIngresos_other: "{{count}} entries · {{diezmos}} tithes",
+    abrirBandeja: "Open inbox →",
+    ultimosMovimientos: "Latest transactions",
+    estaSemana: "This week",
+    semanaVacia: "Nothing scheduled for the next seven days.",
     miembrosActivos: "Active contributors",
     verMiembros: "View contributors",
     ultimaActualizacion: "Last updated",
@@ -266,6 +276,8 @@ export const en: Resources = {
     colTotalAnio: "Year total",
     colContacto: "Contact",
     sinCorreoRegistrado: "No email on file",
+    // La línea secundaria de la lista del iPad.
+    desdeAnio: "Member since {{anio}}",
     sinRfc: "No tax ID",
     archivarTitulo: "Archive member",
     eliminarTitulo: "Delete member",
@@ -332,6 +344,13 @@ export const en: Resources = {
     resumenMensual: "Monthly summary",
     colMes: "Month",
     colVariacion: "Change",
+    // La columna de informes del iPad (maestro-detalle).
+    informeEstadoSub: "Income, expenses, and balance for the month",
+    informeCategorias: "Breakdown by category",
+    informeCategoriasSub: "Expenses and income with charts",
+    informeResumenSub: "The last six months, with change",
+    informeAnualSub: "All twelve months on one page",
+    sinResumenMensual: "No months with activity to compare yet.",
   },
 
   depositos: {
@@ -962,7 +981,11 @@ export const en: Resources = {
     membresia: "Membership",
     actas: "Board minutes",
     servicios: "Service log",
+    // Corta, para el botón de volver del maestro-detalle del iPad.
+    serviciosCorto: "Services",
     cartas: "Certificates & transfers",
+    // Corta, mismo motivo que serviciosCorto.
+    cartasCorto: "Letters",
     reporteMiembros: "Membership reports",
     agenda: "Agenda & calendar",
     agendaCorto: "Agenda",
@@ -1229,6 +1252,8 @@ export const en: Resources = {
     colTitulo: "Minutes",
     aunNoHay: "No minutes yet",
     agregaPrimera: "Record the first meeting minutes with the New minutes button.",
+    nAcuerdos_one: "{{count}} resolution",
+    nAcuerdos_other: "{{count}} resolutions",
     sinResultados: "No results",
     sinResultadosSub: "Try another term or change the status filter.",
     secBasica: "Basic information",
@@ -1491,6 +1516,8 @@ export const en: Resources = {
     grupoDocumentos: "Documents",
     grupoTraslados: "Transfers",
     tab: { resumen: "Overview", nueva: "New letter", solicitudes: "Requests", salida: "Outgoing transfer", entrada: "Incoming transfer", plantillas: "Templates", archivo: "Archive" },
+    eligeCarta: "Choose a letter",
+    eligeCartaSub: "Tap a row in the list to read it here exactly as it will print.",
     nuevaCarta: "New letter",
     nuevaCartaMenu: "New recommendation letter",
     guardarBorrador: "Save draft",
@@ -2146,6 +2173,8 @@ export const en: Resources = {
     diaActividades_other: "{{count}} activities",
     diaVacioTitulo: "Nothing scheduled",
     diaVacioSub: "Tap ＋ to add an activity to this day.",
+    // La del iPad no menciona el "+" flotante del iPhone.
+    diaVacioSubIPad: "Add an activity to this day with the button below.",
     horario: "Time",
     sufijoCopia: "(copy)",
     fechaImportanteBadge: "Important date",

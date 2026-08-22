@@ -121,7 +121,7 @@ export default function ServicioModal(props: PropsServicio) {
   const enHoja = esMovil();
   useEscapeClose(enHoja ? NO_HACE_NADA : pedirCerrar);
 
-  // En el teléfono el culto se va a su propia hoja: el padrón embebido hace
+  // En todo lo táctil el culto se va a su propia hoja: el padrón embebido hace
   // el formulario interminable con cuarenta miembros, y no digamos con
   // trescientos.
   if (enHoja) return <NuevoServicioIOS servicio={servicio} h={h} tipos={TIPOS_SERVICIO} />;

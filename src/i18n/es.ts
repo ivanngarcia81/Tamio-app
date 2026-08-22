@@ -152,6 +152,18 @@ export const es = {
     ingresoMasFrecuente: "Ingreso más frecuente",
     movimientosUnidad: "movimientos",
     sinIngresosEsteMes: "Sin ingresos este mes",
+    // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
+    // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos
+    // listas del pie.
+    corteHoy: "el corte de mes cierra hoy",
+    corteDias_one: "el corte de mes cierra mañana",
+    corteDias_other: "el corte de mes cierra en {{count}} días",
+    subIngresos_one: "{{count}} registro · {{diezmos}} diezmos",
+    subIngresos_other: "{{count}} registros · {{diezmos}} diezmos",
+    abrirBandeja: "Abrir bandeja →",
+    ultimosMovimientos: "Últimos movimientos",
+    estaSemana: "Esta semana",
+    semanaVacia: "Nada programado en los próximos siete días.",
     miembrosActivos: "Aportantes activos",
     verMiembros: "Ver aportantes",
     ultimaActualizacion: "Última actualización",
@@ -260,6 +272,8 @@ export const es = {
     colTotalAnio: "Total del año",
     colContacto: "Contacto",
     sinCorreoRegistrado: "Sin correo registrado",
+    // La línea secundaria de la lista del iPad: "Miembro desde 2014".
+    desdeAnio: "Miembro desde {{anio}}",
     sinRfc: "Sin ID fiscal",
     archivarTitulo: "Archivar miembro",
     eliminarTitulo: "Eliminar miembro",
@@ -326,6 +340,13 @@ export const es = {
     resumenMensual: "Resumen mensual",
     colMes: "Mes",
     colVariacion: "Variación",
+    // La columna de informes del iPad (maestro-detalle).
+    informeEstadoSub: "Ingresos, gastos y saldo del mes",
+    informeCategorias: "Distribución por categorías",
+    informeCategoriasSub: "Gastos e ingresos con gráfica",
+    informeResumenSub: "Los últimos seis meses, con variación",
+    informeAnualSub: "Los doce meses en una hoja",
+    sinResumenMensual: "Todavía no hay meses con movimientos que comparar.",
   },
 
   depositos: {
@@ -984,7 +1005,12 @@ export const es = {
     membresia: "Membresía",
     actas: "Actas",
     servicios: "Registro de servicios",
+    // Corta, para el botón de volver del maestro-detalle del iPad:
+    // "‹ Registro de servicios" no cabe al lado del documento.
+    serviciosCorto: "Servicios",
     cartas: "Cartas y traslados",
+    // Corta, mismo motivo que serviciosCorto.
+    cartasCorto: "Cartas",
     reporteMiembros: "Informes de membresía",
     agenda: "Agenda y calendario",
     // Corta, mismo motivo: "Agenda y calendario" no cabía en el atajo.
@@ -1259,6 +1285,8 @@ export const es = {
     colTitulo: "Acta",
     aunNoHay: "Aún no hay actas",
     agregaPrimera: "Registra la primera acta de reunión con el botón Nueva acta.",
+    nAcuerdos_one: "{{count}} acuerdo",
+    nAcuerdos_other: "{{count}} acuerdos",
     sinResultados: "Sin resultados",
     sinResultadosSub: "Prueba otro término o cambia el filtro de estado.",
     secBasica: "Información básica",
@@ -1529,6 +1557,8 @@ export const es = {
     grupoDocumentos: "Documentos",
     grupoTraslados: "Traslados",
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
+    eligeCarta: "Elige una carta",
+    eligeCartaSub: "Toca una fila de la lista para leerla aquí tal como va a imprimirse.",
     nuevaCarta: "Nueva carta",
     // Etiqueta larga para el menú del "+" (MenuAnchor) — "nuevaCarta" de
     // arriba es la corta, para la pestaña/botón de cabecera.
@@ -2186,6 +2216,9 @@ export const es = {
     diaActividades_other: "{{count}} actividades",
     diaVacioTitulo: "Nada programado",
     diaVacioSub: "Toca ＋ para añadir una actividad a este día.",
+    // La del iPad no menciona el "+" flotante del iPhone: ahí el botón de
+    // crear vive dentro de la propia columna del día.
+    diaVacioSubIPad: "Añade una actividad a este día con el botón de abajo.",
     horario: "Horario",
     sufijoCopia: "(copia)",
     fechaImportanteBadge: "Fecha importante",

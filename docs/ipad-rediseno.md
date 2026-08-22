@@ -66,18 +66,56 @@ el Large Title, que empieza en y=70.
 > **La lección**: un umbral de iPad se justifica por las clases de tamaño de
 > iPadOS, no por reutilizar un breakpoint que existía para otra cosa.
 
-### La hoja de "Nuevo ingreso/gasto"
+### Las hojas de formulario — TODAS (22 ago)
 
-`NewRecordModal` la elegía con `esIPhone()`; ahora con `esMovil()`. En el
-iPad se pinta como `.formSheet` de UIKit: 600px de ancho, centrada, 82% de
-alto, radio 16, sin tirador.
+`NewRecordModal` elegía la hoja con `esIPhone()`; ahora con `esMovil()`. En
+el iPad se pinta como `.formSheet` de UIKit: 600px de ancho, centrada, 82%
+de alto, radio 16, sin tirador. El 21 de agosto solo "Nuevo ingreso/gasto"
+había cruzado; el 22 cruzaron los OCHO formularios restantes con hoja de
+iOS — el mismo cambio de gancho en cada uno, porque el cascarón (`.ios-sheet`
+y la geometría de `.formSheet`) ya estaba bajo `:root.movil`/`:root.ipad` y
+lo único propio de cada hoja son sus filas:
 
-El CSS de la hoja vivía entero bajo `:root.iphone`. Se movieron a
-`:root.movil` las 71 clases que la hoja monta de verdad (131 apariciones),
-sacadas de leer `NuevoMovimientoIOS.tsx` y `src/components/ios/*.tsx` — no
-a mano. Las otras 148 (Ajustes iOS, Bandeja, Cartas, la barra de menú)
-siguen en `:root.iphone` y el iPad no las alcanza, porque sus componentes
-siguen detrás de `esIPhone()`.
+| Formulario | Gancho cambiado | Hoja |
+|---|---|---|
+| Acta (con subpáginas de horario, mociones, acuerdos) | `ActaModal` | `NuevaActaIOS` |
+| Registro de culto (asistencia en subpágina) | `ServicioModal` | `NuevoServicioIOS` |
+| Actividad de agenda | `ActividadModal` | `NuevaActividadIOS` |
+| Depósito bancario | `DepositoModal` | `NuevoDepositoIOS` |
+| Solicitud de carta | `SolicitudModal` | `NuevaSolicitudIOS` |
+| Traslado de salida | `TrasladoSalidaModal` | `NuevoTrasladoSalidaIOS` |
+| Traslado de entrada | `TrasladoEntradaModal` | `NuevoTrasladoIOS` |
+| Alta de miembro (solo CREAR, como en iPhone) | `FichaMiembroModal` | `NuevoMiembroIOS` |
+
+Las subpantallas (el buscador de nombres, "Tomar asistencia", los textos
+largos, horario/mociones/acuerdos) también son `.ios-sheet`, así que en el
+iPad se apilan solas como una segunda hoja de 600 encima — el mismo
+comportamiento que ya tenía el buscador de aportante de Nuevo ingreso.
+
+El CSS: el 21 se movieron a `:root.movil` las 71 clases que monta la hoja
+de movimiento (extraídas de leer los componentes, no a mano); el 22, con el
+mismo método sobre las ocho hojas nuevas, se movieron las ~25 reglas que
+faltaban (`.sol-tipo`, `.dia-chip`, `.ios-cuenta`, `.ios-ia-campo`,
+`.ios-total`, `.ios-miembro-*`, `.ios-check`, los pies `--error`/`--aviso`,
+`.modal-overlay--confirm` y las variantes oscuras huérfanas de
+`.ios-stepper` y `.ios-chips`). Lo que sigue en `:root.iphone` es solo lo
+que el iPad de verdad no alcanza: los Ajustes de iOS, la Bandeja, el editor
+de Cartas (`carta-ios`), la barra de menú y las pieles de páginas enteras
+de teléfono.
+
+Dos consecuencias que no son formularios pero salieron de aquí:
+
+- **Cartas recuperó su botón de crear en iPad.** Desde 700px el "+" fijo se
+  apaga y vuelven los botones de cabecera; el menú de crear de Cartas
+  (`.cartas-menu-crear`, con las 4 acciones) estaba oculto para todo
+  `movil`, así que el iPad grande no tenía NINGUNA entrada de crear en esa
+  pantalla — ni forma de llegar a la pestaña de Solicitudes. Ahora
+  `:root.ipad` lo enseña desde 700, como al `.btn-nuevo-cabecera`.
+- **El editor de Cartas se queda como página en iPad** (la piel de
+  escritorio, `card pad-lg`). El diseño lo comprime en una hoja de 580;
+  la app lo tiene como pantalla completa con vista previa del documento, y
+  meter ese editor en 600px es otra tarea, anotada abajo, no un cambio de
+  gancho.
 
 ---
 
@@ -246,6 +284,155 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    de 400px + panel), no sus datos inventados — el mismo criterio que con el
    "Rastro de auditoría" de §4.
 
+9. ~~Las seis pantallas restantes~~ **Hecho** (22 ago). Con el andamio ya
+   construido, cada una fue sobre todo decidir qué va en la fila, qué en el
+   panel, y qué del handoff no existe. Las seis comparten el patrón de
+   siempre: `partido` desde 700, columnas desde 1150, la selección es un ID
+   (o un valor) que se re-busca y sobrevive al giro, y el ancho de cada
+   lista es el del diseño (regla por pantalla en el bloque de 1150px).
+
+   - **Depósito bancario (378px).** Lista agrupada por PERÍODO —no por mes
+     de la fecha— porque así agrupan los totales y los reportes: un depósito
+     de julio pagado en agosto sale bajo julio, donde suma. Panel nuevo
+     (`DetalleDeposito`): la anatomía de `DetalleMovimiento` (importe
+     grande, ficha, comprobante como botón) porque un depósito ES un
+     movimiento de dinero. En cero filas abiertas, las tres tarjetas del
+     resumen. Lo que el handoff traía y NO existe: el segmentado
+     Pendientes/Depositados, "Marcar depositado" y la lista de movimientos
+     incluidos en el corte — `depositos_bancarios` no guarda estado ni
+     vínculos con `transactions`; aquí un depósito se registra cuando ya se
+     hizo.
+
+   - **Actas (358px).** Lista agrupada por año (la cabecera "2026" del
+     diseño), fila con título, fecha · tipo · nº de acuerdos y la pastilla
+     de estado. El panel (`DetalleActa`) enseña el acta COMO DOCUMENTO: la
+     hoja serif del diseño (`--paper` claro en los dos temas: un documento
+     impreso no tiene modo oscuro) con las mismas secciones y en el mismo
+     orden que el PDF de `printActa.ts`. "Recopilar firmas" y "Cerrar acta"
+     del handoff no existen como flujos: el estado se cambia editando y las
+     firmas son líneas del documento impreso.
+
+   - **Registro de servicios (358px).** Fila con bloque de fecha (día de la
+     semana + número, como una celda de Calendario), agrupada por mes, con
+     la asistencia como cifra a la derecha. Panel (`DetalleServicio`): la
+     ficha del culto por secciones en el orden del formulario de registro.
+     El "Orden del culto" con horarios y el roster por rol (Predicación,
+     Ujieres, "Asignar encargado") del handoff no existen: `servicios` es
+     una BITÁCORA de lo que ya pasó, no una planeación.
+
+   - **Cartas y traslados (338px).** El partido cubre solo el estado de
+     HOJEAR (resumen y archivo, fundidos): lista de cartas agrupada por mes
+     de emisión con chips de estado, y el panel (`DetalleCarta`) enseña la
+     carta con el MISMO HTML de `buildCartaHtml` que imprime — en un iframe
+     a tamaño de hoja (816px) escalado al ancho del marco, para que lo que
+     se lee sea exactamente lo que va a salir en papel. El editor, las
+     solicitudes, los traslados y las plantillas siguen siendo pantallas
+     completas; la columna de "Plantillas" del handoff se quedó como navcard
+     en el panel vacío, no como sección de la lista — la lista es de cartas
+     emitidas, que es lo que se viene a hojear.
+
+   - **Reportes (330px).** La columna lista los informes que EXISTEN:
+     estado financiero, distribución por categorías, resumen mensual y el
+     reporte anual (`printAnnual.ts`, que además ganó su vista en pantalla:
+     los doce meses con totales, la misma consulta que alimenta su PDF).
+     "Aportantes" y "Depósitos del periodo" del handoff no son documentos de
+     esta pantalla y no se inventaron. La selección es nullable a propósito:
+     en columnas el estado financiero abre por defecto; en el empuje `null`
+     significa "en la lista". Los botones de generar siguen en la barra
+     de 56px.
+
+   - **Agenda y calendario (318px).** Aquí los papeles se INVIERTEN: el
+     maestro es el calendario (flexible, a la izquierda) y el detalle es la
+     columna del día elegido, de 318px sobre el gris del sidebar — la
+     anatomía de la app de Calendario. En el iPad, tocar un día lo ELIGE
+     (es lo que hace el diseño); crear en ese día es el "+" de la propia
+     columna. El día elegido es `cursor`, que ya era estado de pantalla y
+     sobrevive al giro; en el empuje la columna entra por encima con
+     "‹ Agenda". Solo en las vistas de mes y semana: Lista e Historial ya
+     son listas y se quedan a lo ancho. Las reglas genéricas del empuje
+     sirvieron tal cual — `.md-agenda` solo invierte quién es fijo y quién
+     flexible.
+
+10. **La repasada contra el handoff** (22 ago, segunda pasada). Pedida por
+    Iván sobre Inicio, Ingresos, Gastos, Aportantes y Reportes. Ingresos,
+    Gastos, Aportantes y Reportes estaban fieles; lo que faltaba:
+
+    - **Inicio era la pantalla menos aplicada.** El handoff la maqueta con
+      el saludo como h1 de 34px EN el contenido, cuatro KPI (con "Por
+      revisar → Abrir bandeja"), y "Últimos movimientos · Esta semana" a dos
+      columnas. Lo que había era el dashboard del Mac con el saludo y el
+      saldo de 34px DENTRO de la barra — una barra de ~110px en una cáscara
+      que promete 56. Ahora (`enIPad` en Dashboard.tsx): barra de 56px con
+      "Inicio" y el balance del mes como subtítulo (el dato sigue siempre a
+      la vista), saludo con "el corte de mes cierra en N días" (aritmética
+      real del fin de mes), KPI del diseño —el pie de Ingresos dice
+      "{{registros}} registros · {{diezmos}} diezmos", los conteos que
+      `monthTotals` ya traía— con la cuarta tarjeta saltando a la bandeja
+      (el conteo de `countPendingTx`, el mismo del badge), y las dos listas
+      del pie: últimos 4 movimientos y la semana de la Agenda (las mismas
+      ocurrencias de `expandirTodas`). Lo que el handoff traía aquí y NO
+      existe: el segmentado Mes/Trimestre/Año (no hay concepto de periodo
+      más que el mes) y los renglones de "Esta semana" que mezclaban tareas
+      inventadas ("14 movimientos sin depositar" presupone el vínculo
+      depósito↔movimientos que no existe) — la lista es solo de agenda.
+    - **"Ver ficha" en el detalle de un ingreso** (diseño de la ficha de
+      movimiento): existía el dato (`member_id`) pero no el salto. Ahora
+      `DetalleMovimiento` acepta `onVerFicha` y navega a Aportantes con el
+      miembro abierto — el mismo puente por `location.state` que ya usaban
+      Agenda→Servicios y Membresía→Traslados. La Bandeja no lo pasa y no
+      pinta el enlace.
+    - **La línea secundaria de la fila de Aportantes** decía el correo (o la
+      letanía "Sin correo registrado"); el diseño dice "Miembro desde 2014 ·
+      diezma". Ahora: año de `fecha_ingreso` + primera etiqueta, con el
+      correo de repuesto cuando no hay ni lo uno ni lo otro.
+
+11. **La repasada de Configuración** (22 ago, tercera pasada, pedida por
+    Iván). Medido con estilos computados a 1366: el bloque del 21 de agosto
+    aplica tal cual el handoff — índice de 298 con su filo y fondo de
+    sidebar, filas de 40px a 15px con radio 10 y activa con el tinte al 10%
+    (gris con el acento "neutro"; verde si se elige verde), panel con
+    columna de 680 centrada, héroe de 64px en rejilla y zona aplanada.
+    Desviaciones deliberadas que se quedan: las zonas son las REALES de la
+    app (Sincronización y Suscripción viven como tarjetas dentro de "Acceso
+    y áreas"; "Datos y respaldo" es la Zona sensible), los formularios
+    siguen siendo los controles reales y no las listas iOS del mock, y los
+    tres interruptores inventados de Iglesia siguen sin construirse (§4).
+
+    Lo que la repasada sí cazó, los dos en el rango apilado del mini (744):
+
+    - **El índice apilado parecía deshabilitado**: la regla base pinta las
+      filas en `--text-2` porque en Mac el índice convive con el detalle y
+      no es el protagonista; a 744 el índice ES la pantalla y las siete
+      filas salían en gris de apoyo. Ahora tinta entera.
+    - **El cajón cerrado pintaba su sombra**: `box-shadow: 12px 0 40px`
+      siempre encendida con el cajón en `translateX(-100%)` deja el borde
+      derecho en x=0 y la sombra se proyecta DENTRO — una franja gris en el
+      filo izquierdo de toda página del rango. Estaba en los DOS bloques de
+      cajón (el del iPad, 700–1149, y el viejo de 601–1023 sin plataforma,
+      así que también alcanzaba al Mac angosto y al iPhone apaisado). En
+      ambos, la sombra ahora solo existe con `.menu-abierto` — el mismo
+      trato que ya tenía el panel del maestro-detalle.
+
+12. **Los formularios** (22 ago, cuarta pasada, pedida por Iván: "¿ya
+    todas las páginas, incluyendo sus formularios?"). La respuesta honesta
+    era NO: solo "Nuevo ingreso/gasto" había cruzado al iPad; los otros
+    ocho formularios con hoja de iOS seguían detrás de `esIPhone()` y en el
+    iPad salían como el modal de escritorio. Cruzados los ocho — el detalle
+    en §1 ("Las hojas de formulario"). Queda anotado, no hecho:
+
+    - **El editor de Cartas como hoja** (el diseño lo comprime a 580px;
+      la app lo tiene como página con vista previa — es un rediseño del
+      editor, no un gancho).
+    - **Las hojas de Configuración del diseño** (nueva categoría, invitar,
+      responsable): en iPad siguen siendo los modales de escritorio de
+      cada zona, coherentes entre sí. Las listas iOS de Categorías
+      (`CategoriesSettingsIOS`, `IOSFormSheet`) son la piel del teléfono.
+    - **En iPad angosto (<700) la pestaña de Solicitudes sigue sin
+      entrada** — el "+" fijo abre "Nueva carta" directo y el menú de
+      cabecera solo existe desde 700. Desde 700 ya se llega (el menú
+      recuperado); por debajo, el reparto de media pantalla, es un hueco
+      heredado que el rediseño no abrió.
+
 ---
 
 ## 4. Lo que hay que tirar del handoff
@@ -267,9 +454,19 @@ Se eligió empujar. Consecuencias para quien lo implemente:
 
 ## 5. Cómo verificar cambios de iPad
 
-El arnés de Playwright de siempre, con la clase puesta a mano en la raíz y
-estos ocho tamaños. Los cinco marcados como "no debe cambiar" son la red:
-si uno se mueve, el cambio se salió del iPad.
+El arnés de Playwright ya vive en el repo: **`pruebas/arnes-ipad.mjs`**
+(hasta el 22 de agosto se reconstruía en cada sesión y se perdía). Monta la
+app REAL con `vite dev`, sustituye `invoke("db_select"/"db_execute")` por
+sql.js corriendo las migraciones reales de `src-tauri/src/lib.rs`, siembra
+datos con las funciones reales de `db.ts` y recorre las seis pantallas
+partidas en los ocho tamaños de iPad, las ocho hojas de formulario (a 1366
+deben salir como formSheet de 600 centrada, con sus subpáginas apiladas) y
+la red de seguridad (que incluye: en Mac el formulario sigue siendo el
+modal, en iPhone la hoja sigue siendo a lo ancho). 227 comprobaciones. Cómo
+correrlo está en su cabecera (`npm i --no-save playwright sql.js`).
+
+Los tamaños de abajo son los del arnés. Los marcados como "no debe cambiar"
+son la red: si uno se mueve, el cambio se salió del iPad.
 
 **Cuántas pantallas del handoff son maestro-detalle.** La columna maestra
 siempre se declara igual (`width:NNNpx` seguido de `flex:0 0 NNNpx`), así que

@@ -85,18 +85,36 @@ en las tres fuentes:
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
 | 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
-| 22 ago | 1.1.9 — Membresía en iPad, las seis pantallas que faltaban y el modo vertical |
-| esta | **1.2.0** — el mismo código que la 1.1.9, con el número que le toca |
+| 22 ago | 1.1.9 — el rediseño completo: las diez pantallas, Membresía, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight. **En pruebas, NO candidata a publicación** |
+| esta | **1.2.0** — la FUSIÓN de las dos ramas que hicieron el rediseño en paralelo: el modo vertical de una y el Inicio, Configuración y el arnés de la otra |
 | la siguiente | 1.2.1 |
 | cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
-> **La 1.2.0 no trae ni una línea de código que la 1.1.9 no tuviera**, y eso
-> es a propósito. El rediseño de iPad —las diez pantallas, el modo vertical,
-> Membresía— se subió como 1.1.9 porque era el número que tocaba en la
-> cuenta, pero es un cambio de versión menor, no un parche. La 1.2.0 es ese
-> mismo build con el nombre que le corresponde, para probarlo en TestFlight
-> ya llamándose como se va a llamar. En App Store Connect son dos subidas
-> distintas: por eso hace falta el bump, aunque el diff sea solo el número.
+> ⚠️ **La 1.2.0 salió de juntar DOS ramas que hicieron el rediseño a la vez.**
+> Es la lección más cara del 22 de agosto y merece quedar escrita aquí, que
+> es donde se mira antes de compilar.
+>
+> `claude/charming-sagan-hknqp1` y `claude/design-review-execution-can5gv`
+> salieron las dos de `a61a5b7` e hicieron, sin saberlo, el mismo trabajo:
+> las seis pantallas de maestro-detalle y las ocho hojas de formulario. La
+> segunda subió su 1.1.9 a TestFlight; la primera bumpeó su propia 1.1.9 sin
+> que ese número estuviera libre. **Dos ramas con la misma versión y ninguna
+> en `main`.**
+>
+> Cómo se notó: Iván compilaba en su Mac y le seguía saliendo la 1.1.9
+> después del bump. No era el bump — era que su copia estaba en la otra rama,
+> donde ese commit no existe. Un `git pull` no trae lo que está en otra rama.
+>
+> **La regla que sale de esto: antes de subir la versión, comprobar que la
+> rama en la que estás es la que compila la Mac**, y que `main` no se ha
+> quedado atrás de las dos. Con `git branch -r` y un vistazo a la `version`
+> de cada rama se ve en diez segundos:
+>
+> ```sh
+> for b in $(git branch -r | grep -v HEAD); do
+>   echo -n "$b  "; git show "$b:src-tauri/tauri.conf.json" | grep '"version"'
+> done
+> ```
 >
 > El plan que iba a ser la 1.2 —los siete puntos que la 1.1 apartó el 4 de
 > agosto— corrió un puesto y vive ahora en **`docs/plan-1-3.md`**.
@@ -109,6 +127,29 @@ vuelve a compilar.
 > Se puede fijar un número de compilación aparte editándolo en Xcode antes de
 > archivar, pero entonces deja de estar en el repo y se olvida. Subir la
 > versión es una línea en tres archivos y no tiene forma de fallar.
+
+## TestFlight no es publicar
+
+Son dos puertas distintas, y todas las versiones de la tabla de arriba han
+cruzado solo la primera:
+
+- **Subir a TestFlight** es lo que hacen `npm run ios:appstore` y el
+  Organizer: la build queda instalable por ti y por los probadores que
+  invites, y nada más.
+- **Publicar en el App Store** es otra cosa: crear la versión en App Store
+  Connect, adjuntarle una build y **enviarla a revisión**, con sus
+  metadatos, su "qué hay de nuevo" y sus capturas.
+
+Estar en TestFlight no envía nada a revisión. Se sube ahí para probar, y
+probar es lo que se está haciendo.
+
+**La 1.1.9 no es candidata a publicación.** Está en TestFlight para ver el
+rediseño de iPad en aparatos reales —el material translúcido, la hoja carta
+escalada, las hojas de formulario al dedo, todo lo que Chromium no puede
+juzgar— y **el diseño sigue en trabajo**: lo que salga de esas pruebas entra
+en las versiones siguientes. Cuando de verdad toque publicar, además hay que
+rehacer las **capturas del App Store del iPad**, que siguen enseñando el
+diseño viejo y ya no representan la app.
 
 ## La orden
 
@@ -169,12 +210,25 @@ JS la línea que pone y quita `ipad-ancho` al girar el iPad. **La lista de
 clases que se comprueba se alarga con cada tanda**; si no, la comprobación
 deja de comprobar lo que se acaba de escribir.
 
-En la 1.2.0, las mismas comprobaciones otra vez —no se dan por hechas porque
-el diff sea de una línea— y una que solo cabe cuando el código no cambia: el
-CSS construido salió con **el mismo nombre con hash que el de la 1.1.9**
-(`index-CWJz2wN4.css`). Vite pone en ese nombre un hash del contenido, así
-que dos builds con el mismo hash son el mismo bundle. Es la prueba de que la
-1.2.0 es de verdad la 1.1.9 con otro número, que era justo lo que se quería.
+En la 1.2.0, las mismas comprobaciones y una más, porque esta versión salió
+de una fusión y una fusión puede compilar perfectamente y aun así haber
+perdido la mitad de una pantalla.
+
+**La comprobación de la fusión: que el bundle lleve clases de LAS DOS ramas.**
+El CSS construido (`index-Cb9x1AEA.css`, 279 kB frente a los 273 de la
+1.1.9) tiene `ipad-ancho` ×201 y `tabla-membresia` —que solo existían en una
+rama— y `dash-kpi` y `dash-dos-listas` —que solo existían en la otra—. Si
+faltara cualquiera de los dos grupos, la fusión se habría comido un lado
+entero sin que `tsc` dijera nada.
+
+**Y el cruce de clases, que es lo que caza un Frankenstein:** cada clase
+`.md-*`, `.dm-*`, `.da-*`, `.ds-*`, `.ag-*` y `.dash-*` que aparece en un
+`.tsx` tiene que tener regla en `styles.css`, y al revés. Sin ese cruce, una
+página de una rama estilada por el CSS de la otra compila igual de bien y
+sale en blanco en el iPad. Salieron cinco clases sin regla —`.ag-dia`,
+`.da-campos`, `.dm-cab`, `.md-movimientos`, `.tabla-membresia-ipad`— y se
+comprobó una por una que **ya estaban así en las dos ramas y en el ancestro**:
+son marcadores sin estilo, no algo que la fusión perdiera.
 
 **La 1.1.6 se quedó sin distribuir**: se preparó, y antes de archivarla
 apareció el número invisible de "hoy" en el calendario de la Mac. Se arregló

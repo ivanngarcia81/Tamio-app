@@ -1,8 +1,8 @@
 /**
- * TrasladoEntradaModal.tsx — el traslado de entrada en Mac e iPad: el diálogo
+ * TrasladoEntradaModal.tsx — el traslado de entrada en el Mac: el diálogo
  * centrado de siempre, con sus cuatro secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevoTrasladoIOS`) se
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS (`NuevoTrasladoIOS`) se
  * lleva el formulario entero. Lo que comparten es `useTrasladoEntrada`, así
  * que las dos vistas escriben el MISMO registro con las MISMAS validaciones,
  * y el enredo de duplicados —la única pantalla que evita miembros repetidos—

@@ -15,6 +15,10 @@ interface Props {
   onEditar: (tx: Tx) => void;
   onEliminar: (tx: Tx) => void;
   onVerComprobante: (path: string) => void;
+  /** "Ver ficha" en la fila del aportante (diseño de iPad): salta a la ficha
+   *  del miembro en Aportantes. Solo tiene sentido en ingresos con miembro
+   *  vinculado; quien no lo pasa (la Bandeja) no pinta el enlace. */
+  onVerFicha?: (memberId: number) => void;
   /** Sustituye la fila de botones por otra. Lo usa la Bandeja, donde el
    *  mismo movimiento se mira para APROBARLO, no para editarlo o borrarlo:
    *  ahí las acciones son "Marcar revisado" y "Editar", y "Eliminar" no
@@ -37,7 +41,7 @@ interface Props {
  * `transactions` no guarda quién creó ni un historial de cambios, y una ficha
  * que inventa datos es peor que una que no está (docs/ipad-rediseno.md §4).
  */
-export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar, onEliminar, onVerComprobante, acciones }: Props) {
+export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar, onEliminar, onVerComprobante, onVerFicha, acciones }: Props) {
   const { t } = useTranslation();
   const esIngreso = tx.tipo === "ingreso";
   const cat = categoriaInfo(tx.tipo, tx.categoria);
@@ -102,7 +106,20 @@ export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar,
 
       <div className="dm-ficha">
         {fila(t("recordModal.fecha"), [fmtFechaCorta(tx.fecha), hora || null].filter(Boolean).join(", "))}
-        {fila(esIngreso ? t("recordModal.aportante") : t("recordModal.beneficiario"), persona)}
+        {/* La fila del aportante lleva "Ver ficha" cuando el ingreso está
+            vinculado a un miembro — el salto del diseño de iPad a su ficha
+            en Aportantes. Con beneficiario suelto no hay ficha que abrir. */}
+        {esIngreso && persona && tx.member_id != null && onVerFicha ? (
+          <div className="dm-campo">
+            <span className="dm-campo-etiqueta">{t("recordModal.aportante")}</span>
+            <span className="dm-campo-valor">{persona}</span>
+            <button type="button" className="dm-ver-ficha" onClick={() => onVerFicha(tx.member_id!)}>
+              {t("common.verFicha")}
+            </button>
+          </div>
+        ) : (
+          fila(esIngreso ? t("recordModal.aportante") : t("recordModal.beneficiario"), persona)
+        )}
         {fila(t("recordModal.rfc"), tx.beneficiario_rfc)}
         {fila(t("recordModal.metodoPago"), metodoTexto)}
         {fila(t("recordModal.categoria"), tx.subcategoria ? `${cat.nombre} · ${tx.subcategoria}` : cat.nombre)}

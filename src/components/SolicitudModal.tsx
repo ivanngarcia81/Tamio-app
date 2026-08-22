@@ -1,8 +1,8 @@
 /**
- * SolicitudModal.tsx — la solicitud de carta en Mac e iPad: el diálogo
+ * SolicitudModal.tsx — la solicitud de carta en el Mac: el diálogo
  * centrado de siempre, con sus dos secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevaSolicitudIOS`) se
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS (`NuevaSolicitudIOS`) se
  * lleva el formulario entero. Lo que comparten es `useSolicitud`, así que las
  * dos vistas escriben el MISMO registro con las MISMAS validaciones.
  */

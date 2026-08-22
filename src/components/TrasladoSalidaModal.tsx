@@ -1,8 +1,8 @@
 /**
- * TrasladoSalidaModal.tsx — el traslado de salida en Mac e iPad: el diálogo
+ * TrasladoSalidaModal.tsx — el traslado de salida en el Mac: el diálogo
  * centrado de siempre, con sus tres secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS
  * (`NuevoTrasladoSalidaIOS`) se lleva el formulario entero. Lo que comparten
  * es `useTrasladoSalida`, así que las dos vistas escriben el MISMO registro
  * con las MISMAS cuatro validaciones, y la generación de la carta vinculada
