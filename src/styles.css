@@ -9495,6 +9495,103 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-campo + .dm-campo { border-top: 0.5px solid var(--line-soft); }
   :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: 15px; color: var(--text-2); }
   :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+
+  /* ------------------------------------------------------------
+     El acta como DOCUMENTO (.da-*)
+     ------------------------------------------------------------
+     El único panel del rediseño que no es una ficha de campos. Un acta se
+     lee de arriba abajo —encabezado, acuerdos, firmas— y en un iPad hay
+     sitio para leerla; convertirla en una tabla de etiqueta·valor sería
+     tratarla como una fila de base de datos, que es justo lo que no es. La
+     ficha sigue existiendo: es el formulario que abre "Editar".
+
+     Reutiliza el cascarón `.dm` (el botón de volver, la cabecera con chips y
+     acciones) y solo cambia el cuerpo. */
+  :root.ipad .da-titulo {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Papel: fondo de superficie sobre el lienzo, con una medida de lectura
+     acotada. 72ch y no el ancho del panel — un párrafo de acta a 900px de
+     ancho se pierde de renglón. */
+  :root.ipad .da-doc {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 26px 28px 30px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  :root.ipad .da-doc > * { max-width: 72ch; }
+
+  :root.ipad .da-doc-cab {
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  :root.ipad .da-doc-iglesia { font-size: 15px; font-weight: 600; }
+  :root.ipad .da-doc-folio {
+    margin-top: 2px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+  :root.ipad .da-doc-linea { margin-top: 6px; font-size: 13.5px; color: var(--text-2); }
+
+  :root.ipad .da-seccion + .da-seccion { margin-top: 22px; }
+  :root.ipad .da-seccion-titulo {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .da-parrafo { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  /* Los campos de "Quién": etiqueta a la izquierda con ancho fijo, como la
+     ficha del panel de un movimiento, para que los valores se alineen. */
+  :root.ipad .da-campo {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 5px 0;
+  }
+  :root.ipad .da-campo > span:first-child {
+    width: 170px;
+    flex: 0 0 170px;
+    color: var(--text-2);
+  }
+  :root.ipad .da-campo > span:last-child { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
+  /* Mociones y acuerdos van numerados de verdad (`<ol>`): en un acta el
+     número no es decoración, es cómo se cita un acuerdo después. */
+  :root.ipad .da-numerada { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; }
+  :root.ipad .da-numerada li::marker { color: var(--text-3); font-variant-numeric: tabular-nums; }
+  :root.ipad .da-item-texto { overflow-wrap: anywhere; }
+  :root.ipad .da-item-pie { margin-top: 2px; font-size: 13px; color: var(--text-2); }
+
+  /* Las firmas. Dos y no las tres del handoff: el acta guarda quién preside
+     y quién es secretario, y nada más — una tercera raya para un "Testigo"
+     sería un renglón que nadie firma. */
+  :root.ipad .da-firmas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    margin-top: 40px;
+    padding-top: 8px;
+  }
+  :root.ipad .da-firma { flex: 1 1 220px; min-width: 0; }
+  :root.ipad .da-firma-raya { border-top: 1px solid var(--text-3); margin-bottom: 7px; }
+  :root.ipad .da-firma-nombre { font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
+  :root.ipad .da-firma-cargo { font-size: 12.5px; color: var(--text-2); }
+
+  :root.ipad .da-aprobada { margin: 22px 0 0; font-size: 13px; color: var(--text-2); }
 }
 
 /* ============================================================

@@ -1333,6 +1333,9 @@ export const es = {
     colFechaLimite: "Fecha límite",
     agregarAcuerdo: "Agregar acuerdo",
     estadoActa: "Estado",
+    aprobadaEl: "Aprobada el {{fecha}}",
+    eligeActa: "Elige un acta",
+    eligeActaSub: "El documento —encabezado, acuerdos y firmas— sale aquí al tocar una de la lista.",
     estado: {
       borrador: "Borrador",
       pendiente: "Pendiente de aprobación",

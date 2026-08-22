@@ -1299,6 +1299,9 @@ export const en: Resources = {
     colFechaLimite: "Deadline",
     agregarAcuerdo: "Add agreement",
     estadoActa: "Status",
+    aprobadaEl: "Approved on {{fecha}}",
+    eligeActa: "Pick a minute book entry",
+    eligeActaSub: "The document — heading, resolutions and signatures — shows up here when you tap one in the list.",
     estado: {
       borrador: "Draft",
       pendiente: "Pending approval",

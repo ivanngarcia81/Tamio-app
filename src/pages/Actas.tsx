@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto, esMac } from "../movil";
+import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import DetalleActa from "../components/DetalleActa";
 import { MacBuscador } from "../components/mac/MacFiltros";
 import { deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
 import { EmptyState } from "../components/TxList";
@@ -79,6 +81,15 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
 
+  /* ---- Maestro-detalle del iPad ----
+     Los dos umbrales de siempre: partido a partir de 700px, columnas a
+     partir de 1150. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
+  const [selId, setSelId] = useState<number | null>(null);
+
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
@@ -124,6 +135,44 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  /* Los chips de estado y su etiqueta se calculan UNA vez y los consumen las
+     tres plataformas (el bloque de abajo ya lo decía; ahora también los usa
+     la columna maestra del iPad, así que salen del IIFE al cuerpo). Mismo
+     criterio que en Movimientos: solo los estados que tienen documentos, más
+     el activo aunque se haya quedado en cero, para poder salir de él. */
+  const chipsEstado = ["todas", ...ESTADOS_FILTRO.filter((f) => f === filtro || actas.some((a) => a.estado === f))] as FiltroEstado[];
+  const etiquetaEstado = (f: FiltroEstado) => (f === "todas" ? t("actas.filtroTodas") : t(`actas.estado.${f}`));
+
+  const estadoVacio = (
+    <EmptyState
+      pagina
+      titulo={actas.length === 0 ? t("actas.aunNoHay") : t("actas.sinResultados")}
+      sub={actas.length === 0 ? t("actas.agregaPrimera") : t("actas.sinResultadosSub")}
+      icon={<IconFileText size={20} strokeWidth={1.8} />}
+      accion={actas.length === 0
+        ? { label: t("actas.nuevaActa"), onClick: () => setModal({ open: true, acta: null }) }
+        : undefined}
+      duplicaCrear
+    />
+  );
+
+  /* El acta abierta es un ID que se re-busca en cada recarga, no una copia
+     congelada: guardar una edición refresca el documento en sitio y un
+     borrado cierra el panel solo. */
+  const sel = selId == null ? null : actas.find((a) => a.id === selId) ?? null;
+  const ultimoSel = useRef<Acta | null>(null);
+  if (sel) ultimoSel.current = sel;
+
+  /* Las actas se agrupan por AÑO, que es como las numera el folio y como se
+     archivan de verdad. Es lo que hace el handoff con su rótulo "2026". */
+  const gruposAnio: { anio: string; items: Acta[] }[] = [];
+  for (const a of visibles) {
+    const anio = a.fecha.slice(0, 4);
+    const ultimo = gruposAnio[gruposAnio.length - 1];
+    if (ultimo && ultimo.anio === anio) ultimo.items.push(a);
+    else gruposAnio.push({ anio, items: [a] });
+  }
+
   /* Pie de ventana (solo Mac). Con un filtro puesto se dicen los DOS números:
      un "3 actas" a secas, con seis en la base, se lee como que se perdieron
      tres. */
@@ -150,14 +199,117 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
         </div>
       </div>
 
+      {/* ---- Maestro-detalle (iPad) ----
+          Lista de 358px a la izquierda y, a la derecha, el ACTA: no una ficha
+          de etiqueta·valor sino el documento, que es lo que dibuja el handoff
+          y lo que se viene a hacer con un acta — leerla. La ficha sigue
+          existiendo: es el formulario que abre "Editar". */}
+      {partido ? (
+        <div className={`md-split md-actas${selId != null ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista">
+                <div className="md-filtros">
+                  <label className="md-buscar">
+                    <IconSearch size={15} strokeWidth={2} />
+                    <input
+                      value={query}
+                      placeholder={t("actas.buscarPlaceholder")}
+                      onChange={(e) => setQuery(e.target.value)}
+                      aria-label={t("actas.buscarPlaceholder")}
+                    />
+                  </label>
+                  {chipsEstado.length >= 3 && (
+                    <div className="md-chips">
+                      {chipsEstado.map((f) => (
+                        <button
+                          key={f}
+                          type="button"
+                          className={`chip${filtro === f ? " active" : ""}`}
+                          onClick={() => setFiltro(f)}
+                        >
+                          {etiquetaEstado(f)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="md-filas">
+                  {visibles.length === 0 ? (
+                    <div className="md-filas-vacio">{estadoVacio}</div>
+                  ) : (
+                    gruposAnio.map((g) => (
+                      <div key={g.anio}>
+                        <div className="md-grupo">{g.anio}</div>
+                        {g.items.map((a) => (
+                          <div
+                            key={a.id}
+                            className={`md-fila${selId === a.id ? " sel" : ""}`}
+                            onClick={() => setSelId(a.id)}
+                          >
+                            <div className="md-fila-textos">
+                              <div className="md-fila-titular">
+                                {a.confidencial === 1 && (
+                                  <span title={t("actas.confidencial")} style={{ marginRight: 4 }}>🔒</span>
+                                )}
+                                {a.folio} · {t(`actas.tipo.${a.tipo}`)}
+                              </div>
+                              <div className="md-fila-sub">
+                                {[fmtFechaCorta(a.fecha), a.preside, t(`actas.estado.${a.estado}`)]
+                                  .filter(Boolean).join(" · ")}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  const det = angosto ? sel ?? ultimoSel.current : sel;
+                  if (det) {
+                    return (
+                      <DetalleActa
+                        acta={det}
+                        church={church}
+                        tituloLista={t("secretaria.actas.titulo")}
+                        onVolver={() => setSelId(null)}
+                        onEditar={(a) => setModal({ open: true, acta: a })}
+                        onEliminar={setPendingDelete}
+                        onImprimir={(a) => { if (imprimiendo === null) imprimir(a); }}
+                        imprimiendo={imprimiendo === det.id}
+                      />
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{t("actas.eligeActa")}</h3>
+                        <p>{t("actas.eligeActaSub")}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {/* Mismo criterio que en Movimientos, y NO se toca: solo los estados
             que tienen documentos, más el activo aunque se haya quedado en cero
             (para poder salir de él). Con dos actas, cinco chips en cero eran
             ruido. Se calcula una vez y lo consumen las dos plataformas. */}
         {(() => {
-          const estados = ["todas", ...ESTADOS_FILTRO.filter((f) => f === filtro || actas.some((a) => a.estado === f))] as FiltroEstado[];
-          const etiqueta = (f: FiltroEstado) => (f === "todas" ? t("actas.filtroTodas") : t(`actas.estado.${f}`));
+          const estados = chipsEstado;
+          const etiqueta = etiquetaEstado;
 
           if (!enIPhone) {
             return (
@@ -252,16 +404,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
         {loading ? (
           <LoadingState />
         ) : visibles.length === 0 ? (
-          <EmptyState
-            pagina
-            titulo={actas.length === 0 ? t("actas.aunNoHay") : t("actas.sinResultados")}
-            sub={actas.length === 0 ? t("actas.agregaPrimera") : t("actas.sinResultadosSub")}
-            icon={<IconFileText size={20} strokeWidth={1.8} />}
-            accion={actas.length === 0
-              ? { label: t("actas.nuevaActa"), onClick: () => setModal({ open: true, acta: null }) }
-              : undefined}
-            duplicaCrear
-          />
+          estadoVacio
         ) : enIPhone ? (
           <div className="ios-listcard">
             {pagina.map((a) => (
@@ -353,6 +496,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+      )}
 
       {modal.open && (
         <ActaModal
