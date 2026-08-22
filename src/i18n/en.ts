@@ -1051,6 +1051,10 @@ export const en: Resources = {
     colEstado: "Status",
     colCondicion: "Standing",
     colMinisterio: "Ministry",
+    colAsistencia: "Attendance",
+    asistenciaSinDatos: "No rolls",
+    asistenciaDeCultos: "{{asistidos}} of {{total}}",
+    asistenciaNota: "There's no attendance to summarise yet: no service in {{anio}} has had its roll taken. You take it in the Service log, and this column fills in on its own.",
     estadoActivo: "Active",
     estadoBaja: "Removed",
     estado: {

@@ -477,13 +477,53 @@ versalitas y filas de 58px.
   cambia un píxel, está medido.
 - Tabla táctil: cabecera de 44 pegada, filas de 58, avatar de 32, realce al
   tocar y "···" de 44pt.
-- Se adelanta **Condición** a la segunda columna y entra **Ministerio**, que
-  el handoff pide y que existe de verdad (`members.ministerios`).
+- Se adelanta **Condición** a la segunda columna y entran **Ministerio**
+  (`members.ministerios`) y **Asistencia**. Las cinco del handoff.
 
-**Lo que NO entra**, y por la misma razón que la taxonomía de alertas del
-handoff se quedó fuera de la Bandeja (§3.8): su quinta columna,
-"Asistencia". Ese es un cálculo por periodo que vive en Informes de
-membresía, no en el padrón. Ponerlo aquí sería inventar un dato.
+### La quinta columna, y qué hacer cuando no hay dato
 
-Ministerio se apaga por debajo de 1024 —los tres iPads chicos en vertical—,
-donde con cinco columnas los nombres se cortaban a la mitad.
+La primera versión la dejó fuera con este argumento: "es un cálculo por
+periodo que vive en Informes de membresía, ponerlo aquí sería inventar un
+dato". La mitad era cierta —el dato del handoff, un 96% de adorno, sí era
+inventado— y la conclusión no. Lo corrigió Iván:
+
+> lo más correcto es poner que no hay suficiente información hasta que haya
+> información que compilar
+
+Que es una regla mejor que "quitar la columna", y vale para cualquier otra:
+**una columna sin datos todavía no es lo mismo que una columna que no
+corresponde.** La primera se enseña vacía y diciendo por qué; la segunda no
+se enseña.
+
+El dato existe y se calcula con la MISMA función que usa Informes de
+membresía (`asistenciaPorMiembro` sobre `servicio_asistencia`), no con una
+cuenta paralela que se desviaría. Tres estados:
+
+| Situación | Qué se pinta |
+|---|---|
+| Ni un culto del año con lista tomada | "Sin listas" en gris, y **una** nota al pie de la tabla que explica de dónde saldría el dato |
+| Hay listas, pero este miembro no estuvo en ningún roster | "—" — aquí el guion sí significa lo que parece |
+| Hay dato | el porcentaje, y debajo de cuántos cultos sale |
+
+Dos detalles que no son adorno:
+
+- **El "de cuántos" va debajo del porcentaje.** Un 100% de un culto y un
+  100% de cuarenta no son la misma noticia, y el porcentaje solo no
+  distingue los dos. Es el mismo problema de "no hay suficiente
+  información", una fila más abajo.
+- **La nota va una vez, no en cada celda.** El motivo es el mismo para todas
+  las filas, y treinta veces "sin datos" no informa treinta veces. Dice
+  dónde se toma la lista, que es lo que convierte un hueco en una tarea.
+
+### El reparto de columnas se decide en el marcado
+
+Ministerio cae por debajo de 1024 —los tres iPads chicos en vertical—, donde
+con seis vías los nombres se partían a la mitad. Asistencia se queda: es la
+columna que responde "¿este miembro sigue viniendo?", que es de lo que va el
+padrón.
+
+Pero **la elección se hace con `useMediaQuery` en el componente, no con
+`display: none` en el CSS**, y es una trampa que conviene tener escrita:
+esconder una celda de una rejilla NO quita su vía. Apagar Ministerio dejaba a
+la columna de acciones ocupando la vía de 1.2fr y un hueco muerto de 104px al
+final de cada fila.

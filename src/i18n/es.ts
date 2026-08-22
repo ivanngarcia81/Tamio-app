@@ -1077,6 +1077,10 @@ export const es = {
     colEstado: "Estado",
     colCondicion: "Condición",
     colMinisterio: "Ministerio",
+    colAsistencia: "Asistencia",
+    asistenciaSinDatos: "Sin listas",
+    asistenciaDeCultos: "{{asistidos}} de {{total}}",
+    asistenciaNota: "Todavía no hay asistencia que resumir: en {{anio}} no se ha tomado lista en ningún culto. Se toma en Registro de servicios, y la columna se llena sola.",
     estadoActivo: "Activo",
     estadoBaja: "Baja",
     estado: {

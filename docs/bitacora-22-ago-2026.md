@@ -138,12 +138,42 @@ Tres decisiones que conviene dejar escritas:
   `style=` pasaron a clases **con los mismos valores**: un estilo en línea
   gana a cualquier hoja. En Mac no cambia un píxel — está medido.
 - **Entra Ministerio** (`members.ministerios`), que el handoff pide y que
-  existe de verdad. Se apaga por debajo de 1024, donde con cinco columnas los
-  nombres se cortaban a la mitad.
-- **No entra "Asistencia"**, la quinta columna del handoff. Es un cálculo por
-  periodo que vive en Informes de membresía, no en el padrón: ponerlo aquí
-  sería inventar un dato. Mismo criterio que dejó fuera la taxonomía de
-  alertas del handoff en la Bandeja.
+  existe de verdad. Cae por debajo de 1024, donde con seis vías los nombres
+  se partían a la mitad; Asistencia se queda, porque es la columna que
+  responde "¿este miembro sigue viniendo?".
+- **Entra "Asistencia"**, la quinta columna — pero no como en el handoff.
+
+### La quinta columna, y una regla que sale de ella
+
+La primera versión de hoy dejó Asistencia fuera con este argumento: "es un
+cálculo por periodo que vive en Informes de membresía, ponerlo aquí sería
+inventar un dato". La mitad era cierta —el 96% que dibuja el handoff sí es
+de adorno— y la conclusión no. Lo corrigió Iván en una frase:
+
+> lo más correcto es poner que no hay suficiente información hasta que haya
+> información que compilar
+
+Es mejor regla que "quitar la columna", y no vale solo aquí: **una columna
+sin datos TODAVÍA no es lo mismo que una columna que no corresponde.** La
+primera se enseña vacía y diciendo por qué; la segunda no se enseña.
+
+El dato existe: sale de `servicio_asistencia` con la misma función que usa
+Informes de membresía (`asistenciaPorMiembro`), no con una cuenta paralela
+que se desviaría al primer cambio. Y tiene tres estados:
+
+| Situación | Qué se pinta |
+|---|---|
+| Ni un culto del año con lista tomada | "Sin listas", y **una** nota al pie que explica de dónde saldría el dato |
+| Hay listas, pero este miembro no estuvo en ningún roster | "—", que aquí sí significa lo que parece |
+| Hay dato | el porcentaje y, debajo, de cuántos cultos sale |
+
+Ese "de cuántos" no es adorno: un 100% de un culto y un 100% de cuarenta no
+son la misma noticia, y el porcentaje solo no los distingue. Es el mismo
+problema de "no hay suficiente información", una fila más abajo.
+
+Y la nota va **una vez**, debajo de la tabla, no repetida en cada celda: el
+motivo es el mismo para todas las filas, y treinta veces "sin datos" no
+informa treinta veces.
 
 ---
 
@@ -191,6 +221,12 @@ membresía la fila de cabecera medía 74px y "Ministerio, cargo e instrumentos"
 ocupaba tres renglones. Y no era consistente ni consigo misma: las columnas
 ordenables son `<button class="th">` con `font: inherit` en línea, así que
 heredaban los 10.5px del `.thead` — menos de la mitad — y sin versalitas.
+
+**Esconder una celda de una rejilla no quita su vía.** Apagar Ministerio con
+`display: none` por debajo de 1024 dejaba a la columna de acciones ocupando
+la vía de 1.2fr y un hueco muerto de 104px al final de cada fila, en los
+tres iPads chicos en vertical. Qué columnas se pintan pasa a decidirse en el
+marcado, con `useMediaQuery`.
 
 **El "···" de una tabla medía 25×28**, la medida de un ratón. Eso y el
 esconder los iconos de puntero eran cosas que el bloque del cajón daba al

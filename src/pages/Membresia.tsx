@@ -4,9 +4,12 @@ import { useTranslation } from "react-i18next";
 import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
 import { MacBuscador } from "../components/mac/MacFiltros";
 import {
-  currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
+  currentYear, darDeBajaMember, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
+  membresiaStats, restoreMember,
   type Church, type Member, type MembresiaStats,
 } from "../db";
+import { asistenciaPorMiembro, periodoDeAnio, type AsistenciaMiembro } from "../services/informes/membresia";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -25,15 +28,26 @@ import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 const COLS = "1.7fr 1fr 130px 190px 104px";
 /* El iPad reparte distinto porque el handoff de "Diseño nativo para iPad"
-   dibuja esta pantalla como una tabla táctil de cinco columnas —Nombre,
-   Condición, Ingreso, Ministerio, Asistencia— y no como la tabla de ratón
-   del Mac. Se toman cuatro: "Asistencia" es un cálculo por periodo que vive
-   en Informes de membresía, no en el padrón, y ponerlo aquí sería inventar
-   un dato (el mismo criterio que dejó fuera la taxonomía de alertas del
-   handoff en la Bandeja). "Ministerio" sí existe: es `members.ministerios`.
-   Debajo de 1024 —los tres iPads chicos en vertical— esa quinta columna se
-   apaga con CSS y el reparto vuelve a las cuatro de siempre. */
-const COLS_IPAD = "2.2fr 1.1fr 132px 1.2fr 104px";
+   dibuja esta pantalla como una tabla táctil de CINCO columnas: Nombre,
+   Condición, Ingreso, Ministerio y Asistencia. Las cinco están.
+
+   La quinta se calcula, no se inventa: sale de `servicio_asistencia` con la
+   misma función que usa Informes de membresía (`asistenciaPorMiembro`), y
+   cuando no hay listas tomadas la celda lo DICE en vez de enseñar un número
+   de mentira. Ese fue el criterio de Iván: "lo más correcto es poner que no
+   hay suficiente información hasta que haya información que compilar".
+
+   Las columnas se eligen aquí y no con `display: none` en el CSS a
+   propósito: esconder una celda de una rejilla NO quita su vía, así que
+   apagar Ministerio dejaba a las acciones ocupando la vía de 1.2fr y un
+   hueco muerto de 104px al final de cada fila. Se veía en los tres iPads
+   chicos en vertical. */
+const COLS_IPAD = "2.2fr 1.1fr 132px 1.2fr 132px 104px";
+/* Debajo de 1024 —el mini, el 10.9" y el 11" en vertical— cae Ministerio,
+   que es lo más prescindible de las cinco: con seis vías los nombres se
+   partían a la mitad. Asistencia se queda: es la columna que responde "¿este
+   miembro sigue viniendo?", que es de lo que va el padrón. */
+const COLS_IPAD_ESTRECHO = "2.2fr 1.1fr 132px 132px 104px";
 const PAGE_SIZE = 30;
 
 type Filtro = "activos" | "bajas" | "todos";
@@ -110,6 +124,36 @@ function celdaCondicion(t: (k: string, o?: Record<string, unknown>) => string, m
   );
 }
 
+/** La celda de Asistencia. Tres estados, y ninguno inventa nada:
+ *
+ *  - **Sin listas tomadas en todo el año** (`vacio`): no hay NADA que
+ *    resumir. Se dice con palabras, no con un guion que se leería como
+ *    "este miembro no vino". La nota al pie de la tabla explica por qué.
+ *  - **Hay listas, pero este miembro no estuvo en ningún roster**: guion.
+ *    Aquí el guion sí significa lo que parece: de esta persona no hay dato.
+ *  - **Hay dato**: el porcentaje, y debajo de cuántos cultos sale — un 100%
+ *    de un culto y un 100% de cuarenta no son la misma noticia, y el
+ *    porcentaje solo no distingue los dos.
+ */
+function CeldaAsistencia({ a, vacio, t }: {
+  a: AsistenciaMiembro | undefined;
+  vacio: boolean;
+  t: (k: string, o?: Record<string, unknown>) => string;
+}) {
+  if (vacio) {
+    return <span style={{ color: "var(--text-3)", fontSize: 13 }}>{t("membresia.asistenciaSinDatos")}</span>;
+  }
+  if (!a || a.pct == null) return <span style={{ color: "var(--text-3)" }}>—</span>;
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{a.pct}%</div>
+      <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>
+        {t("membresia.asistenciaDeCultos", { asistidos: a.asistidos, total: a.enRoster })}
+      </div>
+    </div>
+  );
+}
+
 function initials(nombre: string): string {
   return nombre
     .split(" ")
@@ -137,9 +181,17 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   // el título grande sobra ahí.
   const enIPhone = esIPhone();
   const enIPad = esIPad();
-  const cols = enIPad ? COLS_IPAD : COLS;
+  /* 1024 y no los 1150 del maestro-detalle: aquí lo que decide no es si caben
+     dos columnas de pantalla, sino si caben las seis vías de la tabla. */
+  const iPadAmplio = useMediaQuery("(min-width: 1024px)");
+  const conMinisterio = enIPad && iPadAmplio;
+  const cols = enIPad ? (conMinisterio ? COLS_IPAD : COLS_IPAD_ESTRECHO) : COLS;
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MembresiaStats | null>(null);
+  /* La asistencia del año por miembro. Se carga solo en el iPad, que es la
+     única plataforma cuya tabla lleva esa columna: en el Mac y en el teléfono
+     sería una consulta que nadie mira. */
+  const [asistencia, setAsistencia] = useState<Map<number, AsistenciaMiembro> | null>(null);
   const [query, setQuery] = useState("");
   /* Igual que en Actas: el foco del buscador es estado de React y no
      `:focus-within`, porque con el selector "Cancelar" desaparecía al tocarlo
@@ -162,16 +214,23 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    Promise.all([listMembersRegistro(church.id), membresiaStats(church.id, anio)])
-      .then(([nuevosMembers, nuevosStats]) => {
+    // `currentYear()` da la cadena; `periodoDeAnio` pide el número.
+    const periodo = periodoDeAnio(Number(anio));
+    Promise.all([
+      listMembersRegistro(church.id),
+      membresiaStats(church.id, anio),
+      enIPad ? listAsistenciaLigera(church.id, periodo.desde, periodo.hasta) : Promise.resolve([]),
+    ])
+      .then(([nuevosMembers, nuevosStats, filas]) => {
         if (cancelado) return;
         setMembers(nuevosMembers);
         setStats(nuevosStats);
+        setAsistencia(enIPad ? asistenciaPorMiembro(filas) : null);
       })
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
     return () => { cancelado = true; };
-  }, [church.id, refreshKey, anio]);
+  }, [church.id, refreshKey, anio, enIPad]);
 
   useEffect(() => setPage(1), [query, filtro, refreshKey]);
 
@@ -196,6 +255,13 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
     showToast(t("membresia.toastReactivado"));
     onChanged();
   }
+
+  /* "No hay suficiente información todavía": ni un solo culto del año con
+     lista tomada. No es que los miembros falten — es que nadie ha pasado
+     lista, y por tanto no hay nada que resumir. El mapa vacío lo dice sin
+     ambigüedad, porque `asistenciaPorMiembro` solo crea entradas para quien
+     aparece en algún roster. */
+  const sinAsistenciaQueResumir = enIPad && asistencia != null && asistencia.size === 0;
 
   const q = query.trim().toLowerCase();
   const visibles = members
@@ -429,8 +495,9 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               <div className="th">{t("miembros.colMiembro")}</div>
               <div className="th">{enIPad ? t("membresia.colCondicion") : t("miembros.colContacto")}</div>
               <div className="th">{t("membresia.colIngreso")}</div>
+              {conMinisterio && <div className="th">{t("membresia.colMinisterio")}</div>}
               {enIPad ? (
-                <div className="th th-ministerio">{t("membresia.colMinisterio")}</div>
+                <div className="th">{t("membresia.colAsistencia")}</div>
               ) : (
                 <div className="th">{t("membresia.colEstado")}</div>
               )}
@@ -469,9 +536,14 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                 <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
                   {m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : "—"}
                 </div>
-                {enIPad ? (
-                  <div className="td td-ministerio" style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+                {conMinisterio && (
+                  <div className="td" style={{ fontSize: 13.5, color: "var(--text-2)" }}>
                     <div className="truncate">{ministeriosDe(t, m.ministerios) || "—"}</div>
+                  </div>
+                )}
+                {enIPad ? (
+                  <div className="td" style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+                    <CeldaAsistencia a={asistencia?.get(m.id)} vacio={sinAsistenciaQueResumir} t={t} />
                   </div>
                 ) : (
                   <div className="td">{celdaCondicion(t, m)}</div>
@@ -495,6 +567,13 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               </div>
             ))}
           </div>
+        )}
+        {/* La nota va UNA vez, debajo de la tabla, y no repetida en cada celda:
+            el motivo es el mismo para todas las filas y treinta veces
+            "sin datos" no informa treinta veces. Dice de dónde saldría el
+            dato, que es lo que convierte un hueco en una tarea. */}
+        {sinAsistenciaQueResumir && !loading && visibles.length > 0 && (
+          <p className="membresia-nota-asistencia">{t("membresia.asistenciaNota", { anio })}</p>
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>

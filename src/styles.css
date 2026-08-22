@@ -1172,6 +1172,16 @@ html.vibrancy .main { background: var(--surface); }
    podía convertir los tres chips en el segmentado del handoff. */
 .membresia-buscar { flex: 1; max-width: 420px; }
 .membresia-segmentado { display: flex; gap: 6px; }
+/* La nota que explica una columna vacía. Va debajo de la tabla, del tamaño
+   de un pie de sección, y solo aparece cuando de verdad no hay nada que
+   resumir — si estuviera siempre, sería ruido. */
+.membresia-nota-asistencia {
+  margin: 10px 2px 0;
+  font-size: var(--fs-secondary);
+  line-height: 1.5;
+  color: var(--text-3);
+  max-width: 62ch;
+}
 
 /* Summary — 8 cards (Informes): filas parejas de 4 en vez de 5+3 */
 .summary-8 {
@@ -9678,17 +9688,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .data-table .row-icon-btn { width: 44px; height: 44px; }
   :root.ipad .data-table .row-icon-btn.solo-escritorio { display: none; }
 
-  /* La quinta columna (Ministerio) es lo primero que sobra cuando el ancho
-     aprieta: en VERTICAL, los tres iPads chicos (744, 820, 834) reparten
-     entre 680 y 770px de contenido y con ella los nombres se cortaban a la
-     mitad. Se apaga y el reparto vuelve a cuatro columnas — el mismo criterio
-     del handoff, que dibuja esta tabla a 1366. */
-  :root.ipad .tabla-membresia-ipad .th-ministerio,
-  :root.ipad .tabla-membresia-ipad .td-ministerio { display: none; }
-}
-@media (min-width: 1024px) {
-  :root.ipad .tabla-membresia-ipad .th-ministerio { display: block; }
-  :root.ipad .tabla-membresia-ipad .td-ministerio { display: flex; align-items: center; }
+  /* Qué columnas se pintan (las cinco a partir de 1024, sin Ministerio por
+     debajo) NO se decide aquí: se decide en el marcado, con `useMediaQuery`.
+     Esconder una celda de una rejilla no quita su vía, así que apagarla con
+     `display: none` dejaba a las acciones ocupando la vía de Ministerio y un
+     hueco muerto de 104px al final de cada fila. */
 }
 
 /* La lista de Aportantes mide 378px, la medida del diseño para una columna
