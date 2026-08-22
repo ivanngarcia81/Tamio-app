@@ -88,6 +88,12 @@ await new Promise((res, rej) => {
   vite.stderr.on("data", (d) => process.stderr.write(d));
 });
 console.log("vite arriba");
+/* Si el arnés muere a medio camino (una aserción que revienta, un click a un
+   elemento invisible), vite se quedaba vivo con el puerto 1420 tomado y la
+   siguiente pasada fallaba con "Port already in use" —un fallo que no tiene
+   nada que ver con lo que se estaba probando. Se cierra pase lo que pase. */
+process.on("exit", () => vite.kill());
+for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { vite.kill(); process.exit(1); });
 
 // ---------- 4. Navegador ----------
 const browser = await chromium.launch(
@@ -626,6 +632,80 @@ console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
     }
   }
   await ctxInf.close();
+}
+
+/* ---------- 9. El cajón del sidebar se decide por ORIENTACIÓN ----------
+   Llegó de TestFlight: "en portrait mode el side bar no se esconde, sigue
+   afuera como lo hace landscape mode". La regla se preguntaba solo por
+   ancho (max-width: 1149.98px) y el 13" con "Más espacio" reporta ~1210pt
+   en vertical, así que se salía del rango y la barra se quedaba fija.
+
+   Aquí se mide lo único que importa y que una captura no dice bien: la
+   POSICIÓN calculada de la barra. En vertical tiene que ser `fixed` y estar
+   fuera de pantalla (borde derecho ≤ 0) con el ☰ encendido; en horizontal
+   ancho, al revés: en el flujo, a la vista, y sin ☰. El 1210×1614 es el
+   caso que falló — si algún día se vuelve a tocar el umbral, este es el que
+   avisa. */
+console.log("\n== Cajón del sidebar por orientación ==");
+{
+  const ctxSb = await nuevoContexto("ipad");
+  const pg = await ctxSb.newPage();
+  const CASOS = [
+    [744, 1133, "cajón"],   // mini vertical
+    [1024, 1366, "cajón"],  // 13" vertical
+    [1210, 1614, "cajón"],  // 13" vertical con "Más espacio" — el del fallo
+    [1133, 744, "cajón"],   // mini horizontal: 1133 < 1150, tampoco cabe
+    [1194, 834, "fija"],    // 11" horizontal
+    [1366, 1024, "fija"],   // 13" horizontal
+  ];
+  for (const [w, h, modo] of CASOS) {
+    await pg.setViewportSize({ width: w, height: h });
+    await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    // 600 > los 280ms de la transición del cajón: al cambiar de tamaño la
+    // barra se desliza, y midiendo antes se lee un borde a medio camino
+    // (salió un 1 donde tocaba 0 en la primera pasada).
+    await pg.waitForTimeout(600);
+    const m = await pg.evaluate(() => {
+      const sb = document.querySelector(".sidebar");
+      const ham = document.querySelector(".menu-hamburguesa");
+      if (!sb) return null;
+      const r = sb.getBoundingClientRect();
+      return {
+        position: getComputedStyle(sb).position,
+        derecha: Math.round(r.right),
+        ancho: Math.round(r.width),
+        ham: ham ? getComputedStyle(ham).display : "sin botón",
+      };
+    });
+    if (!m) { chk(false, `${w}×${h}: no hay .sidebar`); continue; }
+    if (modo === "cajón") {
+      chk(m.position === "fixed", `${w}×${h}: barra superpuesta (position ${m.position})`);
+      chk(m.derecha <= 0, `${w}×${h}: barra escondida fuera de pantalla (borde derecho ${m.derecha})`);
+      chk(m.ham !== "none", `${w}×${h}: el ☰ está encendido (${m.ham})`);
+    } else {
+      chk(m.position !== "fixed", `${w}×${h}: barra en el flujo (position ${m.position})`);
+      chk(m.derecha > 0 && m.ancho > 0, `${w}×${h}: barra a la vista (${m.ancho}px, borde ${m.derecha})`);
+      chk(m.ham === "none", `${w}×${h}: sin ☰ (${m.ham})`);
+    }
+  }
+  // Y que el cajón ABRA donde tiene que abrir: el caso del fallo, con el
+  // velo puesto. Sin esto la prueba de arriba pasaría con un sidebar roto
+  // que nunca se deja ver.
+  await pg.setViewportSize({ width: 1210, height: 1614 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.click(".menu-hamburguesa");
+  await pg.waitForTimeout(450);
+  const abierto = await pg.evaluate(() => {
+    const sb = document.querySelector(".sidebar");
+    const velo = document.querySelector(".menu-telon");
+    return {
+      x: Math.round(sb.getBoundingClientRect().x),
+      velo: velo ? getComputedStyle(velo).display : "sin velo",
+    };
+  });
+  chk(abierto.x === 0, `1210×1614: el ☰ saca el cajón (x ${abierto.x})`);
+  chk(abierto.velo === "block", `1210×1614: con velo (${abierto.velo})`);
+  await ctxSb.close();
 }
 
 await browser.close();

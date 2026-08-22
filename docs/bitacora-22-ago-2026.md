@@ -629,3 +629,36 @@ separado, que **Cartas en el iPad no tenía ningún control de alta**.
   Meter la 1.2.0 en `main` de golpe habría dejado la versión que está en
   TestFlight sin existir en ninguna rama estable, y el día que hubiera que
   volver a ella no habría a dónde volver.
+
+## 13. El sidebar que no se escondía en vertical
+
+Primer hallazgo de Iván revisando la 1.2.2 en TestFlight, y el único de la
+tanda que era un fallo de verdad y no una diferencia de gusto:
+
+> "ya revise la app en testflight una cosa que vi es que en portrait mode el
+> side bar no se esconde sigue afuera como si como lo hace landscape mode."
+
+La causa, entera, en una línea de CSS: el cajón con velo se encendía por
+ancho (`max-width: 1149.98px`) cuando lo que decide es la **orientación**.
+Su iPad de 13" con "Más espacio" reporta ~1210pt en vertical, se salía del
+rango por 60 puntos y se quedaba con la barra fija. El detalle largo, con la
+tabla de los seis aparatos, está en `docs/ipad-rediseno.md` §13.
+
+Tres cosas que quedan dichas:
+
+- **El arnés no lo vio porque medía el iPad de catálogo.** 1024×1366 pasaba;
+  1210×1614 nunca se preguntó por el sidebar (estaba en la lista de tamaños
+  solo para las pantallas de la sección 8). Ahora hay una sección propia que
+  mide la `position` calculada de la barra en seis tamaños, y el primero de
+  la lista de sospechosos es el suyo.
+- **Se reprodujo el fallo antes de arreglarlo.** Con la regla vieja puesta a
+  mano, las tres aserciones de 1210×1614 fallan —`position static`, borde
+  derecho 318, ☰ en `none`—; con la nueva, las 308 pasan. Sin ese paso el
+  arreglo sería una conjetura con buena pinta.
+- **De paso, el arnés ya no deja vite colgado.** Cuando reventaba a medio
+  camino, el puerto 1420 quedaba tomado y la pasada siguiente fallaba con
+  "Port already in use", que no tiene nada que ver con lo que se estaba
+  probando. Dos veces perdí una carrera en eso hoy.
+
+La versión sigue en **1.2.2**: Iván pidió que no se moviera hasta que él
+diga que sube un build.

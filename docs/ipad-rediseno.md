@@ -932,3 +932,63 @@ No es mala suerte: **lo que no está en la maqueta no se revisa.**
    de iPad más Mac, iPhone, Split View y Slide Over. Antes de que existiera,
    la única verificación era Iván con el iPad en la mano — y por eso los tres
    fallos llegaron a un build.
+
+## 13. El cajón del sidebar se decide por orientación, no por ancho (22 ago 2026)
+
+Iván revisó la 1.2.2 en TestFlight y trajo esto:
+
+> "en portrait mode el side bar no se esconde sigue afuera como si como lo
+> hace landscape mode. ahi que arreglarlo."
+
+La regla decía:
+
+```css
+@media (min-width: 700px) and (max-width: 1149.98px) { /* cajón con velo */ }
+```
+
+Y el diseño que esa misma regla dice seguir —`anchoAmplio` solo en
+horizontal— no habla de anchos: habla de **orientación**. El ancho era un
+sustituto: "todo iPad en vertical mide menos de 1150". Y es falso.
+
+**Ajustes → Pantalla y brillo → Zoom de pantalla → "Más espacio"** cambia
+cuántos puntos reporta la pantalla sin cambiar la pantalla. El iPad Pro de
+13" pasa de 1024pt en vertical a **~1210pt**. La cuenta:
+
+| Aparato | Orientación | Ancho en pt | ¿< 1149.98? | Antes |
+|---|---|---|---|---|
+| iPad mini | vertical | 744 | sí | cajón ✓ |
+| iPad 11" | vertical | 834 | sí | cajón ✓ |
+| iPad 13" | vertical | 1024 | sí | cajón ✓ |
+| **iPad 13" "Más espacio"** | **vertical** | **1210** | **no** | **fija ✗** |
+| iPad mini | horizontal | 1133 | sí | cajón ✓ |
+| iPad 13" | horizontal | 1366 | no | fija ✓ |
+
+Una sola fila mal, y era la suya. Por eso las capturas que mandó en agosto
+enseñaban la barra plantada en vertical mientras el arnés —que medía el 1024
+de catálogo— decía que todo estaba bien.
+
+La consulta ahora pregunta lo que de verdad quiere saber:
+
+```css
+@media (min-width: 700px) and (orientation: portrait),
+       (min-width: 700px) and (max-width: 1149.98px) { … }
+```
+
+La coma es un O. Primera rama: cualquier iPad en vertical, mida lo que mida.
+Segunda: el mini en horizontal (1133), que con 318 de barra más 400 de lista
+se queda sin sitio para el detalle. Las dos ramas siguen siendo dos
+preguntas distintas, y ahora cada una se hace con su propia unidad.
+
+**Lo que hay que aprender de esto:** un umbral en píxeles que en realidad
+está midiendo otra cosa funciona hasta el día en que un ajuste del sistema
+mueve los píxeles debajo. El mismo aparato, en la misma orientación, con dos
+números distintos según una casilla de Ajustes. Si la pregunta es "¿está de
+pie o acostado?", `orientation` la contesta y `width` la aproxima.
+
+**El arnés lo caza ahora.** `pruebas/arnes-ipad.mjs` mide la `position`
+calculada de `.sidebar` en seis tamaños —incluido 1210×1614— y exige barra
+superpuesta y fuera de pantalla con el ☰ encendido en vertical, y barra en
+el flujo sin ☰ en horizontal ancho. Con la regla vieja puesta a propósito,
+las tres aserciones de 1210×1614 fallan; con la nueva, las 308 pasan. El
+corte de columnas (§11) NO se tocó: sigue en 1000 y sigue siendo por ancho,
+porque esa sí es una pregunta de anchura.

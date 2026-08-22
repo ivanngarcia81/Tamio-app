@@ -10468,19 +10468,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 /* ============================================================
-   Cajón con velo para el iPad de 13" en vertical (1024–1149)
+   Cajón con velo: todo iPad en VERTICAL, y el mini en horizontal
    ------------------------------------------------------------
-   El único iPad con barra fija cuyo ancho no da para sidebar de 318 MÁS el
-   contenido: en vertical la lista del maestro-detalle quedaba en 706px y
-   toda página normal perdía un tercio del ancho por un menú que se consulta
-   dos veces por sesión. Es lo que hace el diseño (`anchoAmplio` solo en
-   horizontal) y lo que hace iPadOS: en vertical el sidebar se SUPERPONE con
-   velo en vez de convivir. Aquí caen TODOS los iPads en vertical —744, 820,
-   834 y 1024— y también el mini en horizontal (1133), que con 318 de
-   sidebar más 400 de lista se quedaría sin sitio para el detalle. El botón
-   ☰ y el velo ya viven en App.tsx montados siempre; esto solo los enciende
-   para este rango. */
-@media (min-width: 700px) and (max-width: 1149.98px) {
+   La pregunta es de ORIENTACIÓN, no de ancho. En vertical el sidebar se
+   SUPERPONE con velo en vez de convivir: es lo que hace el diseño
+   (`anchoAmplio` solo en horizontal) y lo que hace iPadOS. Con 318 de barra
+   más 400 de lista, a un iPad en vertical le quedarían 306px de panel, y
+   una página normal perdía un tercio del ancho por un menú que se consulta
+   dos veces por sesión.
+
+   ⚠️ Esto se preguntaba SOLO por ancho (`max-width: 1149.98px`) y por eso
+   fallaba en el 13" con "Más espacio" (Ajustes → Pantalla y brillo → Zoom
+   de pantalla): en vertical reporta ~1210pt, 1210 > 1149.98, la regla no
+   entraba y la barra se quedaba fija. Es el fallo que llegó de TestFlight
+   —"en portrait mode el side bar no se esconde"—; el ancho no podía
+   contestar la pregunta porque el MISMO aparato, en la MISMA orientación,
+   cambia de número según un ajuste del sistema.
+
+   Las dos ramas de la consulta (la coma es un O):
+     · vertical, con cualquier ancho ≥700 — 744, 820, 834, 1024, 1210…
+     · horizontal por debajo de 1150 — el mini a 1133, que con la barra más
+       la lista se queda sin sitio para el detalle.
+
+   El botón ☰ y el velo ya viven en App.tsx montados siempre; esto solo los
+   enciende. */
+@media (min-width: 700px) and (orientation: portrait),
+       (min-width: 700px) and (max-width: 1149.98px) {
   :root.ipad .app { grid-template-columns: 1fr; }
   :root.ipad .sidebar {
     position: fixed;
@@ -10553,8 +10566,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    empieza en el mismo 700. Compartían número y no comparten motivo:
 
      · el cajón pregunta "¿caben sidebar Y contenido a la vez?" — a 1024, con
-       318 de sidebar más 400 de lista, al detalle le quedarían 306: no. Ahí
-       sigue en 1149.98, y por eso el 12.9" en vertical enseña el ☰.
+       318 de sidebar más 400 de lista, al detalle le quedarían 306: no. Ese
+       ya ni siquiera se contesta por ancho: se contesta por orientación, y
+       por eso todo iPad en vertical —también el de 13"— enseña el ☰.
      · el empuje pregunta "¿caben lista Y detalle?" — y esa es otra cuenta,
        porque con el sidebar YA superpuesto los 1024 enteros son del split:
        378 de lista dejan 646 al panel, más que un iPhone Pro Max entero.
