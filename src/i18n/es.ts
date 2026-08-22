@@ -1379,6 +1379,8 @@ export const es = {
     colServicio: "Servicio",
     colPredica: "Predicó",
     colAsistencia: "Asistencia",
+    eligeServicio: "Elige un culto",
+    eligeServicioSub: "El conteo, el mensaje y la asistencia salen aquí al tocar uno de la lista.",
     statServiciosMes: "Servicios este mes",
     statAsistenciaPromedio: "Asistencia promedio del mes",
     statVisitantesMes: "Visitantes este mes",

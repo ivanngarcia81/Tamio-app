@@ -1345,6 +1345,8 @@ export const en: Resources = {
     colServicio: "Service",
     colPredica: "Preached",
     colAsistencia: "Attendance",
+    eligeServicio: "Pick a service",
+    eligeServicioSub: "The headcount, the message and attendance show up here when you tap one in the list.",
     statServiciosMes: "Services this month",
     statAsistenciaPromedio: "Average attendance this month",
     statVisitantesMes: "Visitors this month",
