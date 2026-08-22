@@ -9787,6 +9787,71 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     max-width: 640px;
   }
   :root.ipad .rep-documento-sub { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+
+  /* ------------------------------------------------------------
+     Agenda: el calendario a lo ancho y el día a la derecha
+     ------------------------------------------------------------ */
+  /* La columna del calendario no es una lista: no lleva el gris del sidebar
+     ni su filo, lleva el lienzo y el relleno de una página. */
+  :root.ipad .md-agenda-cal {
+    background: var(--bg);
+    padding: 18px 20px 24px;
+    gap: 16px;
+    overflow-y: auto;
+  }
+  /* El día elegido se marca en la propia celda, no solo en el panel: si no,
+     con el panel abierto no se sabe de qué día está hablando. */
+  :root.ipad .agenda-cell.sel {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--ink);
+  }
+
+  :root.ipad .ag-dia-cab { padding: 0 2px; }
+  :root.ipad .ag-dia-titulo {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  :root.ipad .ag-dia-sub { margin: 3px 0 0; font-size: 13px; color: var(--text-2); }
+  :root.ipad .ag-dia-vacio { margin: 0; padding: 0 2px; font-size: 14px; color: var(--text-3); }
+
+  :root.ipad .ag-dia-lista { display: flex; flex-direction: column; gap: 8px; }
+  /* Cada compromiso, una tarjeta con su hora delante: en una columna de 318
+     la hora es lo que ordena la lectura, igual que en el día de Calendario. */
+  :root.ipad .ag-dia-fila {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 56px;
+    padding: 11px 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--surface);
+    text-align: left;
+    font: inherit;
+    color: var(--text);
+    cursor: pointer;
+    /* El filo de color del estado, la misma señal que ya usa `.agenda-evt`. */
+    box-shadow: inset 3px 0 0 var(--line);
+  }
+  :root.ipad .ag-dia-fila:active { opacity: 0.55; }
+  :root.ipad .ag-dia-fila.estado-confirmada { box-shadow: inset 3px 0 0 var(--pos); }
+  :root.ipad .ag-dia-fila.estado-completada { box-shadow: inset 3px 0 0 var(--text-3); }
+  :root.ipad .ag-dia-fila.estado-cancelada { box-shadow: inset 3px 0 0 var(--neg); opacity: 0.6; }
+  :root.ipad .ag-dia-fila.estado-cancelada .ag-dia-nombre { text-decoration: line-through; }
+  :root.ipad .ag-dia-hora {
+    flex: 0 0 46px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+    padding-top: 1px;
+  }
+  :root.ipad .ag-dia-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  :root.ipad .ag-dia-nombre { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+  :root.ipad .ag-dia-meta { font-size: 12.5px; color: var(--text-2); overflow-wrap: anywhere; }
+  :root.ipad .ag-dia-nueva { align-self: flex-start; }
 }
 
 /* ============================================================
@@ -10005,6 +10070,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-split.md-servicios .md-lista { width: 358px; flex-basis: 358px; }
   :root.ipad .md-split.md-cartas .md-lista { width: 338px; flex-basis: 338px; }
   :root.ipad .md-split.md-reportes .md-lista { width: 330px; flex-basis: 330px; }
+  /* Agenda va al revés: el calendario se queda con el ancho y el panel del
+     día es la columna fija de 318px, a la DERECHA. Se monta sobre las mismas
+     dos clases para no duplicar el modo de empuje ni su animación; lo único
+     que cambia es quién es fijo y quién es flexible. */
+  :root.ipad .md-split.md-agenda .md-lista { width: auto; flex: 1 1 auto; border-right: 0; }
+  :root.ipad .md-split.md-agenda .md-detalle {
+    width: 318px;
+    flex: 0 0 318px;
+    border-left: 0.5px solid var(--line);
+    background: var(--sidebar-bg);
+  }
 }
 
 /* ============================================================

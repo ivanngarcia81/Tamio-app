@@ -2115,6 +2115,13 @@ export const en: Resources = {
   },
 
   agenda: {
+    eligeDia: "Pick a day",
+    eligeDiaSub: "Whatever it has shows up here, and this is where you add something new to it.",
+    compromisos_one: "{{count}} commitment",
+    compromisos_other: "{{count}} commitments",
+    vencidas_one: "{{count}} overdue",
+    vencidas_other: "{{count}} overdue",
+    diaSinNada: "Nothing scheduled for this day.",
     nuevaActividad: "New activity",
     editarActividad: "Edit activity",
     guardarActividad: "Save activity",

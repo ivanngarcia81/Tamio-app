@@ -2155,6 +2155,13 @@ export const es = {
   },
 
   agenda: {
+    eligeDia: "Elige un día",
+    eligeDiaSub: "Lo que tenga sale aquí, y desde aquí se le añade algo nuevo.",
+    compromisos_one: "{{count}} compromiso",
+    compromisos_other: "{{count}} compromisos",
+    vencidas_one: "{{count}} vencido",
+    vencidas_other: "{{count}} vencidos",
+    diaSinNada: "Nada agendado este día.",
     nuevaActividad: "Nueva actividad",
     editarActividad: "Editar actividad",
     guardarActividad: "Guardar actividad",

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMac, textoCorto } from "../movil";
+import { esIPad, esIPhone, esMac, textoCorto } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { TFunction } from "i18next";
 import {
   ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, agregarExcepcionAgenda, deleteActividad, fmtFecha, fmtFechaCorta,
@@ -210,6 +211,17 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const [miembros, setMiembros] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [vista, setVista] = useState<Vista>("mes");
+
+  /* ---- Maestro-detalle del iPad ----
+     Un solo umbral aquí: partido a partir de 700px. El de 1150 lo aplica el
+     CSS —columnas o empuje—, pero el componente no necesita saberlo: el día
+     elegido se pinta igual en los dos. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const partido = esIPad() && anchoPartido;
+  /* El día abierto es una FECHA, no un objeto: sobrevive a recargas y a
+     cambiar de mes, y las actividades se re-buscan de `porFecha` cada vez.
+     Es el mismo patrón de "el detalle es un ID que se re-busca". */
+  const [diaSel, setDiaSel] = useState<string | null>(null);
   const [cursor, setCursor] = useState(hoyISO());
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_VACIOS);
   const [soloImportantes, setSoloImportantes] = useState(false);
@@ -605,57 +617,78 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     setVista("lista");
   }
 
-  return (
-    <>
-      <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        {!enIPhone && (
-          <div>
-            <div className="page-title">{t("secretaria.agenda.titulo")}</div>
-            {!enMac && <div className="page-sub">{t("secretaria.agenda.sub")}</div>}
-          </div>
-        )}
-        <div className="header-actions">
-          {/* En Mac la pantalla entera se maneja desde la toolbar: navegación
-              de mes, selector de vista, buscador y filtros. Antes eran dos
-              filas dentro del contenido —una barra y una fila de filtros que
-              envolvía— que empujaban el calendario media pantalla hacia
-              abajo. En iPad y iPhone no cambia nada. */}
-          {enMac && (
-            <>
-              {(vista === "mes" || vista === "semana") && (
-                <>
-                  <div className="agenda-nav-group">
-                    <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={13} /></button>
-                    <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
-                    <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={13} /></button>
-                  </div>
-                  <span className="agenda-mes-titulo">{titulo}</span>
-                </>
-              )}
-              <MacSegmentado
-                value={vista}
-                onChange={(v) => setVista(v)}
-                aria={t("agenda.cambiarVista")}
-                opciones={[
-                  { id: "mes" as Vista, label: t("agenda.vistaMes") },
-                  { id: "semana" as Vista, label: t("agenda.vistaSemana") },
-                  { id: "lista" as Vista, label: t("agenda.vistaLista") },
-                  { id: "historial" as Vista, label: t("agenda.vistaHistorial") },
-                ]}
-              />
-              <MacBuscador
-                value={filtros.q}
-                onChange={(v) => setFiltros((f) => ({ ...f, q: v }))}
-                placeholder={t("agenda.buscarPlaceholder")}
-              />
-              <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltrosMac} />
-            </>
-          )}
-          <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
-        </div>
+  /* ---- El panel del día (columna derecha del iPad) ----
+     El handoff lo titula "Jueves 20 · 2 compromisos · 1 vencido". Los dos
+     números salen de datos: los compromisos son las ocurrencias de ese día
+     que no están canceladas, y "vencido" es una que ya pasó y sigue sin
+     completarse ni cancelarse — no un estado guardado, sino la lectura
+     evidente de la fecha contra hoy. */
+  const actividadesDia = diaSel ? porFecha.get(diaSel) ?? [] : [];
+  const compromisosDia = actividadesDia.filter((a) => a.estado !== "cancelada");
+  const vencidasDia = compromisosDia.filter(
+    (a) => a.fecha < hoy && a.estado !== "completada",
+  ).length;
+
+  const panelDia = diaSel == null ? (
+    <div className="md-vacio">
+      <div className="md-vacio-hint">
+        <h3>{t("agenda.eligeDia")}</h3>
+        <p>{t("agenda.eligeDiaSub")}</p>
+      </div>
+    </div>
+  ) : (
+    <div className="dm ag-dia">
+      <button type="button" className="dm-volver" onClick={() => setDiaSel(null)}>
+        <IconChevronLeft size={17} strokeWidth={2.4} /> {t("secretaria.agenda.titulo")}
+      </button>
+
+      <div className="ag-dia-cab">
+        <h2 className="ag-dia-titulo">{fmtFechaCorta(diaSel)}</h2>
+        <p className="ag-dia-sub">
+          {t("agenda.compromisos", { count: compromisosDia.length })}
+          {vencidasDia > 0 && ` · ${t("agenda.vencidas", { count: vencidasDia })}`}
+        </p>
       </div>
 
-      <div className="content content-lienzo">
+      {compromisosDia.length === 0 ? (
+        <p className="ag-dia-vacio">{t("agenda.diaSinNada")}</p>
+      ) : (
+        <div className="ag-dia-lista">
+          {actividadesDia.map((a) => (
+            <button
+              key={`${a._master.id}:${a._fechaOriginal}`}
+              type="button"
+              className={`ag-dia-fila estado-${a.estado}`}
+              onClick={() => setDetalle(a)}
+            >
+              <span className="ag-dia-hora">
+                {a.dia_completo ? t("agenda.diaCompletoCorto") : (a.hora_inicio ?? "—")}
+              </span>
+              <span className="ag-dia-textos">
+                <span className="ag-dia-nombre">
+                  {a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}
+                </span>
+                <span className="ag-dia-meta">
+                  {[etiquetaTipo(a), a.lugar, nombreResponsable(a)].filter(Boolean).join(" · ")}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <button className="btn primary ag-dia-nueva" onClick={() => abrirNueva(diaSel)}>
+        <IconPlus size={14} /> {t("agenda.nuevaActividad")}
+      </button>
+    </div>
+  );
+
+  /* El cuerpo de la pantalla (barra de vistas + calendario o lista), a una
+     constante: el iPad lo pinta dentro de la columna ancha del
+     maestro-detalle y el Mac y el teléfono dentro de su `.content`. Los
+     mismos nodos en los dos sitios.  */
+  const calendario = (
+    <>
         {enIPhone ? (
           <div className="ios-panel">
             <div className="ios-panel-head"><h2>{t("agenda.seccionResumen")}</h2></div>
@@ -913,8 +946,14 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                 if (!fecha) return <div key={i} className="agenda-cell empty" />;
                 const items = porFecha.get(fecha) ?? [];
                 return (
-                  <div key={i} className={`agenda-cell${fecha === hoy ? " today" : ""}`} onClick={() => abrirNueva(fecha)}
-                    role="button" tabIndex={0} aria-label={fmtFechaCorta(fecha)} onKeyDown={(e) => { if (e.key === "Enter") abrirNueva(fecha); }}>
+                  /* En el iPad tocar un día lo ABRE en el panel de la
+                     derecha —es lo que dibuja el handoff— en vez de saltar
+                     directo al formulario de "nueva actividad"; crear sigue
+                     estando, dentro del propio panel. En Mac no cambia. */
+                  <div key={i} className={`agenda-cell${fecha === hoy ? " today" : ""}${partido && diaSel === fecha ? " sel" : ""}`}
+                    onClick={() => (partido ? setDiaSel(fecha) : abrirNueva(fecha))}
+                    role="button" tabIndex={0} aria-label={fmtFechaCorta(fecha)}
+                    onKeyDown={(e) => { if (e.key === "Enter") (partido ? setDiaSel(fecha) : abrirNueva(fecha)); }}>
                     <div className="agenda-cell-num">{Number(fecha.slice(8, 10))}</div>
                     <div className="agenda-cell-items">
                       {items.slice(0, 3).map((a) => (
@@ -938,7 +977,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               const f = fmtFecha(fecha);
               return (
                 <div key={fecha} className={`agenda-sem-col${fecha === hoy ? " today" : ""}`}>
-                  <button className="agenda-sem-head" onClick={() => abrirNueva(fecha)}>
+                  <button className="agenda-sem-head" onClick={() => (partido ? setDiaSel(fecha) : abrirNueva(fecha))}>
                     <span className="agenda-sem-dow">{f.nombreDia}</span>
                     <span className="agenda-sem-num">{f.dia}</span>
                   </button>
@@ -986,7 +1025,78 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             </div>
           )
         )}
+    </>
+  );
+
+  return (
+    <>
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("secretaria.agenda.titulo")}</div>
+            {!enMac && <div className="page-sub">{t("secretaria.agenda.sub")}</div>}
+          </div>
+        )}
+        <div className="header-actions">
+          {/* En Mac la pantalla entera se maneja desde la toolbar: navegación
+              de mes, selector de vista, buscador y filtros. Antes eran dos
+              filas dentro del contenido —una barra y una fila de filtros que
+              envolvía— que empujaban el calendario media pantalla hacia
+              abajo. En iPad y iPhone no cambia nada. */}
+          {enMac && (
+            <>
+              {(vista === "mes" || vista === "semana") && (
+                <>
+                  <div className="agenda-nav-group">
+                    <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}><IconChevronLeft size={13} /></button>
+                    <button className="nav-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+                    <button className="nav-arrow" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}><IconChevronRight size={13} /></button>
+                  </div>
+                  <span className="agenda-mes-titulo">{titulo}</span>
+                </>
+              )}
+              <MacSegmentado
+                value={vista}
+                onChange={(v) => setVista(v)}
+                aria={t("agenda.cambiarVista")}
+                opciones={[
+                  { id: "mes" as Vista, label: t("agenda.vistaMes") },
+                  { id: "semana" as Vista, label: t("agenda.vistaSemana") },
+                  { id: "lista" as Vista, label: t("agenda.vistaLista") },
+                  { id: "historial" as Vista, label: t("agenda.vistaHistorial") },
+                ]}
+              />
+              <MacBuscador
+                value={filtros.q}
+                onChange={(v) => setFiltros((f) => ({ ...f, q: v }))}
+                placeholder={t("agenda.buscarPlaceholder")}
+              />
+              <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltrosMac} />
+            </>
+          )}
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
+        </div>
       </div>
+
+      {/* ---- Maestro-detalle (iPad) ----
+          Aquí el reparto va al revés que en las otras cinco: el calendario se
+          queda con el ancho y el panel es una columna de 318px a la DERECHA
+          con el día elegido. Es lo que dibuja el handoff, y tiene sentido —
+          un calendario mensual no cabe en una columna de lista.
+
+          Se monta sobre las MISMAS clases (`.md-lista` para el calendario,
+          `.md-detalle` para el día) en vez de un andamio nuevo: así el modo
+          de empuje, su animación y el botón de volver salen gratis, y lo
+          único que hay que hacer es invertir los anchos en el rango de
+          columnas. */}
+      {partido ? (
+        <div className={`md-split md-agenda${diaSel ? " md-abierto" : ""}`}>
+          <div className="md-lista md-agenda-cal">{calendario}</div>
+          <div className="md-detalle">{panelDia}</div>
+        </div>
+      ) : (
+      <div className="content content-lienzo">{calendario}</div>
+      )}
 
       {modal && (
         <ActividadModal
