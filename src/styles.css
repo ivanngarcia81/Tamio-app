@@ -933,13 +933,6 @@ html.vibrancy .main { background: var(--surface); }
   width: 100%;
   margin-inline: auto;
 }
-.dash-saludo {
-  font-size: var(--fs-secondary);
-  font-weight: 600;
-  color: var(--text-3);
-  letter-spacing: 0.01em;
-  margin-bottom: 5px;
-}
 .balance { display: flex; align-items: baseline; gap: var(--space-4); }
 .balance .amount {
   font-size: var(--fs-display);
@@ -9122,10 +9115,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: space-between;
     gap: 16px;
     min-height: 56px;
+    /* `min-height` en un hijo de `.main` —que es flex en columna— SUSTITUYE
+       al mínimo automático de contenido, así que sin esto la barra se
+       encogía a 56 y su contenido se salía por debajo. Se veía en Inicio,
+       cuya cabecera no es un título sino el saldo del mes (saludo + cifra
+       de 40px + "Balance de agosto"): 87px de bloque dentro de una caja de
+       56, o sea la cifra partida por la línea de la barra y el subtítulo
+       pintado encima del contenido de la página. En los ocho tamaños y en
+       las dos orientaciones. Es justo lo que el `min-height` quería evitar
+       (que la barra pueda CRECER, como en Reportes con sus acciones en dos
+       líneas) y no conseguía. */
+    flex: 0 0 auto;
     /* La zona segura va DENTRO de la barra: pegada en top:0, su material
        tiene que extenderse por debajo de la barra de estado del iPad (24px)
        y el contenido de la barra empezar después — como cualquier barra de
        iOS. En el arnés env() es 0 y no cambia nada. */
+    /* En el aparato de verdad el relleno de arriba NO es cero: es el inset de
+       la barra de estado (~24px en un iPad), así que el título nunca nace
+       pegado al borde ni cuando la barra crece a dos líneas (Reportes en
+       vertical). Añadir aquí un relleno fijo subiría las dieciséis barras de
+       56 a 61 y el diseño pide 56. */
     padding: env(safe-area-inset-top) 20px 0;
     /* Fondo y línea son lo que la vuelve CHROME en vez de contenido: sin
        ellos el título flota sobre el lienzo y la barra no se lee como
@@ -9637,6 +9646,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     margin-right: 6px;
   }
   :root.ipad .data-table .row-actions { display: none; }
+
+  /* 3. La cabecera de una tabla es una ETIQUETA, no texto de cuerpo. En el
+        iPad salía a 17px —`.data-table .th` hereda `--fs-body`, que en
+        táctil son 17— y en versalitas: en Informes de membresía la fila de
+        cabecera medía 74px y "Ministerio, cargo e instrumentos" ocupaba
+        tres renglones. Peor aún, no era ni consistente consigo misma: las
+        columnas ORDENABLES son `<button class="th">` con `font: inherit`
+        en línea, así que esas heredaban los 10.5px del `.thead` y salían a
+        menos de la mitad, y sin versalitas (el `text-transform` de un botón
+        lo pone el navegador, y gana a lo heredado).
+        12.5px con 0.4 de tracking es la medida del handoff. Se pone también
+        en `.thead` para que el `font: inherit` de esos botones herede lo
+        mismo — sin tocar su `style=`— y se les devuelve la versalita. */
+  :root.ipad .data-table .thead,
+  :root.ipad .data-table .th { font-size: 12.5px; letter-spacing: 0.4px; }
+  :root.ipad .data-table button.th { text-transform: uppercase; }
+
+  /* 4. El lápiz suelto de Informes de membresía (el único icono de fila que
+        NO se esconde: ahí no hay "···" que lo cubra) sube al objetivo
+        táctil. Medía 28×28 dentro de una celda de 40. */
+  :root.ipad .data-table .row-icon-btn { width: 44px; height: 44px; }
   :root.ipad .data-table .row-icon-btn.solo-escritorio { display: none; }
 
   /* La quinta columna (Ministerio) es lo primero que sobra cuando el ancho

@@ -17,7 +17,7 @@ import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import { CERO, restar } from "../dinero";
-import { esIPhone, esMac } from "../movil";
+import { esIPad, esIPhone, esMac } from "../movil";
 
 interface Props {
   church: Church;
@@ -36,14 +36,6 @@ const IosChevron = () => (
 
 function accentStyle(color: string): CSSProperties {
   return { "--accent-color": color } as CSSProperties;
-}
-
-/** Franja del día según la hora local, para el saludo del encabezado. */
-function franjaDelDia(): "manana" | "tarde" | "noche" {
-  const h = new Date().getHours();
-  if (h < 12) return "manana";
-  if (h < 19) return "tarde";
-  return "noche";
 }
 
 /** "15 ago" / "Aug 15" — la fecha del eje, sin año.
@@ -84,6 +76,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   // en el teléfono manda el idioma de panel. Mac no cambia.
   const enIPhone = esIPhone();
   const enMac = esMac();
+  const enIPad = esIPad();
   const [totales, setTotales] = useState<MonthTotals | null>(null);
   const [totalesAnt, setTotalesAnt] = useState<MonthTotals | null>(null);
   const [anio, setAnio] = useState<YearTotals | null>(null);
@@ -252,11 +245,21 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           `--mac-fs-large-title` — las cuatro tarjetas KPI usan 15. El saludo
           se va: en una barra de 52 px no cabe y no dice nada del dinero. */}
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
+        {/* En el iPad, título y subtítulo — como las otras quince pantallas.
+            El handoff de iPad titula esta barra "Inicio · Resumen de agosto
+            2026" y baja las cifras a las tarjetas, que es donde el saldo del
+            mes ya vive (la tarjeta consolidada de abajo). El bloque de héroe
+            del Mac y del iPhone mide 87px —saludo, cifra de 40 y pie— y en
+            una barra de 56 no cabe: se salía por debajo, con la cifra
+            partida por la línea de la barra. */}
+        {enIPad ? (
+          <div>
+            <div className="page-title">{t("nav.inicio")}</div>
+            <div className="page-sub">{t("dashboard.resumenDe", { mes: mesLegible(mes) })}</div>
+          </div>
+        ) : (
         <div>
           {enMac && <div className="page-title">{t("nav.inicio")}</div>}
-          {/* El saludo gasta una línea y no dice nada del dinero: fuera en el
-              teléfono. La cifra grande se queda — es EL dato de la app. */}
-          {!enIPhone && !enMac && <div className="dash-saludo">{t(`dashboard.saludo.${franjaDelDia()}`)}</div>}
           <div className="balance">
             {/* La cifra que el tesorero mira primero también comunica el signo,
                 con la misma semántica de color que las tarjetas de abajo. */}
@@ -271,6 +274,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               : t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}
           </div>
         </div>
+        )}
         <div className="header-actions">
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
             <span className="solo-escritorio"><IconPrinter size={14} /></span>

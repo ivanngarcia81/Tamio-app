@@ -140,8 +140,8 @@ export const en: Resources = {
   },
 
   dashboard: {
-    saludo: { manana: "Good morning", tarde: "Good afternoon", noche: "Good evening" },
     balanceDelMes: "Balance for the month · {{mes}}",
+    resumenDe: "Overview of {{mes}}",
     nuevoRegistro: "New record",
     chartCaptionSemanal: "Income vs. expenses and balance trend",
     chartCaptionCategorias: "Expense breakdown by category",

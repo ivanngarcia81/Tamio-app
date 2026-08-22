@@ -134,8 +134,8 @@ export const es = {
   },
 
   dashboard: {
-    saludo: { manana: "Buenos días", tarde: "Buenas tardes", noche: "Buenas noches" },
     balanceDelMes: "Balance del mes · {{mes}}",
+    resumenDe: "Resumen de {{mes}}",
     nuevoRegistro: "Nuevo registro",
     chartCaptionSemanal: "Ingresos vs. gastos y evolución del balance",
     chartCaptionCategorias: "Distribución de gastos por categoría",
