@@ -164,13 +164,13 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    | Ingresos · Gastos | 400px | hecho |
    | Aportantes | 378px | hecho |
    | Configuración | 298px | hecho (21 ago, ver abajo) |
-   | Reportes | 330px | **falta** |
-   | Depósito bancario | 378px | **falta** |
+   | Reportes | 330px | hecho (22 ago, §3.9) |
+   | Depósito bancario | 378px | hecho (22 ago, §3.9) |
    | Por revisar (bandeja) | 400px | hecho (21 ago) |
-   | Actas | 358px | **falta** |
-   | Registro de servicios | 358px | **falta** |
-   | Cartas y traslados | 338px | **falta** |
-   | Agenda y calendario | 318px | **falta** |
+   | Actas | 358px | hecho (22 ago, §3.9) |
+   | Registro de servicios | 358px | hecho (22 ago, §3.9) |
+   | Cartas y traslados | 338px | hecho (22 ago, §3.9) |
+   | Agenda y calendario | 318px | hecho (22 ago, §3.9) |
 
    Solo Inicio y Membresía son de una columna en el diseño.
 
@@ -244,6 +244,75 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    de 400px + panel), no sus datos inventados — el mismo criterio que con el
    "Rastro de auditoría" de §4.
 
+9. ~~Las seis pantallas restantes~~ **Hecho** (22 ago). Con el andamio ya
+   construido, cada una fue sobre todo decidir qué va en la fila, qué en el
+   panel, y qué del handoff no existe. Las seis comparten el patrón de
+   siempre: `partido` desde 700, columnas desde 1150, la selección es un ID
+   (o un valor) que se re-busca y sobrevive al giro, y el ancho de cada
+   lista es el del diseño (regla por pantalla en el bloque de 1150px).
+
+   - **Depósito bancario (378px).** Lista agrupada por PERÍODO —no por mes
+     de la fecha— porque así agrupan los totales y los reportes: un depósito
+     de julio pagado en agosto sale bajo julio, donde suma. Panel nuevo
+     (`DetalleDeposito`): la anatomía de `DetalleMovimiento` (importe
+     grande, ficha, comprobante como botón) porque un depósito ES un
+     movimiento de dinero. En cero filas abiertas, las tres tarjetas del
+     resumen. Lo que el handoff traía y NO existe: el segmentado
+     Pendientes/Depositados, "Marcar depositado" y la lista de movimientos
+     incluidos en el corte — `depositos_bancarios` no guarda estado ni
+     vínculos con `transactions`; aquí un depósito se registra cuando ya se
+     hizo.
+
+   - **Actas (358px).** Lista agrupada por año (la cabecera "2026" del
+     diseño), fila con título, fecha · tipo · nº de acuerdos y la pastilla
+     de estado. El panel (`DetalleActa`) enseña el acta COMO DOCUMENTO: la
+     hoja serif del diseño (`--paper` claro en los dos temas: un documento
+     impreso no tiene modo oscuro) con las mismas secciones y en el mismo
+     orden que el PDF de `printActa.ts`. "Recopilar firmas" y "Cerrar acta"
+     del handoff no existen como flujos: el estado se cambia editando y las
+     firmas son líneas del documento impreso.
+
+   - **Registro de servicios (358px).** Fila con bloque de fecha (día de la
+     semana + número, como una celda de Calendario), agrupada por mes, con
+     la asistencia como cifra a la derecha. Panel (`DetalleServicio`): la
+     ficha del culto por secciones en el orden del formulario de registro.
+     El "Orden del culto" con horarios y el roster por rol (Predicación,
+     Ujieres, "Asignar encargado") del handoff no existen: `servicios` es
+     una BITÁCORA de lo que ya pasó, no una planeación.
+
+   - **Cartas y traslados (338px).** El partido cubre solo el estado de
+     HOJEAR (resumen y archivo, fundidos): lista de cartas agrupada por mes
+     de emisión con chips de estado, y el panel (`DetalleCarta`) enseña la
+     carta con el MISMO HTML de `buildCartaHtml` que imprime — en un iframe
+     a tamaño de hoja (816px) escalado al ancho del marco, para que lo que
+     se lee sea exactamente lo que va a salir en papel. El editor, las
+     solicitudes, los traslados y las plantillas siguen siendo pantallas
+     completas; la columna de "Plantillas" del handoff se quedó como navcard
+     en el panel vacío, no como sección de la lista — la lista es de cartas
+     emitidas, que es lo que se viene a hojear.
+
+   - **Reportes (330px).** La columna lista los informes que EXISTEN:
+     estado financiero, distribución por categorías, resumen mensual y el
+     reporte anual (`printAnnual.ts`, que además ganó su vista en pantalla:
+     los doce meses con totales, la misma consulta que alimenta su PDF).
+     "Aportantes" y "Depósitos del periodo" del handoff no son documentos de
+     esta pantalla y no se inventaron. La selección es nullable a propósito:
+     en columnas el estado financiero abre por defecto; en el empuje `null`
+     significa "en la lista". Los botones de generar siguen en la barra
+     de 56px.
+
+   - **Agenda y calendario (318px).** Aquí los papeles se INVIERTEN: el
+     maestro es el calendario (flexible, a la izquierda) y el detalle es la
+     columna del día elegido, de 318px sobre el gris del sidebar — la
+     anatomía de la app de Calendario. En el iPad, tocar un día lo ELIGE
+     (es lo que hace el diseño); crear en ese día es el "+" de la propia
+     columna. El día elegido es `cursor`, que ya era estado de pantalla y
+     sobrevive al giro; en el empuje la columna entra por encima con
+     "‹ Agenda". Solo en las vistas de mes y semana: Lista e Historial ya
+     son listas y se quedan a lo ancho. Las reglas genéricas del empuje
+     sirvieron tal cual — `.md-agenda` solo invierte quién es fijo y quién
+     flexible.
+
 ---
 
 ## 4. Lo que hay que tirar del handoff
@@ -265,9 +334,16 @@ Se eligió empujar. Consecuencias para quien lo implemente:
 
 ## 5. Cómo verificar cambios de iPad
 
-El arnés de Playwright de siempre, con la clase puesta a mano en la raíz y
-estos ocho tamaños. Los cinco marcados como "no debe cambiar" son la red:
-si uno se mueve, el cambio se salió del iPad.
+El arnés de Playwright ya vive en el repo: **`pruebas/arnes-ipad.mjs`**
+(hasta el 22 de agosto se reconstruía en cada sesión y se perdía). Monta la
+app REAL con `vite dev`, sustituye `invoke("db_select"/"db_execute")` por
+sql.js corriendo las migraciones reales de `src-tauri/src/lib.rs`, siembra
+datos con las funciones reales de `db.ts` y recorre las seis pantallas
+partidas en los ocho tamaños de iPad más la red de seguridad. Cómo correrlo
+está en su cabecera (`npm i --no-save playwright sql.js`).
+
+Los tamaños de abajo son los del arnés. Los marcados como "no debe cambiar"
+son la red: si uno se mueve, el cambio se salió del iPad.
 
 **Cuántas pantallas del handoff son maestro-detalle.** La columna maestra
 siempre se declara igual (`width:NNNpx` seguido de `flex:0 0 NNNpx`), así que

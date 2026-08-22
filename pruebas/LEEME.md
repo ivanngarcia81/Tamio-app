@@ -1,3 +1,13 @@
+# Banco de pruebas
+
+## El arnés del iPad (`arnes-ipad.mjs`)
+
+El maestro-detalle del iPad, medido sobre la app REAL: `vite dev` + un stub
+de SQL (sql.js con las migraciones reales de `src-tauri/src/lib.rs`) detrás
+de `invoke`, datos sembrados con las funciones reales de `db.ts`, y las seis
+pantallas partidas recorridas en los ocho tamaños de iPad más la red de
+seguridad (Mac, iPhone, Split View). Cómo correrlo está en su cabecera.
+
 # Banco de pruebas del gesto de deslizar
 
 ```
