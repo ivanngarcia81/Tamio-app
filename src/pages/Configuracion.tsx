@@ -660,6 +660,18 @@ export default function Configuracion({
               {enMac && zonasVisibles.length === 0 && (
                 <p className="settings-buscar-vacio">{t("common.sinResultados")}</p>
               )}
+              {/* La versión, al pie del índice. Existía SOLO en el índice del
+                  iPhone (`.ios-version`, unas líneas más arriba), porque la
+                  tarjeta de cuenta que la acompaña —`CuentaSettingsIOS`, con
+                  su "Acerca de"— está detrás de `enIPhone`. Resultado: en
+                  iPad y en Mac, Tamio no decía en NINGUNA parte qué versión
+                  era.
+                  Lo destapó el 22 de agosto la pregunta más simple posible:
+                  "¿esta build es la 1.2.0 o sigo viendo la 1.1.9?". Sin este
+                  renglón, la única forma de contestarla es abrir TestFlight,
+                  y en la Mac ni eso. Sale de `getVersion()`, que lee el
+                  bundle: no puede desincronizarse de lo que se instaló. */}
+              <p className="settings-nav-version">{version && t("config.pieVersion", { version })}</p>
             </nav>
           )}
 

@@ -3202,6 +3202,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* La flecha solo orienta en la vista angosta (de una zona se puede volver);
    en Mac/iPad, con las dos columnas visibles a la vez, no dice nada. */
 .settings-nav-flecha { display: none; color: var(--text-3); }
+/* La versión al pie del índice de Ajustes, para Mac e iPad — el iPhone tiene
+   la suya en `.ios-version`. `margin-top: auto` la empuja al fondo de la
+   columna, que es donde una app pone su número: fuera de la lista, no como
+   una fila más. El `min-height` reserva su renglón porque `getVersion()` es
+   asíncrono y sin él la columna da un salto al llegar el texto. */
+.settings-nav-version {
+  margin: auto 0 0;
+  padding: 14px 10px 4px;
+  font-size: 12px;
+  line-height: 16px;
+  min-height: 16px;
+  color: var(--text-3);
+}
 .settings-detail {
   flex: 1;
   min-width: 0;
