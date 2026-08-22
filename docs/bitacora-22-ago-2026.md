@@ -1,7 +1,9 @@
 # Bitácora — 22 de agosto de 2026
 
-El día del iPad **en vertical**. Y de las hojas de alta, que llevaban un día
-esperando en un párrafo del documento de ayer.
+El día del iPad **en vertical**, el de las hojas de alta —que llevaban un día
+esperando en un párrafo del documento de ayer— y el que cerró **las seis
+pantallas de maestro-detalle que faltaban**. Con eso, las diez que el handoff
+maqueta partidas están las diez.
 
 Iván lo abrió con dos frases, mirando su aparato:
 
@@ -259,14 +261,56 @@ lleva de verdad lo que dice llevar (`:root.ipad`, `md-split`,
 
 ---
 
-## 8. Lo que sigue pendiente
+## 8. Las seis que faltaban
 
-- **Las seis pantallas de maestro-detalle** que el handoff maqueta y que
-  siguen sin partirse: Reportes (330px), Depósito bancario (378), Actas
-  (358), Registro de servicios (358), Cartas y traslados (338) y Agenda
-  (318). El andamio está construido desde ayer (`.md-split`, el modo de
-  empuje, `useMediaQuery`, el patrón de "el detalle es un ID"); cada una es
-  sobre todo decidir qué va en la fila y qué en el panel.
+Cerradas el mismo día, después de la quinta columna. El andamio de ayer
+aguantó entero: `.md-split`, `.md-lista`, `.md-detalle`, el modo de empuje
+con su animación, los dos umbrales (700 y 1150) y el patrón de "el detalle
+es un ID que se re-busca". Ninguna de las seis lo tocó.
+
+Lo que sí hizo falta fue descubrir que **la columna maestra tiene tres
+formas**, no una:
+
+| Forma | Pantallas | Por qué |
+|---|---|---|
+| Lista de registros | Ingresos, Aportantes, Bandeja, **Depósitos**, **Actas**, **Servicios** | Hay muchos y llegan más |
+| Índice de destinos | **Reportes**, **Cartas**, Configuración | Son cinco o siete destinos FIJOS: una fila de lista miente, promete que hay muchos y que llegan más |
+| Panel a la derecha | **Agenda** | Un calendario mensual no cabe en una columna de lista, así que la que se estrecha es la otra |
+
+La tercera se monta sobre las MISMAS dos clases y solo invierte cuál es fija
+y cuál flexible. Un andamio paralelo habría duplicado el modo de empuje, su
+animación y el botón de volver.
+
+Tres cosas que salieron de hacerlas:
+
+- **Actas estrenó un panel que no es una ficha**: es el documento. Un acta se
+  lee de arriba abajo, y sus mociones y acuerdos van en un `<ol>` de verdad
+  porque el número es cómo se cita un acuerdo después.
+- **Servicios pone la fecha en pastilla delante**: en una lista de cultos la
+  fecha no es un dato más, es la identidad de la fila.
+- **Cartas no tenía forma de volver.** Se entraba a una sección desde las
+  tarjetas del resumen y no había manera de regresar ni de saltar a otra sin
+  salir de la pantalla — no hay barra de pestañas en ningún lado. Con el
+  índice siempre a la vista, las siete están a un toque.
+
+Y lo de siempre, seis veces más: **decidir qué del handoff es estructura y
+qué es contenido inventado.** Fuera se quedaron el desglose Efectivo/Cheques
+y la lista de movimientos de un depósito (un depósito es una fila; no guarda
+qué lo compone), el "Roster" por puestos y el "Orden del culto" de Servicios
+(no hay catálogo de puestos ni horario minuto a minuto), los botones
+"Recopilar firmas" y "Cerrar acta" y la firma de un "Testigo" que el modelo
+no guarda, las entradas "Aportantes" y "Depósitos del periodo" del índice de
+Reportes (son dos pantallas con su entrada en el sidebar: meterlas ahí
+duplica la navegación) y la tercera columna de "Campos de la carta"
+(`CartaEditor` ya los enseña; repetirlos al lado no añade, repite).
+
+Cada exclusión queda escrita **en su propio componente**, no solo aquí, para
+que no se "arregle" luego por error.
+
+---
+
+## 9. Lo que sigue pendiente
+
 - **`CartaEditor` sigue en su forma de escritorio en el iPad**, a propósito:
   es un documento a página completa, no una hoja, y a 820px o más se lee bien
   en dos columnas. Si se quiere su versión de iOS, es su propia tarea.

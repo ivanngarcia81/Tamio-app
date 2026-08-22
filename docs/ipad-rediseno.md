@@ -161,16 +161,16 @@ Se eligió empujar. Consecuencias para quien lo implemente:
 
    | Pantalla | Columna | Estado |
    |---|---|---|
-   | Ingresos · Gastos | 400px | hecho |
-   | Aportantes | 378px | hecho |
+   | Ingresos · Gastos | 400px | hecho (21 ago) |
+   | Aportantes | 378px | hecho (21 ago) |
    | Configuración | 298px | hecho (21 ago, ver abajo) |
-   | Reportes | 330px | **falta** |
-   | Depósito bancario | 378px | **falta** |
    | Por revisar (bandeja) | 400px | hecho (21 ago) |
-   | Actas | 358px | **falta** |
-   | Registro de servicios | 358px | **falta** |
-   | Cartas y traslados | 338px | **falta** |
-   | Agenda y calendario | 318px | **falta** |
+   | Depósito bancario | 378px | hecho (22 ago, §10) |
+   | Actas | 358px | hecho (22 ago, §10) |
+   | Registro de servicios | 358px | hecho (22 ago, §10) |
+   | Reportes | 330px | hecho (22 ago, §10) |
+   | Cartas y traslados | 338px | hecho (22 ago, §10) |
+   | Agenda y calendario | 318px (a la DERECHA) | hecho (22 ago, §10) |
 
    Solo Inicio y Membresía son de una columna en el diseño. **Membresía
    quedó hecha el 22 de agosto** (§9); Inicio ya lo estaba salvo su barra,
@@ -527,3 +527,76 @@ Pero **la elección se hace con `useMediaQuery` en el componente, no con
 esconder una celda de una rejilla NO quita su vía. Apagar Ministerio dejaba a
 la columna de acciones ocupando la vía de 1.2fr y un hueco muerto de 104px al
 final de cada fila.
+
+
+---
+
+## 10. Las seis que faltaban
+
+Cerradas el 22 de agosto. El andamio del día 21 aguantó: `.md-split`,
+`.md-lista`, `.md-detalle`, el modo de empuje con su animación, los dos
+umbrales (700 y 1150) y el patrón de "el detalle es un ID que se re-busca".
+Ninguna de las seis necesitó tocarlo. Lo que sí hizo falta fue **descubrir
+que la columna maestra tiene tres formas**, no una.
+
+### 10.1 Las tres formas de una columna maestra
+
+| Forma | Pantallas | Por qué |
+|---|---|---|
+| **Lista de registros** | Ingresos, Aportantes, Bandeja, Depósitos, Actas, Servicios | Hay muchos y llegan más; la fila de 64px con su cabecera de grupo es la forma correcta |
+| **Índice de destinos** (`.md-indice`) | Reportes, Cartas, Configuración | Son cinco o siete destinos FIJOS. Una fila de lista miente: promete que hay muchos y que llegan más |
+| **Panel a la derecha** | Agenda | Un calendario mensual no cabe en una columna de lista, así que la que se estrecha es la otra |
+
+La tercera se monta sobre las MISMAS dos clases (`.md-lista` para el
+calendario, `.md-detalle` para el día) y solo invierte cuál es fija y cuál
+flexible en el rango de columnas. Así el modo de empuje, su animación y el
+botón de volver salen gratis; un andamio paralelo habría duplicado los tres.
+
+El índice se pinta como el de Ajustes —pastillas de radio 10, sin filos
+entre ellas, la activa con el `color-mix` del ink al 10%— para que "lo
+elegido" se vea igual en las tres formas.
+
+### 10.2 Los seis paneles, uno por uno
+
+- **Depósitos** (378px). Lista agrupada por PERÍODO y no por fecha: es como
+  suman los totales de la pantalla y como agrupan los reportes. Pie con el
+  conteo y la suma de lo VISIBLE. Panel con la cifra grande y la ficha.
+- **Actas** (358px). El primer panel que no es una ficha: es el
+  **documento**. Un acta se lee de arriba abajo —encabezado, quién estuvo,
+  agenda, resumen, mociones, acuerdos y firmas—, y las mociones y acuerdos
+  van en un `<ol>` de verdad porque su número es cómo se cita un acuerdo
+  después. Lista agrupada por AÑO, que es como los numera el folio.
+- **Servicios** (358px). Fecha en pastilla delante (en una lista de cultos la
+  fecha es la identidad de la fila), conteo grande primero y una tira de
+  barras con los cuatro últimos cultos —la sección "Asistencia del último
+  mes" del handoff, con datos que la página ya tiene cargados—.
+- **Reportes** (330px, índice). Cinco informes; en columnas se llega con el
+  estado financiero abierto, en empuje se llega al índice.
+- **Cartas** (338px, índice). Sus siete secciones, agrupadas en documentos y
+  traslados. Arregla de paso que **no había forma de volver** de una sección
+  al resumen ni de saltar a otra sin salir de la pantalla.
+- **Agenda** (318px a la derecha). Tocar un día lo abre en el panel; crear
+  sigue estando, dentro del panel y con esa fecha puesta.
+
+### 10.3 Lo que NO se construyó, y por qué
+
+El mismo criterio de §4 y §3.8, seis veces más. Queda escrito en cada
+componente para que no se "arregle" luego por error:
+
+| Pantalla | Lo que el handoff dibuja | Por qué no está |
+|---|---|---|
+| Depósitos | "14 movimientos en efectivo y cheque", desglose Efectivo/Cheques, lista de movimientos incluidos | Un depósito es una fila: no guarda qué movimientos lo componen ni en qué forma venía el dinero |
+| Actas | Botones "Recopilar firmas" y "Cerrar acta"; tercera firma de "Testigo" | El estado se cambia en el formulario; el modelo guarda preside y secretario, no un testigo |
+| Servicios | "Roster" por puestos (Predicación, Alabanza, Ujieres, Sonido) y "Orden del culto" con horas | No hay catálogo de puestos, ni asignación por puesto, ni horario minuto a minuto |
+| Reportes | "Aportantes" y "Depósitos del periodo" en el índice | En Tamio son dos PANTALLAS con su entrada en el sidebar; meterlas aquí duplica la navegación |
+| Cartas | Tercera columna de 298px con "Campos de la carta" | `CartaEditor` ya enseña esos campos; una columna que repita lo de al lado no añade, repite |
+| Agenda | — | Aquí el handoff no inventó nada |
+
+### 10.4 La regla que sale de las seis
+
+En las seis, el trabajo de verdad no fue el andamio sino **decidir qué del
+handoff es estructura y qué es contenido inventado**. La estructura se copia;
+el contenido se comprueba contra el esquema antes de dibujarlo. Y cuando el
+dato existe pero todavía no hay ninguno —el caso de la asistencia en
+Membresía, §9— la columna se enseña vacía y diciendo por qué, que no es lo
+mismo que no enseñarla.
