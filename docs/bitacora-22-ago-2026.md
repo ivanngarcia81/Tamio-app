@@ -617,5 +617,15 @@ separado, que **Cartas en el iPad no tenía ningún control de alta**.
   propósito:** meter una poda de CSS en el mismo cambio que junta dos ramas es
   cómo se rompe algo sin poder culpar a nadie. Es su propia tarea, de diez
   minutos.
-- **`main` sigue en 1.1.8** y ahora va dos ramas por detrás. Fusionar esto a
-  `main` es lo siguiente que hay que hacer, antes de que aparezca una tercera.
+- ~~**`main` sigue en 1.1.8**~~ — **arreglado el mismo día.** Iván lo pidió en
+  cuanto se vio el lío: primero la 1.1.9 a `main`, y la 1.2 después. `main`
+  avanzó de `a61a5b7` a `a8abf3c` **sin fusión** —avance directo, porque no
+  tenía ningún commit propio desde el ancestro— así que `main` ES ahora,
+  commit por commit, la 1.1.9 que está en TestFlight. Consecuencia práctica:
+  la Mac ya puede compilar desde `main`, y la 1.2.0 entrará también por
+  avance directo cuando se pruebe.
+
+  El orden importaba y era el suyo: **lo que ya se probó aterriza primero.**
+  Meter la 1.2.0 en `main` de golpe habría dejado la versión que está en
+  TestFlight sin existir en ninguna rama estable, y el día que hubiera que
+  volver a ella no habría a dónde volver.

@@ -114,11 +114,30 @@ no se reconoce. Es esto.
 
 ## La que queda viva
 
-- **`claude/design-review-execution-can5gv`** — fusionarla a `main` cuando la
-  1.1.9 haya pasado la prueba en los iPads. Mientras no se fusione, la Mac
-  tiene que compilar DESDE esta rama: compilar desde `main` produce la 1.1.8,
-  que es el código del día 21. Es exactamente lo que pasó el 22 de agosto
-  (ver la bitácora de ese día).
+- ~~**`claude/design-review-execution-can5gv`**~~ — **aterrizó en `main` el 22
+  de agosto**, por avance directo (`a61a5b7..a8abf3c`). `main` ES ahora la
+  1.1.9, la misma que está en TestFlight, así que la Mac ya puede compilar
+  desde `main`. Por la regla de aquí abajo, esta rama se puede borrar: su
+  trabajo está en `main`.
+
+- **`claude/charming-sagan-hknqp1`** — la 1.2.0. Lleva `main` más el modo
+  vertical del iPad y Membresía, y ya trae fusionada la rama de arriba (por
+  eso también entra a `main` por avance directo). Se fusiona cuando la 1.2.0
+  haya pasado la prueba en los iPads. **Mientras no se fusione, para compilar
+  la 1.2.0 hay que estar EN esta rama**: desde `main` sale la 1.1.9.
+
+> **Lo que costó el 22 de agosto, y de dónde sale la regla de abajo.** Ese día
+> hubo DOS ramas haciendo el rediseño a la vez sin saberlo, las dos con su
+> propia 1.1.9, y `main` en 1.1.8 detrás de las dos. Iván bumpeó a 1.2.0 y su
+> Mac le seguía sacando la 1.1.9 — porque el bump estaba en la otra rama. Un
+> `git pull` no trae lo que vive en otra rama. Antes de subir una versión,
+> mirar en qué rama compila la Mac:
+>
+> ```sh
+> for b in $(git branch -r | grep -v HEAD); do
+>   echo -n "$b  "; git show "$b:src-tauri/tauri.conf.json" | grep '"version"'
+> done
+> ```
 
 ## La regla, para no volver aquí
 

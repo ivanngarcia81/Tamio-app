@@ -105,10 +105,21 @@ en las tres fuentes:
 > después del bump. No era el bump — era que su copia estaba en la otra rama,
 > donde ese commit no existe. Un `git pull` no trae lo que está en otra rama.
 >
-> **La regla que sale de esto: antes de subir la versión, comprobar que la
+> **Arreglado el mismo día, y en este orden:** primero la 1.1.9 —la que ya
+> estaba probada y en TestFlight— aterrizó en `main` por avance directo
+> (`a61a5b7..a8abf3c`, sin fusión, porque `main` no tenía ningún commit propio
+> desde el ancestro). `main` ES ahora esa 1.1.9, commit por commit. La 1.2.0
+> espera en su rama y entrará igual, por avance directo, cuando se pruebe.
+>
+> El orden no es capricho: **lo que ya se probó aterriza primero.** Si la
+> 1.2.0 hubiera entrado de golpe, la versión que está en TestFlight no
+> existiría en ninguna rama estable, y el día que hubiera que volver a ella no
+> habría a dónde volver.
+>
+> **Y la regla para no repetirlo: antes de subir la versión, comprobar que la
 > rama en la que estás es la que compila la Mac**, y que `main` no se ha
-> quedado atrás de las dos. Con `git branch -r` y un vistazo a la `version`
-> de cada rama se ve en diez segundos:
+> quedado atrás. Con `git branch -r` y un vistazo a la `version` de cada rama
+> se ve en diez segundos:
 >
 > ```sh
 > for b in $(git branch -r | grep -v HEAD); do
