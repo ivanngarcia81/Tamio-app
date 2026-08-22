@@ -93,8 +93,13 @@ en las tres fuentes:
 | 22 ago | 1.1.9 — el rediseño completo: las diez pantallas, Membresía, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight. **En pruebas, NO candidata a publicación** |
 | 22 ago | **1.2.0** — la FUSIÓN de las dos ramas que hicieron el rediseño en paralelo: el modo vertical de una y el Inicio, Configuración y el arnés de la otra. **Subida a TestFlight**, compilada desde `claude/charming-sagan-hknqp1` |
 | esta | **1.2.1** — el corte de columnas baja de 1150 a 1000: el iPad Pro de 12.9"/13" en vertical pasa a dos columnas, y Ajustes enseña por fin la versión en iPad y Mac |
-| esta | **1.2.2** — Cartas: crear vive SOLO en el "+"; "Nueva carta" deja de ser una sección del índice (lo circuló Iván probando en su iPad) |
+| esta | **1.2.2** — la build de REVISIÓN del handoff 2: Membresía maestro-detalle, Informes de membresía con su índice, Mensajes como chat centrado, y Cartas con crear solo en el "+" |
 | la siguiente | 1.2.3 |
+
+> **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
+> acumular arreglos y subir una sola vez para revisar de corrido, así que
+> el número solo avanza cuando algo sube DE VERDAD a App Store Connect.
+> Por eso la 1.2.2 lleva cuatro tandas de trabajo y no una.
 
 > Para compilar la 1.2.0 hubo que intentarlo **tres veces**, y las tres salió
 > la 1.1.9: dos por estar en la rama equivocada y una por `main`, que es la
