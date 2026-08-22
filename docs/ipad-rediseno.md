@@ -346,6 +346,33 @@ Se eligió empujar. Consecuencias para quien lo implemente:
       diezma". Ahora: año de `fecha_ingreso` + primera etiqueta, con el
       correo de repuesto cuando no hay ni lo uno ni lo otro.
 
+11. **La repasada de Configuración** (22 ago, tercera pasada, pedida por
+    Iván). Medido con estilos computados a 1366: el bloque del 21 de agosto
+    aplica tal cual el handoff — índice de 298 con su filo y fondo de
+    sidebar, filas de 40px a 15px con radio 10 y activa con el tinte al 10%
+    (gris con el acento "neutro"; verde si se elige verde), panel con
+    columna de 680 centrada, héroe de 64px en rejilla y zona aplanada.
+    Desviaciones deliberadas que se quedan: las zonas son las REALES de la
+    app (Sincronización y Suscripción viven como tarjetas dentro de "Acceso
+    y áreas"; "Datos y respaldo" es la Zona sensible), los formularios
+    siguen siendo los controles reales y no las listas iOS del mock, y los
+    tres interruptores inventados de Iglesia siguen sin construirse (§4).
+
+    Lo que la repasada sí cazó, los dos en el rango apilado del mini (744):
+
+    - **El índice apilado parecía deshabilitado**: la regla base pinta las
+      filas en `--text-2` porque en Mac el índice convive con el detalle y
+      no es el protagonista; a 744 el índice ES la pantalla y las siete
+      filas salían en gris de apoyo. Ahora tinta entera.
+    - **El cajón cerrado pintaba su sombra**: `box-shadow: 12px 0 40px`
+      siempre encendida con el cajón en `translateX(-100%)` deja el borde
+      derecho en x=0 y la sombra se proyecta DENTRO — una franja gris en el
+      filo izquierdo de toda página del rango. Estaba en los DOS bloques de
+      cajón (el del iPad, 700–1149, y el viejo de 601–1023 sin plataforma,
+      así que también alcanzaba al Mac angosto y al iPhone apaisado). En
+      ambos, la sombra ahora solo existe con `.menu-abierto` — el mismo
+      trato que ya tenía el panel del maestro-detalle.
+
 ---
 
 ## 4. Lo que hay que tirar del handoff

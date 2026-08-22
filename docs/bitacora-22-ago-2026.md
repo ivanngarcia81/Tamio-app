@@ -89,7 +89,24 @@ Verificado igual que lo demás: arnés completo en verde (189 comprobaciones),
 capturas del Inicio nuevo a 1366 y 834, y el salto de "Ver ficha" probado de
 punta a punta en el navegador.
 
-## 4. Lo que quedó anotado, no hecho
+## 4. La tercera pasada: Configuración
+
+También pedida por Iván. A 1366 y 834 el bloque del día 21 aplica el handoff
+tal cual (medido con estilos computados: índice de 298, filas de 40, tinte
+al 10%, columna de 680, héroe en rejilla). Lo que cazó fue en el rango
+APILADO del mini a 744, y uno de los dos ni siquiera era de Ajustes:
+
+- Las filas del índice apilado salían en `--text-2` — siete filas que
+  parecían deshabilitadas. Tinta entera ahora.
+- **El cajón cerrado pintaba su sombra**: con `translateX(-100%)` el borde
+  derecho queda en x=0 y `box-shadow: 12px 0 40px` proyecta una franja gris
+  dentro de la pantalla, en toda página del rango. Estaba en los dos bloques
+  de cajón (el del iPad y el viejo de 601–1023 sin plataforma — o sea que
+  también manchaba el Mac angosto y el iPhone apaisado). En ambos, la sombra
+  ahora solo existe con el cajón abierto. La franja llevaba ahí desde que
+  existe el cajón; la cazó una captura, no el código.
+
+## 5. Lo que quedó anotado, no hecho
 
 - **Probar en el aparato.** El arnés es Chromium; el patrón ya se sabe (el
   umbral de 1024, el AccentColor): lo que WKWebView decida distinto solo se
