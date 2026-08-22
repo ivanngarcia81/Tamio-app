@@ -175,6 +175,49 @@ enlace de compra (regla 3.1.1 de Apple) y el aviso de versión nueva (2.5.2).
 
 Después, Xcode → Organizer → Distribute → TestFlight.
 
+### `verificar-rama` corre antes, y dice qué vas a compilar
+
+Desde el 22 de agosto, `ios:appstore` y `dist:appstore` empiezan por
+`node scripts/verificar-rama.mjs`, que imprime esto **antes** de que Tauri
+toque nada:
+
+```
+────────────────────────────────────────────────────────────────
+  Vas a compilar la versión  1.1.9
+  desde la rama              main
+────────────────────────────────────────────────────────────────
+```
+
+**Por qué hacía falta un script y no bastaba la regla escrita aquí.** Ese día
+la versión salió mal DOS veces, y la segunda ya con la regla puesta en este
+documento. El motivo es que el número de versión no aparece por ningún lado
+hasta el FINAL del log de Xcode —después de compilar Rust, enlazar, firmar y
+exportar—, en la línea `Setting version of project tesoreria to: 1.1.9`,
+cuando ya no queda nadie leyendo. Ahora se dice al principio, cuando todavía
+sirve de algo.
+
+Aborta en dos casos, los dos en los que el .ipa no correspondería a ningún
+commit del repositorio:
+
+- **el árbol tiene cambios sin confirmar** — lo que se compila sale del disco,
+  no del último commit, así que después no hay forma de reconstruir lo que se
+  subió (y es justo el `Cargo.lock` a medio tocar del que avisa el recuadro de
+  arriba);
+- **la rama va por detrás de su remoto** — compilarías código viejo. Fue el
+  fallo del primer intento: el bump estaba empujado y la Mac no lo tenía.
+
+Y **avisa sin frenar** cuando otra rama tiene una versión más alta, con la
+orden para cambiarse. Eso fue el segundo fallo, y no es un error del build:
+`main` es la 1.1.9 a propósito, y la 1.2.0 espera en su rama hasta probarse,
+así que compilar `main` es legítimo — solo hay que saber que es lo que estás
+haciendo.
+
+Escotilla, para cuando sabes lo que haces:
+
+```sh
+SALTAR_VERIFICAR_RAMA=1 npm run ios:appstore
+```
+
 ## Antes de subir
 
 ```sh
