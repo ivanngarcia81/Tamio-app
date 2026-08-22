@@ -34,19 +34,32 @@ pedía. La regla nueva todavía no ha hecho falta.
 
 ### 🔜 Lo que el handoff 2 vuelve a pedir y el handoff 1 descartó
 
-**Aquí sí aplica la regla nueva.** Son las siete funciones que se rechazaron
-por no tener datos detrás y que el diseño insiste en dibujar. Ordenadas por
-lo que cuesta darles motor de verdad después:
+> ⚠️ **Esta tabla se rehízo el 22 de agosto por la tarde, y la primera versión
+> estaba MAL.** Iván avisó de algo que yo no sabía: *"el handoff 2 fue
+> diseñado usando el repo, debería ser fiel a la aplicación"*. Al verificar
+> columna por columna contra `src-tauri/src/lib.rs` resultó que tenía razón:
+> **de las siete funciones que declaré imposibles, solo dos lo son.** Las
+> otras cinco se apoyan en datos que ya existen y que yo di por ausentes sin
+> comprobarlo.
+>
+> La lección es la del §12 de `docs/ipad-rediseno.md` otra vez, del otro lado:
+> allí fue "lo que no está en la maqueta no se revisa"; aquí fue "lo que no
+> busqué en el esquema, lo declaré inexistente". Un diseño hecho SOBRE el
+> repo merece que se compruebe el repo antes de contradecirlo.
 
-| # | Pantalla | Lo que el handoff dibuja | Qué falta por detrás |
+| # | Pantalla | Lo que el handoff dibuja | Qué hace falta DE VERDAD |
 |---|---|---|---|
-| 1 | **Por revisar** | Taxonomía de alertas: monto sin comprobante, duplicado probable, categoría vacía, miembro no encontrado, recurrente vencido. Más "Aprobar todo" y las acciones por alerta (Adjuntar y aprobar, Aprobar sin comprobante, Devolver al tesorero) | Hoy `Bandeja` solo lista movimientos en estado pendiente. Las cinco alertas son consultas calculables con lo que ya hay — **esta es la más barata y la más útil** |
-| 2 | **Actas** | "Recopilar firmas", "Cerrar acta", tercera firma de Testigo | El estado se cambia en el formulario; el modelo guarda preside y secretario. Cerrar acta ≈ transición de estado con freno (es el punto 7 del plan 1.3) |
-| 3 | **Servicios** | Roster por puestos (Predicación, Alabanza, Ujieres, Sonido…), "Orden del culto" con horas, "Asignar encargado" | No hay catálogo de puestos ni horario. Tabla nueva |
-| 4 | **Depósitos** | Desglose Efectivo/Cheques, "Movimientos incluidos", "Marcar depositado", ficha con cámara | Un depósito es una fila: no guarda qué lo compone ni la forma del dinero. Es el bloque de conciliación de la 2.0 |
-| 5 | **Movimientos** | "Rastro de auditoría" (creado por, editado a las…) | `transactions` solo tiene `updated_at`. Tabla nueva + escrituras en cada mutación |
-| 6 | **Cartas** | Tercera columna de 298 con "Campos de la carta" | `CartaEditor` ya los enseña; es duplicación, no falta de datos |
-| 7 | **Reportes** | "Conciliación bancaria" y "Depósitos del periodo" en el catálogo | La conciliación no existe (ver 4); Depósitos es una pantalla con su entrada propia |
+| 1 | **Actas** | "Cerrar acta" | **Nada.** `actas.estado` ya tiene `aprobada` y `archivada`, y `fecha_aprobacion` existe. Es un botón sobre una transición que ya se puede hacer desde el formulario — el punto 7 del plan 1.3 le pone el freno |
+| 2 | **Cartas** | Tercera columna "Campos de la carta" | **Nada.** `CartaEditor` ya los enseña, y `cartas.firmas` existe. Es decisión de maquetación, no falta de datos |
+| 3 | **Movimientos** | "Registrado por: Rosa Elena Vega · tesorera" | **Una columna.** La tabla `usuarios` YA existe con `nombre` y `rol` — es exactamente el dato del diseño. Falta `transactions.usuario_id` y escribirlo al insertar. Dije "tabla nueva + escrituras en cada mutación": lo primero era falso |
+| 4 | **Actas** | Tercera firma de "Testigo" | **Una columna.** `preside` y `secretario` ya están; falta `testigo` |
+| 5 | **Por revisar** | Las cinco alertas + "Aprobar todo" | **Nada.** Ya está el servicio (`services/bandeja/alertas.ts`): las cinco se calculan con lo que hay |
+| 6 | **Servicios** | Roster por puestos y "Orden del culto" con horas | **Estructura nueva.** `participaciones` es JSON sin forma; hace falta catálogo de puestos y horario. Hueco real |
+| 7 | **Depósitos** | Desglose Efectivo/Cheques, "Movimientos incluidos", "Marcar depositado" | **Estructura nueva.** `depositos_bancarios` no tiene estado ni vínculo con `transactions`. Hueco real, y es el bloque de conciliación de la 2.0 |
+
+**Solo 6 y 7 necesitan estructura nueva.** Las cinco primeras se construyen
+con datos reales, así que la regla de "aunque sea decoración" NO aplica a
+ellas: salen cableadas de verdad.
 
 ### ⚪ Sin cambios respecto a lo construido
 
@@ -57,8 +70,13 @@ previa —`acento` (cinco colores, que la app YA tiene en Ajustes) y
 
 ## Orden propuesto
 
-**1 → 2 → 3**, y parar ahí a revisar con Iván. Por revisar es la que más da
-por lo que cuesta (sus cinco alertas se calculan con datos existentes),
-Actas engancha con el punto 7 del plan 1.3, y Servicios ya pide tabla nueva.
-Las cuatro últimas tocan el bloque de conciliación, que el propio plan
-manda a la 2.0 como una sola función y no como cuatro.
+Con la tabla corregida, el orden cambia y se acorta:
+
+1. **Por revisar** (motor ya escrito) — cablear la pantalla.
+2. **Movimientos**: "Registrado por". Una columna y un join con `usuarios`.
+3. **Actas**: "Cerrar acta" (ya se puede) y la firma de Testigo (una columna).
+4. **Cartas**: decidir si la tercera columna se pinta o se descarta por
+   duplicar lo que `CartaEditor` ya enseña. Es decisión de Iván, no técnica.
+5. **Servicios** y **Depósitos**, los dos únicos con estructura nueva, al
+   final — y Depósitos va con el bloque de conciliación que el plan manda
+   a la 2.0 como una sola función.
