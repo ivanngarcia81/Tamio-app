@@ -82,11 +82,17 @@ const IosChevron = () => (
 
 type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
 
-/** Las siete secciones de esta pantalla, agrupadas como el handoff agrupa su
- *  columna: los documentos por un lado y los traslados por otro. Son las que
- *  la pantalla YA tiene; no se inventa ninguna. */
+/** Las secciones del índice del iPad, agrupadas como el handoff agrupa su
+ *  columna: los documentos por un lado y los traslados por otro. Son LUGARES
+ *  a los que se va y se vuelve — por eso "nueva" NO está, aunque sea una
+ *  pestaña real (`Tab`): es una ACCIÓN, y ya vive en el "+" de la cabecera,
+ *  que es donde crean todas las demás pantallas. Tenerla también aquí ponía
+ *  la misma orden en dos sitios a la vez, y fue lo primero que Iván circuló
+ *  al probar la 1.2 en su iPad (22 ago 2026). El editor sigue siendo la
+ *  pestaña "nueva": se llega por el "+", por las tarjetas del resumen y por
+ *  "Emitir carta" de una solicitud; solo deja de fingir que es un sitio. */
 const SECCIONES_CARTAS: { grupo: string; items: Tab[] }[] = [
-  { grupo: "cartas.grupoDocumentos", items: ["resumen", "nueva", "archivo", "plantillas"] },
+  { grupo: "cartas.grupoDocumentos", items: ["resumen", "archivo", "plantillas"] },
   { grupo: "cartas.grupoTraslados", items: ["solicitudes", "salida", "entrada"] },
 ];
 
@@ -1308,12 +1314,16 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
       )}
 
       {/* ---- Maestro-detalle (iPad) ----
-          Aquí la columna maestra es un ÍNDICE de las siete secciones de la
+          Aquí la columna maestra es un ÍNDICE de las secciones de la
           pantalla, como en Reportes. Y resuelve algo que faltaba: hasta ahora
           se entraba a una sección desde las tarjetas del resumen y NO había
-          forma de volver ni de saltar a otra sin salir de la pantalla. Con el
-          índice siempre a la vista, las siete están a un toque. Es lo que
-          dibuja el handoff, que también pinta una columna fija con grupos. */}
+          forma de volver ni de saltar a otra sin salir de la pantalla. Es lo
+          que dibuja el handoff, que también pinta una columna fija con
+          grupos. Seis lugares y no las siete pestañas: "nueva" (el editor)
+          se quedó fuera a propósito — ver la nota de SECCIONES_CARTAS.
+          Mientras se edita, el índice no marca ninguna sección: estás en un
+          documento, no en un lugar, igual que redactar en Mail no ilumina
+          ningún buzón. */}
       {partido ? (
         <div className={`md-split md-cartas${tab !== "resumen" ? " md-abierto" : ""}`}>
           {loading ? (
