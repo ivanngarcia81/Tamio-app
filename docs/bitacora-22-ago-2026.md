@@ -171,7 +171,10 @@ en orden:
    comprobación ya casi se escapa dos veces; el `grep` la caza en un
    segundo). El estorbo real del cambio de rama fue un `package-lock.json`
    tocado por `npm install`, que se descarta con
-   `git checkout -- package-lock.json`.
+   `git checkout -- package-lock.json`. Resuelto eso, **la 1.1.9 subió a
+   TestFlight ese mismo día** — la primera versión con el rediseño del
+   iPad que llegó de verdad a los probadores (las 1.1.6, 1.1.7 y 1.1.8
+   murieron antes de archivar).
 
 ## 7. Lo que quedó anotado, no hecho
 
