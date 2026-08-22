@@ -10431,6 +10431,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    vez de quedar clavado en el ancho de un modelo concreto. */
 @media (min-width: 1000px) {
   :root.ipad .md-split.md-miembros .md-lista { width: 378px; flex-basis: 378px; }
+  /* Membresía (handoff 2): la lista más ancha del proyecto — lleva avatar,
+     dos líneas, porcentaje Y pastilla en cada fila. Es el 400 del diseño. */
+  :root.ipad .md-split.md-membresia .md-lista { width: 400px; flex-basis: 400px; }
   :root.ipad .md-split.md-depositos .md-lista { width: 378px; flex-basis: 378px; }
   :root.ipad .md-split.md-actas .md-lista { width: 358px; flex-basis: 358px; }
   :root.ipad .md-split.md-servicios .md-lista { width: 358px; flex-basis: 358px; }
@@ -14771,3 +14774,610 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Aviso dentro de un pie de sección: no es un error, es un descuadre entre el
    conteo y la lista. Naranja, no rojo. */
 :root.movil .ios-section-footer--aviso { display: block; margin-top: 6px; color: var(--warn, #b45309); }
+
+/* ============================================================
+   Membresía en iPad: el maestro-detalle del handoff 2 (22 ago 2026)
+   ------------------------------------------------------------
+   Lista de 400px con tres vistas y panel con las ocho tarjetas del padrón
+   + la ficha del miembro (DetalleMembresia) o la analítica de asistencia.
+   Todo con fichas de var(): los dos temas salen gratis. */
+
+/* ---- La cabecera de la lista ---- */
+:root.ipad .mb-lista-cab {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 0.5px solid var(--line);
+}
+:root.ipad .mb-segmentado {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--fill-2, rgba(118, 118, 128, 0.08));
+}
+:root.ipad .mb-seg-opcion {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+:root.ipad .mb-seg-opcion.activo {
+  background: var(--surface);
+  color: var(--ink, var(--text));
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+:root.ipad .mb-globo {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--neg);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+:root.ipad .mb-buscar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text-2);
+}
+:root.ipad .mb-buscar input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+}
+:root.ipad .mb-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* MenuAnchor envuelve su disparador en `.ios-bar-button`, que mide 44x44
+   fijos para los glifos de la barra. Aquí el disparador es un CHIP con
+   texto: sin esto, los dos chips desbordaban sus 44px y se encimaban. */
+:root.ipad .mb-controles .ios-bar-button { width: auto; height: auto; padding: 0; border-radius: 8px; }
+
+:root.ipad .mb-chip-mando {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+:root.ipad .mb-chip-mando.teñido {
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+}
+:root.ipad .mb-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--brand);
+}
+:root.ipad .mb-conteo {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* ---- Las filas ---- */
+:root.ipad .mb-filas {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+:root.ipad .mb-filas-vacio {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+}
+:root.ipad .mb-fila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 0 16px 0 13px;
+  border: 0;
+  border-bottom: 0.5px solid var(--line);
+  border-left: 3px solid transparent;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+:root.ipad .mb-fila.sel {
+  background: var(--brand-soft, rgba(16, 185, 129, 0.12));
+  border-left-color: var(--brand);
+}
+:root.ipad .mb-fila .mb-fila-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 18px;
+  font-size: 12.5px;
+}
+:root.ipad .mb-fila-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+:root.ipad .mb-fila-nombre {
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .mb-fila.sel .mb-fila-nombre { font-weight: 600; }
+:root.ipad .mb-fila-sub {
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .mb-fila-cola {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+:root.ipad .mb-fila-pct {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+:root.ipad .mb-fila-pct.bajo { color: var(--warn-text, #c2600e); }
+
+/* ---- El pie ---- */
+:root.ipad .mb-pie {
+  flex: 0 0 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-top: 0.5px solid var(--line);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+:root.ipad .mb-pie-nav { display: flex; gap: 6px; }
+:root.ipad .mb-pie-nav button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* ---- El panel ---- */
+:root.ipad .mb-dm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 24px 40px;
+}
+:root.ipad .mb-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
+  gap: 11px;
+}
+:root.ipad .mb-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 0;
+  border-top: 3px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+:root.ipad .mb-tarjeta.sel { outline: 2px solid var(--brand); }
+:root.ipad .mb-tarjeta-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .mb-tarjeta-valor {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ---- La ficha (DetalleMembresia) ---- */
+:root.ipad .mb-det { display: flex; flex-direction: column; gap: 18px; }
+:root.ipad .mb-cab { display: flex; align-items: flex-start; gap: 16px; }
+:root.ipad .mb-cab-avatar {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 36px;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+:root.ipad .mb-cab-textos { flex: 1; min-width: 0; }
+:root.ipad .mb-cab-nombre {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+:root.ipad .mb-cab-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+:root.ipad .mb-chip {
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+:root.ipad .mb-cab-acciones { display: flex; gap: 8px; flex: 0 0 auto; }
+
+:root.ipad .mb-alertas { display: flex; flex-direction: column; gap: 8px; }
+:root.ipad .mb-alerta {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+}
+:root.ipad .mb-alerta-punto {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 11px;
+  background: var(--warn-text, #c2600e);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+:root.ipad .mb-alerta-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+:root.ipad .mb-alerta-titulo { font-size: 14.5px; font-weight: 600; color: var(--warn-text, #c2600e); }
+:root.ipad .mb-alerta-detalle { font-size: 12.5px; color: var(--warn-text, #c2600e); opacity: 0.85; }
+:root.ipad .mb-alerta-revisar {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--warn-text, #c2600e);
+  cursor: pointer;
+}
+
+:root.ipad .mb-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+:root.ipad .mb-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+:root.ipad .mb-carta {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  min-width: 0;
+}
+:root.ipad .mb-carta-lisa { padding: 4px 0; }
+:root.ipad .mb-carta-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+:root.ipad .mb-carta-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+:root.ipad .mb-carta > .mb-carta-titulo { margin-bottom: 13px; }
+:root.ipad .mb-carta-cifra {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barras (ficha: % por mes · analítica: presentes por mes) */
+:root.ipad .mb-barras { display: flex; align-items: flex-end; gap: 7px; }
+:root.ipad .mb-barra-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+:root.ipad .mb-barra-hueco {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 4px 4px 0 0;
+  background: var(--fill-2, rgba(118, 118, 128, 0.08));
+  overflow: hidden;
+}
+:root.ipad .mb-barras.alta .mb-barra-hueco { height: 120px; border-radius: 5px 5px 0 0; }
+:root.ipad .mb-barra {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--brand);
+}
+:root.ipad .mb-barra-mes { font-size: 10px; color: var(--text-3); }
+:root.ipad .mb-barra-n {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+:root.ipad .mb-metricas {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--line);
+}
+:root.ipad .mb-metrica { display: flex; flex-direction: column; gap: 2px; }
+:root.ipad .mb-metrica > span { font-size: 11.5px; color: var(--text-2); }
+:root.ipad .mb-metrica > strong { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+:root.ipad .mb-dato {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  border-bottom: 0.5px solid var(--line);
+}
+:root.ipad .mb-carta-lisa .mb-dato:last-child,
+:root.ipad .mb-carta-lisa .mb-mini-fila:last-child { border-bottom: 0; }
+:root.ipad .mb-dato-k { width: 150px; flex: 0 0 150px; font-size: 15px; color: var(--text-2); }
+:root.ipad .mb-dato-v { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+
+:root.ipad .mb-exp-estado { font-size: 13px; font-weight: 600; color: var(--brand); }
+:root.ipad .mb-exp-estado.pendiente { color: var(--warn-text, #c2600e); }
+:root.ipad .mb-exp-lista { display: flex; flex-direction: column; gap: 9px; }
+:root.ipad .mb-exp-campo { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+:root.ipad .mb-exp-icono {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  border-radius: 10px;
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+:root.ipad .mb-exp-icono.falta { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
+:root.ipad .mb-exp-nombre { flex: 1; min-width: 0; color: var(--text); }
+:root.ipad .mb-exp-nombre.falta { color: var(--warn-text, #c2600e); }
+
+:root.ipad .mb-movs { display: flex; flex-direction: column; gap: 12px; }
+:root.ipad .mb-movs-vacio { font-size: 13px; color: var(--text-3); }
+/* Dentro de una tarjeta lisa (que no trae relleno propio), el vacío se
+   pega a los bordes; se le da el aire de una fila. */
+:root.ipad .mb-carta-lisa .mb-movs-vacio { display: block; padding: 15px 16px; }
+:root.ipad .mb-mov { display: flex; gap: 11px; font-size: 14px; }
+:root.ipad .mb-mov-punto {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 4px;
+  background: var(--line);
+  margin-top: 6px;
+}
+:root.ipad .mb-mov-punto.reciente { background: var(--brand); }
+:root.ipad .mb-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+:root.ipad .mb-mov-titulo { font-weight: 500; }
+:root.ipad .mb-mov-detalle { font-size: 12.5px; color: var(--text-3); }
+
+/* ---- La analítica (vista Asistencia) ---- */
+:root.ipad .mb-analitica { display: flex; flex-direction: column; gap: 16px; }
+:root.ipad .mb-anal-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+:root.ipad .mb-anal-rejilla.listas { align-items: start; }
+:root.ipad .mb-anal-lado { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+:root.ipad .mb-leyenda { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+:root.ipad .mb-leyenda > span { display: flex; align-items: center; gap: 5px; }
+:root.ipad .mb-ley-cuadro {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  display: inline-block;
+}
+:root.ipad .mb-ley-cuadro.lleno { background: var(--brand); }
+:root.ipad .mb-anillo-fila { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+:root.ipad .mb-anillo {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  border-radius: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+:root.ipad .mb-anillo-centro {
+  width: 68px;
+  height: 68px;
+  border-radius: 34px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+:root.ipad .mb-anillo-centro strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+:root.ipad .mb-anillo-centro span { font-size: 10px; color: var(--text-3); }
+:root.ipad .mb-anillo-datos { flex: 1; min-width: 110px; display: flex; flex-direction: column; gap: 9px; }
+:root.ipad .mb-anillo-datos > span { display: flex; flex-direction: column; gap: 1px; }
+:root.ipad .mb-anillo-datos > span > span { font-size: 11.5px; color: var(--text-2); }
+:root.ipad .mb-anillo-datos > span > strong { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.ipad .mb-tipos { display: flex; flex-direction: column; gap: 10px; }
+:root.ipad .mb-tipo { display: flex; flex-direction: column; gap: 4px; }
+:root.ipad .mb-tipo-cab { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+:root.ipad .mb-tipo-nombre {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .mb-tipo-cab strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.ipad .mb-tipo-pista {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  overflow: hidden;
+}
+:root.ipad .mb-tipo-barra { display: block; height: 8px; border-radius: 4px; background: var(--brand); }
+:root.ipad .mb-lista-rotulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+:root.ipad .mb-ver-seg {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--brand);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+:root.ipad .mb-mini-fila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 16px;
+  border-bottom: 0.5px solid var(--line);
+  font: inherit;
+  text-align: left;
+}
+:root.ipad .mb-mini-fila.boton { border-left: 0; border-right: 0; border-top: 0; background: transparent; cursor: pointer; }
+:root.ipad .mb-mini-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 15px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+:root.ipad .mb-mini-avatar.aviso { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
+:root.ipad .mb-mini-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.ipad .mb-mini-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .mb-mini-textos .mb-mini-nombre { flex: none; }
+:root.ipad .mb-mini-sub { font-size: 12px; color: var(--text-2); }
+:root.ipad .mb-mini-fila strong { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
+:root.ipad .mb-mini-fila strong.aviso { color: var(--warn-text, #c2600e); font-size: 13.5px; }

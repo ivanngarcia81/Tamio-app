@@ -277,6 +277,8 @@ await ctxSeed.close();
 // se quedaba colgado 30s en Cartas esperando una fila que ahí no existe.
 const PANTALLAS = [
   { ruta: "depositos", clase: "md-depositos", lista: 378, fila: ".md-fila" },
+  // Membresía (handoff 2): lista de 400 con filas propias (.mb-fila).
+  { ruta: "membresia", clase: "md-membresia", lista: 400, fila: ".mb-fila" },
   { ruta: "actas", clase: "md-actas", lista: 358, fila: ".md-fila" },
   { ruta: "servicios", clase: "md-servicios", lista: 358, fila: ".md-fila" },
   { ruta: "cartas", clase: "md-cartas", lista: 338, fila: ".md-indice-item" },
@@ -553,7 +555,7 @@ console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
   const DIR = process.env.CAPTURAS || "";
   for (const [w, h] of [[1366, 1024], [1024, 1366], [1210, 1614]]) {
     await pg.setViewportSize({ width: w, height: h });
-    for (const ruta of ["reporte-miembros", "inbox"]) {
+    for (const ruta of ["reporte-miembros", "inbox", "membresia"]) {
       await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
       await pg.waitForTimeout(600);
       const m = await pg.evaluate(() => {
@@ -578,6 +580,17 @@ console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
       chk(m.desbordaContenido !== true, `${ruta} ${w}×${h}: el contenido no se desborda (${m.desbordaContenido})`);
       chk(m.recortados.length === 0, `${ruta} ${w}×${h}: ningún mando bajo la barra (${m.recortados.join(", ") || "ok"})`);
       if (DIR) await pg.screenshot({ path: `${DIR}/${ruta}-${w}x${h}.png`, fullPage: false });
+      // Membresía además con ficha abierta y en la vista de asistencia: son
+      // los dos estados del panel y una captura sin ellos no enseña nada.
+      if (DIR && ruta === "membresia") {
+        await pg.click(".mb-fila").catch(() => {});
+        await pg.waitForTimeout(350);
+        await pg.screenshot({ path: `${DIR}/${ruta}-ficha-${w}x${h}.png`, fullPage: false });
+        await pg.click(".mb-seg-opcion:nth-child(2)").catch(() => {});
+        await pg.waitForTimeout(350);
+        await pg.screenshot({ path: `${DIR}/${ruta}-asistencia-${w}x${h}.png`, fullPage: false });
+        await pg.click(".mb-seg-opcion:nth-child(1)").catch(() => {});
+      }
     }
   }
   await ctxInf.close();

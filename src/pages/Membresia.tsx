@@ -1,14 +1,22 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
 import { MacBuscador } from "../components/mac/MacFiltros";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
-  membresiaStats, restoreMember,
-  type Church, type Member, type MembresiaStats,
+  listServiciosLigero, listTrasladosEntrada, membresiaStats, restoreMember,
+  type AsistenciaLigera, type Church, type Member, type MembresiaStats,
+  type ServicioLigero, type TrasladoEntrada,
 } from "../db";
-import { asistenciaPorMiembro, periodoDeAnio, type AsistenciaMiembro } from "../services/informes/membresia";
+import {
+  asistenciaPorMiembro, camposFaltantes, enPeriodo, esNuevoEnPeriodo, estadoEfectivo,
+  periodoDeAnio, resumenAsistencia, resumenMembresia, type AsistenciaMiembro,
+} from "../services/informes/membresia";
+import { cargarUmbrales, UMBRALES_DEFAULT, type Umbrales } from "../services/informes/umbrales";
+import DetalleMembresia from "../components/DetalleMembresia";
+import SeguimientoModal from "../components/SeguimientoModal";
+import { MenuAnchor } from "../components/MenuAnchor";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -21,7 +29,7 @@ import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
-import { IconArrowDown, IconArrowUp, IconEdit, IconEye, IconIdBadge, IconMiembros, IconPlus, IconSearch } from "../icons";
+import { IconArrowDown, IconArrowUp, IconChevronLeft, IconEdit, IconEye, IconIdBadge, IconMiembros, IconPlus, IconSearch } from "../icons";
 import CountUp from "../components/CountUp";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
@@ -209,7 +217,26 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   useAbrirCrearDesdeMas(() => setCrearFicha(true));
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const anio = currentYear();
+  /* Era `const`: el maestro-detalle del handoff 2 trae selector de periodo,
+     así que el año pasa a ser estado. El efecto de carga ya dependía de él. */
+  const [anio, setAnio] = useState(currentYear());
+
+  /* ---- Estado del maestro-detalle (handoff 2, solo iPad partido) ---- */
+  type VistaMb = "miembros" | "asistencia" | "seguimiento";
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const partido = enIPad && anchoPartido;
+  const [vistaMb, setVistaMb] = useState<VistaMb>("miembros");
+  /* El detalle es un ID que se re-busca, no una copia congelada. */
+  const [selId, setSelId] = useState<number | null>(null);
+  const [tarjeta, setTarjeta] = useState<string>("todos");
+  const [segDe, setSegDe] = useState<Member | null>(null);
+  const [menuAnio, setMenuAnio] = useState(false);
+  const [menuFiltros, setMenuFiltros] = useState(false);
+  const [asisFilas, setAsisFilas] = useState<AsistenciaLigera[]>([]);
+  const [serviciosLig, setServiciosLig] = useState<ServicioLigero[]>([]);
+  const [trasladosE, setTrasladosE] = useState<TrasladoEntrada[]>([]);
+  const [umbrales, setUmbrales] = useState<Umbrales>(UMBRALES_DEFAULT);
+  const refFilas = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -220,12 +247,17 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
       listMembersRegistro(church.id),
       membresiaStats(church.id, anio),
       enIPad ? listAsistenciaLigera(church.id, periodo.desde, periodo.hasta) : Promise.resolve([]),
+      enIPad ? listServiciosLigero(church.id, periodo.desde, periodo.hasta) : Promise.resolve([]),
+      enIPad ? listTrasladosEntrada(church.id) : Promise.resolve([]),
     ])
-      .then(([nuevosMembers, nuevosStats, filas]) => {
+      .then(([nuevosMembers, nuevosStats, filas, servicios, te]) => {
         if (cancelado) return;
         setMembers(nuevosMembers);
         setStats(nuevosStats);
         setAsistencia(enIPad ? asistenciaPorMiembro(filas) : null);
+        setAsisFilas(filas);
+        setServiciosLig(servicios);
+        setTrasladosE(te);
       })
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
@@ -281,6 +313,150 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
      lista que tienes delante. */
   useBarraEstado(t("barraEstado.membresia", { count: visibles.length }));
 
+  /* ---- Derivados del maestro-detalle (todos de datos ya cargados) ---- */
+  useEffect(() => {
+    if (!enIPad) return;
+    let cancelado = false;
+    cargarUmbrales(church.id).then((u) => { if (!cancelado) setUmbrales(u); }).catch(console.error);
+    return () => { cancelado = true; };
+  }, [church.id, enIPad]);
+
+  const periodoObj = useMemo(() => periodoDeAnio(Number(anio)), [anio]);
+
+  /* Recibidos por traslado en el periodo: el MISMO criterio del resumen del
+     informe (traslado de entrada completado con recepción en el periodo),
+     para que la tarjeta y su filtro digan lo mismo. */
+  const recibidosSet = useMemo(() => {
+    const set = new Set<number>();
+    for (const te of trasladosE) {
+      if (te.estado === "completado" && te.member_id != null &&
+          enPeriodo(te.fecha_recepcion ?? te.creado_en.slice(0, 10), periodoObj)) set.add(te.member_id);
+    }
+    return set;
+  }, [trasladosE, periodoObj]);
+
+  /* Las alertas de un miembro: las dos computables hoy. La MISMA regla que
+     pinta DetalleMembresia, escrita una sola vez para lista, globo y modal. */
+  const alertasDe = useMemo(() => (m: Member): string[] => {
+    const out: string[] = [];
+    const a = asistencia?.get(m.id);
+    if (estadoEfectivo(m) === "activo" && a && a.racha >= umbrales.rachaServicios) {
+      out.push(t("membresia.alertaRacha", { n: a.racha }));
+    }
+    const fechaNuevo = m.fecha_ingreso ?? m.fecha_congregacion;
+    if (fechaNuevo && enPeriodo(fechaNuevo, periodoObj) && !m.seguimiento_revisado_en) {
+      out.push(t("membresia.alertaNuevo"));
+    }
+    return out;
+  }, [asistencia, umbrales, periodoObj, t]);
+
+  const conAlertas = useMemo(
+    () => (partido ? members.filter((m) => alertasDe(m).length > 0) : []),
+    [partido, members, alertasDe]
+  );
+
+  const resumen = useMemo(
+    () => (partido && asistencia
+      ? resumenMembresia(members, periodoObj, [], trasladosE, asistencia, umbrales)
+      : null),
+    [partido, members, periodoObj, trasladosE, asistencia, umbrales]
+  );
+
+  /* Las ocho tarjetas del handoff, con su predicado de filtro. Los colores
+     son los del prototipo; los números, los del servicio del informe. */
+  const tarjetas = useMemo(() => {
+    if (!resumen) return [];
+    const nuevoEn = (m: Member) => esNuevoEnPeriodo(m, periodoObj, umbrales);
+    const def: { id: string; label: string; valor: number; color: string; pred: (m: Member) => boolean }[] = [
+      { id: "todos", label: t("membresia.tarj.total"), valor: resumen.total, color: "var(--text-3)", pred: () => true },
+      { id: "activos", label: t("membresia.tarj.activos"), valor: resumen.activos, color: "var(--brand)", pred: (m) => estadoEfectivo(m) === "activo" },
+      { id: "inactivos", label: t("membresia.tarj.inactivos"), valor: resumen.inactivos, color: "#f97316", pred: (m) => estadoEfectivo(m) === "inactivo" },
+      { id: "nuevos", label: t("membresia.tarj.nuevos"), valor: resumen.nuevosEnPeriodo, color: "#7c3aed", pred: nuevoEn },
+      { id: "recibidos", label: t("membresia.tarj.recibidos"), valor: resumen.recibidosPorTraslado, color: "#06b6d4", pred: (m) => recibidosSet.has(m.id) },
+      { id: "trasladados", label: t("membresia.tarj.trasladados"), valor: resumen.trasladados, color: "#b45309", pred: (m) => m.activo === 0 && m.motivo_baja === "traslado" && enPeriodo(m.fecha_baja, periodoObj) },
+      { id: "frecuentes", label: t("membresia.tarj.ausencias"), valor: resumen.ausenciasFrecuentes, color: "var(--neg)", pred: (m) => { const a = asistencia?.get(m.id); return estadoEfectivo(m) === "activo" && !!a && a.racha >= umbrales.rachaServicios; } },
+      { id: "incompletos", label: t("membresia.tarj.incompletos"), valor: resumen.incompletos, color: "#4338ca", pred: (m) => camposFaltantes(m).length > 0 },
+    ];
+    return def;
+  }, [resumen, periodoObj, umbrales, recibidosSet, asistencia, t]);
+
+  /* La lista del maestro: la vista decide el universo, la tarjeta recorta,
+     y el filtro alta/baja solo aplica cuando no hay tarjeta puesta (las
+     tarjetas de bajas — Trasladados — no tendrían sentido bajo "De alta"). */
+  const filasSplit = useMemo(() => {
+    if (!partido) return [];
+    let base = vistaMb === "seguimiento" ? conAlertas : members;
+    const tj = tarjetas.find((c) => c.id === tarjeta);
+    if (tj && tarjeta !== "todos") base = base.filter(tj.pred);
+    else if (vistaMb !== "seguimiento") base = base.filter((m) => (filtro === "todos" ? true : filtro === "activos" ? m.activo === 1 : m.activo === 0));
+    if (q) {
+      base = base.filter((m) => m.nombre.toLowerCase().includes(q) ||
+        (m.email ?? "").toLowerCase().includes(q) || (m.telefono ?? "").toLowerCase().includes(q));
+    }
+    return base;
+  }, [partido, vistaMb, conAlertas, members, tarjetas, tarjeta, filtro, q]);
+
+  const selMiembro = useMemo(
+    () => (selId == null ? null : filasSplit.find((m) => m.id === selId) ?? members.find((m) => m.id === selId) ?? null),
+    [selId, filasSplit, members]
+  );
+
+  /* Los años que vale la pena ofrecer: los que aparecen en el padrón. */
+  const aniosDisponibles = useMemo(() => {
+    const set = new Set<string>([currentYear()]);
+    for (const m of members) for (const fch of [m.fecha_ingreso, m.fecha_congregacion, m.fecha_baja]) {
+      if (fch) set.add(fch.slice(0, 4));
+    }
+    return [...set].sort().reverse().slice(0, 8);
+  }, [members]);
+
+  /* ---- Analítica de la vista Asistencia (todo de asisFilas/servicios) ---- */
+  const anal = useMemo(() => {
+    if (!partido || vistaMb !== "asistencia") return null;
+    const res = resumenAsistencia(serviciosLig, asisFilas);
+    const porMes = new Map<string, { pres: number; roster: number }>();
+    const porServicio = new Map<number, number>();
+    for (const fila of asisFilas) {
+      const mes = fila.fecha.slice(0, 7);
+      const e = porMes.get(mes) ?? { pres: 0, roster: 0 };
+      e.roster += 1;
+      if (fila.presente === 1) { e.pres += 1; porServicio.set(fila.servicio_id, (porServicio.get(fila.servicio_id) ?? 0) + 1); }
+      porMes.set(mes, e);
+    }
+    const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const barras = [...porMes.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).slice(-8)
+      .map(([mes, v2]) => ({ mes: MESES[Number(mes.slice(5, 7)) - 1] ?? mes, n: v2.pres, h: v2.roster ? Math.max(4, Math.round((v2.pres / v2.roster) * 100)) : 4 }));
+    let mejor: { fecha: string; n: number } | null = null;
+    const tipoAg = new Map<string, { pres: number; servicios: number }>();
+    for (const sv of serviciosLig) {
+      const pres = porServicio.get(sv.id) ?? 0;
+      if (!mejor || pres > mejor.n) mejor = { fecha: sv.fecha, n: pres };
+      const e = tipoAg.get(sv.tipo) ?? { pres: 0, servicios: 0 };
+      e.pres += pres; e.servicios += 1; tipoAg.set(sv.tipo, e);
+    }
+    const tipos = [...tipoAg.entries()]
+      .map(([tipo, v2]) => ({ tipo, prom: v2.servicios ? Math.round(v2.pres / v2.servicios) : 0 }))
+      .sort((a, b) => b.prom - a.prom);
+    const maxProm = Math.max(1, ...tipos.map((x) => x.prom));
+    const mejores = (asistencia ? [...asistencia.entries()] : [])
+      .filter(([, a]) => a.pct != null && a.enRoster >= 2)
+      .sort(([, a], [, b]) => (b.pct ?? 0) - (a.pct ?? 0))
+      .slice(0, umbrales.topAsistencia)
+      .map(([id, a]) => ({ m: members.find((x) => x.id === id), a }))
+      .filter((x): x is { m: Member; a: AsistenciaMiembro } => !!x.m);
+    const ausentes = members
+      .map((m) => ({ m, a: asistencia?.get(m.id) }))
+      .filter((x): x is { m: Member; a: AsistenciaMiembro } => x.m.activo === 1 && !!x.a && x.a.racha > 0)
+      .sort((a, b) => b.a.racha - a.a.racha)
+      .slice(0, 5);
+    return { res, barras, mejor, tipos, maxProm, mejores, ausentes };
+  }, [partido, vistaMb, serviciosLig, asisFilas, asistencia, members, umbrales]);
+
+  function paginaLista(dir: number) {
+    const el = refFilas.current;
+    if (el) el.scrollBy({ top: dir * el.clientHeight * 0.9, behavior: "smooth" });
+  }
+
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
@@ -300,6 +476,265 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
         </div>
       </div>
 
+      {partido ? (
+        /* ---- Maestro-detalle del handoff 2 (22 ago 2026) ----
+           Lista de 400px con TRES vistas (Miembros / Asistencia / Seguimiento)
+           y el panel a la derecha: las ocho tarjetas del padrón arriba —que
+           además FILTRAN la lista— y debajo la ficha del miembro elegido, o
+           la analítica de asistencia, según la vista. Mac y iPhone no pasan
+           por aquí: conservan su página de siempre, más abajo. */
+        loading ? (
+          <LoadingState />
+        ) : (
+          <div className={`md-split md-membresia${selId != null || vistaMb === "asistencia" ? " md-abierto" : ""}`}>
+            <div className="md-lista mb-lista">
+              <div className="mb-lista-cab">
+                <div className="mb-segmentado" role="tablist">
+                  {(["miembros", "asistencia", "seguimiento"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      role="tab"
+                      aria-selected={vistaMb === v}
+                      className={`mb-seg-opcion${vistaMb === v ? " activo" : ""}`}
+                      onClick={() => { setVistaMb(v); if (v === "asistencia") setSelId(null); }}
+                    >
+                      {t(`membresia.vista.${v}`)}
+                      {v === "seguimiento" && conAlertas.length > 0 && <span className="mb-globo">{conAlertas.length}</span>}
+                    </button>
+                  ))}
+                </div>
+                <label className="mb-buscar">
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input
+                    value={query}
+                    placeholder={t("membresia.buscarPlaceholder")}
+                    onChange={(e) => setQuery(e.target.value)}
+                    aria-label={t("miembros.buscarPlaceholder")}
+                  />
+                </label>
+                <div className="mb-controles">
+                  <MenuAnchor
+                    open={menuAnio}
+                    onOpenChange={setMenuAnio}
+                    ariaLabel={t("membresia.periodoAria")}
+                    button={<span className="mb-chip-mando teñido">{t("membresia.chipAnio", { anio })}</span>}
+                    items={aniosDisponibles.map((a) => ({ label: a, onPress: () => setAnio(a) }))}
+                  />
+                  <MenuAnchor
+                    open={menuFiltros}
+                    onOpenChange={setMenuFiltros}
+                    ariaLabel={t("membresia.masFiltros")}
+                    button={
+                      <span className="mb-chip-mando">
+                        {t("membresia.masFiltros")}
+                        {filtro !== "todos" && <span className="mb-punto" />}
+                      </span>
+                    }
+                    items={(["activos", "bajas", "todos"] as Filtro[]).map((fl) => ({
+                      label: t(`membresia.filtro.${fl}`),
+                      onPress: () => setFiltro(fl),
+                    }))}
+                  />
+                  <span className="mb-conteo">{t("membresia.conteoLista", { visibles: filasSplit.length, total: members.length })}</span>
+                </div>
+              </div>
+
+              <div className="mb-filas" ref={refFilas}>
+                {filasSplit.length === 0 ? (
+                  <div className="mb-filas-vacio">{t("membresia.sinResultados")}</div>
+                ) : (
+                  filasSplit.map((m, i) => {
+                    const a = asistencia?.get(m.id);
+                    const alertasM = vistaMb === "seguimiento" ? alertasDe(m) : [];
+                    const esNuevo = esNuevoEnPeriodo(m, periodoObj, umbrales);
+                    const tag = m.activo === 0
+                      ? (m.motivo_baja === "traslado" ? t("membresia.tag.traslado") : t("membresia.tag.baja"))
+                      : esNuevo ? t("membresia.tag.nuevo") : t(`membresia.estado.${estadoEfectivo(m)}`, { defaultValue: "—" });
+                    const tagClase = m.activo === 0 ? (m.motivo_baja === "traslado" ? "administracion" : "baja")
+                      : esNuevo ? "donacion" : estadoEfectivo(m) === "activo" ? "activo" : "baja";
+                    const sub = vistaMb === "seguimiento"
+                      ? alertasM.join(" · ")
+                      : [
+                          m.fecha_ingreso ? t("membresia.chipIngreso", { anio: m.fecha_ingreso.slice(0, 4) }) : null,
+                          ministeriosDe(t, m.ministerios) || null,
+                        ].filter(Boolean).join(" · ") || (m.email ?? t("miembros.sinCorreoRegistrado"));
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className={`mb-fila${selId === m.id ? " sel" : ""}`}
+                        onClick={() => { setSelId(m.id); if (vistaMb === "asistencia") setVistaMb("miembros"); }}
+                      >
+                        <span className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]} mb-fila-avatar`}>
+                          {initials(m.nombre)}
+                        </span>
+                        <span className="mb-fila-textos">
+                          <span className="mb-fila-nombre">{m.nombre}</span>
+                          <span className="mb-fila-sub">{sub}</span>
+                        </span>
+                        <span className="mb-fila-cola">
+                          <span className={`mb-fila-pct${a && a.pct != null && a.pct < 70 ? " bajo" : ""}`}>
+                            {a?.pct != null ? `${a.pct}%` : "—"}
+                          </span>
+                          <span className={`tag ${tagClase}`}>{tag}</span>
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mb-pie">
+                <span>{t("membresia.pieTotal", { count: members.length })}</span>
+                <span className="mb-pie-nav">
+                  <button type="button" aria-label={t("paginacion.anterior")} onClick={() => paginaLista(-1)}>‹</button>
+                  <button type="button" aria-label={t("paginacion.siguiente")} onClick={() => paginaLista(1)}>›</button>
+                </span>
+              </div>
+            </div>
+
+            <div className="md-detalle">
+              <div className="dm mb-dm">
+                <button type="button" className="dm-volver" onClick={() => { setSelId(null); setVistaMb("miembros"); }}>
+                  <IconChevronLeft size={17} strokeWidth={2.4} /> {t("secretaria.membresia.titulo")}
+                </button>
+
+                <div className="mb-tarjetas">
+                  {tarjetas.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={`mb-tarjeta${tarjeta === c.id && c.id !== "todos" ? " sel" : ""}`}
+                      style={{ borderTopColor: c.color }}
+                      onClick={() => setTarjeta(tarjeta === c.id ? "todos" : c.id)}
+                    >
+                      <span className="mb-tarjeta-label">{c.label}</span>
+                      <span className="mb-tarjeta-valor">{c.valor}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {vistaMb === "asistencia" && anal ? (
+                  <div className="mb-analitica">
+                    <div className="mb-anal-rejilla">
+                      <section className="mb-carta">
+                        <div className="mb-carta-cab">
+                          <h3 className="mb-carta-titulo">{t("membresia.analPorServicio")}</h3>
+                          <span className="mb-leyenda">
+                            <span><i className="mb-ley-cuadro lleno" />{t("membresia.presentes")}</span>
+                            <span><i className="mb-ley-cuadro" />{t("membresia.enRoster")}</span>
+                          </span>
+                        </div>
+                        {anal.barras.length === 0 ? (
+                          <p className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</p>
+                        ) : (
+                          <div className="mb-barras alta">
+                            {anal.barras.map((b) => (
+                              <span key={b.mes} className="mb-barra-col">
+                                <span className="mb-barra-n">{b.n}</span>
+                                <span className="mb-barra-hueco"><span className="mb-barra" style={{ height: `${b.h}%` }} /></span>
+                                <span className="mb-barra-mes">{b.mes}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </section>
+                      <div className="mb-anal-lado">
+                        <section className="mb-carta">
+                          <h3 className="mb-carta-titulo">{t("membresia.analPromedio")}</h3>
+                          <div className="mb-anillo-fila">
+                            <span
+                              className="mb-anillo"
+                              style={{ background: `conic-gradient(var(--brand) 0 ${anal.res.pctGeneral ?? 0}%, var(--line) ${anal.res.pctGeneral ?? 0}% 100%)` }}
+                            >
+                              <span className="mb-anillo-centro">
+                                <strong>{anal.res.pctGeneral != null ? `${anal.res.pctGeneral}%` : "—"}</strong>
+                                <span>{t("membresia.delRoster")}</span>
+                              </span>
+                            </span>
+                            <span className="mb-anillo-datos">
+                              <span><span>{t("membresia.analServicios")}</span><strong>{anal.res.totalServicios}</strong></span>
+                              <span><span>{t("membresia.analPromPresentes")}</span><strong>{anal.res.promedioPorServicio}</strong></span>
+                              <span><span>{t("membresia.analMejor")}</span><strong>{anal.mejor ? `${anal.mejor.n} · ${fmtFechaCorta(anal.mejor.fecha)}` : "—"}</strong></span>
+                            </span>
+                          </div>
+                        </section>
+                        <section className="mb-carta">
+                          <h3 className="mb-carta-titulo">{t("membresia.analPorTipo")}</h3>
+                          <div className="mb-tipos">
+                            {anal.tipos.length === 0 && <span className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</span>}
+                            {anal.tipos.map((tp) => (
+                              <span key={tp.tipo} className="mb-tipo">
+                                <span className="mb-tipo-cab">
+                                  <span className="mb-tipo-nombre">{t(`servicios.tipo.${tp.tipo}`, { defaultValue: tp.tipo })}</span>
+                                  <strong>{t("membresia.enPromedio", { n: tp.prom })}</strong>
+                                </span>
+                                <span className="mb-tipo-pista"><span className="mb-tipo-barra" style={{ width: `${Math.round((tp.prom / anal.maxProm) * 100)}%` }} /></span>
+                              </span>
+                            ))}
+                          </div>
+                        </section>
+                      </div>
+                    </div>
+                    <div className="mb-anal-rejilla listas">
+                      <div>
+                        <div className="mb-lista-rotulo">{t("membresia.analConstantes")}</div>
+                        <div className="mb-carta mb-carta-lisa">
+                          {anal.mejores.length === 0 && <span className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</span>}
+                          {anal.mejores.map(({ m, a }) => (
+                            <span key={m.id} className="mb-mini-fila">
+                              <span className="mb-mini-avatar">{initials(m.nombre)}</span>
+                              <span className="mb-mini-nombre">{m.nombre}</span>
+                              <strong>{a.pct}%</strong>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-lista-rotulo">
+                          {t("membresia.analAusentes")}
+                          <button type="button" className="mb-ver-seg" onClick={() => setVistaMb("seguimiento")}>{t("membresia.verSeguimiento")}</button>
+                        </div>
+                        <div className="mb-carta mb-carta-lisa">
+                          {anal.ausentes.length === 0 && <span className="mb-movs-vacio">{t("membresia.sinAusentes")}</span>}
+                          {anal.ausentes.map(({ m, a }) => (
+                            <button key={m.id} type="button" className="mb-mini-fila boton" onClick={() => { setVistaMb("miembros"); setSelId(m.id); }}>
+                              <span className="mb-mini-avatar aviso">{initials(m.nombre)}</span>
+                              <span className="mb-mini-textos">
+                                <span className="mb-mini-nombre">{m.nombre}</span>
+                                <span className="mb-mini-sub">{a.ultimaAsistencia ? t("membresia.ultimaVisitaEl", { fecha: fmtFechaCorta(a.ultimaAsistencia) }) : t("membresia.sinVisitas")}</span>
+                              </span>
+                              <strong className="aviso">{t("membresia.rachaServicios", { count: a.racha })}</strong>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : selMiembro ? (
+                  <DetalleMembresia
+                    member={selMiembro}
+                    asis={asistencia?.get(selMiembro.id)}
+                    filasAsis={asisFilas.filter((fla) => fla.member_id === selMiembro.id)}
+                    periodo={periodoObj}
+                    umbralRacha={umbrales.rachaServicios}
+                    onEditar={(mm) => setFicha(mm)}
+                    onSeguimiento={(mm) => setSegDe(mm)}
+                  />
+                ) : (
+                  <div className="md-vacio">
+                    <div className="md-vacio-hint">
+                      <h3>{t("membresia.eligeMiembro")}</h3>
+                      <p>{t("membresia.eligeMiembroSub")}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      ) : (
       <div className="content">
         {enIPhone ? (
           <div className="ios-panel">
@@ -577,6 +1012,18 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
         )}
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+      )}
+
+      {segDe && (
+        <SeguimientoModal
+          church={church}
+          member={segDe}
+          alertas={alertasDe(segDe)}
+          onClose={() => setSegDe(null)}
+          onSaved={onChanged}
+          onVerPerfil={() => { const m = segDe; setSegDe(null); setFicha(m); }}
+        />
+      )}
 
       {fusionando && (
         <FusionarMiembroModal
