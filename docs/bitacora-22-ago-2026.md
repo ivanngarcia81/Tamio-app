@@ -184,3 +184,8 @@ en orden:
   escalado de Cartas.
 - **Face ID / Touch ID** y el plan de **Plaid**, como ayer.
 - **Capturas del App Store** del iPad: siguen enseñando el diseño viejo.
+- **Publicar.** La 1.1.9 está en TestFlight para PROBAR, no para salir: el
+  rediseño sigue en trabajo y lo que digan los iPads reales entra en las
+  siguientes versiones. Ninguna versión de este repo se ha enviado todavía a
+  revisión del App Store — ver "TestFlight no es publicar" en
+  `docs/testflight.md`.

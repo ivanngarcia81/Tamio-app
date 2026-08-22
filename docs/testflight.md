@@ -78,7 +78,7 @@ en las tres fuentes:
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
 | 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
-| 22 ago | **1.1.9** — el rediseño completo: las diez pantallas, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight |
+| 22 ago | **1.1.9** — el rediseño completo: las diez pantallas, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight. **En pruebas, NO candidata a publicación** |
 | la siguiente | 1.1.10 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
@@ -90,6 +90,29 @@ vuelve a compilar.
 > Se puede fijar un número de compilación aparte editándolo en Xcode antes de
 > archivar, pero entonces deja de estar en el repo y se olvida. Subir la
 > versión es una línea en tres archivos y no tiene forma de fallar.
+
+## TestFlight no es publicar
+
+Son dos puertas distintas, y todas las versiones de la tabla de arriba han
+cruzado solo la primera:
+
+- **Subir a TestFlight** es lo que hacen `npm run ios:appstore` y el
+  Organizer: la build queda instalable por ti y por los probadores que
+  invites, y nada más.
+- **Publicar en el App Store** es otra cosa: crear la versión en App Store
+  Connect, adjuntarle una build y **enviarla a revisión**, con sus
+  metadatos, su "qué hay de nuevo" y sus capturas.
+
+Estar en TestFlight no envía nada a revisión. Se sube ahí para probar, y
+probar es lo que se está haciendo.
+
+**La 1.1.9 no es candidata a publicación.** Está en TestFlight para ver el
+rediseño de iPad en aparatos reales —el material translúcido, la hoja carta
+escalada, las hojas de formulario al dedo, todo lo que Chromium no puede
+juzgar— y **el diseño sigue en trabajo**: lo que salga de esas pruebas entra
+en las versiones siguientes. Cuando de verdad toque publicar, además hay que
+rehacer las **capturas del App Store del iPad**, que siguen enseñando el
+diseño viejo y ya no representan la app.
 
 ## La orden
 
