@@ -172,7 +172,9 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    | Cartas y traslados | 338px | **falta** |
    | Agenda y calendario | 318px | **falta** |
 
-   Solo Inicio y Membresía son de una columna en el diseño.
+   Solo Inicio y Membresía son de una columna en el diseño. **Membresía
+   quedó hecha el 22 de agosto** (§9); Inicio ya lo estaba salvo su barra,
+   que también se arregló ese día.
 
    El error vino acompañado de un argumento inventado —"Reportes y Agenda no
    son listas, no ganan nada partiéndose"— cuando el handoff las parte las
@@ -309,3 +311,179 @@ cuatro primeras filas fallaban y nadie lo vio hasta probarlo en el aparato:
 | `movil ipad` | 507×1194 | Split View ½ en 11" — compacto |
 | `movil ipad` | 678×1024 | Split View ½ en 13" — compacto |
 | `movil ipad` | 320×1194 | Slide Over — compacto |
+
+
+---
+
+## 6. El 22 de agosto: el iPad EN VERTICAL
+
+Iván lo dijo mirando su aparato: *"los diseños de portrait mode no salió"*.
+Y era literal.
+
+### 6.1 Por dos píxeles
+
+El rediseño entra a partir de 700px (§1), pero el bloque del cajón lateral
+—`@media (min-width: 601px) and (max-width: 1023px)`, escrito mirando un
+teléfono— seguía alcanzando a los **tres iPads que en vertical miden menos
+de 1024**: el mini (744), el 10.9" (820) y el 11" (834). Solo el Pro de 13"
+(1024) se libraba.
+
+Es el error de §4.1 de la bitácora del 21 de agosto **a medio arreglar**:
+se corrigió el umbral de ENTRADA y no se miró qué seguía entrando por la
+puerta de al lado. Medido a 1023 contra 1024 con la misma página:
+
+| Qué | a 1023 (todo iPad chico en vertical) | a 1024 |
+|---|---|---|
+| Filas del sidebar | 40px | 44px |
+| `.dash-canvas` | sin fondo, sin radio, sin relleno | tarjeta de 14 |
+| `.summary-4` | 2 columnas, cifra de 20px | 3–4 columnas, cifra de 24 |
+| `.data-table` de Membresía | 3 columnas (sin Contacto ni Alta) | 5 columnas |
+| Filas de Inicio | sin método, sin aportante, sin hora | completas |
+| `.report-preview` | apilada, sin cabecera de tabla | entera |
+
+**La guarda es `:where(:root:not(.ipad-ancho))`** sobre las 143 reglas del
+bloque, con `.ipad-ancho` puesta desde `main.tsx` cuando el aparato es iPad
+Y mide 700px o más. Dos decisiones que conviene no deshacer:
+
+- **`:where()` no suma especificidad.** Cada regla del bloque pesa
+  exactamente lo que pesaba, así que su orden con el resto del archivo no se
+  mueve: lo único que cambia es a QUIÉN alcanza. Sin eso, prefijar 143
+  reglas es un cambio de riesgo alto.
+- **`.ipad-ancho` lleva listener de `matchMedia`.** Este valor cambia al
+  girar el aparato y al repartir la pantalla, al revés que `.ipad`,
+  `.iphone` y `.mac`, que se resuelven una vez y no vuelven a cambiar.
+
+El Split View y el Slide Over **sí** siguen entrando al bloque: ahí el ancho
+es compacto de verdad y esa franja es justo lo que corresponde.
+
+### 6.2 La tira de cifras
+
+Tres reglas se repartían el reparto de `.summary-4/5/8` y ninguna era del
+iPad: la base (`auto-fit, minmax(240px, 1fr)`), un `@media (max-width:
+860px)` genérico, y un `gridTemplateColumns` en el marcado de cinco páginas.
+Girar el aparato costaba media pantalla de tarjetas antes de ver un dato:
+
+| Pantalla | vertical | horizontal |
+|---|---|---|
+| Depósitos | 288px | 136px |
+| Servicios | 228px | 106px |
+| Agenda | 228px | 106px |
+| Aportantes | 200px | 92px |
+| Informes de membresía | 401px | 192px |
+
+Con 150px de vía mínima entran en una fila en los ocho tamaños. **Solo para
+tarjetas que son etiqueta y número**: las de Inicio llevan dentro barra de
+proporción, desglose de dos columnas, segmentado o pastilla de categoría, y
+a 160px de ancho eso no se lee. La frontera se escribe sobre lo que la
+tarjeta CONTIENE (`:not(:has(…))`), no sobre en qué página vive — así una
+tarjeta nueva cae del lado correcto sola. Y el panel de detalle se queda con
+sus dos columnas: es una columna angosta DENTRO de la pantalla, no la
+pantalla.
+
+### 6.3 La barra se aplastaba
+
+`.main` es flex en columna y `.header` es uno de sus hijos. `min-height:
+56px` en un hijo de un flex **sustituye al mínimo automático de contenido**:
+en vez de garantizar 56, permitía bajar HASTA 56 con lo que hubiera dentro.
+
+Inicio lo enseñaba: su cabecera no era un título sino el saldo del mes —87px
+de saludo, cifra de 40 y pie— dentro de una caja de 56, con la cifra partida
+por la línea de la barra. En los ocho tamaños y en las dos orientaciones.
+`flex: 0 0 auto` lo arregla y devuelve lo que el `min-height` quería: que la
+barra pueda CRECER (Reportes en vertical pasa a 101px en vez de recortar sus
+acciones).
+
+Con la barra sana, Inicio se pone en línea con el handoff: "Inicio" +
+"Resumen de agosto 2026", como las otras quince. El saldo no se pierde: vive
+en la tarjeta consolidada, que es donde el diseño lo pone.
+
+---
+
+## 7. Las ocho hojas de alta
+
+§1 dejó escrito el porqué y no lo cerró: *"las otras 148 [clases de iOS]
+siguen en `:root.iphone` y el iPad no las alcanza, porque sus componentes
+siguen detrás de `esIPhone()`"*. De "Nuevo ingreso/gasto" en adelante,
+ninguna otra alta cruzó — y el handoff maqueta Servicios, Cartas, Agenda,
+Actas, Miembro, Depósito, Solicitud y los dos Traslados como hojas.
+
+Ocho puertas del mismo tamaño: `esIPhone()` → `esMovil()` en `ActaModal`,
+`ActividadModal`, `DepositoModal`, `ServicioModal`, `SolicitudModal`,
+`TrasladoEntradaModal`, `TrasladoSalidaModal` y el **alta** de
+`FichaMiembroModal` (la edición no: ahí la ficha completa es justo lo que se
+viene a ver).
+
+**Las reglas que faltaban no se movieron a ojo.** Se sacó la lista de clases
+que monta de verdad cada hoja siguiendo sus imports, se cruzó con los 275
+selectores `:root.iphone` del archivo, y salieron 24 reglas de 13 clases que
+son EXCLUSIVAS de las hojas: `.ios-cuenta`, `.ios-total`, `.dia-chip`,
+`.sol-tipo`, `.ios-field--pos`, `.ios-miembro*`, `.ios-check`,
+`.ios-ia-campo`, los dos pies de sección y el z-index del `ConfirmDialog`
+(que abierto DESDE una hoja tiene que quedar por encima de ella). Las demás
+se quedan donde están: son de la bienvenida, de Ayuda, del carrusel o de
+Ajustes del teléfono, y ahí el iPad no entra.
+
+**Cómo se comprobó**, y es el método a repetir: se abre cada hoja a 820×1180
+con clase de iPhone y con clase de iPad y se comparan los estilos calculados
+de cada clase. Antes salían tres desajustes reales; ahora la única
+diferencia que queda es la que debe quedar — 16px de radio en vez de 12, el
+tirador de arrastre apagado y las esquinas del formSheet.
+
+> **Un agujero que esto destapó:** Cartas y traslados no tenía NINGUNA forma
+> de crear en un iPad. Su menú de alta (`.cartas-menu-crear`) se escondía
+> bajo `:root.movil` porque en el teléfono el "+" fijo ya lo cubre, pero el
+> "+" fijo del iPad no existe desde el rediseño. Ni botón de cabecera, ni
+> flotante, ni acción de estado vacío: cero controles de alta visibles.
+
+**Lo que sigue en el modal de escritorio en el iPad, a propósito:** la
+EDICIÓN de la ficha de miembro, el editor de cartas (`CartaEditor`, que es
+un documento a página completa y no una hoja) y los diálogos cortos
+(`ConfirmDialog`, `BajaMemberModal`, importar CSV, plantillas).
+
+---
+
+## 8. Las cabeceras de tabla
+
+En el iPad salían a **17px y en versalitas** —`.data-table .th` hereda
+`--fs-body`, que en táctil son 17—: en Informes de membresía la fila de
+cabecera medía 74px y "Ministerio, cargo e instrumentos" ocupaba tres
+renglones. Y no era consistente ni consigo misma: las columnas ORDENABLES
+son `<button class="th">` con `font: inherit` **en línea**, así que heredaban
+los 10.5px del `.thead` y salían sin versalitas (el `text-transform` de un
+botón lo pone el navegador y gana a lo heredado).
+
+12.5px con 0.4 de tracking, la medida del handoff, puesta también en
+`.thead` para que ese `font: inherit` herede lo mismo sin tocar su `style=`.
+Y lo táctil que el bloque del cajón daba por accidente se escribe ahora
+donde le toca —para los ocho tamaños y las dos orientaciones—: el "···" de
+fila vuelve a 44pt (medía 25×28, la medida de un ratón), los iconos que solo
+aparecen al pasar el puntero no se pintan, y el lápiz suelto de Informes de
+membresía (el único que no se esconde, porque ahí no hay "···") sube a 44.
+
+---
+
+## 9. Membresía
+
+La única pantalla del rediseño sin tocar, así que en el iPad salía la tabla
+de RATÓN del Mac. El handoff la maqueta como pantalla de UNA columna (solo
+ella e Inicio lo son): cuatro cifras arriba en una fila, un segmentado a la
+izquierda de su barra de controles, y una tabla de tarjeta con cabecera en
+versalitas y filas de 58px.
+
+- Las cuatro cifras en una fila, tarjetas de radio 16 y cifra de 28.
+- Los tres chips (De alta / De baja / Todos) se pintan como el segmentado de
+  iOS. Para eso, las dos medidas que estaban en `style=` pasan a clases con
+  los MISMOS valores: un estilo en línea gana a cualquier hoja. En Mac no
+  cambia un píxel, está medido.
+- Tabla táctil: cabecera de 44 pegada, filas de 58, avatar de 32, realce al
+  tocar y "···" de 44pt.
+- Se adelanta **Condición** a la segunda columna y entra **Ministerio**, que
+  el handoff pide y que existe de verdad (`members.ministerios`).
+
+**Lo que NO entra**, y por la misma razón que la taxonomía de alertas del
+handoff se quedó fuera de la Bandeja (§3.8): su quinta columna,
+"Asistencia". Ese es un cálculo por periodo que vive en Informes de
+membresía, no en el padrón. Ponerlo aquí sería inventar un dato.
+
+Ministerio se apaga por debajo de 1024 —los tres iPads chicos en vertical—,
+donde con cinco columnas los nombres se cortaban a la mitad.

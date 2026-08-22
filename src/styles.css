@@ -4291,31 +4291,40 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    filas de 44px, selectores que empujan subpágina— es el mismo objeto, con
    el mismo estado (`useNuevoMovimiento`), y por eso esto son diez líneas y
    no una segunda hoja que mantener. */
-:root.ipad .ios-sheet-overlay {
-  align-items: center;
-  justify-content: center;
+/* El `.formSheet` de UIKit: hoja centrada de 600px. Vive a partir de 700px,
+   el mismo umbral que el resto del rediseño, y por una razón de iPadOS y no
+   de gusto: por debajo de eso el iPad está en Split View o en Slide Over, o
+   sea en anchura COMPACTA, y ahí la presentación correcta es la del teléfono
+   —hoja a pantalla completa desde abajo, con su tirador—. Sin este umbral,
+   un Slide Over de 320px pintaba una "hoja centrada" de 294 con 13px de
+   margen a cada lado: ni hoja ni pantalla completa. */
+@media (min-width: 700px) {
+  :root.ipad .ios-sheet-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+  :root.ipad .ios-sheet {
+    width: 600px;
+    /* 92vw es el suelo para el iPad mini en vertical (744px), donde 600 fijos
+       dejarían 72px por lado y la hoja se leería como pegada a los bordes. */
+    max-width: 92vw;
+    height: auto;
+    max-height: 82%;
+    margin-top: 0;
+    border-radius: 16px;
+    /* `modalIn` y no `hojaEntra`: una hoja centrada que se desliza desde el
+       borde inferior de la pantalla contradice dónde acaba. Aparece donde
+       va a quedarse, como el modal del Mac. */
+    animation: modalIn 0.18s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+  :root.ipad .ios-sheet .ios-nav { border-radius: 16px 16px 0 0; }
+  /* El tirador es la afordancia de "arrastra para cerrar" de una hoja pegada
+     al borde inferior. Una hoja centrada no se arrastra: se cierra con
+     Cancelar o tocando fuera, y el tirador solo prometería un gesto que no
+     existe. */
+  :root.ipad .nm-tirador { display: none; }
 }
-:root.ipad .ios-sheet {
-  width: 600px;
-  /* 92vw es el suelo para el iPad mini en vertical (744px), donde 600 fijos
-     dejarían 72px por lado y la hoja se leería como pegada a los bordes. */
-  max-width: 92vw;
-  height: auto;
-  max-height: 82%;
-  margin-top: 0;
-  border-radius: 16px;
-  /* `modalIn` y no `hojaEntra`: una hoja centrada que se desliza desde el
-     borde inferior de la pantalla contradice dónde acaba. Aparece donde
-     va a quedarse, como el modal del Mac. */
-  animation: modalIn 0.18s cubic-bezier(0.32, 0.72, 0, 1) both;
-}
-:root.ipad .ios-sheet .ios-nav { border-radius: 16px 16px 0 0; }
-/* El tirador es la afordancia de "arrastra para cerrar" de una hoja pegada
-   al borde inferior. Una hoja centrada no se arrastra: se cierra con
-   Cancelar o tocando fuera, y el tirador solo prometería un gesto que no
-   existe. */
-:root.ipad .nm-tirador { display: none; }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (min-width: 700px) {
   :root.ipad .ios-sheet { animation: none; }
 }
 
