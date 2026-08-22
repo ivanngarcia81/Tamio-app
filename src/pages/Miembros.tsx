@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -97,6 +98,20 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   const sel = selId != null ? members.find((m) => m.id === selId) ?? null : null;
   const ultimoSel = useRef<Member | null>(null);
   if (sel) ultimoSel.current = sel;
+
+  // Puente Ingresos → Aportantes: el "Ver ficha" del detalle de un
+  // movimiento (iPad) navega aquí con el miembro a abrir. El state se limpia
+  // enseguida para que un refresh no re-seleccione — el mismo trato que el
+  // puente Agenda → Bitácora de Servicios.tsx.
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const vm = (location.state as { verMiembro?: number } | null)?.verMiembro;
+    if (!vm) return;
+    setSelId(vm);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   useEffect(() => {
     let cancelado = false;
@@ -329,6 +344,20 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                         <div className="md-grupo">{g.letra}</div>
                         {g.items.map((m) => {
                           const stat = stats[m.id];
+                          /* La línea secundaria del diseño: "Miembro desde
+                             2014 · diezmador". Año de ingreso y primera
+                             etiqueta, que sí existen; el correo queda de
+                             repuesto para fichas sin nada de eso — mejor un
+                             dato que la letanía de "Sin correo registrado". */
+                          let etiquetas: string[] = [];
+                          try { etiquetas = JSON.parse(m.etiquetas); } catch { /* noop */ }
+                          const partesSub = [
+                            m.fecha_ingreso ? t("miembros.desdeAnio", { anio: m.fecha_ingreso.slice(0, 4) }) : null,
+                            etiquetas[0] ?? null,
+                          ].filter(Boolean);
+                          const sub = partesSub.length > 0
+                            ? partesSub.join(" · ")
+                            : m.email ?? t("miembros.sinCorreoRegistrado");
                           return (
                             <div
                               key={m.id}
@@ -343,7 +372,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                               </div>
                               <span className="md-fila-textos">
                                 <span className="md-fila-titular"><span className="truncate">{m.nombre}</span></span>
-                                <span className="md-fila-sub truncate">{m.email ?? t("miembros.sinCorreoRegistrado")}</span>
+                                <span className="md-fila-sub truncate">{sub}</span>
                               </span>
                               {stat?.totalAnio ? (
                                 <span className="md-fila-monto">{fmtMoney(stat.totalAnio)}</span>

@@ -9429,6 +9429,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-campo + .dm-campo { border-top: 0.5px solid var(--line-soft); }
   :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: 15px; color: var(--text-2); }
   :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+  /* "Ver ficha" al final de la fila del aportante (diseño de iPad): un
+     enlace, no un botón con caja — es navegación, no una acción. */
+  :root.ipad .dm-ver-ficha {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 4px 0 4px 12px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  :root.ipad .dm-ver-ficha:active { opacity: 0.3; }
 
   /* El rótulo de sección del panel (Servicios y afines): el mismo idioma que
      los encabezados de grupo de una lista de iOS, sobre cada tarjeta. */
@@ -9464,6 +9479,86 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .md-fila.sel .md-fila-fecha-dow { color: var(--ink); }
   :root.ipad .md-fila-fecha-num { font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+  /* ---- El Inicio del iPad (diseño del handoff) ----
+     El saludo como h1 de 34px en el contenido (la barra queda en sus 56px),
+     y las dos listas del pie —Últimos movimientos · Esta semana— a dos
+     columnas, con las filas de 56px del diseño. */
+  :root.ipad .dash-hero { margin-bottom: 4px; }
+  /* Los cuatro KPI del diseño en UNA fila (el auto-fit de la regla base los
+     partía en 3 + 1); por debajo del rango de columnas, en 2×2. */
+  :root.ipad .dash-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :root.ipad .dash-hero h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.6px; }
+  :root.ipad .dash-hero p { margin: 4px 0 0; font-size: 15px; color: var(--text-2); }
+  /* La tarjeta "Por revisar" es un Link: pierde el subrayado y hereda el
+     texto para verse EXACTAMENTE como sus tres vecinas. */
+  :root.ipad .stat-card--enlace { text-decoration: none; color: inherit; cursor: pointer; }
+  :root.ipad .stat-card--enlace:active { opacity: 0.7; }
+  :root.ipad .dash-abrir-bandeja { color: var(--ink); font-weight: 600; }
+  :root.ipad .dash-dos-listas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  :root.ipad .dash-lista-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .dash-lista-cab a {
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  :root.ipad .dash-lista-card {
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  :root.ipad .dash-fila {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 6px 16px;
+  }
+  :root.ipad .dash-fila + .dash-fila { border-top: 0.5px solid var(--line-soft); }
+  :root.ipad .dash-fila-icono {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  :root.ipad .dash-fila-icono.ing { background: color-mix(in srgb, var(--pos) 12%, transparent); color: var(--pos); }
+  :root.ipad .dash-fila-icono.gas { background: color-mix(in srgb, var(--neg) 12%, transparent); color: var(--neg); }
+  :root.ipad .dash-fila-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  :root.ipad .dash-fila-titular { font-size: 15px; font-weight: 500; }
+  :root.ipad .dash-fila-sub { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .dash-fila-monto {
+    font-size: 15.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  :root.ipad .dash-fila-monto.pos { color: var(--pos); }
+  :root.ipad .dash-fila-monto.neg { color: var(--neg); }
+  :root.ipad .dash-lista-vacia { padding: 18px 16px; font-size: 13.5px; color: var(--text-3); }
 
   /* ---- Agenda partida (.md-agenda) ----
      Aquí los papeles se invierten: el "maestro" es el calendario (flexible,
@@ -9652,6 +9747,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-width: 318px;
     border-left: 0.5px solid var(--line);
   }
+  /* Los cuatro KPI del Inicio, en una sola fila desde el rango de columnas. */
+  :root.ipad .dash-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* ============================================================

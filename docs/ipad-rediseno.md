@@ -313,6 +313,39 @@ Se eligió empujar. Consecuencias para quien lo implemente:
      sirvieron tal cual — `.md-agenda` solo invierte quién es fijo y quién
      flexible.
 
+10. **La repasada contra el handoff** (22 ago, segunda pasada). Pedida por
+    Iván sobre Inicio, Ingresos, Gastos, Aportantes y Reportes. Ingresos,
+    Gastos, Aportantes y Reportes estaban fieles; lo que faltaba:
+
+    - **Inicio era la pantalla menos aplicada.** El handoff la maqueta con
+      el saludo como h1 de 34px EN el contenido, cuatro KPI (con "Por
+      revisar → Abrir bandeja"), y "Últimos movimientos · Esta semana" a dos
+      columnas. Lo que había era el dashboard del Mac con el saludo y el
+      saldo de 34px DENTRO de la barra — una barra de ~110px en una cáscara
+      que promete 56. Ahora (`enIPad` en Dashboard.tsx): barra de 56px con
+      "Inicio" y el balance del mes como subtítulo (el dato sigue siempre a
+      la vista), saludo con "el corte de mes cierra en N días" (aritmética
+      real del fin de mes), KPI del diseño —el pie de Ingresos dice
+      "{{registros}} registros · {{diezmos}} diezmos", los conteos que
+      `monthTotals` ya traía— con la cuarta tarjeta saltando a la bandeja
+      (el conteo de `countPendingTx`, el mismo del badge), y las dos listas
+      del pie: últimos 4 movimientos y la semana de la Agenda (las mismas
+      ocurrencias de `expandirTodas`). Lo que el handoff traía aquí y NO
+      existe: el segmentado Mes/Trimestre/Año (no hay concepto de periodo
+      más que el mes) y los renglones de "Esta semana" que mezclaban tareas
+      inventadas ("14 movimientos sin depositar" presupone el vínculo
+      depósito↔movimientos que no existe) — la lista es solo de agenda.
+    - **"Ver ficha" en el detalle de un ingreso** (diseño de la ficha de
+      movimiento): existía el dato (`member_id`) pero no el salto. Ahora
+      `DetalleMovimiento` acepta `onVerFicha` y navega a Aportantes con el
+      miembro abierto — el mismo puente por `location.state` que ya usaban
+      Agenda→Servicios y Membresía→Traslados. La Bandeja no lo pasa y no
+      pinta el enlace.
+    - **La línea secundaria de la fila de Aportantes** decía el correo (o la
+      letanía "Sin correo registrado"); el diseño dice "Miembro desde 2014 ·
+      diezma". Ahora: año de `fecha_ingreso` + primera etiqueta, con el
+      correo de repuesto cuando no hay ni lo uno ni lo otro.
+
 ---
 
 ## 4. Lo que hay que tirar del handoff

@@ -152,6 +152,18 @@ export const es = {
     ingresoMasFrecuente: "Ingreso más frecuente",
     movimientosUnidad: "movimientos",
     sinIngresosEsteMes: "Sin ingresos este mes",
+    // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
+    // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos
+    // listas del pie.
+    corteHoy: "el corte de mes cierra hoy",
+    corteDias_one: "el corte de mes cierra mañana",
+    corteDias_other: "el corte de mes cierra en {{count}} días",
+    subIngresos_one: "{{count}} registro · {{diezmos}} diezmos",
+    subIngresos_other: "{{count}} registros · {{diezmos}} diezmos",
+    abrirBandeja: "Abrir bandeja →",
+    ultimosMovimientos: "Últimos movimientos",
+    estaSemana: "Esta semana",
+    semanaVacia: "Nada programado en los próximos siete días.",
     miembrosActivos: "Aportantes activos",
     verMiembros: "Ver aportantes",
     ultimaActualizacion: "Última actualización",
@@ -260,6 +272,8 @@ export const es = {
     colTotalAnio: "Total del año",
     colContacto: "Contacto",
     sinCorreoRegistrado: "Sin correo registrado",
+    // La línea secundaria de la lista del iPad: "Miembro desde 2014".
+    desdeAnio: "Miembro desde {{anio}}",
     sinRfc: "Sin ID fiscal",
     archivarTitulo: "Archivar miembro",
     eliminarTitulo: "Eliminar miembro",

@@ -60,7 +60,36 @@ Todo en verde, más `tsc`, los doce `verificar-*` y el build completo (con la
 comprobación de que el bundle construido lleva las clases nuevas de verdad —
 la lección de la 1.1.6).
 
-## 3. Lo que quedó anotado, no hecho
+## 3. La repasada que pidió Iván
+
+Segunda pasada del día, sobre Inicio, Ingresos, Gastos, Aportantes y
+Reportes, "por si no se aplicó bien el diseño". Ingresos, Gastos, Aportantes
+y Reportes estaban fieles (columna, filas, detalle y pie como el handoff, con
+las desviaciones ya documentadas); lo que la repasada cazó:
+
+- **Inicio era la pantalla menos aplicada** — seguía siendo el dashboard del
+  Mac con el saludo y el saldo de 34px metidos en la barra (una barra de
+  ~110px en una cáscara que promete 56). Ahora es el del diseño: barra de
+  56px con el balance del mes de subtítulo, saludo como h1 en el contenido
+  con "el corte de mes cierra en N días", los cuatro KPI (el cuarto es la
+  bandeja, con su conteo real y "Abrir bandeja →"), y "Últimos movimientos ·
+  Esta semana" a dos columnas — la semana sale de `expandirTodas`, las
+  mismas ocurrencias de la Agenda. El Mes/Trimestre/Año del handoff no
+  existe como concepto y no se inventó.
+- **Faltaba "Ver ficha"** en el detalle de un ingreso (el salto del diseño a
+  la ficha del aportante). El dato existía (`member_id`); ahora
+  `DetalleMovimiento` lo pinta y navega a Aportantes con el miembro abierto,
+  por el mismo puente de `location.state` de Agenda→Servicios.
+- **La fila de Aportantes** decía el correo (o "Sin correo registrado" en
+  cadena); el diseño dice "Miembro desde 2014 · diezma", y los dos datos son
+  reales (`fecha_ingreso`, etiquetas). Ahora dice eso, con el correo de
+  repuesto.
+
+Verificado igual que lo demás: arnés completo en verde (189 comprobaciones),
+capturas del Inicio nuevo a 1366 y 834, y el salto de "Ver ficha" probado de
+punta a punta en el navegador.
+
+## 4. Lo que quedó anotado, no hecho
 
 - **Probar en el aparato.** El arnés es Chromium; el patrón ya se sabe (el
   umbral de 1024, el AccentColor): lo que WKWebView decida distinto solo se

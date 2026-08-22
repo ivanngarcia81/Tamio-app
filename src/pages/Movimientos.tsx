@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { esIPad, esIPhone, esMac, textoCorto } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -42,6 +43,7 @@ const PAGE_SIZE = 40;
 
 export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx, onChanged }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   // El carrusel de secciones ya muestra "Ingresos"/"Gastos" como pastilla
   // activa (ver Cartas.tsx) — el título grande de aquí abajo sobra ahí. El
   // resto de la cabecera (mes anterior/siguiente, compartir) se queda: no
@@ -588,6 +590,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                         onEditar={onEditTx}
                         onEliminar={setPendingDeleteSel}
                         onVerComprobante={setPreviewSel}
+                        onVerFicha={(mid) => navigate("/miembros", { state: { verMiembro: mid } })}
                       />
                     );
                   }
