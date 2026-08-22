@@ -540,6 +540,49 @@ await ctx.close();
   await ctxSv.close();
 }
 
+/* ---------- 8. La pantalla once: Informes de membresía (y Mensajes) ----------
+   Ninguna de las dos está en el handoff — y §12 de docs/ipad-rediseno.md ya
+   contó lo que pasa con lo que no está en la maqueta: no se revisa. Aquí se
+   miden las dos cosas que SÍ puede decir un arnés sin diseño de referencia:
+   que nada se desborde en horizontal, y que ningún mando quede recortado
+   por la barra. Con captura, para poder VER la página. */
+console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
+{
+  const ctxInf = await nuevoContexto("ipad");
+  const pg = await ctxInf.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  for (const [w, h] of [[1366, 1024], [1024, 1366], [1210, 1614]]) {
+    await pg.setViewportSize({ width: w, height: h });
+    for (const ruta of ["reporte-miembros", "inbox"]) {
+      await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+      await pg.waitForTimeout(600);
+      const m = await pg.evaluate(() => {
+        const doc = document.documentElement;
+        const contenido = document.querySelector(".content");
+        // Mandos recortados: algo interactivo cuyo cajón se sale por arriba
+        // del contenido o queda debajo de la barra.
+        const barra = document.querySelector(".header")?.getBoundingClientRect();
+        const recortados = [];
+        for (const el of document.querySelectorAll(".content button, .content input, .content select, .content .chip")) {
+          const r = el.getBoundingClientRect();
+          if (r.height === 0 || r.width === 0) continue;
+          if (barra && r.top < barra.bottom - 2) recortados.push(el.className || el.tagName);
+        }
+        return {
+          desbordaX: doc.scrollWidth > doc.clientWidth,
+          desbordaContenido: contenido ? contenido.scrollWidth > contenido.clientWidth + 1 : null,
+          recortados: recortados.slice(0, 4),
+        };
+      });
+      chk(m.desbordaX === false, `${ruta} ${w}×${h}: sin scroll horizontal de página`);
+      chk(m.desbordaContenido !== true, `${ruta} ${w}×${h}: el contenido no se desborda (${m.desbordaContenido})`);
+      chk(m.recortados.length === 0, `${ruta} ${w}×${h}: ningún mando bajo la barra (${m.recortados.join(", ") || "ok"})`);
+      if (DIR) await pg.screenshot({ path: `${DIR}/${ruta}-${w}x${h}.png`, fullPage: false });
+    }
+  }
+  await ctxInf.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
