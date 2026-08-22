@@ -45,6 +45,29 @@ if (esIPad) document.documentElement.classList.add("ipad");
 const esEscritorio = !esIOS;
 if (esEscritorio) document.documentElement.classList.add("mac");
 
+// Y una cuarta clase que, a diferencia de las tres de arriba, SÍ cambia
+// durante la sesión: `ipad-ancho` marca al iPad cuando está en una anchura
+// REGULAR (700px o más), que es donde vive el rediseño. Existe porque el
+// bloque `@media (min-width: 601px) and (max-width: 1023px)` de styles.css
+// —el cajón lateral con forma de teléfono— caía encima de los tres iPads
+// que en vertical miden menos de 1024 (mini 744, 10.9" 820, 11" 834): con
+// el rediseño puesto a partir de 700, esos tres seguían pintando filas de
+// sidebar de 40px, tarjetas de resumen de dos en dos y tablas colapsadas a
+// tres columnas. Una media query no puede preguntar por una clase, así que
+// la pregunta se hace aquí y el CSS la lee con `:not(.ipad-ancho)`.
+//
+// Con listener y no una lectura suelta: este valor cambia al GIRAR el iPad
+// y al repartir la pantalla (Split View baja de 700 y el diseño compacto
+// vuelve a ser el correcto), que es justo lo que un `innerWidth` leído una
+// vez al arrancar no se entera.
+if (esIPad) {
+  const anchoRegular = window.matchMedia("(min-width: 700px)");
+  const marcarAncho = () =>
+    document.documentElement.classList.toggle("ipad-ancho", anchoRegular.matches);
+  marcarAncho();
+  anchoRegular.addEventListener("change", marcarAncho);
+}
+
 // Foco de ventana. En macOS la selección del sidebar se apaga a gris cuando
 // la ventana pasa a segundo plano; es de las señales que más delatan a una
 // app web cuando falta. Va en el DOM y no en estado de React a propósito:

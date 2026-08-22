@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, textoCorto, esMac } from "../movil";
+import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
 import { MacBuscador } from "../components/mac/MacFiltros";
 import {
   currentYear, darDeBajaMember, fmtFechaCorta, listMembersRegistro, membresiaStats, restoreMember,
@@ -24,6 +24,16 @@ import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 
 const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
 const COLS = "1.7fr 1fr 130px 190px 104px";
+/* El iPad reparte distinto porque el handoff de "Diseño nativo para iPad"
+   dibuja esta pantalla como una tabla táctil de cinco columnas —Nombre,
+   Condición, Ingreso, Ministerio, Asistencia— y no como la tabla de ratón
+   del Mac. Se toman cuatro: "Asistencia" es un cálculo por periodo que vive
+   en Informes de membresía, no en el padrón, y ponerlo aquí sería inventar
+   un dato (el mismo criterio que dejó fuera la taxonomía de alertas del
+   handoff en la Bandeja). "Ministerio" sí existe: es `members.ministerios`.
+   Debajo de 1024 —los tres iPads chicos en vertical— esa quinta columna se
+   apaga con CSS y el reparto vuelve a las cuatro de siempre. */
+const COLS_IPAD = "2.2fr 1.1fr 132px 1.2fr 104px";
 const PAGE_SIZE = 30;
 
 type Filtro = "activos" | "bajas" | "todos";
@@ -54,6 +64,52 @@ function badgeClaseMembresiaIOS(m: Member): string {
   return e === "activo" ? "ios-badge--ok" : "";
 }
 
+/** Los ministerios del miembro en una línea ("Música · Ujieres"). El campo
+ *  es JSON en la base; si trae basura, la fila se queda sin dato en vez de
+ *  reventar la tabla entera. */
+function ministeriosDe(t: (k: string) => string, json: string | null): string {
+  if (!json) return "";
+  try {
+    const v = JSON.parse(json);
+    if (!Array.isArray(v)) return "";
+    return v
+      .map((x) => {
+        /* El catálogo (MINISTERIOS) no es cerrado: la ficha admite escribir
+           uno a mano, y esos no tienen clave. i18next devuelve la clave tal
+           cual cuando no la encuentra, así que sin esta vuelta atrás la
+           celda diría "ficha.ministerio.Damas" en la tabla. */
+        const clave = `ficha.ministerio.${x}`;
+        const texto = t(clave);
+        return texto === clave ? String(x) : texto;
+      })
+      .join(" · ");
+  } catch {
+    return "";
+  }
+}
+
+/** La celda de Condición: la pastilla de estado y, en una baja, la fecha y
+ *  el motivo debajo. Estaba escrita en línea dentro de la fila; sale a una
+ *  función porque el iPad la pinta en otra columna (la segunda) y el Mac en
+ *  la cuarta — el mismo nodo, no una copia que se desviaría. */
+function celdaCondicion(t: (k: string, o?: Record<string, unknown>) => string, m: Member) {
+  const badge = estadoBadge(m);
+  if (m.activo === 1) return <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>;
+  const motivoTexto = m.motivo_baja
+    ? MOTIVOS_CONOCIDOS.includes(m.motivo_baja)
+      ? t(`membresia.motivo.${m.motivo_baja}`)
+      : m.motivo_baja
+    : null;
+  return (
+    <div style={{ minWidth: 0 }}>
+      <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>
+      <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>
+        {[m.fecha_baja ? fmtFechaCorta(m.fecha_baja) : null, motivoTexto].filter(Boolean).join(" · ") || "—"}
+      </div>
+    </div>
+  );
+}
+
 function initials(nombre: string): string {
   return nombre
     .split(" ")
@@ -80,6 +136,8 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   // El carrusel de secciones ya muestra "Membresía" como pastilla activa —
   // el título grande sobra ahí.
   const enIPhone = esIPhone();
+  const enIPad = esIPad();
+  const cols = enIPad ? COLS_IPAD : COLS;
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MembresiaStats | null>(null);
   const [query, setQuery] = useState("");
@@ -201,7 +259,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           </div>
         ) : (
           <div className="dash-canvas">
-          <div className="summary-4 enter">
+          <div className="summary-4 enter membresia-resumen">
             <div className="stat-card accent" style={accent("var(--accent-2)")}>
               <div className="stat-head">
                 <span className="stat-label">{t("membresia.statActivos")}</span>
@@ -285,8 +343,13 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             </div>
           </div>
         ) : (
-        <div className="tx-head">
-          <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
+        /* Las medidas que estaban en `style=` pasan a clases con los MISMOS
+           valores (.membresia-buscar, .membresia-segmentado): un estilo en
+           línea gana a cualquier hoja, así que mientras vivieran ahí el iPad
+           no podía convertir los tres chips en el segmentado que pide el
+           handoff. En Mac no cambia un píxel — está medido. */
+        <div className="tx-head membresia-controles">
+          <div className="search-input-wrap membresia-buscar">
             <IconSearch size={15} strokeWidth={2} />
             <input
               className="form-input"
@@ -295,7 +358,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <div className="membresia-segmentado">
             {(["activos", "bajas", "todos"] as Filtro[]).map((f) => (
               <button
                 key={f}
@@ -361,19 +424,23 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
             })}
           </div>
         ) : (
-          <div className="data-table roomy tabla-membresia">
-            <div className="thead" style={{ gridTemplateColumns: COLS }}>
+          <div className={`data-table roomy tabla-membresia${enIPad ? " tabla-membresia-ipad" : ""}`}>
+            <div className="thead" style={{ gridTemplateColumns: cols }}>
               <div className="th">{t("miembros.colMiembro")}</div>
-              <div className="th">{t("miembros.colContacto")}</div>
+              <div className="th">{enIPad ? t("membresia.colCondicion") : t("miembros.colContacto")}</div>
               <div className="th">{t("membresia.colIngreso")}</div>
-              <div className="th">{t("membresia.colEstado")}</div>
+              {enIPad ? (
+                <div className="th th-ministerio">{t("membresia.colMinisterio")}</div>
+              ) : (
+                <div className="th">{t("membresia.colEstado")}</div>
+              )}
               <div className="th"></div>
             </div>
             {pagina.map((m, i) => (
               <div
                 className="tr" data-fila
                 key={m.id}
-                style={{ gridTemplateColumns: COLS, cursor: "pointer", opacity: m.activo === 1 ? 1 : 0.72 }}
+                style={{ gridTemplateColumns: cols, cursor: "pointer", opacity: m.activo === 1 ? 1 : 0.72 }}
                 onClick={() => setFicha(m)}
               >
                 <div className="td">
@@ -389,31 +456,26 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                     </div>
                   </div>
                 </div>
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
-                  <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
-                </div>
+                {/* El iPad adelanta la Condición a la segunda columna, como en el
+                    handoff: en una tabla táctil el estado se lee antes que el
+                    teléfono. En Mac el orden no se toca. */}
+                {enIPad ? (
+                  <div className="td">{celdaCondicion(t, m)}</div>
+                ) : (
+                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
+                  </div>
+                )}
                 <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
                   {m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : "—"}
                 </div>
-                <div className="td">
-                  {(() => {
-                    const badge = estadoBadge(m);
-                    if (m.activo === 1) return <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>;
-                    const motivoTexto = m.motivo_baja
-                      ? MOTIVOS_CONOCIDOS.includes(m.motivo_baja)
-                        ? t(`membresia.motivo.${m.motivo_baja}`)
-                        : m.motivo_baja
-                      : null;
-                    return (
-                      <div style={{ minWidth: 0 }}>
-                        <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>
-                        <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>
-                          {[m.fecha_baja ? fmtFechaCorta(m.fecha_baja) : null, motivoTexto].filter(Boolean).join(" · ") || "—"}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+                {enIPad ? (
+                  <div className="td td-ministerio" style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+                    <div className="truncate">{ministeriosDe(t, m.ministerios) || "—"}</div>
+                  </div>
+                ) : (
+                  <div className="td">{celdaCondicion(t, m)}</div>
+                )}
                 <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                   <span className="row-actions">
                     <span className="row-icon-btn" title={t("common.verFicha")} onClick={() => setFicha(m)}>

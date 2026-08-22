@@ -1049,6 +1049,8 @@ export const en: Resources = {
     filtro: { activos: "On roll", bajas: "Removed", todos: "All" },
     colIngreso: "Join date",
     colEstado: "Status",
+    colCondicion: "Standing",
+    colMinisterio: "Ministry",
     estadoActivo: "Active",
     estadoBaja: "Removed",
     estado: {

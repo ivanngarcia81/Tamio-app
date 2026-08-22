@@ -1075,6 +1075,8 @@ export const es = {
     filtro: { activos: "De alta", bajas: "De baja", todos: "Todos" },
     colIngreso: "Fecha de alta",
     colEstado: "Estado",
+    colCondicion: "Condición",
+    colMinisterio: "Ministerio",
     estadoActivo: "Activo",
     estadoBaja: "Baja",
     estado: {
