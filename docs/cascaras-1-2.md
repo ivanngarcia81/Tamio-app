@@ -27,3 +27,12 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
   desplazamiento continuo y los botones desplazan una página de alto. No es
   cáscara (hacen algo real), pero se anota porque el gesto difiere del
   dibujo.
+
+## Informes de membresía (índice maestro, handoff 2)
+
+- **Nada quedó de cáscara.** El índice, el periodo, las cuatro vistas, la
+  barrita con Imprimir/Exportar y los subtítulos con números reales ya
+  existían como funciones; el trabajo fue de alojamiento, no de motor.
+- **La hoja del periodo del prototipo** (`infper_abrir`, un picker en hoja)
+  se resolvió con los campos inline bajo los chips — misma función, sin hoja.
+  Si Iván prefiere la hoja del dibujo, es solo presentación.

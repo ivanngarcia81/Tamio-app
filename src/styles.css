@@ -10439,6 +10439,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-split.md-servicios .md-lista { width: 358px; flex-basis: 358px; }
   :root.ipad .md-split.md-cartas .md-lista { width: 338px; flex-basis: 338px; }
   :root.ipad .md-split.md-reportes .md-lista { width: 330px; flex-basis: 330px; }
+  :root.ipad .md-split.md-informes .md-lista { width: 330px; flex-basis: 330px; }
   /* Agenda va al revés: el calendario se queda con el ancho y el panel del
      día es la columna fija de 318px, a la DERECHA. Se monta sobre las mismas
      dos clases para no duplicar el modo de empuje ni su animación; lo único
@@ -15381,3 +15382,78 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.ipad .mb-mini-sub { font-size: 12px; color: var(--text-2); }
 :root.ipad .mb-mini-fila strong { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
 :root.ipad .mb-mini-fila strong.aviso { color: var(--warn-text, #c2600e); font-size: 13.5px; }
+
+/* ============================================================
+   Informes de membresía en iPad (handoff 2): índice + documento
+   ------------------------------------------------------------ */
+/* En partido (iPad ≥700), Imprimir/Exportar viven en la barrita del panel;
+   las copias de la cabecera se van para no decir lo mismo dos veces. */
+@media (min-width: 700px) {
+  :root.ipad .inf-fuera-partido { display: none !important; }
+}
+:root.ipad .inf-indice { padding: 0; }
+:root.ipad .inf-grupo { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+:root.ipad .inf-grupo.periodo { border-bottom: 0.5px solid var(--line); gap: 8px; }
+:root.ipad .inf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+:root.ipad .inf-per-campos { display: flex; flex-direction: column; gap: 8px; }
+:root.ipad .inf-per-campos .form-input { width: 100%; }
+/* La base .md-indice-item apila en columna (título solo); aquí el ítem
+   lleva título+subtítulo a la izquierda y el globo a la derecha: fila. */
+:root.ipad .inf-item { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; }
+:root.ipad .inf-item-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+:root.ipad .inf-item-titulo { font-size: 15px; }
+:root.ipad .inf-item.sel .inf-item-titulo { font-weight: 600; }
+:root.ipad .inf-item-sub { font-size: 12.5px; color: var(--text-2); line-height: 1.35; white-space: normal; }
+:root.ipad .inf-item .mb-globo { margin-top: 2px; }
+
+:root.ipad .inf-detalle { display: flex; flex-direction: column; }
+:root.ipad .inf-barrita {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 22px;
+  border-bottom: 0.5px solid var(--line);
+  background: var(--sidebar-bg);
+}
+:root.ipad .inf-barrita-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.ipad .inf-barrita-titulo {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .inf-barrita-sub {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.ipad .inf-cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 22px 30px;
+}
+/* El volver de la barrita: solo existe en el modo de empuje, donde el panel
+   tapa al índice; en columnas las dos están a la vista y no hay a dónde
+   "volver". */
+:root.ipad .inf-volver {
+  display: none;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--brand);
+  cursor: pointer;
+  padding: 0 4px 0 0;
+}
+@media (min-width: 700px) and (max-width: 999.98px) {
+  :root.ipad .inf-volver { display: inline-flex; }
+}

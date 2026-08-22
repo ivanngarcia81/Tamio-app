@@ -2046,6 +2046,13 @@ export const en: Resources = {
   },
 
   informes: {
+    grupoPeriodo: "Period",
+    grupoInformes: "Reports",
+    idxGeneral: "Distributions, monthly additions and movements",
+    idxMiembros: "Period registry · {{count}} members",
+    idxAsistencia: "{{n}} services · {{pct}}% overall attendance",
+    idxAsistenciaVacia: "No services with a roll in the period",
+    idxSeguimiento: "Unreviewed pastoral alerts",
     // Columnas de la tabla de Mac: las fechas y el estado dejan de ir
     // apiladas dentro de otra celda y cada dato tiene la suya.
     colCongregacion: "Congregation",

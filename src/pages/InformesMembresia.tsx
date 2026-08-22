@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMac, textoCorto } from "../movil";
+import { esIPhone, esMac, textoCorto, esIPad } from "../movil";
 import {
   currentMonth, currentYear, fmtFechaCorta, listAsistenciaLigera, listMembersRegistro,
   listServiciosLigero, listTrasladosEntrada, listTrasladosSalida,
@@ -13,6 +13,7 @@ import {
   resumenMembresia, sinAsistirReciente, topAsistencia,
   type Alerta, type Periodo,
 } from "../services/informes/membresia";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { cargarUmbrales, UMBRALES_DEFAULT, type Umbrales } from "../services/informes/umbrales";
 import { exportarInformeCsv } from "../services/informes/exportInforme";
 import { printInformeGeneral } from "../services/informes/printInforme";
@@ -26,7 +27,7 @@ import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../com
 import Pagination from "../components/Pagination";
 import RowMenu from "../components/RowMenu";
 import { showToast } from "../toast";
-import { IconCheck, IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconWarn } from "../icons";
+import { IconChevronLeft, IconCheck, IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconWarn } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import Portal from "../components/Portal";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -38,6 +39,10 @@ import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
 const COLS = "1.5fr 150px 1.4fr 140px 72px";
+/* En el partido del iPad el panel mide ~660–1000px: el nombre manda. Con el
+   reparto de arriba, "Ana Martínez" salía "Ana Ma…" — el nombre es LA
+   columna de esta tabla y era la única que se truncaba. */
+const COLS_IPAD_TABLA = "minmax(0, 1.9fr) 128px minmax(0, 1.1fr) 116px 52px";
 /* En Mac cada dato tiene su columna y la fila cabe en 26 px. Antes el estado
    iba debajo del nombre, las dos fechas apiladas en una celda y la asistencia
    con su última visita debajo: tres celdas de dos líneas que dejaban la fila
@@ -204,6 +209,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   // de aquí abajo sobra ahí.
   const enIPhone = esIPhone();
   const enMac = esMac();
+  /* El maestro-detalle del handoff 2: índice de 330 (Periodo + los cuatro
+     informes) y el detalle con su propia barrita. Solo iPad partido. */
+  const enIPad = esIPad();
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const partido = enIPad && anchoPartido;
+  const [panelAbierto, setPanelAbierto] = useState(false);
   const [miembros, setMiembros] = useState<Member[]>([]);
   const [servicios, setServicios] = useState<ServicioLigero[]>([]);
   const [asistenciaRaw, setAsistenciaRaw] = useState<AsistenciaLigera[]>([]);
@@ -576,162 +587,11 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
     { id: "incompletos", label: t("informes.cardIncompletos"), valor: resumen.incompletos, color: "var(--accent-5)" },
   ];
 
-  return (
+  /* El cuerpo de la vista elegida. Extraído a constante para que el modo
+     partido (iPad) y la página plana (Mac/iPhone) pinten LOS MISMOS nodos —
+     el patrón de todas las pantallas partidas: extraer, no copiar. */
+  const cuerpoVista = (
     <>
-      <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        {!enIPhone && (
-          <div>
-            <div className="page-title">{t("informes.titulo")}</div>
-            {!enMac && <div className="page-sub">{t("informes.sub")}</div>}
-          </div>
-        )}
-        <div className="header-actions solo-escritorio">
-          {/* De las TRES navegaciones apiladas que tenía la pantalla —periodo,
-              pestañas y fila de filtros— el periodo sube a la toolbar como
-              segmentado y los filtros se pliegan en su botón. Abajo quedan las
-              pestañas, que es la única navegación que de verdad cambia lo que
-              se está mirando. */}
-          {enMac && (
-            <>
-              <MacSegmentado
-                value={periodoTipo}
-                onChange={setPeriodoTipo}
-                aria={t("informes.periodo.mes")}
-                opciones={(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => ({
-                  id: p, label: t(`informes.periodo.${p}`),
-                }))}
-              />
-              {vista === "miembros" && (
-                <>
-                  <MacBuscador value={query} onChange={setQuery} placeholder={t("informes.buscar")} ancho={160} />
-                  <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltros} />
-                </>
-              )}
-            </>
-          )}
-          <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
-            <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
-          </button>
-          <button className="btn secondary" onClick={exportar} disabled={filas.length === 0}>
-            {t("informes.exportar")}
-          </button>
-        </div>
-        <div className="header-actions solo-movil">
-          <button
-            type="button"
-            className="btn-compartir-cabecera"
-            onClick={exportar}
-            disabled={filas.length === 0}
-            aria-label={t("informes.exportar")}
-          >
-            <ShareIcon size={22} />
-          </button>
-          <HeaderMenu
-            icon={<IconMore size={20} />}
-            ariaLabel={t("common.masAcciones")}
-            sections={[
-              { items: [
-                { label: t("informes.imprimirGeneral"), icon: <IconPrinter size={13} />, disabled: loading || miembros.length === 0, onClick: imprimirGeneral },
-              ] },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="content content-lienzo">
-        {/* En el teléfono, UNA fila de control en vez de las dos barras de
-            arriba (periodo y vista). Eran unos 260 px de mandos antes del
-            primer dato, y la de filtros —que se deslizaba— escondía lo puesto
-            fuera del borde: un filtro en el cuarto chip dejaba la lista
-            incompleta sin que nada lo dijera. */}
-        {enIPhone && (
-          <>
-            <button type="button" className="inf-control" onClick={() => setHojaControl(true)}>
-              <span className="inf-control-texto">
-                <span className="inf-control-titulo">{t(`informes.vista.${vista}`)} · {periodoTexto}</span>
-                <span className="inf-control-sub">
-                  {hayFiltros && vista === "miembros"
-                    ? t("informes.conteoFiltrado", { visibles: filas.length, total: miembros.length })
-                    : t("informes.conteoTotal", { count: vista === "miembros" ? filas.length : miembros.length })}
-                </span>
-              </span>
-              <IosChevron />
-            </button>
-
-            {hojaControl && (
-              <IOSHojaControl
-                vista={vista}
-                onVista={(v) => setVista(v)}
-                periodoTipo={periodoTipo}
-                onPeriodoTipo={setPeriodoTipo}
-                mesSel={mesSel} onMes={setMesSel}
-                anioSel={anioSel} onAnio={setAnioSel}
-                trimestreSel={trimestreSel} onTrimestre={setTrimestreSel}
-                rangoDesde={rangoDesde} onDesde={setRangoDesde}
-                rangoHasta={rangoHasta} onHasta={setRangoHasta}
-                pendientesSeguimiento={gruposSeguimiento.length}
-                onCerrar={() => setHojaControl(false)}
-              />
-            )}
-          </>
-        )}
-
-        {/* Selector de periodo — fuente de verdad */}
-        {!enIPhone && (
-        <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
-          {!enMac && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => (
-              <button key={p} className={`chip${periodoTipo === p ? " active" : ""}`} onClick={() => setPeriodoTipo(p)}>
-                {t(`informes.periodo.${p}`)}
-              </button>
-            ))}
-          </div>
-          )}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {periodoTipo === "mes" && (
-              <input type="month" className="form-input" style={{ width: "auto" }} value={mesSel} onChange={(e) => setMesSel(e.target.value)} aria-label={t("informes.periodo.mes")} />
-            )}
-            {(periodoTipo === "trimestre" || periodoTipo === "anio") && (
-              <input type="number" className="form-input" style={{ width: 100 }} value={anioSel} min={2000} max={2100} onChange={(e) => setAnioSel(e.target.value)} aria-label={t("informes.periodo.anio")} />
-            )}
-            {periodoTipo === "trimestre" && (enIPhone ? (
-              /* Este no es un filtro que se ponga y se quite: el trimestre
-                 SIEMPRE tiene valor, así que el chip va siempre teñido y
-                 mostrando cuál es — que es justo lo que interesa leer. */
-              <IOSPickerChip
-                label={t("informes.periodo.trimestre")}
-                options={opcTrimestre}
-                value={String(trimestreSel)}
-                onSelect={(v) => setTrimestreSel(Number(v) as 1 | 2 | 3 | 4)}
-              />
-            ) : (
-              <select className="form-input" style={{ width: "auto" }} value={trimestreSel} onChange={(e) => setTrimestreSel(Number(e.target.value) as 1 | 2 | 3 | 4)} aria-label={t("informes.periodo.trimestre")}>
-                {opcTrimestre.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            ))}
-            {periodoTipo === "rango" && (
-              <>
-                <input type="date" className="form-input" style={{ width: "auto" }} value={rangoDesde} onChange={(e) => setRangoDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
-                <input type="date" className="form-input" style={{ width: "auto" }} value={rangoHasta} onChange={(e) => setRangoHasta(e.target.value)} aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} />
-              </>
-            )}
-          </div>
-        </div>
-        )}
-
-        {/* Pestañas: registro de miembros, asistencia y seguimiento */}
-        {!enIPhone && (
-        <div className="chip-toggle" style={{ flexWrap: "wrap", margin: "14px 0 4px" }}>
-          {(["miembros", "asistencia", "seguimiento", "general"] as Vista[]).map((v) => (
-            <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
-              {t(`informes.vista.${v}`)}
-              {v === "seguimiento" && gruposSeguimiento.length > 0 && <span className="badge" style={{ marginLeft: 6 }}>{gruposSeguimiento.length}</span>}
-            </button>
-          ))}
-        </div>
-        )}
-
         {loading ? (
           <LoadingState />
         ) : vista === "general" ? (
@@ -1062,7 +922,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               </div>
             ) : (
               <div className="data-table roomy tabla-informe-miembros">
-                <div className="thead" style={{ gridTemplateColumns: enMac ? COLS_MAC : COLS, position: "sticky", top: 0, zIndex: 1, background: "var(--surface)" }}>
+                <div className="thead" style={{ gridTemplateColumns: enMac ? COLS_MAC : partido ? COLS_IPAD_TABLA : COLS, position: "sticky", top: 0, zIndex: 1, background: "var(--surface)" }}>
                   <button className="th" style={{ cursor: "pointer", background: "none", border: "none", font: "inherit", textAlign: "left" }} onClick={() => ordenarPor("nombre")}>{t("informes.colMiembro")}{flecha("nombre")}</button>
                   {enMac && <div className="th">{t("membresia.colEstado")}</div>}
                   {enMac && <div className="th">{t("informes.colCongregacion")}</div>}
@@ -1081,7 +941,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     chipsDe(t, m.instrumentos, "ficha.instrumento"),
                   ].filter(Boolean).join(" · ");
                   return (
-                    <div className="tr" key={m.id} style={{ gridTemplateColumns: enMac ? COLS_MAC : COLS, cursor: "pointer" }} onClick={() => setFicha(m)}>
+                    <div className="tr" key={m.id} style={{ gridTemplateColumns: enMac ? COLS_MAC : partido ? COLS_IPAD_TABLA : COLS, cursor: "pointer" }} onClick={() => setFicha(m)}>
                       <div className="td" style={{ minWidth: 0 }}>
                         <div className="p-name truncate" title={m.nombre}>
                           {incompleto && <span className="informes-aviso" title={t("informes.incompletoTitle")}><IconWarn size={11} strokeWidth={2.2} /></span>}
@@ -1286,7 +1146,254 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             )}
           </>
         )}
+    </>
+  );
+
+  return (
+    <>
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
+        {!enIPhone && (
+          <div>
+            <div className="page-title">{t("informes.titulo")}</div>
+            {!enMac && <div className="page-sub">{t("informes.sub")}</div>}
+          </div>
+        )}
+        <div className="header-actions solo-escritorio inf-fuera-partido">
+          {/* De las TRES navegaciones apiladas que tenía la pantalla —periodo,
+              pestañas y fila de filtros— el periodo sube a la toolbar como
+              segmentado y los filtros se pliegan en su botón. Abajo quedan las
+              pestañas, que es la única navegación que de verdad cambia lo que
+              se está mirando. */}
+          {enMac && (
+            <>
+              <MacSegmentado
+                value={periodoTipo}
+                onChange={setPeriodoTipo}
+                aria={t("informes.periodo.mes")}
+                opciones={(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => ({
+                  id: p, label: t(`informes.periodo.${p}`),
+                }))}
+              />
+              {vista === "miembros" && (
+                <>
+                  <MacBuscador value={query} onChange={setQuery} placeholder={t("informes.buscar")} ancho={160} />
+                  <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltros} />
+                </>
+              )}
+            </>
+          )}
+          <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
+            <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
+          </button>
+          <button className="btn secondary" onClick={exportar} disabled={filas.length === 0}>
+            {t("informes.exportar")}
+          </button>
+        </div>
+        <div className="header-actions solo-movil inf-fuera-partido">
+          <button
+            type="button"
+            className="btn-compartir-cabecera"
+            onClick={exportar}
+            disabled={filas.length === 0}
+            aria-label={t("informes.exportar")}
+          >
+            <ShareIcon size={22} />
+          </button>
+          <HeaderMenu
+            icon={<IconMore size={20} />}
+            ariaLabel={t("common.masAcciones")}
+            sections={[
+              { items: [
+                { label: t("informes.imprimirGeneral"), icon: <IconPrinter size={13} />, disabled: loading || miembros.length === 0, onClick: imprimirGeneral },
+              ] },
+            ]}
+          />
+        </div>
       </div>
+
+      {partido ? (
+        /* ---- Maestro-detalle (handoff 2) ----
+           El índice de 330 lleva DOS grupos: el PERIODO (los cinco cortes,
+           con sus campos debajo) y los CUATRO informes con su subtítulo —
+           navegación a la izquierda, documento a la derecha, con la barrita
+           de Imprimir/Exportar pegada al informe que se está viendo. */
+        <div className={`md-split md-informes${panelAbierto ? " md-abierto" : ""}`}>
+          <div className="md-lista md-indice inf-indice">
+            <div className="inf-grupo periodo">
+              <div className="md-indice-grupo">{t("informes.grupoPeriodo")}</div>
+              <div className="inf-chips">
+                {(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => (
+                  <button key={p} className={`chip${periodoTipo === p ? " active" : ""}`} onClick={() => setPeriodoTipo(p)}>
+                    {t(`informes.periodo.${p}`)}
+                  </button>
+                ))}
+              </div>
+              <div className="inf-per-campos">
+                {periodoTipo === "mes" && (
+                  <input type="month" className="form-input" value={mesSel} onChange={(e) => setMesSel(e.target.value)} aria-label={t("informes.periodo.mes")} />
+                )}
+                {(periodoTipo === "trimestre" || periodoTipo === "anio") && (
+                  <input type="number" className="form-input" value={anioSel} min={2000} max={2100} onChange={(e) => setAnioSel(e.target.value)} aria-label={t("informes.periodo.anio")} />
+                )}
+                {periodoTipo === "trimestre" && (
+                  <select className="form-input" value={trimestreSel} onChange={(e) => setTrimestreSel(Number(e.target.value) as 1 | 2 | 3 | 4)} aria-label={t("informes.periodo.trimestre")}>
+                    {opcTrimestre.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
+                {periodoTipo === "rango" && (
+                  <>
+                    <input type="date" className="form-input" value={rangoDesde} onChange={(e) => setRangoDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} />
+                    <input type="date" className="form-input" value={rangoHasta} onChange={(e) => setRangoHasta(e.target.value)} aria-label={t("cartas.fechaHasta")} />
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="inf-grupo">
+              <div className="md-indice-grupo">{t("informes.grupoInformes")}</div>
+              {(["general", "miembros", "asistencia", "seguimiento"] as Vista[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`md-indice-item inf-item${vista === v ? " sel" : ""}`}
+                  onClick={() => { setVista(v); setPanelAbierto(true); }}
+                >
+                  <span className="inf-item-textos">
+                    <span className="inf-item-titulo">{t(`informes.vista.${v}`)}</span>
+                    <span className="inf-item-sub">
+                      {v === "general" ? t("informes.idxGeneral")
+                        : v === "miembros" ? t("informes.idxMiembros", { count: miembros.length })
+                        : v === "asistencia" ? (asistGeneral.totalServicios > 0
+                            ? t("informes.idxAsistencia", { n: asistGeneral.totalServicios, pct: asistGeneral.pctGeneral ?? 0 })
+                            : t("informes.idxAsistenciaVacia"))
+                        : t("informes.idxSeguimiento")}
+                    </span>
+                  </span>
+                  {v === "seguimiento" && gruposSeguimiento.length > 0 && (
+                    <span className="mb-globo">{gruposSeguimiento.length}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="md-detalle inf-detalle">
+            <div className="inf-barrita">
+              <button type="button" className="inf-volver" onClick={() => setPanelAbierto(false)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {t("informes.titulo")}
+              </button>
+              <span className="inf-barrita-textos">
+                <span className="inf-barrita-titulo">{t(`informes.vista.${vista}`)}</span>
+                <span className="inf-barrita-sub">{periodoTexto}</span>
+              </span>
+              <button className="btn secondary" onClick={imprimirGeneral} disabled={loading || miembros.length === 0}>
+                <IconPrinter size={13} /> {t("informes.imprimirGeneral")}
+              </button>
+              <button className="btn secondary" onClick={exportar} disabled={filas.length === 0}>
+                {t("informes.exportar")}
+              </button>
+            </div>
+            <div className="inf-cuerpo">{cuerpoVista}</div>
+          </div>
+        </div>
+      ) : (
+      <div className="content content-lienzo">
+        {/* En el teléfono, UNA fila de control en vez de las dos barras de
+            arriba (periodo y vista). Eran unos 260 px de mandos antes del
+            primer dato, y la de filtros —que se deslizaba— escondía lo puesto
+            fuera del borde: un filtro en el cuarto chip dejaba la lista
+            incompleta sin que nada lo dijera. */}
+        {enIPhone && (
+          <>
+            <button type="button" className="inf-control" onClick={() => setHojaControl(true)}>
+              <span className="inf-control-texto">
+                <span className="inf-control-titulo">{t(`informes.vista.${vista}`)} · {periodoTexto}</span>
+                <span className="inf-control-sub">
+                  {hayFiltros && vista === "miembros"
+                    ? t("informes.conteoFiltrado", { visibles: filas.length, total: miembros.length })
+                    : t("informes.conteoTotal", { count: vista === "miembros" ? filas.length : miembros.length })}
+                </span>
+              </span>
+              <IosChevron />
+            </button>
+
+            {hojaControl && (
+              <IOSHojaControl
+                vista={vista}
+                onVista={(v) => setVista(v)}
+                periodoTipo={periodoTipo}
+                onPeriodoTipo={setPeriodoTipo}
+                mesSel={mesSel} onMes={setMesSel}
+                anioSel={anioSel} onAnio={setAnioSel}
+                trimestreSel={trimestreSel} onTrimestre={setTrimestreSel}
+                rangoDesde={rangoDesde} onDesde={setRangoDesde}
+                rangoHasta={rangoHasta} onHasta={setRangoHasta}
+                pendientesSeguimiento={gruposSeguimiento.length}
+                onCerrar={() => setHojaControl(false)}
+              />
+            )}
+          </>
+        )}
+
+        {/* Selector de periodo — fuente de verdad */}
+        {!enIPhone && (
+        <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+          {!enMac && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["mes", "trimestre", "anio", "rango", "todo"] as PeriodoTipo[]).map((p) => (
+              <button key={p} className={`chip${periodoTipo === p ? " active" : ""}`} onClick={() => setPeriodoTipo(p)}>
+                {t(`informes.periodo.${p}`)}
+              </button>
+            ))}
+          </div>
+          )}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {periodoTipo === "mes" && (
+              <input type="month" className="form-input" style={{ width: "auto" }} value={mesSel} onChange={(e) => setMesSel(e.target.value)} aria-label={t("informes.periodo.mes")} />
+            )}
+            {(periodoTipo === "trimestre" || periodoTipo === "anio") && (
+              <input type="number" className="form-input" style={{ width: 100 }} value={anioSel} min={2000} max={2100} onChange={(e) => setAnioSel(e.target.value)} aria-label={t("informes.periodo.anio")} />
+            )}
+            {periodoTipo === "trimestre" && (enIPhone ? (
+              /* Este no es un filtro que se ponga y se quite: el trimestre
+                 SIEMPRE tiene valor, así que el chip va siempre teñido y
+                 mostrando cuál es — que es justo lo que interesa leer. */
+              <IOSPickerChip
+                label={t("informes.periodo.trimestre")}
+                options={opcTrimestre}
+                value={String(trimestreSel)}
+                onSelect={(v) => setTrimestreSel(Number(v) as 1 | 2 | 3 | 4)}
+              />
+            ) : (
+              <select className="form-input" style={{ width: "auto" }} value={trimestreSel} onChange={(e) => setTrimestreSel(Number(e.target.value) as 1 | 2 | 3 | 4)} aria-label={t("informes.periodo.trimestre")}>
+                {opcTrimestre.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            ))}
+            {periodoTipo === "rango" && (
+              <>
+                <input type="date" className="form-input" style={{ width: "auto" }} value={rangoDesde} onChange={(e) => setRangoDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
+                <input type="date" className="form-input" style={{ width: "auto" }} value={rangoHasta} onChange={(e) => setRangoHasta(e.target.value)} aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} />
+              </>
+            )}
+          </div>
+        </div>
+        )}
+
+        {/* Pestañas: registro de miembros, asistencia y seguimiento */}
+        {!enIPhone && (
+        <div className="chip-toggle" style={{ flexWrap: "wrap", margin: "14px 0 4px" }}>
+          {(["miembros", "asistencia", "seguimiento", "general"] as Vista[]).map((v) => (
+            <button key={v} className={`chip${vista === v ? " active" : ""}`} onClick={() => setVista(v)}>
+              {t(`informes.vista.${v}`)}
+              {v === "seguimiento" && gruposSeguimiento.length > 0 && <span className="badge" style={{ marginLeft: 6 }}>{gruposSeguimiento.length}</span>}
+            </button>
+          ))}
+        </div>
+        )}
+
+        {cuerpoVista}
+      </div>
+      )}
 
       {ficha && (
         <FichaMiembroModal
