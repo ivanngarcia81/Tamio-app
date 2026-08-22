@@ -1,11 +1,12 @@
 # Las ramas del repo, y qué hacer con ellas
 
-_Escrito el 22 de agosto de 2026, cuando eran doce y sobraban diez._
+_Escrito el 22 de agosto de 2026, cuando eran doce y sobraban diez. Hecha
+ese mismo día: quedaron dos ramas y tres etiquetas._
 
-## Lo que hay
+## Lo que había
 
-Doce ramas en `origin`. **Dos** están vivas; las otras diez son cadáveres de
-features que ya aterrizaron.
+Doce ramas en `origin`. **Dos** estaban vivas; las otras diez eran cadáveres
+de features que ya habían aterrizado.
 
 | Rama | Estado |
 |---|---|
@@ -48,11 +49,11 @@ Por eso el orden es: **etiquetar primero, borrar después.** Una etiqueta es
 una referencia como cualquier otra: mientras exista, git conserva todo lo
 que cuelga de ella, y no ensucia la lista de ramas.
 
-## La limpieza
+## La limpieza, y cómo se hizo
 
-Hay que correrla desde una máquina con permiso de escritura completo sobre
-el repo (la Mac). Las sesiones de Claude Code tienen el push acotado a su
-rama designada: el `git push` de una etiqueta les contesta 403.
+Se corrió desde la Mac, y tenía que ser desde ahí: las sesiones de Claude
+Code llevan el push acotado a su rama designada, así que al empujar una
+etiqueta les contesta 403.
 
 Primero las etiquetas de archivo:
 
@@ -85,9 +86,31 @@ Para limpiar también las copias locales:
 git fetch --prune origin
 ```
 
-Queda el repo en dos ramas y tres etiquetas (`v1.0.0` y las dos de
-archivo), con todo recuperable: `git checkout archivo/historia-pre-rediseno`
-devuelve el árbol completo de antes del rediseño.
+Quedó el repo en dos ramas —`main` y la del rediseño— y tres etiquetas
+(`v1.0.0` y las dos de archivo). Antes de borrar se comprobó una por una que
+la punta de cada rama colgara de una etiqueta: `archivo/historia-pre-rediseno`
+ancla ocho de las nueve y `archivo/sitio-web` la restante, así que no quedó
+nada huérfano. `git checkout archivo/historia-pre-rediseno` devuelve el árbol
+completo de antes del rediseño, con sus 663 commits.
+
+### El tropiezo del token
+
+Empujar las etiquetas costó tres intentos, y el error engañaba:
+
+```
+remote: Permission to ivanngarcia81/Tamio-app.git denied to ivanngarcia81
+```
+
+Parece un problema de cuenta y no lo es: GitHub reconoció el token y lo
+resolvió a la cuenta DUEÑA del repo, y aun así denegó la escritura. Cuando
+dice eso, lo que falta es el permiso del token — la casilla `repo` en uno
+clásico, o **Contents: Read and write** en uno *fine-grained*. El permiso de
+un token no se edita: hay que generar otro. Y el nombre de usuario que pide
+git da igual (aquí se escribió el correo y funcionó): con un token, GitHub
+lo ignora.
+
+El día que el token caduque volverá exactamente este 403, y a los tres meses
+no se reconoce. Es esto.
 
 ## La que queda viva
 
