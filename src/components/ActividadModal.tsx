@@ -1,15 +1,15 @@
 /**
- * ActividadModal.tsx — la actividad de la Agenda en Mac e iPad: el diálogo
+ * ActividadModal.tsx — la actividad de la Agenda en el Mac: el diálogo
  * centrado de siempre, con sus cuatro secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevaActividadIOS`) se
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS (`NuevaActividadIOS`) se
  * lleva el formulario entero. Lo que comparten es `useActividad`, así que las
  * dos vistas escriben el MISMO registro con las MISMAS seis validaciones, y
  * la detección de choques de horario —con su "guardar de todas formas"—
  * existe una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, type RecFin, type RecurrenciaTipo } from "../db";
 import { Seccion } from "./FichaMiembroModal";
 import NuevaActividadIOS from "./NuevaActividadIOS";
@@ -26,7 +26,7 @@ export default function ActividadModal(props: PropsActividad) {
   const { t } = useTranslation();
   const { onClose } = props;
   const h = useActividad(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : onClose);

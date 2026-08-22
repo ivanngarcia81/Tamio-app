@@ -2080,9 +2080,9 @@ html.vibrancy .main { background: var(--surface); }
    Empatados a 300 decide el orden del documento —cada diálogo se cuelga de
    <body> en su propio portal al abrirse, así que lo último abierto queda
    encima—, que es justo lo que hace falta.
-   Solo en iPhone: en Mac no hay hojas, y subirlo allí lo pondría por encima
+   Solo en lo táctil: en Mac no hay hojas, y subirlo allí lo pondría por encima
    del visor de PDF (240), que sí debe tapar a quien lo abrió. */
-:root.iphone .modal-overlay--confirm { z-index: 300; }
+:root.movil .modal-overlay--confirm { z-index: 300; }
 .modal-card {
   background: var(--surface);
   width: 640px;
@@ -3702,7 +3702,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de error en rojo y el detalle técnico del sync en monoespaciada. Van como
    bloques para que cada una ocupe su renglón. */
 :root.movil .ios-section-footer > span { display: block; margin-top: 6px; }
-:root.iphone .ios-section-footer--error { color: var(--ios-red); }
+:root.movil .ios-section-footer--error { color: var(--ios-red); }
 :root.iphone .ios-section-footer--tecnico {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
@@ -3866,7 +3866,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    selección es el tinte de marca, el mismo del "+" y de las acciones. Y sube
    a 34 px de alto: 30 es cómodo con un ratón y corto con un pulgar. */
 :root.movil .ios-field--stacked .dias-toggle { gap: 8px; padding-top: 2px; }
-:root.iphone .dia-chip {
+:root.movil .dia-chip {
   min-height: 34px;
   padding: 6px 12px;
   font-size: 15px;
@@ -3879,15 +3879,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-color: transparent;
   color: var(--text);
 }
-:root.iphone .dia-chip.active {
+:root.movil .dia-chip.active {
   background: var(--brand, #059669);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
 }
-:root[data-theme="dark"].iphone .dia-chip { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .dia-chip { background: rgba(118, 118, 128, 0.24); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]).iphone .dia-chip { background: rgba(118, 118, 128, 0.24); }
+  :root:not([data-theme="light"]).movil .dia-chip { background: rgba(118, 118, 128, 0.24); }
 }
 
 :root.movil .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
@@ -3899,7 +3899,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Fila de estado consumado, no de acción: "Miembro creado y vinculado". Verde
    de semáforo (--pos) y no de marca, por lo mismo que las insignias: es un
    éxito, no un elemento de identidad. */
-:root.iphone .ios-field--pos { justify-content: center; color: var(--pos); font-size: 17px; }
+:root.movil .ios-field--pos { justify-content: center; color: var(--pos); font-size: 17px; }
 
 /* ---------------- Logo / avatar ---------------- */
 :root.iphone .ios-avatar {
@@ -4344,7 +4344,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Miembro / persona externa, arriba del todo de la hoja de solicitud. Sin
    sangría lateral: `.ios-segmented` ya trae la suya (`margin: 0 16px`), y
    repetirla aquí lo metería 32 px. */
-:root.iphone .sol-tipo { padding: 14px 0 4px; }
+:root.movil .sol-tipo { padding: 14px 0 4px; }
 
 /* El importe: lo primero que se teclea y lo único que se lee de lejos.
    Centrado y grande como en Wallet, con la moneda, la categoría y el método
@@ -9158,6 +9158,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .titulo-fijo,
   :root.ipad .app::after { display: none; }
   :root.ipad .btn-nuevo-cabecera { display: inline-flex; }
+  /* El menú de crear de Cartas es el `.btn-nuevo-cabecera` de esa pantalla
+     (con cuatro acciones en vez de una): sin él, el iPad grande no tenía
+     NINGUNA forma de crear ahí — el "+" fijo acaba de morir en esta misma
+     regla y el menú venía oculto por la de `:root.movil`. */
+  :root.ipad .cartas-menu-crear { display: block; }
 
   /* Imprimir y "···" vuelven al flujo de la barra como botones normales.
      Se les deshace una por una la conversión a glifo fijo de `:root.movil`
@@ -13932,13 +13937,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: rgba(118, 118, 128, 0.12);
   font-size: 16px;
 }
-:root[data-theme="dark"].iphone .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
 :root.movil .ios-chips .btn.secondary { font-size: 15px; }
 
 /* La cuenta de la fila de un bloque: "3" cuando está vacío —cuántos campos
    hay dentro— y "1 de 3" en cuanto hay algo escrito. El tinte es lo que
    distingue un bloque relleno de uno vacío sin tener que entrar. */
-:root.iphone .ios-cuenta {
+:root.movil .ios-cuenta {
   flex: 0 0 auto;
   margin-left: auto;
   padding: 2px 9px;
@@ -13950,19 +13955,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-:root[data-theme="dark"].iphone .ios-cuenta { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-cuenta { background: rgba(118, 118, 128, 0.24); }
 /* Después de la regla oscura a propósito: misma especificidad, así que manda
    el orden y el bloque relleno se tiñe en los dos temas. */
-:root.iphone .ios-cuenta[data-lleno="true"] {
+:root.movil .ios-cuenta[data-lleno="true"] {
   background: var(--brand-soft, rgba(16, 185, 129, 0.14));
   color: var(--brand);
 }
 
-/* ---------------- El acta en iPhone (NuevaActaIOS) ----------------
+/* ---------------- El acta en su hoja (NuevaActaIOS) ----------------
    El campo de puntos de la IA: un área de varias líneas dentro de una fila
    apilada, con el mismo relleno gris que el resto y sin el borde de 1 px que
    delata a la web. Alto fijo modesto — son viñetas, no un ensayo. */
-:root.iphone .ios-ia-campo {
+:root.movil .ios-ia-campo {
   min-height: 132px;
   margin-top: 6px;
   padding: 10px 12px;
@@ -13973,9 +13978,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 1.45;
   resize: none;
 }
-:root[data-theme="dark"].iphone .ios-ia-campo { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-ia-campo { background: rgba(118, 118, 128, 0.24); }
 
-/* ---------------- El culto en iPhone (NuevoServicioIOS) ----------------
+/* ---------------- El culto en su hoja (NuevoServicioIOS) ----------------
    El padrón embebido hacía el formulario interminable —cuarenta miembros en
    línea, y hay iglesias con trescientos— y marcar quién vino se hacía con
    interruptores, que son para ajustes que se quedan encendidos. Ahora el
@@ -14011,19 +14016,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-stepper button:first-child { border-right: 0.5px solid rgba(60, 60, 67, 0.15); }
 :root.movil .ios-stepper button:active { background: rgba(118, 118, 128, 0.2); }
 :root.movil .ios-stepper button:disabled { color: var(--text-3); cursor: default; }
-:root[data-theme="dark"].iphone .ios-stepper { background: rgba(118, 118, 128, 0.24); }
+:root[data-theme="dark"].movil .ios-stepper { background: rgba(118, 118, 128, 0.24); }
 
 /* El total: se calcula, no se escribe. Fondo apenas teñido y peso 600 para
    que se lea como cierre de la sección y no como un campo más. */
-:root.iphone .ios-total { background: rgba(118, 118, 128, 0.06); }
-:root.iphone .ios-total .ios-field-label,
-:root.iphone .ios-total .ios-field-value { font-weight: 600; color: var(--text); }
-:root[data-theme="dark"].iphone .ios-total { background: rgba(118, 118, 128, 0.12); }
+:root.movil .ios-total { background: rgba(118, 118, 128, 0.06); }
+:root.movil .ios-total .ios-field-label,
+:root.movil .ios-total .ios-field-value { font-weight: 600; color: var(--text); }
+:root[data-theme="dark"].movil .ios-total { background: rgba(118, 118, 128, 0.12); }
 
 /* Fila de miembro: casi toda la fila es el área de marcar; el chevron de la
    derecha, cuando lo hay, es un objetivo aparte que abre el motivo. */
-:root.iphone .ios-miembro { padding-right: 0; }
-:root.iphone .ios-miembro-marcar {
+:root.movil .ios-miembro { padding-right: 0; }
+:root.movil .ios-miembro-marcar {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -14036,8 +14041,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-align: left;
   cursor: pointer;
 }
-:root.iphone .ios-miembro-marcar:active { opacity: 0.6; }
-:root.iphone .ios-miembro-detalle {
+:root.movil .ios-miembro-marcar:active { opacity: 0.6; }
+:root.movil .ios-miembro-detalle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14048,7 +14053,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: none;
   cursor: pointer;
 }
-:root.iphone .ios-miembro-etiqueta {
+:root.movil .ios-miembro-etiqueta {
   flex: 0 0 auto;
   padding: 2px 8px;
   border-radius: 9px;
@@ -14056,8 +14061,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text-2);
   font-size: 13px;
 }
-:root[data-theme="dark"].iphone .ios-miembro-etiqueta { background: rgba(118, 118, 128, 0.24); }
-:root.iphone .ios-check { flex: 0 0 auto; color: var(--brand); font-size: 17px; font-weight: 600; }
+:root[data-theme="dark"].movil .ios-miembro-etiqueta { background: rgba(118, 118, 128, 0.24); }
+:root.movil .ios-check { flex: 0 0 auto; color: var(--brand); font-size: 17px; font-weight: 600; }
 
 /* Una fila que solo lleva etiqueta y chevron: sin el valor de por medio no
    hay nada que empuje al chevron al borde derecho. */
@@ -14065,4 +14070,4 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Aviso dentro de un pie de sección: no es un error, es un descuadre entre el
    conteo y la lista. Naranja, no rojo. */
-:root.iphone .ios-section-footer--aviso { display: block; margin-top: 6px; color: var(--warn, #b45309); }
+:root.movil .ios-section-footer--aviso { display: block; margin-top: 6px; color: var(--warn, #b45309); }

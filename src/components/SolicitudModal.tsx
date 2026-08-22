@@ -1,13 +1,13 @@
 /**
- * SolicitudModal.tsx — la solicitud de carta en Mac e iPad: el diálogo
+ * SolicitudModal.tsx — la solicitud de carta en el Mac: el diálogo
  * centrado de siempre, con sus dos secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevaSolicitudIOS`) se
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS (`NuevaSolicitudIOS`) se
  * lleva el formulario entero. Lo que comparten es `useSolicitud`, así que las
  * dos vistas escriben el MISMO registro con las MISMAS validaciones.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { TIPOS_CARTA } from "./CartaEditor";
 import { Seccion } from "./FichaMiembroModal";
 import { IconClose } from "../icons";
@@ -24,7 +24,7 @@ export default function SolicitudModal(props: PropsSolicitud) {
   const { t } = useTranslation();
   const { solicitud, onClose } = props;
   const h = useSolicitud(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape (y sus pantallas internas se lo quitan
    *  mientras están abiertas). Un `() => {}` estable evita que este efecto se
    *  vuelva a suscribir en cada render. */

@@ -1,7 +1,8 @@
 // Arnés de Playwright para el maestro-detalle del iPad: monta la app REAL
 // (vite dev) con un stub de SQL (sql.js corriendo las 37 migraciones reales
 // de src-tauri/src/lib.rs), siembra datos con las funciones reales de db.ts
-// y mide las seis pantallas nuevas en los tamaños de iPad y la red de
+// y mide las seis pantallas nuevas en los tamaños de iPad, las OCHO hojas
+// de formulario (que en iPad salen como formSheet de 600) y la red de
 // seguridad (Mac, iPhone, Split View).
 //
 // Requiere dos paquetes que NO son dependencias de la app (no ensucian el
@@ -115,7 +116,12 @@ async function nuevoContexto(plataforma) {
       Object.defineProperty(navigator, "platform", { get: () => "MacIntel" });
       Object.defineProperty(navigator, "maxTouchPoints", { get: () => 5 });
     }
-    try { localStorage.setItem("tesoreria-welcomed", "1"); } catch { /* noop */ }
+    // Idioma fijo: las comprobaciones de las hojas tocan filas por su texto
+    // ("Presentes", "Horario"), y el Chromium del CI arranca en inglés.
+    try {
+      localStorage.setItem("tesoreria-welcomed", "1");
+      localStorage.setItem("tesoreria-lang", "es");
+    } catch { /* noop */ }
     const noop = async () => null;
     window.__TAURI_INTERNALS__ = {
       metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
@@ -341,6 +347,108 @@ for (const [w, h] of IPADS) {
   }
 }
 
+// ---------- 6b. Las hojas de formulario ----------
+// Desde el 22-ago los OCHO formularios con hoja de iOS corren también en el
+// iPad (esMovil en vez de esIPhone): acta, servicio, actividad, depósito,
+// miembro, solicitud y los dos traslados. En iPad deben salir como hoja de
+// formulario (.formSheet: 600px, centrada, radio 16), nunca como el modal
+// de escritorio; las subpantallas se apilan como hojas encima.
+console.log("\n== Hojas de formulario (iPad 1366) ==");
+await page.setViewportSize({ width: 1366, height: 1024 });
+
+async function medirHoja() {
+  return page.evaluate(() => {
+    const hojas = [...document.querySelectorAll(".ios-sheet")];
+    const hoja = hojas[hojas.length - 1];
+    if (!hoja) return null;
+    const r = hoja.getBoundingClientRect();
+    const grupo = hoja.querySelector(".ios-group");
+    const marcar = hoja.querySelector(".ios-miembro-marcar");
+    const cuenta = hoja.querySelector(".ios-cuenta");
+    return {
+      n: hojas.length,
+      w: Math.round(r.width),
+      centro: Math.round(r.x + r.width / 2),
+      radio: getComputedStyle(hoja).borderRadius,
+      grupoBg: grupo ? getComputedStyle(grupo).backgroundColor : null,
+      marcarAlto: marcar ? getComputedStyle(marcar).minHeight : null,
+      cuentaBg: cuenta ? getComputedStyle(cuenta).backgroundColor : null,
+    };
+  });
+}
+async function esperaHoja() {
+  await page.waitForSelector(".ios-sheet", { timeout: 5000 }).catch(() => { /* la chk lo dirá */ });
+  await page.waitForTimeout(500); // que termine `modalIn` antes de medir
+}
+async function cierraHoja() {
+  await page.locator(".ios-sheet").last().locator(".ios-sheet-cancelar").click().catch(() => { });
+  await page.waitForTimeout(400);
+}
+function chkHoja(nombre, m) {
+  if (!m) { chk(false, `${nombre}: se abre como hoja de iOS`); return false; }
+  chk(m.w === 600, `${nombre}: hoja de 600 (mide ${m.w})`);
+  chk(Math.abs(m.centro - 683) <= 2, `${nombre}: centrada (centro ${m.centro})`);
+  chk(m.radio === "16px", `${nombre}: radio 16 (${m.radio})`);
+  chk(m.grupoBg && m.grupoBg !== "rgba(0, 0, 0, 0)", `${nombre}: grupos con fondo`);
+  return true;
+}
+
+// Las cinco pantallas con botón de crear en la cabecera.
+for (const { ruta, nombre } of [
+  { ruta: "depositos", nombre: "deposito" },
+  { ruta: "actas", nombre: "acta" },
+  { ruta: "servicios", nombre: "servicio" },
+  { ruta: "agenda", nombre: "actividad" },
+  { ruta: "membresia", nombre: "miembro" },
+]) {
+  await page.goto(`${URL_BASE}/#/${ruta}`);
+  await page.waitForTimeout(700);
+  await page.locator(".btn-nuevo-cabecera").first().click();
+  await esperaHoja();
+  const m = await medirHoja();
+  if (!chkHoja(nombre, m)) continue;
+  if (nombre === "acta") {
+    // La subpágina (Horario) se apila como segunda hoja, también a 600.
+    await page.locator(".ios-sheet .ios-field--link", { hasText: "Horario" }).first().click();
+    await page.waitForTimeout(500);
+    const s = await medirHoja();
+    chk(s?.n === 2 && s?.w === 600, `acta: subpágina apilada a 600 (${s?.n} hojas, ${s?.w})`);
+    await page.locator(".ios-sheet").last().locator(".ios-back").click();
+    await page.waitForTimeout(300);
+  }
+  if (nombre === "servicio") {
+    // El padrón vive en la subpágina "Tomar asistencia" (fila Presentes).
+    await page.locator(".ios-sheet .ios-field--link", { hasText: "Presentes" }).first().click();
+    await page.waitForTimeout(500);
+    const s = await medirHoja();
+    chk(s?.marcarAlto === "44px", `servicio: fila de padrón a 44 (${s?.marcarAlto})`);
+    await page.locator(".ios-sheet").last().locator(".ios-back").click();
+    await page.waitForTimeout(300);
+  }
+  if (nombre === "miembro") {
+    chk(m.cuentaBg && m.cuentaBg !== "rgba(0, 0, 0, 0)", "miembro: cuenta \"n de m\" teñida");
+  }
+  await cierraHoja();
+}
+
+// Cartas: solicitud y los dos traslados salen del menú de crear de la
+// cabecera — el mismo MenuAnchor del Mac, que a partir de 700 vuelve a ser
+// la única entrada de crear de esa pantalla (el "+" fijo muere ahí).
+await page.goto(`${URL_BASE}/#/cartas`);
+await page.waitForTimeout(700);
+for (const [etiqueta, nombre] of [
+  ["Nueva solicitud", "solicitud"],
+  ["Registrar traslado de salida", "traslado salida"],
+  ["Registrar traslado de entrada", "traslado entrada"],
+]) {
+  await page.locator(".cartas-menu-crear button").first().click();
+  await page.waitForTimeout(300);
+  await page.getByText(etiqueta, { exact: true }).first().click();
+  await esperaHoja();
+  chkHoja(nombre, await medirHoja());
+  await cierraHoja();
+}
+
 // ---------- 7. La red de seguridad ----------
 console.log("\n== Red de seguridad ==");
 await page.close();
@@ -362,6 +470,14 @@ await ctx.close();
       chk(n === 0, `mac ${w}: ${p.ruta} sin md-split`);
     }
   }
+  // Y el formulario sigue siendo el modal de escritorio, no una hoja.
+  await pg.setViewportSize({ width: 1440, height: 900 });
+  await pg.goto(`${URL_BASE}/#/servicios`);
+  await pg.waitForTimeout(500);
+  await pg.locator(".btn-nuevo-cabecera").first().click();
+  await pg.waitForTimeout(400);
+  chk(await pg.locator(".modal-card").count() > 0, "mac: Nuevo servicio es el modal de siempre");
+  chk(await pg.locator(".ios-sheet").count() === 0, "mac: sin hoja de iOS");
   await ctxMac.close();
 }
 
@@ -382,6 +498,18 @@ await ctx.close();
       chk(n === 0, `iphone ${w}: ${p.ruta} sin md-split`);
     }
   }
+  // Y la hoja del teléfono sigue siendo a lo ancho, no el formSheet de 600.
+  await pg.setViewportSize({ width: 390, height: 844 });
+  await pg.goto(`${URL_BASE}/#/servicios`);
+  await pg.waitForTimeout(500);
+  await pg.locator(".btn-crear").click();
+  await pg.waitForSelector(".ios-sheet", { timeout: 5000 }).catch(() => { /* la chk lo dirá */ });
+  await pg.waitForTimeout(400);
+  const hojaTel = await pg.evaluate(() => {
+    const hoja = document.querySelector(".ios-sheet");
+    return hoja ? Math.round(hoja.getBoundingClientRect().width) : null;
+  });
+  chk(hojaTel === 390, `iphone: hoja a lo ancho del teléfono (${hojaTel})`);
   await ctxIp.close();
 }
 

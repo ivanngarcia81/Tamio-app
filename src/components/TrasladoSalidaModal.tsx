@@ -1,15 +1,15 @@
 /**
- * TrasladoSalidaModal.tsx — el traslado de salida en Mac e iPad: el diálogo
+ * TrasladoSalidaModal.tsx — el traslado de salida en el Mac: el diálogo
  * centrado de siempre, con sus tres secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS
  * (`NuevoTrasladoSalidaIOS`) se lleva el formulario entero. Lo que comparten
  * es `useTrasladoSalida`, así que las dos vistas escriben el MISMO registro
  * con las MISMAS cuatro validaciones, y la generación de la carta vinculada
  * existe una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { Seccion, SwitchRow } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
 import NuevoTrasladoSalidaIOS from "./NuevoTrasladoSalidaIOS";
@@ -25,7 +25,7 @@ export default function TrasladoSalidaModal(props: PropsTrasladoSalida) {
   const { t } = useTranslation();
   const { traslado, onAbrirCarta } = props;
   const h = useTrasladoSalida(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : h.pedirCerrar);

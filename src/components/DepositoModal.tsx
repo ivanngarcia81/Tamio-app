@@ -1,15 +1,15 @@
 /**
- * DepositoModal.tsx — el depósito bancario en Mac e iPad: el diálogo centrado
+ * DepositoModal.tsx — el depósito bancario en el Mac: el diálogo centrado
  * de siempre, con su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevoDepositoIOS`) se
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS (`NuevoDepositoIOS`) se
  * lleva el formulario entero. Lo que comparten es `useDeposito`, así que las
  * dos vistas escriben el MISMO registro y los cuatro avisos contables
  * —duplicado, exceso de efectivo, período distinto y fechas futuras— existen
  * una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { mesLegible } from "../db";
 import { rutaComprobante } from "../services/comprobantes";
@@ -22,7 +22,7 @@ export default function DepositoModal(props: PropsDeposito) {
   const { t } = useTranslation();
   const { church, onClose } = props;
   const h = useDeposito(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : onClose);

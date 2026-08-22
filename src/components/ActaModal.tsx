@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import { ChipGroup, Seccion, SwitchRow } from "./FichaMiembroModal";
 import { IconClose, IconPlus, IconPrinter, IconSparkles } from "../icons";
@@ -26,8 +26,8 @@ export { parseMociones, parseAcuerdos } from "./acta";
 export default function ActaModal(props: PropsActa) {
   const { acta, onClose, onImprimir } = props;
   const { t } = useTranslation();
-  const enIPhone = esIPhone();
-  useEscapeClose(enIPhone ? NO_HACE_NADA : onClose);
+  const enHoja = esMovil();
+  useEscapeClose(enHoja ? NO_HACE_NADA : onClose);
   const h = useActa(props);
   const {
     saving, error, muestraAprobacion,
@@ -42,10 +42,10 @@ export default function ActaModal(props: PropsActa) {
     guardar,
   } = h;
 
-  // En el teléfono el acta entera se va a su propia hoja: es el formulario más
+  // En todo lo táctil el acta entera se va a su propia hoja: es el formulario más
   // largo de la app y en una columna de cajas de 46 px no cabe ni la primera
   // sección.
-  if (enIPhone) {
+  if (enHoja) {
     return <NuevaActaIOS churchId={props.church.id} acta={acta} onClose={onClose} onImprimir={onImprimir} h={h} tipos={TIPOS_ACTA} estados={ESTADOS_ACTA} />;
   }
 
@@ -65,7 +65,7 @@ export default function ActaModal(props: PropsActa) {
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("actas.tipoReunion")}</label>
-                {enIPhone ? (
+                {enHoja ? (
                   <IOSPickerInput ariaLabel={t("actas.tipoActa")} options={TIPOS_ACTA.map((k) => ({ value: k, label: t(`actas.tipo.${k}`) }))} value={tipo} onSelect={setTipo} />
                 ) : (
                   <select className="form-input" value={tipo} onChange={(e) => setTipo(e.target.value)}>
@@ -260,7 +260,7 @@ export default function ActaModal(props: PropsActa) {
             <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">{t("actas.estadoActa")}</label>
-                {enIPhone ? (
+                {enHoja ? (
                   <IOSPickerInput ariaLabel={t("actas.estadoActa")} options={ESTADOS_ACTA.map((k) => ({ value: k, label: t(`actas.estado.${k}`) }))} value={estado} onSelect={setEstado} />
                 ) : (
                   <select className="form-input" value={estado} onChange={(e) => setEstado(e.target.value)}>

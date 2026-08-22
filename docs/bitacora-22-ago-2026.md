@@ -106,7 +106,40 @@ APILADO del mini a 744, y uno de los dos ni siquiera era de Ajustes:
   ahora solo existe con el cajón abierto. La franja llevaba ahí desde que
   existe el cajón; la cazó una captura, no el código.
 
-## 5. Lo que quedó anotado, no hecho
+## 5. La cuarta pasada: los formularios
+
+Iván preguntó si TODAS las páginas tenían ya el handoff, "incluyendo sus
+formularios". La respuesta honesta era no: el 21 solo la hoja de "Nuevo
+ingreso/gasto" había cruzado al iPad; los otros ocho formularios con hoja
+de iOS (acta, culto, actividad, depósito, solicitud, los dos traslados y el
+alta de miembro) seguían detrás de `esIPhone()` y en el iPad salían como el
+modal de escritorio — justo lo que el diseño reemplaza con su hoja centrada
+de ~600.
+
+El arreglo fue barato porque el cascarón ya estaba: cambiar el gancho de
+cada modal a `esMovil()` y mover las ~25 reglas de CSS que sus filas
+montan y seguían solo bajo `:root.iphone` (extraídas leyendo los
+componentes, como el 21). Las subpantallas —"Tomar asistencia", el
+buscador de nombres, horario/mociones/acuerdos— ya eran `.ios-sheet`, así
+que en iPad se apilan solas como segunda hoja de 600.
+
+De paso cayó un hallazgo que no era de formularios: **el iPad grande no
+tenía NINGUNA forma de crear en Cartas** (desde 700 el "+" fijo se apaga y
+el menú de crear de la cabecera estaba oculto para todo `movil`), ni
+entrada alguna a la pestaña de Solicitudes. El menú de crear ahora vuelve
+en iPad desde 700, como los botones de cabecera.
+
+El editor de Cartas se queda como página de escritorio en iPad (meterlo en
+una hoja de 600 es un rediseño del editor, anotado); las hojas de
+Configuración del diseño (categoría, invitar) siguen como modales.
+
+Verificado con el arnés, que creció para quedarse: las ocho hojas a 1366
+(600 de ancho, centrada, radio 16, grupos con fondo, subpáginas apiladas,
+padrón a 44) y en la red de seguridad que el Mac conserva su modal y el
+iPhone su hoja a lo ancho — 227 comprobaciones en verde (eran 189), más
+tsc, los doce `verificar-*` y el build con las clases movidas en el bundle.
+
+## 6. Lo que quedó anotado, no hecho
 
 - **Probar en el aparato.** El arnés es Chromium; el patrón ya se sabe (el
   umbral de 1024, el AccentColor): lo que WKWebView decida distinto solo se

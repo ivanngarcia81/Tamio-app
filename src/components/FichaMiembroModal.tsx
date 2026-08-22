@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esIPhone, esMovil } from "../movil";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import { fmtFechaCorta } from "../db";
 import { IconCalendar, IconChevronDown, IconClose, IconMail, IconPrinter } from "../icons";
@@ -219,9 +219,9 @@ export default function FichaMiembroModal(props: PropsFicha) {
     asistencia, docs, guardar,
   } = h;
 
-  // El ALTA en el teléfono se va a su propia hoja; la EDICIÓN no, que ahí la
+  // El ALTA en lo táctil se va a su propia hoja; la EDICIÓN no, que ahí la
   // ficha completa es justamente lo que se viene a ver.
-  const enHoja = esIPhone() && crear;
+  const enHoja = esMovil() && crear;
   useEscapeClose(enHoja ? NO_HACE_NADA : onClose);
   if (enHoja) return <NuevoMiembroIOS onClose={onClose} h={h} />;
 

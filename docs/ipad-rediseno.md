@@ -66,18 +66,56 @@ el Large Title, que empieza en y=70.
 > **La lección**: un umbral de iPad se justifica por las clases de tamaño de
 > iPadOS, no por reutilizar un breakpoint que existía para otra cosa.
 
-### La hoja de "Nuevo ingreso/gasto"
+### Las hojas de formulario — TODAS (22 ago)
 
-`NewRecordModal` la elegía con `esIPhone()`; ahora con `esMovil()`. En el
-iPad se pinta como `.formSheet` de UIKit: 600px de ancho, centrada, 82% de
-alto, radio 16, sin tirador.
+`NewRecordModal` elegía la hoja con `esIPhone()`; ahora con `esMovil()`. En
+el iPad se pinta como `.formSheet` de UIKit: 600px de ancho, centrada, 82%
+de alto, radio 16, sin tirador. El 21 de agosto solo "Nuevo ingreso/gasto"
+había cruzado; el 22 cruzaron los OCHO formularios restantes con hoja de
+iOS — el mismo cambio de gancho en cada uno, porque el cascarón (`.ios-sheet`
+y la geometría de `.formSheet`) ya estaba bajo `:root.movil`/`:root.ipad` y
+lo único propio de cada hoja son sus filas:
 
-El CSS de la hoja vivía entero bajo `:root.iphone`. Se movieron a
-`:root.movil` las 71 clases que la hoja monta de verdad (131 apariciones),
-sacadas de leer `NuevoMovimientoIOS.tsx` y `src/components/ios/*.tsx` — no
-a mano. Las otras 148 (Ajustes iOS, Bandeja, Cartas, la barra de menú)
-siguen en `:root.iphone` y el iPad no las alcanza, porque sus componentes
-siguen detrás de `esIPhone()`.
+| Formulario | Gancho cambiado | Hoja |
+|---|---|---|
+| Acta (con subpáginas de horario, mociones, acuerdos) | `ActaModal` | `NuevaActaIOS` |
+| Registro de culto (asistencia en subpágina) | `ServicioModal` | `NuevoServicioIOS` |
+| Actividad de agenda | `ActividadModal` | `NuevaActividadIOS` |
+| Depósito bancario | `DepositoModal` | `NuevoDepositoIOS` |
+| Solicitud de carta | `SolicitudModal` | `NuevaSolicitudIOS` |
+| Traslado de salida | `TrasladoSalidaModal` | `NuevoTrasladoSalidaIOS` |
+| Traslado de entrada | `TrasladoEntradaModal` | `NuevoTrasladoIOS` |
+| Alta de miembro (solo CREAR, como en iPhone) | `FichaMiembroModal` | `NuevoMiembroIOS` |
+
+Las subpantallas (el buscador de nombres, "Tomar asistencia", los textos
+largos, horario/mociones/acuerdos) también son `.ios-sheet`, así que en el
+iPad se apilan solas como una segunda hoja de 600 encima — el mismo
+comportamiento que ya tenía el buscador de aportante de Nuevo ingreso.
+
+El CSS: el 21 se movieron a `:root.movil` las 71 clases que monta la hoja
+de movimiento (extraídas de leer los componentes, no a mano); el 22, con el
+mismo método sobre las ocho hojas nuevas, se movieron las ~25 reglas que
+faltaban (`.sol-tipo`, `.dia-chip`, `.ios-cuenta`, `.ios-ia-campo`,
+`.ios-total`, `.ios-miembro-*`, `.ios-check`, los pies `--error`/`--aviso`,
+`.modal-overlay--confirm` y las variantes oscuras huérfanas de
+`.ios-stepper` y `.ios-chips`). Lo que sigue en `:root.iphone` es solo lo
+que el iPad de verdad no alcanza: los Ajustes de iOS, la Bandeja, el editor
+de Cartas (`carta-ios`), la barra de menú y las pieles de páginas enteras
+de teléfono.
+
+Dos consecuencias que no son formularios pero salieron de aquí:
+
+- **Cartas recuperó su botón de crear en iPad.** Desde 700px el "+" fijo se
+  apaga y vuelven los botones de cabecera; el menú de crear de Cartas
+  (`.cartas-menu-crear`, con las 4 acciones) estaba oculto para todo
+  `movil`, así que el iPad grande no tenía NINGUNA entrada de crear en esa
+  pantalla — ni forma de llegar a la pestaña de Solicitudes. Ahora
+  `:root.ipad` lo enseña desde 700, como al `.btn-nuevo-cabecera`.
+- **El editor de Cartas se queda como página en iPad** (la piel de
+  escritorio, `card pad-lg`). El diseño lo comprime en una hoja de 580;
+  la app lo tiene como pantalla completa con vista previa del documento, y
+  meter ese editor en 600px es otra tarea, anotada abajo, no un cambio de
+  gancho.
 
 ---
 
@@ -373,6 +411,26 @@ Se eligió empujar. Consecuencias para quien lo implemente:
       ambos, la sombra ahora solo existe con `.menu-abierto` — el mismo
       trato que ya tenía el panel del maestro-detalle.
 
+12. **Los formularios** (22 ago, cuarta pasada, pedida por Iván: "¿ya
+    todas las páginas, incluyendo sus formularios?"). La respuesta honesta
+    era NO: solo "Nuevo ingreso/gasto" había cruzado al iPad; los otros
+    ocho formularios con hoja de iOS seguían detrás de `esIPhone()` y en el
+    iPad salían como el modal de escritorio. Cruzados los ocho — el detalle
+    en §1 ("Las hojas de formulario"). Queda anotado, no hecho:
+
+    - **El editor de Cartas como hoja** (el diseño lo comprime a 580px;
+      la app lo tiene como página con vista previa — es un rediseño del
+      editor, no un gancho).
+    - **Las hojas de Configuración del diseño** (nueva categoría, invitar,
+      responsable): en iPad siguen siendo los modales de escritorio de
+      cada zona, coherentes entre sí. Las listas iOS de Categorías
+      (`CategoriesSettingsIOS`, `IOSFormSheet`) son la piel del teléfono.
+    - **En iPad angosto (<700) la pestaña de Solicitudes sigue sin
+      entrada** — el "+" fijo abre "Nueva carta" directo y el menú de
+      cabecera solo existe desde 700. Desde 700 ya se llega (el menú
+      recuperado); por debajo, el reparto de media pantalla, es un hueco
+      heredado que el rediseño no abrió.
+
 ---
 
 ## 4. Lo que hay que tirar del handoff
@@ -399,8 +457,11 @@ El arnés de Playwright ya vive en el repo: **`pruebas/arnes-ipad.mjs`**
 app REAL con `vite dev`, sustituye `invoke("db_select"/"db_execute")` por
 sql.js corriendo las migraciones reales de `src-tauri/src/lib.rs`, siembra
 datos con las funciones reales de `db.ts` y recorre las seis pantallas
-partidas en los ocho tamaños de iPad más la red de seguridad. Cómo correrlo
-está en su cabecera (`npm i --no-save playwright sql.js`).
+partidas en los ocho tamaños de iPad, las ocho hojas de formulario (a 1366
+deben salir como formSheet de 600 centrada, con sus subpáginas apiladas) y
+la red de seguridad (que incluye: en Mac el formulario sigue siendo el
+modal, en iPhone la hoja sigue siendo a lo ancho). 227 comprobaciones. Cómo
+correrlo está en su cabecera (`npm i --no-save playwright sql.js`).
 
 Los tamaños de abajo son los del arnés. Los marcados como "no debe cambiar"
 son la red: si uno se mueve, el cambio se salió del iPad.

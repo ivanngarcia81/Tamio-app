@@ -1,15 +1,15 @@
 /**
- * TrasladoEntradaModal.tsx — el traslado de entrada en Mac e iPad: el diálogo
+ * TrasladoEntradaModal.tsx — el traslado de entrada en el Mac: el diálogo
  * centrado de siempre, con sus cuatro secciones y su rejilla de dos columnas.
  *
- * En iPhone no se pinta nada de aquí: la hoja de iOS (`NuevoTrasladoIOS`) se
+ * En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS (`NuevoTrasladoIOS`) se
  * lleva el formulario entero. Lo que comparten es `useTrasladoEntrada`, así
  * que las dos vistas escriben el MISMO registro con las MISMAS validaciones,
  * y el enredo de duplicados —la única pantalla que evita miembros repetidos—
  * existe una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { Seccion } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
@@ -25,7 +25,7 @@ export default function TrasladoEntradaModal(props: PropsTrasladoEntrada) {
   const { t } = useTranslation();
   const { traslado } = props;
   const h = useTrasladoEntrada(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : h.pedirCerrar);
