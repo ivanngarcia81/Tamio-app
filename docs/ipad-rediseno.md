@@ -872,3 +872,63 @@ de la rama que perdió la fusión y probaba SU código:
 - y su propio corte seguía en 1150, así que juzgaba con una vara distinta de
   la de la app. Es el fallo más peligroso de los cuatro: un verificador que
   no comparte umbral con lo que verifica aprueba lo que debería suspender.
+
+---
+
+## 12. Por qué el iPad del diseño fue el último en salir bien
+
+_Escrito el 22 de agosto de 2026, contestando una pregunta de Iván: "si el
+handoff fue diseñado para iPad 13, ¿qué fue lo que pasó?". Es la lección más
+cara de los tres días y merece estar aquí y no solo en los commits._
+
+### El handoff describe UN estado de doce
+
+Venía dibujado a **1366×1024** — el 13" en horizontal. De ahí salen todos los
+números de este documento: lista de 400 y de 378, sidebar de 318, hoja de
+600, filas de 60–64, radio de 14–16. Son medidas de **un lienzo**.
+
+Y a 1366 la app hace lo que dibuja. Ahí no falló nada en ningún momento.
+
+Lo que el handoff **no** traía: vertical (fue el primer mensaje de Iván sobre
+esto, *"los diseños de portrait mode no salió"*), Split View, Slide Over, el
+mini, el 10.9" y el 11". Un iPad puede aparecer en unos doce estados entre
+tamaños y repartos; el handoff describe uno.
+
+**Los otros once se inventaron aquí.** Y una decisión inventada no tiene
+contra qué comprobarse: solo contra el criterio de quien la toma.
+
+### Los tres fallos son el mismo fallo
+
+Los tres fueron "un número puesto sin nada que lo validara", y los tres los
+encontró Iván probando en el aparato, no una comprobación:
+
+| Cuándo | El número | A quién dejaba fuera |
+|---|---|---|
+| 21 ago | el rediseño ENTRABA a 1024 | todos menos el 13"; *"sigue en su mayoría con la vieja UI"* |
+| 22 ago | el bloque del teléfono LLEGABA a 1023 | mini, 10.9" y 11" en vertical corrían la maqueta del iPhone |
+| 22 ago | las columnas ENTRABAN a 1150 | **todo iPad en vertical, incluido el 13"** |
+
+La progresión es lo que duele: cada arreglo corrigió el umbral de entrada y
+dejó intacto el de al lado. Tres veces seguidas.
+
+### Y el 13" fue el último precisamente por ser el del diseño
+
+Porque **es el que se dibujó, y por eso es el que se miró**. En horizontal
+coincidía con la maqueta al píxel, así que daba la sensación de estar
+terminado, y nadie lo giró. El aparato del diseño acabó siendo el mejor
+atendido en la orientación dibujada y el peor en la que no.
+
+No es mala suerte: **lo que no está en la maqueta no se revisa.**
+
+### Las dos reglas que salen de aquí
+
+1. **Un umbral se justifica por su propia pregunta, no por parecerse al de al
+   lado.** El fallo de hoy eran dos decisiones —"¿caben sidebar y contenido?"
+   y "¿caben lista y detalle?"— atadas al mismo 1149.98 sin compartir motivo.
+   Está escrito junto a las dos media queries, en `styles.css`.
+
+2. **Cuando la maqueta cubre un tamaño, la verificación tiene que cubrir
+   todos.** Es la razón de ser de `pruebas/arnes-ipad.mjs`: los ocho tamaños
+   de iPad más Mac, iPhone, Split View y Slide Over. Antes de que existiera,
+   la única verificación era Iván con el iPad en la mano — y por eso los tres
+   fallos llegaron a un build.
