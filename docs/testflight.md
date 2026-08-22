@@ -77,8 +77,9 @@ en las tres fuentes:
 | 21 ago | 1.1.5 |
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
-| esta | **1.1.8** — el rediseño llega a TODOS los iPads, no solo al de 13" |
-| la siguiente | 1.1.9 |
+| 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
+| esta | **1.1.9** — Membresía en iPad, las seis pantallas que faltaban y el modo vertical |
+| la siguiente | 1.1.10 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
@@ -132,6 +133,22 @@ el rediseño de iPad viajaba de verdad en el bundle (`:root.ipad`,
 `md-split`, `sidebar-buscar` y `backdrop-filter` presentes en el CSS
 construido) — el número de versión y el código son cosas distintas, y subir
 una versión nueva con el bundle viejo es un fallo silencioso.
+
+En la 1.1.9, lo mismo: `tsc`, los doce `verificar-*` —los seis sueltos más
+los cinco del dinero que arrastra `verificar-centavos`, y `verificar-canal`
+al final del build— y el build del canal `appstore` con sus dos guardas
+confirmadas.
+
+Y la comprobación del bundle **se amplió a lo que trae esta tanda**, que es
+la parte que se olvida. Buscar solo `:root.ipad` y `md-split` seguiría
+saliendo en verde con el trabajo nuevo fuera del bundle: esas clases ya
+estaban en la 1.1.6. Así que se buscaron también, en el CSS construido,
+`ipad-ancho` (la clase del modo vertical), `tabla-membresia`,
+`membresia-segmentado`, `md-indice`, `md-agenda`, `ag-dia-fila`, `ds-tira`,
+`da-doc`, `md-dia` y `rep-documento` —una por cada pantalla nueva—, y en el
+JS la línea que pone y quita `ipad-ancho` al girar el iPad. **La lista de
+clases que se comprueba se alarga con cada tanda**; si no, la comprobación
+deja de comprobar lo que se acaba de escribir.
 
 **La 1.1.6 se quedó sin distribuir**: se preparó, y antes de archivarla
 apareció el número invisible de "hoy" en el calendario de la Mac. Se arregló
