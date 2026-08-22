@@ -36,3 +36,13 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 - **La hoja del periodo del prototipo** (`infper_abrir`, un picker en hoja)
   se resolvió con los campos inline bajo los chips — misma función, sin hoja.
   Si Iván prefiere la hoja del dibujo, es solo presentación.
+
+## Mensajes (chat de columna centrada, handoff 2)
+
+- **Nada quedó de cáscara.** Enviar, borrar lo propio con confirmación, el
+  hilo, el estado vacío y ⌘↩ ya funcionaban; lo nuevo (columna de 720
+  centrada, separadores por día, hora en la burbuja y la nota de
+  visibilidad) es presentación sobre datos que ya existían.
+- **El aviso "lo ven las tres áreas"** dice la verdad: `mensajes` no tiene
+  destinatario, es un hilo único por iglesia. Si algún día se quiere
+  mensajería dirigida, es columna nueva y no un cambio de texto.

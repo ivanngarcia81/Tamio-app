@@ -53,6 +53,7 @@ export const en: Resources = {
   },
 
   fechas: {
+    hoy: "Today",
     sinActividad: "No activity",
     haceMomento: "Just now",
     haceMin: "{{n}} min ago",
@@ -1066,6 +1067,8 @@ export const en: Resources = {
   },
 
   mensajes: {
+    visibilidad: "All three areas see this: treasury, secretariat and administration.",
+    atajoEnviar: "⌘ ↩ to send",
     titulo: "Inbox",
     sub: "Communication between treasury and secretariat",
     vacioTitulo: "No messages yet",

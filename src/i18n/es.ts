@@ -47,6 +47,7 @@ export const es = {
   },
 
   fechas: {
+    hoy: "Hoy",
     sinActividad: "Sin actividad",
     haceMomento: "Hace un momento",
     haceMin: "Hace {{n}} min",
@@ -1095,6 +1096,8 @@ export const es = {
   },
 
   mensajes: {
+    visibilidad: "Lo ven las tres áreas: tesorería, secretaría y administración.",
+    atajoEnviar: "⌘ ↩ para enviar",
     titulo: "Mensajes",
     sub: "Comunicación entre tesorería y secretaría",
     vacioTitulo: "No hay mensajes todavía",

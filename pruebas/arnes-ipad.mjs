@@ -262,6 +262,13 @@ const ctxSeed = await nuevoContexto("ipad");
       responsable_persona: null, responsable_ministerio: null,
       invitado: null, contacto: null, estado: "programada", es_fecha_importante: false,
     });
+    // Mensajes: el hilo compartido de las tres áreas. Tres mensajes de dos
+    // roles distintos para que se vean las burbujas de los dos lados; el
+    // separador de día sale solo (todos caen hoy).
+    await db.insertMensaje(id, "tesoreria", "El corte del domingo ya está capturado, falta el comprobante del banco.");
+    await db.insertMensaje(id, "secretaria", "Perfecto. Subo el acta de la administrativa esta tarde.");
+    await db.insertMensaje(id, "tesoreria", "Va. Y ojo con el traslado de Javier: la carta sigue sin firma.");
+
     return "ok";
   });
   chk(sembrado === "ok", "datos sembrados con las funciones reales de db.ts");

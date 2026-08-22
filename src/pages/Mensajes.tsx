@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  deleteMensaje, fmtRelativo, insertMensaje, listMensajes, marcarMensajesLeidos,
+  deleteMensaje, fmtFechaCorta, fmtRelativo, insertMensaje, listMensajes, marcarMensajesLeidos,
   type Church, type Mensaje,
 } from "../db";
 import type { Role } from "../role";
@@ -12,7 +12,21 @@ import { EmptyState } from "../components/TxList";
 import { IconClose, IconMail } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
-import { esIPhone, esMac } from "../movil";
+import { esIPad, esIPhone, esMac } from "../movil";
+
+/** El día de un `creado_en` ("2026-08-22 17:04:11" → "2026-08-22"). */
+function diaDe(iso: string): string {
+  return iso.slice(0, 10);
+}
+
+/** La hora local corta ("17:04"). Dentro de la burbuja se enseña la HORA y no
+ *  el "hace 3 h" de antes: con el separador de día encima, el relativo
+ *  duplicaba una información que ya está arriba y encima se contradecía con
+ *  ella ("Ayer" sobre una burbuja que decía "hace 20 h"). */
+function horaDe(iso: string): string {
+  const hm = iso.slice(11, 16);
+  return hm || fmtRelativo(iso);
+}
 
 interface Props {
   church: Church;
@@ -24,6 +38,7 @@ interface Props {
 export default function Mensajes({ church, role, refreshKey, onChanged }: Props) {
   const { t } = useTranslation();
   const enIPhone = esIPhone();
+  const enIPad = esIPad();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [loading, setLoading] = useState(true);
   const [texto, setTexto] = useState("");
@@ -57,6 +72,20 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
   useEffect(() => {
     finRef.current?.scrollIntoView({ block: "end" });
   }, [mensajes.length]);
+
+  /* La etiqueta del separador de día: Hoy, Ayer o la fecha. Se calcula
+     contra el día de HOY, no contra el mensaje anterior, para que un hilo
+     abierto a medianoche no diga "Ayer" sobre lo que se acaba de escribir. */
+  function etiquetaDia(dia: string): string {
+    const hoy = new Date();
+    const pd = (x: number) => String(x).padStart(2, "0");
+    const iso = (d: Date) => `${d.getFullYear()}-${pd(d.getMonth() + 1)}-${pd(d.getDate())}`;
+    if (dia === iso(hoy)) return t("fechas.hoy");
+    const ayer = new Date(hoy);
+    ayer.setDate(ayer.getDate() - 1);
+    if (dia === iso(ayer)) return t("fechas.ayer");
+    return fmtFechaCorta(dia);
+  }
 
   function nombreRol(r: string): string {
     if (r === "secretaria") return t("rol.secretaria");
@@ -111,7 +140,7 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
             el hilo que desplaza por dentro, el compositor pegado abajo).
             Lo que se va es `card`, que es lo que le ponía borde, radio y
             superficie propia. */}
-        <div className={enIPhone ? "msg-card" : "card msg-card"}>
+        <div className={`${enIPhone ? "msg-card" : "card msg-card"}${enIPad ? " msg-card-ipad" : ""}`}>
           <div className="msg-thread">
             {loading ? (
               <LoadingState />
@@ -124,14 +153,20 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
               />
             ) : (
               <>
-                {mensajes.map((m) => {
+                {mensajes.map((m, i) => {
                   const propio = m.de_rol === role;
+                  /* Separador de día cuando cambia respecto al mensaje de
+                     arriba (y siempre antes del primero). */
+                  const dia = diaDe(m.creado_en);
+                  const nuevoDia = i === 0 || diaDe(mensajes[i - 1].creado_en) !== dia;
                   return (
-                    <div key={m.id} className={`msg-row${propio ? " propio" : ""}`}>
+                    <div key={m.id} className="msg-grupo">
+                    {nuevoDia && <div className="msg-dia"><span>{etiquetaDia(dia)}</span></div>}
+                    <div className={`msg-row${propio ? " propio" : ""}`}>
                       <div className="msg-bubble">
                         <div className="msg-meta">
                           <span className="msg-autor">{nombreRol(m.de_rol)}</span>
-                          <span className="msg-fecha">{fmtRelativo(m.creado_en)}</span>
+                          <span className="msg-fecha">{horaDe(m.creado_en)}</span>
                           {propio && (
                             <button className="msg-del" aria-label={t("mensajes.eliminar")} title={t("mensajes.eliminar")} onClick={() => setPendingDelete(m)}>
                               <IconClose size={12} strokeWidth={2.4} />
@@ -140,6 +175,7 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
                         </div>
                         <div className="msg-cuerpo">{m.cuerpo}</div>
                       </div>
+                    </div>
                     </div>
                   );
                 })}
@@ -163,6 +199,17 @@ export default function Mensajes({ church, role, refreshKey, onChanged }: Props)
               {t("mensajes.enviar")}
             </button>
           </div>
+
+          {/* Quién lo ve y cómo se manda. Lo pide el handoff 2, y contesta la
+              pregunta que un hilo compartido plantea sola —"¿esto lo lee
+              todo el mundo?"— justo donde se escribe. Fuera del teléfono,
+              donde no hay teclas de atajo ni sitio para dos renglones. */}
+          {!enIPhone && (
+            <div className="msg-pie">
+              <span>{t("mensajes.visibilidad")}</span>
+              <span className="msg-atajo">{t("mensajes.atajoEnviar")}</span>
+            </div>
+          )}
         </div>
       </div>
 

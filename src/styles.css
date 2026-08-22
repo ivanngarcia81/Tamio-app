@@ -7117,6 +7117,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-direction: column;
   gap: var(--space-3);
 }
+/* Cada mensaje va envuelto en `.msg-grupo` porque puede traer separador de
+   día encima. El grupo hereda la columna y el hueco del hilo para que el
+   reparto vertical no cambie por el hecho de envolver. */
+.msg-grupo { display: flex; flex-direction: column; gap: var(--space-3); }
+/* El separador de día: una etiqueta centrada, como en Mensajes de iOS. */
+.msg-dia { display: flex; align-items: center; justify-content: center; padding: 6px 0 0; }
+.msg-dia > span { font-size: 12px; font-weight: 600; color: var(--text-3); }
 .msg-row { display: flex; justify-content: flex-start; }
 .msg-row.propio { justify-content: flex-end; }
 .msg-bubble {
@@ -15457,3 +15464,77 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 @media (min-width: 700px) and (max-width: 999.98px) {
   :root.ipad .inf-volver { display: inline-flex; }
 }
+
+/* ============================================================
+   Mensajes en iPad: la columna de 720 centrada (handoff 2)
+   ------------------------------------------------------------
+   El hilo y el compositor comparten un carril de 720px centrado en vez de
+   estirarse a los 1366 del iPad: una burbuja de 74% sobre un panel entero
+   son renglones de más de 900px, que se leen mal — es la misma razón por la
+   que Mail y Mensajes de iPadOS centran su contenido. El carril lo pone un
+   `max-width` con `margin: auto` en los TRES hijos (hilo, compositor y pie),
+   no un contenedor nuevo, para no tocar el andamiaje que ya funciona en Mac
+   y en el teléfono. */
+/* `.main` tiene que ser columna flexible para que la cadena main → content
+   → tarjeta tenga contra qué crecer; con solo `.content` en flex, el hijo
+   no hereda altura y el compositor se queda flotando a media pantalla,
+   justo debajo del último mensaje. Es el mismo tratamiento que ya reciben
+   las pantallas partidas (`:has(.md-split)`, más arriba). */
+:root.ipad .main:has(.msg-card-ipad) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+:root.ipad .main:has(.msg-card-ipad) .content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+:root.ipad .msg-card-ipad {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  height: auto;
+  flex: 1;
+  min-height: 0;
+}
+/* El compositor pierde su recuadro propio: aquí la superficie es la página
+   entera y una tarjeta blanca dentro de otra se ve como un parche. Queda la
+   línea de separación, que es lo que el handoff dibuja. */
+:root.ipad .msg-card-ipad .msg-composer {
+  background: transparent;
+  border-top: 0;
+}
+:root.ipad .msg-card-ipad .msg-thread {
+  padding: 22px 0 26px;
+}
+:root.ipad .msg-card-ipad .msg-grupo,
+:root.ipad .msg-card-ipad .msg-dia,
+:root.ipad .msg-card-ipad .msg-composer,
+:root.ipad .msg-card-ipad .msg-pie,
+:root.ipad .msg-card-ipad .empty-state {
+  width: 720px;
+  max-width: calc(100% - 56px);
+  margin-left: auto;
+  margin-right: auto;
+}
+:root.ipad .msg-card-ipad .msg-composer {
+  border-top: 0.5px solid var(--line);
+  padding-top: 12px;
+}
+:root.ipad .msg-card-ipad .msg-bubble { border-radius: 18px; }
+
+/* El pie del compositor: quién lo ve, y el atajo. */
+.msg-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 22px 12px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.msg-atajo { white-space: nowrap; }
+:root.ipad .msg-card-ipad .msg-pie { padding: 7px 0 14px; }
