@@ -9699,8 +9699,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de personas — un pelo más angosta que la de movimientos (400). Solo en el
    rango de columnas: en el modo de empuje la lista es todo el ancho y esta
    regla, con su especificidad extra, pisaría el `width: auto` de abajo. */
+/* Los anchos de columna maestra que pide el handoff, uno por pantalla. No
+   son un capricho de cada una: el ancho lo fija lo más largo que su fila
+   tiene que enseñar sin recortarse —un nombre y dos apellidos en Aportantes,
+   un "Acta 2026-08 · Extraordinaria" en Actas— y por eso no hay un solo
+   número para todas. Solo en el rango de columnas: en el modo de empuje la
+   lista es todo el ancho y estas reglas, con su especificidad extra,
+   pisarían el `width: auto` de ese bloque. */
 @media (min-width: 1150px) {
   :root.ipad .md-split.md-miembros .md-lista { width: 378px; flex-basis: 378px; }
+  :root.ipad .md-split.md-depositos .md-lista { width: 378px; flex-basis: 378px; }
+  :root.ipad .md-split.md-actas .md-lista { width: 358px; flex-basis: 358px; }
+  :root.ipad .md-split.md-servicios .md-lista { width: 358px; flex-basis: 358px; }
+  :root.ipad .md-split.md-cartas .md-lista { width: 338px; flex-basis: 338px; }
+  :root.ipad .md-split.md-reportes .md-lista { width: 330px; flex-basis: 330px; }
 }
 
 /* ============================================================
