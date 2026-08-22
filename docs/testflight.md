@@ -86,8 +86,13 @@ en las tres fuentes:
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
 | 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
 | 22 ago | 1.1.9 — el rediseño completo: las diez pantallas, Membresía, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight. **En pruebas, NO candidata a publicación** |
-| esta | **1.2.0** — la FUSIÓN de las dos ramas que hicieron el rediseño en paralelo: el modo vertical de una y el Inicio, Configuración y el arnés de la otra |
+| 22 ago | **1.2.0** — la FUSIÓN de las dos ramas que hicieron el rediseño en paralelo: el modo vertical de una y el Inicio, Configuración y el arnés de la otra. **Subida a TestFlight**, compilada desde `claude/charming-sagan-hknqp1` |
 | la siguiente | 1.2.1 |
+
+> Para compilar la 1.2.0 hubo que intentarlo **tres veces**, y las tres salió
+> la 1.1.9: dos por estar en la rama equivocada y una por `main`, que es la
+> 1.1.9 a propósito. De ahí salió `verificar-rama`, que ya iba dentro de este
+> mismo build y cantó `1.2.0` antes de empezar. Es lo que había que ver.
 | cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
 > ⚠️ **La 1.2.0 salió de juntar DOS ramas que hicieron el rediseño a la vez.**
