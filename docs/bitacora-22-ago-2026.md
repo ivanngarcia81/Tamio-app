@@ -139,7 +139,41 @@ padrón a 44) y en la red de seguridad que el Mac conserva su modal y el
 iPhone su hoja a lo ancho — 227 comprobaciones en verde (eran 189), más
 tsc, los doce `verificar-*` y el build con las clases movidas en el bundle.
 
-## 6. Lo que quedó anotado, no hecho
+## 6. El resumen de la sesión, de principio a fin
+
+Toda la jornada fue UNA conversación con Claude, en seis commits sobre la
+rama `claude/design-review-execution-can5gv`. Lo que se pidió y lo que pasó,
+en orden:
+
+1. **"Revisa el repo y ejecuta el diseño por completo"** (con el bundle del
+   handoff de Claude Design adjunto). El repo decía 4 de 10 pantallas
+   hechas del día 21; se ejecutaron las seis restantes (§1) y el arnés de
+   verificación entró al repo (§2). Commits `30a76a7` y `dcf6a81`.
+2. **"Revisa Ingresos, Gastos, Inicio, Aportantes y Reportes por si no se
+   aplicó bien."** Cuatro estaban fieles; el Inicio era la pantalla menos
+   aplicada y se rehízo, más "Ver ficha" y la fila de Aportantes (§3).
+   Commit `01261cc`.
+3. **"Revisa también Ajustes."** Fiel a 1366/834; dos arreglos en el rango
+   apilado del mini, uno de ellos la sombra del cajón cerrado que manchaba
+   toda la app (§4). Commit `db7efc9`.
+4. **"¿Ya todas las páginas tienen el handoff, incluyendo sus
+   formularios?"** La respuesta honesta era no — y de ahí salió la cuarta
+   pasada entera (§5). Commit `1cf05fc`.
+5. **"Mándame la versión para TestFlight."** Desde el contenedor no se
+   puede compilar iOS (eso pide Mac, Xcode y la firma); lo que sí: la
+   **1.1.9** preparada según `docs/testflight.md` — bump en las tres
+   fuentes y el lock, las cinco verificaciones, build del canal `appstore`
+   con las dos guardas de Apple y el bundle comprobado. Commit `97eec6b`.
+6. **"Salió la 1.1.8 al compilar."** No era la compilación: la Mac estaba
+   en `main`, que se quedó en el día 21 — todo lo de hoy vive en la rama.
+   La moraleja para la próxima: **antes de compilar, confirmar la rama y
+   que `grep '"version"' package.json` diga el número que se espera** (esa
+   comprobación ya casi se escapa dos veces; el `grep` la caza en un
+   segundo). El estorbo real del cambio de rama fue un `package-lock.json`
+   tocado por `npm install`, que se descarta con
+   `git checkout -- package-lock.json`.
+
+## 7. Lo que quedó anotado, no hecho
 
 - **Probar en el aparato.** El arnés es Chromium; el patrón ya se sabe (el
   umbral de 1024, el AccentColor): lo que WKWebView decida distinto solo se
