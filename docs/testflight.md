@@ -35,6 +35,13 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > regla**: en el de la 1.1.6, `version = "1.1.5"` salía sola, pero eso depende
 > de qué versiones lleven ese día las 400 dependencias del árbol — es una
 > casualidad, no una garantía. Se ancla siempre en `name = "tesoreria"`.
+>
+> **Y en el bump a la 1.2.0 volvió a pasar.** `version = "1.1.9"` salía **dos
+> veces**: la de `tesoreria` y la del crate **`flate2`**, que ese día iba
+> justo en la 1.1.9. Buscar y reemplazar habría dejado el lockfile diciendo
+> que `flate2` es la 1.2.0, que no existe. Van ya dos de cuatro bumps en los
+> que la colisión aparece: no es rara, es lo normal en un árbol de 400
+> dependencias.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -78,9 +85,21 @@ en las tres fuentes:
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
 | 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
-| esta | **1.1.9** — Membresía en iPad, las seis pantallas que faltaban y el modo vertical |
-| la siguiente | 1.1.10 |
-| cuando toque la 1.2 del plan | 1.2.0 |
+| 22 ago | 1.1.9 — Membresía en iPad, las seis pantallas que faltaban y el modo vertical |
+| esta | **1.2.0** — el mismo código que la 1.1.9, con el número que le toca |
+| la siguiente | 1.2.1 |
+| cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
+
+> **La 1.2.0 no trae ni una línea de código que la 1.1.9 no tuviera**, y eso
+> es a propósito. El rediseño de iPad —las diez pantallas, el modo vertical,
+> Membresía— se subió como 1.1.9 porque era el número que tocaba en la
+> cuenta, pero es un cambio de versión menor, no un parche. La 1.2.0 es ese
+> mismo build con el nombre que le corresponde, para probarlo en TestFlight
+> ya llamándose como se va a llamar. En App Store Connect son dos subidas
+> distintas: por eso hace falta el bump, aunque el diff sea solo el número.
+>
+> El plan que iba a ser la 1.2 —los siete puntos que la 1.1 apartó el 4 de
+> agosto— corrió un puesto y vive ahora en **`docs/plan-1-3.md`**.
 
 Si App Store Connect contesta *"The bundle version must be higher than the
 previously uploaded version"*, es esto: sube el tercer número en
@@ -149,6 +168,13 @@ estaban en la 1.1.6. Así que se buscaron también, en el CSS construido,
 JS la línea que pone y quita `ipad-ancho` al girar el iPad. **La lista de
 clases que se comprueba se alarga con cada tanda**; si no, la comprobación
 deja de comprobar lo que se acaba de escribir.
+
+En la 1.2.0, las mismas comprobaciones otra vez —no se dan por hechas porque
+el diff sea de una línea— y una que solo cabe cuando el código no cambia: el
+CSS construido salió con **el mismo nombre con hash que el de la 1.1.9**
+(`index-CWJz2wN4.css`). Vite pone en ese nombre un hash del contenido, así
+que dos builds con el mismo hash son el mismo bundle. Es la prueba de que la
+1.2.0 es de verdad la 1.1.9 con otro número, que era justo lo que se quería.
 
 **La 1.1.6 se quedó sin distribuir**: se preparó, y antes de archivarla
 apareció el número invisible de "hoy" en el calendario de la Mac. Se arregló

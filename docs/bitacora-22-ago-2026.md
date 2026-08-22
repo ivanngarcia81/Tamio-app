@@ -318,3 +318,49 @@ que no se "arregle" luego por error.
   medido en el arnés. Es lo mismo que pasó ayer con las 1.1.6 y 1.1.7, y la
   lección de aquel día sigue valiendo: estas cosas mueren en la Mac de Iván,
   que es donde deben morir.
+
+---
+
+## 10. La versión, dos veces
+
+El rediseño salió a TestFlight como **1.1.9**, que era el número que tocaba
+en la cuenta. Después Iván pidió que la versión con la que se prueba el iPad
+sea la **1.2.0** — y tiene razón: diez pantallas rehechas, Membresía nueva y
+el modo vertical entero no son un parche. Así que la 1.2.0 es el mismo build
+con el nombre que le corresponde. En App Store Connect son dos subidas
+distintas, y el bump hace falta aunque el diff sea de una línea.
+
+Que es literalmente el mismo código no hay que creérselo: el CSS construido
+salió con **el mismo nombre con hash** que el de la 1.1.9
+(`index-CWJz2wN4.css`). Vite mete en ese nombre un hash del contenido, así
+que dos builds con el mismo hash son el mismo bundle. La comprobación que se
+hace siempre al revés —¿viaja el rediseño en el bundle?— aquí sirvió para
+confirmar lo contrario: que no viajó nada nuevo.
+
+### Y el `Cargo.lock` volvió a intentarlo
+
+`docs/testflight.md` avisa desde la 1.1.5 de que en el lockfile no vale
+buscar y reemplazar, porque el número de Tamio no es el único que aparece.
+Hoy `version = "1.1.9"` salía **dos veces**: la de `tesoreria` y la del crate
+**`flate2`**, que ese día iba justo en la 1.1.9. Un reemplazo global habría
+dejado escrito que `flate2` es la 1.2.0, que no existe. Van dos de cuatro
+bumps con colisión: no es rara, es lo normal en un árbol de 400
+dependencias, y por eso la regla es anclar en `name = "tesoreria"` y no
+mirar el resto.
+
+### El plan de la 1.2 corrió un puesto
+
+El número estaba apalabrado desde el 4 de agosto para los siete puntos que la
+1.1 apartó. Se lo llevó el rediseño, que no estaba en ninguna lista, así que
+esos siete se mudaron a **`docs/plan-1-3.md`** — que es la mudanza que aquel
+plan ya decía que había que hacer en cuanto la 1.1 cerrara, solo que a otro
+archivo. En `docs/plan-1-1.md` queda el título de cada punto y un puntero: el
+razonamiento vive en un solo sitio, que es como no acaba en dos versiones
+que se contradicen.
+
+Al mudarlos apareció algo que conviene mirar antes de darlos por pendientes:
+**dos de las ideas de "Proyecto B" ya están medio hechas** por el rediseño de
+estos dos días. Ajustes con índice sale en dos columnas en el iPad desde los
+761 px, y el detalle en panel lateral en vez de modal es exactamente lo que
+son ahora las siete pantallas de maestro-detalle. Lo que queda de las dos es
+Mac y teléfono. Está anotado arriba del plan nuevo.
