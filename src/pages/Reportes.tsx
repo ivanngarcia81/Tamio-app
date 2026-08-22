@@ -177,7 +177,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
      informes, como en Configuración: son cinco documentos fijos, no
      registros. Por eso no lleva buscador ni pie de suma. */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
-  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1000px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
   const [informe, setInforme] = useState<InformeId | null>(null);

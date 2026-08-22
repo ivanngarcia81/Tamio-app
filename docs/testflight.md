@@ -39,9 +39,14 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > **Y en el bump a la 1.2.0 volvió a pasar.** `version = "1.1.9"` salía **dos
 > veces**: la de `tesoreria` y la del crate **`flate2`**, que ese día iba
 > justo en la 1.1.9. Buscar y reemplazar habría dejado el lockfile diciendo
-> que `flate2` es la 1.2.0, que no existe. Van ya dos de cuatro bumps en los
-> que la colisión aparece: no es rara, es lo normal en un árbol de 400
-> dependencias.
+> que `flate2` es la 1.2.0, que no existe.
+>
+> **Y en la 1.2.1, otra vez**: `version = "1.2.0"` salía dos veces, la de
+> `tesoreria` y la de **`scopeguard`**. Van **tres de cinco** bumps con
+> colisión, y cada vez con un crate distinto. Deja de ser una anécdota: en
+> un árbol de 400 dependencias lo raro es que el número NO se repita. Se
+> ancla siempre en `name = "tesoreria"`, sin excepciones y sin mirar
+> cuántas veces sale.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -87,7 +92,8 @@ en las tres fuentes:
 | 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
 | 22 ago | 1.1.9 — el rediseño completo: las diez pantallas, Membresía, Inicio, Configuración y los formularios como hoja. La PRIMERA con el rediseño que llegó a TestFlight. **En pruebas, NO candidata a publicación** |
 | 22 ago | **1.2.0** — la FUSIÓN de las dos ramas que hicieron el rediseño en paralelo: el modo vertical de una y el Inicio, Configuración y el arnés de la otra. **Subida a TestFlight**, compilada desde `claude/charming-sagan-hknqp1` |
-| la siguiente | 1.2.1 |
+| esta | **1.2.1** — el corte de columnas baja de 1150 a 1000: el iPad Pro de 12.9"/13" en vertical pasa a dos columnas, y Ajustes enseña por fin la versión en iPad y Mac |
+| la siguiente | 1.2.2 |
 
 > Para compilar la 1.2.0 hubo que intentarlo **tres veces**, y las tres salió
 > la 1.1.9: dos por estar en la rama equivocada y una por `main`, que es la

@@ -270,13 +270,18 @@ const ctxSeed = await nuevoContexto("ipad");
 await ctxSeed.close();
 
 // ---------- 6. Las mediciones ----------
+// `fila` porque la columna maestra NO tiene una sola forma (ver
+// docs/ipad-rediseno.md §10.1): la de FILAS agrupadas usa `.md-fila`, y la
+// de ÍNDICE —Cartas y Reportes, donde la columna lista SECCIONES y no
+// registros— usa `.md-indice-item`. El arnés daba `.md-fila` por sentado y
+// se quedaba colgado 30s en Cartas esperando una fila que ahí no existe.
 const PANTALLAS = [
-  { ruta: "depositos", clase: "md-depositos", lista: 378 },
-  { ruta: "actas", clase: "md-actas", lista: 358 },
-  { ruta: "servicios", clase: "md-servicios", lista: 358 },
-  { ruta: "cartas", clase: "md-cartas", lista: 338 },
-  { ruta: "reportes", clase: "md-reportes", lista: 330 },
-  { ruta: "agenda", clase: "md-agenda", lista: null }, // aquí la fija es la columna del día (318)
+  { ruta: "depositos", clase: "md-depositos", lista: 378, fila: ".md-fila" },
+  { ruta: "actas", clase: "md-actas", lista: 358, fila: ".md-fila" },
+  { ruta: "servicios", clase: "md-servicios", lista: 358, fila: ".md-fila" },
+  { ruta: "cartas", clase: "md-cartas", lista: 338, fila: ".md-indice-item" },
+  { ruta: "reportes", clase: "md-reportes", lista: 330, fila: ".md-indice-item" },
+  { ruta: "agenda", clase: "md-agenda", lista: null, fila: ".md-fila" }, // aquí la fija es la columna del día (318)
 ];
 
 const IPADS = [
@@ -299,7 +304,7 @@ page.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.mess
 await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
 
 for (const [w, h] of IPADS) {
-  const columnas = w >= 1150;
+  const columnas = w >= 1000;  // el mismo corte que la app (styles.css y useMediaQuery)
   console.log(`\n== iPad ${w}×${h} (${columnas ? "columnas" : "empuje"}) ==`);
   await page.setViewportSize({ width: w, height: h });
   for (const p of PANTALLAS) {
@@ -319,23 +324,27 @@ for (const [w, h] of IPADS) {
         chk(abierto2 === true, "agenda: tocar un día abre su columna");
         const dia2 = await medir(page, ".md-agenda .md-detalle");
         chk(dia2 && Math.abs(dia2.w - w) < 3, `agenda: la columna empuja a lo ancho (${dia2?.w})`);
-        await page.click(".agenda-dia-cab .dm-volver");
+        // El volver del panel del día. Se ancla en `.md-agenda .dm-volver`
+        // y no en la clase de la cabecera: el panel es `.dm.ag-dia` en la
+        // implementación que se envió, y atarse al nombre de un div interno
+        // es lo que hizo que este arnés midiera otra rama durante horas.
+        await page.click(".md-agenda .dm-volver");
       }
       continue;
     }
     const lista = await medir(page, `.${p.clase} .md-lista`);
     if (columnas) {
       chk(lista && lista.w === p.lista, `${p.ruta}: lista de ${p.lista}px (${lista?.w})`);
-      const filas = await page.locator(`.${p.clase} .md-fila`).count();
+      const filas = await page.locator(`.${p.clase} ${p.fila}`).count();
       chk(filas > 0, `${p.ruta}: ${filas} filas en la lista`);
       // Abrir la primera fila enseña el detalle en el panel.
-      await page.click(`.${p.clase} .md-fila`);
+      await page.click(`.${p.clase} ${p.fila}:not(.sel)`);
       await page.waitForTimeout(150);
       const dm = await page.locator(`.${p.clase} .md-detalle .dm`).count();
       chk(dm > 0, `${p.ruta}: el panel enseña el detalle al tocar una fila`);
     } else {
       chk(lista && Math.abs(lista.w - w) < 3, `${p.ruta}: lista a lo ancho en empuje (${lista?.w})`);
-      await page.click(`.${p.clase} .md-fila`);
+      await page.click(`.${p.clase} ${p.fila}:not(.sel)`);
       await page.waitForTimeout(400);
       const abierto = await page.evaluate((c) => document.querySelector(`.${c}`)?.classList.contains("md-abierto"), p.clase);
       chk(abierto === true, `${p.ruta}: tocar una fila empuja el detalle`);

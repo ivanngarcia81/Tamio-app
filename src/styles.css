@@ -10401,7 +10401,35 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    número para todas. Solo en el rango de columnas: en el modo de empuje la
    lista es todo el ancho y estas reglas, con su especificidad extra,
    pisarían el `width: auto` de ese bloque. */
-@media (min-width: 1150px) {
+
+/* ── El corte columnas / empuje: 1000px ──────────────────────────────────
+   Nació en 1150 y bajó a 1000 el 22 de agosto de 2026, por una razón
+   concreta: con 1150, NINGÚN iPad en vertical llegaba a dos columnas — ni
+   siquiera el Pro de 12.9", que mide 1024, ni el de 13", que mide 1032. En
+   vertical, el iPad más grande que existe se comportaba como el mini.
+
+   Y no había motivo. A 1024, con la columna maestra más ancha que tenemos
+   (400px en Ingresos, Gastos y Por revisar), al panel le quedan 624px: más
+   que el ancho entero de un iPhone Pro Max, donde ese mismo panel es la
+   pantalla completa. El sitio estaba; el umbral no lo dejaba usar.
+
+   La referencia manda en la misma dirección: Mail, Notas y Archivos de
+   Apple SÍ enseñan dos columnas en un 12.9" en vertical. 1150 nos dejaba
+   por debajo del comportamiento nativo en el dispositivo más grande.
+
+   Qué cambia y qué no, con 1000:
+     · 12.9" y 13" en vertical (1024 / 1032) → dos columnas.  ← lo que se buscaba
+     · mini en horizontal (1133)             → dos columnas.
+     · mini (744), 10.9" (820) y 11" (834) en vertical → siguen en empuje,
+       que a esos anchos es lo correcto: 744 − 400 dejaría 344px de panel.
+     · 10.9" y 11" en horizontal (1180 / 1194) → ya estaban en columnas.
+     · Split View y Slide Over → siguen en empuje; ninguna mitad llega a
+       1000 salvo la grande de un 70/30 en el de 13", que ronda los 940.
+
+   El número redondo es a propósito: 1000 se lee como "mil puntos es donde
+   dos columnas empiezan a pagar", y deja margen sobre el 1024 exacto en
+   vez de quedar clavado en el ancho de un modelo concreto. */
+@media (min-width: 1000px) {
   :root.ipad .md-split.md-miembros .md-lista { width: 378px; flex-basis: 378px; }
   :root.ipad .md-split.md-depositos .md-lista { width: 378px; flex-basis: 378px; }
   :root.ipad .md-split.md-actas .md-lista { width: 358px; flex-basis: 358px; }
@@ -10501,12 +10529,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .sidebar { transition: none; }
 }
 
-/* El modo de empuje: todo iPad en vertical (744, 820, 834, 1024) y el mini
-   en horizontal. El panel entra desde la derecha COMO un push de navegación
-   —la lista se corre un cuarto a la izquierda, igual que la vista que queda
+/* El modo de empuje: el mini (744), el 10.9" (820) y el 11" (834) en
+   vertical. El panel entra desde la derecha COMO un push de navegación —la
+   lista se corre un cuarto a la izquierda, igual que la vista que queda
    debajo en iOS— y el botón "‹ Ingresos" aparece. La lista, mientras tanto,
-   ocupa todo el ancho y el resumen del mes baja a su cabeza (.md-extra). */
-@media (min-width: 700px) and (max-width: 1149.98px) {
+   ocupa todo el ancho y el resumen del mes baja a su cabeza (.md-extra).
+
+   ⚠️ El tope es 999.98 y NO 1149.98 como el bloque del cajón de arriba, que
+   empieza en el mismo 700. Compartían número y no comparten motivo:
+
+     · el cajón pregunta "¿caben sidebar Y contenido a la vez?" — a 1024, con
+       318 de sidebar más 400 de lista, al detalle le quedarían 306: no. Ahí
+       sigue en 1149.98, y por eso el 12.9" en vertical enseña el ☰.
+     · el empuje pregunta "¿caben lista Y detalle?" — y esa es otra cuenta,
+       porque con el sidebar YA superpuesto los 1024 enteros son del split:
+       378 de lista dejan 646 al panel, más que un iPhone Pro Max entero.
+
+   Tenerlos en el mismo número costó que el iPad más grande que existe se
+   comportara en vertical como el mini. Si algún día se vuelve a mover uno,
+   moverlo por su propia razón, no por parecerse al de al lado. */
+@media (min-width: 700px) and (max-width: 999.98px) {
   :root.ipad .md-lista {
     width: auto;
     flex: 1 1 auto;

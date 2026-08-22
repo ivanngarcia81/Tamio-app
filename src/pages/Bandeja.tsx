@@ -31,9 +31,9 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   const enIPhone = esIPhone();
   /* Maestro-detalle del iPad, los mismos dos umbrales que Movimientos y
      Aportantes (docs/ipad-rediseno.md): partido desde 700, columnas desde
-     1150, y entre medias el detalle empuja. */
+     1000, y entre medias el detalle empuja. */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
-  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1000px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
   const [pendientes, setPendientes] = useState<Tx[]>([]);

@@ -47,10 +47,10 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
 
   /* ---- Maestro-detalle del iPad ----
      Mismos dos umbrales que Ingresos y Aportantes, y por la misma razón: a
-     partir de 700px la pantalla se parte, y a partir de 1150 las dos columnas
+     partir de 700px la pantalla se parte, y a partir de 1000 las dos columnas
      conviven en vez de empujarse. */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
-  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1000px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
   /* El detalle es un ID que se re-busca en cada recarga, no una copia

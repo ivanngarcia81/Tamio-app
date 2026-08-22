@@ -213,7 +213,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const [vista, setVista] = useState<Vista>("mes");
 
   /* ---- Maestro-detalle del iPad ----
-     Un solo umbral aquí: partido a partir de 700px. El de 1150 lo aplica el
+     Un solo umbral aquí: partido a partir de 700px. El de 1000 lo aplica el
      CSS —columnas o empuje—, pero el componente no necesita saberlo: el día
      elegido se pinta igual en los dos. */
   const anchoPartido = useMediaQuery("(min-width: 700px)");

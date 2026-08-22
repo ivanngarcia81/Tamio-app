@@ -181,7 +181,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   // el título grande sobra ahí.
   const enIPhone = esIPhone();
   const enIPad = esIPad();
-  /* 1024 y no los 1150 del maestro-detalle: aquí lo que decide no es si caben
+  /* 1024 y no los 1000 del maestro-detalle: aquí lo que decide no es si caben
      dos columnas de pantalla, sino si caben las seis vías de la tabla. */
   const iPadAmplio = useMediaQuery("(min-width: 1024px)");
   const conMinisterio = enIPad && iPadAmplio;

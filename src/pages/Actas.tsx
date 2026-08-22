@@ -83,9 +83,9 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
 
   /* ---- Maestro-detalle del iPad ----
      Los dos umbrales de siempre: partido a partir de 700px, columnas a
-     partir de 1150. */
+     partir de 1000. */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
-  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1000px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
   const [selId, setSelId] = useState<number | null>(null);

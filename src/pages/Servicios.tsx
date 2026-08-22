@@ -74,7 +74,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
 
   /* ---- Maestro-detalle del iPad: los dos umbrales de siempre. ---- */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
-  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1000px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
   const [selId, setSelId] = useState<number | null>(null);

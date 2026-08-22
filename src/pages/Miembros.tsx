@@ -72,11 +72,11 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   // ahí.
   const enIPhone = esIPhone();
   /* Maestro-detalle del iPad, el mismo trato que Movimientos.tsx: partido a
-     partir de 700px, columnas desde 1150, y entre medias (todo iPad en
+     partir de 700px, columnas desde 1000, y entre medias (todo iPad en
      vertical, más el mini en horizontal) la ficha EMPUJA a la lista.
      Ver docs/ipad-rediseno.md. */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
-  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1000px)");
   const partido = esIPad() && anchoPartido;
   const angosto = partido && !anchoColumnas;
   const [members, setMembers] = useState<Member[]>([]);

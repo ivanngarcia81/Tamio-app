@@ -150,11 +150,11 @@ Se eligió empujar. Consecuencias para quien lo implemente:
    (`selId`, un ID re-buscado en cada recarga, no una copia congelada), el
    giro con una fila abierta la deja abierta en los dos sentidos, y la
    entrada es el push de iOS (la lista se corre un cuarto a la izquierda
-   mientras el panel entra). El corte columnas/empuje es **1150px**: por debajo
-   —todo iPad en vertical, más el mini en horizontal (1133)— la lista se
-   queda con todo el ancho, el resumen del mes baja a su cabeza
-   (`.md-extra`) y el panel entra por encima con "‹ Ingresos"; de 1150 en
-   adelante conviven 400px + el resto. En columnas,
+   mientras el panel entra). El corte columnas/empuje es **1000px** (nació en
+   1150 y bajó el 22 ago, §11): por debajo —el mini, el 10.9" y el 11" en
+   vertical— la lista se queda con todo el ancho, el resumen del mes baja a su
+   cabeza (`.md-extra`) y el panel entra por encima con "‹ Ingresos"; de 1000
+   en adelante conviven 400px + el resto. En columnas,
    el panel sin fila abierta enseña el resumen del mes y los recurrentes —
    los mismos nodos, extraídos a constantes, no una copia.
 2. ~~Maestro-detalle en Ingresos/Gastos~~ **Hecho** (21 ago): columna de
@@ -287,9 +287,10 @@ Se eligió empujar. Consecuencias para quien lo implemente:
 9. ~~Las seis pantallas restantes~~ **Hecho** (22 ago). Con el andamio ya
    construido, cada una fue sobre todo decidir qué va en la fila, qué en el
    panel, y qué del handoff no existe. Las seis comparten el patrón de
-   siempre: `partido` desde 700, columnas desde 1150, la selección es un ID
+   siempre: `partido` desde 700, columnas desde 1000 (1150 cuando se
+   escribieron, ver §11), la selección es un ID
    (o un valor) que se re-busca y sobrevive al giro, y el ancho de cada
-   lista es el del diseño (regla por pantalla en el bloque de 1150px).
+   lista es el del diseño (regla por pantalla en el bloque de columnas).
 
    - **Depósito bancario (378px).** Lista agrupada por PERÍODO —no por mes
      de la fecha— porque así agrupan los totales y los reportes: un depósito
@@ -732,7 +733,8 @@ final de cada fila.
 
 Cerradas el 22 de agosto. El andamio del día 21 aguantó: `.md-split`,
 `.md-lista`, `.md-detalle`, el modo de empuje con su animación, los dos
-umbrales (700 y 1150) y el patrón de "el detalle es un ID que se re-busca".
+umbrales (700 y 1150, hoy 1000) y el patrón de "el detalle es un ID que se
+re-busca".
 Ninguna de las seis necesitó tocarlo. Lo que sí hizo falta fue **descubrir
 que la columna maestra tiene tres formas**, no una.
 
@@ -797,3 +799,76 @@ el contenido se comprueba contra el esquema antes de dibujarlo. Y cuando el
 dato existe pero todavía no hay ninguno —el caso de la asistencia en
 Membresía, §9— la columna se enseña vacía y diciendo por qué, que no es lo
 mismo que no enseñarla.
+
+---
+
+## 11. El corte de columnas baja de 1150 a 1000 (22 ago 2026)
+
+Lo destapó una pregunta de Iván después de probar la 1.2.0 en su iPad: *"no
+se puede arreglar para iPad 12.9?"*.
+
+**Con 1150, ningún iPad en vertical llegaba a dos columnas.** Ni siquiera el
+Pro de 12.9", que mide 1024, ni el de 13", que mide 1032. El iPad más grande
+que existe se comportaba en vertical como el mini de 744. Y no había motivo:
+a 1024, con la columna maestra más ancha del proyecto (400px en Ingresos,
+Gastos y Por revisar), al panel le quedan 624px — más que el ancho entero de
+un iPhone Pro Max, donde ese mismo panel ES la pantalla. El sitio estaba; el
+umbral no dejaba usarlo. Mail, Notas y Archivos de Apple sí muestran dos
+columnas en un 12.9" en vertical.
+
+### Lo que costó: dos decisiones compartiendo un número
+
+El cambio parecía de una línea y eran tres sitios, porque `1150` vivía en un
+`min-width` y en **dos** `max-width: 1149.98px` compañeros. Cambiar solo el
+primero dejó el CSS aplicando los dos bloques a 1024, con el del empuje
+ganando por orden — y la medición salió contradictoria: Agenda en columnas
+(318px) y Depósitos en empuje (1024px) en el mismo viewport. El arnés lo cazó
+en la primera vuelta; leyendo el CSS a ojo no se veía.
+
+Y al abrir esos bloques apareció lo importante: **los dos empezaban en 700 y
+acababan en 1149.98, pero no comparten motivo.**
+
+| Bloque | Pregunta que hace | Tope |
+|---|---|---|
+| Cajón del sidebar con velo | ¿caben sidebar Y contenido a la vez? | **1149.98** (sin tocar) |
+| Modo de empuje del maestro-detalle | ¿caben lista Y detalle? | **999.98** (bajado) |
+
+A 1024 la primera respuesta sigue siendo NO —318 de sidebar más 400 de lista
+dejarían 306 al detalle—, y por eso el 12.9" en vertical sigue enseñando el
+☰. Pero con el sidebar ya superpuesto, los 1024 enteros son del split, y la
+segunda respuesta pasa a ser SÍ. Eran dos cuentas distintas que por
+casualidad daban el mismo número, y tenerlas atadas costó que el iPad más
+grande se comportara como el más pequeño. **Si algún día se vuelve a mover
+uno, moverlo por su propia razón.**
+
+### Qué cambia y qué no
+
+- 12.9" y 13" en vertical (1024 / 1032) → **dos columnas**. Era el objetivo.
+- mini en horizontal (1133) → dos columnas (antes empuje).
+- mini (744), 10.9" (820) y 11" (834) en vertical → siguen en empuje, que a
+  esos anchos es lo correcto: 744 − 400 dejaría 344px de panel.
+- 10.9" y 11" en horizontal (1180 / 1194) → ya estaban en columnas.
+- Split View y Slide Over → siguen en empuje.
+
+Verificado con el arnés en los ocho tamaños más la red de seguridad: **223
+comprobaciones, cero fallos**. A 1024×1366 las seis pantallas dan sus anchos
+de diseño (378 / 358 / 358 / 338 / 330, y el día de Agenda en 318); a 744
+siguen dando empuje.
+
+### El arnés medía otra rama
+
+De paso hubo que alinearlo con la implementación que se envió, porque venía
+de la rama que perdió la fusión y probaba SU código:
+
+- daba `.md-fila` por sentado como fila de la columna maestra, y se colgaba
+  30 s en Cartas. La columna maestra tiene **tres formas** (§10.1): Cartas y
+  Reportes son de ÍNDICE y usan `.md-indice-item`. Ahora cada pantalla nombra
+  la suya.
+- pulsaba la PRIMERA fila, que en una columna de índice es la sección en la
+  que ya estás: no abría nada y el empuje "fallaba" sin fallar. Ahora pulsa
+  `:not(.sel)`.
+- buscaba el volver de Agenda en `.agenda-dia-cab`, un div interno de la otra
+  rama. Ahora se ancla en `.md-agenda .dm-volver`.
+- y su propio corte seguía en 1150, así que juzgaba con una vara distinta de
+  la de la app. Es el fallo más peligroso de los cuatro: un verificador que
+  no comparte umbral con lo que verifica aprueba lo que debería suspender.
