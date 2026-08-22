@@ -9,7 +9,7 @@
  * existe una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD, type RecFin, type RecurrenciaTipo } from "../db";
 import { Seccion } from "./FichaMiembroModal";
 import NuevaActividadIOS from "./NuevaActividadIOS";
@@ -26,7 +26,7 @@ export default function ActividadModal(props: PropsActividad) {
   const { t } = useTranslation();
   const { onClose } = props;
   const h = useActividad(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : onClose);

@@ -7,7 +7,7 @@
  * dos vistas escriben el MISMO registro con las MISMAS validaciones.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { TIPOS_CARTA } from "./CartaEditor";
 import { Seccion } from "./FichaMiembroModal";
 import { IconClose } from "../icons";
@@ -24,7 +24,7 @@ export default function SolicitudModal(props: PropsSolicitud) {
   const { t } = useTranslation();
   const { solicitud, onClose } = props;
   const h = useSolicitud(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape (y sus pantallas internas se lo quitan
    *  mientras están abiertas). Un `() => {}` estable evita que este efecto se
    *  vuelva a suscribir en cada render. */

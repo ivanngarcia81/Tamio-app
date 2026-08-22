@@ -9,7 +9,7 @@
  * existe una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { Seccion, SwitchRow } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
 import NuevoTrasladoSalidaIOS from "./NuevoTrasladoSalidaIOS";
@@ -25,7 +25,7 @@ export default function TrasladoSalidaModal(props: PropsTrasladoSalida) {
   const { t } = useTranslation();
   const { traslado, onAbrirCarta } = props;
   const h = useTrasladoSalida(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : h.pedirCerrar);

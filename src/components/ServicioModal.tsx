@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esIPhone, esMovil } from "../movil";
 import NuevoServicioIOS from "./NuevoServicioIOS";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import { textoCorto } from "../movil";
@@ -118,13 +118,13 @@ export default function ServicioModal(props: PropsServicio) {
     pedirCerrar, guardar,
   } = h;
 
-  const enIPhone = esIPhone();
-  useEscapeClose(enIPhone ? NO_HACE_NADA : pedirCerrar);
+  const enHoja = esMovil();
+  useEscapeClose(enHoja ? NO_HACE_NADA : pedirCerrar);
 
   // En el teléfono el culto se va a su propia hoja: el padrón embebido hace
   // el formulario interminable con cuarenta miembros, y no digamos con
   // trescientos.
-  if (enIPhone) return <NuevoServicioIOS servicio={servicio} h={h} tipos={TIPOS_SERVICIO} />;
+  if (enHoja) return <NuevoServicioIOS servicio={servicio} h={h} tipos={TIPOS_SERVICIO} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) pedirCerrar(); }}>

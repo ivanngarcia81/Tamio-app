@@ -9,7 +9,7 @@
  * una sola vez.
  */
 import { useTranslation } from "react-i18next";
-import { esIPhone } from "../movil";
+import { esMovil } from "../movil";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { mesLegible } from "../db";
 import { rutaComprobante } from "../services/comprobantes";
@@ -22,7 +22,7 @@ export default function DepositoModal(props: PropsDeposito) {
   const { t } = useTranslation();
   const { church, onClose } = props;
   const h = useDeposito(props);
-  const enHoja = esIPhone();
+  const enHoja = esMovil();
   /** La hoja registra su propio Escape. Un `() => {}` estable evita que este
    *  efecto se vuelva a suscribir en cada render. */
   useEscapeClose(enHoja ? NO_HACE_NADA : onClose);
