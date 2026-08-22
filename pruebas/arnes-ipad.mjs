@@ -549,6 +549,31 @@ await ctx.close();
   await ctxSv.close();
 }
 
+/* ---------- 7 bis. El gris del cromo (ficha de color del handoff 2) ----------
+   Barra, columna maestra y panel tienen que ser EL MISMO gris, y el que el
+   diseño manda: #F7F7F9 en claro, #131315 en oscuro. Se mide con estilos
+   computados y no a ojo, porque medio tono de diferencia no se ve en una
+   captura y sí se ve en un iPad al lado de otro. */
+console.log("\n== El gris del cromo ==");
+{
+  const ctxC = await nuevoContexto("ipad");
+  const pg = await ctxC.newPage();
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  for (const [tema, esperado] of [["light", "rgb(247, 247, 249)"], ["dark", "rgb(19, 19, 21)"]]) {
+    await pg.emulateMedia({ colorScheme: tema });
+    await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+    await pg.waitForTimeout(500);
+    const c = await pg.evaluate(() => {
+      const bg = (s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null; };
+      return { barra: bg(".header"), lista: bg(".md-lista"), panel: bg(".md-detalle") };
+    });
+    for (const [k, v] of Object.entries(c)) {
+      chk(v === esperado, `${tema}: ${k} = ${v} (esperado ${esperado})`);
+    }
+  }
+  await ctxC.close();
+}
+
 /* ---------- 8. La pantalla once: Informes de membresía (y Mensajes) ----------
    Ninguna de las dos está en el handoff — y §12 de docs/ipad-rediseno.md ya
    contó lo que pasa con lo que no está en la maqueta: no se revisa. Aquí se

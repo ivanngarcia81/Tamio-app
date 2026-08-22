@@ -9460,7 +9460,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 28px 32px 40px;
-    background: var(--bg);
+    /* El gris del cromo, no el del lienzo: barra, columna maestra y panel
+       son UNA superficie continua y las tarjetas flotan encima. Ver el
+       bloque "El gris del cromo del iPad" al final del archivo. */
+    background: var(--ipad-cromo);
   }
   :root.ipad .md-vacio { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
   :root.ipad .md-vacio-hint h3 { margin: 0; font-size: 17px; font-weight: 600; }
@@ -15538,3 +15541,49 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 .msg-atajo { white-space: nowrap; }
 :root.ipad .msg-card-ipad .msg-pie { padding: 7px 0 14px; }
+
+/* ============================================================
+   El gris del cromo del iPad (handoff 2 — ficha de color de Iván)
+   ------------------------------------------------------------
+   Tres superficies que el diseño manda pintar del MISMO gris:
+
+     · Barra y estado  — "el mismo gris del sidebar, sin degradado ni sombra"
+     · Columna maestra — "lista y navegación son un solo bloque"
+     · Fondo del panel — "gris cálido, medio tono por encima del lienzo"
+
+   Es medio tono por encima del lienzo (#F2F2F7), no el mismo: el lienzo se
+   sigue viendo en el `.content` de las páginas sin partir, que es donde las
+   tarjetas necesitan un fondo que las agrupe. Aquí, en cambio, el cromo es
+   continuo —barra, columna y panel sin costuras— y lo que flota encima son
+   las tarjetas blancas.
+
+   Va en su propio token y no reusando `--sidebar-bg` porque `--sidebar-bg`
+   cuelga de `--canvas`, que en `.movil` vale lo mismo que `--bg` para el
+   iPhone: cambiarlo allí le movería el fondo al teléfono, que no lo pidió.
+
+   Los tres estados de tema, como manda la casa: claro por defecto, oscuro
+   explícito, y oscuro del sistema cuando no hay elección guardada. */
+:root.ipad { --ipad-cromo: #f7f7f9; }
+:root.ipad[data-theme="dark"] { --ipad-cromo: #131315; }
+@media (prefers-color-scheme: dark) {
+  :root.ipad:not([data-theme="light"]) { --ipad-cromo: #131315; }
+}
+
+@media (min-width: 700px) {
+  /* La barra. `background-image: none` y `box-shadow: none` son explícitos
+     porque el diseño lo pide por escrito ("sin degradado ni sombra"): hoy no
+     los lleva, y esto impide que vuelvan por herencia el día que alguien le
+     ponga sombra a `.header` para el Mac. */
+  :root.ipad .header {
+    background: var(--ipad-cromo);
+    background-image: none;
+    box-shadow: none;
+  }
+  /* La columna maestra. Ya usaba `--sidebar-bg`; ahora comparte el token
+     del cromo para que lista y barra sean el mismo bloque sin costura. */
+  :root.ipad .md-lista,
+  :root.ipad .sidebar { background: var(--ipad-cromo); }
+  /* Y el `.main` debajo, para que el gris llegue hasta los bordes cuando el
+     contenido no llena el alto: sin esto asomaba el lienzo por abajo. */
+  :root.ipad .main:has(.md-split) { background: var(--ipad-cromo); }
+}
