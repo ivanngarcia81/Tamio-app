@@ -1,6 +1,7 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMac } from "../movil";
+import { esIPad, esIPhone, esMac } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import {
   catNombre, colorCategoria, currentMonth, fmtMoney, getCategoriasGasto, getCategoriasIngreso, insertTx, nowLocalIso,
   listMembers, memberStats,
@@ -136,6 +137,24 @@ function FilaFinancieraIOS({ nombre, color, monto, pct }: { nombre: string; colo
   );
 }
 
+/** Los cinco informes que ESTA pantalla produce de verdad. El handoff lista
+ *  además "Aportantes" y "Depósitos del periodo", que en Tamio no son
+ *  informes de Reportes sino dos pantallas propias con su entrada en el
+ *  sidebar: meterlas aquí como si fueran documentos de esta pantalla sería
+ *  duplicar la navegación, no añadir un informe. */
+type InformeId = "estado" | "gastos" | "ingresos" | "historial" | "anual";
+
+/** El índice del handoff, con las claves que ya existen. El orden es el de
+ *  lectura de un tesorero: primero el estado del mes, luego de dónde salió y
+ *  en qué se fue, luego la serie de meses, y al final el documento del año. */
+const INFORMES: { id: InformeId; titulo: string; sub: string }[] = [
+  { id: "estado", titulo: "reportes.estadoFinanciero", sub: "reportes.infEstadoSub" },
+  { id: "ingresos", titulo: "reportes.distIngresos", sub: "reportes.infIngresosSub" },
+  { id: "gastos", titulo: "reportes.distGastos", sub: "reportes.infGastosSub" },
+  { id: "historial", titulo: "reportes.resumenMensual", sub: "reportes.infHistorialSub" },
+  { id: "anual", titulo: "anual.boton", sub: "reportes.infAnualSub" },
+];
+
 interface Props {
   church: Church;
   refreshKey: number;
@@ -152,6 +171,25 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [mes, setMes] = useState(currentMonth());
+
+  /* ---- Maestro-detalle del iPad ----
+     Aquí la columna maestra no es una lista de FILAS sino un índice de
+     informes, como en Configuración: son cinco documentos fijos, no
+     registros. Por eso no lleva buscador ni pie de suma. */
+  const anchoPartido = useMediaQuery("(min-width: 700px)");
+  const anchoColumnas = useMediaQuery("(min-width: 1150px)");
+  const partido = esIPad() && anchoPartido;
+  const angosto = partido && !anchoColumnas;
+  const [informe, setInforme] = useState<InformeId | null>(null);
+  /* En el modo de empuje el panel conserva el último informe mientras se
+     desliza fuera; en columnas, cerrar vuelve directo al índice. */
+  const ultimoInforme = useRef<InformeId | null>(null);
+  if (informe) ultimoInforme.current = informe;
+  /* En columnas se llega con el estado financiero abierto —es lo que dibuja
+     el handoff y lo que se viene a ver el 90% de las veces—; en el modo de
+     empuje se llega al ÍNDICE, porque ahí abrir algo tapa la lista y
+     empezar tapado sería empezar perdido. */
+  const informeActivo: InformeId | null = informe ?? (anchoColumnas ? "estado" : null);
   const [loading, setLoading] = useState(true);
   const [iaResumen, setIaResumen] = useState<string | null>(null);
   const [iaGenerando, setIaGenerando] = useState(false);
@@ -416,6 +454,295 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     }
   }
 
+  /* ---- Los cinco informes, cada uno en su constante ----
+     El maestro-detalle del iPad los pinta de UNO en uno, según lo que se
+     elija en el índice de la izquierda; el Mac y el teléfono los pintan
+     todos seguidos, como siempre. Son los MISMOS nodos en los dos sitios y
+     no una copia: si mañana cambia el estado financiero, cambia en las dos.
+     Es el trato que ya tenían el resumen del mes de Ingresos y las tarjetas
+     de Depósitos. */
+  const bloqueResumen = (
+    <div className="summary-4 enter">
+      <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
+        <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
+      </div>
+      <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
+        <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
+      </div>
+      <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
+        <div className="stat-value md"><CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
+      </div>
+      <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
+        <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
+        <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
+        <div className="stat-foot">{mesLegible(mesAnterior)}</div>
+      </div>
+    </div>
+  );
+
+  const tarjetaGastos = (
+    <div className="card">
+      <div className="card-head">
+        <span className="card-title">{t("reportes.distGastos")}</span>
+        <span className="card-meta">{mesStr}</span>
+      </div>
+      {filasGasto.length === 0 ? (
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinGastosEsteMes")}</div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <div className="donut-wrap" style={{ flexShrink: 0 }}>
+            <Donut
+              segments={filasGasto.map((c) => ({ color: c.color, pct: porcentaje(c.total, gastos) }))}
+              delayMs={0}
+            />
+            <div className="donut-center">
+              <div className="val">{fmtMoney(gastos)}</div>
+              <div className="lbl">{church.moneda}</div>
+            </div>
+          </div>
+          <div className="donut-legend" style={{ flex: 1 }}>
+            {filasGasto.slice(0, 5).map((c) => (
+              <div className="donut-legend-row" key={c.id}>
+                <span className="sw" style={{ background: c.color }} />
+                <span className="name">{catNombre(c.id)}</span>
+                <span className="pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(0)}%` : "0%"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const tarjetaIngresos = (
+    <div className="card">
+      <div className="card-head">
+        <span className="card-title">{t("reportes.distIngresos")}</span>
+        <span className="card-meta">{mesStr}</span>
+      </div>
+      {filasIngreso.length === 0 ? (
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinIngresosEsteMes")}</div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <div className="donut-wrap" style={{ flexShrink: 0 }}>
+            <Donut
+              segments={filasIngreso.map((c) => ({ color: c.color, pct: porcentaje(c.total, ingresos) }))}
+              delayMs={150}
+            />
+            <div className="donut-center">
+              <div className="val">{fmtMoney(ingresos)}</div>
+              <div className="lbl">{church.moneda}</div>
+            </div>
+          </div>
+          <div className="donut-legend" style={{ flex: 1 }}>
+            {filasIngreso.map((c) => (
+              <div className="donut-legend-row" key={c.id}>
+                <span className="sw" style={{ background: c.color }} />
+                <span className="name">{catNombre(c.id)}</span>
+                <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const bloqueEstado = (
+    <div className="report-preview">
+      <div className="r-head">
+        <div>
+          <div className="r-title-lg">{t("reportes.estadoFinanciero")}</div>
+          <div className="r-church">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+          <div className="r-period">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
+        </div>
+      </div>
+
+      <div className="r-section-title">{t("reportes.ingresosPeriodo")}</div>
+      {filasIngreso.length === 0 && (
+        <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+          {t("reportes.sinIngresosRegistrados")}
+        </div>
+      )}
+      {filasIngreso.map((c) => (
+        <div className="r-row" key={c.id}>
+          <span className="r-color" style={{ background: c.color }} />
+          <span>{catNombre(c.id)}</span>
+          <span className="r-amt">{fmtMoney(c.total)}</span>
+          <span className="r-pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(1)}%` : "—"}</span>
+        </div>
+      ))}
+      <div className="r-row total">
+        <span></span>
+        <span>{t("reportes.totalIngresos")}</span>
+        <span className="r-amt" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</span>
+        <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
+      </div>
+
+      <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
+      {filasGasto.length === 0 && (
+        <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+          {t("reportes.sinGastosRegistrados")}
+        </div>
+      )}
+      {filasGasto.map((c) => (
+        <div className="r-row" key={c.id}>
+          <span className="r-color" style={{ background: c.color }} />
+          <span>{catNombre(c.id)}</span>
+          <span className="r-amt">{fmtMoney(c.total)}</span>
+          <span className="r-pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(1)}%` : "—"}</span>
+        </div>
+      ))}
+      <div className="r-row total">
+        <span></span>
+        <span>{t("reportes.totalGastos")}</span>
+        <span className="r-amt" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</span>
+        <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
+      </div>
+
+      <div className="r-summary">
+        <div className="r-dup">
+          <div className="k">{t("reportes.totalIngresos")}</div>
+          <div className="v" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</div>
+        </div>
+        <div className="r-dup">
+          <div className="k">{t("reportes.totalGastos")}</div>
+          <div className="v" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</div>
+        </div>
+        <div>
+          <div className="k">{t("reportes.balanceNeto")}</div>
+          <div className="v">{fmtMoney(balance)}</div>
+        </div>
+        <div>
+          <div className="k">{t("reportes.depositosBancarios")}</div>
+          <div className="v">{fmtMoney(depositosMes)}</div>
+          {depositosMes > 0 && (
+            <div className="r-nota">{t("reportes.depositosNota")}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const bloqueHistorial = historial.length > 0 && (
+    <>
+        <div className="tx-head">
+          <div className="tx-title">{t("reportes.resumenMensual")}</div>
+        </div>
+        {enIPhone ? (
+          /* Cinco columnas de cifras no caben en 390 px: la fila pasa a
+             dos líneas —el mes y su balance arriba; ingresos, gastos y la
+             variación abajo—. Los nombres salen de los `data-label` que
+             la tabla ya llevaba, no de claves nuevas. */
+          <div className="ios-listcard">
+            {historial.map((h, i) => {
+              const bal = restar(h.ingresos, h.gastos);
+              const anterior = historial[i - 1];
+              const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
+              const variacion = balAnt === null ? null : pctChange(bal, balAnt);
+              return (
+                <div className="ios-txrow rep-fila" key={h.mes}>
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{mesLegible(h.mes)}</div>
+                    <div className="tx-secundaria-movil">
+                      {t("charts.ingresos")} {fmtMoney(h.ingresos)} · {t("charts.gastos")} {fmtMoney(h.gastos)}
+                    </div>
+                  </div>
+                  <div className="ios-txrow-trailing rep-trailing">
+                    <span className="rep-monto">{fmtMoney(bal)}</span>
+                    {variacion === null ? (
+                      <span className="rep-var vacia">—</span>
+                    ) : (
+                      <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
+                        {variacion >= 0 ? "+" : ""}{variacion}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+        <div className="data-table roomy tabla-resumen-mes">
+          <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
+            <div className="th">{t("reportes.colMes")}</div>
+            <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
+            <div className="th" style={{ textAlign: "right" }}>{t("charts.gastos")}</div>
+            <div className="th" style={{ textAlign: "right" }}>{t("pdfPreview.balance")}</div>
+            <div className="th" style={{ textAlign: "right" }}>{t("reportes.colVariacion")}</div>
+          </div>
+          {historial.map((h, i) => {
+            const bal = restar(h.ingresos, h.gastos);
+            const anterior = historial[i - 1];
+            const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
+            const variacion = balAnt === null ? null : pctChange(bal, balAnt);
+            return (
+              <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
+                <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
+                <div className="td" data-label={t("charts.ingresos")} style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
+                  {fmtMoney(h.ingresos)}
+                </div>
+                <div className="td" data-label={t("charts.gastos")} style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
+                  {fmtMoney(h.gastos)}
+                </div>
+                <div className="td" data-label={t("pdfPreview.balance")} style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                  {fmtMoney(bal)}
+                </div>
+                <div className="td" data-label={t("reportes.colVariacion")} style={{ textAlign: "right" }}>
+                  {variacion === null ? (
+                    <span style={{ color: "var(--text-3)" }}>—</span>
+                  ) : (
+                    <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
+                      {variacion >= 0 ? "+" : ""}{variacion}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        )}
+    </>
+  );
+
+  /** Qué pinta el panel para cada entrada del índice. Los cuatro primeros son
+   *  los mismos nodos que el Mac apila en su lienzo; el quinto es un
+   *  DOCUMENTO —el reporte anual sale en PDF, no en pantalla— así que su
+   *  panel dice qué lleva y ofrece generarlo, en vez de fingir una vista
+   *  previa de doce meses que la app no dibuja. */
+  function panelInforme(id: InformeId) {
+    if (id === "estado") {
+      return (
+        <>
+          {bloqueResumen}
+          {bloqueEstado}
+        </>
+      );
+    }
+    if (id === "gastos") return <div className="charts enter rep-uno">{tarjetaGastos}</div>;
+    if (id === "ingresos") return <div className="charts enter rep-uno">{tarjetaIngresos}</div>;
+    if (id === "historial") {
+      return bloqueHistorial || (
+        <div className="md-vacio-hint"><p>{t("reportes.sinHistorial")}</p></div>
+      );
+    }
+    return (
+      <div className="rep-documento">
+        <h2 className="da-titulo">{t("anual.boton")}</h2>
+        <p className="rep-documento-sub">{t("reportes.infAnualDetalle", { anio: mes.slice(0, 4) })}</p>
+        <button className="btn primary" onClick={handleAnnual} disabled={exporting !== null}>
+          <IconFileText size={14} /> {exporting === "anual" ? t("common.generando") : t("anual.boton")}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
@@ -530,6 +857,62 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
+      {/* ---- Maestro-detalle (iPad) ----
+          Índice de informes a la izquierda (330px, el ancho del handoff) y el
+          informe elegido a la derecha. La columna maestra es un ÍNDICE y no
+          una lista de filas: son cinco documentos fijos, no registros, así
+          que no lleva buscador ni pie de suma. Es la misma forma que
+          Configuración, y la que dibuja el handoff. */}
+      {partido ? (
+        <div className={`md-split md-reportes${informe != null ? " md-abierto" : ""}`}>
+          {loading ? (
+            <LoadingState />
+          ) : (
+            <>
+              <div className="md-lista md-indice">
+                <div className="md-indice-grupo">{t("nav.grupoTesoreria")}</div>
+                {INFORMES.map((inf) => (
+                  <button
+                    key={inf.id}
+                    type="button"
+                    className={`md-indice-item${informeActivo === inf.id ? " sel" : ""}`}
+                    onClick={() => setInforme(inf.id)}
+                  >
+                    <span className="md-indice-nombre">{t(inf.titulo)}</span>
+                    <span className="md-indice-sub">{t(inf.sub)}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="md-detalle">
+                {(() => {
+                  const elegido = angosto ? informe ?? ultimoInforme.current : informeActivo;
+                  if (elegido) {
+                    return (
+                      <div className="dm">
+                        <button type="button" className="dm-volver" onClick={() => setInforme(null)}>
+                          <IconChevronLeft size={17} strokeWidth={2.4} /> {t("reportes.titulo")}
+                        </button>
+                        {panelInforme(elegido)}
+                      </div>
+                    );
+                  }
+                  if (angosto) return null;
+                  return (
+                    <div className="md-vacio">
+                      <div className="md-vacio-hint">
+                        <h3>{t("reportes.eligeInforme")}</h3>
+                        <p>{t("reportes.eligeInformeSub")}</p>
+                      </div>
+                      {bloqueResumen}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="content content-lienzo">
         {loading ? <LoadingState /> : <>
         {enIPhone ? (
@@ -594,93 +977,12 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         ) : (
         <>
         <div className="dash-canvas">
-        <div className="summary-4 enter">
-          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
-            <div className="stat-value md"><CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
-          </div>
-          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-2)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
-            <div className="stat-value md"><CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
-          </div>
-          <div className="stat-card accent" style={{ "--accent-color": balance >= 0 ? "var(--accent-1)" : "var(--accent-2)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("reportes.balanceNeto")}</span></div>
-            <div className="stat-value md"><CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
-          </div>
-          <div className="stat-card accent" style={{ "--accent-color": "var(--accent-3)" } as CSSProperties}>
-            <div className="stat-head"><span className="stat-label">{t("reportes.mesAnterior")}</span></div>
-            <div className="stat-value md"><CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></div>
-            <div className="stat-foot">{mesLegible(mesAnterior)}</div>
-          </div>
-        </div>
+        {bloqueResumen}
 
         <div className="charts enter">
-          <div className="card">
-            <div className="card-head">
-              <span className="card-title">{t("reportes.distGastos")}</span>
-              <span className="card-meta">{mesStr}</span>
-            </div>
-            {filasGasto.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinGastosEsteMes")}</div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                <div className="donut-wrap" style={{ flexShrink: 0 }}>
-                  <Donut
-                    segments={filasGasto.map((c) => ({ color: c.color, pct: porcentaje(c.total, gastos) }))}
-                    delayMs={0}
-                  />
-                  <div className="donut-center">
-                    <div className="val">{fmtMoney(gastos)}</div>
-                    <div className="lbl">{church.moneda}</div>
-                  </div>
-                </div>
-                <div className="donut-legend" style={{ flex: 1 }}>
-                  {filasGasto.slice(0, 5).map((c) => (
-                    <div className="donut-legend-row" key={c.id}>
-                      <span className="sw" style={{ background: c.color }} />
-                      <span className="name">{catNombre(c.id)}</span>
-                      <span className="pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(0)}%` : "0%"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {tarjetaGastos}
 
-          <div className="card">
-            <div className="card-head">
-              <span className="card-title">{t("reportes.distIngresos")}</span>
-              <span className="card-meta">{mesStr}</span>
-            </div>
-            {filasIngreso.length === 0 ? (
-              <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinIngresosEsteMes")}</div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                <div className="donut-wrap" style={{ flexShrink: 0 }}>
-                  <Donut
-                    segments={filasIngreso.map((c) => ({ color: c.color, pct: porcentaje(c.total, ingresos) }))}
-                    delayMs={150}
-                  />
-                  <div className="donut-center">
-                    <div className="val">{fmtMoney(ingresos)}</div>
-                    <div className="lbl">{church.moneda}</div>
-                  </div>
-                </div>
-                <div className="donut-legend" style={{ flex: 1 }}>
-                  {filasIngreso.map((c) => (
-                    <div className="donut-legend-row" key={c.id}>
-                      <span className="sw" style={{ background: c.color }} />
-                      <span className="name">{catNombre(c.id)}</span>
-                      <span className="pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(0)}%` : "0%"}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {tarjetaIngresos}
         </div>
         </div>
         </>
@@ -784,164 +1086,14 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             </div>
           </>
         ) : (
-        <div className="report-preview">
-          <div className="r-head">
-            <div>
-              <div className="r-title-lg">{t("reportes.estadoFinanciero")}</div>
-              <div className="r-church">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
-              <div className="r-period">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
-            </div>
-          </div>
-
-          <div className="r-section-title">{t("reportes.ingresosPeriodo")}</div>
-          {filasIngreso.length === 0 && (
-            <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
-              {t("reportes.sinIngresosRegistrados")}
-            </div>
-          )}
-          {filasIngreso.map((c) => (
-            <div className="r-row" key={c.id}>
-              <span className="r-color" style={{ background: c.color }} />
-              <span>{catNombre(c.id)}</span>
-              <span className="r-amt">{fmtMoney(c.total)}</span>
-              <span className="r-pct">{ingresos > 0 ? `${((c.total / ingresos) * 100).toFixed(1)}%` : "—"}</span>
-            </div>
-          ))}
-          <div className="r-row total">
-            <span></span>
-            <span>{t("reportes.totalIngresos")}</span>
-            <span className="r-amt" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</span>
-            <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
-          </div>
-
-          <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
-          {filasGasto.length === 0 && (
-            <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
-              {t("reportes.sinGastosRegistrados")}
-            </div>
-          )}
-          {filasGasto.map((c) => (
-            <div className="r-row" key={c.id}>
-              <span className="r-color" style={{ background: c.color }} />
-              <span>{catNombre(c.id)}</span>
-              <span className="r-amt">{fmtMoney(c.total)}</span>
-              <span className="r-pct">{gastos > 0 ? `${((c.total / gastos) * 100).toFixed(1)}%` : "—"}</span>
-            </div>
-          ))}
-          <div className="r-row total">
-            <span></span>
-            <span>{t("reportes.totalGastos")}</span>
-            <span className="r-amt" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</span>
-            <span className="r-pct solo-escritorio" style={{ color: "var(--text)" }}>100%</span>
-          </div>
-
-          <div className="r-summary">
-            <div className="r-dup">
-              <div className="k">{t("reportes.totalIngresos")}</div>
-              <div className="v" style={{ color: "var(--pos)" }}>{fmtMoney(ingresos)}</div>
-            </div>
-            <div className="r-dup">
-              <div className="k">{t("reportes.totalGastos")}</div>
-              <div className="v" style={{ color: "var(--neg)" }}>{fmtMoney(gastos)}</div>
-            </div>
-            <div>
-              <div className="k">{t("reportes.balanceNeto")}</div>
-              <div className="v">{fmtMoney(balance)}</div>
-            </div>
-            <div>
-              <div className="k">{t("reportes.depositosBancarios")}</div>
-              <div className="v">{fmtMoney(depositosMes)}</div>
-              {depositosMes > 0 && (
-                <div className="r-nota">{t("reportes.depositosNota")}</div>
-              )}
-            </div>
-          </div>
-        </div>
+          bloqueEstado
 
         )}
 
-        {historial.length > 0 && (
-          <>
-            <div className="tx-head">
-              <div className="tx-title">{t("reportes.resumenMensual")}</div>
-            </div>
-            {enIPhone ? (
-              /* Cinco columnas de cifras no caben en 390 px: la fila pasa a
-                 dos líneas —el mes y su balance arriba; ingresos, gastos y la
-                 variación abajo—. Los nombres salen de los `data-label` que
-                 la tabla ya llevaba, no de claves nuevas. */
-              <div className="ios-listcard">
-                {historial.map((h, i) => {
-                  const bal = restar(h.ingresos, h.gastos);
-                  const anterior = historial[i - 1];
-                  const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
-                  const variacion = balAnt === null ? null : pctChange(bal, balAnt);
-                  return (
-                    <div className="ios-txrow rep-fila" key={h.mes}>
-                      <div className="ios-txrow-main">
-                        <div className="ios-txrow-title">{mesLegible(h.mes)}</div>
-                        <div className="tx-secundaria-movil">
-                          {t("charts.ingresos")} {fmtMoney(h.ingresos)} · {t("charts.gastos")} {fmtMoney(h.gastos)}
-                        </div>
-                      </div>
-                      <div className="ios-txrow-trailing rep-trailing">
-                        <span className="rep-monto">{fmtMoney(bal)}</span>
-                        {variacion === null ? (
-                          <span className="rep-var vacia">—</span>
-                        ) : (
-                          <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
-                            {variacion >= 0 ? "+" : ""}{variacion}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-            <div className="data-table roomy tabla-resumen-mes">
-              <div className="thead" style={{ gridTemplateColumns: RESUMEN_COLS }}>
-                <div className="th">{t("reportes.colMes")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("charts.ingresos")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("charts.gastos")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("pdfPreview.balance")}</div>
-                <div className="th" style={{ textAlign: "right" }}>{t("reportes.colVariacion")}</div>
-              </div>
-              {historial.map((h, i) => {
-                const bal = restar(h.ingresos, h.gastos);
-                const anterior = historial[i - 1];
-                const balAnt = anterior ? anterior.ingresos - anterior.gastos : null;
-                const variacion = balAnt === null ? null : pctChange(bal, balAnt);
-                return (
-                  <div className="tr" key={h.mes} style={{ gridTemplateColumns: RESUMEN_COLS }}>
-                    <div className="td" style={{ fontWeight: 600 }}>{mesLegible(h.mes)}</div>
-                    <div className="td" data-label={t("charts.ingresos")} style={{ textAlign: "right", color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoney(h.ingresos)}
-                    </div>
-                    <div className="td" data-label={t("charts.gastos")} style={{ textAlign: "right", color: "var(--neg)", fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoney(h.gastos)}
-                    </div>
-                    <div className="td" data-label={t("pdfPreview.balance")} style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                      {fmtMoney(bal)}
-                    </div>
-                    <div className="td" data-label={t("reportes.colVariacion")} style={{ textAlign: "right" }}>
-                      {variacion === null ? (
-                        <span style={{ color: "var(--text-3)" }}>—</span>
-                      ) : (
-                        <span className={`delta ${variacion >= 0 ? "good" : "bad"}`}>
-                          {variacion >= 0 ? "+" : ""}{variacion}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            )}
-          </>
-        )}
+        {bloqueHistorial}
         </>}
       </div>
+      )}
 
       {importOpen && (
         <GenericCsvImportModal<NewTx>

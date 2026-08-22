@@ -9716,6 +9716,73 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     text-overflow: ellipsis;
     max-width: 100%;
   }
+
+  /* ------------------------------------------------------------
+     La columna maestra como ÍNDICE (.md-indice)
+     ------------------------------------------------------------
+     Dos de las diez pantallas partidas no tienen una lista de registros a la
+     izquierda sino un índice de destinos fijos: Reportes (cinco informes) y
+     Cartas (las plantillas). Ahí una fila de 64px con su separador miente
+     —promete que hay muchos y que llegan más—, así que se pinta como el
+     índice de Ajustes: pastillas de 10 de radio, sin filos entre ellas y con
+     la activa tintada. Es lo que dibuja el handoff en las dos (relleno de
+     14/12, hueco de 2). */
+  :root.ipad .md-indice {
+    padding: 14px 12px;
+    gap: 2px;
+    overflow-y: auto;
+  }
+  :root.ipad .md-indice-grupo {
+    padding: 4px 10px 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .md-indice-grupo + .md-indice-grupo,
+  :root.ipad .md-indice-item + .md-indice-grupo { padding-top: 18px; }
+  :root.ipad .md-indice-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 52px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    text-align: left;
+    font: inherit;
+    color: var(--text);
+    cursor: pointer;
+  }
+  :root.ipad .md-indice-item:active { opacity: 0.5; }
+  /* Relleno tintado y no el acento sólido: el mismo `color-mix` del 10% que
+     usa `.md-fila.sel` y el índice de Ajustes, para que "lo elegido" se vea
+     igual en las tres columnas maestras del rediseño. */
+  :root.ipad .md-indice-item.sel { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+  :root.ipad .md-indice-item.sel .md-indice-nombre { font-weight: 600; }
+  :root.ipad .md-indice-nombre { font-size: 15px; }
+  :root.ipad .md-indice-sub { font-size: 12.5px; color: var(--text-2); }
+
+  /* Un informe solo en el panel: la rejilla de dos columnas de `.charts` no
+     tiene con quién partirse. */
+  :root.ipad .charts.rep-uno { grid-template-columns: minmax(0, 1fr); }
+
+  /* El panel del reporte anual: no es una vista, es un documento que se
+     genera. Dice qué lleva y ofrece el botón, en vez de fingir una vista
+     previa de doce meses que la app no dibuja en pantalla. */
+  :root.ipad .rep-documento {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 26px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    max-width: 640px;
+  }
+  :root.ipad .rep-documento-sub { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
 }
 
 /* ============================================================
