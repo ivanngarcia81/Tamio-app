@@ -9756,6 +9756,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     color: var(--text);
     cursor: pointer;
   }
+  /* Sin subtítulo la pastilla no necesita 52: baja al objetivo táctil y la
+     lista deja de parecer una rejilla con huecos. Es el caso de Cartas, cuyas
+     siete secciones se llaman solas. */
+  :root.ipad .md-indice-item:not(:has(.md-indice-sub)) { min-height: 44px; }
   :root.ipad .md-indice-item:active { opacity: 0.5; }
   /* Relleno tintado y no el acento sólido: el mismo `color-mix` del 10% que
      usa `.md-fila.sel` y el índice de Ajustes, para que "lo elegido" se vea

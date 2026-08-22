@@ -1526,6 +1526,8 @@ export const es = {
   },
 
   cartas: {
+    grupoDocumentos: "Documentos",
+    grupoTraslados: "Traslados",
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
     nuevaCarta: "Nueva carta",
     // Etiqueta larga para el menú del "+" (MenuAnchor) — "nuevaCarta" de
