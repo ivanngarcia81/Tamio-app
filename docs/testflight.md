@@ -77,8 +77,9 @@ en las tres fuentes:
 | 21 ago | 1.1.5 |
 | 21 ago | 1.1.6 — el rediseño de iPad, **no distribuida** |
 | 21 ago | 1.1.7 — el rediseño de iPad + el punto negro, **no distribuida** |
-| esta | **1.1.8** — el rediseño llega a TODOS los iPads, no solo al de 13" |
-| la siguiente | 1.1.9 |
+| 21 ago | 1.1.8 — el rediseño llega a TODOS los iPads, no solo al de 13" |
+| esta | **1.1.9** — el rediseño completo: las diez pantallas, Inicio, Configuración y los formularios como hoja |
+| la siguiente | 1.1.10 |
 | cuando toque la 1.2 del plan | 1.2.0 |
 
 Si App Store Connect contesta *"The bundle version must be higher than the
