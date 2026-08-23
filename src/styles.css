@@ -10856,6 +10856,27 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .rep-documento-sub { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
 
+  /* ---- Fuera la caja de debajo de las tarjetas ----
+     `.dash-canvas` nació como un LIENZO: una caja gris con radio, relleno de
+     28 y su sombrita, sobre la que flotaban las tarjetas blancas. En el iPad
+     eso deja tres niveles de elevación apilados —panel, lienzo, tarjeta— para
+     decir una sola cosa, y el handoff solo tiene dos: las tarjetas blancas
+     sobre el fondo de la pantalla, sin nada en medio.
+
+     Se nota poco porque el gris del lienzo y el del panel coinciden, pero el
+     radio y la sombra dibujan un rectángulo fantasma alrededor de cada grupo
+     de cifras. Iván los circuló en cinco pantallas de una vez: Ingresos,
+     Gastos, Cartas, y los dos informes de membresía.
+
+     Aquí el lienzo se queda solo con su `display: flex` y su `gap`: sigue
+     siendo el que agrupa y separa, deja de ser una superficie. */
+  :root.ipad .dash-canvas {
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
   /* ------------------------------------------------------------
      Agenda: el calendario a lo ancho y el día a la derecha
      ------------------------------------------------------------ */

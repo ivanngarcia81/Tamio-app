@@ -2155,3 +2155,39 @@ La guarda comprueba la geometría, no el color: que el índice arranque en el
 borde de la barra lateral, pegado a la cabecera, que llegue al fondo de la
 ventana, y que **la página no desplace** —porque quien desplaza son las
 columnas—. El arnés pasa de 608 a **612**.
+
+## 30. Fuera la caja de debajo de las tarjetas (23 ago 2026)
+
+Iván circuló lo mismo en **cinco pantallas de una vez** —Ingresos, Gastos,
+Cartas y los dos informes de membresía— con una instrucción de una línea:
+*"eliminar la jerarquía de elevación de lo que está en el círculo"*.
+
+Lo circulado era siempre `.dash-canvas`: la caja gris con radio, `padding: 28`
+y su sombrita sobre la que flotaban las tarjetas blancas. En el iPad eso deja
+**tres niveles apilados para decir una sola cosa** —panel, lienzo, tarjeta—
+cuando el handoff solo tiene dos: las tarjetas blancas sobre el fondo de la
+pantalla, y nada en medio.
+
+Se notaba poco porque desde §25 el gris del lienzo y el del panel coinciden;
+lo que delataba la caja eran el **radio y la sombra**, que dibujaban un
+rectángulo fantasma alrededor de cada grupo de cifras.
+
+En el iPad, `.dash-canvas` se queda solo con su `display: flex` y su `gap`:
+sigue siendo lo que agrupa y separa, deja de ser una superficie. Una regla,
+trece usos, cinco pantallas.
+
+### Una guarda que dejó de significar lo que decía
+
+La comprobación de los grises (§25) comparaba el fondo del panel con el de
+`.dash-canvas` — era el gris que Iván había señalado con la flecha aquel día.
+Con el lienzo sin pintar, esa comparación se quedó sin los dos términos y
+salió en rojo con el código bien. Reescrita contra el **token** `--bg`, que es
+lo que se quería decir desde el principio, más una línea nueva que comprueba
+justo lo contrario: que `.dash-canvas` ya no pinte nada.
+
+Es la segunda vez en esta serie que una guarda envejece con el código que
+vigila (la otra, el roster de Servicios en §26). Merece la pena anotarlo: una
+comprobación escrita contra un intermediario —"el mismo color que ESE
+elemento"— caduca cuando el intermediario cambia; escrita contra el token, no.
+
+El arnés pasa de 612 a **613**.

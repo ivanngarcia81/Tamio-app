@@ -1686,13 +1686,27 @@ console.log("\n== Los grises del iPad (handoff) ==");
       panel: bg(".md-movimientos .md-detalle"),
       lienzo: bg(".md-detalle .dash-canvas"),
       tokenBg: raiz.getPropertyValue("--bg").trim(),
+      // El token en rgb(), para poder compararlo con un `backgroundColor`.
+      tokenBgRGB: (() => {
+        const d = document.createElement("div");
+        d.style.backgroundColor = "var(--bg)";
+        document.body.appendChild(d);
+        const v = getComputedStyle(d).backgroundColor;
+        d.remove();
+        return v;
+      })(),
       tokenCromo: raiz.getPropertyValue("--ipad-cromo").trim(),
     };
   });
   chk(g.sidebar === g.cabecera, `barra lateral y cabecera, el mismo cromo (${g.sidebar})`);
   chk(g.lista === g.sidebar, "y la columna maestra también");
   chk(!!g.panel && g.panel !== g.sidebar, `el panel de detalle NO es ese gris (${g.panel})`);
-  chk(g.panel === g.lienzo, `es el del lienzo, el mismo de .dash-canvas (${g.lienzo})`);
+  /* El panel tiene que valer el token del lienzo. Antes se comparaba contra
+     el fondo de `.dash-canvas` —era el gris que Iván señaló con la flecha—,
+     pero desde que ese lienzo dejó de pintar (una elevación de más) ya no hay
+     nada que comparar: se mira el token, que es lo que se quería decir. */
+  chk(g.panel === g.tokenBgRGB, `es el del lienzo (${g.panel} = ${g.tokenBgRGB})`);
+  chk(g.lienzo === "rgba(0, 0, 0, 0)", `y .dash-canvas ya no pinta nada debajo (${g.lienzo})`);
   chk(g.tokenBg !== g.tokenCromo, `y los dos tokens son distintos (${g.tokenBg} vs ${g.tokenCromo})`);
 
   /* Todo lo que en el iPad tiene que ser CROMO. `--sidebar-bg` cuelga de
