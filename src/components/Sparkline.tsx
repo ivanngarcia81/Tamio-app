@@ -7,7 +7,7 @@ interface Props {
   height?: number;
 }
 
-export default function Sparkline({ data, color = "var(--ink)", width = 90, height = 34 }: Props) {
+export default function Sparkline({ data, color = "var(--brand)", width = 90, height = 34 }: Props) {
   const gradId = `spark-${useId().replace(/:/g, "")}`;
 
   if (data.length < 2) return <svg className="spark" width={width} height={height} />;

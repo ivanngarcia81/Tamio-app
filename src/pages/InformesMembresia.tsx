@@ -567,7 +567,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
           <div key={it.clave} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0" }}>
             <span style={{ fontSize: 12.5, width: 130, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etiqueta(it.clave)}</span>
             <div style={{ flex: 1, height: 8, background: "var(--surface-2)", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ width: `${Math.round((it.n / max) * 100)}%`, height: "100%", background: "var(--ink)", borderRadius: 4 }} />
+              <div style={{ width: `${Math.round((it.n / max) * 100)}%`, height: "100%", background: "var(--brand)", borderRadius: 4 }} />
             </div>
             <span style={{ fontSize: 12.5, fontWeight: 700, width: 32, textAlign: "right", flex: "none", fontVariantNumeric: "tabular-nums" }}>{it.n}</span>
           </div>
@@ -616,7 +616,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     {nuevosPorMes.map((x) => (
                       <div key={x.mes} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 24 }}>
                         <span style={{ fontSize: 11.5, fontWeight: 700 }}>{x.n}</span>
-                        <div style={{ width: "70%", maxWidth: 40, height: `${Math.round((x.n / maxNuevos) * 90)}%`, minHeight: 3, background: "var(--ink)", borderRadius: "4px 4px 0 0" }} />
+                        <div style={{ width: "70%", maxWidth: 40, height: `${Math.round((x.n / maxNuevos) * 90)}%`, minHeight: 3, background: "var(--brand)", borderRadius: "4px 4px 0 0" }} />
                         <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>{x.mes.slice(2)}</span>
                       </div>
                     ))}

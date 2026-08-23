@@ -2042,6 +2042,68 @@ console.log("\n== Los menús anclados no se recortan ==");
   await ctxMn.close();
 }
 
+/* ---------- 25. Ninguna barra de gráfica sale negra ----------
+   Con el acento de fábrica ("neutro") `--ink` vale #0f0f0f, así que todo lo
+   que se pintara con él como MARCA DE DATO salía negro. La regla de la casa
+   —escrita en styles.css sobre `--brand`— es que el estado activo y el tinte
+   de los controles no usan negro puro. Iván lo cazó dos veces: primero el día
+   de hoy de la Agenda, después las barras de Informes de membresía. Esto las
+   vigila juntas, y de paso la barra de Informes, que flotaba sobre el lienzo
+   en vez de ser la barra del panel. */
+console.log("\n== Las barras van con el acento, no en negro ==");
+{
+  const ctxG = await nuevoContexto("ipad");
+  const pg = await ctxG.newPage();
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  const negro = "rgb(15, 15, 15)";
+
+  await pg.goto(`${URL_BASE}/#/reporte-miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".inf-barrita", { timeout: 10000 });
+  /* Las distribuciones viven en "Información general", que no es la vista de
+     arranque. */
+  await pg.locator(".inf-item").first().click();
+  await pg.waitForTimeout(500);
+  const inf = await pg.evaluate(() => {
+    const relleno = (el) => getComputedStyle(el).backgroundColor;
+    // Las barras de "Miembros por estado / ministerio / expediente" y las de
+    // "Nuevos por mes": divs sin clase, se buscan por su forma.
+    const barras = [...document.querySelectorAll(".inf-cuerpo .card div")]
+      .filter((d) => {
+        const cs = getComputedStyle(d);
+        return d.children.length === 0 && cs.borderRadius !== "0px" &&
+               cs.backgroundColor !== "rgba(0, 0, 0, 0)" && d.getBoundingClientRect().height > 2;
+      })
+      .map(relleno);
+    const b = document.querySelector(".inf-barrita").getBoundingClientRect();
+    const p = document.querySelector(".inf-detalle").getBoundingClientRect();
+    return {
+      colores: [...new Set(barras)],
+      barritaX: Math.round(b.left), panelX: Math.round(p.left),
+      barritaY: Math.round(b.top), panelY: Math.round(p.top),
+      barritaW: Math.round(b.width), panelW: Math.round(p.width),
+    };
+  });
+  const negras = inf.colores.filter((c) => c === negro);
+  chk(inf.colores.length > 0, `las gráficas de Informes tienen barras (${inf.colores.length} colores)`);
+  chk(negras.length === 0, `y ninguna sale negra (${inf.colores.join(" · ")})`);
+  chk(inf.barritaX === inf.panelX, `la barrita arranca en el filo del panel (${inf.barritaX} = ${inf.panelX})`);
+  chk(inf.barritaY === inf.panelY, `y pegada a la cabecera (${inf.barritaY} = ${inf.panelY})`);
+  chk(inf.barritaW === inf.panelW, `y de filo a filo (${inf.barritaW} = ${inf.panelW})`);
+
+  /* Y el barrido general: ninguna barra de gráfica de las pantallas del iPad
+     puede quedarse en el negro de "neutro". */
+  for (const [ruta, esperar, sel, nombre] of [
+    ["", ".dash-barras", ".dash-barra", "Inicio"],
+  ]) {
+    await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(esperar, { timeout: 10000 });
+    await pg.waitForTimeout(400);
+    const cols = await pg.$$eval(sel, (ns) => [...new Set(ns.map((n) => getComputedStyle(n).backgroundColor))]);
+    chk(!cols.includes(negro), `${nombre}: sus barras tampoco (${cols.join(" · ")})`);
+  }
+  await ctxG.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

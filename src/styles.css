@@ -10163,7 +10163,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: color-mix(in srgb, var(--ink) 22%, transparent);
   }
   /* El mes en curso, lleno: es el que se está mirando. */
-  :root.ipad .fm-barra.actual { background: var(--ink); }
+  :root.ipad .fm-barra.actual { background: var(--brand); }
   :root.ipad .fm-anios { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 
   /* Filas de aporte: fecha a la izquierda, categoría en medio, monto a la
@@ -10775,7 +10775,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 5px 5px 0 0;
     background: color-mix(in srgb, var(--ink) 22%, transparent);
   }
-  :root.ipad .ds-tira-col.es-actual .ds-tira-barra { background: var(--ink); }
+  :root.ipad .ds-tira-col.es-actual .ds-tira-barra { background: var(--brand); }
   :root.ipad .ds-tira-fecha {
     font-size: 11px;
     color: var(--text-3);
@@ -11484,6 +11484,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      este rediseño vino a quitar. `--brand` arranca en el verde de la app y
      pasa a seguir al acento en cuanto el usuario elige uno. Lo cazó Iván en
      el iPad: "lo negro debe ser verde". */
+  /* La vista de Semana marca el día de hoy con el mismo criterio que la de
+     Mes: si no, las dos vistas de la misma pantalla dirían "hoy" en colores
+     distintos. Acotado a iPad; en Mac el marcador sigue siendo `--ink`. */
+  :root.ipad .agenda-sem-col.today .agenda-sem-num {
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
   :root.ipad .md-agenda-cal .agenda-cell.today { background: var(--brand); }
   :root.ipad .md-agenda-cal .agenda-cell.today .agenda-cell-num {
     background: none;
@@ -16971,7 +16978,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.ipad .inf-item-sub { font-size: 12.5px; color: var(--text-2); line-height: 1.35; white-space: normal; }
 :root.ipad .inf-item .mb-globo { margin-top: 2px; }
 
-:root.ipad .inf-detalle { display: flex; flex-direction: column; }
+/* `padding: 0`: la barrita es la barra DEL PANEL, así que va pegada a la
+   cabecera y de filo a filo, como la de 50px de la Agenda. Con el relleno de
+   `.md-detalle` (28/32/40) salía flotando a 32px del borde y 28 bajo la
+   cabecera — una tira de cromo suelta sobre el lienzo, no una barra. El aire
+   lo pone `.inf-cuerpo`, que además es quien desplaza. */
+:root.ipad .inf-detalle { display: flex; flex-direction: column; padding: 0; }
 :root.ipad .inf-barrita {
   flex: 0 0 auto;
   display: flex;

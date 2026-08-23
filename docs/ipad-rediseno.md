@@ -2191,3 +2191,58 @@ comprobación escrita contra un intermediario —"el mismo color que ESE
 elemento"— caduca cuando el intermediario cambia; escrita contra el token, no.
 
 El arnés pasa de 612 a **613**.
+
+## 31. Las barras negras y la barrita suelta (23 ago 2026)
+
+Otra captura de Iván, dos cosas: *"la gráfica debe ser verde y sale negra"* y
+*"lo circulado arriba debe ser del mismo color del maestro-detalle"*.
+
+### El negro, otra vez, y esta vez con barrido
+
+Es la misma raíz de §28: `var(--ink)` usado como **marca de dato**. Con el
+acento de fábrica vale `#0f0f0f`, y todo lo pintado con él sale negro. Allí
+fue la celda de hoy; aquí, las barras de "Miembros por estado", "por
+ministerio", "Estado del expediente" y "Nuevos por mes".
+
+Como ya iban dos, esta vez no se arregló solo lo señalado: se barrió el
+código. Aparecieron **cinco** sitios más con el mismo patrón, y se cambiaron
+los que son gráfica o marca de "hoy":
+
+| Dónde | Qué es |
+|---|---|
+| `InformesMembresia` ×2 | barras de distribución y de altas por mes |
+| `.fm-barra.actual` | barra del mes actual en la ficha de miembro |
+| `.ds-tira-barra` | barra del servicio actual en la tira de Servicios |
+| `.agenda-sem-col.today` | el "hoy" de la vista Semana |
+| `Sparkline` | color por defecto |
+
+El de Semana entró por consistencia: sin él, las dos vistas de la **misma**
+pantalla dirían "hoy" en colores distintos. Va acotado a iPad; en Mac el
+marcador sigue siendo `--ink`.
+
+Lo que **no** se tocó: `chip.active`, `switch.on`, `tabs-segmented .seg.active`
+y la pastilla del sidebar. Ésos son controles con texto de contraste encima,
+no marcas de dato, y llevan el acento a propósito.
+
+### La barrita, que era una tira suelta
+
+Medido: `.inf-barrita` arrancaba en x=680 / y=84, cuando el panel empieza en
+648 / 56. O sea 32px del filo y 28 bajo la cabecera — **una tira de cromo
+flotando sobre el lienzo**, no la barra del panel. La causa, el `padding:
+28px 32px 40px` que hereda de `.md-detalle`.
+
+Con `padding: 0` en `.inf-detalle`, la barrita pasa a ser lo que el handoff
+dibuja: primer hijo de la columna, de filo a filo y pegada a la cabecera, como
+la de 50px de la Agenda. El aire y el desplazamiento ya los ponía
+`.inf-cuerpo`.
+
+Es la tercera vez que el mismo `padding` heredado convierte una barra en un
+rectángulo flotando —Configuración (§29), esta— y la segunda que la respuesta
+es quitarlo del panel y dejarlo en el cuerpo.
+
+### Lo medido
+
+La guarda mira las barras por su **color computado** y exige que ninguna sea
+`rgb(15, 15, 15)`, en Informes y en Inicio; y la geometría de la barrita
+contra el panel. Probada al revés —devolviendo `--ink` y el padding— canta los
+cuatro fallos. El arnés pasa de 613 a **619**.
