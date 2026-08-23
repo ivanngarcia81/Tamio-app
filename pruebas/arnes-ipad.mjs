@@ -994,6 +994,66 @@ console.log("\n== Reportes del iPad (handoff) ==");
   await ctxRp.close();
 }
 
+/* ---------- 14. Depósitos: el corte del handoff, con sus huecos a la vista ---------- */
+console.log("\n== Depósitos del iPad (handoff) ==");
+{
+  const ctxDp = await nuevoContexto("ipad");
+  const pg = await ctxDp.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
+  await pg.waitForTimeout(300);
+
+  const lista = await pg.evaluate(() => {
+    const f = document.querySelector(".md-depositos .md-fila");
+    return {
+      seg: [...document.querySelectorAll(".md-depositos .md-seg-tipo button")].map((b) => b.textContent.trim()),
+      sel: document.querySelector(".md-depositos .md-seg-tipo button.sel")?.textContent.trim(),
+      alto: f ? Math.round(f.getBoundingClientRect().height) : 0,
+      estados: document.querySelectorAll(".md-depositos .dep-estado").length,
+      filas: document.querySelectorAll(".md-depositos .md-fila").length,
+    };
+  });
+  chk(lista.seg.length === 2, `el segmentado del corte (${lista.seg.join(" · ")})`);
+  chk(lista.sel === "Depositados", `arranca en lo que la app sí tiene (${lista.sel})`);
+  chk(lista.alto >= 72, `la fila del corte mide 72 o más (${lista.alto})`);
+  chk(lista.estados === lista.filas, `cada corte dice su estado (${lista.estados}/${lista.filas})`);
+
+  // El panel: tres cifras, movimientos incluidos y ficha del banco.
+  await pg.click(".md-depositos .md-fila:not(.sel)");
+  await pg.waitForTimeout(400);
+  const det = await pg.evaluate(() => ({
+    titular: document.querySelector(".dm-titular")?.textContent.trim(),
+    cifras: document.querySelectorAll(".dep-cifra").length,
+    sinMotor: document.querySelectorAll(".dep-cifra--sinmotor").length,
+    tarjetas: document.querySelectorAll(".dep-cuerpo .dm-tarjeta").length,
+    ficha: !!document.querySelector(".dm-comp-falta, .dm-comp-hay"),
+    desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  }));
+  chk(!!det.titular, `el panel titula el corte (${det.titular})`);
+  chk(det.cifras === 3, `las tres cifras del corte (${det.cifras})`);
+  /* Dos de las tres esperan la relación depósito↔movimientos, y tienen que
+     DECIRLO en vez de enseñar un cero que parecería un dato. */
+  chk(det.sinMotor === 2, `dos dicen que esperan motor (${det.sinMotor})`);
+  chk(det.tarjetas === 2, `movimientos incluidos y ficha del banco (${det.tarjetas})`);
+  chk(det.ficha, "la ficha del banco tiene su hueco o su archivo");
+  chk(det.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/depositos-1366x1024.png` });
+
+  // La pestaña Pendientes explica qué le falta, con la cifra real.
+  await pg.click(".md-depositos .md-seg-tipo button:nth-child(1)");
+  await pg.waitForTimeout(350);
+  const pend = await pg.evaluate(() => ({
+    texto: (document.querySelector(".dep-pendientes")?.textContent || "").trim(),
+    filas: document.querySelectorAll(".md-depositos .md-fila").length,
+  }));
+  chk(pend.filas === 0, `"Pendientes" no finge cortes que no hay (${pend.filas} filas)`);
+  chk(/\$/.test(pend.texto), "y da el efectivo por depositar, que sí se sabe");
+  if (DIR) await pg.screenshot({ path: `${DIR}/depositos-pendientes-1366x1024.png` });
+  await ctxDp.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

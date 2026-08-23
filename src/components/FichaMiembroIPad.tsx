@@ -24,8 +24,13 @@ import type { Centavos } from "../dinero";
  *     y dice qué le falta, en vez de desaparecer: una sección sin datos
  *     todavía no es lo mismo que una que no aplica.
  *
- * Tres campos del diseño tampoco existen y por eso NO se pintan: nacimiento,
- * dirección y estado civil. Piden migración. Ver docs/ipad-rediseno.md §16.
+ * Y tres campos del diseño —nacimiento, dirección y estado civil— **se pintan
+ * sin motor**, por decisión de Iván (23 ago): primero la plantilla, el dato
+ * después. `members` no tiene esas columnas; la fila sale con su etiqueta y
+ * dice que todavía no se captura, para que se vea el hueco que va a llenarse
+ * y no parezca que el campo no existe. Mismo trato que la pestaña Familia.
+ * Cuando lleguen las columnas, solo cambia de qué se lee.
+ * Ver docs/ipad-rediseno.md §16.
  */
 
 export type PestanaFicha = "datos" | "aportes" | "familia" | "asistencia";
@@ -135,6 +140,22 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
       </div>
     ) : null;
 
+  /**
+   * Una fila del diseño que TODAVÍA no tiene columna detrás.
+   *
+   * No es lo mismo que `fila()` con el valor vacío: aquella se esconde porque
+   * el campo existe y esta ficha no lo trae; esta se enseña porque el campo va
+   * a existir y el hueco es la información. Se distingue a la vista (valor en
+   * gris claro, en cursiva) para que nadie la confunda con un dato borrado, y
+   * lleva `title` explicando por qué.
+   */
+  const filaSinMotor = (etiqueta: string) => (
+    <div className="dm-campo dm-campo--sinmotor" key={etiqueta} title={t("detalleMiembro.sinCapturarAyuda")}>
+      <span className="dm-campo-etiqueta">{etiqueta}</span>
+      <span className="dm-campo-valor">{t("detalleMiembro.sinCapturar")}</span>
+    </div>
+  );
+
   const PESTANAS: PestanaFicha[] = ["datos", "aportes", "familia", "asistencia"];
 
   /* Los últimos tres aportes, que en el diseño van bajo la tarjeta del año.
@@ -164,6 +185,11 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
             <div className="dm-ficha">
               {fila(t("detalleMiembro.telefono"), member.telefono)}
               {fila(t("detalleMiembro.correo"), member.email)}
+              {/* Los tres del diseño que esperan columna. Van aquí, entre el
+                  correo y el expediente, que es su sitio en el handoff. */}
+              {filaSinMotor(t("detalleMiembro.nacimiento"))}
+              {filaSinMotor(t("detalleMiembro.direccion"))}
+              {filaSinMotor(t("detalleMiembro.estadoCivil"))}
               {fila(t("detalleMiembro.idFiscal"), member.rfc)}
               {fila(t("detalleMiembro.desde"), member.fecha_ingreso ? fmtFechaCorta(member.fecha_ingreso) : null)}
               {fila(t("detalleMiembro.congregaDesde"), member.fecha_congregacion ? fmtFechaCorta(member.fecha_congregacion) : null)}

@@ -1324,3 +1324,63 @@ El handoff rotula el bloque de arriba como "Resumen en pantalla · **No se
 incluye en el PDF**". Es un detalle pequeño y honesto: esas cuatro cifras son
 ayuda de pantalla, y quien comparte el reporte esperaría encontrarlas dentro.
 Ahora lo dice.
+
+## 18. Depósitos, y la regla nueva: primero la plantilla (23 ago 2026)
+
+Quinta pantalla, y la primera que se construye bajo una **regla nueva de
+Iván**, dicha el 23 de agosto sobre las tres contradicciones abiertas:
+
+> 1. "Registrado por" — *déjalo registrado, y cuando terminemos con el diseño
+>    se le agregan los usuarios.*
+> 2. Nacimiento, dirección, estado civil — *déjalo construido, la plantilla, y
+>    después se le pone motor.*
+> 3. "Sin depositar" — *se lo ponemos después del diseño.*
+
+O sea: **el diseño primero, el motor después**, y lo que no tiene datos se
+DIBUJA con su hueco explicado en vez de desaparecer. Es la misma regla que ya
+había fijado para la quinta columna de Membresía, ahora general.
+
+### Lo que eso cambió en Aportantes (§16)
+
+Los tres campos personales ya no se omiten: salen como filas de la ficha con
+su etiqueta y "Sin capturar todavía" en gris cursiva, y un `title` que explica
+que el campo está en el diseño y aún no se guarda. No es lo mismo que una fila
+vacía —esa se esconde porque el campo existe y esta ficha no lo trae—: aquí el
+hueco ES la información.
+
+### Depósitos
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Segmentado **Pendientes · Depositados** | no | construido |
+| Fila de 72px con estado | 64px, sin estado | ambas cosas |
+| `h1` "Corte del domingo 23" | solo el monto | construido |
+| **Efectivo / Cheques / Total** | no | Total real; los otros dos, plantilla |
+| **Movimientos incluidos** con palomitas | no | plantilla con su explicación |
+| **Ficha de depósito** (foto del banco) | una fila de la ficha | tarjeta con hueco punteado |
+| Botón "Marcar depositado" | — | **no**, ver abajo |
+
+**"Ficha de depósito" era real desde siempre.** `depositos_bancarios` tiene
+`comprobante_path` desde la migración 5; lo que faltaba era darle la forma de
+tarjeta con el recuadro punteado del diseño en vez de una fila que decía "Sin
+ficha adjunta".
+
+**"Pendientes" no se queda muda.** Un depósito, en Tamio, se registra cuando
+YA se hizo: no existe el paso de preparar el corte antes de ir al banco. La
+pestaña lo dice, y de paso da el número que sí se sabe calcular —el efectivo
+por depositar, `efectivoDisponibleHasta`, la misma cuenta del "Saldo en caja"
+del Inicio—. Vale más un dato verdadero y una explicación que una lista vacía.
+
+**El botón "Marcar depositado" NO se construye.** Aquí la regla de "primero la
+plantilla" se para, y a propósito: un campo vacío es pasivo y un botón invita
+a pulsarlo. Un primario que no hace nada, encima de cada corte, enseña el
+diseño a costa de mentirle a quien lo toca. Las plantillas mudas —una fila,
+una tarjeta, una pestaña— sí van, porque no prometen una acción. Cuando exista
+el estado del corte, el botón entra con su motor puesto.
+
+### Lo que sigue esperando la relación depósito↔movimientos
+
+Tres cosas, todas dibujadas y sin motor: el desglose Efectivo / Cheques, la
+lista de movimientos incluidos, y el chip "Sin depositar" de la lista de
+Ingresos (§15). Las tres se resuelven con la misma pieza: guardar qué
+movimientos componen cada depósito.

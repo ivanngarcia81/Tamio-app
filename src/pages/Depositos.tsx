@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  countDepositos, currentMonth, currentYear, fmtFechaCorta, fmtMoney, listDepositos,
-  mesLegible, monthDepositos,
+  countDepositos, currentMonth, currentYear, efectivoDisponibleHasta, fmtFechaCorta, fmtMoney,
+  hoyISO, listDepositos, mesLegible, monthDepositos,
   type Church, type Deposito,
 } from "../db";
 import { EmptyState } from "../components/TxList";
@@ -58,6 +58,19 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
      cierra solo. Es el patrón de `Movimientos.tsx`. */
   const [selId, setSelId] = useState<number | null>(null);
   const [query, setQuery] = useState("");
+  /* El segmentado Pendientes · Depositados del handoff. "Depositados" es lo
+     que la app tiene: un depósito registrado ES un depósito hecho.
+     "Pendientes" —preparar el corte antes de ir al banco— es el paso que
+     falta; la pestaña se construye y explica qué le falta, con la cifra REAL
+     de efectivo por depositar, que sí se sabe calcular. */
+  const [vista, setVista] = useState<"pendientes" | "depositados">("depositados");
+  const [porDepositar, setPorDepositar] = useState<Centavos | null>(null);
+  useEffect(() => {
+    /* Apertura + aprobados − ya depositado: la misma cuenta que usa el Inicio
+       para su "Saldo en caja". Es el número que la pestaña Pendientes SÍ
+       puede dar aunque no sepa repartirlo en cortes. */
+    efectivoDisponibleHasta(church, hoyISO()).then(setPorDepositar).catch(console.error);
+  }, [church, refreshKey]);
   const [previewSel, setPreviewSel] = useState<string | null>(null);
   const [pendingDeleteSel, setPendingDeleteSel] = useState<Deposito | null>(null);
 
@@ -271,6 +284,20 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             <>
               <div className="md-lista">
                 <div className="md-filtros">
+                  {/* El segmentado del handoff, encima del buscador. */}
+                  <div className="md-seg-tipo" role="group" aria-label={t("depositos.vistaAria")}>
+                    {(["pendientes", "depositados"] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        className={vista === v ? "sel" : ""}
+                        aria-pressed={vista === v}
+                        onClick={() => setVista(v)}
+                      >
+                        {t(`depositos.filtro_${v}`)}
+                      </button>
+                    ))}
+                  </div>
                   <label className="md-buscar">
                     <IconSearch size={15} strokeWidth={2} />
                     <input
@@ -284,7 +311,19 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
 
                 <div className="md-filas">
                   {angosto && <div className="md-extra">{resumenEscritorio}</div>}
-                  {visibles.length === 0 ? (
+                  {vista === "pendientes" ? (
+                    /* La pestaña que espera motor. No se queda muda: da el
+                       número que sí se sabe —el efectivo por depositar— y
+                       dice qué paso falta para que aquí haya cortes. */
+                    <div className="fm-vacio fm-vacio--pendiente dep-pendientes">
+                      <span className="fm-vacio-titulo">{t("depositos.pendientesTitulo")}</span>
+                      <span className="fm-vacio-sub">
+                        {t("depositos.pendientesSub", {
+                          monto: `${fmtMoney(porDepositar ?? CERO)} ${church.moneda}`,
+                        })}
+                      </span>
+                    </div>
+                  ) : visibles.length === 0 ? (
                     <div className="md-filas-vacio">{estadoVacio}</div>
                   ) : (
                     gruposPeriodo.map((g) => (
@@ -297,12 +336,22 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                             onClick={() => setSelId(d.id)}
                           >
                             <div className="md-fila-textos">
-                              <div className="md-fila-titular">{fmtFechaCorta(d.fecha)}</div>
-                              <div className="md-fila-sub">
+                              <div className="md-fila-titular">
+                                {t("depositos.corteDel", { fecha: fmtFechaCorta(d.fecha) })}
+                              </div>
+                              <div className="md-fila-sub truncate">
                                 {[d.cuenta_banco, d.referencia].filter(Boolean).join(" · ")}
                               </div>
                             </div>
-                            <div className="md-fila-monto">{fmtMoney(d.monto)}</div>
+                            {/* Monto y estado, como el diseño. Aquí el estado
+                                es siempre "Depositado": una fila de esta tabla
+                                es un depósito ya hecho. El "Sin depositar" del
+                                handoff vive en la pestaña Pendientes, que es
+                                la que espera motor. */}
+                            <span className="md-fila-cola">
+                              <span className="md-fila-monto">{fmtMoney(d.monto)}</span>
+                              <span className="dep-estado">{t("depositos.filtro_depositados")}</span>
+                            </span>
                           </div>
                         ))}
                       </div>

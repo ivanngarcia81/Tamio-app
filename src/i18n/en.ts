@@ -420,6 +420,20 @@ export const en: Resources = {
 
   depositos: {
     seccionResumen: "Overview",
+    vistaAria: "Pending or deposited",
+    corteDel: "{{fecha}} deposit",
+    efectivo: "Cash",
+    cheques: "Checks",
+    totalDepositado: "Total deposited",
+    sinDesgloseAyuda: "Splitting cash from checks needs to know which entries went into the deposit, and that link is not stored yet.",
+    movsIncluidos: "Entries included",
+    sinMovsTitulo: "What makes up the deposit is not stored yet",
+    sinMovsSub: "A deposit today is an amount with its date, its account and its bank slip. Once the entries that went into it are stored, they will be listed here one by one with a checkmark, and the deposit will be built by ticking them.",
+    adjuntarFicha: "Attach slip",
+    filtro_pendientes: "Pending",
+    filtro_depositados: "Deposited",
+    pendientesTitulo: "Preparing a deposit does not exist yet",
+    pendientesSub: "In Tamio a deposit is recorded once it has been made. Preparing it beforehand — ticking what goes in and marking it deposited later — is the missing step. For now, cash left to deposit is {{monto}}.",
     titulo: "Bank deposit",
     sub: "Record money deposited into the church's bank account",
     nuevoDeposito: "New deposit",
@@ -602,6 +616,11 @@ export const en: Resources = {
 
   detalleMiembro: {
     sub: "Member contribution history",
+    nacimiento: "Date of birth",
+    direccion: "Address",
+    estadoCivil: "Marital status",
+    sinCapturar: "Not recorded yet",
+    sinCapturarAyuda: "This field is in the design and is not stored yet. It will show here as soon as it can be captured.",
     // La ficha del iPad (handoff 2): pestañas y campos del panel.
     seccionesAria: "Record sections",
     pestana_datos: "Details",

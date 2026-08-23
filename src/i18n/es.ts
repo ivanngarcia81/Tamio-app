@@ -416,6 +416,20 @@ export const es = {
 
   depositos: {
     seccionResumen: "Resumen",
+    vistaAria: "Cortes pendientes o depositados",
+    corteDel: "Corte del {{fecha}}",
+    efectivo: "Efectivo",
+    cheques: "Cheques",
+    totalDepositado: "Total depositado",
+    sinDesgloseAyuda: "El reparto entre efectivo y cheques necesita saber qué movimientos entraron en el corte, y esa relación todavía no se guarda.",
+    movsIncluidos: "Movimientos incluidos",
+    sinMovsTitulo: "Todavía no se guarda qué compone el corte",
+    sinMovsSub: "Un depósito es hoy una cifra con su fecha, su cuenta y su ficha del banco. Cuando se guarde qué movimientos entraron, aquí saldrán uno por uno con su palomita y el corte se armará marcándolos.",
+    adjuntarFicha: "Adjuntar ficha",
+    filtro_pendientes: "Pendientes",
+    filtro_depositados: "Depositados",
+    pendientesTitulo: "El corte previo todavía no existe",
+    pendientesSub: "En Tamio un depósito se registra cuando ya se hizo. Preparar el corte antes de ir al banco —marcar qué entra y darlo por depositado después— es el paso que falta. Mientras tanto, el efectivo por depositar es {{monto}}.",
     titulo: "Depósito bancario",
     sub: "Registrar dinero depositado en la cuenta bancaria de la iglesia",
     nuevoDeposito: "Nuevo depósito",
@@ -598,6 +612,11 @@ export const es = {
 
   detalleMiembro: {
     sub: "Historial de aportes del miembro",
+    nacimiento: "Nacimiento",
+    direccion: "Dirección",
+    estadoCivil: "Estado civil",
+    sinCapturar: "Sin capturar todavía",
+    sinCapturarAyuda: "Este campo está en el diseño y todavía no se guarda en la base. Aparecerá aquí en cuanto se pueda capturar.",
     // La ficha del iPad (handoff 2): pestañas y campos del panel.
     seccionesAria: "Secciones de la ficha",
     pestana_datos: "Datos",

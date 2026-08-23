@@ -9940,6 +9940,68 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .fm-vacio-titulo { font-size: 15.5px; font-weight: 600; color: var(--text); }
   :root.ipad .fm-vacio-sub { font-size: 13px; line-height: 1.5; color: var(--text-2); max-width: 380px; margin: 0 auto; }
 
+  /* Una fila de la ficha que existe en el diseño y todavía no tiene columna.
+     En gris claro y cursiva para que NO se lea como un dato borrado: el hueco
+     es la información. Ver `filaSinMotor` en FichaMiembroIPad.tsx. */
+  :root.ipad .dm-campo--sinmotor .dm-campo-valor {
+    color: var(--text-3);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* ---- Depósitos (.dep-*) — handoff 2 ---- */
+  /* La fila del corte es de 72px, más alta que las de 64: lleva dos líneas de
+     texto Y dos a la derecha (monto y estado). */
+  :root.ipad .md-depositos .md-fila { min-height: 72px; }
+  :root.ipad .dep-estado {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  /* Las tres cifras del corte. Igual que las KPI del informe pero sin filete:
+     aquí no clasifican, reparten. */
+  :root.ipad .dep-cifras {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  :root.ipad .dep-cifra {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+  :root.ipad .dep-cifra-et { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+  :root.ipad .dep-cifra-val {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  :root.ipad .dep-cifra-val--total { color: var(--ink); }
+  /* La cifra que espera motor: el mismo gris en cursiva de la ficha, y en
+     cuerpo pequeño — no es un número, es un hueco con nombre. */
+  :root.ipad .dep-cifra--sinmotor .dep-cifra-val {
+    font-size: 14px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-3);
+  }
+  /* El cuerpo del panel: movimientos incluidos (1.4fr) y ficha (1fr). */
+  :root.ipad .dep-cuerpo {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  :root.ipad .dep-vacio { box-shadow: none; margin-top: 14px; }
+  :root.ipad .dep-ficha-falta { min-height: 190px; }
+  :root.ipad .dep-pendientes { margin: 16px 14px; }
+
   /* ------------------------------------------------------------
      El acta como DOCUMENTO (.da-*)
      ------------------------------------------------------------
@@ -11082,6 +11144,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dash-graficas { grid-template-columns: 1.55fr 1fr; }
   :root.ipad .dm-pie-tarjetas { grid-template-columns: 1fr 1fr; }
   :root.ipad .fm-cuerpo { grid-template-columns: 1.1fr 1fr; }
+  :root.ipad .dep-cuerpo { grid-template-columns: 1.4fr 1fr; }
   /* Las cuatro del informe en una fila. `!important` porque la regla del
      panel de detalle (~10729) lo lleva también: allí la decisión de 2×2 se
      tomó con la tipografía de escritorio, y aquí ya no es esa (ver el bloque
