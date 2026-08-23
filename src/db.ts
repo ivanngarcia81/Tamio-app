@@ -1631,6 +1631,30 @@ export async function insertActa(churchId: number, a: NewActa): Promise<void> {
   );
 }
 
+/**
+ * "Cerrar acta" del handoff: el borrador pasa a **aprobada** y se sella con
+ * la fecha de aprobación.
+ *
+ * El estado y `fecha_aprobacion` existían desde que se creó la tabla; lo que
+ * no había era forma de cambiarlos sin abrir el formulario entero y guardar
+ * todo el documento otra vez. Cerrar un acta es UN gesto, no una edición: por
+ * eso va aparte y solo toca esas dos columnas.
+ *
+ * No es irreversible por sí sola —el formulario puede devolverla a borrador—,
+ * pero sí es la que convierte un borrador en documento oficial, así que la
+ * pantalla la pide con confirmación.
+ */
+export async function cerrarActa(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE actas SET estado = 'aprobada',
+            fecha_aprobacion = coalesce(fecha_aprobacion, date('now', 'localtime')),
+            updated_at = datetime('now')
+      WHERE id = $1 AND church_id = $2`,
+    [id, churchId]
+  );
+}
+
 export async function updateActa(id: number, churchId: number, a: NewActa): Promise<void> {
   const d = await getDb();
   await d.execute(

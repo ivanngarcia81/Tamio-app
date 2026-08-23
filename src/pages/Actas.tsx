@@ -4,7 +4,7 @@ import { esIPad, esIPhone, textoCorto, esMac } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import DetalleActa from "../components/DetalleActa";
 import { MacBuscador } from "../components/mac/MacFiltros";
-import { deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
+import { cerrarActa, deleteActa, fmtFechaCorta, listActas, type Acta, type Church } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -77,6 +77,23 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
   const [modal, setModal] = useState<{ open: boolean; acta: Acta | null }>({ open: false, acta: null });
   useAbrirCrearDesdeMas(() => setModal({ open: true, acta: null }));
   const [pendingDelete, setPendingDelete] = useState<Acta | null>(null);
+  /* Cerrar un acta convierte un borrador en documento oficial, así que pasa
+     por confirmación como el borrado — no porque sea irreversible (el
+     formulario puede devolverla a borrador) sino porque es el gesto que
+     cambia lo que ese papel significa. */
+  const [pendingCerrar, setPendingCerrar] = useState<Acta | null>(null);
+
+  async function confirmarCierre() {
+    const a = pendingCerrar;
+    if (!a) return;
+    setPendingCerrar(null);
+    await cerrarActa(a.id, church.id);
+    showToast(t("actas.toastCerrada", { folio: a.folio }));
+    playSound("guardado");
+    // `onChanged` es lo que recarga la lista en esta pantalla, igual que
+    // después de borrar.
+    onChanged();
+  }
   const [imprimiendo, setImprimiendo] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -284,6 +301,11 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                         onEliminar={setPendingDelete}
                         onImprimir={(a) => { if (imprimiendo === null) imprimir(a); }}
                         imprimiendo={imprimiendo === det.id}
+                        /* Solo se ofrece cerrar lo que está abierto: un acta
+                           aprobada o archivada ya pasó por aquí. */
+                        onCerrar={det.estado === "borrador" || det.estado === "pendiente" || det.estado === "corregida"
+                          ? setPendingCerrar
+                          : undefined}
                       />
                     );
                   }
@@ -517,6 +539,15 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
           danger
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {pendingCerrar && (
+        <ConfirmDialog
+          title={t("actas.cerrarTitulo", { folio: pendingCerrar.folio })}
+          message={t("actas.cerrarMensaje")}
+          confirmLabel={t("actas.cerrarActa")}
+          onConfirm={confirmarCierre}
+          onCancel={() => setPendingCerrar(null)}
         />
       )}
     </>

@@ -1153,6 +1153,43 @@ console.log("\n== Por revisar del iPad (handoff) ==");
   await ctxBn.close();
 }
 
+/* ---------- 16. Actas: la barra del trámite y el documento ---------- */
+console.log("\n== Actas del iPad (handoff) ==");
+{
+  const ctxAc = await nuevoContexto("ipad");
+  const pg = await ctxAc.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.click(".md-actas .md-fila:not(.sel)");
+  await pg.waitForTimeout(450);
+
+  const m = await pg.evaluate(() => ({
+    barra: !!document.querySelector(".ac-barra"),
+    estado: document.querySelector(".ac-barra .tag")?.textContent.trim(),
+    botones: [...document.querySelectorAll(".ac-barra .chip")].map((b) => ({
+      texto: b.textContent.trim(), apagado: b.disabled,
+    })),
+    firmas: document.querySelectorAll(".da-firma").length,
+    testigo: !!document.querySelector(".da-firma--sinmotor"),
+    desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  }));
+  chk(m.barra, "el acta lleva su barra de trámite");
+  chk(!!m.estado, `con el estado del documento (${m.estado})`);
+  chk(m.botones.length >= 1, `y sus acciones (${m.botones.map((b) => b.texto).join(" · ")})`);
+  /* "Recopilar firmas" tiene que estar APAGADO: se dibuja porque el diseño lo
+     pide y no tiene motor. Un botón que promete y no cumple es peor que uno
+     apagado que explica. */
+  const firmas = m.botones.find((b) => /firmas|signatures/i.test(b.texto));
+  chk(firmas?.apagado === true, `"Recopilar firmas" está apagado hasta tener motor (${firmas?.apagado})`);
+  chk(m.firmas === 3, `el documento lleva las tres rayas de firma (${m.firmas})`);
+  chk(m.testigo, "y la del testigo se marca como pendiente");
+  chk(m.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/actas-1366x1024.png` });
+  await ctxAc.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

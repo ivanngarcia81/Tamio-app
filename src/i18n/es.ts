@@ -1493,6 +1493,14 @@ export const es = {
 
   actas: {
     nuevaActa: "Nueva acta",
+    recopilarFirmas: "Recopilar firmas",
+    firmasAyuda: "El acta guarda quién preside y quién redacta, pero todavía no si firmaron ni cuándo. Cuando se guarde, este botón recogerá las firmas una por una.",
+    cerrarActa: "Cerrar acta",
+    cerrarTitulo: "Cerrar el acta {{folio}}",
+    cerrarMensaje: "El acta pasará a Aprobada y quedará sellada con la fecha de hoy. Sigue pudiendo corregirse desde el formulario si hiciera falta.",
+    toastCerrada: "Acta {{folio}} cerrada",
+    testigo: "Testigo",
+    testigoAyuda: "El acta todavía no guarda quién firma como testigo. El renglón se imprime igual, para poder firmarlo a mano.",
     editarActa: "Editar acta",
     guardarActa: "Guardar acta",
     buscarPlaceholder: "Buscar por folio, título o quien presidió…",

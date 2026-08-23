@@ -13,6 +13,9 @@ interface Props {
   onEliminar: (acta: Acta) => void;
   onImprimir: (acta: Acta) => void;
   imprimiendo: boolean;
+  /** "Cerrar acta" del handoff. Solo se pasa cuando el acta puede cerrarse;
+   *  una ya aprobada no vuelve a cerrarse. */
+  onCerrar?: (acta: Acta) => void;
 }
 
 const BADGE_ESTADO: Record<string, string> = {
@@ -49,13 +52,19 @@ function lista<T>(json: string | null): T[] {
  * `acuerdos`, `preside` y `secretario`. Una sección sin dato NO se pinta —un
  * acta sin mociones no enseña un "Mociones" vacío.
  *
- * **Lo que el handoff pone aquí y no existe:** sus dos botones "Recopilar
- * firmas" y "Cerrar acta", que son pantallas suyas sin nada detrás en la app
- * (el estado del acta se cambia en el formulario), y una tercera línea de
- * firma para un "Testigo" que el modelo no guarda. Las acciones del panel son
- * las que esta pantalla ya tenía: imprimir, editar y eliminar.
+ * **La barra del handoff, con sus dos botones.** "Cerrar acta" SÍ existe: el
+ * estado `aprobada` y `fecha_aprobacion` estaban en la tabla desde el
+ * principio, y lo que faltaba era poder cambiarlos sin reabrir el formulario
+ * entero (`cerrarActa` en db.ts). "Recopilar firmas" todavía no: el acta
+ * guarda quién preside y quién es secretario, pero no si firmaron ni cuándo
+ * —eso sí lo tienen las cartas (`cartas.firmas`)—, así que el botón se dibuja
+ * y dice qué le falta, siguiendo la regla de Iván del 23 de agosto: primero
+ * la plantilla, el motor después.
+ *
+ * Lo mismo con el TERCER renglón de firma ("Testigo"): se dibuja porque el
+ * diseño lo pide, marcado como pendiente de capturar. Ver §20.
  */
-export default function DetalleActa({ acta, church, tituloLista, onVolver, onEditar, onEliminar, onImprimir, imprimiendo }: Props) {
+export default function DetalleActa({ acta, church, tituloLista, onVolver, onEditar, onEliminar, onImprimir, imprimiendo, onCerrar }: Props) {
   const { t } = useTranslation();
 
   const presentes = lista<string>(acta.presentes);
@@ -86,9 +95,31 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
         <IconChevronLeft size={17} strokeWidth={2.4} /> {tituloLista}
       </button>
 
+      {/* La barra del handoff: en qué estado está el acta y las dos acciones
+          que la mueven de estado, pegadas al documento. Imprimir, editar y
+          eliminar se quedan abajo con la ficha: son de la hoja, no del
+          trámite. */}
+      <div className="ac-barra">
+        <span className={`tag ${BADGE_ESTADO[acta.estado] ?? "otros"}`}>{t(`actas.estado.${acta.estado}`)}</span>
+        {acta.fecha_aprobacion && (
+          <span className="ac-barra-nota">{t("actas.aprobadaEl", { fecha: fmtFechaCorta(acta.fecha_aprobacion) })}</span>
+        )}
+        <div className="ac-barra-hueco" />
+        {/* "Recopilar firmas": dibujado y sin motor. Deshabilitado a
+            propósito, no invisible — el `title` dice qué le falta. Un botón
+            que promete y no cumple es peor que uno apagado que explica. */}
+        <button type="button" className="chip" disabled title={t("actas.firmasAyuda")}>
+          {t("actas.recopilarFirmas")}
+        </button>
+        {onCerrar && (
+          <button type="button" className="chip chip-mes" onClick={() => onCerrar(acta)}>
+            {t("actas.cerrarActa")}
+          </button>
+        )}
+      </div>
+
       <div className="dm-cab">
         <div className="dm-chips">
-          <span className={`tag ${BADGE_ESTADO[acta.estado] ?? "otros"}`}>{t(`actas.estado.${acta.estado}`)}</span>
           {acta.confidencial === 1 && <span className="tag baja">{t("actas.confidencial")}</span>}
         </div>
         <h2 className="da-titulo">{acta.titulo}</h2>
@@ -178,9 +209,10 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
           </ol>
         ))}
 
-        {/* Las firmas del documento. Dos rayas y no las tres del handoff: el
-            acta guarda quién preside y quién es secretario, y nada más — un
-            tercer renglón para un "Testigo" sería una raya que nadie firma. */}
+        {/* Las tres rayas del handoff. Las dos primeras se llenan con quien
+            preside y quien redacta; la de "Testigo" se dibuja vacía porque el
+            acta todavía no guarda ese nombre — un acta impresa lleva tres
+            firmas y la hoja tiene que tener dónde ponerlas. */}
         {(acta.preside || acta.secretario) && (
           <footer className="da-firmas">
             {acta.preside && (
@@ -197,6 +229,11 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
                 <div className="da-firma-cargo">{t("actas.secretarioRedacta")}</div>
               </div>
             )}
+            <div className="da-firma da-firma--sinmotor" title={t("actas.testigoAyuda")}>
+              <div className="da-firma-raya" />
+              <div className="da-firma-nombre">&nbsp;</div>
+              <div className="da-firma-cargo">{t("actas.testigo")}</div>
+            </div>
           </footer>
         )}
 

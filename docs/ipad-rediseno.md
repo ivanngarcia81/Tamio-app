@@ -1458,3 +1458,63 @@ siete reglas: con la bandeja llena de gastos sin comprobante y ningún
 movimiento en estado pendiente, la suma daba cero. Ahora cuenta alertas, que
 es la unidad de esta pantalla, y el arnés comprueba que la cabecera no
 contradiga a la lista.
+
+## 20. Actas: el acta pasa a ser una HOJA (23 ago 2026)
+
+Séptima pantalla. El documento estructurado ya estaba —quién, agenda,
+resumen, mociones, acuerdos, firmas—; lo que faltaba era **cómo se presenta**
+y las dos acciones del trámite.
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Índice de 358px con fila de 74px | ✓ | sin cambios |
+| **Barra de 50px** con estado y trámite | no | construida |
+| **Cerrar acta** | solo desde el formulario | acción propia, real |
+| **Recopilar firmas** | no | dibujado y **apagado** |
+| El acta sobre **papel**, en serif | tarjeta blanca, sans | hoja de 660px |
+| **Tres** renglones de firma | dos | el tercero, marcado |
+
+### El acta es papel, no una tarjeta
+
+Un acta se firma y se archiva, y el diseño la trata como tal: hoja de 660px
+centrada sobre un lienzo gris, sombra de papel levantado, cuerpo en serif y
+encabezado centrado. La **estructura de dentro no se toca** —la del repo es
+más rica que la prosa del prototipo—; lo que cambia es la presentación, que es
+lo que el handoff manda.
+
+Con eso aparece un token nuevo: **`--paper`**. Es el blanco de un documento y
+**no sigue al tema**: en oscuro baja a hueso (`#f6f6f4`) para no deslumbrar,
+pero no se vuelve negro. Una hoja no se pone negra, y el acta impresa y la de
+pantalla tienen que parecerse. Sobre ella, los rótulos de sección vuelven a la
+tipografía de la app: el serif es para el TEXTO del acta, no para su
+andamiaje — exactamente lo que hace el prototipo.
+
+### "Cerrar acta" sí existía; "Recopilar firmas" no
+
+**Cerrar** es real: `estado = 'aprobada'` y `fecha_aprobacion` estaban en la
+tabla desde el principio. Lo que faltaba era poder cambiarlos **sin reabrir el
+formulario entero y volver a guardar el documento completo**. Cerrar un acta
+es UN gesto, no una edición, así que va en su propia función (`cerrarActa`)
+que toca solo esas dos columnas, y pasa por confirmación: no porque sea
+irreversible —el formulario puede devolverla a borrador— sino porque es el
+gesto que cambia lo que ese papel significa.
+
+**Recopilar firmas** no tiene motor: el acta guarda quién preside y quién
+redacta, pero no **si firmaron ni cuándo**. Eso sí lo tienen las cartas
+(`cartas.firmas`), y por eso la pieza existe en el proyecto pero no en esta
+tabla.
+
+El botón **se dibuja apagado**, con su `title` explicando qué le falta. Y aquí
+la regla del 23 de agosto se aplica distinto que en Depósitos: allí me negué a
+dibujar "Marcar depositado" porque un primario encendido invita a pulsarlo y
+miente. **Un botón deshabilitado no miente**: enseña que la acción existe en
+el diseño y dice por qué todavía no. La frontera no es "botón sí / botón no",
+es *¿parece que funciona?*.
+
+### El tercer renglón de firma
+
+El handoff pone tres rayas: Pastor, Secretaria y **Testigo**. El acta no
+guarda ese tercer nombre. Se dibuja igual, con la raya punteada y el cargo en
+cursiva: **un acta impresa lleva tres firmas y la hoja tiene que tener dónde
+ponerlas**, aunque el nombre se escriba a mano. Es el mismo criterio que los
+tres campos personales de Aportantes.

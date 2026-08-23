@@ -27,6 +27,7 @@
   --text-sub: #565656;
   --text-3: #a1a1a1;
   --ink: #0f0f0f;         /* strongest accent: primary buttons, active states, focus */
+  --paper: #ffffff;       /* la HOJA de un documento (acta, carta): no sigue al tema */
   --ink-contrast: #ffffff;
   --active: var(--ink);
   --active-text: var(--ink-contrast);
@@ -196,6 +197,7 @@
   --text-sub: #a6a6ab;
   --text-3: #77777d;
   --ink: #f5f5f5;
+  --paper: #f6f6f4;       /* en oscuro la hoja baja a hueso: no deslumbra y sigue siendo papel */
   --ink-contrast: #0b0b0c;
   --stripe: rgba(255,255,255,0.018);
   --line-soft: #2a2b2e;
@@ -10075,6 +10077,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .al-panel .dm { padding-top: 0; }
   :root.ipad .al-panel .dm-cab .dm-acciones:empty { display: none; }
 
+  /* ---- La barra del acta (.ac-*) — handoff 2 ----
+     Estado a la izquierda, trámite a la derecha, pegada al documento. Las
+     acciones de la HOJA (imprimir, editar, eliminar) se quedan abajo con la
+     ficha: son cosas distintas y el diseño las separa. */
+  :root.ipad .ac-barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    flex-wrap: wrap;
+  }
+  :root.ipad .ac-barra-hueco { flex: 1; min-width: 0; }
+  :root.ipad .ac-barra-nota { font-size: 13px; color: var(--text-2); }
+  :root.ipad .ac-barra .chip { min-height: 32px; }
+  /* El botón que todavía no tiene motor: apagado, no invisible. Su `title`
+     dice qué le falta. */
+  :root.ipad .ac-barra .chip:disabled { opacity: 0.45; cursor: default; }
+  /* El tercer renglón de firma, el del testigo: la raya se imprime igual
+     —un acta lleva tres firmas— pero se marca a media tinta para que se vea
+     que ahí no hay nombre guardado, solo sitio para firmar a mano. */
+  :root.ipad .da-firma--sinmotor .da-firma-raya { border-top-style: dashed; opacity: 0.7; }
+  :root.ipad .da-firma--sinmotor .da-firma-cargo { font-style: italic; }
+  /* La hoja va sobre un lienzo gris, no sobre el fondo de la app: es lo que
+     la hace parecer papel encima de una mesa y no otra tarjeta más. */
+  :root.ipad .md-actas .md-detalle { background: var(--surface-2); }
+
   /* ------------------------------------------------------------
      El acta como DOCUMENTO (.da-*)
      ------------------------------------------------------------
@@ -10097,21 +10125,55 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* Papel: fondo de superficie sobre el lienzo, con una medida de lectura
      acotada. 72ch y no el ancho del panel — un párrafo de acta a 900px de
      ancho se pierde de renglón. */
+  /* El acta como HOJA, no como tarjeta (handoff 2). Un acta es un documento
+     que se firma y se archiva, y el diseño lo trata como tal: papel de 660px
+     centrado, sombra de hoja levantada, cuerpo en serif y encabezado
+     centrado. La estructura de dentro —quién, agenda, resumen, mociones,
+     acuerdos— es la del repo y es más rica que la prosa del prototipo; lo que
+     cambia es la PRESENTACIÓN, que es lo que el handoff manda.
+
+     `--paper` es blanco también en oscuro: una hoja no se pone negra, y el
+     acta impresa y la de pantalla tienen que parecerse. */
   :root.ipad .da-doc {
-    background: var(--surface);
-    border-radius: 14px;
-    padding: 26px 28px 30px;
-    font-size: 15px;
-    line-height: 1.6;
+    width: 660px;
+    max-width: 100%;
+    margin: 0 auto;
+    background: var(--paper, #fff);
+    color: #111;
+    border-radius: 4px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+    padding: 46px 52px 40px;
+    font-family: ui-serif, "New York", Georgia, serif;
+    font-size: 14.5px;
+    line-height: 1.7;
   }
-  :root.ipad .da-doc > * { max-width: 72ch; }
+  :root.ipad .da-doc > * { max-width: none; }
+  /* Los rótulos de sección y las etiquetas siguen en la tipografía de la app:
+     el serif es para el TEXTO del acta, no para su andamiaje. Es lo que hace
+     el handoff. */
+  :root.ipad .da-doc .da-seccion-titulo,
+  :root.ipad .da-doc .da-campo-etiqueta,
+  :root.ipad .da-doc .da-firma-cargo,
+  :root.ipad .da-doc-folio {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+  /* Sobre papel blanco los grises de la app (pensados para su superficie) se
+     pierden o cantan. Aquí van los del diseño. */
+  :root.ipad .da-doc .da-seccion-titulo,
+  :root.ipad .da-doc .da-campo-etiqueta,
+  :root.ipad .da-doc .da-firma-cargo,
+  :root.ipad .da-doc-folio,
+  :root.ipad .da-doc-linea { color: #555; }
+  :root.ipad .da-doc .da-campo-valor,
+  :root.ipad .da-doc .da-doc-iglesia { color: #111; }
 
   :root.ipad .da-doc-cab {
-    padding-bottom: 14px;
-    margin-bottom: 18px;
-    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid #ccc;
+    text-align: center;
   }
-  :root.ipad .da-doc-iglesia { font-size: 15px; font-weight: 600; }
+  :root.ipad .da-doc-iglesia { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; }
   :root.ipad .da-doc-folio {
     margin-top: 2px;
     font-size: 12.5px;

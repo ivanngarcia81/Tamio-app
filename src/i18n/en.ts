@@ -1460,6 +1460,14 @@ export const en: Resources = {
 
   actas: {
     nuevaActa: "New minutes",
+    recopilarFirmas: "Collect signatures",
+    firmasAyuda: "The minutes store who presides and who writes them, but not yet whether they signed or when. Once stored, this button will collect the signatures one by one.",
+    cerrarActa: "Close minutes",
+    cerrarTitulo: "Close minutes {{folio}}",
+    cerrarMensaje: "The minutes will move to Approved and be stamped with today's date. They can still be corrected from the form if needed.",
+    toastCerrada: "Minutes {{folio}} closed",
+    testigo: "Witness",
+    testigoAyuda: "The minutes do not store who signs as witness yet. The line is printed anyway, so it can be signed by hand.",
     editarActa: "Edit minutes",
     guardarActa: "Save minutes",
     buscarPlaceholder: "Search by number, title, or presider…",
