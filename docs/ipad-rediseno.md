@@ -1854,3 +1854,57 @@ y no al panel entero: las otras seis siguen en el DOM, ocultas con CSS, y al
 primer intento las medidas salieron de una zona que no se estaba viendo —
 `gridTemplateColumns` de un elemento oculto devolvió las dos columnas viejas
 y dio un falso rojo.
+
+## 25. Los cuatro grises, y el que estaba mal (23 ago 2026)
+
+Iván lo cazó en el iPad, sobre la 1.2.4 y con la pantalla marcada: circuló el
+panel de detalle de Ingresos y señaló con una flecha el gris de `.dash-canvas`
+— *"el color gris tiene que ser idéntico al de la flecha; esa área no debe ser
+del mismo gris del sidebar ni del maestro-detalle"*.
+
+Medido sobre su captura:
+
+| Superficie | Estaba | Debía |
+|---|---|---|
+| Barra lateral | `#F7F7F9` | ✓ |
+| Barra de arriba | `#F7F7F9` | ✓ |
+| Columna maestra | `#F7F7F9` | ✓ |
+| **Panel de detalle** | `#F7F7F9` | **`#F2F2F7`** |
+| (`.dash-canvas`, la flecha) | `#F2F2F7` | — |
+
+**El handoff le da la razón, y por escrito.** El `<main>` lleva
+`background: var(--bg)` (`#f2f2f7` claro, `#000` oscuro) y el div del panel de
+detalle **no declara fondo**: lo hereda. Solo tres cosas llevan `--sb`
+(`#f7f7f9`): la barra lateral, la barra de 56px de arriba y la columna
+maestra.
+
+### De dónde salió el error
+
+Del bloque que escribí el 22 de agosto —"El gris del cromo del iPad"—, que
+declaraba **tres** superficies del mismo gris e incluía el panel entre ellas,
+con este razonamiento: *"es medio tono por encima del lienzo, no el mismo…
+el cromo es continuo, barra, columna y panel sin costuras"*. Suena bien y es
+falso: convertía media pantalla en una sola mancha de `#F7F7F9` de borde a
+borde, y las tarjetas blancas perdían el fondo que las agrupa.
+
+No lo inventé del aire —venía de una nota de color— pero **no lo comprobé
+contra el archivo del handoff**, que es donde estaba la respuesta en una
+línea. Es el §12 otra vez, y van tres: *lo que no se busca en la fuente, se
+declara de memoria*.
+
+### El segundo fallo, que salió al poner la comprobación
+
+Al escribir la guarda nueva apareció otro: **la columna del día de la Agenda
+tampoco tenía el gris que le toca**. Esa sí es cromo en el handoff —su div
+declara `background:var(--sb)`, la única columna de detalle que lo hace— y en
+el repo pedía `--sidebar-bg`… que en el iPad **cuelga de `--canvas`**, o sea
+el lienzo. Llevaba así desde que se construyó, tapado porque el panel también
+era del otro gris. Ahora usa `--ipad-cromo` explícito.
+
+### Lo medido
+
+Dos guardas. La vieja —que exigía **el mismo** gris en los tres— se reescribe
+para exigir cromo en barra y lista y **lienzo** en el panel, en claro y en
+oscuro (`#F2F2F7` y `#000`). Y una nueva comprueba las cuatro superficies de
+una vez, incluida la identidad que pidió Iván —panel igual a `.dash-canvas`—
+y la excepción de la Agenda. El arnés pasa de 550 a **557**.

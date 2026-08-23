@@ -628,16 +628,25 @@ await ctx.close();
 }
 
 /* ---------- 7 bis. El gris del cromo (ficha de color del handoff 2) ----------
-   Barra, columna maestra y panel tienen que ser EL MISMO gris, y el que el
-   diseño manda: #F7F7F9 en claro, #131315 en oscuro. Se mide con estilos
+   Barra y columna maestra van con el CROMO —#F7F7F9 claro, #131315 oscuro—
+   y el panel de detalle con el LIENZO —#F2F2F7 y #000—. Se mide con estilos
    computados y no a ojo, porque medio tono de diferencia no se ve en una
-   captura y sí se ve en un iPad al lado de otro. */
+   captura y sí se ve en un iPad al lado de otro.
+
+   ⚠️ Este bloque exigía el MISMO gris en los tres hasta el 23 de agosto, y
+   estaba mal: el handoff pinta `<main>` con `--bg` y el panel de detalle no
+   declara fondo, así que lo hereda. Lo cazó Iván en el iPad. */
 console.log("\n== El gris del cromo ==");
 {
   const ctxC = await nuevoContexto("ipad");
   const pg = await ctxC.newPage();
   await pg.setViewportSize({ width: 1366, height: 1024 });
-  for (const [tema, esperado] of [["light", "rgb(247, 247, 249)"], ["dark", "rgb(19, 19, 21)"]]) {
+  const ESPERADO = {
+    light: { cromo: "rgb(247, 247, 249)", lienzo: "rgb(242, 242, 247)" },
+    dark: { cromo: "rgb(19, 19, 21)", lienzo: "rgb(0, 0, 0)" },
+  };
+  for (const tema of ["light", "dark"]) {
+    const e = ESPERADO[tema];
     await pg.emulateMedia({ colorScheme: tema });
     await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
     await pg.waitForTimeout(500);
@@ -645,9 +654,9 @@ console.log("\n== El gris del cromo ==");
       const bg = (s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).backgroundColor : null; };
       return { barra: bg(".header"), lista: bg(".md-lista"), panel: bg(".md-detalle") };
     });
-    for (const [k, v] of Object.entries(c)) {
-      chk(v === esperado, `${tema}: ${k} = ${v} (esperado ${esperado})`);
-    }
+    chk(c.barra === e.cromo, `${tema}: barra = ${c.barra} (cromo ${e.cromo})`);
+    chk(c.lista === e.cromo, `${tema}: lista = ${c.lista} (cromo ${e.cromo})`);
+    chk(c.panel === e.lienzo, `${tema}: panel = ${c.panel} (lienzo ${e.lienzo})`);
   }
   await ctxC.close();
 }
@@ -1589,6 +1598,59 @@ console.log("\n== Configuración del iPad (handoff) ==");
   chk(del.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-sensible-1366x1024.png` });
   await ctxCf.close();
+}
+
+/* ---------- 21. Los cuatro grises del cromo ---------- */
+console.log("\n== Los grises del iPad (handoff) ==");
+{
+  const ctxGr = await nuevoContexto("ipad");
+  const pg = await ctxGr.newPage();
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-movimientos .md-fila", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  /* El handoff reparte CUATRO superficies, y solo tres son el mismo gris:
+     barra lateral, barra de arriba y columna maestra llevan `--sb`; el panel
+     de detalle NO declara fondo y hereda el `--bg` del `<main>`. Confundir
+     las dos fue el fallo de la 1.2.3 —todo salía de un solo gris— y lo cazó
+     Iván en el iPad, señalando que el panel tenía que ser el gris de
+     `.dash-canvas`. */
+  const g = await pg.evaluate(() => {
+    const bg = (s) => {
+      const e = document.querySelector(s);
+      return e ? getComputedStyle(e).backgroundColor : null;
+    };
+    const raiz = getComputedStyle(document.documentElement);
+    return {
+      sidebar: bg(".sidebar"),
+      cabecera: bg(".header"),
+      lista: bg(".md-movimientos .md-lista"),
+      panel: bg(".md-movimientos .md-detalle"),
+      lienzo: bg(".md-detalle .dash-canvas"),
+      tokenBg: raiz.getPropertyValue("--bg").trim(),
+      tokenCromo: raiz.getPropertyValue("--ipad-cromo").trim(),
+    };
+  });
+  chk(g.sidebar === g.cabecera, `barra lateral y cabecera, el mismo cromo (${g.sidebar})`);
+  chk(g.lista === g.sidebar, "y la columna maestra también");
+  chk(!!g.panel && g.panel !== g.sidebar, `el panel de detalle NO es ese gris (${g.panel})`);
+  chk(g.panel === g.lienzo, `es el del lienzo, el mismo de .dash-canvas (${g.lienzo})`);
+  chk(g.tokenBg !== g.tokenCromo, `y los dos tokens son distintos (${g.tokenBg} vs ${g.tokenCromo})`);
+
+  /* La excepción: la columna del día de la Agenda SÍ es cromo en el handoff
+     (ese div sí declara `background:var(--sb)`). */
+  await pg.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-agenda .md-detalle", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+  const ag = await pg.evaluate(() => ({
+    dia: getComputedStyle(document.querySelector(".md-agenda .md-detalle")).backgroundColor,
+    sidebar: getComputedStyle(document.querySelector(".sidebar")).backgroundColor,
+    calendario: getComputedStyle(document.querySelector(".md-agenda .md-lista")).backgroundColor,
+  }));
+  chk(ag.dia === ag.sidebar, `la columna del día de la Agenda sí es cromo (${ag.dia})`);
+  chk(ag.calendario !== ag.dia, `y su calendario, lienzo (${ag.calendario})`);
+  await ctxGr.close();
 }
 
 await browser.close();

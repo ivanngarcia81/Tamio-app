@@ -9766,10 +9766,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 28px 32px 40px;
-    /* El gris del cromo, no el del lienzo: barra, columna maestra y panel
-       son UNA superficie continua y las tarjetas flotan encima. Ver el
-       bloque "El gris del cromo del iPad" al final del archivo. */
-    background: var(--ipad-cromo);
+    /* El LIENZO, no el cromo. Ver el bloque "El gris del cromo del iPad" al
+       final del archivo: el panel es la única de las cuatro superficies que
+       NO es cromo, y confundirlas fue el error de la 1.2.3. */
+    background: var(--bg);
   }
   :root.ipad .md-vacio { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
   :root.ipad .md-vacio-hint h3 { margin: 0; font-size: 17px; font-weight: 600; }
@@ -11086,8 +11086,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-right: 0;
     background: var(--bg);
   }
+  /* `--ipad-cromo` y no `--sidebar-bg`: en el iPad `--sidebar-bg` cuelga de
+     `--canvas`, que aquí vale lo mismo que el lienzo, así que la columna del
+     día salía del gris del calendario en vez del de la barra. El handoff sí
+     le pone `--sb` a este div — es la única columna de detalle que lo lleva. */
   :root.ipad .md-split.md-agenda .md-detalle {
-    background: var(--sidebar-bg);
+    background: var(--ipad-cromo);
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -11807,7 +11811,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     width: 318px;
     flex: 0 0 318px;
     border-left: 0.5px solid var(--line);
-    background: var(--sidebar-bg);
+    background: var(--ipad-cromo);
   }
   /* De su rama: el `min-width` que ata la columna aunque el calendario pida
      más, y la fila de cuatro KPI del Inicio, que su Dashboard necesita. */
@@ -16928,17 +16932,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* ============================================================
    El gris del cromo del iPad (handoff 2 — ficha de color de Iván)
    ------------------------------------------------------------
-   Tres superficies que el diseño manda pintar del MISMO gris:
+   TRES superficies del mismo gris, y una CUARTA que no lo es:
 
-     · Barra y estado  — "el mismo gris del sidebar, sin degradado ni sombra"
-     · Columna maestra — "lista y navegación son un solo bloque"
-     · Fondo del panel — "gris cálido, medio tono por encima del lienzo"
+     · Barra y estado  — cromo (`--sb` del handoff)
+     · Barra lateral   — cromo
+     · Columna maestra — cromo, "lista y navegación son un solo bloque"
+     · Panel de detalle — **lienzo** (`--bg`), NO cromo
 
-   Es medio tono por encima del lienzo (#F2F2F7), no el mismo: el lienzo se
-   sigue viendo en el `.content` de las páginas sin partir, que es donde las
-   tarjetas necesitan un fondo que las agrupe. Aquí, en cambio, el cromo es
-   continuo —barra, columna y panel sin costuras— y lo que flota encima son
-   las tarjetas blancas.
+   > ⚠️ **Corregido el 23 de agosto, y lo cazó Iván en el iPad.** Este bloque
+   > nació el 22 diciendo que el panel también era cromo —"medio tono por
+   > encima del lienzo"— y eso dejaba barra, columna maestra y panel en una
+   > sola mancha de `#F7F7F9` de borde a borde. El handoff dice lo contrario y
+   > es explícito: `<main>` lleva `background: var(--bg)` (`#f2f2f7` claro,
+   > `#000` oscuro) y el panel de detalle **no declara fondo**, así que lo
+   > hereda; solo la barra lateral, la barra de arriba y la columna maestra
+   > llevan `--sb`. En esta hoja `--bg` y `--canvas` valen lo mismo bajo
+   > `:root.movil`, que es por qué el panel queda idéntico al gris de
+   > `.dash-canvas` — el que Iván señaló con la flecha.
+   >
+   > La excepción de verdad es **la columna del día de la Agenda**: esa sí es
+   > `--sb` en el handoff, y por eso conserva `--sidebar-bg`.
 
    Va en su propio token y no reusando `--sidebar-bg` porque `--sidebar-bg`
    cuelga de `--canvas`, que en `.movil` vale lo mismo que `--bg` para el
@@ -16966,7 +16979,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      del cromo para que lista y barra sean el mismo bloque sin costura. */
   :root.ipad .md-lista,
   :root.ipad .sidebar { background: var(--ipad-cromo); }
-  /* Y el `.main` debajo, para que el gris llegue hasta los bordes cuando el
-     contenido no llena el alto: sin esto asomaba el lienzo por abajo. */
-  :root.ipad .main:has(.md-split) { background: var(--ipad-cromo); }
+  /* Y el `.main` debajo del partido va con el LIENZO, no con el cromo: lo
+     único suyo que se ve es lo que queda detrás del panel de detalle, y el
+     panel es lienzo. Con cromo aquí, el panel se fundía con la columna
+     maestra y con la barra en una sola mancha. */
+  :root.ipad .main:has(.md-split) { background: var(--bg); }
 }
