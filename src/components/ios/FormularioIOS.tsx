@@ -323,20 +323,37 @@ export function PickerField({
 /** Fila con switch nativo a la derecha. */
 export function SwitchField({
   label,
+  sub,
   checked,
   onChange,
+  disabled,
+  title,
 }: {
   label: string;
+  /** Segunda línea bajo la etiqueta, como la usa el handoff de iPad. */
+  sub?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
+  /** Dibujado pero sin motor: se apaga y el `title` dice qué le falta. */
+  disabled?: boolean;
+  title?: string;
 }) {
   return (
-    <div className="ios-field">
-      <span className="ios-field-label">{label}</span>
+    <div className={`ios-field${disabled ? " ios-field--apagado" : ""}`} title={title}>
+      {sub ? (
+        <span className="ios-field-textos">
+          <span className="ios-field-label">{label}</span>
+          <span className="ios-field-sub">{sub}</span>
+        </span>
+      ) : (
+        <span className="ios-field-label">{label}</span>
+      )}
       <button
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-disabled={disabled || undefined}
+        disabled={disabled}
         className="ios-switch"
         onClick={() => onChange(!checked)}
       />

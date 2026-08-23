@@ -1250,7 +1250,12 @@ console.log("\n== Servicios del iPad (handoff) ==");
       dia: !!document.querySelector(".md-servicios .md-dia"),
       puestos: document.querySelectorAll(".sv-puesto").length,
       cubiertos: document.querySelectorAll(".sv-puesto-avatar").length,
+      /* El hueco se dice de DOS formas, según por qué esté vacío: los dos
+         puestos que la tabla sí guarda dicen "Sin asignar" (nadie los ha
+         llenado todavía) y los cuatro que no sabe guardar traen el
+         "Asignar encargado" apagado del handoff (falta el motor). */
       sinAsignar: document.querySelectorAll(".sv-puesto-sin").length,
+      sinMotor: document.querySelectorAll(".sv-puesto-asignar").length,
       orden: !!document.querySelector(".sv-orden"),
       acciones: [...document.querySelectorAll(".dm-acciones .btn")].map((b) => b.textContent.trim()),
       desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -1262,7 +1267,7 @@ console.log("\n== Servicios del iPad (handoff) ==");
      todavía no. Si solo salieran los cubiertos, el hueco desaparecería. */
   chk(m.puestos >= 6, `el roster enseña sus puestos (${m.puestos})`);
   chk(m.cubiertos >= 1, `alguno viene cubierto de la base (${m.cubiertos})`);
-  chk(m.sinAsignar >= 1, `y los que no, lo dicen (${m.sinAsignar})`);
+  chk(m.sinAsignar + m.sinMotor >= 1, `y los que no, lo dicen (${m.sinAsignar} sin asignar · ${m.sinMotor} sin motor)`);
   chk(m.orden, "la tarjeta del orden del culto está");
   chk(m.acciones.some((a) => /asistencia|attendance/i.test(a)), `y "Tomar asistencia" (${m.acciones.join(" · ")})`);
   chk(m.desborda === false, "sin scroll horizontal");
@@ -1651,6 +1656,98 @@ console.log("\n== Los grises del iPad (handoff) ==");
   chk(ag.dia === ag.sidebar, `la columna del día de la Agenda sí es cromo (${ag.dia})`);
   chk(ag.calendario !== ag.dia, `y su calendario, lienzo (${ag.calendario})`);
   await ctxGr.close();
+}
+
+/* ---------- 22. Lo dibujado sin motor: apagado, nunca encendido ----------
+   Iván pidió construir lo que el handoff dibuja aunque no tenga función
+   ("y luego se le pone motor"), y el trato acordado para los CONTROLES es
+   que se pinten DESHABILITADOS y con su explicación. Esta sección es la
+   guarda de ese trato: si alguien le quita el `disabled` a uno de estos sin
+   ponerle motor, el arnés lo canta — y con él se iría a revisión del App
+   Store un control muerto (guideline 2.1). El registro está en
+   docs/cascaras-1-2.md. */
+console.log("\n== Lo dibujado sin motor va apagado ==");
+{
+  const ctxSm = await nuevoContexto("ipad");
+  const pg = await ctxSm.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  const apagado = async (sel, nombre) => {
+    const r = await pg.evaluate((s) => {
+      const e = document.querySelector(s);
+      if (!e) return null;
+      return { off: e.disabled === true, titulo: (e.getAttribute("title") || "").length, texto: e.textContent.trim() };
+    }, sel);
+    chk(!!r, `${nombre}: está dibujado`);
+    if (r) {
+      chk(r.off, `${nombre}: y APAGADO (${r.texto})`);
+      chk(r.titulo > 20, `${nombre}: con su explicación (${r.titulo} car.)`);
+    }
+  };
+
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
+  await pg.click(".md-depositos .md-fila");
+  await pg.waitForTimeout(400);
+  await apagado(".dm-acciones button[disabled]", "Marcar depositado");
+
+  await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
+  await pg.click(".md-servicios .md-fila");
+  await pg.waitForTimeout(400);
+  await apagado(".sv-puesto-asignar", "Asignar encargado");
+  const cuantos = await pg.locator(".sv-puesto-asignar").count();
+  chk(cuantos === 4, `y uno por cada puesto que la tabla no sabe (${cuantos})`);
+
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.click(".md-actas .md-fila");
+  await pg.waitForTimeout(400);
+  await apagado(".ac-barra .chip[disabled]", "Recopilar firmas");
+
+  /* Configuración: los tres de Presentación y los cuatro de permisos. */
+  await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".settings-nav-item", { timeout: 10000 });
+  const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+  const irA = async (re) => {
+    const i = zonas.findIndex((z) => re.test(z));
+    await pg.locator(".settings-nav-item").nth(i).click();
+    await pg.waitForTimeout(400);
+  };
+
+  await irA(/Preferenc|Preferences/i);
+  const pres = await pg.evaluate(() => {
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const filas = [...z.querySelectorAll(".ios-field--apagado")];
+    return {
+      filas: filas.length,
+      conTitulo: filas.filter((f) => (f.getAttribute("title") || "").length > 20).length,
+      mandosVivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
+      opacidad: filas[0] ? Number(getComputedStyle(filas[0]).opacity) : 1,
+      seg: z.querySelectorAll(".pf-seg button").length,
+    };
+  });
+  chk(pres.filas === 3, `Presentación trae sus tres filas (${pres.filas})`);
+  chk(pres.conTitulo === 3, "las tres con su explicación");
+  chk(pres.mandosVivos === 0, `y ningún mando vivo dentro (${pres.mandosVivos})`);
+  chk(pres.opacidad < 0.7, `la fila entera a media tinta (${pres.opacidad})`);
+  chk(pres.seg === 3, `el segmentado de tamaño de texto (${pres.seg})`);
+  if (DIR) await pg.screenshot({ path: `${DIR}/config-presentacion-1366x1024.png` });
+
+  await irA(/Acceso|Access/i);
+  const perm = await pg.evaluate(() => {
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const filas = [...z.querySelectorAll(".ios-field--apagado")];
+    return {
+      filas: filas.length,
+      vivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
+    };
+  });
+  chk(perm.filas === 4, `los cuatro permisos del rol (${perm.filas})`);
+  chk(perm.vivos === 0, "ninguno pulsable");
+  if (DIR) await pg.screenshot({ path: `${DIR}/config-permisos-1366x1024.png` });
+  await ctxSm.close();
 }
 
 await browser.close();

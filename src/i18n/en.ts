@@ -462,6 +462,8 @@ export const en: Resources = {
     efectivo: "Cash",
     cheques: "Checks",
     totalDepositado: "Total deposited",
+    marcarDepositado: "Mark as deposited",
+    marcarDepositadoAyuda: "The batch doesn't record yet whether the money reached the bank. The button is here for when that state exists.",
     sinDesgloseAyuda: "Splitting cash from checks needs to know which entries went into the deposit, and that link is not stored yet.",
     movsIncluidos: "Entries included",
     sinMovsTitulo: "What makes up the deposit is not stored yet",
@@ -1601,6 +1603,8 @@ export const en: Resources = {
     roster: "Roster",
     tomarAsistencia: "Take attendance",
     sinAsignar: "Unassigned",
+    asignarEncargado: "Assign someone",
+
     puestoAyuda: "The service stores who preaches and who leads. The other roles are not assigned one by one yet; the row is ready for when they are.",
     ordenCulto: "Order of service",
     sinOrdenTitulo: "The order is not stored yet",
@@ -2935,6 +2939,24 @@ export const en: Resources = {
     hint: "\"Automatic\" uses the operating system language: Spanish if the system is in Spanish, English otherwise.",
   },
 
+  presentacion: {
+    titulo: "Presentation",
+    hint: "These three settings are in the design and have no effect yet. They will turn on as soon as the app knows how to apply them.",
+    tamanoTexto: "Text size",
+    tamano: { chico: "Small", normal: "Normal", grande: "Large" },
+    sidebarFijo: "Always show the sidebar",
+    sidebarFijoSub: "In portrait orientation too",
+    ocultarMontos: "Hide amounts when locked",
+    ocultarMontosSub: "Blurs the figures when you leave the app",
+  },
+  permisos: {
+    titulo: "Treasury role permissions",
+    hint: "Access is granted by whole role today, not permission by permission. What you see here is what the treasury role can already do; changing it comes later.",
+    registrar: "Record income and expenses",
+    cortes: "Close batches and deposits",
+    padron: "See the full member roll",
+    eliminar: "Delete transactions",
+  },
   sonido: {
     titulo: "Sound",
     sub: "Plays a short tone when saving or deleting transactions",

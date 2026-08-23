@@ -80,6 +80,16 @@ export default function DetalleDeposito({ dep, tituloLista, onVolver, onEditar, 
           <button type="button" className="btn primary" onClick={() => onEditar(dep)}>
             <IconEdit size={14} strokeWidth={2} /> {t("common.editar")}
           </button>
+          {/* "Marcar depositado": dibujado y sin motor, por decisión de Iván
+              (23 ago). El corte no tiene estado —`depositos_bancarios` no
+              guarda si el dinero ya entró al banco— así que va DESHABILITADO
+              y con su `title`, el mismo trato que "Recopilar firmas" en
+              Actas: un botón apagado que explica es mejor que uno encendido
+              que promete. Cuando exista el estado, se le quita el `disabled`
+              y ya está en su sitio. */}
+          <button type="button" className="btn secondary" disabled title={t("depositos.marcarDepositadoAyuda")}>
+            {t("depositos.marcarDepositado")}
+          </button>
         </div>
       </div>
 

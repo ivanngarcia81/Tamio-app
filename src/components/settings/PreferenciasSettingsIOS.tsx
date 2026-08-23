@@ -202,6 +202,53 @@ export default function PreferenciasSettingsIOS({
         <SwitchField label={t("sonido.sub")} checked={sonidoOn} onChange={alternarSonido} />
       </Section>
 
+      {/* "Presentación": los tres controles que el handoff de iPad dibuja y
+          que la app no tiene. Se pintan por decisión de Iván (23 ago) —"si el
+          botón no tiene función, que se construya, y luego se le pone
+          motor"— pero APAGADOS y con su explicación, que es el trato que ya
+          tenían "Recopilar firmas" en Actas y el renglón del testigo.
+
+          Solo iPad: son del handoff de iPad, y el teléfono no los pidió.
+          Quedan apuntados en `docs/cascaras-1-2.md`, que es lo que se revisa
+          antes de mandar una versión a REVISIÓN del App Store. */}
+      {esIPad() && (
+        <Section header={t("presentacion.titulo")} footer={t("presentacion.hint")}>
+          <div className="ios-field ios-field--apagado" title={t("presentacion.hint")}>
+            <span className="ios-field-label">{t("presentacion.tamanoTexto")}</span>
+            <span className="pf-seg" role="radiogroup" aria-label={t("presentacion.tamanoTexto")} aria-disabled="true">
+              {(["chico", "normal", "grande"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={k === "normal"}
+                  className={k === "normal" ? "activo" : ""}
+                  disabled
+                >
+                  {t(`presentacion.tamano.${k}`)}
+                </button>
+              ))}
+            </span>
+          </div>
+          <SwitchField
+            label={t("presentacion.sidebarFijo")}
+            sub={t("presentacion.sidebarFijoSub")}
+            checked={false}
+            onChange={() => {}}
+            disabled
+            title={t("presentacion.hint")}
+          />
+          <SwitchField
+            label={t("presentacion.ocultarMontos")}
+            sub={t("presentacion.ocultarMontosSub")}
+            checked={false}
+            onChange={() => {}}
+            disabled
+            title={t("presentacion.hint")}
+          />
+        </Section>
+      )}
+
       {sonidoOn && (
         <Section header={t("sonido.juego")} footer={t("sonido.hintJuego")}>
           <ChoiceGroup

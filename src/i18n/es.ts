@@ -458,6 +458,8 @@ export const es = {
     efectivo: "Efectivo",
     cheques: "Cheques",
     totalDepositado: "Total depositado",
+    marcarDepositado: "Marcar depositado",
+    marcarDepositadoAyuda: "El corte todavía no guarda si el dinero ya entró al banco. El botón está aquí para cuando ese estado exista.",
     sinDesgloseAyuda: "El reparto entre efectivo y cheques necesita saber qué movimientos entraron en el corte, y esa relación todavía no se guarda.",
     movsIncluidos: "Movimientos incluidos",
     sinMovsTitulo: "Todavía no se guarda qué compone el corte",
@@ -1638,6 +1640,8 @@ export const es = {
     roster: "Roster",
     tomarAsistencia: "Tomar asistencia",
     sinAsignar: "Sin asignar",
+    asignarEncargado: "Asignar encargado",
+
     puestoAyuda: "El servicio guarda quién predica y quién dirige. Los demás puestos todavía no se asignan uno por uno; el renglón está listo para cuando se guarden.",
     ordenCulto: "Orden del culto",
     sinOrdenTitulo: "Todavía no se guarda el orden",
@@ -3008,6 +3012,24 @@ export const es = {
     hint: "\"Automático\" usa el idioma del sistema operativo: español si el sistema está en español, inglés en cualquier otro caso.",
   },
 
+  presentacion: {
+    titulo: "Presentación",
+    hint: "Estos tres ajustes están en el diseño y todavía no tienen efecto. Aparecerán encendidos en cuanto la app sepa aplicarlos.",
+    tamanoTexto: "Tamaño de texto",
+    tamano: { chico: "Chico", normal: "Normal", grande: "Grande" },
+    sidebarFijo: "Barra lateral siempre visible",
+    sidebarFijoSub: "También en orientación vertical",
+    ocultarMontos: "Ocultar montos al bloquear",
+    ocultarMontosSub: "Difumina las cifras al salir de la app",
+  },
+  permisos: {
+    titulo: "Permisos del rol Tesorería",
+    hint: "Hoy el acceso se da por rol completo, no permiso a permiso. Lo que se ve aquí es lo que el rol de tesorería ya puede hacer; poder cambiarlo llegará después.",
+    registrar: "Registrar ingresos y gastos",
+    cortes: "Cerrar cortes y depósitos",
+    padron: "Ver el padrón completo",
+    eliminar: "Eliminar movimientos",
+  },
   sonido: {
     titulo: "Sonido",
     sub: "Reproduce un tono corto al guardar o eliminar movimientos",

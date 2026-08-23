@@ -17,6 +17,7 @@
  * las mismas cuatro que aplica Configuracion.tsx en el camino de Mac.
  */
 import { useState } from "react";
+import { esIPad } from "../../movil";
 import { useTranslation } from "react-i18next";
 import { updateSuscripcion, type Church } from "../../db";
 import { authHabilitado } from "../../supabase";
@@ -24,7 +25,7 @@ import { PLANES, incluyeSecretaria, incluyeTesoreria } from "../../plan";
 import { ROLES_ACCESO, type Role } from "../../role";
 import { SYNC_HABILITADO, ejecutarSync, useSync } from "../../syncManager";
 import { playSound } from "../../sound";
-import { ActionField, Section, TextField } from "../ios/FormularioIOS";
+import { ActionField, Section, SwitchField, TextField } from "../ios/FormularioIOS";
 import { IOSPickerField } from "../ios/IOSPickerField";
 import { useInvitacion } from "./InvitarUsuario";
 
@@ -209,6 +210,34 @@ export default function AccesosSettingsIOS({
               onSelect={(v) => onRoleChange(v as Role)}
             />
           )}
+        </Section>
+      )}
+
+      {/* "Permisos del rol Tesorería": los cuatro interruptores del handoff de
+          iPad. No existen —el rol se elige entero, no por permisos— así que
+          van APAGADOS y con su explicación, por decisión de Iván (23 ago):
+          se construye lo que el diseño dibuja y el motor viene después. El
+          estado que enseñan es el que YA se cumple hoy con el rol de
+          tesorería, para que la fila no mienta mientras espera.
+
+          Solo iPad, y apuntados en `docs/cascaras-1-2.md`. */}
+      {esIPad() && (
+        <Section header={t("permisos.titulo")} footer={t("permisos.hint")}>
+          {([
+            ["registrar", true],
+            ["cortes", true],
+            ["padron", false],
+            ["eliminar", false],
+          ] as const).map(([clave, activo]) => (
+            <SwitchField
+              key={clave}
+              label={t(`permisos.${clave}`)}
+              checked={activo}
+              onChange={() => {}}
+              disabled
+              title={t("permisos.hint")}
+            />
+          ))}
         </Section>
       )}
     </div>

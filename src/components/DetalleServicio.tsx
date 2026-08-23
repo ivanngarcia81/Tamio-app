@@ -148,13 +148,23 @@ export default function DetalleServicio({ servicio: s, historial, tituloLista, o
                   <span className="sv-puesto-avatar">{inicialesDe(valor)}</span>
                   <span className="sv-puesto-nombre truncate">{valor}</span>
                 </>
+              ) : p.campo ? (
+                <span className="sv-puesto-nombre sv-puesto-sin">{t("servicios.sinAsignar")}</span>
               ) : (
-                <span
-                  className="sv-puesto-nombre sv-puesto-sin"
-                  title={p.campo ? undefined : t("servicios.puestoAyuda")}
+                /* El puesto que la tabla todavía no sabe guardar. El handoff
+                   pone aquí "Asignar encargado" en azul; se pinta, pero como
+                   BOTÓN APAGADO y no como enlace —decisión de Iván (23 ago)—
+                   porque un enlace apagado no existe en ninguna interfaz y un
+                   enlace vivo llevaría a ningún sitio. El `title` dice qué le
+                   falta. Mismo trato que "Recopilar firmas" en Actas. */
+                <button
+                  type="button"
+                  className="sv-puesto-asignar"
+                  disabled
+                  title={t("servicios.puestoAyuda")}
                 >
-                  {t("servicios.sinAsignar")}
-                </span>
+                  {t("servicios.asignarEncargado")}
+                </button>
               )}
             </div>
           );

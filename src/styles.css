@@ -8170,6 +8170,51 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* El separador arranca donde arranca la etiqueta, no bajo ella: con la
      sangría de 16 del teléfono la raya empezaba dentro de la columna. */
   :root.ipad .settings-detail .ios-field:not(:last-child)::after { left: 16px; right: 16px; }
+  /* La fila con dos renglones (etiqueta + explicación), que el handoff usa
+     en Presentación y en Sincronización. */
+  :root.ipad .settings-detail .ios-field-textos {
+    flex: 0 0 auto;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  :root.ipad .settings-detail .ios-field-textos .ios-field-label { flex: none; width: auto; }
+  :root.ipad .settings-detail .ios-field-sub { font-size: 12.5px; color: var(--text-2); }
+  /* Dibujado y sin motor: la fila entera a media tinta. Se apaga el CONJUNTO
+     y no solo el mando, para que se lea como "esto todavía no" y no como "el
+     interruptor está roto". El `title` de la fila dice qué falta. */
+  :root.ipad .settings-detail .ios-field--apagado { opacity: 0.5; }
+  :root.ipad .settings-detail .ios-field--apagado .ios-switch,
+  :root.ipad .settings-detail .ios-field--apagado button { cursor: default; }
+  /* El segmentado de "Tamaño de texto": el mismo de la barra de Agenda y del
+     Inicio, en pequeño. */
+  :root.ipad .settings-detail .pf-seg {
+    display: flex;
+    margin-left: auto;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+  :root.ipad .settings-detail .pf-seg button {
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: default;
+    white-space: nowrap;
+  }
+  :root.ipad .settings-detail .pf-seg button.activo {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
 
   /* Los cinco tintes del acento a 40px, como el handoff (en el teléfono son
      más chicos porque comparten fila con menos ancho). */
@@ -10304,6 +10349,24 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      pinta como acción ("Asignar encargado") y aquí todavía no hay dónde
      guardar esa asignación — un enlace que no lleva a ningún sitio miente,
      y un hueco descrito no. */
+  /* "Asignar encargado": el handoff lo pinta como enlace azul; aquí es un
+     BOTÓN apagado. Un enlace deshabilitado no existe en ninguna interfaz —o
+     lleva a un sitio o no es un enlace—, así que el hueco se dice con la
+     misma pieza que el resto de lo dibujado-sin-motor: apagado y con `title`.
+     Se le quita el `disabled` el día que haya dónde guardar la asignación. */
+  :root.ipad .sv-puesto-asignar {
+    margin-left: auto;
+    padding: 4px 0 4px 12px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-3);
+    opacity: 0.75;
+    cursor: default;
+  }
+
   :root.ipad .sv-puesto-sin { color: var(--text-3); font-style: italic; font-weight: 400; }
   :root.ipad .sv-orden-vacio { box-shadow: none; margin: 0 16px; }
   /* El punto del culto incompleto. Naranja como en el diseño —es aviso, no

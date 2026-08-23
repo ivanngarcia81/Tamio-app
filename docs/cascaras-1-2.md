@@ -165,32 +165,69 @@ corte). Esa pieza también apaga el chip "Sin depositar" de §15.
 
 ---
 
-## Lo que NO se construyó, y que es decisión tuya
+## Los seis controles que faltaban — construidos y APAGADOS (23 ago 2026)
 
-La regla que pusiste dice **construir aunque sea decoración**. La apliqué a
-todo lo pasivo —campos, tarjetas, pestañas, renglones de firma, un botón
-**apagado**— pero **me frené en los controles encendidos**, por mi cuenta y
-sin preguntarte cada vez. El criterio que usé: *un campo vacío es pasivo; un
-botón invita a pulsarlo, y un primario que no hace nada le miente a quien lo
-toca*. Y el aviso de la cabecera de este archivo: un control que no hace nada
-es motivo de rechazo del App Store (guideline 2.1) — a TestFlight no le
-importa, a revisión sí.
+Esta sección empezó siendo "lo que NO se construyó". Duró unas horas: Iván
+leyó la lista y contestó **"píntalo igual"**. Queda como registro de la
+decisión y de dónde está cada uno.
 
-Eso es una regla mía sobre una regla tuya, así que aquí está la lista para
-que la revoques si quieres:
+La regla suya dice construir aunque sea decoración. Yo la había aplicado a
+todo lo pasivo —campos, tarjetas, pestañas, renglones de firma— y me había
+frenado en los **controles encendidos**, por mi cuenta. El freno se levanta,
+con la forma que menos daño hace y que ya estaba probada en Actas:
+**apagados, con su `title` diciendo qué falta**, nunca encendidos y mudos.
 
-| Control | Dónde | Por qué me frené | Si dices que sí |
-|---|---|---|---|
-| **"Marcar depositado"** | Depósitos, cabecera del corte | primario grande sobre cada corte | se pinta apagado, o encendido con un aviso |
-| **"Asignar encargado"** | Servicios, puesto vacío del roster | enlace azul que no lleva a ningún sitio | se pinta en gris sin enlace, o apagado |
-| **"Tamaño de texto"** | Configuración → Apariencia | segmentado que no cambia nada | igual que arriba |
-| **"Sidebar siempre visible"** | Configuración → Apariencia | interruptor sin nada detrás | igual |
-| **"Ocultar montos al bloquear"** | Configuración → Apariencia | interruptor sin nada detrás | igual |
-| **4 permisos del rol Tesorería** | Configuración → Acceso | cuatro interruptores sin nada detrás | igual |
+| Control | Dónde | Cómo quedó |
+|---|---|---|
+| **Marcar depositado** | Depósitos, acciones del corte | `btn secondary` apagado + `title` |
+| **Asignar encargado** ×4 | Servicios, puestos sin motor | botón apagado, uno por puesto |
+| **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
+| **Barra lateral siempre visible** | ídem | interruptor apagado |
+| **Ocultar montos al bloquear** | ídem | interruptor apagado |
+| **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
 
-Los tres de Apariencia y los cuatro de Acceso son, además, los que el handoff
-1 ya había marcado como **inventados** (§4 de `docs/ipad-rediseno.md`): no
-existen en el repo ni en el esquema.
+Tres detalles de la ejecución que no son obvios:
+
+- **"Asignar encargado" es un BOTÓN, no el enlace azul del handoff.** Un
+  enlace deshabilitado no existe en ninguna interfaz —o lleva a un sitio o no
+  es un enlace—, así que el hueco usa la misma pieza que todo lo demás.
+- **Se apaga la FILA entera, no solo el mando** (`.ios-field--apagado`, media
+  tinta). Un interruptor gris dentro de una fila normal se lee como "está
+  roto"; la fila entera a media tinta se lee como "esto todavía no".
+- **Los cuatro permisos enseñan el estado que YA se cumple** con el rol de
+  tesorería (dos sí, dos no), no un estado inventado. Mientras espera motor,
+  la fila dice algo verdadero.
+- **Solo iPad.** Son del handoff de iPad; el teléfono no los pidió y no se le
+  meten controles muertos.
+
+Lo que hace falta detrás de cada uno: los dos primeros, la pieza de
+`deposito_movimientos` y el roster por puestos (ya listados arriba). Los
+cuatro de Configuración son **funciones nuevas**, no columnas: escalar el
+tipo de letra, fijar la barra lateral en vertical, difuminar cifras al pasar
+a segundo plano, y permisos por acción en vez de por rol.
+
+> ⚠️ **Esto sube la apuesta de revisar este archivo antes de mandar a
+> REVISIÓN del App Store.** Un control apagado con explicación es defendible
+> ante la guideline 2.1; seis controles apagados en una pantalla de Ajustes,
+> menos. Antes de enviar a revisión: o tienen motor, o se ocultan detrás de
+> una bandera. A TestFlight no le afecta.
+>
+> El arnés tiene una guarda para esto (**sección 22**): comprueba que los
+> seis —más "Recopilar firmas"— siguen **apagados y con explicación**. Si
+> alguien le quita el `disabled` a uno sin ponerle motor, sale en rojo.
+
+## Lo que sigue sin pintarse
+
+- **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:
+  es un **dato de contabilidad**, y uno inventado se lee como verdadero. Pide
+  columna y numerador.
+- **"Registrado por"** y **el chip "Sin depositar"** — aplazados por ti hasta
+  después del diseño, no por este criterio.
+- **Los cuatro interruptores de Iglesia del handoff 1** ("Exigir comprobante
+  en gastos mayores a $1,000", "Doble firma en el corte", "Avisar
+  duplicados", "Cierre de mes: último domingo"). No entraron en la tabla de
+  arriba porque son de otro handoff; si los quieres, es el mismo trato y una
+  tarde.
 
 ## Cuando toque cablear, el orden que rinde más
 
