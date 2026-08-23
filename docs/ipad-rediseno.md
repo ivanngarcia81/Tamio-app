@@ -1189,3 +1189,88 @@ app no puede contestarlo: `depositos_bancarios` guarda el monto y el periodo
 del corte, pero **no qué movimientos lo componen**. Hasta que exista esa
 relación, el chip de estado dice **"Pendientes"** —que es `estado`, real— en
 las dos listas. Es la misma pieza que falta para la pantalla de Depósitos.
+
+## 16. Aportantes, pantalla por pantalla contra el handoff (23 ago 2026)
+
+Tercera pantalla. El handoff la llama "Miembros"; en la app es **Aportantes**
+(`/miembros`), la vista de TESORERÍA del padrón. Membresía (`/membresia`, de
+secretaría) es otra pantalla y ya se hizo en su momento.
+
+### La columna maestra
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Buscador | ✓ | sin cambios |
+| Segmentado **Activos · Bajas · Todos** | no | construido |
+| Conteo bajo el filtro | solo en el pie | añadido |
+| Cabecera de sección por inicial | ✓ | sin cambios |
+| Fila de 60px con avatar de 38 | ✓ (64px) | sin cambios |
+| Sub "Miembro desde 2014 · ujier" | ✓ | y ahora "Baja en 2025 · traslado" |
+| Etiqueta **Traslado** | no | construida (`estado_membresia`) |
+
+Para poder ofrecer las tres vistas, la página pasa de `listMembers` (solo
+activos) a `listMembersRegistro` (el registro completo) y filtra en memoria: un
+padrón de iglesia son cientos de filas, y dos consultas serían dos verdades
+que sincronizar.
+
+### El panel: la ficha de cuatro pestañas
+
+El handoff pide un segmentado de **Datos · Aportes · Familia · Asistencia** con
+el expediente a la izquierda y el dinero fijo a la derecha. Eso no es lo que
+hacía el panel, que reutilizaba tal cual el cuerpo del modal de Mac (tres
+tarjetas + selector de año + tabla). Ahora el CUERPO es propio
+(`FichaMiembroIPad`), pero el ESTADO se sigue compartiendo: `useFichaMiembro`
+carga los años, el año elegido y los aportes una sola vez. Hay una fuente de
+datos y dos maneras de enseñarla, no dos fichas que mantener.
+
+De dónde sale cada pestaña:
+
+| Pestaña | Fuente | ¿Real? |
+|---|---|---|
+| Datos | `members` (teléfono, correo, ingreso, bautismo, ministerios, cargos) | sí |
+| Aportes | `listMemberAportes` | sí |
+| Asistencia | `listAsistenciaLigera` | sí |
+| **Familia** | — | **no** |
+
+La columna derecha —total del año, barras por mes, últimos tres aportes— es
+fija y no cambia con la pestaña: esta es la pantalla de Tesorería y el aporte
+es la razón de abrir la ficha.
+
+El promedio de la tarjeta se saca sobre los meses **con** aporte, no sobre los
+transcurridos: quien diezma cada dos meses no aporta "la mitad", y dividir
+entre los meses vacíos convertiría su ficha en un reproche.
+
+### Lo que esta pantalla no puede llenar
+
+**La pestaña Familia.** `members` no guarda parentesco: no hay tabla de
+relaciones ni columna de familia. La pestaña **se construye igual** y explica
+qué le falta, siguiendo la regla que Iván ya fijó en Membresía: *una sección
+sin datos todavía no es lo mismo que una que no aplica; enséñala vacía y di
+por qué*. Cuando exista la relación, se enchufa el motor y la pestaña ya está.
+
+**Tres campos del expediente del diseño no existen** y por eso no se pintan:
+nacimiento, dirección y estado civil. `members` tiene mucho de membresía
+(ingreso, congregación, bautismos, ministerios, cargos, instrumentos) y casi
+nada de datos personales. Piden migración; la ficha enseña mientras tanto lo
+que sí hay, que no es poco.
+
+### Y una cosa que casi doy por bug y no lo era
+
+Las barras del año y el chip del mes salían **negros** en el arnés, no verdes
+como el handoff. Parecía que había usado el token equivocado.
+
+No: **`--ink` en esta app es el acento que el usuario elige** en Configuración
+→ Apariencia. De fábrica es "neutro" (`#0f0f0f`), y hay verde, azul, morado y
+ámbar. El `--ink` del handoff (`#047857`) es **exactamente**
+`[data-acento="verde"]` de esta hoja — otra prueba de que el diseño se dibujó
+sobre el repo.
+
+O sea: el prototipo está pintado con el acento verde puesto, y la app arranca
+en neutro. Atarse al token es lo correcto —hardcodear el verde rompería el
+selector de acento que Configuración ofrece—, y el arnés ahora lo comprueba:
+cambia `data-acento` a verde y exige que la barra se mueva. Sale
+`rgb(15,15,15) → rgb(4,120,87)`.
+
+**Queda una decisión para Iván, no técnica:** si el acento de fábrica debería
+ser verde en vez de neutro, para que la app recién instalada se vea como el
+handoff. Es una línea de CSS; no la toco sin que lo diga.

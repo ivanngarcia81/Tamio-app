@@ -6,7 +6,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import DetalleMiembro from "../components/DetalleMiembro";
 import {
   archiveMember, countMemberAsistencias, countMemberTx, currentYear, deleteMember, fmtFechaCorta, fmtMoney,
-  insertMember, listMembers, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
+  insertMember, listMembersRegistro, memberStats, undeleteMember, type Church, type Member, type MemberStat, type NewMember,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import RowMenu from "../components/RowMenu";
@@ -82,6 +82,9 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<Record<number, MemberStat>>({});
   const [query, setQuery] = useState("");
+  /* El segmentado Activos · Bajas · Todos del handoff. Arranca en activos,
+     que es el padrón vivo y lo que esta pantalla quiere decir por defecto. */
+  const [filtro, setFiltro] = useState<"activos" | "bajas" | "todos">("activos");
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [detalle, setDetalle] = useState<Member | null>(null);
@@ -117,7 +120,12 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
     let cancelado = false;
     setLoading(true);
     Promise.all([
-      listMembers(church.id),
+      /* El registro COMPLETO —activos y bajas— porque el segmentado del
+         handoff ofrece las tres vistas. `listMembers` (solo activos) se
+         quedaría corto en "Bajas" y en "Todos", y pedir dos listas sería
+         tener dos verdades que sincronizar. El filtro se hace en memoria:
+         un padrón de iglesia son cientos de filas, no millones. */
+      listMembersRegistro(church.id),
       memberStats(church.id, currentYear()),
     ])
       .then(([nuevosMembers, nuevosStats]) => {
@@ -130,7 +138,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
     return () => { cancelado = true; };
   }, [church.id, refreshKey]);
 
-  useEffect(() => setPage(1), [query, refreshKey]);
+  useEffect(() => setPage(1), [query, filtro, refreshKey]);
 
   async function requestDelete(m: Member) {
     // Un miembro con historial (movimientos O asistencia a servicios) nunca
@@ -196,14 +204,19 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   }));
 
   const q = query.trim().toLowerCase();
+  const delFiltro = filtro === "todos"
+    ? members
+    : members.filter((m) => (filtro === "activos" ? m.activo === 1 : m.activo === 0));
   const visibles = q
-    ? members.filter(
+    ? delFiltro.filter(
         (m) =>
           m.nombre.toLowerCase().includes(q) ||
           (m.email ?? "").toLowerCase().includes(q) ||
           (m.rfc ?? "").toLowerCase().includes(q)
       )
-    : members;
+    : delFiltro;
+  const nActivos = members.filter((m) => m.activo === 1).length;
+  const nBajas = members.length - nActivos;
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
   const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   // Muchas iglesias no usan etiquetas: la columna quedaba entera con guiones,
@@ -332,6 +345,27 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                       aria-label={t("miembros.buscarPlaceholder")}
                     />
                   </label>
+                  {/* El segmentado del handoff. Va DEBAJO del buscador, no
+                      encima como en Movimientos: allí elige entre dos
+                      pantallas y aquí filtra la que ya estás viendo. */}
+                  <div className="md-seg-tipo" role="group" aria-label={t("miembros.filtroAria")}>
+                    {(["activos", "bajas", "todos"] as const).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        className={filtro === f ? "sel" : ""}
+                        aria-pressed={filtro === f}
+                        onClick={() => setFiltro(f)}
+                      >
+                        {t(`miembros.filtro_${f}`)}
+                      </button>
+                    ))}
+                  </div>
+                  {/* El conteo del diseño, bajo el segmentado: dice cuántos
+                      hay de cada cosa aunque estés mirando una sola. */}
+                  <span className="md-conteo">
+                    {t("miembros.conteoFiltro", { activos: nActivos, bajas: nBajas })}
+                  </span>
                 </div>
 
                 <div className="md-filas">
@@ -351,17 +385,41 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                              dato que la letanía de "Sin correo registrado". */
                           let etiquetas: string[] = [];
                           try { etiquetas = JSON.parse(m.etiquetas); } catch { /* noop */ }
-                          const partesSub = [
-                            m.fecha_ingreso ? t("miembros.desdeAnio", { anio: m.fecha_ingreso.slice(0, 4) }) : null,
-                            etiquetas[0] ?? null,
-                          ].filter(Boolean);
+                          /* Una baja NO se describe por su año de ingreso:
+                             lo que hay que saber de ella es cuándo dejó el
+                             padrón y por qué, que es lo que dibuja el handoff
+                             ("Baja en 2025 · traslado aceptado"). */
+                          const esBaja = m.activo === 0;
+                          const partesSub = esBaja
+                            ? [
+                                m.fecha_baja ? t("miembros.bajaEnAnio", { anio: m.fecha_baja.slice(0, 4) }) : null,
+                                m.motivo_baja ? (() => {
+                                    /* El catálogo de motivos vive en
+                                       `membresia.motivo.*`; la ficha también
+                                       admite escribir uno a mano, y esos no
+                                       tienen clave — i18next devolvería la
+                                       clave cruda en la fila. */
+                                    const k = `membresia.motivo.${m.motivo_baja}`;
+                                    const txt = t(k);
+                                    return txt === k ? m.motivo_baja : txt;
+                                  })() : null,
+                              ].filter(Boolean)
+                            : [
+                                m.fecha_ingreso ? t("miembros.desdeAnio", { anio: m.fecha_ingreso.slice(0, 4) }) : null,
+                                etiquetas[0] ?? null,
+                              ].filter(Boolean);
                           const sub = partesSub.length > 0
                             ? partesSub.join(" · ")
                             : m.email ?? t("miembros.sinCorreoRegistrado");
+                          /* La etiqueta "Traslado" del diseño. Sale del estado
+                             de membresía, no de una invención: `enProceso` es
+                             el valor que la ficha pone mientras un traslado
+                             está abierto. */
+                          const enTraslado = m.estado_membresia === "enProceso";
                           return (
                             <div
                               key={m.id}
-                              className={`md-fila${selId === m.id ? " sel" : ""}`}
+                              className={`md-fila${selId === m.id ? " sel" : ""}${esBaja ? " es-baja" : ""}`}
                               onClick={() => setSelId(m.id)}
                             >
                               {/* El color sale del id, no de la posición: así
@@ -374,11 +432,14 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                                 <span className="md-fila-titular"><span className="truncate">{m.nombre}</span></span>
                                 <span className="md-fila-sub truncate">{sub}</span>
                               </span>
-                              {stat?.totalAnio ? (
-                                <span className="md-fila-monto">{fmtMoney(stat.totalAnio)}</span>
-                              ) : (
-                                <span className="md-fila-monto" style={{ color: "var(--text-3)", fontWeight: 400 }}>—</span>
-                              )}
+                              <span className="md-fila-cola">
+                                {stat?.totalAnio ? (
+                                  <span className="md-fila-monto">{fmtMoney(stat.totalAnio)}</span>
+                                ) : (
+                                  <span className="md-fila-monto" style={{ color: "var(--text-3)", fontWeight: 400 }}>—</span>
+                                )}
+                                {enTraslado && <span className="md-fila-aviso">{t("miembros.traslado")}</span>}
+                              </span>
                             </div>
                           );
                         })}

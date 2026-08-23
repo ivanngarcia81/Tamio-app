@@ -9399,9 +9399,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 9px;
     background: color-mix(in srgb, var(--text) 7%, transparent);
   }
-  :root.ipad .md-seg-tipo a {
+  :root.ipad .md-seg-tipo a,
+  :root.ipad .md-seg-tipo button {
     flex: 1;
     padding: 6px 0;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
     border-radius: 7px;
     text-align: center;
     text-decoration: none;
@@ -9409,12 +9414,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-weight: 600;
     color: var(--text-2);
   }
-  :root.ipad .md-seg-tipo a.sel {
+  :root.ipad .md-seg-tipo a.sel,
+  :root.ipad .md-seg-tipo button.sel {
     background: var(--surface);
     color: var(--text);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
-  :root.ipad .md-seg-tipo a:active { opacity: 0.5; }
+  :root.ipad .md-seg-tipo a:active,
+  :root.ipad .md-seg-tipo button:active { opacity: 0.5; }
 
   /* La navegación ‹ Agosto › de la cabecera se apaga en el maestro-detalle:
      el chip del mes de la barra de filtros hace lo mismo y es el sitio que le
@@ -9736,6 +9743,130 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     color: var(--ink);
     cursor: pointer;
   }
+
+  /* ---- Conteo bajo los filtros de la lista (Aportantes) ---- */
+  :root.ipad .md-conteo { font-size: 12px; color: var(--text-3); }
+  /* Una baja se lee más apagada que un miembro vivo: es el padrón histórico,
+     no el de hoy. Lo mismo que hace el handoff con su sección de bajas. */
+  :root.ipad .md-fila.es-baja .md-fila-titular { color: var(--text-2); }
+  :root.ipad .md-fila.es-baja .mini-avatar { filter: grayscale(1); opacity: 0.75; }
+
+  /* ============================================================
+     La ficha del aportante (.fm-*) — handoff 2
+     ------------------------------------------------------------
+     Cuatro pestañas a la izquierda y el dinero fijo a la derecha. El
+     segmentado mide 400px en el diseño, que es lo que ocupan cuatro
+     etiquetas cortas sin que ninguna se estire de más.
+     ============================================================ */
+  :root.ipad .fm-seg {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    width: 400px;
+    max-width: 100%;
+    margin: 18px 0;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+  :root.ipad .fm-seg button {
+    flex: 1;
+    padding: 6px 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+  }
+  :root.ipad .fm-seg button.sel {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+  :root.ipad .fm-seg button:active { opacity: 0.5; }
+
+  /* Una columna por defecto; el 1.1fr/1fr del diseño solo donde cabe. */
+  :root.ipad .fm-cuerpo {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  :root.ipad .fm-izq, :root.ipad .fm-der { min-width: 0; }
+  :root.ipad .fm-der { display: flex; flex-direction: column; gap: 14px; }
+  :root.ipad .fm-tarjeta {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  :root.ipad .fm-tarjeta-cab {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  :root.ipad .fm-total { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  :root.ipad .fm-tarjeta-pie { display: block; margin-top: 8px; font-size: 12.5px; color: var(--text-3); }
+  /* Las barras del año: 64px de alto, como el diseño. `align-items:flex-end`
+     y alturas en % — el contenedor tiene alto fijo, así que el porcentaje se
+     resuelve sin cuentas en JS. */
+  :root.ipad .fm-barras { display: flex; align-items: flex-end; gap: 6px; height: 64px; margin-top: 14px; }
+  :root.ipad .fm-barra {
+    flex: 1;
+    min-width: 0;
+    border-radius: 4px 4px 0 0;
+    background: color-mix(in srgb, var(--ink) 22%, transparent);
+  }
+  /* El mes en curso, lleno: es el que se está mirando. */
+  :root.ipad .fm-barra.actual { background: var(--ink); }
+  :root.ipad .fm-anios { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+  /* Filas de aporte: fecha a la izquierda, categoría en medio, monto a la
+     derecha. Se montan sobre `.dm-campo` para no repetir la tarjeta. */
+  :root.ipad .fm-aporte .dm-campo-etiqueta { width: 110px; flex: 0 0 110px; font-size: 13.5px; }
+  :root.ipad .fm-aporte { align-items: center; }
+  /* Sin esto, "Diezmo · Efectivo" partía en dos líneas y la fila crecía a 70px:
+     el valor es flexible y el monto se lleva el ancho que quiere. */
+  :root.ipad .fm-aporte .dm-campo-valor {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :root.ipad .fm-aporte-metodo { color: var(--text-3); font-weight: 400; }
+  :root.ipad .fm-aporte-monto {
+    margin-left: auto;
+    padding-left: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  :root.ipad .fm-ultimo { min-height: 50px; padding: 10px 16px; }
+
+  :root.ipad .fm-vacio {
+    padding: 28px 20px;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    font-size: 13.5px;
+    color: var(--text-3);
+    text-align: center;
+  }
+  /* El vacío que NO es un vacío: la pestaña que existe y todavía no tiene
+     motor. Se distingue del "no hay nada este año" porque explica por qué. */
+  :root.ipad .fm-vacio--pendiente {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 34px 26px;
+    text-align: center;
+  }
+  :root.ipad .fm-vacio-titulo { font-size: 15.5px; font-weight: 600; color: var(--text); }
+  :root.ipad .fm-vacio-sub { font-size: 13px; line-height: 1.5; color: var(--text-2); max-width: 380px; margin: 0 auto; }
 
   /* ------------------------------------------------------------
      El acta como DOCUMENTO (.da-*)
@@ -10873,6 +11004,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dash-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   :root.ipad .dash-graficas { grid-template-columns: 1.55fr 1fr; }
   :root.ipad .dm-pie-tarjetas { grid-template-columns: 1fr 1fr; }
+  :root.ipad .fm-cuerpo { grid-template-columns: 1.1fr 1fr; }
 }
 
 /* ============================================================

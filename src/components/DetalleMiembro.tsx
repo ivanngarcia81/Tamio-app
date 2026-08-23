@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Church, Member } from "../db";
-import { CuerpoFichaMiembro, IdentidadMiembro, useFichaMiembro } from "./MemberDetailModal";
+import { IdentidadMiembro, useFichaMiembro } from "./MemberDetailModal";
+import FichaMiembroIPad from "./FichaMiembroIPad";
 import { IconChevronLeft, IconEdit, IconFileText, IconPrinter, IconTrash } from "../icons";
 
 interface Props {
@@ -22,12 +23,13 @@ interface Props {
 /**
  * DetalleMiembro — la columna derecha del maestro-detalle de Aportantes.
  *
- * Es la MISMA ficha que el modal de Mac/iPhone —identidad, tarjetas del año,
- * tabla de aportes, constancia— montada en el panel en vez de en un modal:
- * el estado vive en `useFichaMiembro` y las piezas en MemberDetailModal.tsx,
- * así que no hay una segunda ficha que mantener. Lo único propio de aquí son
- * los botones (Editar y Eliminar acompañan a Imprimir/Constancia, porque en
- * el panel no hay fila de tabla con lápiz al lado) y el botón de volver.
+ * Comparte el ESTADO con el modal de Mac/iPhone —`useFichaMiembro` carga los
+ * años, el año elegido y los aportes— pero desde el handoff 2 el CUERPO es
+ * propio: el diseño pide un segmentado de cuatro pestañas con el expediente a
+ * la izquierda y el dinero fijo a la derecha, y eso no es lo que hace un modal
+ * de 640px en el Mac. La carga sigue siendo una sola, así que no hay dos
+ * fichas que mantener: hay una fuente de datos y dos maneras de enseñarla.
+ * Ver `FichaMiembroIPad`.
  */
 export default function DetalleMiembro({ church, member, tituloLista, onVolver, onEditar, onEliminar, acciones }: Props) {
   const { t } = useTranslation();
@@ -61,9 +63,18 @@ export default function DetalleMiembro({ church, member, tituloLista, onVolver, 
         </div>
       </div>
 
-      <div>
-        <CuerpoFichaMiembro church={church} f={f} />
-      </div>
+      <FichaMiembroIPad
+        church={church}
+        member={member}
+        aportes={f.aportes}
+        total={f.total}
+        year={f.year}
+        years={f.years}
+        onYear={f.setYear}
+      />
+      {f.error && (
+        <div className="form-warning" style={{ marginTop: 12 }}>{f.error}</div>
+      )}
     </div>
   );
 }

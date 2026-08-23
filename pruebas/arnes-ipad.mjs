@@ -611,7 +611,7 @@ console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
   const DIR = process.env.CAPTURAS || "";
   for (const [w, h] of [[1366, 1024], [1024, 1366], [1210, 1614]]) {
     await pg.setViewportSize({ width: w, height: h });
-    for (const ruta of ["", "reporte-miembros", "inbox", "membresia"]) {
+    for (const ruta of ["", "miembros", "reporte-miembros", "inbox", "membresia"]) {
       await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
       await pg.waitForTimeout(600);
       const m = await pg.evaluate(() => {
@@ -860,6 +860,83 @@ console.log("\n== Movimientos del iPad (handoff) ==");
     }
   }
   await ctxMv.close();
+}
+
+/* ---------- 12. Aportantes: filtro del padrón y ficha de cuatro pestañas ---------- */
+console.log("\n== Aportantes del iPad (handoff) ==");
+{
+  const ctxAp = await nuevoContexto("ipad");
+  const pg = await ctxAp.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-miembros .md-fila", { timeout: 10000 });
+  await pg.waitForTimeout(300);
+
+  const lista = await pg.evaluate(() => ({
+    seg: [...document.querySelectorAll(".md-miembros .md-seg-tipo button")].map((b) => b.textContent.trim()),
+    sel: document.querySelector(".md-miembros .md-seg-tipo button.sel")?.textContent.trim(),
+    conteo: document.querySelector(".md-miembros .md-conteo")?.textContent.trim(),
+    filas: document.querySelectorAll(".md-miembros .md-fila").length,
+  }));
+  chk(lista.seg.length === 3, `el padrón filtra por tres (${lista.seg.join(" · ")})`);
+  chk(lista.sel === lista.seg[0], `arranca en activos (${lista.sel})`);
+  chk(!!lista.conteo, `conteo bajo el filtro (${lista.conteo})`);
+
+  // La ficha: cuatro pestañas y la columna del dinero fija.
+  await pg.click(".md-miembros .md-fila:not(.sel)");
+  await pg.waitForTimeout(400);
+  const ficha = await pg.evaluate(() => ({
+    pestanas: [...document.querySelectorAll(".fm-seg button")].map((b) => b.textContent.trim()),
+    abierta: document.querySelector(".fm-seg button.sel")?.textContent.trim(),
+    tarjeta: !!document.querySelector(".fm-tarjeta"),
+    barras: document.querySelectorAll(".fm-barra").length,
+  }));
+  chk(ficha.pestanas.length === 4, `la ficha trae cuatro pestañas (${ficha.pestanas.join(" · ")})`);
+  chk(!!ficha.abierta, `abre en la primera (${ficha.abierta})`);
+  chk(ficha.tarjeta, "la columna del dinero está fija a la derecha");
+
+  /* El acento del handoff (#047857) es `--ink`, que en esta app NO es un
+     verde fijo: es el acento que el usuario elige en Configuración —neutro
+     (negro) de fábrica, o verde/azul/morado/ámbar—. Lo que hay que comprobar
+     no es "sale verde" sino que el chip y la barra estén ATADOS al acento y
+     no a un hexadecimal copiado del prototipo: se cambia el acento y tienen
+     que moverse los dos. */
+  const acento = await pg.evaluate(() => {
+    const raiz = document.documentElement;
+    const previo = raiz.getAttribute("data-acento");
+    const leer = () => ({
+      chip: getComputedStyle(document.querySelector(".chip-mes") || document.body).backgroundColor,
+      barra: getComputedStyle(document.querySelector(".fm-barra.actual") || document.body).backgroundColor,
+    });
+    const antes = leer();
+    raiz.setAttribute("data-acento", "verde");
+    const despues = leer();
+    if (previo) raiz.setAttribute("data-acento", previo); else raiz.removeAttribute("data-acento");
+    return { antes, despues };
+  });
+  chk(acento.despues.barra !== acento.antes.barra,
+      `la barra del año sigue el acento elegido (${acento.antes.barra} → ${acento.despues.barra})`);
+
+  /* Cada pestaña tiene que enseñar ALGO: una pestaña que se marca y deja el
+     panel en blanco es peor que no tenerla. Familia es la que no tiene motor
+     todavía y por eso se comprueba que explique por qué está vacía. */
+  for (let i = 1; i < 4; i++) {
+    await pg.click(`.fm-seg button:nth-child(${i + 1})`);
+    await pg.waitForTimeout(350);
+    const m = await pg.evaluate(() => ({
+      sel: document.querySelector(".fm-seg button.sel")?.textContent.trim(),
+      hay: (document.querySelector(".fm-izq")?.textContent || "").trim().length,
+      tarjeta: !!document.querySelector(".fm-tarjeta"),
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    }));
+    chk(m.sel === ficha.pestanas[i], `"${ficha.pestanas[i]}" queda abierta (${m.sel})`);
+    chk(m.hay > 0, `"${ficha.pestanas[i]}": el panel dice algo (${m.hay} caracteres)`);
+    chk(m.tarjeta, `"${ficha.pestanas[i]}": el dinero sigue a la vista`);
+    chk(m.desborda === false, `"${ficha.pestanas[i]}": sin scroll horizontal`);
+    if (DIR) await pg.screenshot({ path: `${DIR}/miembros-${ficha.pestanas[i].toLowerCase()}-1366x1024.png` });
+  }
+  await ctxAp.close();
 }
 
 await browser.close();
