@@ -1546,6 +1546,28 @@ console.log("\n== Configuración del iPad (handoff) ==");
   const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
   chk(zonas.length >= 6, `el índice trae sus zonas (${zonas.length}: ${zonas.join(" · ")})`);
 
+  /* Y que sea una COLUMNA, no un rectángulo flotando. Configuración se monta
+     como cualquier pantalla partida: el índice pegado a la barra lateral y a
+     la cabecera, y llegando hasta abajo. Antes traía el padding y el ancho
+     máximo centrado de `.content`, así que arrancaba en x=350/y=68 y su alto
+     lo daba lo que hubiera dentro (1168 sobre una ventana de 1024). */
+  const col = await pg.evaluate(() => {
+    const r = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect();
+      return { x: Math.round(b.left), y: Math.round(b.top), b2: Math.round(b.bottom), r2: Math.round(b.right) }; };
+    return {
+      nav: r(".settings-nav"),
+      sidebar: r(".sidebar"),
+      header: r(".header"),
+      alto: window.innerHeight,
+      // La página no desplaza: desplaza cada columna por su cuenta.
+      desplazaPagina: document.querySelector(".main").scrollHeight > document.querySelector(".main").clientHeight + 1,
+    };
+  });
+  chk(col.nav.x === col.sidebar.r2, `el índice arranca pegado a la barra lateral (${col.nav.x} = ${col.sidebar.r2})`);
+  chk(col.nav.y === col.header.b2, `y pegado a la cabecera (${col.nav.y} = ${col.header.b2})`);
+  chk(col.nav.b2 === col.alto, `y llega hasta abajo (${col.nav.b2} = ${col.alto})`);
+  chk(col.desplazaPagina === false, "la página no desplaza: lo hace cada columna");
+
   /* Iglesia: lista agrupada, no la tarjeta de escritorio. */
   const ig = await pg.evaluate(() => {
     const g = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-group");

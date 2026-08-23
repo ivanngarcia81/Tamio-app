@@ -8005,10 +8005,45 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      su borde se cortaba a media página. Aquí el índice desplaza por su
      cuenta y llega abajo del todo, así que un `border-right` de verdad
      basta — y es lo que pide el diseño. */
+  /* Configuración se monta como CUALQUIER pantalla partida, y no como una
+     página con contenido dentro.
+
+     Medido antes: `.content-ajustes` traía el `padding: 12px 32px 24px` y el
+     `max-width` centrado de `.content`, así que el índice arrancaba en
+     x=350/y=68 —32px del borde, 12 bajo la cabecera— y su alto lo daba lo que
+     hubiera dentro (1168 sobre una ventana de 1024). O sea: un RECTÁNGULO de
+     cromo flotando en medio del lienzo, no una columna. Es lo que Iván marcó:
+     "debe tener el color del maestro-detalle, no solo un cuadrado".
+
+     La receta es la misma de `.main:has(.md-split)`: la página no desplaza,
+     desplaza cada columna por su cuenta. Con eso el índice queda pegado a la
+     barra lateral y a la cabecera, y llega hasta abajo — que es justo lo que
+     el comentario de aquí arriba decía que pasaba, y no pasaba. */
+  :root.ipad .main:has(.settings-shell) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* `.main` en el selector para GANAR: `:root.movil .content` fija el
+     padding de arriba (12) y el de abajo (24) más abajo en el archivo y con
+     la misma especificidad, así que sin este escalón el índice seguía
+     separado de la cabecera y sin llegar al fondo. Medido: y=68 en vez de 56
+     y base en 1000 en vez de 1024. */
+  :root.ipad .main .content-ajustes {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    padding: 0;
+    gap: 0;
+    max-width: none;
+    margin-inline: 0;
+    overflow: hidden;
+  }
   :root.ipad .settings-shell {
     display: flex;
     align-items: stretch;
     gap: 0;
+    flex: 1;
     min-height: 0;
   }
   :root.ipad .settings-nav {
@@ -8017,6 +8052,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     position: static;
     gap: 2px;
     padding: 14px 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-right: 0.5px solid var(--line);
     /* CROMO: es una columna maestra como la de cualquier otra pantalla
        partida, y tiene que empatar con ella y con la barra lateral. */

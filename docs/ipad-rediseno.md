@@ -2110,3 +2110,48 @@ Vale la pena dejarlo escrito: una comprobación que miente en verde es peor que
 no tenerla, y esta mentía en rojo, que al menos se ve.
 
 El arnés pasa de 605 a **608**.
+
+## 29. Configuración era una página con contenido, no una pantalla partida (23 ago 2026)
+
+Iván marcó el índice de zonas: *"debe tener el color del maestro-detalle, no
+solo un cuadrado"*. El gris ya era el correcto desde la 1.2.6 (§25) — lo que
+fallaba era la **forma**.
+
+Medido antes de tocar nada:
+
+| | Estaba | Debía |
+|---|---|---|
+| Índice, x | **350** | 318 (pegado a la barra lateral) |
+| Índice, y | **68** | 56 (pegado a la cabecera) |
+| Índice, alto | **1168** sobre una ventana de 1024 | 968, hasta abajo |
+
+O sea: un **rectángulo de cromo flotando** en medio del lienzo, con 32px de
+aire a la izquierda y 12 arriba, y creciendo con lo que hubiera dentro en vez
+de llenar la pantalla.
+
+La causa: Configuración se montaba como una **página con contenido**
+—`.content-ajustes` heredaba de `.content` el `padding: 12px 32px 24px` y su
+`max-width` centrado— mientras que las otras diez pantallas se montan como
+**partidas**, donde `.main` es una columna con `overflow: hidden` y desplaza
+cada columna por su cuenta.
+
+Aplicada la misma receta de `.main:has(.md-split)`. Lo curioso es que el
+comentario que ya estaba escrito en ese bloque decía *"aquí el índice desplaza
+por su cuenta y llega abajo del todo"* — describía lo que **debía** pasar, no
+lo que pasaba.
+
+### El escalón de especificidad que hizo falta
+
+Con `padding: 0` no bastó: `:root.movil .content` fija el padding de arriba
+(12) y el de abajo (24) **más abajo en el archivo** y con la misma
+especificidad (0,2,0), así que ganaba por orden. Medido otra vez: y seguía en
+68 y la base en 1000. Con `.main` en el selector —`:root.ipad .main
+.content-ajustes`— sube a 0,3,0 y gana. Es la segunda vez en esta serie que la
+respuesta estaba en la especificidad y no en el valor (la primera, §23).
+
+### Lo medido
+
+La guarda comprueba la geometría, no el color: que el índice arranque en el
+borde de la barra lateral, pegado a la cabecera, que llegue al fondo de la
+ventana, y que **la página no desplace** —porque quien desplaza son las
+columnas—. El arnés pasa de 608 a **612**.
