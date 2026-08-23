@@ -1896,6 +1896,86 @@ console.log("\n== Los disparadores de menú caben en su caja ==");
   await ctxMb.close();
 }
 
+/* ---------- 24. Los menús anclados no los recorta nadie ----------
+   `MenuAnchor` era un `position: absolute` dentro de su propio anclaje, así
+   que cualquier ancestro con `overflow` lo recortaba. Medido en el chip del
+   mes de Reportes: el menú ocupaba 546–796 y el panel empieza en 648 — 102px
+   se los comía el `overflow-y: auto`, y el menú se veía cortado "detrás" de
+   la columna maestra. Ahora cuelga de <body> en `fixed`, como RowMenu y los
+   otros menús de la casa. Esto lo vigila en las cuatro pantallas que usan
+   menús anclados. */
+console.log("\n== Los menús anclados no se recortan ==");
+{
+  const ctxMn = await nuevoContexto("ipad");
+  const pg = await ctxMn.newPage();
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  const abrir = async (ruta, esperar, previo, disparador, nombre) => {
+    await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(esperar, { timeout: 10000 });
+    if (previo) { await pg.click(previo); await pg.waitForTimeout(400); }
+    await pg.click(disparador);
+    await pg.waitForTimeout(400);
+    const m = await pg.evaluate(() => {
+      const menu = document.querySelector(".ios-menu");
+      if (!menu) return null;
+      const r = menu.getBoundingClientRect();
+      // ¿lo recorta algún ancestro con overflow? Con el menú colgado de
+      // <body> no puede haber ninguno, y esto lo comprueba en vez de
+      // suponerlo.
+      let recorta = null;
+      for (let e = menu.parentElement; e && e !== document.documentElement; e = e.parentElement) {
+        const ov = getComputedStyle(e).overflow;
+        if (ov !== "visible") { recorta = e.className || e.tagName; break; }
+      }
+      // Y que se pueda pulsar de verdad: quién está en el centro del menú.
+      const cx = r.left + r.width / 2, cy = r.top + Math.min(r.height / 2, 40);
+      const encima = document.elementFromPoint(cx, cy);
+      return {
+        enBody: menu.parentElement === document.body,
+        recorta,
+        dentro: r.left >= 0 && r.top >= 0 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1,
+        caja: `${Math.round(r.left)}..${Math.round(r.right)} × ${Math.round(r.top)}..${Math.round(r.bottom)}`,
+        pulsable: !!encima && menu.contains(encima),
+        items: menu.querySelectorAll(".ios-menu-item").length,
+      };
+    });
+    chk(!!m, `${nombre}: el menú se abre`);
+    if (m) {
+      chk(m.enBody, `${nombre}: cuelga de <body> (${m.enBody})`);
+      chk(m.recorta === null, `${nombre}: ningún ancestro lo recorta (${m.recorta ?? "ninguno"})`);
+      chk(m.dentro, `${nombre}: entero dentro de la pantalla (${m.caja})`);
+      chk(m.pulsable, `${nombre}: y se puede pulsar`);
+      chk(m.items > 0, `${nombre}: con sus opciones (${m.items})`);
+    }
+    await pg.keyboard.press("Escape");
+    await pg.waitForTimeout(200);
+  };
+
+  await abrir("reportes", ".md-reportes .md-indice-item", ".md-reportes .md-indice-item",
+    ".rep-barra .ios-bar-button", "Reportes · mes");
+  await abrir("ingresos", ".md-movimientos .md-fila", null,
+    ".md-chips .ios-bar-button", "Ingresos · mes");
+
+  /* El del chip del mes de Reportes, además, tiene que quedar DENTRO del
+     panel: es el que Iván vio salirse por la izquierda. */
+  await pg.goto(`${URL_BASE}/#/reportes`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-reportes .md-indice-item", { timeout: 10000 });
+  await pg.click(".md-reportes .md-indice-item");
+  await pg.waitForTimeout(400);
+  await pg.click(".rep-barra .ios-bar-button");
+  await pg.waitForTimeout(400);
+  const d = await pg.evaluate(() => {
+    const m = document.querySelector(".ios-menu").getBoundingClientRect();
+    const p = document.querySelector(".md-reportes .md-detalle").getBoundingClientRect();
+    const b = document.querySelector(".rep-barra .ios-bar-button").getBoundingClientRect();
+    return { menuL: Math.round(m.left), panelL: Math.round(p.left), botonL: Math.round(b.left) };
+  });
+  chk(d.menuL >= d.panelL, `y no invade la columna maestra (${d.menuL} >= ${d.panelL})`);
+  chk(d.menuL === d.botonL, `arranca en el borde del chip, no a su izquierda (${d.menuL} = ${d.botonL})`);
+  await ctxMn.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

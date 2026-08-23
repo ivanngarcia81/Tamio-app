@@ -1994,3 +1994,64 @@ Más la comprobación concreta de lo que Iván señaló: el chip del mes arranca
 donde arranca el informe (680 = 680) y dentro del panel (680 > 648).
 
 El arnés pasa de 586 a **591**.
+
+## 27. El menú del mes se abría detrás del panel (23 ago 2026)
+
+Iván tocó el chip del mes en Reportes y el desplegable salió **cortado por la
+mitad**, con los meses tapados por la columna maestra. Medido antes de tocar
+nada: el menú ocupaba **546–796** y el panel empieza en **648**. Los 102px de
+la izquierda se los comía el `overflow-y: auto` del panel.
+
+Dos causas encadenadas, y las dos en `MenuAnchor`:
+
+1. **El menú vivía dentro de su anclaje** (`position: absolute`), así que
+   cualquier ancestro con `overflow` podía recortarlo. `.md-detalle` lo tiene,
+   porque el panel se desplaza.
+2. **Se alineaba siempre a la derecha del disparador** (`right: 4px`). Con el
+   chip pegado al borde izquierdo del panel, los 250px del menú salían todos
+   hacia la izquierda — justo fuera.
+
+### La casa ya tenía la respuesta escrita
+
+`RowMenu`, `HeaderMenu` y `ContextMenu` **ya** cuelgan sus menús de `<body>`
+con `createPortal` y los colocan en `fixed` desde el rect del disparador. Lo
+dice hasta la cabecera de `Portal.tsx`: *"igual que hacen RowMenu/HeaderMenu/
+ContextMenu con sus menús, la salida es colgar el overlay de `<body>`"*.
+`MenuAnchor` era el único que no lo hacía. No hubo que inventar el patrón,
+solo aplicarlo donde faltaba.
+
+Con el menú suelto hay que colocarlo a mano, y eso permite además:
+
+- **Voltear.** Se alinea al borde **izquierdo** del disparador y crece hacia la
+  derecha —lo que espera cualquiera de un desplegable— y solo se voltea a la
+  derecha si así se saldría de la ventana, que es el caso de los "+" de las
+  cabeceras.
+- **Limitarse de alto.** El menú de meses trae doce entradas; si no cabe
+  debajo se abre hacia arriba, y si tampoco, se queda con el alto disponible y
+  se desplaza por dentro.
+- **Cerrarse al desplazar.** Un `fixed` no sigue a su disparador; quedarse
+  abierto sería quedarse flotando en el sitio equivocado.
+
+Se coloca en **dos pasadas** —se monta invisible, se mide, se coloca— dentro
+de un `useLayoutEffect`, que es lo que evita ver el salto.
+
+### La guarda, y el segundo fallo que encontró
+
+Comprueba, en las pantallas con menú anclado: que cuelgue de `<body>`, que
+**ningún ancestro con `overflow` lo recorte** —recorriendo la cadena de padres
+de verdad, no suponiéndolo—, que quepa entero en pantalla y que se pueda
+pulsar (`elementFromPoint` en su centro cae dentro del menú).
+
+Puesta a prueba devolviendo el `absolute`, canta ocho fallos… y **uno no era
+el de Iván**:
+
+```
+✗ Reportes · mes: ningún ancestro lo recorta (md-detalle)
+✗ Ingresos · mes: ningún ancestro lo recorta (md-chips)
+✗ Ingresos · mes: y se puede pulsar
+```
+
+El chip del mes de **Ingresos** estaba igual de recortado, y ahí nadie lo
+había visto todavía. Es la ventaja de arreglar el patrón y no el síntoma.
+
+El arnés pasa de 591 a **605**.
