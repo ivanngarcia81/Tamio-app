@@ -1096,3 +1096,96 @@ El handoff pone `Folio 1042 · Efectivo` bajo cada movimiento de "Últimos
 movimientos". **`transactions` no tiene columna `folio`** (`lib.rs`,
 migración 2): las cartas sí lo tienen y los movimientos no. No se inventa un
 número; la fila sigue diciendo `fecha · método`. Está a la espera de decisión.
+
+## 15. Ingresos y Gastos, pantalla por pantalla contra el handoff (23 ago 2026)
+
+Segunda pantalla de la revisión. Buena parte ya estaba —la lista de 64px, la
+cabecera de día pegada, el pie con conteo y total, el panel con su ficha de
+campos—, así que aquí se anota solo lo que faltaba y lo que cambió.
+
+### La columna maestra
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Segmentado **Ingresos \| Gastos** sobre el buscador | no, en iPad | construido, con `<Link>` |
+| Chip de **mes**, relleno, con chevrón | en la cabecera (‹ Agosto ›) | movido al chip; la ‹ › se apaga |
+| Chips de categoría con conteo | ✓ | sin cambios |
+| Chip de estado | no | **Pendientes** (ver contradicción) |
+| Cuadrito de color 11px | solo en **gastos** | también en ingresos |
+| Etiqueta de aviso junto al monto | punto ámbar en el titular | etiqueta, como el diseño |
+
+El segmentado son dos rutas de verdad y no un estado local: el resto de la app
+enlaza a `/ingresos` y `/gastos`, y el atrás del sistema tiene que seguir
+funcionando.
+
+El chip del mes **sustituye** a la navegación ‹ Agosto › de la cabecera en las
+páginas partidas, no se suma a ella. Dos mandos que hacen lo mismo en la misma
+pantalla son peores que cualquiera de los dos por separado.
+
+### El panel
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| `h1` de 32px con el título | no — abría con el importe | construido |
+| Importe grande | ✓ (40px) | sin cambios |
+| Chip **Folio** | — | contradicción (§14) |
+| "registrado por Iván García" | — | contradicción, abajo |
+| Comprobante · **Compartir** · Editar | Ver comprobante · Eliminar · Editar | **Compartir** añadido; Eliminar se queda |
+| Ficha de campos | ✓ | sin cambios |
+| **Rastro de auditoría** | no | construido con datos reales |
+| **Tarjeta de comprobante** con hueco punteado | solo un botón | construida |
+
+**Eliminar no se quita.** El handoff dibuja tres botones y ninguno es borrar,
+pero eso es una omisión del prototipo, no una decisión: quitarlo dejaría la
+pantalla sin forma de deshacer un alta equivocada desde el iPad.
+
+**Compartir** no inventa un formato: llama a `printRegister` con un solo
+movimiento, y sale por `entrega`, que en iPad es la hoja nativa (Archivos,
+AirDrop, Mail, Imprimir).
+
+### El rastro de auditoría: lo que sí y lo que no
+
+El handoff 1 pedía este mismo bloque y se descartó entero por inventado (§4).
+Al mirar el esquema con calma —la lección de agosto— resulta que la mitad sí
+existe:
+
+| Línea del diseño | Columna | ¿Se construye? |
+|---|---|---|
+| Creado | `created_at` (migración 2) | **sí** |
+| Editado | `updated_at` (migración 20) | **sí**, si difiere |
+| Estado | `estado` | **sí** |
+| Generado por recurrente | `recurrente_id` | **sí** |
+| "por Iván García" | — | **no**, ver abajo |
+| "Depositado · incluido en el corte" | — | **no**: los depósitos no están enlazados a sus movimientos |
+
+**Un fallo que salió al construirlo.** `created_at` y `updated_at` los escribe
+SQLite con `datetime('now')`: **UTC, con segundos**. `transactions.fecha` y
+todo lo que escribe la app con `nowLocalIso()` van en hora **local sin
+segundos**. Los formateadores no distinguen —reciben una cadena y la parten—,
+así que el sello salía como "23 ago 2026, 00:46:48": con segundos, y **un día
+por delante** de la fecha que el mismo panel enseña dos líneas más arriba. Un
+gasto registrado a las 19:00 en México (UTC−6) decía haberse registrado al día
+siguiente.
+
+Se arregló con `utcALocal()` en `db.ts`, que devuelve "YYYY-MM-DD HH:MM" local
+—el formato del resto de la app— para poder pasarlo a `fmtFecha` sin caso
+especial. Comprobado a mano en UTC y en `America/Mexico_City`, y el arnés
+comprueba que el sello no lleve segundos. **Cualquier otra columna
+`datetime('now')` que se enseñe tiene el mismo problema**: hoy solo se enseñan
+estas dos.
+
+### Las dos contradicciones abiertas de esta pantalla
+
+**1. "Registrado por".** El handoff lo pone dos veces: en el pie de la cabecera
+("… · registrado por Iván García") y como primera línea del rastro. La tabla
+`usuarios` **sí existe** (nombre + rol) y la sesión **sí sabe** quién está
+dentro (`authEstado.nombre`), pero `transactions` **no tiene columna de
+usuario**: no hay dónde guardarlo al dar de alta. Necesita una migración de una
+columna y tocar el alta, la edición y la importación de CSV. No se inventa un
+nombre.
+
+**2. El chip "Sin depositar".** El handoff lo pone en la lista de ingresos. La
+app no puede contestarlo: `depositos_bancarios` guarda el monto y el periodo
+del corte, pero **no qué movimientos lo componen**. Hasta que exista esa
+relación, el chip de estado dice **"Pendientes"** —que es `estado`, real— en
+las dos listas. Es la misma pieza que falta para la pantalla de Depósitos.

@@ -9388,6 +9388,80 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     box-shadow: inset 3px 0 0 var(--ink);
   }
   :root.ipad .md-cat-dot { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 3px; }
+
+  /* ---- Segmentado Ingresos | Gastos, arriba de la lista ----
+     Son dos <Link>, no dos botones, así que hay que apagarles el subrayado y
+     el color de enlace antes de que parezcan lo que no son. */
+  :root.ipad .md-seg-tipo {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+  :root.ipad .md-seg-tipo a {
+    flex: 1;
+    padding: 6px 0;
+    border-radius: 7px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  :root.ipad .md-seg-tipo a.sel {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+  :root.ipad .md-seg-tipo a:active { opacity: 0.5; }
+
+  /* La navegación ‹ Agosto › de la cabecera se apaga en el maestro-detalle:
+     el chip del mes de la barra de filtros hace lo mismo y es el sitio que le
+     da el handoff. Acotado a `.header` de las páginas partidas —Depósitos y
+     el resto la siguen usando— con `:has()`, que es lo que ya distingue esas
+     pantallas en el resto de la hoja. */
+  :root.ipad .main:has(.md-movimientos) .header .month-nav { display: none; }
+
+  /* El chip del mes: relleno con el acento, que en el diseño es el mando
+     principal de la fila. `MenuAnchor` envuelve su disparador en un
+     `.ios-bar-button` de 44×44 fijos —el mismo tropiezo que en Membresía—,
+     así que aquí se le devuelve el tamaño de su contenido. */
+  :root.ipad .md-chips .ios-bar-button { width: auto; height: auto; min-width: 0; }
+  :root.ipad .chip.chip-mes {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--ink);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+  }
+  /* El chip de estado: ámbar cuando filtra, para que se distinga de los de
+     categoría — no clasifica, señala. */
+  :root.ipad .chip.chip-aviso.active {
+    background: var(--warn-bg);
+    border-color: transparent;
+    color: var(--warn);
+  }
+
+  /* ---- La cola de la fila: monto arriba, aviso debajo ---- */
+  :root.ipad .md-fila-cola {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    flex: 0 0 auto;
+  }
+  :root.ipad .md-fila-aviso {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
   /* En la lista de Aportantes la fila lleva el avatar de iniciales; a 38px,
      no a los 32 de las tablas — la fila de 64 lo pide y es la medida del
      diseño (y la de una celda de Contactos). */
@@ -9532,6 +9606,136 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-campo + .dm-campo { border-top: 0.5px solid var(--line-soft); }
   :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: 15px; color: var(--text-2); }
   :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+
+  /* El titular del handoff, sobre el importe. 32px y no los 40 del monto: el
+     dinero sigue siendo lo primero que se lee, y el título dice de qué es. */
+  :root.ipad .dm-titular {
+    margin: 10px 0 0;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  /* Con título encima, el importe ya no necesita su propio aire arriba. */
+  :root.ipad .dm-titular + .dm-monto { margin-top: 6px; }
+
+  /* ---- Las dos tarjetas del pie: rastro y comprobante ----
+     A dos columnas como el diseño, y a una sola por debajo del corte de
+     columnas: en el modo de empuje el panel ocupa el ancho de la lista y dos
+     tarjetas de 14px de radio ahí dentro salen a 150px cada una. */
+  :root.ipad .dm-pie-tarjetas {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  :root.ipad .dm-tarjeta {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    min-width: 0;
+  }
+  :root.ipad .dm-tarjeta--comp { display: flex; flex-direction: column; }
+  :root.ipad .dm-tarjeta-titulo {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .dm-rastro { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+  :root.ipad .dm-rastro-item { display: flex; gap: 11px; font-size: 14px; }
+  :root.ipad .dm-rastro-punto {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 4px;
+    margin-top: 6px;
+    background: var(--line);
+  }
+  :root.ipad .dm-rastro-punto.ink { background: var(--ink); }
+  :root.ipad .dm-rastro-punto.aviso { background: var(--warn); }
+  :root.ipad .dm-rastro-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  :root.ipad .dm-rastro-titulo { font-weight: 500; }
+  :root.ipad .dm-rastro-detalle { font-size: 12.5px; color: var(--text-3); }
+
+  /* El comprobante que falta: recuadro punteado con la trama diagonal del
+     diseño. Dice "aquí va algo que no está", que es distinto de no enseñar
+     nada — y por eso NO se esconde la tarjeta cuando el movimiento no trae
+     comprobante. */
+  :root.ipad .dm-comp-falta {
+    flex: 1;
+    margin-top: 14px;
+    min-height: 132px;
+    border-radius: 11px;
+    border: 1.5px dashed var(--line);
+    background-image: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--text) 4%, transparent) 0 8px,
+      transparent 8px 16px
+    );
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  :root.ipad .dm-comp-falta-texto { font-size: 13px; color: var(--text-2); }
+  :root.ipad .dm-comp-adjuntar {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  :root.ipad .dm-comp-hay {
+    flex: 1;
+    margin-top: 14px;
+    min-height: 132px;
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 16px;
+  }
+  :root.ipad .dm-comp-icono {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :root.ipad .dm-comp-archivo {
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: center;
+    word-break: break-all;
+  }
+  :root.ipad .dm-comp-enlaces { display: flex; gap: 14px; }
+  :root.ipad .dm-comp-enlaces button {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+  }
 
   /* ------------------------------------------------------------
      El acta como DOCUMENTO (.da-*)
@@ -10668,6 +10872,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-split.md-agenda .md-detalle { min-width: 318px; }
   :root.ipad .dash-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   :root.ipad .dash-graficas { grid-template-columns: 1.55fr 1fr; }
+  :root.ipad .dm-pie-tarjetas { grid-template-columns: 1fr 1fr; }
 }
 
 /* ============================================================

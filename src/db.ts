@@ -273,6 +273,14 @@ export interface Tx {
   /** Si no es null, esta transacción la generó un movimiento recurrente
    *  (ver sección "Movimientos recurrentes" más abajo). */
   recurrente_id?: number | null;
+  /* Las dos marcas de tiempo de la fila. Ya venían en los resultados —las
+     consultas hacen `SELECT t.*`— pero no estaban declaradas, así que no se
+     podían usar sin que TypeScript se quejara. Son lo único REAL que la app
+     guarda sobre el historial de un movimiento, y con ellas se construye el
+     rastro de auditoría del handoff (ver DetalleMovimiento.tsx).
+     `updated_at` es null en las filas creadas antes de la migración 20. */
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 // ---------- Catálogos ----------
@@ -3532,6 +3540,31 @@ export function fmtMoney(c: Centavos): string {
   const sign = n < 0 ? "−" : "";
   const abs = Math.abs(n);
   return `${sign}${simboloActivo}${abs.toLocaleString(localeDeNumeros(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * Pasa una marca de tiempo escrita por SQLite a hora local.
+ *
+ * `datetime('now')` guarda **UTC** con segundos ("2026-08-22 18:46:48"),
+ * mientras que `transactions.fecha` y todo lo que escribe la app con
+ * `nowLocalIso()` van en hora LOCAL sin segundos. Los formateadores de fecha
+ * no distinguen: reciben una cadena y la parten. Enseñar `created_at` tal
+ * cual hacía que un movimiento registrado a las 19:00 en México (UTC−6)
+ * dijera "23 ago, 01:00" — un día distinto del que se ve dos líneas más
+ * arriba en el mismo panel.
+ *
+ * Devuelve "YYYY-MM-DD HH:MM" local, el mismo formato que el resto de la app,
+ * para poder pasárselo a `fmtFecha` / `fmtFechaCorta` sin caso especial.
+ * Con null, o con algo que no parezca una marca UTC, devuelve null.
+ */
+export function utcALocal(s?: string | null): string | null {
+  if (!s) return null;
+  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2})?/.exec(s);
+  if (!m) return null;
+  const d = new Date(`${m[1]}T${m[2]}${m[3] ?? ":00"}Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  const p = (x: number) => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 export function nowLocalIso(): string {

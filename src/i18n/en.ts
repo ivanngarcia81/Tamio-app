@@ -38,6 +38,7 @@ export const en: Resources = {
     imprimir: "Print",
     preparando: "Preparing…",
     generando: "Generating…",
+    compartir: "Share",
     ver: "View",
     quitar: "Remove",
     descartarCambiosTitulo: "Discard changes?",
@@ -112,6 +113,7 @@ export const en: Resources = {
     colMonto: "Amount",
     colEstado: "Status",
     aprobado: "Approved",
+    pendientes: "Pending",
     pendiente: "Pending",
     rechazado: "Rejected",
     eliminarTitulo: "Delete transaction",
@@ -138,6 +140,20 @@ export const en: Resources = {
     error: "The preview could not be shown. Try \"Open externally\".",
     noDisponible: "The original file is no longer available: it was moved, renamed or deleted. Attach it again by editing the entry.",
     sinPermiso: "The file is still there, but Tamio no longer has permission to read it from that folder. Pick it again (Settings → Receipts to recover) and it will be stored inside the app.",
+  },
+
+  dm: {
+    // El panel de detalle del movimiento (maestro-detalle del iPad, handoff 2).
+    rastro: "Audit trail",
+    rastroCreado: "Recorded",
+    rastroEditado: "Edited",
+    rastroEnBandeja: "Waiting for approval in To review",
+    rastroSinPendiente: "Nothing left to review",
+    rastroGenerado: "Created by a recurring entry",
+    comprobantePendiente: "Receipt pending",
+    sinComprobante: "No receipt attached yet",
+    adjuntar: "Attach",
+    reemplazar: "Replace",
   },
 
   dashboard: {
@@ -231,6 +247,8 @@ export const en: Resources = {
 
   mov: {
     // Nombre accesible del segmentado de categorías (Mac).
+    tipoAria: "Income or expenses",
+    elegirMes: "Choose month",
     filtrarCategoria: "Filter by category",
     otrasCategorias: "Other ({{count}})",
     registrados_one: "{{count}} transaction recorded",

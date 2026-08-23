@@ -32,6 +32,7 @@ export const es = {
     imprimir: "Imprimir",
     preparando: "Preparando…",
     generando: "Generando…",
+    compartir: "Compartir",
     ver: "Ver",
     quitar: "Quitar",
     todos: "Todos",
@@ -106,6 +107,7 @@ export const es = {
     colMonto: "Monto",
     colEstado: "Estado",
     aprobado: "Aprobado",
+    pendientes: "Pendientes",
     pendiente: "Pendiente",
     rechazado: "Rechazado",
     eliminarTitulo: "Eliminar movimiento",
@@ -132,6 +134,20 @@ export const es = {
     error: "No se pudo mostrar la vista previa. Prueba \"Abrir con el sistema\".",
     noDisponible: "El archivo original ya no está disponible: se movió, se renombró o se borró de su ubicación. Vuelve a adjuntarlo editando el movimiento.",
     sinPermiso: "El archivo sigue ahí, pero Tamio ya no tiene permiso para leerlo desde esa carpeta. Vuelve a elegirlo (Ajustes → Comprobantes por recuperar) y quedará guardado dentro de la app.",
+  },
+
+  dm: {
+    // El panel de detalle del movimiento (maestro-detalle del iPad, handoff 2).
+    rastro: "Rastro de auditoría",
+    rastroCreado: "Registrado",
+    rastroEditado: "Editado",
+    rastroEnBandeja: "Espera visto bueno en Por revisar",
+    rastroSinPendiente: "Sin nada pendiente de revisar",
+    rastroGenerado: "Lo generó un movimiento recurrente",
+    comprobantePendiente: "Comprobante pendiente",
+    sinComprobante: "Todavía no hay comprobante adjunto",
+    adjuntar: "Adjuntar",
+    reemplazar: "Reemplazar",
   },
 
   dashboard: {
@@ -227,6 +243,8 @@ export const es = {
 
   mov: {
     // Nombre accesible del segmentado de categorías (Mac).
+    tipoAria: "Ingresos o gastos",
+    elegirMes: "Elegir mes",
     filtrarCategoria: "Filtrar por categoría",
     otrasCategorias: "Otras ({{count}})",
     registrados_one: "{{count}} movimiento registrado",

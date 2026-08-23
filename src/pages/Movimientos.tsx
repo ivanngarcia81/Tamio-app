@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { esIPad, esIPhone, esMac, textoCorto } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -11,6 +12,7 @@ import {
   type Church, type MovimientoRecurrente, type MonthTotals, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
+import { MenuAnchor } from "../components/MenuAnchor";
 import DetalleMovimiento from "../components/DetalleMovimiento";
 import ComprobantePreview from "../components/ComprobantePreview";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -22,7 +24,7 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import TxTable from "../components/TxTable";
 import {
-  IconChevronLeft, IconChevronRight, IconClose, IconEdit, IconGasto, IconIngreso,
+  IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconEdit, IconGasto, IconIngreso,
   IconPlus, IconPrinter, IconRepeat, IconSearch, IconWarn,
 } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
@@ -76,6 +78,11 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [pendingDeleteSerie, setPendingDeleteSerie] = useState<{ def: MovimientoRecurrente; generados: number } | null>(null);
   const [editingRec, setEditingRec] = useState<MovimientoRecurrente | null>(null);
   const [mes, setMes] = useState(currentMonth());
+  /* Los dos mandos del handoff que la lista del iPad no tenía: el chip de mes
+     —que en el diseño vive EN la barra de filtros y no en la cabecera— y el
+     chip de estado, que aísla lo que espera visto bueno. */
+  const [menuMes, setMenuMes] = useState(false);
+  const [soloPendientes, setSoloPendientes] = useState(false);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const esMesActual = mes >= currentMonth();
@@ -134,7 +141,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   }, [church.id, tipo, refreshKey, mes]);
 
   // El filtro/búsqueda o el cambio de mes siempre regresan a la página 1.
-  useEffect(() => setPage(1), [tipo, mes, filtroCat, query]);
+  useEffect(() => setPage(1), [tipo, mes, filtroCat, query, soloPendientes]);
 
   async function confirmDeleteRecurrente() {
     if (!pendingDeleteRec) return;
@@ -213,6 +220,21 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     ];
   }, [categorias, porCategoria, tipo, t]);
 
+  /* Los doce meses que ofrece el chip: el año en curso hasta el mes de hoy,
+     más los del año anterior si el mes elegido cayó ahí. Se ofrece un rango y
+     no "todos los meses con movimiento" porque un mes vacío también se
+     consulta —para comprobar justamente que está vacío. */
+  const mesesMenu = useMemo(() => {
+    const out: string[] = [];
+    const [y, m] = currentMonth().split("-").map(Number);
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(y, m - 1 - i, 1);
+      out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    if (!out.includes(mes)) out.push(mes);
+    return out;
+  }, [mes]);
+
   const q = query.trim().toLowerCase();
   const coincide = (tx: Tx) =>
     !q ||
@@ -221,8 +243,13 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     (tx.beneficiario ?? "").toLowerCase().includes(q) ||
     (tx.member_nombre ?? "").toLowerCase().includes(q);
   const buscados = txs.filter(coincide);
-  const visibles = filtroCat ? buscados.filter((t) => t.categoria === filtroCat) : buscados;
-  const conteo = (id: string) => buscados.filter((t) => t.categoria === id).length;
+  const porEstado = soloPendientes ? buscados.filter((x) => x.estado === "pendiente") : buscados;
+  const visibles = filtroCat ? porEstado.filter((t) => t.categoria === filtroCat) : porEstado;
+  const conteo = (id: string) => porEstado.filter((t) => t.categoria === id).length;
+  /* Cuántos esperan visto bueno, para el chip. Se cuenta sobre `buscados` y
+     NO sobre `porEstado`: si se contara sobre lo ya filtrado, el chip diría
+     siempre el total de lo que él mismo dejó pasar. */
+  const nPendientes = buscados.filter((x) => x.estado === "pendiente").length;
   /* Las categorías que se ofrecen para filtrar: EXACTAMENTE la misma lista que
      ya calculaban los chips —solo las que tienen movimientos, más la activa
      aunque quede en cero, para que no desaparezca bajo el dedo al filtrar—.
@@ -235,6 +262,28 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const [printing, setPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
   const [printEmpty, setPrintEmpty] = useState(false);
+
+  /** "Compartir" del handoff, sobre UN movimiento: el mismo registro que ya
+   *  sabe imprimir la pantalla, con una sola fila. Sale por `entrega`, que en
+   *  iPad es la hoja nativa (Archivos, AirDrop, Mail, Imprimir). No hay
+   *  formato nuevo que mantener: es el registro de siempre, acotado. */
+  async function compartirMovimiento(tx: Tx) {
+    setPrintError(null);
+    setPrinting(true);
+    try {
+      await printRegister({
+        church,
+        titulo,
+        filtroDescripcion: `${fmtFecha(tx.fecha).nombreDia} · ${catNombre(tx.categoria)}`,
+        periodoISO: tx.fecha.slice(0, 7),
+        movimientos: [tx],
+      });
+    } catch (e) {
+      setPrintError(t("common.noSePudoImprimir", { error: String(e) }));
+    } finally {
+      setPrinting(false);
+    }
+  }
 
   async function handlePrint() {
     setPrintError(null);
@@ -463,6 +512,20 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
             <>
               <div className="md-lista">
                 <div className="md-filtros">
+                  {/* El segmentado del handoff: Ingresos y Gastos son la MISMA
+                      pantalla con dos contenidos, y en el diseño se cambia
+                      desde arriba de la lista en vez de volver al menú. Son
+                      dos rutas de verdad (`<Link>`), no un estado local: el
+                      resto de la app enlaza a /ingresos y /gastos y el atrás
+                      del sistema tiene que seguir funcionando. */}
+                  <div className="md-seg-tipo" role="group" aria-label={t("mov.tipoAria")}>
+                    <Link to="/ingresos" className={esIngreso ? "sel" : ""} aria-current={esIngreso || undefined}>
+                      {t("nav.ingresos")}
+                    </Link>
+                    <Link to="/gastos" className={!esIngreso ? "sel" : ""} aria-current={!esIngreso || undefined}>
+                      {t("nav.gastos")}
+                    </Link>
+                  </div>
                   <label className="md-buscar">
                     <IconSearch size={15} strokeWidth={2} />
                     <input
@@ -472,27 +535,59 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       aria-label={t("mov.buscarPlaceholder")}
                     />
                   </label>
-                  {catsVisibles.length >= 2 && (
-                    <div className="md-chips">
+                  <div className="md-chips">
+                    {/* El chip del mes, relleno y con chevrón: el mando
+                        principal de la fila, como en el diseño. En el iPad la
+                        navegación ‹ › de la cabecera se esconde por CSS — el
+                        mismo mando dos veces en la misma pantalla es peor que
+                        cualquiera de los dos por separado. */}
+                    <MenuAnchor
+                      open={menuMes}
+                      onOpenChange={setMenuMes}
+                      ariaLabel={t("mov.elegirMes")}
+                      button={<span className="chip chip-mes">{mesLegible(mes)}<IconChevronDown size={11} strokeWidth={2.4} /></span>}
+                      items={mesesMenu.map((m) => ({ label: mesLegible(m), onPress: () => setMes(m) }))}
+                    />
+                    {catsVisibles.length >= 2 && (
+                      <>
+                        <button
+                          type="button"
+                          className={`chip${filtroCat === null ? " active" : ""}`}
+                          onClick={() => setFiltroCat(null)}
+                        >
+                          {t("common.todos")} <span className="count">{porEstado.length}</span>
+                        </button>
+                        {catsVisibles.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`chip${filtroCat === c.id ? " active" : ""}`}
+                            onClick={() => setFiltroCat(filtroCat === c.id ? null : c.id)}
+                          >
+                            {catNombre(c.id)} <span className="count">{conteo(c.id)}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {/* El chip de estado. En el handoff dice "Sin depositar"
+                        en ingresos y "Pendientes" en gastos; aquí es
+                        "Pendientes" en las dos, porque lo que la base sabe es
+                        `estado`. "Sin depositar" pediría saber qué
+                        movimientos entraron en qué depósito, y esa relación no
+                        existe todavía (ver docs/ipad-rediseno.md §15). Solo
+                        sale si hay algo pendiente: un filtro que nunca
+                        encuentra nada es ruido en la barra. */}
+                    {nPendientes > 0 && (
                       <button
                         type="button"
-                        className={`chip${filtroCat === null ? " active" : ""}`}
-                        onClick={() => setFiltroCat(null)}
+                        className={`chip chip-aviso${soloPendientes ? " active" : ""}`}
+                        aria-pressed={soloPendientes}
+                        onClick={() => setSoloPendientes((v) => !v)}
                       >
-                        {t("common.todos")} <span className="count">{buscados.length}</span>
+                        {t("tx.pendientes")} <span className="count">{nPendientes}</span>
                       </button>
-                      {catsVisibles.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          className={`chip${filtroCat === c.id ? " active" : ""}`}
-                          onClick={() => setFiltroCat(filtroCat === c.id ? null : c.id)}
-                        >
-                          {catNombre(c.id)} <span className="count">{conteo(c.id)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 <div className="md-filas">
@@ -538,13 +633,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                                 className={`md-fila${selId === tx.id ? " sel" : ""}`}
                                 onClick={() => setSelId(tx.id)}
                               >
-                                {!esIngreso && (
-                                  <span
-                                    className="md-cat-dot"
-                                    style={{ background: colorCategoria(tipo, tx.categoria) }}
-                                    aria-hidden="true"
-                                  />
-                                )}
+                                {/* El cuadrito de categoría, en las DOS listas.
+                                    Estaba solo en gastos, con el argumento de
+                                    que los ingresos son cuatro categorías y se
+                                    distinguen por el nombre; el handoff lo
+                                    pinta en las dos, y con razón: es lo que
+                                    deja recorrer la columna con la vista sin
+                                    leer. El color sale de `colorCategoria`,
+                                    el mismo que pinta el chip. */}
+                                <span
+                                  className="md-cat-dot"
+                                  style={{ background: colorCategoria(tipo, tx.categoria) }}
+                                  aria-hidden="true"
+                                />
                                 <span className="md-fila-textos">
                                   <span className="md-fila-titular">
                                     {tx.recurrente_id != null && (
@@ -553,11 +654,20 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                                       </span>
                                     )}
                                     <span className="truncate">{titular}</span>
-                                    {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
                                   </span>
                                     {sub && <span className="md-fila-sub truncate">{sub}</span>}
                                 </span>
-                                <span className="md-fila-monto">{fmtMoney(tx.monto)}</span>
+                                {/* Monto y, debajo, la etiqueta de aviso del
+                                    handoff. Sustituye al punto ámbar que iba
+                                    pegado al titular: un punto hay que saber
+                                    interpretarlo, y en una fila de 64px cabe
+                                    la palabra. */}
+                                <span className="md-fila-cola">
+                                  <span className="md-fila-monto">{fmtMoney(tx.monto)}</span>
+                                  {tx.estado === "pendiente" && (
+                                    <span className="md-fila-aviso">{t("tx.pendiente")}</span>
+                                  )}
+                                </span>
                               </div>
                             );
                           })}
@@ -591,6 +701,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                         onEliminar={setPendingDeleteSel}
                         onVerComprobante={setPreviewSel}
                         onVerFicha={(mid) => navigate("/miembros", { state: { verMiembro: mid } })}
+                        onCompartir={compartirMovimiento}
                       />
                     );
                   }

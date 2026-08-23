@@ -793,6 +793,75 @@ console.log("\n== Inicio del iPad (handoff) ==");
   await ctxIn.close();
 }
 
+/* ---------- 11. Ingresos/Gastos: la lista y el panel del handoff ---------- */
+console.log("\n== Movimientos del iPad (handoff) ==");
+{
+  const ctxMv = await nuevoContexto("ipad");
+  const pg = await ctxMv.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  for (const [w, h] of [[1366, 1024], [1024, 1366]]) {
+    await pg.setViewportSize({ width: w, height: h });
+    for (const ruta of ["ingresos", "gastos"]) {
+      await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+      await pg.waitForSelector(".md-movimientos .md-fila", { timeout: 10000 });
+      await pg.waitForTimeout(300);
+      const m = await pg.evaluate(() => ({
+        seg: [...document.querySelectorAll(".md-seg-tipo a")].map((a) => a.textContent.trim()),
+        segSel: document.querySelector(".md-seg-tipo a.sel")?.textContent.trim(),
+        chipMes: document.querySelector(".chip-mes")?.textContent.trim(),
+        // La navegación de mes de la cabecera tiene que estar APAGADA: el chip
+        // hace lo mismo y dos mandos iguales en la misma pantalla confunden.
+        navMes: document.querySelector(".header .month-nav")
+          ? getComputedStyle(document.querySelector(".header .month-nav")).display : "sin nav",
+        puntos: document.querySelectorAll(".md-movimientos .md-fila .md-cat-dot").length,
+        filas: document.querySelectorAll(".md-movimientos .md-fila").length,
+        // La cabecera de día tiene que quedarse pegada al desplazar.
+        grupoSticky: document.querySelector(".md-movimientos .md-grupo")
+          ? getComputedStyle(document.querySelector(".md-movimientos .md-grupo")).position : null,
+        pie: !!document.querySelector(".md-movimientos .md-pie"),
+      }));
+      const et = `${ruta} ${w}×${h}`;
+      chk(m.seg.length === 2, `${et}: segmentado Ingresos|Gastos (${m.seg.join("|")})`);
+      chk(!!m.segSel, `${et}: el segmentado marca la lista abierta (${m.segSel})`);
+      chk(!!m.chipMes, `${et}: chip del mes en los filtros (${m.chipMes})`);
+      chk(m.navMes === "none", `${et}: la navegación ‹mes› de la cabecera está apagada (${m.navMes})`);
+      /* El cuadrito de color en TODAS las filas: estaba solo en gastos y el
+         handoff lo pinta en las dos listas. */
+      chk(m.puntos === m.filas, `${et}: cuadrito de categoría en cada fila (${m.puntos}/${m.filas})`);
+      chk(m.grupoSticky === "sticky", `${et}: la cabecera del día se queda pegada (${m.grupoSticky})`);
+      chk(m.pie, `${et}: pie con conteo y total`);
+
+      // El panel: se abre tocando una fila y trae lo que el handoff pide.
+      await pg.click(".md-movimientos .md-fila:not(.sel)");
+      await pg.waitForTimeout(400);
+      const d = await pg.evaluate(() => ({
+        titular: document.querySelector(".dm-titular")?.textContent.trim(),
+        monto: !!document.querySelector(".dm-monto"),
+        rastro: document.querySelectorAll(".dm-rastro-item").length,
+        // El sello de "Registrado" sale de created_at, que SQLite escribe en
+        // UTC y con segundos. Tiene que llegar convertido y sin segundos: si
+        // aparece "hh:mm:ss", `utcALocal` dejó de aplicarse.
+        selloCreado: document.querySelector(".dm-rastro-item .dm-rastro-detalle")?.textContent.trim(),
+        comp: !!document.querySelector(".dm-comp-falta, .dm-comp-hay"),
+        compartir: [...document.querySelectorAll(".dm-acciones button")]
+          .some((b) => /compartir|share/i.test(b.textContent)),
+        desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      }));
+      chk(!!d.titular, `${et}: el panel titula el movimiento (${d.titular})`);
+      chk(d.monto, `${et}: y enseña el importe`);
+      /* Al menos dos entradas: "Registrado" (created_at) y el estado. Si
+         saliera una sola, es que created_at no está llegando. */
+      chk(d.rastro >= 2, `${et}: rastro de auditoría con lo que la base sabe (${d.rastro})`);
+      chk(!/\d{2}:\d{2}:\d{2}/.test(d.selloCreado || ""), `${et}: el sello va en hora local sin segundos (${d.selloCreado})`);
+      chk(d.comp, `${et}: tarjeta de comprobante (con o sin archivo)`);
+      chk(d.compartir, `${et}: botón Compartir`);
+      chk(d.desborda === false, `${et}: sin scroll horizontal con el panel abierto`);
+      if (DIR) await pg.screenshot({ path: `${DIR}/${ruta}-${w}x${h}.png` });
+    }
+  }
+  await ctxMv.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
