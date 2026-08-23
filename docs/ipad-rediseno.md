@@ -1901,6 +1901,38 @@ el repo pedía `--sidebar-bg`… que en el iPad **cuelga de `--canvas`**, o sea
 el lienzo. Llevaba así desde que se construyó, tapado porque el panel también
 era del otro gris. Ahora usa `--ipad-cromo` explícito.
 
+### Y el tercero y el cuarto, que salieron de la misma raíz
+
+Iván volvió con otra captura marcada: **la barra de vistas de la Agenda**
+—la de 50px con Mes · Semana · Lista y `‹ Hoy ›`— salía del gris del lienzo
+mientras la barra de arriba, la barra lateral y la columna del día que tiene
+al lado eran cromo. *"Lo circulado debe tener el color del maestro-detalle."*
+
+Misma raíz que el fallo de la columna del día: **`--sidebar-bg` cuelga de
+`--canvas`, y en el iPad `--canvas` es el lienzo.** Cualquier superficie de
+cromo escrita con ese token sale del gris equivocado, y el nombre del token
+invita a usarlo — se llama "sidebar-bg", ¿qué va a pintar si no la barra
+lateral?
+
+Esta vez, en vez de arreglar el que señaló, se buscaron **todas**. Hay cinco
+usos de `--sidebar-bg` bajo `:root.ipad` y **cuatro estaban mal**:
+
+| Superficie | Estaba |
+|---|---|
+| Barra de vistas de la Agenda | lienzo → **cromo** |
+| Índice de zonas de Configuración | lienzo → **cromo** |
+| Rótulo pegado de la columna maestra (`color-mix` 80%) | mezclaba lienzo → **cromo** |
+| Barra de arriba (`color-mix` 85%) | mezclaba lienzo → **cromo** |
+
+Los dos últimos son mezclas translúcidas: flotan **sobre** cromo, así que
+mezclar lienzo les daba un tinte que no es el de debajo. La cuarta ni se
+notaba —el bloque del final la pisa con `--ipad-cromo` sólido— pero dejar la
+base equivocada es dejar una trampa para quien toque esa regla mañana.
+
+La guarda nueva mide las dos que se pueden medir (la barra de la Agenda y el
+índice de Ajustes) contra el gris de la barra lateral, no contra un literal:
+si el cromo cambia, la comprobación sigue valiendo.
+
 ### Lo medido
 
 Dos guardas. La vieja —que exigía **el mismo** gris en los tres— se reescribe

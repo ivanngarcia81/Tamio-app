@@ -7997,7 +7997,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     gap: 2px;
     padding: 14px 12px;
     border-right: 0.5px solid var(--line);
-    background: var(--sidebar-bg);
+    /* CROMO: es una columna maestra como la de cualquier otra pantalla
+       partida, y tiene que empatar con ella y con la barra lateral. */
+    background: var(--ipad-cromo);
   }
   /* Fila de 40px y texto de 15: los dos números del handoff, y los dos por
      encima del mínimo táctil cómodo. El glifo va suelto, SIN el cuadradito
@@ -9413,7 +9415,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     position: sticky;
     top: 0;
     z-index: 30;
-    background: color-mix(in srgb, var(--sidebar-bg) 85%, transparent);
+    background: color-mix(in srgb, var(--ipad-cromo) 85%, transparent);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 0.5px solid var(--line);
@@ -9570,7 +9572,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        cabeceras de sección pegadas de una lista de iOS. Blur más corto que
        el de la barra: la franja mide 24px y con 20 de radio el texto de la
        fila de abajo sangraba el rótulo entero. */
-    background: color-mix(in srgb, var(--sidebar-bg) 80%, transparent);
+    background: color-mix(in srgb, var(--ipad-cromo) 80%, transparent);
     -webkit-backdrop-filter: saturate(180%) blur(12px);
     backdrop-filter: saturate(180%) blur(12px);
     font-size: 12px;
@@ -11253,7 +11255,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     gap: 12px;
     padding: 0 20px;
     border-bottom: 0.5px solid var(--line);
-    background: var(--sidebar-bg);
+    /* CROMO. Es la continuación de la barra de arriba —el handoff le pone
+       `--sb`, igual que a la de 56px— y con `--sidebar-bg` salía del lienzo,
+       porque en el iPad ese token cuelga de `--canvas`. Ver el bloque "El
+       gris del cromo del iPad". */
+    background: var(--ipad-cromo);
   }
   /* El mismo segmentado del Inicio: si dos pantallas enseñan el mismo control
      no pueden dibujarlo distinto. */

@@ -1643,6 +1643,24 @@ console.log("\n== Los grises del iPad (handoff) ==");
   chk(g.panel === g.lienzo, `es el del lienzo, el mismo de .dash-canvas (${g.lienzo})`);
   chk(g.tokenBg !== g.tokenCromo, `y los dos tokens son distintos (${g.tokenBg} vs ${g.tokenCromo})`);
 
+  /* Todo lo que en el iPad tiene que ser CROMO. `--sidebar-bg` cuelga de
+     `--canvas`, que aquí vale el lienzo, así que cualquier superficie de
+     cromo que lo use sale del gris equivocado — y ya pasó dos veces (la
+     columna del día de la Agenda y la barra de vistas). Esto las mide todas
+     de golpe para que no haya una tercera. */
+  const cromoEsperado = g.sidebar;
+  await pg.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".ag-barra", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+  const barra = await pg.evaluate(() => getComputedStyle(document.querySelector(".ag-barra")).backgroundColor);
+  chk(barra === cromoEsperado, `la barra de vistas de la Agenda, cromo (${barra})`);
+
+  await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".settings-nav", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+  const nav = await pg.evaluate(() => getComputedStyle(document.querySelector(".settings-nav")).backgroundColor);
+  chk(nav === cromoEsperado, `el índice de zonas de Ajustes, cromo (${nav})`);
+
   /* La excepción: la columna del día de la Agenda SÍ es cromo en el handoff
      (ese div sí declara `background:var(--sb)`). */
   await pg.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
