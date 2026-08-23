@@ -1736,6 +1736,12 @@ perdía por orden de aparición, así que el panel se abría y la celda no se
 marcaba. La comprobación se hace en un día **cualquiera** y no en hoy, que va
 tintado de por sí y tapaba el fallo; quitando la regla, el arnés lo canta.
 
+> 📋 **El registro de cáscaras** (`docs/cascaras-1-2.md`) se quedó parado en
+> la pantalla 3 mientras este documento seguía hasta la 11. Está al día desde
+> el 23 de agosto por la tarde, con las once pantallas y —lo que faltaba— la
+> lista de los controles que NO se construyeron, para que Iván pueda
+> revocarla. Se revisa **antes de mandar a revisión del App Store**.
+
 ## 24. Configuración: las listas agrupadas cruzan al iPad (23 ago 2026)
 
 Undécima pantalla y última del handoff. El **armazón** ya estaba desde el 21
