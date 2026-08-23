@@ -1754,6 +1754,8 @@ export const en: Resources = {
 
   cartas: {
     grupoDocumentos: "Documents",
+    ampliarHoja: "View full size",
+    camposCompletos: "Fields: {{hechos}} of {{total}} filled",
     grupoTraslados: "Transfers",
     tab: { resumen: "Overview", nueva: "New letter", solicitudes: "Requests", salida: "Outgoing transfer", entrada: "Incoming transfer", plantillas: "Templates", archivo: "Archive" },
     eligeCarta: "Choose a letter",

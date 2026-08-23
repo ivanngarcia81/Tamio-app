@@ -1349,7 +1349,12 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </div>
 
               <div className="md-detalle">
-                <div className="dm">
+                {/* Redactando, el panel deja de ser una ficha: son dos
+                    columnas (hoja y formulario) y necesita el ancho entero.
+                    La clase lo dice explícitamente en vez de deducirlo con
+                    `:has()`, que aquí dependía de un hijo que se monta
+                    después. */}
+                <div className={`dm${tab === "nueva" ? " dm--carta" : ""}`}>
                   {/* En el modo de empuje, volver es volver al índice: la
                       sección "Resumen" es la raíz de esta pantalla. */}
                   <button type="button" className="dm-volver" onClick={() => cambiarTab("resumen")}>

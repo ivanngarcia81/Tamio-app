@@ -15,7 +15,8 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { iaHabilitada, redactarCarta } from "../ia";
 import { useHojaDeslizable } from "../hooks/useHojaDeslizable";
-import { esIPhone } from "../movil";
+import { esIPad, esIPhone } from "../movil";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { IOSPickerField, IOSPickerInput } from "./ios/IOSPickerField";
 import { ActionField, IosChevron, Section, SwitchField } from "./ios/FormularioIOS";
 import { IOSFilaTexto } from "./ios/IOSPantallaTexto";
@@ -226,6 +227,10 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
   // Catálogos de los desplegables, en un solo sitio: los consumen tanto los
   // `<option>` de Mac como los pickers de iPhone.
   const enIPhone = esIPhone();
+  /* El papel en vivo del handoff: la carta al lado de sus campos, no detrás
+     de un modal. Solo en el iPad ancho —en Mac el editor vive en una tarjeta
+     de contenido y en el teléfono no hay sitio para dos columnas—. */
+  const papelEnVivo = esIPad() && useMediaQuery("(min-width: 1000px)");
   const opcTipoCarta: IOSPickerOption[] = useMemo(
     () => TIPOS_CARTA.map((ti) => ({ value: ti, label: t(`cartas.tipoDoc.${ti}`) })), [t]);
   const opcDestinatario: IOSPickerOption[] = useMemo(
@@ -404,6 +409,33 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
     );
   }
 
+  /* El HTML del papel, regenerado con freno. `buildCartaHtml` carga el logo y
+     la firma de la iglesia, así que rehacerlo en cada tecla sería pedir esos
+     archivos decenas de veces por frase. Medio segundo después de dejar de
+     escribir es "en vivo" para quien mira y una sola llamada para el disco. */
+  const [papel, setPapel] = useState<string>("");
+  useEffect(() => {
+    if (!papelEnVivo) return;
+    let vivo = true;
+    const id = setTimeout(() => {
+      generarHtml().then((h) => { if (vivo) setPapel(h); }).catch(() => {});
+    }, 500);
+    return () => { vivo = false; clearTimeout(id); };
+    // Se redibuja con CUALQUIER cambio del editor; `dirty` sube en todos los
+    // setters (ver `marcar`), así que sirve de disparador único.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [papelEnVivo, dirty, fechaEmision, lugarEmision, destTipo, destNombre, destDireccion, asunto, saludo, despedida, firmas, miembroSel]);
+
+  /* "Campos: N de M completos" del handoff. Son los que la carta NECESITA
+     para no salir coja: a quién va, de qué trata y qué dice. El folio y la
+     fecha no cuentan — los pone la app. */
+  const requeridos = [
+    destTipo === "miembro" ? miembroSel?.nombre : destNombre.trim(),
+    asunto.trim(),
+    cuerpoRef.current?.textContent?.trim(),
+  ];
+  const completos = requeridos.filter(Boolean).length;
+
   async function verPrevia() {
     setPreview(await generarHtml());
   }
@@ -417,7 +449,59 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
     }
   }
 
+  /* La barra de 50px del handoff: cuántos campos van y las dos salidas. Solo
+     donde hay papel al lado; en Mac y en el teléfono los botones de siempre
+     están al pie del formulario. */
+  const barraPapel = papelEnVivo ? (
+    <div className="ce-barra">
+      <span className="ce-barra-campos">
+        {t("cartas.camposCompletos", { hechos: completos, total: requeridos.length })}
+      </span>
+      <div className="ce-barra-hueco" />
+      <button type="button" className="chip" onClick={() => void verPrevia()}>
+        {t("cartas.vistaPrevia")}
+      </button>
+      <button type="button" className="chip chip-mes" onClick={() => void guardar()} disabled={saving}>
+        {saving ? t("common.guardando") : carta ? t("common.guardarCambios") : t("cartas.guardarBorrador")}
+      </button>
+    </div>
+  ) : null;
+
   return (
+    <div className={papelEnVivo ? "ce-split" : "ce-split ce-split--plano"}>
+      {/* La barra va de lado a lado y no dentro de la columna del papel: en
+          ~330px el contador y los dos botones se partían en dos líneas. */}
+      {barraPapel}
+      {papelEnVivo && (
+        <div className="ce-papel">
+          {/* La MISMA carta que sale por la impresora, no una segunda maqueta
+              de los mismos campos: es `buildCartaHtml`, el HTML que usa
+              imprimir y el PDF. Si algún día cambia el papel, cambia aquí
+              solo. `sandbox` vacío: es contenido propio, pero no tiene por
+              qué poder ejecutar nada.
+
+              A este ancho la hoja es una MINIATURA —el panel da ~330px y el
+              diseño pedía 580, que no caben con la barra lateral y el índice
+              delante—, así que se comporta como tal: se toca y se abre a
+              tamaño. El iframe no recibe el toque (`pointer-events: none` en
+              el CSS) para que el gesto sea del botón y no del documento. */}
+          <button
+            type="button"
+            className="ce-hoja"
+            onClick={() => void verPrevia()}
+            title={t("cartas.ampliarHoja")}
+            aria-label={t("cartas.ampliarHoja")}
+          >
+            <iframe
+              title={t("cartas.vistaPrevia")}
+              srcDoc={papel}
+              sandbox=""
+              tabIndex={-1}
+            />
+            <span className="ce-hoja-lupa">{t("cartas.ampliarHoja")}</span>
+          </button>
+        </div>
+      )}
     <div className={enIPhone ? "carta-ios enter" : "card pad-lg enter"}>
       {vinculo && (
         <div style={{ marginBottom: 14 }}>
@@ -1056,6 +1140,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
           onCancel={() => setConfirmEntrega(false)}
         />
       )}
+    </div>
     </div>
   );
 }

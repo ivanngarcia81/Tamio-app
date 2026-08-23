@@ -1573,3 +1573,67 @@ por eso el aviso no promete más de lo que comprueba.
 
 No hay nada: el servicio guarda su fecha, quién participa y la asistencia,
 pero no el minuto a minuto. La tarjeta se construye y lo dice.
+
+## 22. Cartas: el papel al lado de sus campos (23 ago 2026)
+
+Novena pantalla, y la única del handoff con **tres columnas**: plantillas,
+papel y campos.
+
+Aquí el handoff y el repo modelan cosas distintas. El prototipo dibuja
+Cartas como **un editor**: eliges plantilla, llenas cuatro campos, ves la
+carta, firmas y envías. La app la modela como un **hub de secretaría** con
+resumen, archivo, plantillas, solicitudes y los dos traslados. El hub es
+mucho más de lo que el prototipo enseña, y no se toca.
+
+Lo que sí se lleva del diseño es su idea central, que faltaba: **ver la carta
+mientras se escribe**.
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Índice de 338px | ✓ (secciones, no plantillas) | sin cambios |
+| **Barra con "Campos: N de M"** | no | construida, con cuenta real |
+| **El papel al lado del formulario** | detrás de un modal | construido, en vivo |
+| Campos a la derecha, 298px | debajo, a todo el ancho | a la derecha |
+| Firmar y enviar | flujo propio del repo | sin cambios |
+
+### El papel es el papel de verdad
+
+No es una segunda maqueta de los mismos campos: el iframe carga
+`buildCartaHtml`, **el mismo HTML que sale por la impresora y por el PDF**. Si
+algún día cambia el papel, cambia en un sitio.
+
+Se regenera con **medio segundo de freno**: `buildCartaHtml` carga el logo y
+la firma de la iglesia, y rehacerlo en cada tecla pediría esos archivos
+decenas de veces por frase. Medio segundo después de dejar de escribir es "en
+vivo" para quien mira y una sola llamada para el disco.
+
+### La hoja es una miniatura, y se comporta como tal
+
+**El diseño no cabe en su propio lienzo.** Sus columnas suman 338 + 580 + 298
+= 1216 **más** la barra lateral, sobre un canvas de 1366. Con el sidebar de
+318 de esta app quedan ~646 para el panel, así que la hoja sale en ~310.
+
+En vez de fingir que es una página, se asume: **se toca y se abre a tamaño**
+(la vista previa que ya existía), con `cursor: zoom-in` y un rótulo al posar
+el puntero. El iframe no recibe el toque —`pointer-events: none`— para que el
+gesto sea del botón y no del documento de dentro.
+
+### Dos cosas que costaron una medición
+
+Perseguí el ancho de la hoja **tres veces a ciegas** —culpando al
+`max-width: 720px` de `.dm`, luego a `:has()`— antes de medir la cadena en el
+navegador. La medición dio la respuesta en un renglón:
+`detalle 710 · dm 646 · papel 310`. **El tope nunca fue `.dm`: era el ancho
+real del panel.** Media hora de suposiciones que un `getBoundingClientRect`
+resolvía.
+
+Y la barra se partía en dos líneas porque vivía dentro de la columna del
+papel. Va de lado a lado (`grid-column: 1 / -1`), que además es donde el
+diseño la pone.
+
+### `display: contents`, para no tocar Mac ni el teléfono
+
+El envoltorio nuevo (`.ce-split`) existe siempre, pero cuando no hay papel al
+lado se declara `display: contents` y **desaparece del layout**: el formulario
+se comporta exactamente como antes en Mac y en el iPhone. Sin eso, un div de
+más habría cambiado el ancho de dos pantallas que no se estaban tocando.

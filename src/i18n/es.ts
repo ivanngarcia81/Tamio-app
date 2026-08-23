@@ -1795,6 +1795,8 @@ export const es = {
 
   cartas: {
     grupoDocumentos: "Documentos",
+    ampliarHoja: "Ver a tamaño completo",
+    camposCompletos: "Campos: {{hechos}} de {{total}} completos",
     grupoTraslados: "Traslados",
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
     eligeCarta: "Elige una carta",

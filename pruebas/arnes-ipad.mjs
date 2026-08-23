@@ -1229,6 +1229,52 @@ console.log("\n== Servicios del iPad (handoff) ==");
   await ctxSv.close();
 }
 
+/* ---------- 18. Cartas: el papel en vivo junto a sus campos ---------- */
+console.log("\n== Cartas del iPad (handoff) ==");
+{
+  const ctxCa = await nuevoContexto("ipad");
+  const pg = await ctxCa.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-cartas .md-indice-item", { timeout: 10000 });
+
+  /* Redactar NO está en el índice: desde la 1.2.2 crear vive solo en el "+"
+     de la cabecera (había dos entradas para lo mismo). Se abre por ahí, que
+     es como lo abre una persona. */
+  await pg.click(".cartas-menu-crear button");
+  await pg.waitForTimeout(300);
+  await pg.locator(".ios-menu button, .menu-anclado button, [role=menuitem]").first().click();
+  await pg.waitForTimeout(400);
+  const abierto = await pg.locator(".ce-split").count();
+  chk(abierto > 0, `el "+" de la cabecera abre el editor (${abierto})`);
+  // El papel se pinta con freno de medio segundo; se le da margen.
+  await pg.waitForTimeout(1600);
+
+  const m = await pg.evaluate(() => {
+    const h = document.querySelector(".ce-hoja iframe");
+    return {
+      barra: !!document.querySelector(".ce-barra"),
+      campos: document.querySelector(".ce-barra-campos")?.textContent.trim(),
+      hoja: !!h,
+      ancho: h ? Math.round(h.getBoundingClientRect().width) : 0,
+      alto: h ? Math.round(h.getBoundingClientRect().height) : 0,
+      formulario: !!document.querySelector(".ce-split .card, .ce-split .carta-ios"),
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(m.barra, "la barra del papel está");
+  chk(/\d/.test(m.campos || ""), `y cuenta los campos (${m.campos})`);
+  chk(m.hoja, "la hoja de la carta se pinta al lado");
+  /* La hoja tiene que tener proporción de carta: si el aspect-ratio no
+     agarrara, el iframe saldría de alto cero y no se vería nada. */
+  chk(m.alto > m.ancho, `con proporción de hoja (${m.ancho}×${m.alto})`);
+  chk(m.formulario, "y el formulario sigue a su derecha");
+  chk(m.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/cartas-1366x1024.png` });
+  await ctxCa.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

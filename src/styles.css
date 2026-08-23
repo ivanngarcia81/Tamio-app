@@ -10166,6 +10166,81 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   /* La fila del culto es de 76px: lleva la pastilla de fecha y dos líneas. */
   :root.ipad .md-servicios .md-fila { min-height: 76px; }
+
+  /* ---- El editor de cartas con su papel al lado (.ce-*) — handoff 2 ----
+     `display: contents` cuando no hay papel: el envoltorio desaparece del
+     layout y el formulario se comporta EXACTAMENTE como antes en Mac y en el
+     teléfono. Sin eso, un div de más cambiaría el ancho de una pantalla que
+     no se estaba tocando. */
+  /* Redactando una carta el panel se queda con TODO el ancho. `.dm` lo limita
+     a 720px porque una ficha de campos leída a más de eso cansa; aquí no hay
+     una ficha, hay dos columnas —hoja y formulario— y ese tope dejaba la hoja
+     en 274px y partía la barra en dos líneas. */
+  :root.ipad .md-cartas .dm--carta { max-width: none; }
+  :root.ipad .ce-split--plano { display: contents; }
+  :root.ipad .ce-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  :root.ipad .ce-papel { display: flex; flex-direction: column; min-width: 0; }
+  :root.ipad .ce-barra {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    flex-wrap: wrap;
+  }
+  :root.ipad .ce-barra-campos { font-size: 13.5px; color: var(--text-2); }
+  :root.ipad .ce-barra-hueco { flex: 1; min-width: 0; }
+  :root.ipad .ce-barra .chip { min-height: 32px; }
+  /* La hoja: papel sobre lienzo, con la proporción de una carta. El iframe no
+     puede crecer con su contenido (es otro documento), así que la altura se
+     fija por relación de aspecto — carta US es 8.5×11. */
+  :root.ipad .ce-hoja {
+    position: relative;
+    width: 100%;
+    background: var(--surface-2);
+    border: 0;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+    cursor: zoom-in;
+  }
+  :root.ipad .ce-hoja:active { opacity: 0.85; }
+  /* El toque es del botón, no del documento de dentro. */
+  :root.ipad .ce-hoja iframe { pointer-events: none; }
+  /* El rótulo de "ampliar": discreto, en la esquina, y solo cuando se puede
+     posar el puntero. En táctil estorbaría sobre la hoja. */
+  :root.ipad .ce-hoja-lupa {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--text) 72%, transparent);
+    color: var(--surface);
+    font-size: 11.5px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    :root.ipad .ce-hoja:hover .ce-hoja-lupa { opacity: 1; }
+  }
+  :root.ipad .ce-hoja iframe {
+    width: 100%;
+    max-width: 580px;
+    aspect-ratio: 8.5 / 11;
+    border: 0;
+    border-radius: 4px;
+    background: var(--paper);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+  }
   /* La hoja va sobre un lienzo gris, no sobre el fondo de la app: es lo que
      la hace parecer papel encima de una mesa y no otra tarjeta más. */
   :root.ipad .md-actas .md-detalle { background: var(--surface-2); }
@@ -11347,6 +11422,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-pie-tarjetas { grid-template-columns: 1fr 1fr; }
   :root.ipad .fm-cuerpo { grid-template-columns: 1.1fr 1fr; }
   :root.ipad .dep-cuerpo { grid-template-columns: 1.4fr 1fr; }
+  /* Papel a la izquierda y campos a la derecha, como el handoff — y la
+     columna de campos en sus 298px, no en 320: cada píxel que se le quita se
+     lo lleva la hoja, que es lo que se está mirando.
+
+     La hoja no llega a los 580 del prototipo y no puede: el diseño reparte
+     338 + 580 + 298 = 1216 más su barra lateral, que ya se sale de los 1366
+     del propio lienzo en el que está dibujado. Con el sidebar de 318 de esta
+     app quedan ~710 para el panel, así que la hoja sale en ~390 y se lee como
+     miniatura de página. Para verla a tamaño está "Vista previa". */
+  :root.ipad .ce-split { grid-template-columns: minmax(0, 1fr) 298px; }
   /* Las cuatro del informe en una fila. `!important` porque la regla del
      panel de detalle (~10729) lo lleva también: allí la decisión de 2×2 se
      tomó con la tipografía de escritorio, y aquí ya no es esa (ver el bloque
