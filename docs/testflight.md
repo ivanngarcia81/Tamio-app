@@ -64,6 +64,11 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > es "la línea que sabes cuál es"** — en `package.json`/`package-lock.json`,
 > las dos primeras (la raíz y `packages[""]`); en `Cargo.lock`, la que sigue
 > a `name = "tesoreria"`. Van **cinco de ocho** bumps con colisión.
+>
+> **Y en la 1.2.5, vuelta al `Cargo.lock`**: `version = "1.2.4"` salía dos
+> veces, la de `tesoreria` y la del crate **`camino`**. `package-lock.json`,
+> en cambio, salió limpio esta vez. Van **seis de nueve**. Ya no tiene
+> sentido seguir contándolas como si fueran la excepción: **son la norma**.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -113,7 +118,8 @@ en las tres fuentes:
 | esta | **1.2.2** — la build de REVISIÓN del handoff 2: Membresía maestro-detalle, Informes de membresía con su índice, Mensajes como chat centrado, y Cartas con crear solo en el "+" |
 | esta | **1.2.3** — el primer arreglo salido de revisar la 1.2.2 en un iPad de verdad: la barra lateral se esconde en vertical (la regla pasa de ancho a orientación), más el gris único del cromo del iPad —barra, columna maestra y fondo del panel, `#F7F7F9` / `#131315`— y el inventario del handoff 2 corregido contra el esquema |
 | esta | **1.2.4** — el handoff 2 completo: **Agenda** (barra de 50px sobre las dos columnas, rejilla que llena el alto, pastillas de color por tipo, días vecinos en gris) y **Configuración** (las listas agrupadas cruzan al iPad, las tres miniaturas de tema, y la Zona sensible que se veía rota desde antes). Con esto, las once pantallas del handoff están recorridas |
-| la siguiente | 1.2.5 |
+| esta | **1.2.5** — el panel de detalle pasa al gris del lienzo (`#F2F2F7` / `#000`) y deja de fundirse con la barra y la columna maestra; de paso, la columna del día de la Agenda recupera el suyo. Los dos salieron de revisar la 1.2.4 en el iPad |
+| la siguiente | 1.2.6 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -348,6 +354,13 @@ veces y `iphone .ios-row` solo 5: las cinco que se quedan a propósito
 
 Y las once pantallas del handoff quedan recorridas con esta versión. El
 repaso pantalla por pantalla está en `docs/ipad-rediseno.md` §14–§24.
+
+En la **1.2.5**, lo de siempre más la comprobación de que **el arreglo de
+esta versión** viaja: en el CSS construido, `root.ipad .md-detalle{…;
+background:var(--bg)}` —el panel con el gris del lienzo— y las **dos** reglas
+de `md-agenda .md-detalle` con `--ipad-cromo`, que son la excepción. Un
+arreglo de color es justo el que se puede quedar fuera del bundle sin que
+nada falle, porque no rompe ninguna prueba: solo se ve.
 
 > ⚠️ **`npm run verificar-canal` suelto no dice nada útil.** Está pensado
 > para correr al final de `npm run build`, comparando el bundle contra el
