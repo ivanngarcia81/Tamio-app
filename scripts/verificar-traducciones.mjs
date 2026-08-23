@@ -64,6 +64,38 @@ function clavesUsadas(dir, acc = new Map()) {
   return acc;
 }
 
+/**
+ * Prefijos de claves armadas con plantilla: t(`dashboard.saludo.${franja}`).
+ *
+ * El sufijo no se puede resolver sin ejecutar la app —eso sigue siendo
+ * verdad—, pero el PREFIJO sí es estático, y comprobar que existe al menos
+ * una clave debajo caza el fallo que de verdad ocurre: que la rama entera no
+ * exista. Pasó con `dashboard.saludo.*`, que no estaba en ningún idioma; el
+ * Inicio del iPad enseñó el literal "dashboard.saludo.manana" como saludo de
+ * 34px durante semanas, en TestFlight incluido, y este script pasaba en verde
+ * porque miraba solo las comillas dobles.
+ *
+ * Se recogen las plantillas cuya parte fija acaba en punto o en guion bajo
+ * —`raiz.rama.${x}` y `raiz.clave_${x}`, las dos formas que usa esta app—;
+ * una como `plan.${p}Nombre` no tiene prefijo comprobable y se deja pasar,
+ * igual que antes.
+ */
+function prefijosUsados(dir, acc = new Map()) {
+  for (const e of readdirSync(dir)) {
+    const p = join(dir, e);
+    if (statSync(p).isDirectory()) {
+      if (e !== "i18n") prefijosUsados(p, acc);
+      continue;
+    }
+    if (!/\.tsx?$/.test(p)) continue;
+    const src = readFileSync(p, "utf8");
+    for (const m of src.matchAll(/\bt\(\s*`([a-zA-Z0-9_.]*[._])\$\{/g)) {
+      if (!acc.has(m[1])) acc.set(m[1], p);
+    }
+  }
+  return acc;
+}
+
 /** Los plurales viven como `clave_one` / `clave_other`; en el código se usa
  *  `clave` a secas y i18next elige según el número. */
 const base = (k) => k.replace(/_(one|other|zero|two|few|many)$/, "");
@@ -80,7 +112,14 @@ const sinTraducir = [...usadas.entries()]
   .filter(([k]) => !esN.has(base(k)) || !enN.has(base(k)))
   .sort();
 
-console.log(`Claves: ${esN.size} en español, ${enN.size} en inglés\n`);
+const prefijos = prefijosUsados("src");
+const existePrefijo = (set, pre) => [...set].some((k) => k.startsWith(pre));
+const prefijosHuerfanos = [...prefijos.entries()]
+  .filter(([pre]) => !existePrefijo(esN, pre) || !existePrefijo(enN, pre))
+  .sort();
+
+console.log(`Claves: ${esN.size} en español, ${enN.size} en inglés`);
+console.log(`Prefijos de claves con plantilla comprobados: ${prefijos.size}\n`);
 
 if (soloEs.length) {
   console.log(`✗ ${soloEs.length} clave(s) solo en ESPAÑOL (en inglés saldría el código crudo):`);
@@ -97,7 +136,12 @@ if (sinTraducir.length) {
   for (const [k, archivo] of sinTraducir) console.log(`    ${k}   ${archivo}`);
   console.log();
 }
-if (!soloEs.length && !soloEn.length && !sinTraducir.length) {
+if (prefijosHuerfanos.length) {
+  console.log(`✗ ${prefijosHuerfanos.length} clave(s) con plantilla cuya rama no existe en ningún idioma:`);
+  for (const [pre, archivo] of prefijosHuerfanos) console.log(`    ${pre}\${…}   ${archivo}`);
+  console.log();
+}
+if (!soloEs.length && !soloEn.length && !sinTraducir.length && !prefijosHuerfanos.length) {
   console.log("✔ Los dos idiomas están sincronizados y todas las claves usadas existen.");
 } else {
   // Salir con 1, no con 0. Antes este script IMPRIMÍA los problemas y se iba

@@ -4,12 +4,18 @@ import { useTranslation } from "react-i18next";
 import { useBarraEstado } from "../components/BarraEstado";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  catNombre, categoriaInfo, countPendingTx, currentMonth, currentYear, dailyTotals, getCategoriasGasto, getCategoriasIngreso,
+  catNombre, categoriaInfo, countPendingTx, currentMonth, currentYear, dailyTotals, efectivoDisponibleHasta,
+  getCategoriasGasto, getCategoriasIngreso,
   fmtFecha, fmtFechaCorta, fmtMoney, fmtRelativo, hoyISO, lastActivityAt, listActividades, listTx, mesLegible,
-  metodoNombre, monthDepositos, monthTotals, pctChange, prevMonth, yearTotals,
-  type Church, type DailyPoint, type MonthTotals, type Tx, type YearTotals,
+  metodoNombre, monthDepositos, monthTotals, monthlySummary, pctChange, prevMonth, yearTotals,
+  type Church, type DailyPoint, type MonthSummary, type MonthTotals, type Tx, type YearTotals,
 } from "../db";
 import { expandirTodas, type OcurrenciaVista } from "../services/agenda/recurrencia";
+import {
+  familiaDeActividad, juntarTotales, mesesDePeriodo, mesesDePeriodoAnterior, ultimoDiaDe,
+  type Periodo,
+} from "../services/inicio/periodo";
+import InicioGraficasIPad from "../components/InicioGraficasIPad";
 import TxList, { EmptyState } from "../components/TxList";
 import Delta from "../components/Delta";
 import CountUp from "../components/CountUp";
@@ -17,7 +23,7 @@ import DashboardCharts from "../components/DashboardCharts";
 import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
-import { CERO, restar } from "../dinero";
+import { CERO, restar, type Centavos } from "../dinero";
 import { esIPad, esIPhone, esMac } from "../movil";
 
 interface Props {
@@ -80,7 +86,7 @@ function toCumulativeBalance(dias: DailyPoint[]) {
 }
 
 export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Igual que en Miembros.tsx: el carrusel/la barra ya sitúan la pantalla, y
   // en el teléfono manda el idioma de panel. Mac no cambia.
   const enIPhone = esIPhone();
@@ -133,6 +139,104 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     // `enIPad` es constante durante la sesión (clase puesta antes de montar).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [church.id, refreshKey]);
+
+  /* ---- El periodo del Inicio del iPad (segmentado Mes · Trimestre · Año) ----
+
+     Vive APARTE del estado del mes de arriba y no lo sustituye. Ese sigue
+     alimentando lo que no tiene periodo elegible: el pie de ventana del Mac,
+     el balance de la barra de menús, la impresión del estado financiero y los
+     ocho indicadores del teléfono. Aquí solo se calcula lo que el segmentado
+     del handoff manda cambiar, y solo en el iPad, que es donde ese segmentado
+     existe.
+
+     Se pide `monthTotals` mes a mes y se junta con `juntarTotales` en vez de
+     escribir tres consultas por rango: una sola forma de contar es una sola
+     forma de equivocarse, y sobre un SQLite local doce SELECT agrupados por
+     un índice no se notan. */
+  const [periodo, setPeriodo] = useState<Periodo>("mes");
+  const [totPer, setTotPer] = useState<MonthTotals | null>(null);
+  const [totPerAnt, setTotPerAnt] = useState<MonthTotals | null>(null);
+  const [saldoCaja, setSaldoCaja] = useState<Centavos | null>(null);
+  const [saldoCajaAnt, setSaldoCajaAnt] = useState<Centavos | null>(null);
+  const [histMeses, setHistMeses] = useState<MonthSummary[]>([]);
+
+  useEffect(() => {
+    if (!enIPad) return;
+    const dentro = mesesDePeriodo(periodo, mes);
+    const antes = mesesDePeriodoAnterior(periodo, mes);
+    Promise.all(dentro.map((m) => monthTotals(church.id, m)))
+      .then((r) => setTotPer(juntarTotales(r))).catch(console.error);
+    Promise.all(antes.map((m) => monthTotals(church.id, m)))
+      .then((r) => setTotPerAnt(juntarTotales(r))).catch(console.error);
+    /* Saldo en caja: un SALDO, no un flujo. Es lo que hay hoy —apertura más
+       movimientos aprobados menos lo ya depositado en el banco—, así que no
+       se recorta al periodo: se compara contra lo que había al cierre del
+       periodo anterior. Es `efectivoDisponibleHasta`, la misma cuenta que ya
+       usa Depósitos para saber cuánto queda por depositar. */
+    efectivoDisponibleHasta(church, hoyISO()).then(setSaldoCaja).catch(console.error);
+    efectivoDisponibleHasta(church, ultimoDiaDe(antes[antes.length - 1]))
+      .then(setSaldoCajaAnt).catch(console.error);
+    // 24 meses de histórico para poder recortar la ventana de 6 del diseño
+    // aunque haya huecos sin movimiento por medio.
+    monthlySummary(church.id, 24).then(setHistMeses).catch(console.error);
+    // `enIPad` es constante durante la sesión (clase puesta antes de montar).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [church.id, church.saldo_inicial, refreshKey, mes, periodo]);
+
+  /* La ventana de SEIS meses del diseño, terminando en el mes en curso.
+     `monthlySummary` solo devuelve meses CON movimiento; si se pintara tal
+     cual, un mes en blanco desaparecería y los cinco vecinos se juntarían
+     como si hubieran sido consecutivos. Aquí el hueco se rellena en cero y se
+     ve como lo que es: un mes sin movimiento. */
+  const seisMeses = useMemo<MonthSummary[]>(() => {
+    const porMes = new Map(histMeses.map((m) => [m.mes, m]));
+    const [y, m] = mes.split("-").map(Number);
+    const out: MonthSummary[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(y, m - 1 - i, 1);
+      const clave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      out.push(porMes.get(clave) ?? { mes: clave, ingresos: CERO, gastos: CERO });
+    }
+    return out;
+  }, [histMeses, mes]);
+
+  /* Las cifras que el segmentado gobierna. Mientras el periodo es "mes" son
+     exactamente las de siempre; con el periodo cargando, se cae al mes para
+     no parpadear a cero. */
+  const ingresosPer = totPer?.ingresos ?? totales?.ingresos ?? CERO;
+  const gastosPer = totPer?.gastos ?? totales?.gastos ?? CERO;
+  const gastosPerAnt = totPerAnt?.gastos ?? CERO;
+  const registrosIngresoPer = useMemo(
+    () => Object.values(totPer?.conteoCategoriaIngreso ?? {}).reduce((a, b) => a + b, 0),
+    [totPer]
+  );
+  const diezmosPer = totPer?.conteoCategoriaIngreso?.["diezmo"] ?? 0;
+  const catIngresoPer = useMemo(
+    () => Object.entries(totPer?.porCategoriaIngreso ?? {}).map(([id, monto]) => ({ id, monto })),
+    [totPer]
+  );
+  /* TRES rótulos del periodo, no uno, porque van a tres huecos de anchura muy
+     distinta y el mismo texto no cabe en los tres:
+
+       largo  → subtítulo de la barra ....... "Agosto 2026" · "3.º trimestre 2026"
+       medio  → etiqueta de las KPI ......... "agosto" · "3.º trimestre" · "2026"
+       corto  → centro de la dona (78px) .... "ago" · "T3" · "2026"
+
+     El corto existe porque "3.º trimestre 2026" se salía del agujero del
+     anillo y se leía ENCIMA de los tramos de color. */
+  const trimestreN = Math.floor((Number(mes.slice(5, 7)) - 1) / 3) + 1;
+  const anioStr = mes.slice(0, 4);
+  const localeMes = i18n.language.startsWith("en") ? "en-US" : "es-ES";
+  const fechaMes = new Date(Number(anioStr), Number(mes.slice(5, 7)) - 1, 1);
+  const periodoLargo = periodo === "mes"
+    ? mesLegible(mes)
+    : periodo === "anio" ? anioStr : t("dashboard.trimestreN", { n: trimestreN, anio: anioStr });
+  const periodoMedio = periodo === "mes"
+    ? fechaMes.toLocaleDateString(localeMes, { month: "long" })
+    : periodo === "anio" ? anioStr : t("dashboard.trimestreSolo", { n: trimestreN });
+  const periodoCorto = periodo === "mes"
+    ? fechaMes.toLocaleDateString(localeMes, { month: "short" }).replace(".", "")
+    : periodo === "anio" ? anioStr : t("dashboard.trimestreCorto", { n: trimestreN });
 
   const ingresos = totales?.ingresos ?? CERO;
   const gastos = totales?.gastos ?? CERO;
@@ -308,47 +412,90 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const fHoy = fmtFecha(hoyISO());
   const hoyDate = new Date();
   const diasParaCorte = new Date(hoyDate.getFullYear(), hoyDate.getMonth() + 1, 0).getDate() - hoyDate.getDate();
-  const registrosIngresoMes = Object.values(totales?.conteoCategoriaIngreso ?? {}).reduce((a, b) => a + b, 0);
-  const diezmosMes = totales?.conteoCategoriaIngreso?.["diezmo"] ?? 0;
+  /* "Buenas tardes, Iván" — con el nombre, como el handoff. El nombre sale de
+     `tesorero_nombre` (Configuración → Iglesia), que es de quien es esta
+     pantalla; solo el primero, porque un "Buenas tardes, Iván García Ramírez"
+     no es un saludo. Sin nombre configurado, el saludo va solo: mejor eso que
+     una coma colgando o un "Buenas tardes, undefined". */
+  const saludoBase = t(`dashboard.saludo.${franjaDelDia()}`);
+  const primerNombre = church.tesorero_nombre?.trim().split(/\s+/)[0];
+  const saludo = primerNombre
+    ? t("dashboard.saludoCon", { saludo: saludoBase, nombre: primerNombre })
+    : saludoBase;
 
+  /* El saludo del diseño y, a su derecha, el segmentado del periodo. Van en
+     la MISMA fila (align-items:flex-end) porque el handoff los alinea por
+     abajo: el segmentado se apoya en la línea base de la fecha, no en la del
+     h1 de 34px. */
   const heroIPad = (
-    <div className="dash-hero">
-      <h1>{t(`dashboard.saludo.${franjaDelDia()}`)}</h1>
-      <p>
-        {`${fHoy.nombreDia} ${fHoy.dia}`} · {diasParaCorte === 0
-          ? t("dashboard.corteHoy")
-          : t("dashboard.corteDias", { count: diasParaCorte })}
-      </p>
+    <div className="dash-hero-fila">
+      <div className="dash-hero">
+        <h1>{saludo}</h1>
+        <p>
+          {`${fHoy.nombreDia} ${fHoy.dia}`} · {diasParaCorte === 0
+            ? t("dashboard.corteHoy")
+            : t("dashboard.corteDias", { count: diasParaCorte })}
+        </p>
+      </div>
+      <div className="dash-seg" role="group" aria-label={t("dashboard.periodo")}>
+        {(["mes", "trimestre", "anio"] as Periodo[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            className={periodo === p ? "sel" : ""}
+            aria-pressed={periodo === p}
+            onClick={() => setPeriodo(p)}
+          >
+            {t(`dashboard.periodo_${p}`)}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
   const kpiIPad = (
     <div className="summary-4 enter dash-kpi">
-      <div className="stat-card accent" style={accentStyle(balance >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
-        <div className="stat-head"><span className="stat-label">{t("dashboard.balanceDelMesLabel")}</span></div>
+      {/* 1ª tarjeta: SALDO EN CAJA, que es lo que pide el handoff y no el
+          balance del mes que había antes. No es un cambio de rótulo: son dos
+          cifras distintas. El balance dice cuánto se movió este mes; el saldo
+          en caja dice cuánto hay AHORA —apertura + aprobados − depositado—,
+          que es la pregunta con la que un tesorero abre la app. El balance
+          del mes no se pierde: sigue en la barra de menús del Mac, en el pie
+          de ventana, en el estado financiero impreso y en los indicadores del
+          teléfono. */}
+      <div className="stat-card accent" style={accentStyle((saldoCaja ?? CERO) >= 0 ? "var(--accent-1)" : "var(--accent-2)")}>
+        <div className="stat-head"><span className="stat-label">{t("dashboard.saldoEnCaja")}</span></div>
         <div className="stat-value md">
-          <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+          <CountUp value={saldoCaja ?? CERO} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
         </div>
-        {pctChange(balance, balanceAnt) !== null && (
-          <div className="stat-foot"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
+        {/* El porcentaje solo cuando el punto de partida es positivo. Un saldo
+            que va de −400 a 5.000 da "▲ 1350%", que no significa nada: sobre
+            base cero o negativa el cambio relativo no está definido, y una
+            cifra de cuatro dígitos en el pie de una tarjeta solo hace ruido.
+            Se piden las DOS positivas: si el saldo cruzó el cero en cualquiera
+            de los dos sentidos, el porcentaje tampoco dice nada (−400 → 5.000
+            da "▲ 1350%"; 5.000 → −400, "▼ 108%"). Cuando no se puede, la
+            tarjeta se queda con su cifra, que es la que importa. */}
+        {saldoCaja !== null && saldoCajaAnt !== null && saldoCaja > 0 && saldoCajaAnt > 0 && pctChange(saldoCaja, saldoCajaAnt) !== null && (
+          <div className="stat-foot"><Delta pct={pctChange(saldoCaja, saldoCajaAnt)} /> {t(`dashboard.vsAnterior_${periodo}`)}</div>
         )}
       </div>
       <div className="stat-card accent" style={accentStyle("var(--accent-1)")}>
-        <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
+        <div className="stat-head"><span className="stat-label">{t(`dashboard.ingresosDe_${periodo}`, { periodo: periodoMedio })}</span></div>
         <div className="stat-value md">
-          <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+          <CountUp value={ingresosPer} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
         </div>
         {/* El pie del diseño: cuántos registros son y cuántos diezmos —
             los conteos que `monthTotals` ya trae. */}
-        <div className="stat-foot">{t("dashboard.subIngresos", { count: registrosIngresoMes, diezmos: diezmosMes })}</div>
+        <div className="stat-foot">{t("dashboard.subIngresos", { count: registrosIngresoPer, diezmos: diezmosPer })}</div>
       </div>
       <div className="stat-card accent" style={accentStyle("var(--accent-2)")}>
-        <div className="stat-head"><span className="stat-label">{t("dashboard.gastosDelMes")}</span></div>
+        <div className="stat-head"><span className="stat-label">{t(`dashboard.gastosDe_${periodo}`, { periodo: periodoMedio })}</span></div>
         <div className="stat-value md">
-          <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+          <CountUp value={gastosPer} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
         </div>
-        {pctChange(gastos, gastosAnt) !== null && (
-          <div className="stat-foot"><Delta pct={pctChange(gastos, gastosAnt)} invert /> {t("dashboard.vsMesAnterior")}</div>
+        {pctChange(gastosPer, gastosPerAnt) !== null && (
+          <div className="stat-foot"><Delta pct={pctChange(gastosPer, gastosPerAnt)} invert /> {t(`dashboard.vsAnterior_${periodo}`)}</div>
         )}
       </div>
       {/* La cuarta tarjeta es una COLA de trabajo, no una cifra: lo que
@@ -425,6 +572,16 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                     <span className="dash-fila-titular truncate">{o.nombre}</span>
                     <span className="dash-fila-sub truncate">{[hora, o.lugar].filter(Boolean).join(" · ")}</span>
                   </span>
+                  {/* El punto del diseño. El handoff lo pinta de cuatro colores
+                      sin decir qué los separa (en el prototipo son cuatro filas
+                      fijas); aquí lo decide `tipo`, que es un campo real de la
+                      agenda, agrupado en cuatro familias — ver
+                      services/inicio/periodo.ts. */}
+                  <span
+                    className={`dash-fila-punto fam-${familiaDeActividad(o.tipo)}`}
+                    title={t(`agenda.tipos.${o.tipo}`)}
+                    aria-hidden="true"
+                  />
                 </div>
               );
             })
@@ -452,9 +609,12 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
              34px hinchaba la barra a ~110px, un Large Title disfrazado. */
           <div>
             <div className="page-title">{t("nav.inicio")}</div>
-            <div className="page-sub">
-              {t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}: {fmtMoney(balance)} {church.moneda}
-            </div>
+            {/* "Resumen de agosto 2026", el subtítulo del handoff. Antes aquí
+                iba el balance del mes en cifra; se movió porque la cifra que
+                el diseño quiere primero —el saldo en caja— ya está en la
+                tarjeta de al lado, y repetir dinero en la barra hacía que dos
+                números distintos compitieran por ser "el" número. */}
+            <div className="page-sub">{t("dashboard.resumenDe", { mes: periodoLargo })}</div>
           </div>
         ) : (
         <div>
@@ -506,7 +666,20 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             orden es el del diseño: KPI primero, gráficas después. */}
         <div className="dash-canvas">
         {enIPad && kpiIPad}
-        {graficas}
+        {/* Las dos gráficas del handoff SOLO en el iPad: barras por mes y dona
+            de categorías. En Mac y en el teléfono no se toca nada — ahí siguen
+            las de recharts (ingresos vs. gastos por semana y evolución del
+            balance a 30 días), que son las que se imprimen en el estado
+            financiero y las que esas dos pantallas llevan desde siempre. */}
+        {enIPad ? (
+          <InicioGraficasIPad
+            meses={seisMeses}
+            mesActual={mes}
+            categorias={catIngresoPer}
+            periodoLegible={periodoCorto}
+            moneda={church.moneda}
+          />
+        ) : graficas}
 
         {enIPad ? null : enIPhone ? (
           /* Los ocho indicadores en dos columnas. En Mac siguen siendo las
@@ -745,7 +918,13 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           </>
         )}
 
-        {enIPhone && !enIPad ? (
+        {/* La tarjeta de "Distribución de gastos por categoría" NO va en el
+            Inicio del iPad: el handoff especifica esa pantalla entera —saludo,
+            cuatro KPI, dos gráficas, dos listas— y ahí la única gráfica de
+            categorías es la dona de INGRESOS. El desglose de gastos no se
+            pierde: sigue en Mac, en el teléfono, en Reportes y en el estado
+            financiero impreso, que es donde se consulta con calma. */}
+        {enIPad ? null : enIPhone ? (
           <div className="ios-panel" ref={categoryChartRef}>
             <div className="ios-panel-head">
               <h2>{t("dashboard.distribucionGastos")}</h2>

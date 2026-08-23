@@ -992,3 +992,107 @@ el flujo sin ☰ en horizontal ancho. Con la regla vieja puesta a propósito,
 las tres aserciones de 1210×1614 fallan; con la nueva, las 308 pasan. El
 corte de columnas (§11) NO se tocó: sigue en 1000 y sigue siendo por ancho,
 porque esa sí es una pregunta de anchura.
+
+## 14. Inicio, pantalla por pantalla contra el handoff (23 ago 2026)
+
+Primera pantalla de la revisión página a página. Lo que sigue es la
+comparación completa entre lo que dibuja el handoff de Claude Design y lo que
+había en el repo, con la decisión de cada fila.
+
+| El handoff dibuja | El repo tenía | Qué se hizo |
+|---|---|---|
+| Saludo `h1` 34px + fecha + corte de mes | igual (handoff 1) | se conserva — y se **arregla**: ver abajo |
+| Segmentado **Mes · Trimestre · Año** | no existía | construido **y cableado** |
+| KPI 1 · **Saldo en caja** | "Balance del mes" | cambiado; son dos cifras distintas |
+| KPI 2 · Ingresos, con "N registros · N diezmos" | igual, del mes | ahora sigue al periodo |
+| KPI 3 · Gastos, con delta | igual, del mes | ahora sigue al periodo |
+| KPI 4 · Por revisar → bandeja | igual | sin cambios |
+| Barras **por mes**, 6 columnas | barras por SEMANA (30 días) | sustituida en iPad |
+| **Dona** de ingresos por categoría | área "Evolución del balance" | sustituida en iPad |
+| — | tarjeta "Distribución de gastos" | fuera del Inicio del iPad |
+| Últimos movimientos, 4 filas | igual | subtítulo: ver contradicción |
+| Esta semana, 4 filas **con punto de color** | igual, sin punto | punto añadido |
+
+### El segmentado es de verdad
+
+En el prototipo los tres botones no llevan `onClick`: son estáticos. Se
+cablearon contra datos reales. Un periodo es un **periodo de calendario**, no
+una ventana móvil de 30/90/365 días, porque los libros de una iglesia se
+cierran por calendario: el corte de mes, el informe al consejo y la constancia
+anual caen los tres en fronteras fijas. Un "últimos 90 días" daría una cifra
+que no coincide con ningún papel que la iglesia firme.
+
+Gobierna las KPI de ingresos y gastos, sus deltas, y el periodo de la dona.
+**No** gobierna la gráfica de barras: esa dice "por mes" y son seis meses
+siempre, que es lo que dibuja el handoff — es la tendencia, no el periodo.
+
+### Por qué "Saldo en caja" y no "Balance del mes"
+
+No es un cambio de rótulo. Son dos números:
+
+- **Balance del mes** = ingresos − gastos del mes. Un *flujo*.
+- **Saldo en caja** = apertura + aprobados − depositado en el banco. Un
+  *saldo*, y la pregunta con la que un tesorero abre la app.
+
+Lo calcula `efectivoDisponibleHasta`, que ya existía y que es la misma cuenta
+que usa Depósitos para saber cuánto queda por depositar. **El balance del mes
+no se pierde**: sigue en la barra de menús de macOS, en el pie de ventana, en
+los ocho indicadores del teléfono y en el estado financiero impreso.
+
+Su delta solo sale **entre dos saldos positivos**. Un saldo que cruza el cero
+da porcentajes como "▲ 1350%" o "▼ 356%", que no significan nada; con base
+cero o negativa el cambio relativo no está definido. Cuando no se puede, la
+tarjeta se queda con su cifra.
+
+### Las gráficas: divs, no recharts
+
+El handoff no dibuja una gráfica con ejes. Son doce barras de 13px sin
+rejilla, sin eje Y y sin tooltip, y una dona que es un `conic-gradient`.
+Montar eso sobre recharts es pelearse con su layout para acabar
+escondiéndole todo lo que trae. En Mac y en el teléfono **no se toca nada**:
+ahí siguen las de recharts, que son además las que se imprimen.
+
+Se conserva un criterio que `DashboardCharts` había apuntado: *sin eje Y no
+se sabe si una barra son 13 mil o 130 mil*. El diseño no tiene sitio para ese
+eje, así que el dato va donde no cambia el dibujo — cada columna lleva su
+`title` y su `aria-label` con las dos cifras del mes.
+
+Los colores de la dona salen de `colorCategoria`, la paleta real de la app, y
+no de los hexadecimales del prototipo. Es deliberado: el repo ya arregló una
+vez la "segunda paleta que hacía que el chip y el donut no coincidieran"
+(comentario en `db.ts`), y copiar los hexes la reintroduciría.
+
+### Los puntos de "Esta semana" salían del repo
+
+El handoff los pinta morado, verde, naranja y cian. Son **exactamente**
+`--accent-3`, `--accent-1`, `--accent-5` y `--accent-4` de `styles.css`: la
+prueba de que el handoff 2 se dibujó mirando el repo, como dijo Iván. Lo que
+el prototipo no dice es qué separa un color de otro (son cuatro filas fijas).
+La app sí tiene el dato —`agenda.tipo`, 23 valores— así que el punto pasa a
+decir algo: `familiaDeActividad` agrupa los 23 en cuatro familias (culto,
+reunión, fecha señalada, otra). Un color por tipo serían 23 colores que nadie
+distingue.
+
+### Lo que la captura encontró: el saludo llevaba meses roto
+
+`franjaDelDia()` arma su clave con plantilla —``t(`dashboard.saludo.${franja}`)``—
+y **esas tres claves no existían en ningún idioma**. El `h1` de 34px del Inicio
+del iPad enseñaba el literal `dashboard.saludo.manana`, en 1.2.0 y en 1.2.2, en
+TestFlight. `verificar-traducciones` pasaba en verde porque solo miraba
+`t("…")` con comillas dobles; su propia cabecera avisaba de la limitación.
+
+Ahora comprueba también los **prefijos** de las claves con plantilla: el
+sufijo sigue sin poder resolverse sin ejecutar la app, pero el prefijo es
+estático, y comprobar que existe al menos una clave debajo caza el fallo que
+de verdad ocurre — que la rama entera no exista. Con las claves quitadas a
+mano, el script falla; con ellas, pasa. 52 prefijos comprobados.
+
+El saludo, además, ahora lleva nombre — "Buenas tardes, Iván" — de
+`tesorero_nombre`, y solo el primero.
+
+### La contradicción que queda abierta: el folio
+
+El handoff pone `Folio 1042 · Efectivo` bajo cada movimiento de "Últimos
+movimientos". **`transactions` no tiene columna `folio`** (`lib.rs`,
+migración 2): las cartas sí lo tienen y los movimientos no. No se inventa un
+número; la fila sigue diciendo `fecha · método`. Está a la espera de decisión.

@@ -177,6 +177,43 @@ export const en: Resources = {
     sinGastosEsteMesPunto: "No expenses this month.",
     movimientosRecientes: "Recent transactions",
     emptyTitulo: "No transactions yet",
+    // El segmentado de periodo del handoff (Mes · Trimestre · Año) y lo que
+    // arrastra: los rótulos de las tarjetas y el "vs." de cada delta.
+    periodo: "Period",
+    periodo_mes: "Month",
+    periodo_trimestre: "Quarter",
+    periodo_anio: "Year",
+    trimestreN: "Q{{n}} {{anio}}",
+    trimestreSolo: "Q{{n}}",
+    trimestreCorto: "Q{{n}}",
+    vsAnterior_mes: "vs. last month",
+    vsAnterior_trimestre: "vs. last quarter",
+    vsAnterior_anio: "vs. last year",
+    saldoEnCaja: "Cash on hand",
+    /* Una clave por periodo y no una sola con {{periodo}} dentro: en español
+       "de + el trimestre" se contrae en "del", y "Ingresos de 3.º trimestre"
+       está mal escrito. Con tres claves cada idioma dice lo suyo bien y no
+       hay que armar artículos en el código. */
+    ingresosDe_mes: "{{periodo}} income",
+    ingresosDe_trimestre: "{{periodo}} income",
+    ingresosDe_anio: "{{periodo}} income",
+    gastosDe_mes: "{{periodo}} expenses",
+    gastosDe_trimestre: "{{periodo}} expenses",
+    gastosDe_anio: "{{periodo}} expenses",
+    ingresosGastosPorMes: "Income and expenses by month",
+    ingresosPorCategoria: "Income by category",
+    sinMovimientosPeriodo: "No activity in these months.",
+    // El saludo del Inicio del iPad. Estas tres claves FALTABAN: `franjaDelDia()`
+    // las arma con plantilla (`dashboard.saludo.${franja}`) y el verificador de
+    // traducciones no resolvía plantillas, así que el h1 de 34px llevaba meses
+    // enseñando el literal "dashboard.saludo.manana" en pantalla — se vio en la
+    // primera captura del arnés. El verificador ya comprueba prefijos.
+    saludo: {
+      manana: "Good morning",
+      tarde: "Good afternoon",
+      noche: "Good evening",
+    },
+    saludoCon: "{{saludo}}, {{nombre}}",
     emptySub: "Use the 'New record' button to record your first income or expense.",
   },
 

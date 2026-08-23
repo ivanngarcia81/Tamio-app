@@ -173,6 +173,43 @@ export const es = {
     sinGastosEsteMesPunto: "Sin gastos este mes.",
     movimientosRecientes: "Movimientos recientes",
     emptyTitulo: "Aún no hay movimientos",
+    // El segmentado de periodo del handoff (Mes · Trimestre · Año) y lo que
+    // arrastra: los rótulos de las tarjetas y el "vs." de cada delta.
+    periodo: "Periodo",
+    periodo_mes: "Mes",
+    periodo_trimestre: "Trimestre",
+    periodo_anio: "Año",
+    trimestreN: "{{n}}.º trimestre {{anio}}",
+    trimestreSolo: "{{n}}.º trimestre",
+    trimestreCorto: "T{{n}}",
+    vsAnterior_mes: "vs. mes anterior",
+    vsAnterior_trimestre: "vs. trimestre anterior",
+    vsAnterior_anio: "vs. año anterior",
+    saldoEnCaja: "Saldo en caja",
+    /* Una clave por periodo y no una sola con {{periodo}} dentro: en español
+       "de + el trimestre" se contrae en "del", y "Ingresos de 3.º trimestre"
+       está mal escrito. Con tres claves cada idioma dice lo suyo bien y no
+       hay que armar artículos en el código. */
+    ingresosDe_mes: "Ingresos de {{periodo}}",
+    ingresosDe_trimestre: "Ingresos del {{periodo}}",
+    ingresosDe_anio: "Ingresos de {{periodo}}",
+    gastosDe_mes: "Gastos de {{periodo}}",
+    gastosDe_trimestre: "Gastos del {{periodo}}",
+    gastosDe_anio: "Gastos de {{periodo}}",
+    ingresosGastosPorMes: "Ingresos y gastos por mes",
+    ingresosPorCategoria: "Ingresos por categoría",
+    sinMovimientosPeriodo: "Sin movimientos en estos meses.",
+    // El saludo del Inicio del iPad. Estas tres claves FALTABAN: `franjaDelDia()`
+    // las arma con plantilla (`dashboard.saludo.${franja}`) y el verificador de
+    // traducciones no resolvía plantillas, así que el h1 de 34px llevaba meses
+    // enseñando el literal "dashboard.saludo.manana" en pantalla — se vio en la
+    // primera captura del arnés. El verificador ya comprueba prefijos.
+    saludo: {
+      manana: "Buenos días",
+      tarde: "Buenas tardes",
+      noche: "Buenas noches",
+    },
+    saludoCon: "{{saludo}}, {{nombre}}",
     emptySub: "Usa el botón 'Nuevo registro' para registrar tu primer ingreso o gasto.",
   },
 

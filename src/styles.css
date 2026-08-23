@@ -9975,6 +9975,208 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dash-fila-monto.neg { color: var(--neg); }
   :root.ipad .dash-lista-vacia { padding: 18px 16px; font-size: 13.5px; color: var(--text-3); }
 
+  /* El punto de color de "Esta semana". El handoff lo pinta de morado, verde,
+     naranja y cian; son EXACTAMENTE --accent-3, --accent-1, --accent-5 y
+     --accent-4 de esta hoja, que es la prueba de que el diseño se dibujó
+     mirando el repo. Qué familia le toca a cada tipo de actividad lo decide
+     `familiaDeActividad` en services/inicio/periodo.ts. */
+  :root.ipad .dash-fila-punto {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 4px;
+    background: var(--accent-4);
+  }
+  :root.ipad .dash-fila-punto.fam-culto { background: var(--accent-1); }
+  :root.ipad .dash-fila-punto.fam-reunion { background: var(--accent-3); }
+  :root.ipad .dash-fila-punto.fam-fecha { background: var(--accent-5); }
+
+  /* ---- La fila del saludo, con el segmentado del periodo ----
+     `flex-end` y no `center`: el diseño apoya el segmentado en la línea de
+     abajo del bloque del saludo, a la altura de la fecha, no centrado contra
+     un h1 de 34px que lo dejaría flotando. */
+  :root.ipad .dash-hero-fila {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  :root.ipad .dash-hero-fila .dash-hero { margin-bottom: 0; }
+
+  /* El lienzo se aplana en el Inicio del iPad. `.dash-canvas` es un panel
+     redondeado con 28px de aire y sombra propia: es el envoltorio del Mac,
+     donde el contenido es blanco y hace falta algo que agrupe. Aquí el fondo
+     ya es el gris del cromo y las tarjetas se sostienen solas, así que el
+     panel solo metía un borde fantasma alrededor de las KPI y las gráficas y
+     ~50px de hueco antes de las dos listas. El handoff no lo tiene: sus
+     bloques van uno tras otro con 18px entre ellos, sobre el mismo fondo.
+     Mismo trato que ya recibe en el teléfono (~8693). */
+  :root.ipad .content-inicio .dash-canvas {
+    padding: 0;
+    /* 18px es el aire del handoff entre bloques (`margin-bottom:18px` en la
+       fila de KPI y en la de gráficas). Puesto como `gap` y no como margen de
+       cada hijo, porque el lienzo es un flex column: así el primero no arranca
+       con hueco de más y el último no lo deja colgando. */
+    gap: 18px;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  /* Su margen propio sobra dentro del lienzo: lo pone el `gap`. Sin esto, la
+     separación entre gráficas y listas salía a 36. */
+  :root.ipad .content-inicio .dash-graficas { margin-bottom: 0; }
+  /* Las dos listas viven FUERA del lienzo, así que el `gap` no las alcanza:
+     su separación se pone a mano, con el mismo 18. */
+  :root.ipad .content-inicio .dash-dos-listas { margin-top: 18px; }
+  :root.ipad .dash-seg {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+  :root.ipad .dash-seg button {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  :root.ipad .dash-seg button.sel {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+  :root.ipad .dash-seg button:active { opacity: 0.5; }
+
+  /* ---- Las dos gráficas del Inicio ----
+     Por debajo del corte de columnas van una sobre otra: a 744 de ancho, la
+     de barras en 1.55fr deja la dona en 240px y el anillo de 118 se come su
+     leyenda. El 1.55/1fr del diseño se enciende con el mismo 1000 que ya
+     manda en las cuatro KPI. */
+  :root.ipad .dash-graficas {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  :root.ipad .dash-graf {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    min-width: 0;
+  }
+  :root.ipad .dash-graf-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  :root.ipad .dash-graf-titulo { font-size: 16px; font-weight: 600; }
+  :root.ipad .dash-graf-titulo--solo { display: block; margin-bottom: 14px; }
+  :root.ipad .dash-graf-leyenda {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  :root.ipad .dash-graf-leyenda > span { display: flex; align-items: center; gap: 5px; }
+  :root.ipad .dash-punto { width: 9px; height: 9px; flex: 0 0 9px; border-radius: 3px; }
+  /* La barra de gastos va al 75% en el dibujo; su punto de leyenda tiene que
+     ir igual o la leyenda promete un rojo más fuerte del que se pinta. */
+  :root.ipad .dash-punto--gasto { opacity: 0.75; }
+  :root.ipad .dash-graf-vacia {
+    padding: 26px 0;
+    font-size: 13.5px;
+    color: var(--text-3);
+    text-align: center;
+  }
+
+  /* Barras pareadas: 13px de ancho, 3px entre las dos del mes, sobre una
+     pista de 140. Sin ejes ni rejilla — el dato exacto viaja en el `title` y
+     en el `aria-label` de cada columna (ver InicioGraficasIPad.tsx). */
+  :root.ipad .dash-barras { display: flex; align-items: flex-end; gap: 14px; height: 170px; }
+  :root.ipad .dash-barra-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  :root.ipad .dash-barra-par { display: flex; align-items: flex-end; gap: 3px; height: 140px; }
+  :root.ipad .dash-barra { width: 13px; border-radius: 4px 4px 0 0; }
+  :root.ipad .dash-barra.ing { background: var(--pos); }
+  :root.ipad .dash-barra.gas { background: var(--neg); opacity: 0.75; }
+  :root.ipad .dash-barra-mes { font-size: 11.5px; color: var(--text-3); }
+  /* El mes en curso, en negrita y con el color del texto: es el que se está
+     mirando, y en el diseño es lo único que lo distingue de los otros cinco. */
+  :root.ipad .dash-barra-mes.actual { font-weight: 600; color: var(--text); }
+
+  /* La dona: un `conic-gradient` con un disco del color de la tarjeta encima.
+     Nada de SVG — el anillo del diseño no tiene trazo, ni hueco entre tramos,
+     ni interacción. */
+  :root.ipad .dash-dona-fila { display: flex; align-items: center; gap: 18px; }
+  :root.ipad .dash-dona {
+    width: 118px;
+    height: 118px;
+    flex: 0 0 118px;
+    border-radius: 59px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :root.ipad .dash-dona-centro {
+    width: 78px;
+    height: 78px;
+    border-radius: 39px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  :root.ipad .dash-dona-total { font-size: 17px; font-weight: 700; }
+  /* El agujero del anillo son 78px y el rótulo del periodo tiene que caber
+     DENTRO: con el texto largo ("3.º trimestre 2026") se salía y se leía
+     encima de los tramos de color. El rótulo ya viene corto desde
+     Dashboard.tsx (`periodoCorto`); esto es la red por si un idioma nuevo lo
+     alarga: se recorta, no se desborda. */
+  :root.ipad .dash-dona-periodo {
+    font-size: 10.5px;
+    color: var(--text-3);
+    max-width: 68px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :root.ipad .dash-dona-leyenda {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  :root.ipad .dash-dona-leyenda > span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    min-width: 0;
+  }
+  :root.ipad .dash-dona-leyenda b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+
   /* ---- Agenda partida (.md-agenda) ----
      Aquí los papeles se invierten: el "maestro" es el calendario (flexible,
      sobre el lienzo) y el "detalle" es la columna del día, de 318px sobre el
@@ -10465,6 +10667,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      más, y la fila de cuatro KPI del Inicio, que su Dashboard necesita. */
   :root.ipad .md-split.md-agenda .md-detalle { min-width: 318px; }
   :root.ipad .dash-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  :root.ipad .dash-graficas { grid-template-columns: 1.55fr 1fr; }
 }
 
 /* ============================================================

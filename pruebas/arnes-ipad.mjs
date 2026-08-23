@@ -178,6 +178,24 @@ const ctxSeed = await nuevoContexto("ipad");
       });
     }
 
+    /* Cinco meses hacia atrás, para que la gráfica de barras del Inicio
+       (handoff: seis columnas) tenga de verdad seis meses que dibujar. Con
+       solo el mes en curso se veía una columna y cinco huecos, que es un
+       estado válido pero no el que hay que medir. Montos distintos por mes:
+       una escala compartida solo se puede comprobar si las barras difieren. */
+    for (let k = 1; k <= 5; k++) {
+      const atras = new Date(hoy.getFullYear(), hoy.getMonth() - k, 12);
+      const fecha = iso(atras);
+      await db.insertTx(id, iglesia.moneda, {
+        tipo: "ingreso", categoria: k % 2 ? "ofrenda" : "donacion",
+        concepto: "Ofrenda del mes", fecha, monto: 300000 + k * 90000, metodo_pago: "efectivo",
+      });
+      await db.insertTx(id, iglesia.moneda, {
+        tipo: "gasto", categoria: "mantenimiento", concepto: "Mantenimiento",
+        fecha, monto: 120000 + k * 40000, metodo_pago: "transferencia", beneficiario: "Taller",
+      });
+    }
+
     // Depósitos (uno de período distinto al mes de su fecha)
     await db.insertDeposito(id, iglesia.moneda, {
       fecha: hace(2), periodo: hace(2).slice(0, 7), monto: 1854000,
@@ -593,7 +611,7 @@ console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
   const DIR = process.env.CAPTURAS || "";
   for (const [w, h] of [[1366, 1024], [1024, 1366], [1210, 1614]]) {
     await pg.setViewportSize({ width: w, height: h });
-    for (const ruta of ["reporte-miembros", "inbox", "membresia"]) {
+    for (const ruta of ["", "reporte-miembros", "inbox", "membresia"]) {
       await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
       await pg.waitForTimeout(600);
       const m = await pg.evaluate(() => {
@@ -614,10 +632,11 @@ console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
           recortados: recortados.slice(0, 4),
         };
       });
-      chk(m.desbordaX === false, `${ruta} ${w}×${h}: sin scroll horizontal de página`);
-      chk(m.desbordaContenido !== true, `${ruta} ${w}×${h}: el contenido no se desborda (${m.desbordaContenido})`);
-      chk(m.recortados.length === 0, `${ruta} ${w}×${h}: ningún mando bajo la barra (${m.recortados.join(", ") || "ok"})`);
-      if (DIR) await pg.screenshot({ path: `${DIR}/${ruta}-${w}x${h}.png`, fullPage: false });
+      const nom = ruta || "inicio";
+      chk(m.desbordaX === false, `${nom} ${w}×${h}: sin scroll horizontal de página`);
+      chk(m.desbordaContenido !== true, `${nom} ${w}×${h}: el contenido no se desborda (${m.desbordaContenido})`);
+      chk(m.recortados.length === 0, `${nom} ${w}×${h}: ningún mando bajo la barra (${m.recortados.join(", ") || "ok"})`);
+      if (DIR) await pg.screenshot({ path: `${DIR}/${nom}-${w}x${h}.png`, fullPage: false });
       // Membresía además con ficha abierta y en la vista de asistencia: son
       // los dos estados del panel y una captura sin ellos no enseña nada.
       if (DIR && ruta === "membresia") {
@@ -706,6 +725,72 @@ console.log("\n== Cajón del sidebar por orientación ==");
   chk(abierto.x === 0, `1210×1614: el ☰ saca el cajón (x ${abierto.x})`);
   chk(abierto.velo === "block", `1210×1614: con velo (${abierto.velo})`);
   await ctxSb.close();
+}
+
+/* ---------- 10. El Inicio del handoff: periodo, gráficas y listas ----------
+   El segmentado Mes · Trimestre · Año es lo único de esta pantalla que un
+   arnés puede comprobar de verdad: que existe, que cambia de estado, y que al
+   cambiarlo cambian las cifras. Lo demás (la dona, las barras) se mide como
+   presencia y como forma —seis columnas, un anillo con tramos— porque su
+   valor exacto ya lo garantizan los verificadores de centavos. */
+console.log("\n== Inicio del iPad (handoff) ==");
+{
+  const ctxIn = await nuevoContexto("ipad");
+  const pg = await ctxIn.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(700);
+
+  const base = await pg.evaluate(() => ({
+    seg: [...document.querySelectorAll(".dash-seg button")].map((b) => b.textContent.trim()),
+    sel: document.querySelector(".dash-seg button.sel")?.textContent.trim(),
+    kpis: [...document.querySelectorAll(".dash-kpi .stat-label")].map((e) => e.textContent.trim()),
+    columnas: document.querySelectorAll(".dash-barras .dash-barra-col").length,
+    anillo: getComputedStyle(document.querySelector(".dash-dona")).backgroundImage,
+    ingresos: document.querySelectorAll(".dash-kpi .stat-value")[1]?.textContent.trim(),
+    // El saludo, que es donde se coló una clave sin traducir (§ verificar-traducciones).
+    saludo: document.querySelector(".dash-hero h1")?.textContent.trim(),
+    listas: document.querySelectorAll(".dash-dos-listas .dash-lista-card").length,
+    puntos: document.querySelectorAll(".dash-fila-punto").length,
+  }));
+  chk(base.seg.length === 3, `el segmentado tiene tres opciones (${base.seg.join(" · ")})`);
+  chk(base.sel === base.seg[0], `arranca en la primera (${base.sel})`);
+  chk(base.kpis.length === 4, `cuatro KPI (${base.kpis.length})`);
+  chk(/caja|hand/i.test(base.kpis[0] || ""), `la primera KPI es el saldo en caja (${base.kpis[0]})`);
+  chk(base.columnas === 6, `la gráfica dibuja seis meses (${base.columnas})`);
+  chk(base.anillo.includes("conic-gradient"), "la dona es un conic-gradient");
+  chk(base.listas === 2, `las dos listas del pie (${base.listas})`);
+  chk(base.puntos > 0, `los compromisos llevan su punto de color (${base.puntos})`);
+  /* Ninguna cadena de pantalla puede parecerse a una clave i18n sin traducir
+     ("dashboard.saludo.manana"): eso es exactamente lo que se escapó. */
+  chk(base.saludo && !/^[a-z]+(\.[a-zA-Z]+)+$/.test(base.saludo), `el saludo está traducido (${base.saludo})`);
+
+  if (DIR) await pg.screenshot({ path: `${DIR}/inicio-mes-1366x1024.png` });
+
+  // Trimestre y Año: el segmentado tiene que mover las cifras, no solo el relieve.
+  const vistos = new Map([[base.sel, base.ingresos]]);
+  for (const i of [1, 2]) {
+    await pg.click(`.dash-seg button:nth-child(${i + 1})`);
+    await pg.waitForTimeout(700);
+    const m = await pg.evaluate(() => ({
+      sel: document.querySelector(".dash-seg button.sel")?.textContent.trim(),
+      etiqueta: document.querySelector(".dash-kpi .stat-label")?.textContent.trim(),
+      ingresos: document.querySelectorAll(".dash-kpi .stat-value")[1]?.textContent.trim(),
+      rotulo: document.querySelector(".dash-dona-periodo")?.textContent.trim(),
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    }));
+    chk(m.sel === base.seg[i], `"${base.seg[i]}" queda seleccionado (${m.sel})`);
+    chk(m.desborda === false, `"${base.seg[i]}": sin scroll horizontal`);
+    chk(!!m.rotulo, `"${base.seg[i]}": la dona rotula su periodo (${m.rotulo})`);
+    vistos.set(m.sel, m.ingresos);
+    if (DIR) await pg.screenshot({ path: `${DIR}/inicio-${base.seg[i].toLowerCase()}-1366x1024.png` });
+  }
+  /* Con los datos sembrados hay movimientos fuera del mes en curso, así que
+     mes ≠ año a la fuerza. Si salieran iguales, el segmentado sería adorno. */
+  chk(vistos.get(base.seg[0]) !== vistos.get(base.seg[2]),
+      `el periodo cambia los ingresos (${vistos.get(base.seg[0])} → ${vistos.get(base.seg[2])})`);
+  await ctxIn.close();
 }
 
 await browser.close();
