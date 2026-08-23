@@ -966,7 +966,31 @@ console.log("\n== Reportes del iPad (handoff) ==");
   chk(m.botones.length >= 3, `y las salidas del informe (${m.botones.join(" · ")})`);
   chk(m.navMes === "none", `la ‹ › de la cabecera está apagada (${m.navMes})`);
   chk(m.desborda === false, "sin scroll horizontal");
-  if (DIR) await pg.screenshot({ path: `${DIR}/reportes-1366x1024.png` });
+  /* Una captura por informe: son cinco documentos distintos y el panel cambia
+     entero entre ellos, así que una sola captura no dice si los otros cuatro
+     siguen en pie. De paso comprueba que ninguno se desborde. */
+  const nombres = await pg.evaluate(() =>
+    [...document.querySelectorAll(".md-reportes .md-indice-nombre")].map((e) => e.textContent.trim()));
+  for (let i = 0; i < nombres.length; i++) {
+    /* `.nth(i)` del localizador y NO `:nth-of-type()`: la columna mezcla el
+       rótulo del grupo (un div) con los informes (botones), y `nth-of-type`
+       cuenta por ETIQUETA, no por posición. Con el desfase de uno que eso
+       provocaba, cada captura salía con el nombre del informe vecino. */
+    await pg.locator(".md-reportes .md-indice-item").nth(i).click();
+    await pg.waitForTimeout(500);
+    const r = await pg.evaluate(() => ({
+      barra: !!document.querySelector(".rep-barra"),
+      cuerpo: (document.querySelector(".md-reportes .md-detalle")?.textContent || "").trim().length,
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    }));
+    chk(r.barra, `"${nombres[i]}": conserva la barra de mandos`);
+    chk(r.cuerpo > 40, `"${nombres[i]}": el panel dice algo (${r.cuerpo} caracteres)`);
+    chk(r.desborda === false, `"${nombres[i]}": sin scroll horizontal`);
+    if (DIR) {
+      const slug = nombres[i].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-");
+      await pg.screenshot({ path: `${DIR}/reportes-${slug}-1366x1024.png` });
+    }
+  }
   await ctxRp.close();
 }
 

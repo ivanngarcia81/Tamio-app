@@ -9473,6 +9473,35 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     text-transform: none;
   }
 
+  /* Las cuatro cifras del informe, en UNA fila y con la escala del handoff.
+     La regla general del panel las pone en 2×2 (~9617) con un motivo escrito:
+     con la tipografía de escritorio, cuatro tarjetas en 720px se aprietan.
+     El diseño resuelve eso ENCOGIENDO el texto —etiqueta 11.5, cifra 19, pie
+     11.5— en vez de partir la fila, y así las cuatro se comparan de un
+     vistazo, que es para lo que están juntas. Se sigue al diseño, con su
+     tipografía; poner cuatro columnas conservando los 24px de la cifra sería
+     quedarse con la mitad de la instrucción y romper el renglón. */
+  :root.ipad .md-reportes .summary-4 { gap: 12px; }
+  :root.ipad .md-reportes .summary-4 .stat-card { padding: 13px 15px; gap: 4px; }
+  :root.ipad .md-reportes .summary-4 .stat-label { font-size: 11.5px; font-weight: 600; }
+  :root.ipad .md-reportes .summary-4 .stat-value,
+  :root.ipad .md-reportes .summary-4 .stat-value.md { font-size: 19px; letter-spacing: -0.4px; }
+  :root.ipad .md-reportes .summary-4 .stat-cur { font-size: 11.5px; }
+  :root.ipad .md-reportes .summary-4 .stat-foot { font-size: 11.5px; }
+
+  /* El filete de color de arriba, que en el resto del móvil se apaga
+     (`:root.movil .stat-card.accent::before`) porque allí el color lo llevan
+     el signo y la leyenda. En el informe SÍ va: es lo que distingue de un
+     vistazo ingresos / gastos / balance / mes anterior, y el handoff lo
+     dibuja explícitamente en estas cuatro y solo en estas. */
+  :root.ipad .md-reportes .stat-card.accent::before {
+    display: block;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+
   /* El chip del mes: relleno con el acento, que en el diseño es el mando
      principal de la fila. `MenuAnchor` envuelve su disparador en un
      `.ios-bar-button` de 44×44 fijos —el mismo tropiezo que en Membresía—,
@@ -10699,6 +10728,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      que es de donde salían las tres columnas apretadas del panel. */
   :root.ipad .md-detalle .summary-4,
   :root.ipad .md-detalle .summary-5 { grid-template-columns: 1fr 1fr !important; }
+  /* Excepción: el informe de Reportes. Ahí el handoff pide las cuatro cifras
+     en UNA fila, y puede porque encoge la tipografía (11.5 / 19 / 11.5) en
+     vez de conservar la de escritorio. La regla de arriba sigue mandando en
+     todos los demás paneles; la excepción vive en el bloque de ≥1000px, que
+     es donde hay ancho para cuatro. Buscar `md-reportes .summary-4`. */
   /* Las ocho de Informes de membresía ya venían de cuatro en cuatro por la
      regla base; lo único que hacía falta es que el `max-width: 860px` no se
      las llevara a dos al girar. */
@@ -11048,6 +11082,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dash-graficas { grid-template-columns: 1.55fr 1fr; }
   :root.ipad .dm-pie-tarjetas { grid-template-columns: 1fr 1fr; }
   :root.ipad .fm-cuerpo { grid-template-columns: 1.1fr 1fr; }
+  /* Las cuatro del informe en una fila. `!important` porque la regla del
+     panel de detalle (~10729) lo lleva también: allí la decisión de 2×2 se
+     tomó con la tipografía de escritorio, y aquí ya no es esa (ver el bloque
+     de `.md-reportes .summary-4` en ≥700px). */
+  :root.ipad .md-reportes .md-detalle .summary-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
 }
 
 /* ============================================================
