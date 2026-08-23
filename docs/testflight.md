@@ -118,7 +118,7 @@ en las tres fuentes:
 | esta | **1.2.2** — la build de REVISIÓN del handoff 2: Membresía maestro-detalle, Informes de membresía con su índice, Mensajes como chat centrado, y Cartas con crear solo en el "+" |
 | esta | **1.2.3** — el primer arreglo salido de revisar la 1.2.2 en un iPad de verdad: la barra lateral se esconde en vertical (la regla pasa de ancho a orientación), más el gris único del cromo del iPad —barra, columna maestra y fondo del panel, `#F7F7F9` / `#131315`— y el inventario del handoff 2 corregido contra el esquema |
 | esta | **1.2.4** — el handoff 2 completo: **Agenda** (barra de 50px sobre las dos columnas, rejilla que llena el alto, pastillas de color por tipo, días vecinos en gris) y **Configuración** (las listas agrupadas cruzan al iPad, las tres miniaturas de tema, y la Zona sensible que se veía rota desde antes). Con esto, las once pantallas del handoff están recorridas |
-| esta | **1.2.5** — el panel de detalle pasa al gris del lienzo (`#F2F2F7` / `#000`) y deja de fundirse con la barra y la columna maestra; de paso, la columna del día de la Agenda recupera el suyo. Y se pintan los **seis controles** que el handoff dibuja y la app no tiene —"Marcar depositado", "Asignar encargado" ×4, los tres de Presentación y los cuatro permisos del rol—, **apagados y con su explicación**. Todo salió de revisar la 1.2.4 en el iPad |
+| esta | **1.2.5** — el panel de detalle pasa al gris del lienzo (`#F2F2F7` / `#000`) y deja de fundirse con la barra y la columna maestra; de paso, la columna del día de la Agenda recupera el suyo. Y se pintan los **diez controles** que el handoff dibuja y la app no tiene —"Marcar depositado", "Asignar encargado" ×4, los tres de Presentación, los cuatro permisos del rol y los cuatro Controles de tesorería del handoff 1—, **apagados y con su explicación**. Todo salió de revisar la 1.2.4 en el iPad |
 | la siguiente | 1.2.6 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
@@ -357,9 +357,9 @@ repaso pantalla por pantalla está en `docs/ipad-rediseno.md` §14–§24.
 
 En la **1.2.5**, lo de siempre. Las clases nuevas comprobadas en el bundle:
 `sv-puesto-asignar`, `ios-field--apagado`, `pf-seg`, `ios-field-textos` y
-`ios-field-sub` —los seis controles dibujados sin motor— y en el JS sus
+`ios-field-sub` —los diez controles dibujados sin motor— y en el JS sus
 claves (`marcarDepositado`, `asignarEncargado`, `presentacion.titulo`,
-`permisos.titulo`). Más la comprobación de que **el arreglo de color**
+`permisos.titulo`, `controlesTesoreria.titulo`). Más la comprobación de que **el arreglo de color**
 viaja: en el CSS construido, `root.ipad .md-detalle{…;
 background:var(--bg)}` —el panel con el gris del lienzo— y las **dos** reglas
 de `md-agenda .md-detalle` con `--ipad-cromo`, que son la excepción. Un

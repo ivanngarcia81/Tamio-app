@@ -1735,6 +1735,47 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   chk(pres.seg === 3, `el segmentado de tamaño de texto (${pres.seg})`);
   if (DIR) await pg.screenshot({ path: `${DIR}/config-presentacion-1366x1024.png` });
 
+  /* Los cuatro del handoff 1 en "Iglesia". Dos de ellos van ENCENDIDOS a
+     propósito: describen algo que la app ya hace (el aviso de comprobante
+     sobre `UMBRAL_COMPROBANTE` y el de duplicados), así que apagarlos sería
+     mentir en la otra dirección. Lo que no se puede es cambiarlos. */
+  await irA(/Iglesia|Church/i);
+  const igl = await pg.evaluate(() => {
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const filas = [...z.querySelectorAll(".ios-field--apagado")];
+    return {
+      filas: filas.length,
+      vivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
+      encendidos: filas.filter((f) => f.querySelector('[role="switch"][aria-checked="true"]')).length,
+      apagados: filas.filter((f) => f.querySelector('[role="switch"][aria-checked="false"]')).length,
+      // El importe sale de la constante, no de un literal "$1,000" copiado
+      // del prototipo: si el umbral cambia, la fila cambia con él.
+      conMonto: filas.some((f) => /\d/.test(f.querySelector(".ios-field-label")?.textContent || "")),
+      subs: filas.filter((f) => f.querySelector(".ios-field-sub")).length,
+      opacidad: filas[0] ? Number(getComputedStyle(filas[0]).opacity) : 1,
+    };
+  });
+  chk(igl.filas === 4, `Controles de tesorería trae sus cuatro filas (${igl.filas})`);
+  chk(igl.vivos === 0, "ninguna pulsable");
+  chk(igl.encendidos === 2, `dos encendidas, las que describen algo real (${igl.encendidos})`);
+  chk(igl.apagados === 1, `una apagada, la que no existe (${igl.apagados})`);
+  chk(igl.conMonto, "el umbral sale de la constante, no de un literal");
+  chk(igl.subs === 4, `las cuatro explican qué pasa hoy (${igl.subs})`);
+  chk(igl.opacidad < 0.7, `y van a media tinta como las demás (${igl.opacidad})`);
+  /* Y que la etiqueta larga QUEPA: con la columna fija de 190 de las demás
+     filas, "Avisar de gastos sin comprobante desde $1,000.00 USD" salía
+     cortado en la primera palabra. */
+  const recorte = await pg.evaluate(() => {
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const ls = [...z.querySelectorAll(".ios-field--apagado .ios-field-label")];
+    return ls.filter((l) => l.scrollWidth > l.clientWidth + 1).length;
+  });
+  chk(recorte === 0, `ninguna etiqueta recortada (${recorte})`);
+  // El grupo va al final de la zona; sin bajar, la captura no lo enseña.
+  await pg.evaluate(() => { document.querySelector(".settings-detail").scrollTop = 99999; });
+  await pg.waitForTimeout(300);
+  if (DIR) await pg.screenshot({ path: `${DIR}/config-tesoreria-1366x1024.png` });
+
   await irA(/Acceso|Access/i);
   const perm = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");

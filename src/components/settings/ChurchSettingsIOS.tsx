@@ -16,6 +16,10 @@ import { useTranslation } from "react-i18next";
 import { IconBuilding } from "../../icons";
 import { currentLang } from "../../i18n";
 import { CURRENCIES, currencyLabel } from "../../currencies";
+import { esIPad } from "../../movil";
+import { fmtMoney } from "../../db";
+import { UMBRAL_COMPROBANTE } from "../../services/bandeja/alertas";
+import { SwitchField } from "../ios/FormularioIOS";
 import { convertirImagenAPng } from "../../services/imagenLogo";
 import type { EstadoGuardado } from "./GuardadoChip";
 import type { ChurchFormValues } from "./ChurchSettings";
@@ -148,6 +152,69 @@ export default function ChurchSettingsIOS({
             inputMode="decimal"
             error={saldoError}
           />
+        </Section>
+      )}
+
+      {/* ---- Controles de tesorería (handoff 1) ----
+          Los cuatro que el handoff 1 dibujaba aquí y que §4 de
+          `docs/ipad-rediseno.md` descartó por inventados. Se pintan por
+          decisión de Iván (23 ago), con el trato de la casa: APAGADOS y con
+          su explicación.
+
+          Pero NO los cuatro por igual: **dos describen algo que la app ya
+          hace** y salen encendidos diciendo la verdad, y dos son sitio
+          reservado. Es el mismo criterio que los permisos del rol — una fila
+          apagada puede estar esperando motor sin tener que mentir mientras
+          espera.
+
+            · Comprobante — `UMBRAL_COMPROBANTE` existe y vale de verdad; Por
+              revisar señala los gastos que lo pasan. Lo que no se puede es
+              cambiar la cifra ni apagarlo.
+            · Duplicados  — la regla `duplicado` de `alertas.ts` está viva.
+            · Doble firma — no existe nada.
+            · Cierre de mes — la app cierra por mes natural (ver
+              `services/inicio/periodo.ts`, y ahí está el porqué); "último
+              domingo" no es una opción, es otra forma de contar.
+
+          Solo iPad, y solo con tesorería a la vista. */}
+      {esIPad() && showCurrency && (
+        <Section
+          header={t("controlesTesoreria.titulo")}
+          footer={t("controlesTesoreria.hint")}
+        >
+          <SwitchField
+            label={t("controlesTesoreria.comprobante", {
+              monto: `${fmtMoney(UMBRAL_COMPROBANTE)} ${value.moneda}`,
+            })}
+            sub={t("controlesTesoreria.comprobanteSub")}
+            checked
+            onChange={() => {}}
+            disabled
+            title={t("controlesTesoreria.hint")}
+          />
+          <SwitchField
+            label={t("controlesTesoreria.duplicados")}
+            sub={t("controlesTesoreria.duplicadosSub")}
+            checked
+            onChange={() => {}}
+            disabled
+            title={t("controlesTesoreria.hint")}
+          />
+          <SwitchField
+            label={t("controlesTesoreria.dobleFirma")}
+            sub={t("controlesTesoreria.dobleFirmaSub")}
+            checked={false}
+            onChange={() => {}}
+            disabled
+            title={t("controlesTesoreria.hint")}
+          />
+          <div className="ios-field ios-field--apagado" title={t("controlesTesoreria.hint")}>
+            <span className="ios-field-textos">
+              <span className="ios-field-label">{t("controlesTesoreria.cierreMes")}</span>
+              <span className="ios-field-sub">{t("controlesTesoreria.cierreMesSub")}</span>
+            </span>
+            <span className="ios-field-value">{t("controlesTesoreria.cierreMesValor")}</span>
+          </div>
         </Section>
       )}
 

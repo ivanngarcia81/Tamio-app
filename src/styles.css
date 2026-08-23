@@ -8172,14 +8172,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .settings-detail .ios-field:not(:last-child)::after { left: 16px; right: 16px; }
   /* La fila con dos renglones (etiqueta + explicación), que el handoff usa
      en Presentación y en Sincronización. */
+  /* `flex: 1` y no una columna fija de 190: estas filas no tienen valor a la
+     derecha, tienen un MANDO, así que el texto se queda con todo el ancho que
+     el mando no usa. Con los 190 de las demás, "Avisar de gastos sin
+     comprobante desde $1,000.00 USD" salía cortado en la primera palabra. */
   :root.ipad .settings-detail .ios-field-textos {
-    flex: 0 0 auto;
-    width: 300px;
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 1px;
   }
-  :root.ipad .settings-detail .ios-field-textos .ios-field-label { flex: none; width: auto; }
+  :root.ipad .settings-detail .ios-field-textos .ios-field-label {
+    flex: none;
+    width: auto;
+    white-space: normal;
+    color: var(--text);
+  }
   :root.ipad .settings-detail .ios-field-sub { font-size: 12.5px; color: var(--text-2); }
   /* Dibujado y sin motor: la fila entera a media tinta. Se apaga el CONJUNTO
      y no solo el mando, para que se lea como "esto todavía no" y no como "el

@@ -165,7 +165,7 @@ corte). Esa pieza también apaga el chip "Sin depositar" de §15.
 
 ---
 
-## Los seis controles que faltaban — construidos y APAGADOS (23 ago 2026)
+## Los diez controles que faltaban — construidos y APAGADOS (23 ago 2026)
 
 Esta sección empezó siendo "lo que NO se construyó". Duró unas horas: Iván
 leyó la lista y contestó **"píntalo igual"**. Queda como registro de la
@@ -185,6 +185,10 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | **Barra lateral siempre visible** | ídem | interruptor apagado |
 | **Ocultar montos al bloquear** | ídem | interruptor apagado |
 | **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
+| **Avisar de gastos sin comprobante desde $X** | Config → Iglesia → Controles de tesorería | interruptor apagado, **encendido** |
+| **Avisar de posibles duplicados** | ídem | interruptor apagado, **encendido** |
+| **Doble firma en el corte** | ídem | interruptor apagado |
+| **Cierre de mes** | ídem | fila de valor apagada ("Mes natural") |
 
 Tres detalles de la ejecución que no son obvios:
 
@@ -199,6 +203,18 @@ Tres detalles de la ejecución que no son obvios:
   la fila dice algo verdadero.
 - **Solo iPad.** Son del handoff de iPad; el teléfono no los pidió y no se le
   meten controles muertos.
+- **Dos de los cuatro últimos van ENCENDIDOS**, y no por descuido. "Avisar de
+  gastos sin comprobante" y "Avisar de posibles duplicados" describen algo que
+  la app **ya hace**: `UMBRAL_COMPROBANTE` vale de verdad y Por revisar señala
+  los gastos que lo pasan, y la regla `duplicado` de `alertas.ts` está viva.
+  Apagarlos sería mentir en la otra dirección. Lo que no se puede es cambiar
+  la cifra ni desactivar el aviso — y eso lo dice el pie del grupo. El importe
+  sale de la constante interpolada, no de un `$1,000` copiado del prototipo:
+  si el umbral cambia, la fila cambia con él.
+- **"Cierre de mes" no es un interruptor**, es una fila de valor: la app
+  cierra por **mes natural** (el porqué está en `services/inicio/periodo.ts`)
+  y "último domingo" del prototipo no es un ajuste, es otra forma de contar.
+  Se enseña lo que hace hoy.
 
 Lo que hace falta detrás de cada uno: los dos primeros, la pieza de
 `deposito_movimientos` y el roster por puestos (ya listados arriba). Los
@@ -213,7 +229,7 @@ a segundo plano, y permisos por acción en vez de por rol.
 > una bandera. A TestFlight no le afecta.
 >
 > El arnés tiene una guarda para esto (**sección 22**): comprueba que los
-> seis —más "Recopilar firmas"— siguen **apagados y con explicación**. Si
+> diez —más "Recopilar firmas"— siguen **apagados y con explicación**. Si
 > alguien le quita el `disabled` a uno sin ponerle motor, sale en rojo.
 
 ## Lo que sigue sin pintarse
@@ -223,11 +239,6 @@ a segundo plano, y permisos por acción en vez de por rol.
   columna y numerador.
 - **"Registrado por"** y **el chip "Sin depositar"** — aplazados por ti hasta
   después del diseño, no por este criterio.
-- **Los cuatro interruptores de Iglesia del handoff 1** ("Exigir comprobante
-  en gastos mayores a $1,000", "Doble firma en el corte", "Avisar
-  duplicados", "Cierre de mes: último domingo"). No entraron en la tabla de
-  arriba porque son de otro handoff; si los quieres, es el mismo trato y una
-  tarde.
 
 ## Cuando toque cablear, el orden que rinde más
 
