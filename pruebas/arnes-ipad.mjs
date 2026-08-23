@@ -196,6 +196,28 @@ const ctxSeed = await nuevoContexto("ipad");
       });
     }
 
+    /* Casos que disparan la taxonomía de "Por revisar". Sin ellos la bandeja
+       sale vacía y no hay nada que medir: cada uno enciende UNA regla del
+       motor (services/bandeja/alertas.ts). */
+    await db.insertTx(id, iglesia.moneda, {   // gasto grande sin comprobante
+      tipo: "gasto", categoria: "mantenimiento", concepto: "Pintura del anexo",
+      fecha: hace(2), monto: 239100, metodo_pago: "efectivo", beneficiario: "Ferretería del Norte",
+    });
+    for (const dia of [4, 6]) {               // duplicado probable (mismo monto y concepto)
+      await db.insertTx(id, iglesia.moneda, {
+        tipo: "gasto", categoria: "limpieza", concepto: "Renta del anexo",
+        fecha: hace(dia), monto: 175500, metodo_pago: "transferencia", beneficiario: "Arrendador",
+      });
+    }
+    await db.insertTx(id, iglesia.moneda, {   // categoría vacía
+      tipo: "ingreso", categoria: "", concepto: "Ofrenda sin clasificar",
+      fecha: hace(3), monto: 78000, metodo_pago: "efectivo",
+    });
+    await db.insertTx(id, iglesia.moneda, {   // diezmo sin aportante vinculado
+      tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo en sobre",
+      fecha: hace(5), monto: 96000, metodo_pago: "efectivo",
+    });
+
     // Depósitos (uno de período distinto al mes de su fecha)
     await db.insertDeposito(id, iglesia.moneda, {
       fecha: hace(2), periodo: hace(2).slice(0, 7), monto: 1854000,
@@ -1052,6 +1074,83 @@ console.log("\n== Depósitos del iPad (handoff) ==");
   chk(/\$/.test(pend.texto), "y da el efectivo por depositar, que sí se sabe");
   if (DIR) await pg.screenshot({ path: `${DIR}/depositos-pendientes-1366x1024.png` });
   await ctxDp.close();
+}
+
+/* ---------- 15. Por revisar: la taxonomía de alertas ---------- */
+console.log("\n== Por revisar del iPad (handoff) ==");
+{
+  const ctxBn = await nuevoContexto("ipad");
+  const pg = await ctxBn.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-bandeja .al-fila", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const lista = await pg.evaluate(() => {
+    const f = document.querySelector(".md-bandeja .al-fila");
+    return {
+      conteo: document.querySelector(".al-conteo")?.textContent.trim(),
+      filas: document.querySelectorAll(".md-bandeja .al-fila").length,
+      alto: f ? Math.round(f.getBoundingClientRect().height) : 0,
+      marcas: document.querySelectorAll(".al-marca").length,
+      chips: [...document.querySelectorAll(".al-chips .chip")].map((c) => c.textContent.trim()),
+      titulares: [...document.querySelectorAll(".md-bandeja .al-fila .md-fila-titular")]
+        .map((e) => e.textContent.trim()),
+    };
+  });
+  chk(!!lista.conteo, `la cabecera cuenta los asuntos (${lista.conteo})`);
+  /* La cabecera de la PÁGINA tiene que decir lo mismo que la lista. Decía "No
+     tienes pendientes" encima de doce asuntos, porque contaba solo dos de las
+     siete reglas. */
+  const sub = await pg.evaluate(() => document.querySelector(".header .page-sub")?.textContent.trim() || "");
+  chk(!/No tienes|No pending/i.test(sub) , `la cabecera no contradice a la lista (${sub})`);
+  chk(lista.alto >= 70, `la fila del asunto mide 70 o más (${lista.alto})`);
+  chk(lista.marcas === lista.filas, `cada asunto lleva su marca (${lista.marcas}/${lista.filas})`);
+  /* Lo que de verdad hay que comprobar: que el motor encuentra MÁS DE UN
+     TIPO. Con solo "pendiente" la pantalla sería la de antes con otra ropa. */
+  const tipos = new Set(lista.titulares);
+  chk(tipos.size >= 3, `el motor distingue varios tipos de asunto (${[...tipos].join(" · ")})`);
+  chk(lista.chips.length >= 3, `y ofrece filtrarlos (${lista.chips.length} chips)`);
+
+  // El panel: pastilla, titular, párrafo con datos y acciones propias.
+  await pg.click(".md-bandeja .al-fila:not(.sel)");
+  await pg.waitForTimeout(400);
+  const det = await pg.evaluate(() => ({
+    pastilla: document.querySelector(".al-pastilla")?.textContent.trim(),
+    titulo: document.querySelector(".al-titulo")?.textContent.trim(),
+    texto: (document.querySelector(".al-texto")?.textContent || "").trim(),
+    acciones: [...document.querySelectorAll(".al-acciones .btn")].map((b) => b.textContent.trim()),
+    desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  }));
+  chk(!!det.pastilla, `el panel abre con su pastilla (${det.pastilla})`);
+  chk(!!det.titulo, `y su titular (${det.titulo})`);
+  /* El párrafo tiene que traer DATOS del caso, no un texto fijo: si no
+     aparece una cifra, la interpolación se rompió. */
+  chk(det.texto.length > 60 && /\$/.test(det.texto), `explica el caso con sus cifras (${det.texto.length} caracteres)`);
+  chk(det.acciones.length >= 1, `con acciones propias (${det.acciones.join(" · ")})`);
+  chk(det.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/bandeja-1366x1024.png` });
+
+  /* Recorrer un asunto de cada tipo: cada uno tiene su texto y sus botones, y
+     un tipo que reventara el panel se vería aquí y no en TestFlight. */
+  const nChips = await pg.locator(".al-chips .chip").count();
+  for (let i = 1; i < Math.min(nChips, 5); i++) {
+    await pg.locator(".al-chips .chip").nth(i).click();
+    await pg.waitForTimeout(300);
+    const hay = await pg.locator(".md-bandeja .al-fila").count();
+    if (hay === 0) continue;
+    await pg.locator(".md-bandeja .al-fila").first().click();
+    await pg.waitForTimeout(350);
+    const m = await pg.evaluate(() => ({
+      titulo: document.querySelector(".al-titulo")?.textContent.trim(),
+      texto: (document.querySelector(".al-texto")?.textContent || "").trim(),
+      acciones: document.querySelectorAll(".al-acciones .btn").length,
+    }));
+    chk(!!m.titulo && m.texto.length > 40, `"${m.titulo}": tiene su explicación (${m.texto.length} car.)`);
+    chk(m.acciones >= 1, `"${m.titulo}": y su acción (${m.acciones})`);
+  }
+  await ctxBn.close();
 }
 
 await browser.close();

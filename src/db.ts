@@ -713,6 +713,23 @@ export async function markTxReviewed(id: number, churchId: number): Promise<void
   );
 }
 
+/**
+ * "Devolver al tesorero" de la Bandeja: el movimiento pasa a `rechazado`.
+ *
+ * El estado ya existía en el esquema desde la migración 2 y `listTx` ya lo
+ * excluye de las listas —un movimiento devuelto no cuenta en el mes ni suma
+ * en los totales—, pero **no había forma de ponerlo**: la Bandeja solo sabía
+ * aprobar. No se borra: se conserva con su historial para poder mirarlo, que
+ * es justo la diferencia entre devolver y eliminar.
+ */
+export async function markTxRejected(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE transactions SET estado = 'rechazado', updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
 export async function countPendingTx(churchId: number): Promise<number> {
   const d = await getDb();
   const rows = await d.select<{ n: number }[]>(

@@ -10002,6 +10002,79 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dep-ficha-falta { min-height: 190px; }
   :root.ipad .dep-pendientes { margin: 16px 14px; }
 
+  /* ============================================================
+     Por revisar (.al-*) — la taxonomía de alertas del handoff 2
+     ============================================================ */
+  :root.ipad .al-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  :root.ipad .al-conteo { font-size: 13.5px; font-weight: 600; }
+  :root.ipad .al-cabecera .chip { margin-left: auto; min-height: 30px; }
+  :root.ipad .al-chips { padding: 10px 14px 0; }
+  /* La fila del asunto: 70px, con el círculo de 34 del diseño. */
+  :root.ipad .al-fila { min-height: 70px; }
+  :root.ipad .al-marca {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 17px;
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  /* Lo que pide DECISIÓN, en ámbar. El resto pide arreglo o solo enterarse,
+     y en gris no compiten con ella por la mirada. */
+  :root.ipad .al-marca.urgente {
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 15px;
+  }
+
+  /* El panel: cabecera de la alerta y, debajo, la ficha del objeto. */
+  :root.ipad .al-panel { display: flex; flex-direction: column; }
+  :root.ipad .al-cab { max-width: 720px; }
+  :root.ipad .al-pastilla {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  :root.ipad .al-titulo {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.7px;
+  }
+  /* El párrafo que explica el caso. `text-wrap: pretty` evita la palabra
+     suelta en la última línea, que en un texto de decisión se lee como un
+     descuido. */
+  :root.ipad .al-texto {
+    margin: 8px 0 22px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-2);
+    max-width: 620px;
+    text-wrap: pretty;
+  }
+  :root.ipad .al-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+  :root.ipad .al-devolver { color: var(--neg); }
+  /* Dentro del panel de alerta la ficha ya no necesita su propio aire de
+     arriba ni el botón de volver duplicado: el titular manda. */
+  :root.ipad .al-panel .dm { padding-top: 0; }
+  :root.ipad .al-panel .dm-cab .dm-acciones:empty { display: none; }
+
   /* ------------------------------------------------------------
      El acta como DOCUMENTO (.da-*)
      ------------------------------------------------------------

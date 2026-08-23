@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  categoriaInfo, fmtFecha, fmtFechaCorta, fmtMoney, listArchivedMembers, listPendingTx,
-  markTxReviewed, restoreMember, type Church, type Member, type Tx,
+  categoriaInfo, currentMonth, fmtFecha, fmtFechaCorta, fmtMoney, listArchivedMembers,
+  listMovimientosRecurrentes, listPendingTx, listTx, markTxRejected, markTxReviewed,
+  restoreMember, type Church, type Member, type MovimientoRecurrente, type Tx,
 } from "../db";
+import {
+  calcularAlertas, conteoPorTipo, UMBRAL_COMPROBANTE,
+  type Alerta, type TipoAlerta,
+} from "../services/bandeja/alertas";
+import PanelAlerta from "../components/PanelAlerta";
 import { EmptyState } from "../components/TxList";
 import LoadingState from "../components/LoadingState";
 import { useBarraEstado } from "../components/BarraEstado";
@@ -15,7 +21,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import DetalleMovimiento from "../components/DetalleMovimiento";
 import DetalleMiembro from "../components/DetalleMiembro";
 import ComprobantePreview from "../components/ComprobantePreview";
-import { IconCheck, IconRefreshCw } from "../icons";
+import { IconCheck, IconEdit, IconRefreshCw } from "../icons";
 
 interface Props {
   church: Church;
@@ -41,15 +47,31 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   const [loading, setLoading] = useState(true);
   const [pagPendientes, setPagPendientes] = useState(1);
   const [pagArchivados, setPagArchivados] = useState(1);
+  const [recientes, setRecientes] = useState<Tx[]>([]);
+  const [recurrentes, setRecurrentes] = useState<MovimientoRecurrente[]>([]);
+  /* El chip de tipo del handoff: `null` = todas. */
+  const [filtroTipo, setFiltroTipo] = useState<TipoAlerta | null>(null);
 
   useEffect(() => {
     let cancelado = false;
     setLoading(true);
-    Promise.all([listPendingTx(church.id), listArchivedMembers(church.id)])
-      .then(([nuevosPendientes, nuevosArchivados]) => {
+    Promise.all([
+      listPendingTx(church.id),
+      listArchivedMembers(church.id),
+      /* Los movimientos recientes sobre los que se buscan las otras alertas.
+         200 y no "todos": las cinco reglas miran duplicados, comprobantes y
+         categorías de lo que se acaba de registrar, no del histórico entero —
+         una bandeja que rescata un descuadre de hace tres años no es una
+         bandeja, es una auditoría. */
+      listTx(church.id, { limit: 200 }),
+      listMovimientosRecurrentes(church.id),
+    ])
+      .then(([nuevosPendientes, nuevosArchivados, nuevosRecientes, nuevosRec]) => {
         if (cancelado) return;
         setPendientes(nuevosPendientes);
         setArchivados(nuevosArchivados);
+        setRecientes(nuevosRecientes);
+        setRecurrentes(nuevosRec);
       })
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
@@ -69,6 +91,125 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   const ultimoSel = useRef<{ tx: Tx | null; miembro: Member | null }>({ tx: null, miembro: null });
   if (selTx) ultimoSel.current = { tx: selTx, miembro: null };
   if (selMiembro) ultimoSel.current = { tx: null, miembro: selMiembro };
+
+  /* ---- Las alertas del handoff 2 ----
+     El motor vive en `services/bandeja/alertas.ts`, puro y probado aparte;
+     aquí solo se le dan las cuatro listas y se pinta lo que devuelve. La
+     bandeja deja de ser "pendientes + archivados" y pasa a ser la lista de
+     cosas que alguien tiene que mirar, que es lo que el diseño pide. */
+  const alertas: Alerta[] = useMemo(() => calcularAlertas({
+    pendientes,
+    recientes,
+    archivados,
+    recurrentes,
+    hoyMes: currentMonth(),
+  }), [pendientes, recientes, archivados, recurrentes]);
+  const conteos = useMemo(() => conteoPorTipo(alertas), [alertas]);
+  const visiblesAl = filtroTipo ? alertas.filter((a) => a.tipo === filtroTipo) : alertas;
+
+  /* La alerta abierta, por CLAVE y no por índice: al resolver una, la lista
+     se recalcula y un índice apuntaría a la de al lado. */
+  const [selAl, setSelAl] = useState<string | null>(null);
+  const alertaSel = visiblesAl.find((a) => a.clave === selAl)
+    ?? alertas.find((a) => a.clave === selAl)
+    ?? null;
+  const ultimaAl = useRef<Alerta | null>(null);
+  if (alertaSel) ultimaAl.current = alertaSel;
+
+  /**
+   * Los botones del panel, distintos por alerta — es lo que el handoff pide
+   * y lo que hace útil esta pantalla: la acción que resuelve ESTE caso, a un
+   * toque, en vez de "editar" para todo.
+   *
+   * "Adjuntar", "Asignar categoría" y "Vincular miembro" llevan al formulario
+   * de edición, que es donde esos tres campos se tocan; el nombre dice qué se
+   * va a hacer allí, no cómo se llama la pantalla que abre.
+   */
+  function accionesDe(a: Alerta): ReactNode {
+    const tx = a.tx;
+    const aprobar = tx && (
+      <button type="button" className="btn primary" onClick={() => void handleReviewed(tx)}>
+        <IconCheck size={14} strokeWidth={2.4} /> {t("bandeja.aprobar")}
+      </button>
+    );
+    const editar = (etiqueta: string) => tx && (
+      <button type="button" className="btn secondary" onClick={() => onEditTx(tx)}>
+        <IconEdit size={14} strokeWidth={2} /> {etiqueta}
+      </button>
+    );
+    const devolver = tx && (
+      <button type="button" className="btn secondary al-devolver" onClick={() => void handleRechazado(tx)}>
+        {t("bandeja.devolver")}
+      </button>
+    );
+
+    if (a.tipo === "miembroArchivado" && a.miembro) {
+      const m = a.miembro;
+      return (
+        <button type="button" className="btn primary" onClick={() => void handleRestore(m)}>
+          <IconRefreshCw size={14} strokeWidth={2.2} /> {t("bandeja.restaurar")}
+        </button>
+      );
+    }
+    if (a.tipo === "recurrenteVencido") {
+      /* Aquí no hay movimiento sobre el que actuar: lo que falta es
+         generarlo, y eso vive en la pantalla de Ingresos/Gastos con su
+         serie. El botón lleva ahí en vez de fingir una acción local. */
+      return (
+        <a className="btn primary" href={`#/${a.recurrente?.tipo === "gasto" ? "gastos" : "ingresos"}`}>
+          {t("bandeja.verRecurrentes")}
+        </a>
+      );
+    }
+    if (a.tipo === "sinComprobante") {
+      return (<>{editar(t("bandeja.adjuntarYAprobar"))}{aprobar}{devolver}</>);
+    }
+    if (a.tipo === "categoriaVacia") return (<>{editar(t("bandeja.asignarCategoria"))}{devolver}</>);
+    if (a.tipo === "miembroSinVincular") return (<>{editar(t("bandeja.vincularMiembro"))}{devolver}</>);
+    if (a.tipo === "duplicado") return (<>{editar(t("common.editar"))}{devolver}</>);
+    return (<>{aprobar}{editar(t("common.editar"))}{devolver}</>);
+  }
+
+  /** La inicial del círculo de la fila: la letra del tipo, como el diseño. */
+  const inicialDe = (tipo: TipoAlerta) => t(`bandeja.inicial_${tipo}`);
+
+  /** Lo que va bajo el titular de la fila: de qué objeto habla la alerta. */
+  function subDeAlerta(a: Alerta): string {
+    if (a.tx) {
+      const cat = categoriaInfo(a.tx.tipo, a.tx.categoria);
+      return [a.tx.concepto, cat.nombre, fmtMoney(a.tx.monto)].filter(Boolean).join(" · ");
+    }
+    if (a.miembro) return a.miembro.email ?? a.miembro.rfc ?? t("bandeja.sinCorreoRegistrado");
+    if (a.recurrente) {
+      return [a.recurrente.concepto, t("bandeja.mesesSinGenerar", { count: a.meses?.length ?? 0 })]
+        .filter(Boolean).join(" · ");
+    }
+    return "";
+  }
+
+  async function handleRechazado(tx: Tx) {
+    setSel(null);
+    setSelAl(null);
+    await markTxRejected(tx.id, church.id);
+    showToast(t("toast.movimientoDevuelto"));
+    playSound("guardado");
+    onChanged();
+  }
+
+  /** "Aprobar todo" del handoff: solo sobre lo que de verdad se aprueba —los
+   *  movimientos en estado pendiente—. Las otras cuatro alertas no son cosas
+   *  que se aprueben (un duplicado no se "aprueba", se decide), así que el
+   *  botón no las toca ni finge haberlas resuelto. */
+  async function handleAprobarTodo() {
+    const porAprobar = alertas.filter((a) => a.tipo === "pendiente" && a.tx).map((a) => a.tx!);
+    if (porAprobar.length === 0) return;
+    setSel(null);
+    setSelAl(null);
+    for (const tx of porAprobar) await markTxReviewed(tx.id, church.id);
+    showToast(t("bandeja.aprobadosTodos", { count: porAprobar.length }));
+    playSound("guardado");
+    onChanged();
+  }
   const [previewSel, setPreviewSel] = useState<string | null>(null);
 
   async function handleReviewed(tx: Tx) {
@@ -88,13 +229,18 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
     onChanged();
   }
 
-  const total = pendientes.length + archivados.length;
+  /* Lo que la pantalla dice que hay tiene que ser lo que la lista enseña.
+     Antes `total` sumaba pendientes + archivados, que son DOS de las siete
+     reglas: con doce asuntos en la lista y ningún movimiento en estado
+     pendiente, la cabecera decía "No tienes pendientes" encima de una lista
+     llena. Ahora cuenta alertas, que es la unidad de esta pantalla. */
+  const total = alertas.length;
 
   /* Pie de ventana (solo Mac): el mismo par que ya llevaba `page-sub`, que
      aquí sí cabe entero. */
   useBarraEstado(total === 0
     ? t("bandeja.sinPendientes")
-    : `${t("bandeja.porRevisar", { count: pendientes.length })} · ${t("bandeja.archivados", { count: archivados.length })}`);
+    : `${t("bandeja.porRevisar", { count: total })} · ${t("bandeja.archivados", { count: archivados.length })}`);
   const totalPagPendientes = Math.max(1, Math.ceil(pendientes.length / PAGE_SIZE));
   const totalPagArchivados = Math.max(1, Math.ceil(archivados.length / PAGE_SIZE));
   const paginaPendientes = pendientes.slice((pagPendientes - 1) * PAGE_SIZE, pagPendientes * PAGE_SIZE);
@@ -109,7 +255,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
             <div className="page-sub">
               {total === 0
                 ? t("bandeja.sinPendientes")
-                : `${t("bandeja.porRevisar", { count: pendientes.length })} · ${t("bandeja.archivados", { count: archivados.length })}`}
+                : `${t("bandeja.porRevisar", { count: total })} · ${t("bandeja.archivados", { count: archivados.length })}`}
             </div>
           </div>
         )}
@@ -122,11 +268,11 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
           Ingresos y Aportantes, cambiándoles solo los botones: aquí un
           movimiento se mira para aprobarlo, no para borrarlo.
 
-          El handoff maquetaba esta pantalla con una taxonomía de alertas
-          ("duplicado probable", "categoría vacía", "recurrente vencido")
-          que NO existe en la app: `listPendingTx` da movimientos en estado
-          pendiente y `listArchivedMembers` da miembros archivados, y eso es
-          todo. Se toma la estructura del diseño, no sus datos inventados. */}
+          La taxonomía de alertas del handoff SÍ se calcula: las siete reglas
+          viven en `services/bandeja/alertas.ts` y salen de columnas que ya
+          existían —estado, comprobante_path, categoria, member_id, las
+          fechas de los recurrentes—. Cuando se descartó (handoff 1) fue por
+          no haber mirado el esquema, no porque faltara el dato. */}
       {partido ? (
         <div className={`md-split md-bandeja${sel ? " md-abierto" : ""}`}>
           {loading ? (
@@ -134,116 +280,144 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
           ) : (
             <>
               <div className="md-lista">
+                {/* La cabecera del handoff: cuántas hay y "Aprobar todo". */}
+                <div className="al-cabecera">
+                  <span className="al-conteo">{t("bandeja.nPendientes", { count: alertas.length })}</span>
+                  {conteos.get("pendiente") ? (
+                    <button type="button" className="chip" onClick={() => void handleAprobarTodo()}>
+                      {t("bandeja.aprobarTodo")}
+                    </button>
+                  ) : null}
+                </div>
+                {/* Los chips por tipo. Solo salen los tipos que HAY: una
+                    bandeja limpia no tiene por qué enseñar cinco filtros que
+                    no encuentran nada. */}
+                {conteos.size > 1 && (
+                  <div className="md-chips al-chips">
+                    <button
+                      type="button"
+                      className={`chip${filtroTipo === null ? " active" : ""}`}
+                      onClick={() => setFiltroTipo(null)}
+                    >
+                      {t("common.todos")} <span className="count">{alertas.length}</span>
+                    </button>
+                    {[...conteos.entries()].map(([tipo, n]) => (
+                      <button
+                        key={tipo}
+                        type="button"
+                        className={`chip${filtroTipo === tipo ? " active" : ""}`}
+                        onClick={() => setFiltroTipo(filtroTipo === tipo ? null : tipo)}
+                      >
+                        {t(`bandeja.alerta_${tipo}`)} <span className="count">{n}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="md-filas">
-                  {total === 0 ? (
+                  {alertas.length === 0 ? (
                     <div className="md-filas-vacio">
                       <EmptyState pagina titulo={t("bandeja.sinPendientes")} sub={t("bandeja.emptySub")} />
                     </div>
+                  ) : visiblesAl.length === 0 ? (
+                    <div className="md-filas-vacio">{t("bandeja.sinDeEseTipo")}</div>
                   ) : (
-                    <>
-                      <div className="md-grupo">{t("bandeja.pendientesRevision")}</div>
-                      {pendientes.length === 0 ? (
-                        <div className="md-grupo-vacio">{t("bandeja.noMovsRevisar")}</div>
-                      ) : pendientes.map((tx) => {
-                        const cat = categoriaInfo(tx.tipo, tx.categoria);
-                        const sub = [
-                          tx.tipo === "ingreso" ? t("tx.ingreso") : t("tx.gasto"),
-                          cat.nombre,
-                          fmtFechaCorta(tx.fecha),
-                        ].join(" · ");
-                        return (
-                          <div
-                            key={`tx-${tx.id}`}
-                            className={`md-fila${sel?.tipo === "tx" && sel.id === tx.id ? " sel" : ""}`}
-                            onClick={() => setSel({ tipo: "tx", id: tx.id })}
-                          >
-                            <span className="md-cat-dot md-punto-aviso" aria-hidden="true" />
-                            <span className="md-fila-textos">
-                              <span className="md-fila-titular"><span className="truncate">{tx.concepto}</span></span>
-                              <span className="md-fila-sub truncate">{sub}</span>
-                            </span>
-                            <span className="md-fila-monto">{fmtMoney(tx.monto)}</span>
-                          </div>
-                        );
-                      })}
-
-                      <div className="md-grupo">{t("bandeja.miembrosArchivadosLabel")}</div>
-                      {archivados.length === 0 ? (
-                        <div className="md-grupo-vacio">{t("bandeja.noMiembrosArchivados")}</div>
-                      ) : archivados.map((m) => (
-                        <div
-                          key={`m-${m.id}`}
-                          className={`md-fila${sel?.tipo === "miembro" && sel.id === m.id ? " sel" : ""}`}
-                          onClick={() => setSel({ tipo: "miembro", id: m.id })}
-                        >
-                          <span className="md-fila-textos">
-                            <span className="md-fila-titular"><span className="truncate">{m.nombre}</span></span>
-                            <span className="md-fila-sub truncate">
-                              {m.email ?? m.rfc ?? t("bandeja.sinCorreoRegistrado")}
-                            </span>
+                    visiblesAl.map((a) => (
+                      <div
+                        key={a.clave}
+                        className={`md-fila al-fila${selAl === a.clave ? " sel" : ""}`}
+                        onClick={() => {
+                          setSelAl(a.clave);
+                          /* La selección vieja se mantiene en paralelo porque
+                             el panel reutiliza `DetalleMovimiento` y
+                             `DetalleMiembro`, que reciben el objeto. */
+                          if (a.tx) setSel({ tipo: "tx", id: a.tx.id });
+                          else if (a.miembro) setSel({ tipo: "miembro", id: a.miembro.id });
+                          else setSel(null);
+                        }}
+                      >
+                        {/* El círculo de 34px del diseño con la inicial del
+                            tipo. El de "pendiente" va en ámbar —es el que
+                            pide decisión— y el resto en gris. */}
+                        <span className={`al-marca${a.tipo === "pendiente" ? " urgente" : ""}`} aria-hidden="true">
+                          {a.tipo === "pendiente" ? "!" : inicialDe(a.tipo)}
+                        </span>
+                        <span className="md-fila-textos">
+                          <span className="md-fila-titular">
+                            <span className="truncate">{t(`bandeja.alerta_${a.tipo}`)}</span>
                           </span>
-                          <span className="tag rol-otro">{t("bandeja.archivado")}</span>
-                        </div>
-                      ))}
-                    </>
+                          <span className="md-fila-sub truncate">{subDeAlerta(a)}</span>
+                        </span>
+                      </div>
+                    ))
                   )}
                 </div>
 
                 <div className="md-pie">
-                  <span>{t("bandeja.porRevisar", { count: pendientes.length })}</span>
+                  <span>{t("bandeja.porRevisar", { count: alertas.length })}</span>
                   <span className="md-pie-total">{t("bandeja.archivados", { count: archivados.length })}</span>
                 </div>
               </div>
 
               <div className="md-detalle">
                 {(() => {
-                  const tx = angosto ? selTx ?? ultimoSel.current.tx : selTx;
-                  const miembro = angosto ? selMiembro ?? ultimoSel.current.miembro : selMiembro;
-                  if (tx) {
-                    return (
-                      <DetalleMovimiento
-                        tx={tx}
-                        tituloLista={t("bandeja.titulo")}
-                        onVolver={() => setSel(null)}
-                        onEditar={onEditTx}
-                        onEliminar={() => {}}
-                        onVerComprobante={setPreviewSel}
-                        acciones={
-                          <>
-                            <button type="button" className="btn secondary" onClick={() => onEditTx(tx)}>
-                              {t("common.editar")}
-                            </button>
-                            <button type="button" className="btn primary" onClick={() => void handleReviewed(tx)}>
-                              <IconCheck size={14} strokeWidth={2.4} /> {t("bandeja.marcarRevisado")}
-                            </button>
-                          </>
-                        }
+                  const a = angosto ? alertaSel ?? ultimaAl.current : alertaSel;
+                  if (a) {
+                    /* La cabecera del handoff —pastilla, titular, párrafo y
+                       acciones— va ARRIBA, y debajo la ficha del objeto, que
+                       ya la pintan bien `DetalleMovimiento` / `DetalleMiembro`.
+                       No se duplica nada: cambia el encabezado según por qué
+                       el asunto llegó a la bandeja. */
+                    const cab = (
+                      <PanelAlerta
+                        alerta={a}
+                        umbral={UMBRAL_COMPROBANTE}
+                        moneda={church.moneda}
+                        acciones={accionesDe(a)}
                       />
                     );
-                  }
-                  if (miembro) {
-                    return (
-                      <DetalleMiembro
-                        church={church}
-                        member={miembro}
-                        tituloLista={t("bandeja.titulo")}
-                        onVolver={() => setSel(null)}
-                        onEditar={() => {}}
-                        onEliminar={() => {}}
-                        acciones={
-                          <button type="button" className="btn primary" onClick={() => void handleRestore(miembro)}>
-                            <IconRefreshCw size={14} strokeWidth={2.2} /> {t("bandeja.restaurar")}
-                          </button>
-                        }
-                      />
-                    );
+                    if (a.tx) {
+                      return (
+                        <div className="al-panel">
+                          {cab}
+                          <DetalleMovimiento
+                            tx={a.tx}
+                            tituloLista={t("bandeja.titulo")}
+                            onVolver={() => { setSel(null); setSelAl(null); }}
+                            onEditar={onEditTx}
+                            onEliminar={() => {}}
+                            onVerComprobante={setPreviewSel}
+                            acciones={<></>}
+                          />
+                        </div>
+                      );
+                    }
+                    if (a.miembro) {
+                      return (
+                        <div className="al-panel">
+                          {cab}
+                          <DetalleMiembro
+                            church={church}
+                            member={a.miembro}
+                            tituloLista={t("bandeja.titulo")}
+                            onVolver={() => { setSel(null); setSelAl(null); }}
+                            onEditar={() => {}}
+                            onEliminar={() => {}}
+                            acciones={<></>}
+                          />
+                        </div>
+                      );
+                    }
+                    /* Un recurrente vencido no tiene ficha que enseñar: el
+                       movimiento todavía no existe, que es justo la alerta. */
+                    return <div className="al-panel">{cab}</div>;
                   }
                   if (angosto) return null;
                   return (
                     <div className="md-vacio">
                       <div className="md-vacio-hint">
-                        <h3>{total === 0 ? t("bandeja.todoAlDia") : t("bandeja.eligeAsunto")}</h3>
-                        <p>{total === 0 ? t("bandeja.emptySub") : t("bandeja.eligeAsuntoSub")}</p>
+                        <h3>{alertas.length === 0 ? t("bandeja.todoAlDia") : t("bandeja.eligeAsunto")}</h3>
+                        <p>{alertas.length === 0 ? t("bandeja.emptySub") : t("bandeja.eligeAsuntoSub")}</p>
                       </div>
                     </div>
                   );

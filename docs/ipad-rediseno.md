@@ -1384,3 +1384,77 @@ Tres cosas, todas dibujadas y sin motor: el desglose Efectivo / Cheques, la
 lista de movimientos incluidos, y el chip "Sin depositar" de la lista de
 Ingresos (§15). Las tres se resuelven con la misma pieza: guardar qué
 movimientos componen cada depósito.
+
+## 19. Por revisar: la taxonomía que se descartó por no mirar el esquema (23 ago 2026)
+
+Sexta pantalla, y la que cierra una vieja deuda. El **handoff 1** dibujaba
+esta bandeja con siete tipos de aviso —"duplicado probable", "categoría
+vacía", "recurrente vencido"— y se descartaron **enteros, por inventados**
+(§4). El handoff 2 los volvió a pedir. Al mirar el esquema con calma, la
+conclusión de agosto se confirma en su forma más cara:
+
+**las siete reglas se calculan con columnas que ya existían.** Ninguna
+necesitaba tabla nueva. El descarte no fue por falta de datos: fue por no
+haber abierto `lib.rs`.
+
+| Alerta | De dónde sale | ¿Existía? |
+|---|---|---|
+| Espera visto bueno | `estado = 'pendiente'` | sí |
+| Gasto sin comprobante | `comprobante_path` + monto | sí |
+| Duplicado probable | huella (tipo, monto, contraparte) + ventana de 8 días | sí |
+| Categoría vacía | `categoria` en blanco | sí |
+| Aportante sin vincular | `member_id` nulo + `diezmo`/`emitir_constancia` | sí |
+| Recurrente vencido | `mesesPendientesRecurrente` | sí |
+| Miembro archivado | `activo = 0` | sí |
+
+El motor (`services/bandeja/alertas.ts`) llevaba escrito desde el 22 de
+agosto, puro y probado aparte, **sin que ninguna pantalla lo llamara**. Esto
+es lo que le pone la pantalla.
+
+### Lo que construye
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Cabecera con conteo y **Aprobar todo** | no | construida |
+| Chips por tipo de alerta | no | construidos (solo los tipos que hay) |
+| Fila de 70px con círculo de 34 e inicial | fila de 64, punto ámbar | construida |
+| Pastilla "Requiere revisión" | no | construida |
+| Titular grande de la alerta | no | construido |
+| **Párrafo que explica el caso** | no | construido, con los datos dentro |
+| Acciones propias de cada alerta | "Marcar revisado" para todo | una fila por tipo |
+
+**El párrafo es el corazón de la pantalla** y por eso se redacta con los
+valores reales —concepto, monto, fecha, método, el umbral citado— en vez de
+un texto fijo: quien abre la bandeja tiene que poder decidir sin ir a buscar
+el movimiento. Siete explicaciones, en los dos idiomas.
+
+**Las acciones son distintas por alerta**, que es lo que hace útil la
+pantalla: "Adjuntar comprobante" en la de comprobante, "Asignar categoría" en
+la de categoría, "Vincular aportante" en la del diezmo suelto, "Restaurar" en
+la del miembro archivado. La que no tiene movimiento sobre el que actuar —el
+recurrente vencido— lleva a donde vive su serie en vez de fingir una acción.
+
+### Una acción que faltaba en la base
+
+"Devolver al tesorero" no existía. El estado `rechazado` **sí** estaba en el
+esquema desde la migración 2, y `listTx` ya lo excluía de las listas y los
+totales, pero **no había forma de ponerlo**: la Bandeja solo sabía aprobar. Se
+añade `markTxRejected`, gemela de `markTxReviewed`. No borra: conserva el
+movimiento con su historial, que es justo la diferencia entre devolver y
+eliminar.
+
+### "Aprobar todo" no aprueba todo
+
+Solo los movimientos en estado pendiente. Las otras seis alertas no son cosas
+que se aprueben —un duplicado no se "aprueba", se decide—, así que el botón no
+las toca ni finge haberlas resuelto. Y por eso solo aparece cuando hay algo
+que aprobar.
+
+### Y un bug que salió en la primera captura
+
+La cabecera de la página decía **"No tienes pendientes" encima de una lista
+con doce asuntos**. Contaba `pendientes + archivados`, que son dos de las
+siete reglas: con la bandeja llena de gastos sin comprobante y ningún
+movimiento en estado pendiente, la suma daba cero. Ahora cuenta alertas, que
+es la unidad de esta pantalla, y el arnés comprueba que la cabecera no
+contradiga a la lista.
