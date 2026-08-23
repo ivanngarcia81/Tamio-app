@@ -1634,6 +1634,22 @@ export const es = {
 
   servicios: {
     nuevoServicio: "Nuevo servicio",
+    rosterIncompleto: "Falta gente por asignar",
+    roster: "Roster",
+    tomarAsistencia: "Tomar asistencia",
+    sinAsignar: "Sin asignar",
+    puestoAyuda: "El servicio guarda quién predica y quién dirige. Los demás puestos todavía no se asignan uno por uno; el renglón está listo para cuando se guarden.",
+    ordenCulto: "Orden del culto",
+    sinOrdenTitulo: "Todavía no se guarda el orden",
+    sinOrdenSub: "El servicio guarda su fecha, quién participa y la asistencia, pero no el minuto a minuto del culto. Cuando se guarde, aquí saldrá cada momento con su hora.",
+    puesto: {
+      predicacion: "Predicación",
+      direccion: "Dirección",
+      alabanza: "Alabanza",
+      ujieres: "Ujieres",
+      ofrenda: "Ofrenda",
+      sonido: "Sonido",
+    },
     editarServicio: "Editar servicio",
     guardarServicio: "Guardar servicio",
     buscarPlaceholder: "Buscar por predicador, mensaje, tipo…",

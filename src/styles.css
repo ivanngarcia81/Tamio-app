@@ -10099,6 +10099,73 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      que ahí no hay nombre guardado, solo sitio para firmar a mano. */
   :root.ipad .da-firma--sinmotor .da-firma-raya { border-top-style: dashed; opacity: 0.7; }
   :root.ipad .da-firma--sinmotor .da-firma-cargo { font-style: italic; }
+
+  /* ---- El roster y el orden del culto (.sv-*) — handoff 2 ---- */
+  :root.ipad .sv-roster,
+  :root.ipad .sv-orden {
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  :root.ipad .sv-orden { padding-bottom: 16px; }
+  :root.ipad .sv-roster-cab {
+    padding: 14px 16px 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  /* Fila de 58px: el puesto a la izquierda en 104px fijos, y a su derecha
+     quién lo cubre. Los 104 son del diseño y hacen que los nombres arranquen
+     todos en la misma columna, que es lo que deja leer el roster de un
+     vistazo. */
+  :root.ipad .sv-puesto {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 8px 16px;
+    border-top: 0.5px solid var(--line-soft);
+  }
+  :root.ipad .sv-puesto-rol {
+    width: 104px;
+    flex: 0 0 104px;
+    font-size: 13.5px;
+    color: var(--text-2);
+  }
+  :root.ipad .sv-puesto-avatar {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 15px;
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+  :root.ipad .sv-puesto-nombre { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; }
+  /* El puesto sin cubrir: gris en cursiva, NO un enlace azul. El diseño lo
+     pinta como acción ("Asignar encargado") y aquí todavía no hay dónde
+     guardar esa asignación — un enlace que no lleva a ningún sitio miente,
+     y un hueco descrito no. */
+  :root.ipad .sv-puesto-sin { color: var(--text-3); font-style: italic; font-weight: 400; }
+  :root.ipad .sv-orden-vacio { box-shadow: none; margin: 0 16px; }
+  /* El punto del culto incompleto. Naranja como en el diseño —es aviso, no
+     error—: --accent-5, que es exactamente el #f97316 del prototipo. */
+  :root.ipad .sv-punto-falta {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 4px;
+    background: var(--accent-5);
+  }
+  /* La fila del culto es de 76px: lleva la pastilla de fecha y dos líneas. */
+  :root.ipad .md-servicios .md-fila { min-height: 76px; }
   /* La hoja va sobre un lienzo gris, no sobre el fondo de la app: es lo que
      la hace parecer papel encima de una mesa y no otra tarjeta más. */
   :root.ipad .md-actas .md-detalle { background: var(--surface-2); }

@@ -254,7 +254,18 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                                 {[s.titulo_mensaje, s.predica].filter(Boolean).join(" · ") || fmtFechaCorta(s.fecha)}
                               </div>
                             </div>
-                            <div className="md-fila-monto">{totalPresentes(s) || "—"}</div>
+                            <span className="md-fila-cola">
+                              <span className="md-fila-monto">{totalPresentes(s) || "—"}</span>
+                              {/* El punto naranja del handoff: el culto al que
+                                  le falta gente por asignar. "Falta" se mide
+                                  sobre lo que la tabla SÍ guarda —quién
+                                  predica y quién dirige—; los otros cuatro
+                                  puestos del diseño no se pueden contar
+                                  todavía (ver DetalleServicio). */}
+                              {(!s.predica || !s.dirige) && (
+                                <span className="sv-punto-falta" title={t("servicios.rosterIncompleto")} />
+                              )}
+                            </span>
                           </div>
                         ))}
                       </div>

@@ -1597,6 +1597,22 @@ export const en: Resources = {
 
   servicios: {
     nuevoServicio: "New service",
+    rosterIncompleto: "Roster still incomplete",
+    roster: "Roster",
+    tomarAsistencia: "Take attendance",
+    sinAsignar: "Unassigned",
+    puestoAyuda: "The service stores who preaches and who leads. The other roles are not assigned one by one yet; the row is ready for when they are.",
+    ordenCulto: "Order of service",
+    sinOrdenTitulo: "The order is not stored yet",
+    sinOrdenSub: "The service stores its date, who takes part and the attendance, but not the minute-by-minute run of the meeting. Once it is stored, each moment will show here with its time.",
+    puesto: {
+      predicacion: "Preaching",
+      direccion: "Leading",
+      alabanza: "Worship",
+      ujieres: "Ushers",
+      ofrenda: "Offering",
+      sonido: "Sound",
+    },
     editarServicio: "Edit service",
     guardarServicio: "Save service",
     buscarPlaceholder: "Search by preacher, message, type…",

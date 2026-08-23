@@ -1518,3 +1518,58 @@ guarda ese tercer nombre. Se dibuja igual, con la raya punteada y el cargo en
 cursiva: **un acta impresa lleva tres firmas y la hoja tiene que tener dónde
 ponerlas**, aunque el nombre se escriba a mano. Es el mismo criterio que los
 tres campos personales de Aportantes.
+
+## 21. Servicios: el roster y el orden, dibujados a medio cablear (23 ago 2026)
+
+Octava pantalla. Es la que más se apoya en la regla de "primero la
+plantilla", porque el handoff pide dos secciones y la tabla solo puede llenar
+un tercio de una.
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Fila de 76px con pastilla de fecha | fila más baja, con pastilla | a 76 |
+| Punto naranja del culto incompleto | no | construido, con dato real |
+| **Roster por puestos** (5) | no | construido; 2 reales, 4 plantilla |
+| **Tomar asistencia** | no (solo Editar) | construido, **real** |
+| **Orden del culto** con horas | no | plantilla con su explicación |
+| Asistencia del último mes | ✓ | sin cambios |
+
+### El roster: dos de seis
+
+`servicios` guarda `predica`, `dirige` y una lista de `participaciones`. Los
+cinco puestos del diseño —Predicación, Alabanza, Ujieres, Ofrenda, Sonido— no
+son columnas: son una estructura que la app no tiene.
+
+Se construye la tarjeta con los seis renglones (los cinco del diseño más
+Dirección, que sí existe). Predicación y Dirección se llenan de la base; los
+otros cuatro dicen **"Sin asignar"** en el gris cursiva de pendiente, con su
+`title` explicando. El mapeo vive en una constante (`PUESTOS`) con
+`campo: null` para los que esperan: cuando haya roster por puesto se cambia
+esa tabla y el resto de la tarjeta ni se entera.
+
+**Lo que NO se copió: el enlace azul.** El diseño pinta el puesto vacío como
+una acción — "Asignar encargado", en azul. Aquí no hay dónde guardar esa
+asignación, y un enlace que no lleva a ningún sitio miente. Un hueco descrito
+no. Es la misma frontera de Actas y Depósitos: no es *¿botón sí o no?*, es
+*¿parece que funciona?*
+
+### "Tomar asistencia" sí es real
+
+Y llevaba tiempo siéndolo sin botón que lo dijera: `ServicioModal` ya tiene la
+lista de asistencia y `db.ts` la guarda **por diferencias** en
+`servicio_asistencia` (para que el uid de cada par se conserve y el borrado
+viaje como lápida al sincronizar). El botón abre ese formulario. Comparte
+destino con "Editar" y eso no es un atajo: ahí dentro están las dos cosas, y
+lo que cambia es la intención con la que se entra — que es lo que el rótulo
+dice.
+
+### El punto naranja mide lo que puede medir
+
+"Falta gente por asignar" se calcula sobre `predica` y `dirige`, que son las
+dos que la tabla sabe. Los otros cuatro puestos no se pueden contar todavía, y
+por eso el aviso no promete más de lo que comprueba.
+
+### El orden del culto
+
+No hay nada: el servicio guarda su fecha, quién participa y la asistencia,
+pero no el minuto a minuto. La tarjeta se construye y lo dice.

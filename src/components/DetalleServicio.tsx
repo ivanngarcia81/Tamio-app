@@ -13,6 +13,28 @@ interface Props {
   onEliminar: (s: Servicio) => void;
 }
 
+/**
+ * Los cinco puestos que dibuja el handoff, y de qué columna sale cada uno.
+ *
+ * `campo: null` = el puesto existe en el diseño y la tabla no lo guarda
+ * todavía. No se esconde: la fila sale con su nombre y "sin asignar", que es
+ * lo que deja ver el hueco. Cuando haya roster por puesto, esto se cambia por
+ * la consulta y el resto de la tarjeta no se entera.
+ */
+const PUESTOS: { clave: string; campo: "predica" | "dirige" | null }[] = [
+  { clave: "predicacion", campo: "predica" },
+  { clave: "direccion", campo: "dirige" },
+  { clave: "alabanza", campo: null },
+  { clave: "ujieres", campo: null },
+  { clave: "ofrenda", campo: null },
+  { clave: "sonido", campo: null },
+];
+
+/** Las iniciales de un nombre, para el círculo de 30px del roster. */
+function inicialesDe(nombre: string): string {
+  return nombre.trim().split(/\s+/).slice(0, 2).map((x) => x[0]?.toUpperCase() ?? "").join("");
+}
+
 function lista(json: string | null): string[] {
   if (!json) return [];
   try {
@@ -30,16 +52,19 @@ function totalPresentes(s: Servicio): number {
 /**
  * DetalleServicio — la columna derecha del maestro-detalle de Servicios.
  *
- * **Lo que el handoff dibuja aquí y no existe.** Su panel trae un "Roster"
- * por PUESTOS —Predicación, Alabanza, Ujieres, Ofrenda, Sonido, cada uno con
- * su encargado— y un "Orden del culto" con horas (10:00 Bienvenida, 10:10
- * Alabanza…). En Tamio un servicio guarda `dirige`, `predica` y una lista de
- * `participaciones`: no hay catálogo de puestos, ni asignación por puesto, ni
- * horario minuto a minuto. Inventar esas dos secciones sería dibujar campos
- * que nadie puede llenar (docs/ipad-rediseno.md §4).
+ * **El Roster y el Orden del culto: dibujados, medio cableados.** El handoff
+ * pide un roster por PUESTOS —Predicación, Alabanza, Ujieres, Ofrenda,
+ * Sonido— y un orden del culto con horas. En Tamio un servicio guarda
+ * `predica`, `dirige` y una lista de `participaciones`: dos de los cinco
+ * puestos existen de verdad, el resto no, y del horario no hay nada.
  *
- * Lo que sí cruza es su tercera sección, "Asistencia del último mes": eso son
- * los cultos anteriores, que la página ya tiene cargados.
+ * Por la regla de Iván del 23 de agosto —primero la plantilla, el motor
+ * después— las dos secciones se construyen: los puestos con columna se
+ * llenan, los que no la tienen dicen "sin asignar" en el gris de pendiente, y
+ * el orden del culto explica qué le falta. Ver docs/ipad-rediseno.md §21.
+ *
+ * "Asistencia del último mes" sí es real desde siempre: son los cultos
+ * anteriores, que la página ya tiene cargados.
  */
 export default function DetalleServicio({ servicio: s, historial, tituloLista, onVolver, onEditar, onEliminar }: Props) {
   const { t } = useTranslation();
@@ -91,6 +116,14 @@ export default function DetalleServicio({ servicio: s, historial, tituloLista, o
           {[fmtFechaCorta(s.fecha), s.titulo_mensaje].filter(Boolean).join(" · ")}
         </p>
         <div className="dm-acciones">
+          {/* Las dos del handoff. Las dos abren el MISMO formulario, y eso no
+              es un atajo: ahí dentro están la lista de asistencia (que guarda
+              por diferencias en `servicio_asistencia`) y los campos de quién
+              predica y quién dirige. Lo que cambia es la intención con la que
+              se entra, y el rótulo la dice. */}
+          <button type="button" className="btn secondary" onClick={() => onEditar(s)}>
+            {t("servicios.tomarAsistencia")}
+          </button>
           <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(s)}>
             <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
           </button>
@@ -99,6 +132,51 @@ export default function DetalleServicio({ servicio: s, historial, tituloLista, o
           </button>
         </div>
       </div>
+
+      {/* El roster por puestos del handoff. Los dos que la tabla guarda se
+          llenan; los otros cuatro salen con su nombre y "sin asignar", para
+          que se vea el hueco que va a llenarse. */}
+      <section className="sv-roster">
+        <div className="sv-roster-cab">{t("servicios.roster")}</div>
+        {PUESTOS.map((p) => {
+          const valor = p.campo ? (p.campo === "predica" ? s.predica : s.dirige) : null;
+          return (
+            <div className={`sv-puesto${valor ? "" : " sin"}`} key={p.clave}>
+              <span className="sv-puesto-rol">{t(`servicios.puesto.${p.clave}`)}</span>
+              {valor ? (
+                <>
+                  <span className="sv-puesto-avatar">{inicialesDe(valor)}</span>
+                  <span className="sv-puesto-nombre truncate">{valor}</span>
+                </>
+              ) : (
+                <span
+                  className="sv-puesto-nombre sv-puesto-sin"
+                  title={p.campo ? undefined : t("servicios.puestoAyuda")}
+                >
+                  {t("servicios.sinAsignar")}
+                </span>
+              )}
+            </div>
+          );
+        })}
+        {participaciones.length > 0 && (
+          <div className="sv-puesto">
+            <span className="sv-puesto-rol">{t("servicios.participaciones")}</span>
+            <span className="sv-puesto-nombre truncate">{participaciones.join(" · ")}</span>
+          </div>
+        )}
+      </section>
+
+      {/* "Orden del culto": el handoff lo dibuja con horas y el servicio no
+          guarda ninguna. Se construye la tarjeta con su explicación en vez de
+          desaparecer, igual que la pestaña Familia de Aportantes. */}
+      <section className="sv-orden">
+        <div className="sv-roster-cab">{t("servicios.ordenCulto")}</div>
+        <div className="fm-vacio fm-vacio--pendiente sv-orden-vacio">
+          <span className="fm-vacio-titulo">{t("servicios.sinOrdenTitulo")}</span>
+          <span className="fm-vacio-sub">{t("servicios.sinOrdenSub")}</span>
+        </div>
+      </section>
 
       {/* El conteo, primero y en grande: es la cifra que sale en los informes
           del mes y lo que se viene a comprobar de un culto pasado. */}

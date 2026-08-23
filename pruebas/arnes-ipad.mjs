@@ -1190,6 +1190,45 @@ console.log("\n== Actas del iPad (handoff) ==");
   await ctxAc.close();
 }
 
+/* ---------- 17. Servicios: roster por puestos y orden del culto ---------- */
+console.log("\n== Servicios del iPad (handoff) ==");
+{
+  const ctxSv = await nuevoContexto("ipad");
+  const pg = await ctxSv.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
+  await pg.click(".md-servicios .md-fila:not(.sel)");
+  await pg.waitForTimeout(450);
+
+  const m = await pg.evaluate(() => {
+    const f = document.querySelector(".md-servicios .md-fila");
+    return {
+      alto: f ? Math.round(f.getBoundingClientRect().height) : 0,
+      dia: !!document.querySelector(".md-servicios .md-dia"),
+      puestos: document.querySelectorAll(".sv-puesto").length,
+      cubiertos: document.querySelectorAll(".sv-puesto-avatar").length,
+      sinAsignar: document.querySelectorAll(".sv-puesto-sin").length,
+      orden: !!document.querySelector(".sv-orden"),
+      acciones: [...document.querySelectorAll(".dm-acciones .btn")].map((b) => b.textContent.trim()),
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(m.alto >= 76, `la fila del culto mide 76 o más (${m.alto})`);
+  chk(m.dia, "con la pastilla de fecha del diseño");
+  /* Los seis puestos del handoff, siempre: los que la tabla guarda y los que
+     todavía no. Si solo salieran los cubiertos, el hueco desaparecería. */
+  chk(m.puestos >= 6, `el roster enseña sus puestos (${m.puestos})`);
+  chk(m.cubiertos >= 1, `alguno viene cubierto de la base (${m.cubiertos})`);
+  chk(m.sinAsignar >= 1, `y los que no, lo dicen (${m.sinAsignar})`);
+  chk(m.orden, "la tarjeta del orden del culto está");
+  chk(m.acciones.some((a) => /asistencia|attendance/i.test(a)), `y "Tomar asistencia" (${m.acciones.join(" · ")})`);
+  chk(m.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/servicios-1366x1024.png` });
+  await ctxSv.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
