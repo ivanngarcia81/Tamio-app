@@ -1940,3 +1940,57 @@ para exigir cromo en barra y lista y **lienzo** en el panel, en claro y en
 oscuro (`#F2F2F7` y `#000`). Y una nueva comprueba las cuatro superficies de
 una vez, incluida la identidad que pidió Iván —panel igual a `.dash-canvas`—
 y la excepción de la Agenda. El arnés pasa de 550 a **557**.
+
+## 26. El chip que se salía de su caja (23 ago 2026)
+
+Iván circuló el chip del mes de Reportes. Medido en el navegador antes de
+tocar nada —la lección del §22— el chip arrancaba en **x=642** cuando el panel
+empieza en 648 y su contenido en 680: **38px fuera del panel, encima de la
+columna maestra**.
+
+No era de Reportes. `MenuAnchor` envuelve su disparador en `.ios-bar-button`,
+y esa regla medía **44×44 fijos** con `justify-content: center`. Un glifo cabe;
+un chip con texto de 120px no, y al estar centrado asoma `(120−44)/2 = 38` por
+cada lado. La cuenta cuadra al píxel.
+
+### Lo que hacía que fuera la tercera vez
+
+Ya estaba parcheado **dos veces**, en dos sitios distintos:
+
+```
+:root.ipad .md-chips .ios-bar-button   { width: auto; height: auto; min-width: 0 }
+:root.ipad .mb-controles .ios-bar-button { width: auto; height: auto; padding: 0; … }
+```
+
+Y el comentario del segundo decía, textualmente, *"el mismo tropiezo que en
+Membresía"*. Dos parches y una nota que ya sabía que era un patrón — pero cada
+uno se quedó en su pantalla, así que la barra de Reportes, escrita después, lo
+volvió a pisar.
+
+**El arreglo va a la raíz: 44 pasa a ser el MÍNIMO táctil, no la medida.**
+
+```
+min-width: 44px;  min-height: 44px;   /* en vez de width/height */
+```
+
+Para un glifo no cambia nada —sigue midiendo 44×44— y cualquier disparador con
+texto crece a lo que necesite. Los dos parches se quedan solo con lo que de
+verdad les es propio (soltar el mínimo táctil donde el chip ya lo da, y el
+radio de la fila de Membresía).
+
+### La guarda, y por qué la primera versión no servía
+
+La primera comprobación que escribí medía la caja del botón contra la de su
+**padre**. Con el fallo puesto de vuelta, **salía en verde**: el padre es
+`.ios-menu-anchor`, que se encoge al contenido, así que se lleva el desbordado
+consigo y las dos cajas coinciden.
+
+La invariante buena no es dónde está el botón, es que **su contenido quepa
+dentro de él**: `scrollWidth <= clientWidth`. Con esa, el fallo restaurado
+sale en rojo en las **tres** pantallas a la vez —Reportes, Ingresos y
+Membresía— que es exactamente lo que había que ver desde el principio.
+
+Más la comprobación concreta de lo que Iván señaló: el chip del mes arranca
+donde arranca el informe (680 = 680) y dentro del panel (680 > 648).
+
+El arnés pasa de 586 a **591**.

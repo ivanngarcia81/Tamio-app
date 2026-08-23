@@ -2820,8 +2820,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  /* 44 es el MÍNIMO táctil, no la medida. Con `width/height: 44px` fijos, un
+     disparador que no sea un glifo —un chip con texto, como el del mes— se
+     desborda de su caja Y se centra, así que asoma (ancho−44)/2 por cada
+     lado: medido, 38px a la izquierda en la barra de Reportes, encima de la
+     columna maestra. Ha pasado TRES veces (Movimientos, Membresía y
+     Reportes) y se parcheó dos, cada una en su sitio; esto lo arregla en el
+     origen. Para un glifo no cambia nada: sigue midiendo 44×44. */
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -9715,7 +9722,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      principal de la fila. `MenuAnchor` envuelve su disparador en un
      `.ios-bar-button` de 44×44 fijos —el mismo tropiezo que en Membresía—,
      así que aquí se le devuelve el tamaño de su contenido. */
-  :root.ipad .md-chips .ios-bar-button { width: auto; height: auto; min-width: 0; }
+  /* El chip del mes no necesita el mínimo táctil de 44 de alto: ya lo da
+     `.chip`, y en una fila de filtros 44 rompe el renglón. */
+  :root.ipad .md-chips .ios-bar-button { min-width: 0; min-height: 0; }
   :root.ipad .chip.chip-mes {
     display: inline-flex;
     align-items: center;
@@ -16334,10 +16343,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 8px;
   min-width: 0;
 }
-/* MenuAnchor envuelve su disparador en `.ios-bar-button`, que mide 44x44
-   fijos para los glifos de la barra. Aquí el disparador es un CHIP con
-   texto: sin esto, los dos chips desbordaban sus 44px y se encimaban. */
-:root.ipad .mb-controles .ios-bar-button { width: auto; height: auto; padding: 0; border-radius: 8px; }
+/* MenuAnchor envuelve su disparador en `.ios-bar-button`. Desde el 23 de
+   agosto ese 44 es un MÍNIMO y no una medida fija (ver la regla base), así
+   que el chip ya no se desborda solo. Aquí queda lo propio de esta barra: sin
+   mínimo táctil —lo da el chip— y con el radio de la fila. */
+:root.ipad .mb-controles .ios-bar-button { min-width: 0; min-height: 0; border-radius: 8px; }
 
 :root.ipad .mb-chip-mando {
   display: inline-flex;

@@ -1840,6 +1840,62 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   await ctxSm.close();
 }
 
+/* ---------- 23. Ningún disparador de menú se sale de su caja ----------
+   `MenuAnchor` envuelve su disparador en `.ios-bar-button`, que medía 44×44
+   FIJOS con `justify-content: center`. Cuando el disparador no es un glifo
+   sino un chip con texto, se desborda Y se centra: asoma (ancho−44)/2 por
+   cada lado. En la barra de Reportes eran 38px a la izquierda, encima de la
+   columna maestra — es lo que vio Iván. Pasó tres veces y se parcheó dos, en
+   sitio distinto cada una; ahora el 44 es un mínimo y esto lo vigila donde
+   quiera que aparezca un menú. */
+console.log("\n== Los disparadores de menú caben en su caja ==");
+{
+  const ctxMb = await nuevoContexto("ipad");
+  const pg = await ctxMb.newPage();
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  const revisar = async (ruta, esperar, abrir, nombre) => {
+    await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(esperar, { timeout: 10000 });
+    if (abrir) { await pg.click(abrir); await pg.waitForTimeout(450); }
+    await pg.waitForTimeout(250);
+    const fuera = await pg.evaluate(() => {
+      const malos = [];
+      for (const b of document.querySelectorAll(".ios-bar-button")) {
+        if (b.getBoundingClientRect().width === 0) continue;
+        /* La invariante es del BOTÓN, no de su sitio en la página: su
+           contenido tiene que caber dentro de él. Comparar contra el padre no
+           sirve —`.ios-menu-anchor` se encoge al contenido, así que el
+           desbordado se lleva al padre consigo— y comprobado: con el bug
+           puesto de vuelta, esa versión salía en verde. */
+        if (b.scrollWidth > b.clientWidth + 1 || b.scrollHeight > b.clientHeight + 1) {
+          malos.push(`${b.className}: contenido ${b.scrollWidth}×${b.scrollHeight} en caja ${b.clientWidth}×${b.clientHeight}`);
+        }
+      }
+      return malos;
+    });
+    chk(fuera.length === 0, `${nombre}: el contenido cabe en el disparador (${fuera.join(" · ") || "todos"})`);
+  };
+
+  await revisar("reportes", ".md-reportes .md-indice-item", ".md-reportes .md-indice-item", "Reportes");
+  await revisar("ingresos", ".md-movimientos .md-fila", null, "Ingresos");
+  await revisar("membresia", ".mb-fila", null, "Membresía");
+
+  /* Y lo que Iván vio: el chip del mes tiene que empezar donde empieza el
+     informe, no 38px más a la izquierda. */
+  await pg.goto(`${URL_BASE}/#/reportes`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-reportes .md-indice-item", { timeout: 10000 });
+  await pg.click(".md-reportes .md-indice-item");
+  await pg.waitForTimeout(500);
+  const a = await pg.evaluate(() => {
+    const x = (s) => { const e = document.querySelector(s); return e ? Math.round(e.getBoundingClientRect().left) : null; };
+    return { chip: x(".rep-barra .chip-mes"), cifras: x(".md-reportes .summary-4"), panel: x(".md-reportes .md-detalle") };
+  });
+  chk(a.chip === a.cifras, `el chip del mes arranca donde el informe (${a.chip} vs ${a.cifras})`);
+  chk(a.chip > a.panel, `y dentro del panel, no encima de la lista (${a.chip} > ${a.panel})`);
+  await ctxMb.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
