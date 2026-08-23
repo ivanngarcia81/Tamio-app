@@ -382,6 +382,41 @@ de `md-agenda .md-detalle` con `--ipad-cromo`, que son la excepción. Un
 arreglo de color es justo el que se puede quedar fuera del bundle sin que
 nada falle, porque no rompe ninguna prueba: solo se ve.
 
+## Cuando el build muere con 22 `TS2688` y todos los nombres acaban en " 2"
+
+```
+error TS2688: Cannot find type definition file for 'react 2'.
+error TS2688: Cannot find type definition file for 'node 2'.
+… 22 en total
+```
+
+**No es el código.** Es macOS: con iCloud Drive, o tras un copiar/pegar del
+Finder que colisiona, el sistema duplica carpetas añadiéndoles **" 2"** al
+nombre. TypeScript enumera `node_modules/@types/*` y trata **cada carpeta**
+como un paquete de tipos; las copias no lo son, y cada una es un error. Que
+los errores sean exactamente 22 —los 22 paquetes de `@types` del proyecto— es
+la firma que lo delata.
+
+Le pasó a Iván el 23 de agosto compilando la 1.2.6, y el build de Tauri se
+paró en `beforeBuildCommand`.
+
+**En la Mac, para salir del paso:**
+
+```sh
+ls node_modules/@types | grep ' 2$'   # confirmar que están
+rm -rf node_modules && npm ci         # NO borrar package-lock.json: va versionado
+```
+
+**Y para que no vuelva:** `tsconfig.json` lleva desde ese día `"types": []`,
+que apaga la inclusión automática. Es seguro porque `src` no usa ningún tipo
+global —lo de React llega por `react-jsx` y todo lo demás por `import`— y está
+comprobado de las dos formas: creando las carpetas duplicadas a mano, `tsc`
+falla sin esa línea y pasa con ella.
+
+Si el proyecto vive dentro de iCloud Drive (Escritorio/Documentos
+sincronizados), conviene sacarlo: `node_modules` con decenas de miles de
+archivos es justo lo que hace que iCloud duplique.
+
 > ⚠️ **`npm run verificar-canal` suelto no dice nada útil.** Está pensado
 > para correr al final de `npm run build`, comparando el bundle contra el
 > canal que se pidió. Lanzado solo, sin `VITE_CANAL`, asume "descarga" y

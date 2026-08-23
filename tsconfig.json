@@ -14,6 +14,25 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* NINGÚN paquete de tipos global implícito.
+       Sin esto, TypeScript enumera `node_modules/@types/*` y trata CADA
+       carpeta como un paquete de tipos. Basta con que aparezca una carpeta
+       que no sea un paquete válido para que el build muera con 22
+       `TS2688: Cannot find type definition file`.
+
+       Y aparecen: en un Mac con iCloud Drive o tras un copiar/pegar del
+       Finder, macOS duplica carpetas añadiéndoles " 2" al nombre —`react 2`,
+       `node 2`, `d3-scale 2`…—. Le pasó a Iván el 23 de agosto compilando la
+       1.2.6: los 22 errores eran exactamente los 22 paquetes de @types del
+       proyecto, cada uno con su " 2".
+
+       Vaciar la lista es seguro aquí porque `src` no usa NINGÚN tipo global:
+       lo de React llega por `react-jsx` y todo lo demás por `import`. Está
+       comprobado — con esta línea, `tsc` y `npm run build` pasan igual. Y
+       `vite.config.ts` no depende de `@types/node`: ya lleva su propio
+       `@ts-expect-error` sobre `process`. */
+    "types": [],
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
