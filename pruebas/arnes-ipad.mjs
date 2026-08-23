@@ -1648,12 +1648,43 @@ console.log("\n== Los grises del iPad (handoff) ==");
      cromo que lo use sale del gris equivocado — y ya pasó dos veces (la
      columna del día de la Agenda y la barra de vistas). Esto las mide todas
      de golpe para que no haya una tercera. */
+  /* La guarda de RAÍZ, y la única que impide una sexta vez: sobre el propio
+     archivo, que ninguna regla de `:root.ipad` mencione `--sidebar-bg`. El
+     token cuelga de `--canvas` —el lienzo— pero se llama "sidebar-bg", así
+     que quien lo escriba pensando en la barra lateral pinta el gris
+     contrario. Ya pasó cinco veces, y las cinco las cazó Iván mirando la app.
+     Medir superficie por superficie solo encuentra las que a alguien se le
+     ocurra medir; esto encuentra la regla en cuanto se escribe. */
+  {
+    // Sin comentarios: media docena de ellos NOMBRAN el token justo para
+    // explicar por qué no se usa, y contarlos sería castigar la explicación.
+    const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    const culpables = [];
+    // Recorre bloques `selector { … }` de primer nivel de anidación.
+    const re = /([^{}]+)\{([^{}]*)\}/g;
+    let m;
+    while ((m = re.exec(css)) !== null) {
+      const sel = m[1].trim();
+      if (sel.includes(":root.ipad") && m[2].includes("--sidebar-bg")) {
+        culpables.push(sel.replace(/\s+/g, " ").slice(0, 70));
+      }
+    }
+    chk(culpables.length === 0, `ninguna regla de iPad usa --sidebar-bg (${culpables.join(" · ") || "ninguna"})`);
+  }
+
   const cromoEsperado = g.sidebar;
   await pg.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".ag-barra", { timeout: 10000 });
   await pg.waitForTimeout(400);
   const barra = await pg.evaluate(() => getComputedStyle(document.querySelector(".ag-barra")).backgroundColor);
   chk(barra === cromoEsperado, `la barra de vistas de la Agenda, cromo (${barra})`);
+
+  await pg.goto(`${URL_BASE}/#/reporte-miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".inf-barrita", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+  const barrita = await pg.evaluate(() => getComputedStyle(document.querySelector(".inf-barrita")).backgroundColor);
+  chk(barrita === cromoEsperado, `la barrita de Informes, cromo (${barrita})`);
 
   await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".settings-nav", { timeout: 10000 });

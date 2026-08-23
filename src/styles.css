@@ -9505,7 +9505,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     flex-direction: column;
     border-right: 0.5px solid var(--line);
-    background: var(--sidebar-bg);
+    background: var(--ipad-cromo);
   }
   :root.ipad .md-filtros {
     padding: 12px 14px;
@@ -16889,7 +16889,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 10px;
   padding: 11px 22px;
   border-bottom: 0.5px solid var(--line);
-  background: var(--sidebar-bg);
+  /* CROMO: en el handoff esta barrita lleva `--sb`, como la de arriba y la
+     columna maestra. Ver "El gris del cromo del iPad". */
+  background: var(--ipad-cromo);
 }
 :root.ipad .inf-barrita-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 :root.ipad .inf-barrita-titulo {
@@ -17029,7 +17031,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    > `.dash-canvas` — el que Iván señaló con la flecha.
    >
    > La excepción de verdad es **la columna del día de la Agenda**: esa sí es
-   > `--sb` en el handoff, y por eso conserva `--sidebar-bg`.
+   > `--sb` en el handoff, y por eso va con el cromo aunque sea un panel de
+   > detalle.
+
+   ⚠️ **`--sidebar-bg` NO se usa en el iPad, y hay guarda.** Cuelga de
+   `--canvas`, que aquí vale el LIENZO, así que su nombre engaña: quien
+   escriba "sidebar-bg" pensando en la barra lateral pinta el gris contrario.
+   Pasó cinco veces —la columna del día de la Agenda, su barra de vistas, el
+   índice de zonas de Ajustes, la barrita de Informes y las dos mezclas
+   translúcidas— y cada una la cazó Iván mirando la app, no una prueba. El
+   arnés comprueba ahora sobre el PROPIO ARCHIVO que ninguna regla bajo
+   `:root.ipad` lo mencione: es la única forma de que no haya una sexta.
 
    Va en su propio token y no reusando `--sidebar-bg` porque `--sidebar-bg`
    cuelga de `--canvas`, que en `.movil` vale lo mismo que `--bg` para el
