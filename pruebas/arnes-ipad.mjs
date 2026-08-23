@@ -1407,6 +1407,36 @@ console.log("\n== Agenda del iPad (handoff) ==");
   chk(fams.size >= 3, `las pastillas se tiñen por tipo, no por estado (${[...fams].join(", ")})`);
   if (DIR) await pg.screenshot({ path: `${DIR}/agenda-mes-1366x1024.png` });
 
+  /* El día de HOY va con el acento de la app, no con `--ink`: con el acento
+     de fábrica ("neutro") `--ink` es #0f0f0f y la celda salía como un bloque
+     NEGRO. La regla ya estaba escrita en styles.css sobre `--brand` ("iOS no
+     usa negro puro como estado activo") y la Agenda no la seguía; lo cazó
+     Iván en el iPad. Se comprueba de las dos formas: que no sea negro, y que
+     siga al acento cuando el usuario elige uno. */
+  const bgHoy = () => pg.evaluate(() =>
+    getComputedStyle(document.querySelector(".md-agenda-cal .agenda-cell.today")).backgroundColor);
+  const fabrica = await bgHoy();
+  /* El cambio de acento y la lectura van en pasadas SEPARADAS: leer el color
+     en el mismo `evaluate` que pone el atributo devuelve el valor viejo —el
+     recálculo de estilo no ha llegado al elemento— y la comprobación salía en
+     rojo con el código bien. */
+  await pg.evaluate(() => document.documentElement.setAttribute("data-acento", "morado"));
+  await pg.waitForTimeout(150);
+  const morado = await bgHoy();
+  await pg.evaluate(() => document.documentElement.removeAttribute("data-acento"));
+  await pg.waitForTimeout(150);
+  chk(fabrica === "rgb(5, 150, 105)", `hoy va con el verde de la app, no en negro (${fabrica})`);
+  chk(morado !== fabrica, `y sigue al acento elegido (morado → ${morado})`);
+
+  /* Un solo "Nueva actividad" en pantalla: había otro igual al pie de la
+     columna del día y con un día abierto se veían los dos verdes. */
+  const botones = await pg.evaluate(() => {
+    const t = [...document.querySelectorAll("button")].map((b) => b.textContent.trim());
+    const n = t.filter((x) => /Nueva actividad|New activity/.test(x));
+    return { cuantos: n.length, cuales: n };
+  });
+  chk(botones.cuantos === 1, `un solo "Nueva actividad" (${botones.cuantos}: ${botones.cuales.join(" · ")})`);
+
   /* La columna del día: 22px de fecha, el conteo, y lo ya hecho tachado. */
   await pg.click(".md-agenda-cal .agenda-cell.today");
   await pg.waitForTimeout(400);

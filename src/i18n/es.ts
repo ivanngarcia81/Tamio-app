@@ -2439,7 +2439,7 @@ export const es = {
 
   agenda: {
     eligeDia: "Elige un día",
-    eligeDiaSub: "Lo que tenga sale aquí, y desde aquí se le añade algo nuevo.",
+    eligeDiaSub: "Toca un día para ver lo que tiene. Lo que crees con \"Nueva actividad\" se guardará en el día que tengas abierto.",
     compromisos_one: "{{count}} compromiso",
     compromisos_other: "{{count}} compromisos",
     vencidas_one: "{{count}} vencido",

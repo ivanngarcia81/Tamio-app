@@ -2055,3 +2055,58 @@ El chip del mes de **Ingresos** estaba igual de recortado, y ahí nadie lo
 había visto todavía. Es la ventaja de arreglar el patrón y no el síntoma.
 
 El arnés pasa de 591 a **605**.
+
+## 28. El día de hoy en negro, y el botón repetido (23 ago 2026)
+
+Dos cosas en la misma captura de Iván: *"lo negro debe ser verde"* y *"hay un
+duplicado en nueva actividad"*.
+
+### `--ink` no era el token, y el archivo ya lo decía
+
+La celda de hoy se pintaba con `var(--ink)`. Con el acento de fábrica
+—"neutro"— `--ink` vale `#0f0f0f`, así que la celda entera salía **negra**.
+
+Lo llamativo es que la regla ya estaba escrita en este mismo `styles.css`,
+sobre el token `--brand`, y con estas palabras:
+
+> *"NO es un alias directo de `--ink`: el acento de fábrica ("neutro") deja
+> `--ink` en `#0f0f0f`, y con un alias los switches, checks y chips activos
+> salían casi NEGROS — justo el patrón que este rediseño vino a quitar
+> («iOS no usa negro puro como estado activo»)."*
+
+Es exactamente la celda de hoy: un **estado activo** pintado a bloque. La
+Agenda se escribió sin ver esa nota, y usó `--ink`. Van tres veces en dos días
+que la respuesta ya estaba en el repo y el problema fue no buscarla —el
+`--sidebar-bg` (§25), el patrón de portal de los menús (§27) y esto.
+
+Cambiados a `--brand` la celda de hoy, el día elegido y la pastilla de la
+familia "culto" (que el handoff tiñe con su acento, y que con "neutro" salía
+negra). Con acento de fábrica dan el verde de la app; en cuanto el usuario
+elige uno, lo siguen.
+
+**Faltaba media pareja.** `--brand` no tenía color de texto: `--ink-contrast`
+no sirve encima —con el acento de fábrica son colores distintos, y en oscuro
+`--pos` se aclara tanto que el blanco deja de leerse—. Se añade
+`--brand-contrast`: blanco en claro, tinta oscura en oscuro, y alias de
+`--ink-contrast` en cuanto hay acento elegido.
+
+### El "Nueva actividad" de más
+
+Había **dos** botones verdes idénticos con el mismo rótulo: el de la cabecera
+y otro al pie de la columna del día. Con un día abierto se veían los dos a la
+vez, a un palmo. El handoff no dibuja ninguno en esa columna.
+
+Se queda el de la cabecera **y hereda lo que hacía el otro**: con un día
+elegido, crea EN ESE DÍA. No se pierde el atajo, solo el botón. El texto del
+estado vacío se reescribe, porque prometía un botón que ya no está.
+
+### Un falso rojo de la comprobación
+
+La guarda del acento salía en rojo con el código bien: leía el color en el
+**mismo** `evaluate` que ponía `data-acento`, y el recálculo de estilo todavía
+no había llegado al elemento —`--brand` ya valía morado y la celda seguía
+verde—. Poner el atributo y leer el color en pasadas separadas lo arregla.
+Vale la pena dejarlo escrito: una comprobación que miente en verde es peor que
+no tenerla, y esta mentía en rojo, que al menos se ve.
+
+El arnés pasa de 605 a **608**.

@@ -45,6 +45,12 @@
      aclarada para oscuro) y solo se cambia cuando el usuario SÍ eligió un
      acento, más abajo en los bloques [data-acento]. */
   --brand: var(--pos);
+  /* La otra mitad del par. `--ink-contrast` no sirve sobre `--brand`: con el
+     acento de fábrica son colores distintos (uno es casi negro y el otro el
+     verde de la app), y en oscuro el verde se aclara tanto que el blanco deja
+     de leerse encima. Cuando el usuario SÍ elige acento, los dos coinciden y
+     esto se convierte en un alias. */
+  --brand-contrast: #ffffff;
   --accent-1: #22c55e;   /* ingresos - verde */
   --accent-2: #ef4444;   /* gastos - rojo */
   --accent-3: #7c3aed;   /* diezmos - morado */
@@ -205,6 +211,9 @@
   /* En oscuro: verde/rojo más luminosos para contraste, y fondos suaves
      translúcidos (tinte) en vez de pasteles claros que brillarían. */
   --pos: #34d399;
+  /* Sobre el verde claro de oscuro, tinta oscura: el mismo criterio que el
+     `--ink-contrast` de `[data-acento="verde"]` en oscuro. */
+  --brand-contrast: #052e22;
   --neg: #f87171;
   --pos-bg: rgba(52,211,153,0.13);
   --neg-bg: rgba(248,113,113,0.13);
@@ -226,17 +235,17 @@
 
    Van después del bloque de tema oscuro a propósito: al combinar dos
    atributos ganan en especificidad y no dependen del orden. */
-:root[data-acento="verde"] { --ink: #047857; --ink-contrast: #ffffff; --brand: var(--ink); }
-:root[data-theme="dark"][data-acento="verde"] { --ink: #34d399; --ink-contrast: #052e22; --brand: var(--ink); }
+:root[data-acento="verde"] { --ink: #047857; --ink-contrast: #ffffff; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
+:root[data-theme="dark"][data-acento="verde"] { --ink: #34d399; --ink-contrast: #052e22; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
 
-:root[data-acento="azul"] { --ink: #1d4ed8; --ink-contrast: #ffffff; --brand: var(--ink); }
-:root[data-theme="dark"][data-acento="azul"] { --ink: #60a5fa; --ink-contrast: #0a1e3d; --brand: var(--ink); }
+:root[data-acento="azul"] { --ink: #1d4ed8; --ink-contrast: #ffffff; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
+:root[data-theme="dark"][data-acento="azul"] { --ink: #60a5fa; --ink-contrast: #0a1e3d; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
 
-:root[data-acento="morado"] { --ink: #6d28d9; --ink-contrast: #ffffff; --brand: var(--ink); }
-:root[data-theme="dark"][data-acento="morado"] { --ink: #a78bfa; --ink-contrast: #241046; --brand: var(--ink); }
+:root[data-acento="morado"] { --ink: #6d28d9; --ink-contrast: #ffffff; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
+:root[data-theme="dark"][data-acento="morado"] { --ink: #a78bfa; --ink-contrast: #241046; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
 
-:root[data-acento="ambar"] { --ink: #b45309; --ink-contrast: #ffffff; --brand: var(--ink); }
-:root[data-theme="dark"][data-acento="ambar"] { --ink: #fbbf24; --ink-contrast: #3a2606; --brand: var(--ink); }
+:root[data-acento="ambar"] { --ink: #b45309; --ink-contrast: #ffffff; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
+:root[data-theme="dark"][data-acento="ambar"] { --ink: #fbbf24; --ink-contrast: #3a2606; --brand: var(--ink); --brand-contrast: var(--ink-contrast); }
 
 @media (min-width: 1728px) {
   :root { --content-pad-x: 40px; }
@@ -11253,7 +11262,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .ag-dia-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   :root.ipad .ag-dia-nombre { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
   :root.ipad .ag-dia-meta { font-size: 12.5px; color: var(--text-2); overflow-wrap: anywhere; }
-  :root.ipad .ag-dia-nueva { align-self: flex-start; }
 
   /* ---- La barra de 50px, sobre las DOS columnas (handoff) ----
      Es hermana de `.md-split`, no hija: `.main:has(.md-split)` es una
@@ -11391,8 +11399,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      arriba tiene la misma especificidad que la regla de aquí y perdía por
      orden de aparición — el panel se abría y la celda no se marcaba. */
   :root.ipad .md-agenda-cal .agenda-cell.sel {
-    background: color-mix(in srgb, var(--ink) 10%, transparent);
-    box-shadow: inset 0 0 0 1.5px var(--ink);
+    background: color-mix(in srgb, var(--brand) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--brand);
   }
   :root.ipad .md-agenda-cal .agenda-cell-num {
     width: auto;
@@ -11411,18 +11419,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .md-agenda-cal .agenda-cell.fuera .agenda-evt { opacity: 0.55; }
   /* Hoy: la celda entera con el acento, no un círculo alrededor del número. */
-  :root.ipad .md-agenda-cal .agenda-cell.today { background: var(--ink); }
+  /* `--brand` y NO `--ink`. Es la regla que este mismo archivo ya tenía
+     escrita sobre `--brand` (~línea 40): con el acento de fábrica ("neutro")
+     `--ink` vale `#0f0f0f`, y una celda ENTERA de ese color es un bloque
+     negro — "iOS no usa negro puro como estado activo", que es justo lo que
+     este rediseño vino a quitar. `--brand` arranca en el verde de la app y
+     pasa a seguir al acento en cuanto el usuario elige uno. Lo cazó Iván en
+     el iPad: "lo negro debe ser verde". */
+  :root.ipad .md-agenda-cal .agenda-cell.today { background: var(--brand); }
   :root.ipad .md-agenda-cal .agenda-cell.today .agenda-cell-num {
     background: none;
-    color: var(--ink-contrast);
+    color: var(--brand-contrast);
     font-weight: 700;
   }
   :root.ipad .md-agenda-cal .agenda-cell.today .agenda-evt {
     background: rgba(255, 255, 255, 0.24);
-    color: var(--ink-contrast);
+    color: var(--brand-contrast);
   }
   :root.ipad .md-agenda-cal .agenda-cell.today .agenda-evt-hora,
-  :root.ipad .md-agenda-cal .agenda-cell.today .agenda-mas { color: var(--ink-contrast); }
+  :root.ipad .md-agenda-cal .agenda-cell.today .agenda-mas { color: var(--brand-contrast); }
 
   /* La pastilla del evento. El handoff la tinta por TIPO —culto, reunión,
      fecha límite, lo demás—, que es el color que ya usa el "Esta semana" del
@@ -11437,9 +11452,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-size: 11.5px;
     font-weight: 600;
   }
+  /* El handoff tiñe "culto" con su acento —que allí es verde—; aquí va con
+     `--brand` por lo mismo que la celda de hoy: con "neutro", `--ink` dejaba
+     pastillas negras. */
   :root.ipad .agenda-evt.fam-culto {
-    background: color-mix(in srgb, var(--ink) 12%, transparent);
-    color: var(--ink);
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
   }
   :root.ipad .agenda-evt.fam-reunion {
     background: color-mix(in srgb, var(--accent-3) 14%, transparent);
@@ -11474,7 +11492,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-agenda-cal .agenda-evt--hoy {
     border: 0;
     background: rgba(255, 255, 255, 0.24);
-    color: var(--ink-contrast);
+    color: var(--brand-contrast);
     cursor: default;
     align-self: flex-start;
   }
@@ -11501,7 +11519,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .md-agenda .ag-dia-fila.estado-completada .ag-dia-nombre { text-decoration: line-through; }
   :root.ipad .md-agenda .ag-dia-vacio { padding: 0 18px; }
-  :root.ipad .md-agenda .ag-dia-nueva { margin: 10px 14px 16px; }
 }
 
 /* ============================================================

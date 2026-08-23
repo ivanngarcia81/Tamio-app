@@ -2396,7 +2396,7 @@ export const en: Resources = {
 
   agenda: {
     eligeDia: "Pick a day",
-    eligeDiaSub: "Whatever it has shows up here, and this is where you add something new to it.",
+    eligeDiaSub: "Tap a day to see what it has. Anything you create with \"New activity\" lands on the day you have open.",
     compromisos_one: "{{count}} commitment",
     compromisos_other: "{{count}} commitments",
     vencidas_one: "{{count}} overdue",

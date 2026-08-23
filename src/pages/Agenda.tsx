@@ -717,9 +717,6 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
         </div>
       )}
 
-      <button className="btn primary ag-dia-nueva" onClick={() => abrirNueva(diaSel)}>
-        <IconPlus size={14} /> {t("agenda.nuevaActividad")}
-      </button>
     </div>
   );
 
@@ -1175,7 +1172,12 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               <MacFiltros campos={camposFiltro} onRestablecer={limpiarFiltrosMac} />
             </>
           )}
-          <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
+          {/* El ÚNICO "Nueva actividad" de la pantalla. Había otro igual —mismo
+              rótulo y mismo peso— al pie de la columna del día, y con un día
+              abierto se veían los dos verdes a la vez; el handoff no dibuja
+              ninguno ahí. No se pierde el atajo: con un día elegido, este
+              botón crea EN ESE DÍA, que es lo que hacía el de abajo. */}
+          <button className="btn primary btn-nuevo-cabecera" onClick={() => abrirNueva(partido ? diaSel : null)}><IconPlus size={14} /> {t("agenda.nuevaActividad")}</button>
         </div>
       </div>
 
