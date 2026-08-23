@@ -54,6 +54,16 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > existe, y el fallo no habría salido hasta que alguien intentara resolver el
 > árbol desde cero. Anclado, se cambió **una sola línea**: la 3852. Van
 > **cuatro de siete** bumps con colisión.
+>
+> **En la 1.2.4 el choque cambió de archivo.** En `Cargo.lock`, por primera
+> vez en cuatro bumps, `1.2.3` salía **una sola vez** y era la de `tesoreria`.
+> Pero `package-lock.json` traía **tres** apariciones de `1.2.3`, y solo dos
+> son de Tamio: la tercera es **`update-browserslist-db`**, que ese día iba
+> justo en la 1.2.3 (más una cuarta como rango `^1.2.3` en las dependencias
+> de otro paquete). La lección se generaliza: **el ancla no es "Cargo.lock",
+> es "la línea que sabes cuál es"** — en `package.json`/`package-lock.json`,
+> las dos primeras (la raíz y `packages[""]`); en `Cargo.lock`, la que sigue
+> a `name = "tesoreria"`. Van **cinco de ocho** bumps con colisión.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -102,7 +112,8 @@ en las tres fuentes:
 | esta | **1.2.1** — el corte de columnas baja de 1150 a 1000: el iPad Pro de 12.9"/13" en vertical pasa a dos columnas, y Ajustes enseña por fin la versión en iPad y Mac |
 | esta | **1.2.2** — la build de REVISIÓN del handoff 2: Membresía maestro-detalle, Informes de membresía con su índice, Mensajes como chat centrado, y Cartas con crear solo en el "+" |
 | esta | **1.2.3** — el primer arreglo salido de revisar la 1.2.2 en un iPad de verdad: la barra lateral se esconde en vertical (la regla pasa de ancho a orientación), más el gris único del cromo del iPad —barra, columna maestra y fondo del panel, `#F7F7F9` / `#131315`— y el inventario del handoff 2 corregido contra el esquema |
-| la siguiente | 1.2.4 |
+| esta | **1.2.4** — el handoff 2 completo: **Agenda** (barra de 50px sobre las dos columnas, rejilla que llena el alto, pastillas de color por tipo, días vecinos en gris) y **Configuración** (las listas agrupadas cruzan al iPad, las tres miniaturas de tema, y la Zona sensible que se veía rota desde antes). Con esto, las once pantallas del handoff están recorridas |
+| la siguiente | 1.2.5 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -314,6 +325,29 @@ apareció el número invisible de "hoy" en el calendario de la Mac. Se arregló
 y se subió a la 1.1.7 en vez de distribuir una versión con un fallo
 conocido. No es la 1.1.3 (aquella sí llegó a subirse rota); esta murió en la
 Mac de Iván.
+
+En la **1.2.4**, lo de siempre —`tsc`, los doce `verificar-*`, el build del
+canal `appstore` con sus dos guardas— y la lista de clases del bundle alargada
+con lo de esta tanda, que es lo que se olvida: `ag-barra`, `ag-seg`, `ag-hoy`,
+`ag-nav` y las cuatro familias de color de la Agenda (`fam-culto`,
+`fam-reunion`, `fam-fecha`, `fam-otra`), más `pf-temas`, `pf-lienzo` y
+`pf-renglon` de las miniaturas de tema. Y las tres clases que este cambio
+**mudó** de `:root.iphone` a `:root.movil` —`ios-choice-row`, `ios-color-dot`,
+`ios-swipe`—, comprobando en el CSS construido que `movil .ios-row` sale 11
+veces y `iphone .ios-row` solo 5: las cinco que se quedan a propósito
+(`.ios-row-value` y `.ios-row-accion`, que solo usa el teléfono).
+
+> ⚠️ **Ojo con buscar nombres de función en el JS construido.** El primer
+> intento de comprobar el bundle buscó `matrizMesVecinos`, `enListas` y
+> `TemasIPad` y salieron **cero las tres** — no porque faltaran, sino porque
+> el minificador les cambia el nombre. Lo que sobrevive son las **cadenas**:
+> los nombres de clase (`ag-barra` ×4, `pf-tema` ×3, `fam-` ×3,
+> `settings-zona--ios-flat` ×7) y las claves de traducción
+> (`agenda.vistaHistorial` ×2). Un cero en esa búsqueda no significa que el
+> trabajo no viaje; significa que se buscó lo que no era.
+
+Y las once pantallas del handoff quedan recorridas con esta versión. El
+repaso pantalla por pantalla está en `docs/ipad-rediseno.md` §14–§24.
 
 > ⚠️ **`npm run verificar-canal` suelto no dice nada útil.** Está pensado
 > para correr al final de `npm run build`, comparando el bundle contra el
