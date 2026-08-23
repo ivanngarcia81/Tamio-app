@@ -1637,3 +1637,97 @@ El envoltorio nuevo (`.ce-split`) existe siempre, pero cuando no hay papel al
 lado se declara `display: contents` y **desaparece del layout**: el formulario
 se comporta exactamente como antes en Mac y en el iPhone. Sin eso, un div de
 más habría cambiado el ancho de dos pantallas que no se estaban tocando.
+
+## 23. Agenda: la barra fuera y la rejilla llenando el alto (23 ago 2026)
+
+Décima pantalla. La Agenda ya era **maestro-detalle al revés** —el calendario
+se queda con el ancho y el día es la columna fija de 318 a la derecha— desde
+la primera pasada, así que el diseño no cambia de anatomía. Lo que cambia es
+todo lo que rodea al calendario.
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| **Barra de 50px sobre las dos columnas** | barra dentro del calendario | construida (`.ag-barra`) |
+| Segmentado Mes · Semana · Lista | cuatro *chips* | segmentado, con las **cuatro** vistas |
+| Mes pegado al segmentado, `‹ Hoy ›` al otro extremo | al revés | invertido |
+| Rejilla que **llena el alto** | tabla de 104px por celda | `grid-auto-rows: 1fr` |
+| Celdas sueltas de 10px sobre el lienzo | tabla con filos | tarjetas |
+| Días de los meses vecinos, en gris | huecos en blanco | `matrizMesVecinos` |
+| Hoy con la celda entera tintada | círculo alrededor del número | celda entera |
+| Pastillas de color **por tipo** | filo de color por estado | tipo **y** estado |
+| Columna del día: fecha a 22px, tarjetas, lo hecho tachado | 20px, sin tachado | al diseño |
+
+### Lo que hubo que quitarle el sitio, y por qué no se pierde
+
+El calendario del handoff **necesita el alto entero**: `grid-auto-rows: 1fr`
+no dice nada si encima hay una fila de cuatro cifras, un bloque de
+recordatorios y una fila de filtros. Medido, sin ellos la rejilla pasa a
+852px de alto en 1366×1024.
+
+La regla que salió de ahí: **en el iPad partido, Mes y Semana enseñan solo el
+calendario; Lista e Historial conservan las cifras y los filtros.** No es
+esconder funcionalidad por estética —
+
+- los cuatro destinos a los que llevaban las cifras son exactamente los que
+  la barra nueva ya ofrece: "Semana" + "Hoy" para *Hoy* y *Esta semana*,
+  "Lista" para *Próximas* y *Por confirmar*;
+- filtrar y buscar son operaciones de **lista**, y la lista sigue teniendo su
+  fila de filtros entera.
+
+En Mac y en el iPhone no cambia nada: las dos siguen viendo lo de siempre.
+
+### Tres pestañas en el diseño, cuatro en la app
+
+El handoff dibuja **Mes · Semana · Lista**. La app tiene además
+**Historial**, que es la única forma de mirar lo ya pasado. No se quita: el
+diseño define la **forma** del control —un segmentado— no cuántas vistas
+tiene esta aplicación. Entra como cuarta pestaña, y en 744px (el iPad mini en
+vertical, el más estrecho) las cuatro, el mes y `‹ Hoy ›` siguen cabiendo en
+una sola línea. Está medido en el arnés.
+
+### Color por tipo, filo por estado: caben los dos
+
+La pastilla del handoff se tiñe por **tipo** de actividad (culto en el
+acento, reunión en morado, fecha límite en ámbar, lo demás en cian). La app
+venía pintando un filo de 2px por **estado** (borrador, programada,
+confirmada). Son dos preguntas distintas y las dos tienen dato real detrás,
+así que se quedan las dos: fondo por tipo, filo por estado.
+
+El agrupado de tipos **no es nuevo**: es `familiaDeActividad`, las cuatro
+familias sobre los 23 tipos del catálogo que ya usa el "Esta semana" del
+Inicio (§14). Si dos pantallas dicen "esto es un culto", lo dicen del mismo
+color.
+
+### El nombre delante de la hora
+
+El handoff escribe la pastilla como **"Culto 10:00"**. La app la traía al
+revés, y en una celda de ~93px lo que sobrevivía al recorte era
+`09:00 Fir…` — la hora se adivina, el nombre no. Se invierte con `order`,
+sin tocar el orden del DOM (que es el que oye VoiceOver y el que usa el Mac),
+y la hora lleva factor de encogido alto para que **ceda ella primero** cuando
+no caben las dos.
+
+### `matrizMesVecinos` va aparte a propósito
+
+La rejilla del mes rellenaba con huecos en blanco. El handoff pinta los días
+de los meses de al lado en gris, que es como se dibuja un calendario en
+cualquier parte. La función nueva no sustituye a `matrizMes`: **aquella la
+usa también el calendario del teléfono**, donde el hueco es deliberado —ahí
+el mes es una cuadrícula de puntos, no una tabla— y cambiarla habría movido
+una pantalla que no es la de este rediseño.
+
+### Lo medido
+
+El arnés pasa de 491 a **528 comprobaciones**, todas en verde. Las de esta
+pantalla comprueban, entre otras cosas, que la barra mide 50 y **cruza las
+dos columnas** (1048 contra 1048), que está *por encima* del partido y no
+dentro del calendario, que la rejilla llega hasta abajo (852px, seis filas
+iguales), que no queda ninguna celda en blanco, que las pastillas traen tres
+familias de color distintas y que en Lista **vuelven** las cuatro cifras y
+los filtros.
+
+Una de ellas nació de un fallo de verdad: `.agenda-cell.sel` —la marca del
+día elegido— tiene **la misma especificidad** que el fondo de tarjeta nuevo y
+perdía por orden de aparición, así que el panel se abría y la celda no se
+marcaba. La comprobación se hace en un día **cualquiera** y no en hoy, que va
+tintado de por sí y tapaba el fallo; quitando la regla, el arnés lo canta.

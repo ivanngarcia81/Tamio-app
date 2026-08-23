@@ -308,6 +308,38 @@ const ctxSeed = await nuevoContexto("ipad");
       responsable_persona: null, responsable_ministerio: null,
       invitado: null, contacto: null, estado: "programada", es_fecha_importante: false,
     });
+    /* Las cuatro familias de color de la rejilla (culto, reunión, fecha
+       límite y "lo demás") y un compromiso YA HECHO: sin esto la Agenda del
+       iPad se pinta con un solo color y nunca se ve el tachado. */
+    await db.insertActividad(id, {
+      nombre: "Consejo de agosto", tipo: "reunionLideres", tipo_personalizado: null,
+      fecha: en(2), hora_inicio: "19:00", hora_fin: null, dia_completo: false,
+      lugar: "Salón anexo", descripcion: null, responsable_member_id: null,
+      responsable_persona: null, responsable_ministerio: null,
+      invitado: null, contacto: null, estado: "confirmada", es_fecha_importante: false,
+    });
+    await db.insertActividad(id, {
+      nombre: "Depósito bancario", tipo: "fechaLimite", tipo_personalizado: null,
+      fecha: en(5), hora_inicio: null, hora_fin: null, dia_completo: true,
+      lugar: null, descripcion: null, responsable_member_id: null,
+      responsable_persona: null, responsable_ministerio: null,
+      invitado: null, contacto: null, estado: "programada", es_fecha_importante: true,
+    });
+    await db.insertActividad(id, {
+      nombre: "Entregar carta de traslado", tipo: "otra", tipo_personalizado: "Trámite",
+      fecha: en(6), hora_inicio: "12:00", hora_fin: null, dia_completo: false,
+      lugar: null, descripcion: null, responsable_member_id: null,
+      responsable_persona: null, responsable_ministerio: null,
+      invitado: null, contacto: null, estado: "borrador", es_fecha_importante: false,
+    });
+    await db.insertActividad(id, {
+      nombre: "Firmar acta de julio", tipo: "reunionAdministrativa", tipo_personalizado: null,
+      fecha: iso(hoy), hora_inicio: "09:00", hora_fin: null, dia_completo: false,
+      lugar: null, descripcion: null, responsable_member_id: null,
+      responsable_persona: null, responsable_ministerio: null,
+      invitado: null, contacto: null, estado: "completada", es_fecha_importante: false,
+    });
+
     // Mensajes: el hilo compartido de las tres áreas. Tres mensajes de dos
     // roles distintos para que se vean las burbujas de los dos lados; el
     // separador de día sale solo (todos caen hoy).
@@ -1273,6 +1305,187 @@ console.log("\n== Cartas del iPad (handoff) ==");
   chk(m.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/cartas-1366x1024.png` });
   await ctxCa.close();
+}
+
+/* ---------- 19. Agenda: barra de 50px y rejilla que llena el alto ---------- */
+console.log("\n== Agenda del iPad (handoff) ==");
+{
+  const ctxAg = await nuevoContexto("ipad");
+  const pg = await ctxAg.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".ag-barra", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const b = await pg.evaluate(() => {
+    const r = (s) => document.querySelector(s)?.getBoundingClientRect();
+    const barra = r(".ag-barra");
+    const split = r(".md-split.md-agenda");
+    const grid = r(".md-agenda-cal .agenda-grid");
+    const cal = r(".md-agenda-cal .agenda-cal");
+    const seg = document.querySelectorAll(".ag-seg button");
+    const filas = getComputedStyle(document.querySelector(".md-agenda-cal .agenda-grid")).gridTemplateRows.split(" ").length;
+    return {
+      alto: barra ? Math.round(barra.height) : 0,
+      // La barra cruza las DOS columnas: su ancho es el del partido entero.
+      anchoBarra: barra ? Math.round(barra.width) : 0,
+      anchoSplit: split ? Math.round(split.width) : 0,
+      // …y está POR ENCIMA del partido, no dentro.
+      encima: barra && split ? barra.bottom <= split.top + 1 : false,
+      pestanas: seg.length,
+      activa: document.querySelector(".ag-seg button.activo")?.textContent.trim(),
+      mes: document.querySelector(".ag-barra-mes")?.textContent.trim(),
+      hoy: !!document.querySelector(".ag-hoy"),
+      flechas: document.querySelectorAll(".ag-nav").length,
+      // La rejilla llena lo que queda: su base coincide con la del calendario.
+      llena: grid && cal ? Math.abs(grid.bottom - cal.bottom) < 2 : false,
+      altoGrid: grid ? Math.round(grid.height) : 0,
+      filas,
+      // Lo que el handoff NO dibuja en Agenda y aquí se le cede el alto.
+      cifras: document.querySelectorAll(".md-agenda-cal .summary-4").length,
+      filtros: document.querySelectorAll(".md-agenda-cal .agenda-filtros").length,
+      barraVieja: document.querySelectorAll(".agenda-toolbar").length,
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(b.alto === 50, `la barra mide 50px de alto (${b.alto})`);
+  chk(Math.abs(b.anchoBarra - b.anchoSplit) < 2, `y cruza las dos columnas (${b.anchoBarra} vs ${b.anchoSplit})`);
+  chk(b.encima, "por encima del partido, no dentro del calendario");
+  chk(b.pestanas === 4, `el segmentado trae las cuatro vistas (${b.pestanas})`);
+  chk(!!b.activa, `con Mes activa (${b.activa})`);
+  chk(/\d/.test(b.mes || ""), `el mes al lado (${b.mes})`);
+  chk(b.hoy && b.flechas === 2, `y ‹ · Hoy · › al otro extremo (${b.flechas} flechas)`);
+  chk(b.cifras === 0, "en Mes no está la fila de cuatro cifras");
+  chk(b.filtros === 0, "ni la fila de filtros");
+  chk(b.barraVieja === 0, "ni la barra vieja de vistas");
+  chk(b.llena, "la rejilla llega hasta abajo del calendario");
+  chk(b.altoGrid > 480, `con alto de verdad (${b.altoGrid}px)`);
+  chk(b.filas >= 5, `y filas repartidas a partes iguales (${b.filas})`);
+  chk(b.desborda === false, "sin scroll horizontal");
+
+  /* Las celdas: 10px de radio sobre el lienzo, los días vecinos en gris y
+     el de hoy tintado entero con el acento. */
+  const c = await pg.evaluate(() => {
+    const cel = document.querySelector(".md-agenda-cal .agenda-cell");
+    const hoy = document.querySelector(".md-agenda-cal .agenda-cell.today");
+    const fuera = document.querySelector(".md-agenda-cal .agenda-cell.fuera");
+    const cs = (e) => (e ? getComputedStyle(e) : null);
+    return {
+      radio: cel ? cs(cel).borderRadius : "",
+      vecinos: document.querySelectorAll(".md-agenda-cal .agenda-cell.fuera").length,
+      vacias: document.querySelectorAll(".md-agenda-cal .agenda-cell.empty").length,
+      numFuera: fuera ? cs(fuera.querySelector(".agenda-cell-num")).color : "",
+      numDentro: cel && !cel.classList.contains("fuera") ? cs(cel.querySelector(".agenda-cell-num")).color : "",
+      hoyFondo: hoy ? cs(hoy).backgroundColor : "",
+      inkVar: getComputedStyle(document.documentElement).getPropertyValue("--ink").trim(),
+      familias: [...document.querySelectorAll(".md-agenda-cal .agenda-evt")]
+        .map((e) => [...e.classList].find((k) => k.startsWith("fam-")))
+        .filter(Boolean),
+    };
+  });
+  chk(c.radio.startsWith("10px"), `las celdas son tarjetas de 10px (${c.radio})`);
+  chk(c.vecinos > 0, `los días del mes de al lado se pintan (${c.vecinos})`);
+  chk(c.vacias === 0, "sin huecos en blanco");
+  chk(c.numFuera !== c.numDentro, `y en gris, no como los del mes (${c.numFuera})`);
+  chk(!!c.hoyFondo && c.hoyFondo !== "rgba(0, 0, 0, 0)", `hoy va tintado entero (${c.hoyFondo})`);
+  const fams = new Set(c.familias);
+  chk(fams.size >= 3, `las pastillas se tiñen por tipo, no por estado (${[...fams].join(", ")})`);
+  if (DIR) await pg.screenshot({ path: `${DIR}/agenda-mes-1366x1024.png` });
+
+  /* La columna del día: 22px de fecha, el conteo, y lo ya hecho tachado. */
+  await pg.click(".md-agenda-cal .agenda-cell.today");
+  await pg.waitForTimeout(400);
+  const d = await pg.evaluate(() => {
+    const tit = document.querySelector(".ag-dia-titulo");
+    const hecha = document.querySelector(".ag-dia-fila.estado-completada");
+    return {
+      titulo: tit?.textContent.trim(),
+      tam: tit ? getComputedStyle(tit).fontSize : "",
+      sub: document.querySelector(".ag-dia-sub")?.textContent.trim(),
+      filas: document.querySelectorAll(".ag-dia-fila").length,
+      hecha: !!hecha,
+      tachada: hecha ? getComputedStyle(hecha.querySelector(".ag-dia-nombre")).textDecorationLine : "",
+      apagada: hecha ? Number(getComputedStyle(hecha).opacity) : 1,
+    };
+  });
+  chk(!!d.titulo, `el día se abre con su fecha (${d.titulo})`);
+  chk(d.tam === "22px", `a 22px como el handoff (${d.tam})`);
+  chk(/\d/.test(d.sub || ""), `y su cuenta de compromisos (${d.sub})`);
+  chk(d.filas >= 2, `con las actividades del día (${d.filas})`);
+  chk(d.hecha, "lo ya hecho aparece");
+  chk(d.tachada.includes("line-through"), `tachado (${d.tachada})`);
+  chk(d.apagada < 0.7, `y en segundo plano (opacidad ${d.apagada})`);
+  if (DIR) await pg.screenshot({ path: `${DIR}/agenda-dia-1366x1024.png` });
+
+  /* La marca del día elegido en la rejilla. Se prueba en un día CUALQUIERA
+     y no en hoy: hoy va tintado de por sí y taparía el fallo. Lo tapó una
+     vez —`.agenda-cell.sel` tiene la misma especificidad que el fondo de
+     tarjeta nuevo y perdía por orden de aparición. */
+  await pg.click(".md-agenda-cal .agenda-cell:not(.today):not(.fuera)");
+  await pg.waitForTimeout(350);
+  const sel = await pg.evaluate(() => {
+    const s = document.querySelector(".md-agenda-cal .agenda-cell.sel");
+    const otra = document.querySelector(".md-agenda-cal .agenda-cell:not(.sel):not(.today):not(.fuera)");
+    const cs = (e) => (e ? getComputedStyle(e) : null);
+    return {
+      hay: !!s,
+      hoy: s ? s.classList.contains("today") : false,
+      fondo: s ? cs(s).backgroundColor : "",
+      otro: otra ? cs(otra).backgroundColor : "",
+      sombra: s ? cs(s).boxShadow : "",
+    };
+  });
+  chk(sel.hay && !sel.hoy, "un día cualquiera se puede elegir");
+  chk(sel.fondo !== sel.otro, `y queda marcado en la rejilla (${sel.fondo} vs ${sel.otro})`);
+  chk(sel.sombra !== "none", "con su filo de acento");
+
+  /* Lista: ahí las cifras y los filtros SÍ vuelven — no se han quitado de
+     la pantalla, se han quitado de donde el calendario necesita el alto. */
+  await pg.click(".ag-seg button:nth-child(3)");
+  await pg.waitForTimeout(400);
+  const l = await pg.evaluate(() => ({
+    cifras: document.querySelectorAll(".md-agenda-cal .summary-4").length,
+    filtros: document.querySelectorAll(".md-agenda-cal .agenda-filtros").length,
+    mes: document.querySelectorAll(".ag-barra-mes").length,
+    nav: document.querySelectorAll(".ag-barra-nav").length,
+  }));
+  chk(l.cifras === 1, `en Lista vuelven las cuatro cifras (${l.cifras})`);
+  chk(l.filtros === 1, "y la fila de filtros");
+  chk(l.mes === 0 && l.nav === 0, "y la barra suelta el mes y las flechas, que ahí no significan nada");
+
+  /* La barra en el iPad más estrecho (mini en vertical, 744). Ahí caben
+     cuatro pestañas, el mes Y ‹ · Hoy · › en 744px justos, y si no cupieran
+     lo que se rompería es la fila entera. */
+  await pg.click(".ag-seg button:nth-child(1)");
+  await pg.setViewportSize({ width: 744, height: 1133 });
+  await pg.waitForTimeout(400);
+  const n = await pg.evaluate(() => {
+    const b = document.querySelector(".ag-barra");
+    const r = b.getBoundingClientRect();
+    return {
+      alto: Math.round(r.height),
+      desbordaBarra: b.scrollWidth > b.clientWidth + 1,
+      /* Todos los hijos en UNA línea. Se mira el CENTRO, no el borde de
+         arriba: con `align-items: center` cada pieza tiene su propio alto
+         (el segmentado 30, el texto 16, las flechas 32) y sus `top` no
+         coinciden aunque estén en la misma fila. */
+      dispersion: (() => {
+        const c = [...b.children].map((e) => {
+          const r = e.getBoundingClientRect();
+          return (r.top + r.bottom) / 2;
+        });
+        return Math.round(Math.max(...c) - Math.min(...c));
+      })(),
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(n.alto === 50, `en 744 la barra sigue midiendo 50 (${n.alto})`);
+  chk(n.desbordaBarra === false, "sin desbordarse a lo ancho");
+  chk(n.dispersion <= 1, `y en una sola línea (${n.dispersion}px de dispersión)`);
+  chk(n.desborda === false, "sin scroll horizontal en 744");
+  if (DIR) await pg.screenshot({ path: `${DIR}/agenda-744x1133.png` });
+  await ctxAg.close();
 }
 
 await browser.close();

@@ -10,6 +10,7 @@ import {
   setEstadoActividad, truncarSerieAgenda, type Actividad, type Church, type ExcepcionAgenda, type NewActividad,
 } from "../db";
 import { expandirTodas, normalizarLugar, solapanHorario, type OcurrenciaVista } from "../services/agenda/recurrencia";
+import { familiaDeActividad } from "../services/inicio/periodo";
 import { EmptyState } from "../components/TxList";
 import { useBarraEstado } from "../components/BarraEstado";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -92,6 +93,34 @@ function matrizMes(yyyyMm: string): (string | null)[] {
   while (celdas.length % 7 !== 0) celdas.push(null);
   return celdas;
 }
+/**
+ * Las mismas celdas, pero con los días VECINOS en vez de huecos.
+ *
+ * El handoff dibuja la rejilla del mes con los días de los meses de al lado
+ * en gris —26, 27… 31 de julio antes del 1 de agosto—, que es como se dibuja
+ * un calendario en cualquier parte: la semana no se parte a la mitad.
+ *
+ * Va aparte de `matrizMes` a propósito. Aquella la usa también el calendario
+ * del teléfono (`CalendarioIOS`), donde el hueco es deliberado —ahí el mes es
+ * una cuadrícula de puntos, no una tabla— y cambiarla movería una pantalla
+ * que no es la de este rediseño.
+ */
+function matrizMesVecinos(yyyyMm: string): { fecha: string; fuera: boolean }[] {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const primero = new Date(y, m - 1, 1);
+  const inicio = new Date(primero);
+  inicio.setDate(primero.getDate() - primero.getDay());
+  return Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(inicio);
+    d.setDate(inicio.getDate() + i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return { fecha: iso, fuera: iso.slice(0, 7) !== yyyyMm };
+  })
+    // Seis semanas siempre serían una fila vacía en los meses cortos; se
+    // recorta la última si entera cae fuera del mes.
+    .filter((_, i, todas) => i < 35 || todas.slice(35).some((x) => !x.fuera));
+}
+
 function diasDeSemana(iso: string): string[] {
   const [y, m, d] = iso.split("-").map(Number);
   const base = new Date(y, m - 1, d);
@@ -233,6 +262,17 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const [pendingDelete, setPendingDelete] = useState<Actividad | null>(null);
 
   const hoy = hoyISO();
+
+  /* En el iPad partido, Mes y Semana enseñan SOLO el calendario: es lo que
+     dibuja el handoff —una rejilla que llena el alto con `grid-auto-rows:1fr`
+     y la columna del día al lado— y con la fila de cuatro cifras, los
+     recordatorios y la fila de filtros encima no queda alto para eso.
+
+     No se pierde nada: las cuatro cifras y los filtros siguen en Lista e
+     Historial (que es donde se filtra), y los cuatro destinos a los que
+     llevaban las cifras son exactamente los que la barra nueva ya ofrece —
+     "Semana" + "Hoy" para las dos primeras, "Lista" para las otras dos. */
+  const soloCalendario = partido && (vista === "mes" || vista === "semana");
 
   useEffect(() => {
     let cancelado = false;
@@ -683,13 +723,63 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
     </div>
   );
 
+  /* ---- La barra de 50px del iPad (handoff) ----
+     El handoff pone una barra propia sobre la pantalla partida, del ancho de
+     las dos columnas: segmentado de vistas a la izquierda, el mes al lado, y
+     al otro extremo ‹ · Hoy · ›. Es la barra de la app de Calendario, y por
+     eso va FUERA del calendario que se desplaza: navegar el mes no puede
+     depender de dónde esté el scroll.
+
+     El handoff dibuja tres pestañas —Mes, Semana, Lista— y la app tiene
+     CUATRO: también "Historial". No se quita: es la única forma de mirar lo
+     ya pasado, y el handoff define la forma del control (un segmentado),
+     no cuántas vistas tiene esta app. Entra como cuarta pestaña.
+
+     Ojo con el orden: aquí el título va PEGADO al segmentado y los controles
+     al extremo derecho, al revés que la vieja `.agenda-toolbar`. */
+  const barraIPad = (
+    <div className="ag-barra">
+      <div className="ag-seg" role="tablist" aria-label={t("agenda.cambiarVista")}>
+        {(["mes", "semana", "lista", "historial"] as Vista[]).map((v) => (
+          <button key={v} type="button" role="tab" aria-selected={vista === v}
+            className={vista === v ? "activo" : ""} onClick={() => setVista(v)}>
+            {t(`agenda.vista${v === "mes" ? "Mes" : v === "semana" ? "Semana" : v === "lista" ? "Lista" : "Historial"}`)}
+          </button>
+        ))}
+      </div>
+      {(vista === "mes" || vista === "semana") && <span className="ag-barra-mes">{titulo}</span>}
+      {vista === "historial" && (
+        <>
+          <select className="form-input sm" aria-label={t("agenda.filtrarAnio")} value={anioHist} onChange={(e) => setAnioHist(e.target.value)}>
+            {opcAnioHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <select className="form-input sm" aria-label={t("agenda.filtrarMes")} value={mesHist} onChange={(e) => setMesHist(e.target.value)}>
+            {opcMesHist.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </>
+      )}
+      <div className="ag-barra-cola" />
+      {(vista === "mes" || vista === "semana") && (
+        <div className="ag-barra-nav">
+          <button type="button" className="ag-nav" aria-label={vista === "semana" ? t("agenda.semanaAnterior") : t("agenda.mesAnterior")} onClick={irAtras}>
+            <IconChevronLeft size={16} strokeWidth={2.2} />
+          </button>
+          <button type="button" className="ag-hoy" onClick={() => setCursor(hoy)}>{t("agenda.hoy")}</button>
+          <button type="button" className="ag-nav" aria-label={vista === "semana" ? t("agenda.semanaSiguiente") : t("agenda.mesSiguiente")} onClick={irAdelante}>
+            <IconChevronRight size={16} strokeWidth={2.2} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   /* El cuerpo de la pantalla (barra de vistas + calendario o lista), a una
      constante: el iPad lo pinta dentro de la columna ancha del
      maestro-detalle y el Mac y el teléfono dentro de su `.content`. Los
      mismos nodos en los dos sitios.  */
   const calendario = (
     <>
-        {enIPhone ? (
+        {!soloCalendario && (enIPhone ? (
           <div className="ios-panel">
             <div className="ios-panel-head"><h2>{t("agenda.seccionResumen")}</h2></div>
             <div className="ios-panel-grid">
@@ -732,9 +822,9 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             </button>
           </div>
           </div>
-        )}
+        ))}
 
-        {!loading && !vacio && recordatorios.length > 0 && (
+        {!soloCalendario && !loading && !vacio && recordatorios.length > 0 && (
           <div className="agenda-recordatorios">
             <div className="agenda-rec-head"><IconClock size={14} strokeWidth={1.9} /> {t("agenda.recordatoriosTitulo")} <span className="agenda-grupo-n">{recordatorios.length}</span></div>
             <div className="agenda-rec-lista">
@@ -749,7 +839,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           </div>
         )}
 
-        {!vacio && (enIPhone ? (
+        {!vacio && !soloCalendario && (enIPhone ? (
           /* En iPhone la búsqueda se queda a lo ancho y los filtros bajan a
              una fila propia que se DESLIZA: con seis, envolver dejaba la
              pantalla en escalera. */
@@ -865,7 +955,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
               </div>
             )}
           </>
-        ) : enMac ? null : (
+        ) : enMac || partido ? null : (
         <div className="agenda-toolbar">
           <div className="agenda-nav">
             {(vista === "mes" || vista === "semana") && (
@@ -942,22 +1032,33 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           <div className="agenda-cal card">
             <div className="agenda-dow">{diasSemana.map((d, i) => <div key={i} className="agenda-dow-cell">{d}</div>)}</div>
             <div className="agenda-grid">
-              {matrizMes(mesCursor).map((fecha, i) => {
-                if (!fecha) return <div key={i} className="agenda-cell empty" />;
+              {/* En el iPad la rejilla lleva los días vecinos en gris (handoff);
+                  en Mac se queda con los huecos que tenía. */}
+              {(partido
+                ? matrizMesVecinos(mesCursor)
+                : matrizMes(mesCursor).map((f) => (f ? { fecha: f, fuera: false } : null))
+              ).map((celda, i) => {
+                if (!celda) return <div key={i} className="agenda-cell empty" />;
+                const { fecha, fuera } = celda;
                 const items = porFecha.get(fecha) ?? [];
                 return (
                   /* En el iPad tocar un día lo ABRE en el panel de la
                      derecha —es lo que dibuja el handoff— en vez de saltar
                      directo al formulario de "nueva actividad"; crear sigue
                      estando, dentro del propio panel. En Mac no cambia. */
-                  <div key={i} className={`agenda-cell${fecha === hoy ? " today" : ""}${partido && diaSel === fecha ? " sel" : ""}`}
+                  <div key={i} className={`agenda-cell${fecha === hoy ? " today" : ""}${fuera ? " fuera" : ""}${partido && diaSel === fecha ? " sel" : ""}`}
                     onClick={() => (partido ? setDiaSel(fecha) : abrirNueva(fecha))}
                     role="button" tabIndex={0} aria-label={fmtFechaCorta(fecha)}
                     onKeyDown={(e) => { if (e.key === "Enter") (partido ? setDiaSel(fecha) : abrirNueva(fecha)); }}>
                     <div className="agenda-cell-num">{Number(fecha.slice(8, 10))}</div>
                     <div className="agenda-cell-items">
+                      {/* El día de hoy sin nada: el handoff le pone su propia
+                          pastilla "Hoy" dentro de la celda tintada. */}
+                      {partido && fecha === hoy && items.length === 0 && (
+                        <span className="agenda-evt agenda-evt--hoy">{t("agenda.hoy")}</span>
+                      )}
                       {items.slice(0, 3).map((a) => (
-                        <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)}
+                        <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado} fam-${familiaDeActividad(a.tipo)}`} title={etiquetaTipo(a)}
                           onClick={(e) => { e.stopPropagation(); setDetalle(a); }}>
                           {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
                           <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
@@ -983,7 +1084,7 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
                   </button>
                   <div className="agenda-sem-body">
                     {items.length === 0 ? <div className="agenda-sem-vacio">·</div> : items.map((a) => (
-                      <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado}`} title={etiquetaTipo(a)} onClick={() => setDetalle(a)}>
+                      <button key={`${a._master.id}:${a._fechaOriginal}`} className={`agenda-evt estado-${a.estado} fam-${familiaDeActividad(a.tipo)}`} title={etiquetaTipo(a)} onClick={() => setDetalle(a)}>
                         {!a.dia_completo && a.hora_inicio && <span className="agenda-evt-hora">{a.hora_inicio}</span>}
                         <span className="agenda-evt-nombre">{a.es_fecha_importante === 1 && <span className="evt-star">★</span>}{a.nombre}</span>
                       </button>
@@ -1090,10 +1191,13 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           único que hay que hacer es invertir los anchos en el rango de
           columnas. */}
       {partido ? (
-        <div className={`md-split md-agenda${diaSel ? " md-abierto" : ""}`}>
-          <div className="md-lista md-agenda-cal">{calendario}</div>
-          <div className="md-detalle">{panelDia}</div>
-        </div>
+        <>
+          {barraIPad}
+          <div className={`md-split md-agenda${diaSel ? " md-abierto" : ""}`}>
+            <div className="md-lista md-agenda-cal">{calendario}</div>
+            <div className="md-detalle">{panelDia}</div>
+          </div>
+        </>
       ) : (
       <div className="content content-lienzo">{calendario}</div>
       )}

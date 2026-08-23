@@ -11011,6 +11011,250 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .ag-dia-nombre { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
   :root.ipad .ag-dia-meta { font-size: 12.5px; color: var(--text-2); overflow-wrap: anywhere; }
   :root.ipad .ag-dia-nueva { align-self: flex-start; }
+
+  /* ---- La barra de 50px, sobre las DOS columnas (handoff) ----
+     Es hermana de `.md-split`, no hija: `.main:has(.md-split)` es una
+     columna, así que puesta antes del partido cruza el calendario y la
+     columna del día de un extremo al otro, que es como la dibuja el handoff.
+     Va fuera del calendario que se desplaza a propósito: moverse de mes no
+     puede depender de dónde esté el scroll. */
+  :root.ipad .ag-barra {
+    flex: 0 0 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 20px;
+    border-bottom: 0.5px solid var(--line);
+    background: var(--sidebar-bg);
+  }
+  /* El mismo segmentado del Inicio: si dos pantallas enseñan el mismo control
+     no pueden dibujarlo distinto. */
+  :root.ipad .ag-seg {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+  }
+  :root.ipad .ag-seg button {
+    padding: 5px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  :root.ipad .ag-seg button.activo {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+  :root.ipad .ag-seg button:active { opacity: 0.5; }
+  :root.ipad .ag-barra-mes {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  /* El hueco que empuja ‹ · Hoy · › al extremo derecho. */
+  :root.ipad .ag-barra-cola { flex: 1; min-width: 8px; }
+  :root.ipad .ag-barra-nav { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  :root.ipad .ag-nav,
+  :root.ipad .ag-hoy {
+    height: 32px;
+    border: 0;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+  }
+  :root.ipad .ag-nav {
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :root.ipad .ag-hoy { padding: 0 12px; font-size: 13.5px; font-weight: 600; }
+  :root.ipad .ag-nav:active,
+  :root.ipad .ag-hoy:active { opacity: 0.5; }
+  /* Los dos selectores del Historial caben en la barra sin desbordarla. */
+  :root.ipad .ag-barra .form-input.sm {
+    height: 32px;
+    min-width: 110px;
+    max-width: 160px;
+    flex: 0 1 auto;
+  }
+
+  /* ---- El calendario del handoff ----
+     No es una tabla con filos: son celdas sueltas de 10px de radio sobre el
+     lienzo, separadas 6px, y la rejilla LLENA el alto (`grid-auto-rows: 1fr`)
+     en vez de crecer con lo que tenga dentro. Por eso arriba se le quita el
+     sitio a la fila de cifras y a los filtros: sin alto, `1fr` no dice nada. */
+  :root.ipad .md-agenda-cal .agenda-cal {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+  :root.ipad .md-agenda-cal .agenda-dow {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0 0 8px;
+    border: 0;
+    background: none;
+  }
+  :root.ipad .md-agenda-cal .agenda-dow-cell {
+    padding: 0;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-3);
+  }
+  :root.ipad .md-agenda-cal .agenda-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 6px;
+  }
+  :root.ipad .md-agenda-cal .agenda-cell {
+    min-height: 0;
+    border: 0;
+    border-radius: 10px;
+    background: var(--surface);
+    padding: 7px 9px;
+    gap: 4px;
+    overflow: hidden;
+  }
+  :root.ipad .md-agenda-cal .agenda-cell:hover { background: var(--surface); }
+  /* El día elegido, DESPUÉS del fondo de tarjeta: `.agenda-cell.sel` de más
+     arriba tiene la misma especificidad que la regla de aquí y perdía por
+     orden de aparición — el panel se abría y la celda no se marcaba. */
+  :root.ipad .md-agenda-cal .agenda-cell.sel {
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--ink);
+  }
+  :root.ipad .md-agenda-cal .agenda-cell-num {
+    width: auto;
+    height: auto;
+    justify-content: flex-start;
+    border-radius: 0;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  /* Los días de los meses de al lado: presentes, pero apagados. */
+  :root.ipad .md-agenda-cal .agenda-cell.fuera .agenda-cell-num {
+    font-weight: 400;
+    color: var(--text-3);
+  }
+  :root.ipad .md-agenda-cal .agenda-cell.fuera .agenda-evt { opacity: 0.55; }
+  /* Hoy: la celda entera con el acento, no un círculo alrededor del número. */
+  :root.ipad .md-agenda-cal .agenda-cell.today { background: var(--ink); }
+  :root.ipad .md-agenda-cal .agenda-cell.today .agenda-cell-num {
+    background: none;
+    color: var(--ink-contrast);
+    font-weight: 700;
+  }
+  :root.ipad .md-agenda-cal .agenda-cell.today .agenda-evt {
+    background: rgba(255, 255, 255, 0.24);
+    color: var(--ink-contrast);
+  }
+  :root.ipad .md-agenda-cal .agenda-cell.today .agenda-evt-hora,
+  :root.ipad .md-agenda-cal .agenda-cell.today .agenda-mas { color: var(--ink-contrast); }
+
+  /* La pastilla del evento. El handoff la tinta por TIPO —culto, reunión,
+     fecha límite, lo demás—, que es el color que ya usa el "Esta semana" del
+     Inicio (`familiaDeActividad`, cuatro familias sobre los 23 tipos). El
+     filo de 2px se queda: ahí sigue el ESTADO, que el handoff no dibuja y
+     que es dato real (borrador, programada, confirmada). Color por tipo y
+     filo por estado son dos preguntas distintas y caben las dos. */
+  :root.ipad .md-agenda-cal .agenda-evt,
+  :root.ipad .agenda-semana .agenda-evt {
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  :root.ipad .agenda-evt.fam-culto {
+    background: color-mix(in srgb, var(--ink) 12%, transparent);
+    color: var(--ink);
+  }
+  :root.ipad .agenda-evt.fam-reunion {
+    background: color-mix(in srgb, var(--accent-3) 14%, transparent);
+    color: var(--accent-3);
+  }
+  :root.ipad .agenda-evt.fam-fecha {
+    background: var(--warn-bg);
+    color: var(--warn);
+  }
+  :root.ipad .agenda-evt.fam-otra {
+    background: color-mix(in srgb, var(--accent-4) 16%, transparent);
+    color: var(--accent-4);
+  }
+  /* El nombre DELANTE de la hora, como en el handoff ("Culto 10:00"). En una
+     celda de ~90px sólo caben unos pocos caracteres, y con la hora primero lo
+     que sobrevivía al recorte era "09:00 Fir…" — la hora se lee igual detrás,
+     el nombre no se adivina. Se hace con `order` para no tocar el orden del
+     DOM, que es el que oye VoiceOver y el que usa el Mac. */
+  :root.ipad .md-agenda-cal .agenda-evt { justify-content: flex-start; }
+  :root.ipad .md-agenda-cal .agenda-evt-nombre { flex: 1 1 auto; min-width: 0; }
+  /* Y cuando ni así caben los dos, lo que se recorta es la HORA: el factor
+     de encogido alto hace que ceda ella primero. Un nombre entero sin hora
+     ("Firmar acta de julio") sirve; una hora sin nombre, no. */
+  :root.ipad .md-agenda-cal .agenda-evt-hora {
+    order: 2;
+    flex: 0 20 auto;
+    padding-left: 4px;
+    overflow: hidden;
+  }
+  :root.ipad .agenda-evt .agenda-evt-hora { color: inherit; opacity: 0.75; }
+  /* La pastilla "Hoy" del día en blanco: no es un evento, no se pulsa. */
+  :root.ipad .md-agenda-cal .agenda-evt--hoy {
+    border: 0;
+    background: rgba(255, 255, 255, 0.24);
+    color: var(--ink-contrast);
+    cursor: default;
+    align-self: flex-start;
+  }
+
+  /* ---- La columna del día, a la medida del handoff ---- */
+  /* El panel del día pone su propio aire por piezas (la cabecera con más
+     margen que la lista), así que aquí se apaga el `gap` de `.dm`. */
+  :root.ipad .md-agenda .ag-dia { padding: 0; gap: 0; }
+  :root.ipad .md-agenda .ag-dia .dm-volver { margin: 12px 0 -4px 6px; }
+  :root.ipad .md-agenda .ag-dia-cab { padding: 16px 18px 10px; }
+  :root.ipad .md-agenda .ag-dia-titulo { font-size: 22px; letter-spacing: -0.4px; }
+  :root.ipad .md-agenda .ag-dia-lista { padding: 0 14px; gap: 10px; }
+  :root.ipad .md-agenda .ag-dia-fila {
+    padding: 13px 15px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  :root.ipad .md-agenda .ag-dia-fila.estado-confirmada { box-shadow: inset 3px 0 0 var(--pos), 0 1px 2px rgba(0, 0, 0, 0.05); }
+  /* Lo ya hecho, tachado y en segundo plano: el handoff lo dibuja así
+     ("Firmar acta 2026-07", completado el 19), y `completada` es un estado
+     real de la tabla. */
+  :root.ipad .md-agenda .ag-dia-fila.estado-completada {
+    box-shadow: inset 3px 0 0 var(--text-3), 0 1px 2px rgba(0, 0, 0, 0.05);
+    opacity: 0.6;
+  }
+  :root.ipad .md-agenda .ag-dia-fila.estado-completada .ag-dia-nombre { text-decoration: line-through; }
+  :root.ipad .md-agenda .ag-dia-vacio { padding: 0 18px; }
+  :root.ipad .md-agenda .ag-dia-nueva { margin: 10px 14px 16px; }
 }
 
 /* ============================================================
