@@ -28,6 +28,60 @@ import {
   setSonidoActivado, sonidoActivado, type JuegoSonido,
 } from "../../sound";
 import { Section, SwitchField } from "../ios/FormularioIOS";
+import { esIPad } from "../../movil";
+
+/**
+ * Las tres miniaturas de tema del handoff de iPad: un rectángulo de 104px
+ * que DIBUJA la app —barra lateral con sus renglones y dos tarjetas— en
+ * claro, en oscuro y partido en diagonal para "Automático".
+ *
+ * Los colores van literales y no en tokens a propósito: es un retrato del
+ * tema claro y del oscuro, así que la miniatura clara tiene que verse clara
+ * aunque el iPad esté en oscuro. Es el mismo criterio que `--paper` en las
+ * hojas de Actas y Cartas.
+ *
+ * Solo el iPad. El teléfono se queda con la lista de tres filas: en 390px
+ * tres miniaturas salen a 110 de ancho y no se distingue lo que retratan.
+ */
+function TemasIPad({ value, onChange }: { value: ThemePref; onChange: (v: ThemePref) => void }) {
+  const { t } = useTranslation();
+  const opciones: { id: ThemePref; label: string }[] = [
+    { id: "light", label: t("apariencia.claro") },
+    { id: "dark", label: t("apariencia.oscuro") },
+    { id: "auto", label: t("apariencia.automatico") },
+  ];
+  return (
+    <div className="pf-temas" role="radiogroup" aria-label={t("apariencia.titulo")}>
+      {opciones.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          role="radio"
+          aria-checked={o.id === value}
+          className={`pf-tema${o.id === value ? " sel" : ""}`}
+          onClick={() => onChange(o.id)}
+        >
+          <span className={`pf-lienzo pf-lienzo--${o.id}`} aria-hidden="true">
+            {o.id !== "auto" && (
+              <>
+                <span className="pf-barra">
+                  <i className="pf-renglon pf-renglon--activo" />
+                  <i className="pf-renglon" />
+                  <i className="pf-renglon" />
+                </span>
+                <span className="pf-cuerpo">
+                  <i className="pf-tarjeta" />
+                  <i className="pf-tarjeta" />
+                </span>
+              </>
+            )}
+          </span>
+          <span className="pf-tema-nombre">{o.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const Check = () => (
   <span className="ios-choice-check" aria-hidden="true">
@@ -98,15 +152,19 @@ export default function PreferenciasSettingsIOS({
   return (
     <div className="ios-form">
       <Section header={t("apariencia.titulo")} footer={t("apariencia.hint")}>
-        <ChoiceGroup
-          options={[
-            { id: "light", label: t("apariencia.claro") },
-            { id: "dark", label: t("apariencia.oscuro") },
-            { id: "auto", label: t("apariencia.automatico") },
-          ] as const}
-          value={themePref}
-          onChange={onThemePrefChange}
-        />
+        {esIPad() ? (
+          <TemasIPad value={themePref} onChange={onThemePrefChange} />
+        ) : (
+          <ChoiceGroup
+            options={[
+              { id: "light", label: t("apariencia.claro") },
+              { id: "dark", label: t("apariencia.oscuro") },
+              { id: "auto", label: t("apariencia.automatico") },
+            ] as const}
+            value={themePref}
+            onChange={onThemePrefChange}
+          />
+        )}
       </Section>
 
       <Section header={t("acento.titulo")} footer={t("acento.hint")}>

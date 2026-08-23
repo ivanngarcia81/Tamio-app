@@ -3345,7 +3345,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   overflow: hidden;
 }
 
-:root.iphone .ios-row {
+:root.movil .ios-row {
   position: relative;
   display: flex;
   align-items: center;
@@ -3361,11 +3361,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
   transition: background-color .08s ease;
 }
-:root.iphone .ios-row:active { background: var(--line); }
+:root.movil .ios-row:active { background: var(--line); }
 
 /* Separador con sangría: arranca donde empieza el texto (16 + 29 + 12),
    nunca en la última fila de la tarjeta. */
-:root.iphone .ios-row:not(:last-child)::after {
+:root.movil .ios-row:not(:last-child)::after {
   content: "";
   position: absolute;
   left: 57px;
@@ -3377,7 +3377,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--line-soft);
 }
 
-:root.iphone .ios-icon {
+:root.movil .ios-icon {
   flex: 0 0 auto;
   width: 29px;
   height: 29px;
@@ -3386,23 +3386,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   place-items: center;
   color: #fff;
 }
-:root.iphone .ios-icon svg { width: 17px; height: 17px; }
+:root.movil .ios-icon svg { width: 17px; height: 17px; }
 /* Foto de perfil (Cuenta) en vez del glifo de siempre. */
-:root.iphone .ios-icon img { width: 100%; height: 100%; object-fit: cover; }
+:root.movil .ios-icon img { width: 100%; height: 100%; object-fit: cover; }
 /* Iniciales (Cuenta, sin foto) en vez del glifo. */
-:root.iphone .ios-icon-texto { font-size: 12px; font-weight: 700; }
+:root.movil .ios-icon-texto { font-size: 12px; font-weight: 700; }
 
 /* Fila de dos líneas (Cuenta: nombre + correo) — la única del patrón de
    lista que necesita subtítulo; el resto es título solo o título+valor. */
-:root.iphone .ios-row-textos {
+:root.movil .ios-row-textos {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
-:root.iphone .ios-row-textos .ios-row-label { display: block; }
-:root.iphone .ios-row-sub {
+:root.movil .ios-row-textos .ios-row-label { display: block; }
+:root.movil .ios-row-sub {
   font-size: 13px;
   color: var(--text-2);
   overflow: hidden;
@@ -3410,7 +3410,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 
-:root.iphone .ios-row-label {
+:root.movil .ios-row-label {
   /* min-width:0 para que este flex-item pueda encogerse por debajo de su
      ancho intrínseco: sin esto, una etiqueta larga junto a un valor
      ("Tesorero y pastor" + nombre) empujaba la fila a DOS líneas —altura
@@ -3443,7 +3443,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   stroke-linecap: round; stroke-linejoin: round;
 }
 
-:root.iphone .ios-row--destructive .ios-row-label { color: var(--ios-red); }
+:root.movil .ios-row--destructive .ios-row-label { color: var(--ios-red); }
 
 :root.iphone .ios-version {
   text-align: center;
@@ -3458,7 +3458,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root.iphone .ios-row { transition: none; }
+  :root.movil .ios-row { transition: none; }
 }
 
 /* ============================================================
@@ -3730,7 +3730,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    bloques para que cada una ocupe su renglón. */
 :root.movil .ios-section-footer > span { display: block; margin-top: 6px; }
 :root.movil .ios-section-footer--error { color: var(--ios-red); }
-:root.iphone .ios-section-footer--tecnico {
+:root.movil .ios-section-footer--tecnico {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   color: var(--text-3);
@@ -3929,7 +3929,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-field--pos { justify-content: center; color: var(--pos); font-size: 17px; }
 
 /* ---------------- Logo / avatar ---------------- */
-:root.iphone .ios-avatar {
+:root.movil .ios-avatar {
   flex: 0 0 auto;
   width: 40px;
   height: 40px;
@@ -3940,8 +3940,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   overflow: hidden;
   color: var(--text-2);
 }
-:root.iphone .ios-avatar img { width: 100%; height: 100%; object-fit: cover; }
-:root.iphone .ios-field--avatar { min-height: 58px; }
+:root.movil .ios-avatar img { width: 100%; height: 100%; object-fit: cover; }
+:root.movil .ios-field--avatar { min-height: 58px; }
 
 /* ---------------- Switch nativo ---------------- */
 :root.movil .ios-switch {
@@ -3996,7 +3996,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Preferencias (iPhone): fila de opción exclusiva (check en vez de
    pastilla) y fila de colores de acento (aro en vez de borde negro).
    ============================================================ */
-:root.iphone .ios-choice-row {
+:root.movil .ios-choice-row {
   position: relative;
   display: flex;
   align-items: center;
@@ -4014,8 +4014,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-:root.iphone .ios-choice-row:active { background: var(--line); }
-:root.iphone .ios-choice-row:not(:last-child)::after {
+:root.movil .ios-choice-row:active { background: var(--line); }
+:root.movil .ios-choice-row:not(:last-child)::after {
   content: "";
   position: absolute;
   left: 16px;
@@ -4026,10 +4026,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   transform-origin: bottom;
   background: var(--line-soft);
 }
-:root.iphone .ios-choice-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-:root.iphone .ios-choice-check { flex: 0 0 auto; width: 15px; height: 15px; color: var(--brand, #059669); opacity: 0; }
-:root.iphone .ios-choice-row[aria-checked="true"] .ios-choice-check { opacity: 1; }
-:root.iphone .ios-choice-check svg {
+:root.movil .ios-choice-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root.movil .ios-choice-check { flex: 0 0 auto; width: 15px; height: 15px; color: var(--brand, #059669); opacity: 0; }
+:root.movil .ios-choice-row[aria-checked="true"] .ios-choice-check { opacity: 1; }
+:root.movil .ios-choice-check svg {
   width: 100%; height: 100%;
   stroke: currentColor; stroke-width: 2.6; fill: none;
   stroke-linecap: round; stroke-linejoin: round;
@@ -4038,8 +4038,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Fila de colores de acento: los círculos caben en una sola fila del
    grupo, no piden su propia tarjeta como el selector de categorías
    (`.ios-colors`, una rejilla aparte para muchos más colores). */
-:root.iphone .ios-colors-row { display: flex; align-items: center; gap: 16px; padding: 13px 16px; }
-:root.iphone .ios-color-dot {
+:root.movil .ios-colors-row { display: flex; align-items: center; gap: 16px; padding: 13px 16px; }
+:root.movil .ios-color-dot {
   position: relative;
   flex: 0 0 auto;
   width: 30px;
@@ -4051,14 +4051,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   -webkit-tap-highlight-color: transparent;
 }
 /* Aro del MISMO color, nunca negro. */
-:root.iphone .ios-color-dot[aria-selected="true"]::after {
+:root.movil .ios-color-dot[aria-selected="true"]::after {
   content: "";
   position: absolute;
   inset: -4px;
   border-radius: 50%;
   border: 2.5px solid currentColor;
 }
-:root.iphone .ios-color-dot:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: 4px; border-radius: 50%; }
+:root.movil .ios-color-dot:focus-visible { outline: 2px solid var(--brand, #059669); outline-offset: 4px; border-radius: 50%; }
 
 /* ============================================================
    Categorías (iPhone): lista editable — filas con punto de color en vez
@@ -4074,7 +4074,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    dentro de `.ios-group`, que es la pregunta real ("¿hay otra categoría
    debajo?"). Por eso la regla base `.ios-row:not(:last-child)::after` de
    Prioridad 4 nunca se dispara aquí, y esta la reemplaza a propósito. */
-:root.iphone .ios-swipe:not(:last-child) .ios-row--dot::after {
+:root.movil .ios-swipe:not(:last-child) .ios-row--dot::after {
   content: "";
   position: absolute;
   left: 38px;
@@ -4086,10 +4086,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--line-soft);
 }
 
-:root.iphone .ios-row--static { cursor: default; }
-:root.iphone .ios-row--static:active { background: transparent; }
+:root.movil .ios-row--static { cursor: default; }
+:root.movil .ios-row--static:active { background: transparent; }
 
-:root.iphone .ios-dot {
+:root.movil .ios-dot {
   flex: 0 0 auto;
   width: 12px;
   height: 12px;
@@ -4099,13 +4099,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Recorta el botón rojo mientras la fila se desliza (useFilaDeslizable
    mueve la fila con transform; este wrapper la recorta al salirse). */
-:root.iphone .ios-swipe { position: relative; overflow: hidden; background: var(--surface); }
+:root.movil .ios-swipe { position: relative; overflow: hidden; background: var(--surface); }
 /* `.ios-row` es transparente por diseño (vive directo sobre `.ios-group`
    en el resto de listas); aquí, con el botón rojo posicionado DEBAJO en
    el mismo wrapper, transparente lo dejaba asomando desde el reposo. */
-:root.iphone .ios-swipe .ios-row { background: var(--surface); }
+:root.movil .ios-swipe .ios-row { background: var(--surface); }
 
-:root.iphone .ios-swipe-delete {
+:root.movil .ios-swipe-delete {
   position: absolute;
   top: 0;
   right: 0;
@@ -4122,7 +4122,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Fila para agregar: mismo alto/tipografía que una fila normal, con un
    círculo "+" en vez de punto de color. */
-:root.iphone .ios-new-row {
+:root.movil .ios-new-row {
   position: relative;
   display: flex;
   align-items: center;
@@ -4139,8 +4139,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-align: left;
   cursor: pointer;
 }
-:root.iphone .ios-new-row:active { background: var(--line); }
-:root.iphone .ios-new-icon {
+:root.movil .ios-new-row:active { background: var(--line); }
+:root.movil .ios-new-icon {
   flex: 0 0 auto;
   width: 22px;
   height: 22px;
@@ -4150,7 +4150,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: grid;
   place-items: center;
 }
-:root.iphone .ios-new-icon svg {
+:root.movil .ios-new-icon svg {
   width: 13px;
   height: 13px;
   stroke: currentColor;
@@ -4161,7 +4161,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 /* Fila roja de borrar, dentro de la hoja de editar — la vía VISIBLE del
    borrado; deslizar en la lista es solo el atajo. */
-:root.iphone .ios-delete-row {
+:root.movil .ios-delete-row {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4176,10 +4176,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--ios-red);
   cursor: pointer;
 }
-:root.iphone .ios-delete-row:active { background: var(--line); }
+:root.movil .ios-delete-row:active { background: var(--line); }
 
 /* ---------------- Selector de color ---------------- */
-:root.iphone .ios-colors {
+:root.movil .ios-colors {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
   gap: 12px;
@@ -4188,7 +4188,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 10px;
   margin: 0 16px;
 }
-:root.iphone .ios-color {
+:root.movil .ios-color {
   position: relative;
   width: 36px;
   height: 36px;
@@ -4199,7 +4199,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-:root.iphone .ios-color[aria-selected="true"]::after {
+:root.movil .ios-color[aria-selected="true"]::after {
   content: "";
   position: absolute;
   inset: -5px;
@@ -8030,6 +8030,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     overflow-y: auto;
   }
   :root.ipad .settings-detail > * { width: 100%; max-width: 680px; margin-inline: auto; }
+  /* Y las tarjetas que quedan (la Zona sensible, que no tiene lista
+     agrupada) en UNA columna. `.settings-masonry` son dos, y solo vuelve a
+     una en `max-width: 1180px` — una media query de VIEWPORT, que en un iPad
+     de 1366 no dispara aunque el panel mida 680. Resultado medido: dos
+     tarjetas de ~320 con "Guardar respaldo completo (.zip)" partido en
+     cuatro renglones y el botón encima del texto. */
+  :root.ipad .settings-detail .settings-masonry { grid-template-columns: minmax(0, 1fr); }
 
   /* La cabecera de zona, lo único del rediseño de Mac que el handoff sí
      trae al iPad (con sus 22px/700, no los del Mac). El glifo conserva su
@@ -8089,6 +8096,150 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 0;
     margin-bottom: 0;
   }
+
+  /* ---- Las listas insertadas del handoff ----
+     El diseño dibuja Configuración como listas agrupadas: versalitas de
+     12.5px sobre una tarjeta de 12 de radio, filas de 52 con la etiqueta en
+     una columna fija y el pie explicativo debajo. Ese patrón ya existía
+     —es el de `FormularioIOS`, y su CSS estaba escrito para `:root.movil`,
+     que incluye al iPad—, así que aquí solo se ajustan los NÚMEROS: los del
+     teléfono son de iOS (17px, radio 10, sangría de 32) y los del handoff de
+     iPad son otros.
+
+     Va acotado a `.settings-detail` a propósito: las mismas clases las usan
+     las hojas de formulario, que en el iPad no cambian. */
+  :root.ipad .settings-detail .ios-form { display: flex; flex-direction: column; }
+  :root.ipad .settings-detail .ios-section { margin-bottom: 26px; }
+  :root.ipad .settings-detail .ios-section:last-of-type { margin-bottom: 0; }
+  :root.ipad .settings-detail .ios-section-header {
+    padding: 0 16px 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .settings-detail .ios-section-footer {
+    padding: 8px 16px 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--text-3);
+  }
+  :root.ipad .settings-detail .ios-group {
+    margin: 0;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+  :root.ipad .settings-detail .ios-field {
+    min-height: 52px;
+    padding: 7px 16px;
+    gap: 10px;
+  }
+  /* La etiqueta en columna fija de 190 y el valor a su derecha, alineado a la
+     IZQUIERDA. En el teléfono el valor va pegado al borde derecho porque la
+     fila mide 390 y no hay sitio para dos columnas; en 680 sí lo hay, y el
+     diseño aprovecha para que las etiquetas formen una columna que se lee de
+     arriba abajo. */
+  :root.ipad .settings-detail .ios-field-label {
+    flex: 0 0 190px;
+    width: 190px;
+    font-size: 15.5px;
+    letter-spacing: normal;
+    line-height: 20px;
+    color: var(--text-2);
+  }
+  :root.ipad .settings-detail .ios-field-input,
+  :root.ipad .settings-detail .ios-field-value {
+    font-size: 15.5px;
+    letter-spacing: normal;
+    text-align: left;
+    color: var(--text);
+  }
+  /* Los campos apilados vuelven a ser una fila: el apilado existe porque en
+     390px un EIN o una dirección no caben al lado de su etiqueta. */
+  :root.ipad .settings-detail .ios-field--stacked {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+  }
+  :root.ipad .settings-detail .ios-field--stacked .ios-field-label {
+    font-size: 15.5px;
+    color: var(--text-2);
+  }
+  /* El separador arranca donde arranca la etiqueta, no bajo ella: con la
+     sangría de 16 del teléfono la raya empezaba dentro de la columna. */
+  :root.ipad .settings-detail .ios-field:not(:last-child)::after { left: 16px; right: 16px; }
+
+  /* Los cinco tintes del acento a 40px, como el handoff (en el teléfono son
+     más chicos porque comparten fila con menos ancho). */
+  :root.ipad .settings-detail .ios-colors-row { gap: 16px; padding: 16px; }
+  :root.ipad .settings-detail .ios-color-dot { width: 40px; height: 40px; }
+
+  /* ---- Las tres miniaturas de tema (handoff) ----
+     Retratan la app: barra lateral con tres renglones —el primero con el
+     acento— y dos tarjetas al lado. Los colores son literales y no tokens:
+     la miniatura clara tiene que verse clara aunque el iPad esté en oscuro,
+     igual que el papel de Actas y Cartas. */
+  /* `Section` envuelve SIEMPRE en `.ios-group`, y las miniaturas del handoff
+     van sobre el lienzo, no dentro de una tarjeta: aquí el grupo se apaga.
+     La segunda regla es para las secciones que ya traen su propio
+     `.ios-group` dentro (el acento): dos tarjetas anidadas dibujan un marco
+     dentro de otro. */
+  :root.ipad .settings-detail .ios-group:has(> .pf-temas),
+  :root.ipad .settings-detail .ios-group:has(> .ios-group) {
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+  :root.ipad .pf-temas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  :root.ipad .pf-tema {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+  }
+  :root.ipad .pf-lienzo {
+    width: 100%;
+    height: 104px;
+    display: flex;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 2.5px solid var(--line);
+  }
+  :root.ipad .pf-tema.sel .pf-lienzo { border-color: var(--ink); }
+  :root.ipad .pf-lienzo--light { background: #f2f2f7; }
+  :root.ipad .pf-lienzo--dark { background: #000; }
+  /* "Automático" no retrata una app: retrata las DOS, partidas en diagonal. */
+  :root.ipad .pf-lienzo--auto { background: linear-gradient(105deg, #f2f2f7 0 50%, #000 50% 100%); }
+  :root.ipad .pf-barra {
+    width: 34%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 9px 7px;
+  }
+  :root.ipad .pf-lienzo--light .pf-barra { background: #f7f7f9; border-right: 1px solid rgba(60, 60, 67, 0.2); }
+  :root.ipad .pf-lienzo--dark .pf-barra { background: #131315; border-right: 1px solid rgba(84, 84, 88, 0.7); }
+  :root.ipad .pf-renglon { height: 6px; border-radius: 3px; }
+  :root.ipad .pf-lienzo--light .pf-renglon { background: rgba(60, 60, 67, 0.16); }
+  :root.ipad .pf-lienzo--dark .pf-renglon { background: rgba(235, 235, 245, 0.2); }
+  /* El renglón activo lleva el acento elegido: la miniatura enseña de paso
+     con qué color se va a ver la barra lateral. */
+  :root.ipad .pf-renglon--activo { background: color-mix(in srgb, var(--ink) 40%, transparent) !important; }
+  :root.ipad .pf-cuerpo { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 9px; }
+  :root.ipad .pf-tarjeta { height: 26px; border-radius: 6px; }
+  :root.ipad .pf-lienzo--light .pf-tarjeta { background: #fff; }
+  :root.ipad .pf-lienzo--dark .pf-tarjeta { background: #1c1c1e; }
+  :root.ipad .pf-tema-nombre { font-size: 14px; font-weight: 600; color: var(--text); }
+  :root.ipad .pf-tema[aria-checked="false"] .pf-tema-nombre { font-weight: 500; color: var(--text-2); }
+  :root.ipad .pf-tema:active { opacity: 0.6; }
 }
 
 /* El iPad mini en vertical (744) cae por DEBAJO de los 761 de este bloque, y

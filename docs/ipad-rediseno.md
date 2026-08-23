@@ -399,6 +399,10 @@ Se eligió empujar. Consecuencias para quien lo implemente:
     siguen siendo los controles reales y no las listas iOS del mock, y los
     tres interruptores inventados de Iglesia siguen sin construirse (§4).
 
+    > ⚠️ **La segunda de esas desviaciones se levantó el 23 de agosto**: las
+    > listas agrupadas SÍ cruzaron al iPad. El porqué, y lo que se rompía
+    > mientras tanto, en **§24**.
+
     Lo que la repasada sí cazó, los dos en el rango apilado del mini (744):
 
     - **El índice apilado parecía deshabilitado**: la regla base pinta las
@@ -1731,3 +1735,116 @@ día elegido— tiene **la misma especificidad** que el fondo de tarjeta nuevo y
 perdía por orden de aparición, así que el panel se abría y la celda no se
 marcaba. La comprobación se hace en un día **cualquiera** y no en hoy, que va
 tintado de por sí y tapaba el fallo; quitando la regla, el arnés lo canta.
+
+## 24. Configuración: las listas agrupadas cruzan al iPad (23 ago 2026)
+
+Undécima pantalla y última del handoff. El **armazón** ya estaba desde el 21
+de agosto (§3.7 y §11): índice de 298 con su filo, panel de 680 centrado,
+héroe de 64px, sin buscador ni galones. Lo que faltaba era el **contenido**,
+y ahí había una desviación apuntada por escrito: *"los formularios siguen
+siendo los controles reales y no las listas iOS del mock"*.
+
+Esa frase escondía un error de encuadre. El handoff no dibuja "listas iOS":
+dibuja **listas insertadas** —versalitas de 12.5px sobre una tarjeta de 12 de
+radio, filas de 52 con la etiqueta a la izquierda, pie explicativo debajo—, y
+ese patrón **ya estaba escrito en la app**: es `FormularioIOS`, y los seis
+componentes `*SettingsIOS` son, por su propia cabecera, *"una reescritura del
+MARCADO, no de la lógica"*, con props idénticas a las tarjetas de escritorio.
+
+Lo que había que hacer no era construir nada nuevo, era **dejar de esconderlo
+detrás de `esIPhone()`**.
+
+### Un `enListas` en vez de seis ramas nuevas
+
+```
+const enListas = enIPhone || esIPad();
+```
+
+Las seis zonas con gemelo (`iglesia`, `acceso`, `institucion`, `personas`,
+`categorias`, `preferencias`) cambian de rama con esa constante. El estado, la
+validación y el **guardado automático** no se enteran: son las mismas props.
+
+Se comprobó zona por zona que no se pierde nada por el camino, porque las dos
+ramas no siempre traen lo mismo. El caso que lo justificaba: "Acceso y áreas"
+en escritorio son cinco tarjetas (Plan, Rol, Usuarios, Invitar, Sync) y en
+lista son tres `Section` **más** la tarjeta de Usuarios al lado —
+`AccesosSettingsIOS` sí trae invitar, sync y plan dentro. Si no las hubiera
+traído, el cambio habría borrado la Suscripción del iPad.
+
+### 44 reglas que se habían quedado en `:root.iphone`
+
+Al primer intento, Preferencias salió **rota**: las miniaturas encimadas, los
+tintes del acento sin forma, las filas de elección sin altura. La causa: de la
+familia `.ios-*`, 131 reglas ya estaban escritas para `:root.movil` —que
+incluye al iPad— y **24 clases se habían quedado en `:root.iphone`**
+(`.ios-row`, `.ios-choice-row`, `.ios-color-dot`, `.ios-swipe`…). Son los
+restos de la mudanza del §12, cuando cruzaron las hojas de formulario.
+
+Ampliadas las 44 reglas de esas 24 clases a `:root.movil`. Para el iPhone es
+un no-op exacto: `esIPhone` pone **las dos** clases (`movil` e `iphone`, ver
+`main.tsx`), así que lo que ya se aplicaba se sigue aplicando. El Mac ni se
+entera: `.mac` no lleva `.movil`.
+
+Encima, los números del handoff, acotados a `.settings-detail` para no tocar
+las hojas de formulario: encabezado 12.5/600 en versalitas, tarjeta de 12 con
+sombra de 1px, filas de 52, **etiqueta en columna fija de 190** y valor a su
+izquierda (en el teléfono va pegado al borde derecho porque en 390px no caben
+dos columnas; en 680 sí), y los campos apilados de vuelta a una fila.
+
+### Lo único que se construyó: las tres miniaturas de tema
+
+El handoff dibuja Apariencia con tres rectángulos de 104px que **retratan la
+app** —barra lateral con tres renglones, el primero con el acento, y dos
+tarjetas al lado— en claro, en oscuro y partido en diagonal para
+"Automático". Eso no existía en ninguna parte: `AppearanceSettings` es un
+segmentado de tres pastillas.
+
+Construido (`TemasIPad`, dentro de `PreferenciasSettingsIOS`) con los tres
+botones **cableados de verdad** a `onThemePrefChange`. Los colores van
+literales y no en tokens a propósito: es un retrato del tema claro y del
+oscuro, así que la miniatura clara tiene que verse clara aunque el iPad esté
+en oscuro — el mismo criterio que `--paper` en las hojas de Actas y Cartas.
+El arnés lo comprueba midiendo las dos.
+
+Solo iPad: en 390px tres miniaturas salen a 110 de ancho y no se distingue
+qué retratan. El teléfono se queda con su lista de tres filas.
+
+### Un fallo que llevaba tiempo ahí
+
+**La Zona sensible se veía rota en el iPad**, y no por este cambio: se
+comprobó capturándola antes y después, y salía igual de mal. `.settings-masonry`
+son **dos** columnas y solo vuelve a una en `@media (max-width: 1180px)` —una
+media query de **viewport**, que en un iPad de 1366 no dispara aunque el panel
+de lectura mida 680. Resultado: dos tarjetas de ~320 con "Guardar respaldo
+completo (.zip)" partido en cuatro renglones y el botón montado sobre el
+texto.
+
+Una columna en el panel de Ajustes del iPad, y ya se lee. Es la zona que no
+tiene gemelo en lista —Respaldo, Restaurar, Compactar y Zona de peligro
+siguen siendo tarjetas—, y es también la última de la lista y solo visible
+para el administrador: por eso nadie la había mirado.
+
+### Lo que sigue sin construirse, y por qué
+
+- **La cabecera de logo de "Iglesia"** (tile de 64 con las iniciales, el
+  nombre a 22px y "Cambiar logo · Eliminar"). El héroe de zona ya ocupa ese
+  sitio con el mismo tamaño; dos cabeceras de 64px apiladas dirían lo mismo
+  dos veces. El logo se cambia desde su fila, que es donde lo pone el patrón
+  de lista.
+- **"Tamaño de texto", "Sidebar siempre visible" y "Ocultar montos al
+  bloquear"** (Apariencia), y los cuatro interruptores de permisos por rol
+  (Acceso). No existen. Son **interruptores**, no adornos: un control
+  encendido que no hace nada es lo que esta serie viene rechazando desde
+  Depósitos, y además es motivo de rechazo del App Store (guideline 2.1).
+- **"N movimientos" por categoría** y el asa de arrastre para reordenar. El
+  conteo se puede calcular; el reordenado pide una columna de orden. Los dos
+  son trabajo con motor, no maquetación.
+
+### Lo medido
+
+El arnés pasa de 528 a **550 comprobaciones**, todas en verde. Las de esta
+pantalla se acotan a la zona **visible** (`.settings-zona:not(.settings-zona-inactiva)`)
+y no al panel entero: las otras seis siguen en el DOM, ocultas con CSS, y al
+primer intento las medidas salieron de una zona que no se estaba viendo —
+`gridTemplateColumns` de un elemento oculto devolvió las dos columnas viejas
+y dio un falso rojo.

@@ -6,7 +6,7 @@ import { listUsuarios, updateChurch, type Church, type ChurchUpdate, type Usuari
 import type { LangPref } from "../i18n";
 import { CERO, aTextoTecleado, deTextoTecleado } from "../dinero";
 import { showToast } from "../toast";
-import { esIPhone, esMac } from "../movil";
+import { esIPad, esIPhone, esMac } from "../movil";
 import ActionSheet from "../components/ActionSheet";
 import Portal from "../components/Portal";
 import GuardadoChip, { type EstadoGuardado } from "../components/settings/GuardadoChip";
@@ -132,6 +132,17 @@ export default function Configuracion({
   // cerrar sesión. En iPad/Mac el sidebar sigue igual, así que aquí no
   // hace falta repetir nada.
   const enIPhone = esIPhone();
+  /* Las listas agrupadas de iOS también en el iPad.
+     Hasta ahora eran "la piel del teléfono" y el iPad se quedaba con las
+     tarjetas de escritorio (apuntado como desviación deliberada el 22 ago,
+     §11 de docs/ipad-rediseno.md). El handoff nuevo dibuja Configuración
+     como listas insertadas —encabezado en versalitas, tarjeta de 12px de
+     radio, filas de 52 con su etiqueta a la izquierda y su pie debajo—, que
+     es exactamente este patrón, y su CSS ya estaba escrito para `:root.movil`
+     (o sea, iPad incluido). Los componentes `*SettingsIOS` son reescrituras
+     del MARCADO con las mismas props, así que el estado, la validación y el
+     guardado automático no se enteran del cambio. */
+  const enListas = enIPhone || esIPad();
   /* El rediseño de macOS de Ajustes (índice en columna con iconos
      tintados, buscador, atrás/adelante y encabezado de zona con hero) es
      solo del Mac: el iPad conserva su columna de siempre y el iPhone su
@@ -766,7 +777,7 @@ export default function Configuracion({
           {/* Zonas con jerarquía visual: cada categoría vive en su propio
               contenedor (panel plano) con título, y las tarjetas se elevan
               encima. El mosaico interno balancea las alturas por zona. */}
-          <section className={`${claseZona("iglesia")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+          <section className={`${claseZona("iglesia")}${enListas ? " settings-zona--ios-flat" : ""}`}>
             {/* En Mac/iPad esta cabecera se queda (sigue siendo el índice de
                 dos columnas de siempre); en iPhone la oculta el CSS de
                 `.settings-zona-head` — el título ya lo lleva `.ios-nav`. */}
@@ -774,7 +785,7 @@ export default function Configuracion({
               <div className="settings-zona-titulo">{t("config.zona.iglesia")}</div>
               <div className="settings-zona-sub">{t("config.zona.iglesiaSub")}</div>
             </div>
-            {enIPhone ? (
+            {enListas ? (
               <ChurchSettingsIOS
                 value={churchForm}
                 onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
@@ -806,12 +817,12 @@ export default function Configuracion({
               dato local) y quién administra (Usuarios). Antes vivían en tres
               secciones distintas con dos pantallas de distancia, siendo la
               misma pregunta contada dos veces. */}
-          <section className={`${claseZona("acceso")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+          <section className={`${claseZona("acceso")}${enListas ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.acceso")}</div>
               <div className="settings-zona-sub">{t("config.zona.accesoSub")}</div>
             </div>
-            {enIPhone ? (
+            {enListas ? (
               <>
                 {/* Las cuatro guardas de abajo viven ahora dentro del
                     componente, con las mismas condiciones. */}
@@ -855,12 +866,12 @@ export default function Configuracion({
               (tres filas) — la que más scroll pedía de las seis. Se parte en
               dos zonas más cortas, cada una con lo suyo: el membrete/vista
               previa por un lado, las dos personas y sus firmas por el otro. */}
-          <section className={`${claseZona("institucion")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+          <section className={`${claseZona("institucion")}${enListas ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.institucion")}</div>
               <div className="settings-zona-sub">{t("config.zona.institucionSub")}</div>
             </div>
-            {enIPhone ? (
+            {enListas ? (
               <>
                 {verSecretaria && (
                   <InstitucionSettingsIOS
@@ -907,12 +918,12 @@ export default function Configuracion({
             )}
           </section>
 
-          <section className={`${claseZona("personas")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+          <section className={`${claseZona("personas")}${enListas ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.personas")}</div>
               <div className="settings-zona-sub">{t("config.zona.personasSub")}</div>
             </div>
-            {enIPhone ? (
+            {enListas ? (
               <PersonasSettingsIOS
                 verTesoreria={verTesoreria}
                 treasurerValue={treasurerForm}
@@ -963,12 +974,12 @@ export default function Configuracion({
           </section>
 
           {verTesoreria && (
-            <section className={`${claseZona("categorias")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+            <section className={`${claseZona("categorias")}${enListas ? " settings-zona--ios-flat" : ""}`}>
               <div className="settings-zona-head">
                 <div className="settings-zona-titulo">{t("config.zona.categorias")}</div>
                 <div className="settings-zona-sub">{t("config.zona.categoriasSub")}</div>
               </div>
-              {enIPhone ? (
+              {enListas ? (
                 <CategoriesSettingsIOS church={church} onChanged={() => { /* la caché ya se refrescó; las páginas releen al montar */ }} />
               ) : (
                 <div className="settings-masonry una-tarjeta">
@@ -978,12 +989,12 @@ export default function Configuracion({
             </section>
           )}
 
-          <section className={`${claseZona("preferencias")}${enIPhone ? " settings-zona--ios-flat" : ""}`}>
+          <section className={`${claseZona("preferencias")}${enListas ? " settings-zona--ios-flat" : ""}`}>
             <div className="settings-zona-head">
               <div className="settings-zona-titulo">{t("config.zona.preferencias")}</div>
               <div className="settings-zona-sub">{t("config.zona.preferenciasSub")}</div>
             </div>
-            {enIPhone ? (
+            {enListas ? (
               <PreferenciasSettingsIOS
                 themePref={themePref} onThemePrefChange={onThemePrefChange}
                 acento={acento} onAcentoChange={onAcentoChange}

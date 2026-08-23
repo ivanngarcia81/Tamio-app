@@ -1488,6 +1488,109 @@ console.log("\n== Agenda del iPad (handoff) ==");
   await ctxAg.close();
 }
 
+/* ---------- 20. Configuración: las listas insertadas del handoff ---------- */
+console.log("\n== Configuración del iPad (handoff) ==");
+{
+  const ctxCf = await nuevoContexto("ipad");
+  const pg = await ctxCf.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".settings-nav-item", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+  chk(zonas.length >= 6, `el índice trae sus zonas (${zonas.length}: ${zonas.join(" · ")})`);
+
+  /* Iglesia: lista agrupada, no la tarjeta de escritorio. */
+  const ig = await pg.evaluate(() => {
+    const g = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-group");
+    const h = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-section-header");
+    const f = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-field");
+    const lab = f?.querySelector(".ios-field-label");
+    const cs = (e) => (e ? getComputedStyle(e) : null);
+    return {
+      lista: !!document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-form"),
+      tarjetas: document.querySelectorAll(".settings-zona:not(.settings-zona-inactiva) .settings-card").length,
+      radio: g ? cs(g).borderRadius : "",
+      sombra: g ? cs(g).boxShadow : "",
+      cab: h ? { t: cs(h).textTransform, s: cs(h).fontSize, w: cs(h).fontWeight } : null,
+      alto: f ? Math.round(f.getBoundingClientRect().height) : 0,
+      etiqueta: lab ? Math.round(lab.getBoundingClientRect().width) : 0,
+      ancho: Math.round(document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-form").getBoundingClientRect().width),
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(ig.lista, "Iglesia se pinta como lista agrupada");
+  chk(ig.tarjetas === 0, `y ya no como tarjetas de escritorio (${ig.tarjetas})`);
+  chk(ig.ancho > 600 && ig.ancho <= 680, `en la columna de lectura, con 680 de tope (${ig.ancho})`);
+  chk(ig.radio.startsWith("12px"), `tarjeta de 12px de radio (${ig.radio})`);
+  chk(ig.sombra !== "none", "con su sombra de 1px");
+  chk(ig.cab?.t === "uppercase" && ig.cab?.s === "12.5px", `encabezado en versalitas de 12.5 (${ig.cab?.s} ${ig.cab?.t})`);
+  chk(ig.alto >= 52, `filas de 52 o más (${ig.alto})`);
+  chk(ig.etiqueta === 190, `con la etiqueta en columna de 190 (${ig.etiqueta})`);
+  chk(ig.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/config-iglesia-1366x1024.png` });
+
+  /* Preferencias: las tres miniaturas de tema y los cinco tintes a 40px. */
+  const iPref = zonas.findIndex((z) => /Preferenc|Appearance|Preferences/i.test(z));
+  await pg.locator(".settings-nav-item").nth(iPref).click();
+  await pg.waitForTimeout(400);
+  const pref = await pg.evaluate(() => {
+    const t = document.querySelectorAll(".pf-tema");
+    const sel = document.querySelector(".pf-tema.sel");
+    const dot = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-color-dot");
+    const claro = document.querySelector(".pf-lienzo--light");
+    const oscuro = document.querySelector(".pf-lienzo--dark");
+    const cs = (e) => (e ? getComputedStyle(e) : null);
+    return {
+      temas: t.length,
+      alto: t[0] ? Math.round(t[0].querySelector(".pf-lienzo").getBoundingClientRect().height) : 0,
+      elegido: !!sel,
+      // La miniatura clara es clara y la oscura oscura, pase lo que pase con
+      // el tema del iPad: son retratos, no superficies.
+      fondoClaro: claro ? cs(claro).backgroundColor : "",
+      fondoOscuro: oscuro ? cs(oscuro).backgroundColor : "",
+      dots: document.querySelectorAll(".settings-zona:not(.settings-zona-inactiva) .ios-color-dot").length,
+      dotAncho: dot ? Math.round(dot.getBoundingClientRect().width) : 0,
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(pref.temas === 3, `Apariencia trae las tres miniaturas (${pref.temas})`);
+  chk(pref.alto === 104, `de 104px de alto (${pref.alto})`);
+  chk(pref.elegido, "con una marcada");
+  chk(pref.fondoClaro === "rgb(242, 242, 247)", `la clara se ve clara (${pref.fondoClaro})`);
+  chk(pref.fondoOscuro === "rgb(0, 0, 0)", `y la oscura oscura (${pref.fondoOscuro})`);
+  chk(pref.dots === 5, `los cinco tintes del acento (${pref.dots})`);
+  chk(pref.dotAncho === 40, `a 40px como el handoff (${pref.dotAncho})`);
+  chk(pref.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/config-preferencias-1366x1024.png` });
+
+  /* Zona sensible: la única sin lista agrupada, y por eso la que se rompía.
+     `.settings-masonry` son DOS columnas y solo vuelve a una en
+     `max-width: 1180px` — una media query de VIEWPORT que en 1366 no
+     dispara aunque el panel mida 680. */
+  const iDel = zonas.length - 1;
+  await pg.locator(".settings-nav-item").nth(iDel).click();
+  await pg.waitForTimeout(400);
+  const del = await pg.evaluate(() => {
+    const m = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .settings-masonry");
+    const cards = m ? [...m.children].map((c) => Math.round(c.getBoundingClientRect().width)) : [];
+    return {
+      hay: !!m,
+      columnas: m ? getComputedStyle(m).gridTemplateColumns.split(" ").length : 0,
+      anchoMin: cards.length ? Math.min(...cards) : 0,
+      desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  chk(del.hay, "la Zona sensible conserva sus tarjetas");
+  chk(del.columnas === 1, `en UNA columna (${del.columnas})`);
+  chk(del.anchoMin > 600, `a todo el ancho de lectura (${del.anchoMin}px la más angosta)`);
+  chk(del.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/config-sensible-1366x1024.png` });
+  await ctxCf.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
