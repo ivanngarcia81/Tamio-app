@@ -662,3 +662,38 @@ Tres cosas que quedan dichas:
 
 La versión sigue en **1.2.2**: Iván pidió que no se moviera hasta que él
 diga que sube un build.
+
+## 14. La 1.2.3 sale a TestFlight
+
+Bump limpio, sin sorpresas salvo una: `version = "1.2.2"` salía **cuatro
+veces** en el `Cargo.lock` —`embed_plist`, `form_urlencoded`,
+`idna_adapter` y `tesoreria`—, el récord hasta hoy. Van cuatro de siete
+bumps con colisión, cada vez con crates distintos. La regla de anclar en
+`name = "tesoreria"` (`docs/testflight.md`) volvió a ser lo único que
+separaba un bump correcto de un lockfile roto: se cambió **una sola línea**,
+la 3852.
+
+Los siete sitios, de acuerdo: `package.json`, `package-lock.json` (las dos
+entradas del paquete raíz), `src-tauri/tauri.conf.json`, `Cargo.toml`,
+`Cargo.lock`, `gen/apple/project.yml` y el `Info.plist`.
+
+**Qué lleva la 1.2.3 encima de la 1.2.2** —las tres cosas que salieron de
+que Iván revisara la 1.2.2 en un iPad de verdad:
+
+- La barra lateral se esconde en vertical (§13). El único fallo de verdad
+  de la tanda.
+- El gris único del cromo del iPad: barra de estado, columna maestra y
+  fondo del panel son la misma superficie, `#F7F7F9` / `#131315`.
+- El inventario del handoff 2 corregido contra el esquema: cinco de las
+  siete funciones que yo había declarado imposibles sí se pueden con lo
+  que la base ya tiene.
+
+**Lo que NO lleva, y hay que decirlo:** "Por revisar" sigue con su lista de
+siempre. El motor de las cinco alertas está escrito y probado en
+`src/services/bandeja/alertas.ts`, pero `Bandeja.tsx` todavía no lo llama,
+así que en esta build no se ve nada nuevo ahí. Es lo siguiente.
+
+Comprobado antes de subir: `tsc` limpio, `build:appstore` con los dos
+guardas de Apple en verde (2.5.2 y 3.1.1), los seis verificadores
+—hooks, invitación, navegación, traducciones (2376 = 2376) y los cinco de
+centavos— y las **308** medidas del arnés de iPad.

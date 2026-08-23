@@ -47,6 +47,13 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > un árbol de 400 dependencias lo raro es que el número NO se repita. Se
 > ancla siempre en `name = "tesoreria"`, sin excepciones y sin mirar
 > cuántas veces sale.
+>
+> **En la 1.2.3, el récord**: `version = "1.2.2"` salía **cuatro** veces —
+> `embed_plist`, `form_urlencoded`, `idna_adapter` y `tesoreria`. Un buscar y
+> reemplazar habría dejado tres crates diciendo que van en una versión que no
+> existe, y el fallo no habría salido hasta que alguien intentara resolver el
+> árbol desde cero. Anclado, se cambió **una sola línea**: la 3852. Van
+> **cuatro de siete** bumps con colisión.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -94,7 +101,8 @@ en las tres fuentes:
 | 22 ago | **1.2.0** — la FUSIÓN de las dos ramas que hicieron el rediseño en paralelo: el modo vertical de una y el Inicio, Configuración y el arnés de la otra. **Subida a TestFlight**, compilada desde `claude/charming-sagan-hknqp1` |
 | esta | **1.2.1** — el corte de columnas baja de 1150 a 1000: el iPad Pro de 12.9"/13" en vertical pasa a dos columnas, y Ajustes enseña por fin la versión en iPad y Mac |
 | esta | **1.2.2** — la build de REVISIÓN del handoff 2: Membresía maestro-detalle, Informes de membresía con su índice, Mensajes como chat centrado, y Cartas con crear solo en el "+" |
-| la siguiente | 1.2.3 |
+| esta | **1.2.3** — el primer arreglo salido de revisar la 1.2.2 en un iPad de verdad: la barra lateral se esconde en vertical (la regla pasa de ancho a orientación), más el gris único del cromo del iPad —barra, columna maestra y fondo del panel, `#F7F7F9` / `#131315`— y el inventario del handoff 2 corregido contra el esquema |
+| la siguiente | 1.2.4 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
