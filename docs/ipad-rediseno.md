@@ -1274,3 +1274,53 @@ cambia `data-acento` a verde y exige que la barra se mueva. Sale
 **Queda una decisión para Iván, no técnica:** si el acento de fábrica debería
 ser verde en vez de neutro, para que la app recién instalada se vea como el
 handoff. Es una línea de CSS; no la toco sin que lo diga.
+
+## 17. Reportes, pantalla por pantalla contra el handoff (23 ago 2026)
+
+Cuarta pantalla, y la más corta de las cuatro: el índice de 330px con sus
+cinco informes ya era exactamente el del diseño desde el handoff 1. Lo que
+faltaba era **dónde viven los mandos**.
+
+| El handoff dibuja | Estaba | Qué se hizo |
+|---|---|---|
+| Índice de 330px, cinco informes con subtítulo | ✓ | sin cambios |
+| **Barra de 50px sobre el informe** | no | construida |
+| Chip de mes con chevrón, en esa barra | en la cabecera (‹ Agosto ›) | movido |
+| **Compartir** | en el menú "Más" | también en la barra |
+| **Vista previa PDF** | botón "PDF" en la cabecera | movido a la barra |
+| Chip "Todas las categorías" | — | **no**, ver abajo |
+| Aviso "No se incluye en el PDF" | no | construido |
+| 4 KPI con filete de color arriba | ✓ | sin cambios |
+| Tabla de meses con variación | ✓ | sin cambios |
+
+La barra va **dentro** de `.dm`, encima del informe: al desplazar el papel
+los mandos se van con él, porque son del informe y no de la página. Y por eso
+mismo se apagan sus duplicados de la cabecera — la ‹ › del mes y el botón
+"PDF"—, con el mismo criterio que en Movimientos: el mismo mando dos veces en
+una pantalla es peor que cualquiera de los dos.
+
+### "Vista previa PDF" ya existía, y mejor
+
+El handoff dibuja un velo a pantalla completa con una hoja de 660px dentro,
+Cerrar / Compartir / Imprimir arriba. **No hace falta construirlo**:
+`services/entrega.ts` ya abre el visor de la app con el **PDF de verdad** y su
+propio botón de compartir, precisamente porque en iOS no hay Vista Previa.
+Enseñar el documento real es mejor vista previa que una maqueta de él, así que
+el botón nuevo llama a lo que ya había.
+
+### Lo que no se construyó: el chip "Todas las categorías"
+
+El handoff pone un segundo chip junto al del mes. **La pantalla no tiene ese
+filtro y no debería tenerlo a la ligera**: un reporte de Tesorería es del
+PERIODO, y filtrarlo por categoría cambiaría lo que dice el PDF —el estado
+financiero dejaría de cuadrar contra el saldo—. No es que falte un dato: es
+que la pregunta que hace ese chip no es la que responde este documento. Si de
+verdad hace falta, lo natural es un informe aparte ("Ingresos por categoría"
+ya está en el índice), no un filtro sobre el estado financiero.
+
+### El aviso que sí faltaba
+
+El handoff rotula el bloque de arriba como "Resumen en pantalla · **No se
+incluye en el PDF**". Es un detalle pequeño y honesto: esas cuatro cifras son
+ayuda de pantalla, y quien comparte el reporte esperaría encontrarlas dentro.
+Ahora lo dice.

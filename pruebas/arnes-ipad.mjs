@@ -939,6 +939,37 @@ console.log("\n== Aportantes del iPad (handoff) ==");
   await ctxAp.close();
 }
 
+/* ---------- 13. Reportes: los mandos viven CON el informe ---------- */
+console.log("\n== Reportes del iPad (handoff) ==");
+{
+  const ctxRp = await nuevoContexto("ipad");
+  const pg = await ctxRp.newPage();
+  const DIR = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/reportes`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-reportes .md-indice-item", { timeout: 10000 });
+  await pg.click(".md-reportes .md-indice-item:not(.sel)");
+  await pg.waitForTimeout(500);
+  const m = await pg.evaluate(() => ({
+    indice: document.querySelectorAll(".md-reportes .md-indice-item").length,
+    barra: !!document.querySelector(".rep-barra"),
+    chipMes: document.querySelector(".rep-barra .chip-mes")?.textContent.trim(),
+    botones: [...document.querySelectorAll(".rep-barra .chip")].map((b) => b.textContent.trim()),
+    // La ‹ › de la cabecera se apaga: el chip del mes ya hace eso.
+    navMes: document.querySelector(".header .month-nav")
+      ? getComputedStyle(document.querySelector(".header .month-nav")).display : "sin nav",
+    desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  }));
+  chk(m.indice === 5, `el índice trae los cinco informes (${m.indice})`);
+  chk(m.barra, "el informe lleva su barra de mandos");
+  chk(!!m.chipMes, `con el chip del periodo (${m.chipMes})`);
+  chk(m.botones.length >= 3, `y las salidas del informe (${m.botones.join(" · ")})`);
+  chk(m.navMes === "none", `la ‹ › de la cabecera está apagada (${m.navMes})`);
+  chk(m.desborda === false, "sin scroll horizontal");
+  if (DIR) await pg.screenshot({ path: `${DIR}/reportes-1366x1024.png` });
+  await ctxRp.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

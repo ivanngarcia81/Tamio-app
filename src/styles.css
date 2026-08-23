@@ -9428,7 +9428,50 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      da el handoff. Acotado a `.header` de las páginas partidas —Depósitos y
      el resto la siguen usando— con `:has()`, que es lo que ya distingue esas
      pantallas en el resto de la hoja. */
-  :root.ipad .main:has(.md-movimientos) .header .month-nav { display: none; }
+  /* La navegación ‹ mes › de la cabecera se apaga donde el chip del mes de la
+     propia pantalla hace ya lo mismo: Movimientos y Reportes. */
+  :root.ipad .main:has(.md-movimientos) .header .month-nav,
+  :root.ipad .main:has(.md-reportes) .header .month-nav { display: none; }
+
+  /* ---- La barra del informe (Reportes) ----
+     50px pegados a la cabecera del panel, con el periodo a la izquierda y las
+     salidas a la derecha. Va DENTRO de `.dm`, encima del informe, para que al
+     desplazar el papel los mandos se vayan con él: son del informe, no de la
+     página. */
+  :root.ipad .rep-barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  :root.ipad .rep-barra-hueco { flex: 1; min-width: 0; }
+  :root.ipad .rep-barra .chip { min-height: 32px; }
+  :root.ipad .rep-barra .chip:disabled { opacity: 0.5; cursor: default; }
+  /* El botón principal de la barra reusa `.chip-mes` (relleno con el acento);
+     lo único propio es el hueco entre el icono y el texto. */
+  :root.ipad .rep-barra .chip-mes { gap: 6px; }
+
+  /* El aviso de "esto no va en el PDF", sobre las cuatro cifras. */
+  :root.ipad .rep-aviso-pantalla {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 2px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .rep-aviso-nota {
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
 
   /* El chip del mes: relleno con el acento, que en el diseño es el mando
      principal de la fila. `MenuAnchor` envuelve su disparador en un

@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { esIPad, esIPhone, esMac } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -17,8 +17,9 @@ import Donut from "../components/Donut";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
+import { MenuAnchor } from "../components/MenuAnchor";
 import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../services/importCsv";
-import { IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconSparkles, IconUpload } from "../icons";
+import { IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconSparkles, IconUpload } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import HeaderMenu from "../components/HeaderMenu";
 import Asamblea from "../components/Asamblea";
@@ -168,6 +169,10 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
   const [historial, setHistorial] = useState<MonthSummary[]>([]);
   const [depositosMes, setDepositosMes] = useState<Centavos>(CERO);
   const [exporting, setExporting] = useState<"pdf" | "print" | "anual" | null>(null);
+  /* El chip del mes del panel (handoff): en el diseño los mandos del informe
+     viven CON el informe, en una barra de 50px sobre el papel, no en la
+     cabecera de la página. En el iPad la ‹ › de arriba se apaga por CSS. */
+  const [menuMes, setMenuMes] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [mes, setMes] = useState(currentMonth());
@@ -461,7 +466,32 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
      no una copia: si mañana cambia el estado financiero, cambia en las dos.
      Es el trato que ya tenían el resumen del mes de Ingresos y las tarjetas
      de Depósitos. */
+  /* Los doce meses hacia atrás desde el actual, más el elegido si se salió
+     del rango. Mismo criterio que el chip de Movimientos: se ofrece un rango,
+     no "los meses con datos" — un mes vacío también se consulta, justo para
+     comprobar que está vacío. */
+  const mesesMenu = useMemo(() => {
+    const out: string[] = [];
+    const [y, m] = currentMonth().split("-").map(Number);
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(y, m - 1 - i, 1);
+      out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    if (!out.includes(mes)) out.push(mes);
+    return out;
+  }, [mes]);
+
   const bloqueResumen = (
+    <>
+    {/* El aviso del handoff. Estas cuatro cifras son ayuda de pantalla; el
+        PDF lleva el estado financiero completo. Sin decirlo, quien comparte
+        el reporte espera encontrarlas dentro y no están. */}
+    {esIPad() && (
+      <div className="rep-aviso-pantalla">
+        <span>{t("reportes.seccionResumen")}</span>
+        <span className="rep-aviso-nota">{t("reportes.noEnPdf")}</span>
+      </div>
+    )}
     <div className="summary-4 enter">
       <div className="stat-card accent" style={{ "--accent-color": "var(--accent-1)" } as CSSProperties}>
         <div className="stat-head"><span className="stat-label">{t("dashboard.ingresosDelMes")}</span></div>
@@ -484,6 +514,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <div className="stat-foot">{mesLegible(mesAnterior)}</div>
       </div>
     </div>
+    </>
   );
 
   const tarjetaGastos = (
@@ -791,9 +822,14 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               { label: exporting === "print" ? t("common.preparando") : t("common.imprimir"), icon: <IconPrinter size={14} />, disabled: exporting !== null, onClick: handlePrint },
             ]}
           />
-          <button className="btn primary" onClick={() => handleExport("pdf")} disabled={exporting !== null}>
-            {exporting === "pdf" ? t("common.generando") : "PDF"}
-          </button>
+          {/* En el iPad partido este botón lo repite la barra del informe
+              ("Vista previa PDF"), que es donde el handoff lo pone. Se queda
+              para Mac, para el teléfono y para el iPad angosto sin panel. */}
+          {!partido && (
+            <button className="btn primary" onClick={() => handleExport("pdf")} disabled={exporting !== null}>
+              {exporting === "pdf" ? t("common.generando") : "PDF"}
+            </button>
+          )}
         </div>
         <div className="header-actions solo-movil">
           <button
@@ -889,10 +925,45 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                   const elegido = angosto ? informe ?? ultimoInforme.current : informeActivo;
                   if (elegido) {
                     return (
-                      <div className="dm">
+                      <div className="dm dm--informe">
                         <button type="button" className="dm-volver" onClick={() => setInforme(null)}>
                           <IconChevronLeft size={17} strokeWidth={2.4} /> {t("reportes.titulo")}
                         </button>
+                        {/* La barra de 50px del handoff: el periodo y las dos
+                            salidas del informe, pegadas al informe. */}
+                        <div className="rep-barra">
+                          <MenuAnchor
+                            open={menuMes}
+                            onOpenChange={setMenuMes}
+                            ariaLabel={t("mov.elegirMes")}
+                            button={<span className="chip chip-mes">{mesStr}<IconChevronDown size={12} strokeWidth={2.2} /></span>}
+                            items={mesesMenu.map((m) => ({ label: mesLegible(m), onPress: () => setMes(m) }))}
+                          />
+                          <div className="rep-barra-hueco" />
+                          <button
+                            type="button"
+                            className="chip"
+                            onClick={handlePrint}
+                            disabled={exporting !== null}
+                          >
+                            {exporting === "print" ? t("common.preparando") : t("common.compartir")}
+                          </button>
+                          {/* "Vista previa PDF" del diseño. En iPad no hace
+                              falta un velo dibujado a mano: `entrega` ya abre
+                              el visor de la app con el PDF de verdad y su
+                              propio botón de compartir (services/entrega.ts).
+                              Enseñar el documento real es mejor vista previa
+                              que una maqueta de él. */}
+                          <button
+                            type="button"
+                            className="chip chip-mes"
+                            onClick={() => handleExport("pdf")}
+                            disabled={exporting !== null}
+                          >
+                            <IconFileText size={14} />
+                            {exporting === "pdf" ? t("common.generando") : t("reportes.vistaPreviaPdf")}
+                          </button>
+                        </div>
                         {panelInforme(elegido)}
                       </div>
                     );

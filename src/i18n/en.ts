@@ -353,6 +353,8 @@ export const en: Resources = {
 
   reportes: {
     // Encabezados de sección de la versión iPhone (Reportes.tsx, enIPhone).
+    vistaPreviaPdf: "PDF preview",
+    noEnPdf: "Not included in the PDF",
     seccionResumen: "Overview",
     seccionDistribucion: "Breakdown",
     titulo: "Reports",

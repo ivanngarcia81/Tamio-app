@@ -349,6 +349,8 @@ export const es = {
 
   reportes: {
     // Encabezados de sección de la versión iPhone (Reportes.tsx, enIPhone).
+    vistaPreviaPdf: "Vista previa PDF",
+    noEnPdf: "No se incluye en el PDF",
     seccionResumen: "Resumen",
     seccionDistribucion: "Distribución",
     titulo: "Reportes",
