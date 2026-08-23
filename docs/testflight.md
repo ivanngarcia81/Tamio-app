@@ -73,6 +73,13 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > **En la 1.2.6, la excepción de verdad**: `1.2.5` salía **una sola vez** en
 > `Cargo.lock` y **dos** en `package-lock.json`, las dos de Tamio. Ni una
 > colisión en ninguno de los dos. Seis de diez.
+>
+> **Y en la 1.2.7, una trampa NUEVA.** Colisión exacta, ninguna. Pero
+> `Cargo.lock` tiene el crate **`cc` en la 1.2.67**, y `1.2.6` es un PREFIJO
+> de `1.2.67`: un buscar y reemplazar de `1.2.6` → `1.2.7` lo habría dejado en
+> **`1.2.77`**, una versión que no existe, sin que ninguna colisión exacta lo
+> avisara. Anclar en `name = "tesoreria"` y tocar una sola línea vale también
+> para esto; buscar el número, no.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -124,7 +131,8 @@ en las tres fuentes:
 | esta | **1.2.4** — el handoff 2 completo: **Agenda** (barra de 50px sobre las dos columnas, rejilla que llena el alto, pastillas de color por tipo, días vecinos en gris) y **Configuración** (las listas agrupadas cruzan al iPad, las tres miniaturas de tema, y la Zona sensible que se veía rota desde antes). Con esto, las once pantallas del handoff están recorridas |
 | esta | **1.2.5** — el panel de detalle pasa al gris del lienzo (`#F2F2F7` / `#000`) y deja de fundirse con la barra y la columna maestra; de paso, la barra de vistas de la Agenda, el índice de zonas de Ajustes y la columna del día recuperan el suyo — cuatro superficies que pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Y se pintan los **diez controles** que el handoff dibuja y la app no tiene —"Marcar depositado", "Asignar encargado" ×4, los tres de Presentación, los cuatro permisos del rol y los cuatro Controles de tesorería del handoff 1—, **apagados y con su explicación**. Todo salió de revisar la 1.2.4 en el iPad |
 | esta | **1.2.6** — el cromo, terminado: la barra de vistas de la Agenda, el índice de zonas de Ajustes, la barrita de Informes y las dos superficies translúcidas que mezclaban el gris equivocado. Las cinco pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Con guarda **sobre el archivo**, no sobre la pantalla: ninguna regla de `:root.ipad` puede volver a nombrar ese token. Y dos del chip del mes: deja de salirse 38px del panel (`.ios-bar-button` medía 44×44 fijos) y su menú deja de abrirse recortado detrás del panel (`MenuAnchor` pasa a colgar de `<body>` en `fixed`, como los otros menús de la casa) |
-| la siguiente | 1.2.7 |
+| esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
+| la siguiente | 1.2.8 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -359,6 +367,12 @@ veces y `iphone .ios-row` solo 5: las cinco que se quedan a propósito
 
 Y las once pantallas del handoff quedan recorridas con esta versión. El
 repaso pantalla por pantalla está en `docs/ipad-rediseno.md` §14–§24.
+
+En la **1.2.7**, lo de siempre, y la lista del bundle con lo de esta tanda:
+`ios-bar-button{…min-width:44px}` (el disparador que ya no se desborda),
+`.ios-menu{…position:fixed}` y `ios-menu-backdrop` en el JS (el menú colgado
+de `<body>`), `--brand-contrast` ×14, `agenda-cell.today{background:var(--brand)}`
+y `main .content-ajustes{…flex:1}` (Configuración como pantalla partida).
 
 En la **1.2.6**, lo de siempre. Y una comprobación que ya no es de clases
 sino de **color computado**, porque es lo que esta tanda arregla: el arnés
