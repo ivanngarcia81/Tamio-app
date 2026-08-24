@@ -91,6 +91,11 @@ export interface EntradaAlertas {
   /** "YYYY-MM" de hoy, para los recurrentes. */
   hoyMes: string;
   umbralComprobante?: Centavos;
+  /** Los dos controles de tesorería (migración 45). Sin pasarlos, las dos
+   *  reglas se calculan — que es lo que hacía la app antes de que fueran
+   *  ajustables, y lo que tiene que seguir haciendo por omisión. */
+  avisarSinComprobante?: boolean;
+  avisarDuplicados?: boolean;
 }
 
 /**
@@ -100,6 +105,8 @@ export interface EntradaAlertas {
  */
 export function calcularAlertas(e: EntradaAlertas): Alerta[] {
   const umbral = e.umbralComprobante ?? UMBRAL_COMPROBANTE;
+  const avisaComprobante = e.avisarSinComprobante ?? true;
+  const avisaDuplicados = e.avisarDuplicados ?? true;
   const out: Alerta[] = [];
 
   // 1. Pendientes de revisión: lo que la pantalla ya hacía.
@@ -113,30 +120,34 @@ export function calcularAlertas(e: EntradaAlertas): Alerta[] {
   const pendientesId = new Set(e.pendientes.map((x) => x.id));
   const resto = e.recientes.filter((x) => !pendientesId.has(x.id));
 
-  // 2. Gasto sin comprobante por encima del umbral.
-  for (const tx of resto) {
-    if (tx.tipo === "gasto" && !tx.comprobante_path && tx.monto >= umbral) {
-      out.push({ clave: `tx-${tx.id}-sinComprobante`, tipo: "sinComprobante", tx });
+  // 2. Gasto sin comprobante por encima del umbral, si la iglesia lo pide.
+  if (avisaComprobante) {
+    for (const tx of resto) {
+      if (tx.tipo === "gasto" && !tx.comprobante_path && tx.monto >= umbral) {
+        out.push({ clave: `tx-${tx.id}-sinComprobante`, tipo: "sinComprobante", tx });
+      }
     }
   }
 
   /* 3. Duplicado probable. Se agrupa por huella y dentro de cada grupo se
         comparan por fecha; solo se anuncia UNA vez por pareja (el más nuevo
         contra el más viejo), porque dos avisos del mismo hecho son ruido. */
-  const grupos = new Map<string, Tx[]>();
-  for (const tx of resto) {
-    const h = huella(tx);
-    const g = grupos.get(h);
-    if (g) g.push(tx); else grupos.set(h, [tx]);
-  }
-  for (const g of grupos.values()) {
-    if (g.length < 2) continue;
-    const orden = [...g].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
-    for (let i = 1; i < orden.length; i++) {
-      const previo = orden[i - 1];
-      const actual = orden[i];
-      if (distanciaDias(dia(actual.fecha), dia(previo.fecha)) <= DIAS_DUPLICADO) {
-        out.push({ clave: `tx-${actual.id}-duplicado`, tipo: "duplicado", tx: actual, gemelo: previo });
+  if (avisaDuplicados) {
+    const grupos = new Map<string, Tx[]>();
+    for (const tx of resto) {
+      const h = huella(tx);
+      const g = grupos.get(h);
+      if (g) g.push(tx); else grupos.set(h, [tx]);
+    }
+    for (const g of grupos.values()) {
+      if (g.length < 2) continue;
+      const orden = [...g].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+      for (let i = 1; i < orden.length; i++) {
+        const previo = orden[i - 1];
+        const actual = orden[i];
+        if (distanciaDias(dia(actual.fecha), dia(previo.fecha)) <= DIAS_DUPLICADO) {
+          out.push({ clave: `tx-${actual.id}-duplicado`, tipo: "duplicado", tx: actual, gemelo: previo });
+        }
       }
     }
   }

@@ -975,6 +975,31 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- primera corrección de un nombre mal escrito.
             ALTER TABLE actas ADD COLUMN firmas TEXT NOT NULL DEFAULT '[]';
         "#,
+    }, motordb::Migracion {
+        version: 45,
+        description: "controles de tesorería: los dos avisos, ahora ajustables",
+        sql: r#"
+            -- Los dos primeros "Controles de tesorería" del handoff. Iban
+            -- dibujados y ENCENDIDOS —y apagados como mando— porque describían
+            -- algo que la app ya hacía de verdad: el aviso de gasto sin
+            -- comprobante sobre `UMBRAL_COMPROBANTE` y la regla `duplicado` de
+            -- `alertas.ts`. Lo que no se podía era cambiarlos. Estas tres
+            -- columnas es lo que faltaba.
+            --
+            -- **Tres columnas y no dos**, y la de más es la que evita una
+            -- mentira: sin `avisar_sin_comprobante`, apagar el aviso habría
+            -- que representarlo con un umbral imposible (0, o -1), y un
+            -- umbral que en realidad significa "no avises" es la clase de
+            -- dato que se malinterpreta al leerlo seis meses después.
+            --
+            -- `umbral_comprobante` en NULL significa "el de la constante", no
+            -- cero: una iglesia que nunca tocó el ajuste sigue con el
+            -- comportamiento de siempre, y si algún día la constante cambia,
+            -- cambia con ella. Solo deja de seguirla quien elige un número.
+            ALTER TABLE churches ADD COLUMN avisar_sin_comprobante INTEGER NOT NULL DEFAULT 1;
+            ALTER TABLE churches ADD COLUMN umbral_comprobante INTEGER;
+            ALTER TABLE churches ADD COLUMN avisar_duplicados INTEGER NOT NULL DEFAULT 1;
+        "#,
     }]
 }
 

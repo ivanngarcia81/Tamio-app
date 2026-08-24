@@ -313,10 +313,10 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | ~~**Barra lateral siempre visible**~~ | ídem | **RETIRADO el 24 ago** — no se cableó: se quitó. Ver abajo |
 | ~~**Ocultar montos al bloquear**~~ | ídem | **cableado el 24 ago** — tapa el contenido en segundo plano (`src/privacidad.ts`) |
 | **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
-| **Avisar de gastos sin comprobante desde $X** | Config → Iglesia → Controles de tesorería | interruptor apagado, **encendido** |
-| **Avisar de posibles duplicados** | ídem | interruptor apagado, **encendido** |
-| **Doble firma en el corte** | ídem | interruptor apagado |
-| **Cierre de mes** | ídem | fila de valor apagada ("Mes natural") |
+| ~~**Avisar de gastos sin comprobante desde $X**~~ | Config → Iglesia → Controles de tesorería | **cableado el 24 ago** (migración 45) — se enciende, se apaga y el importe se escribe |
+| ~~**Avisar de posibles duplicados**~~ | ídem | **cableado el 24 ago** — interruptor vivo |
+| **Doble firma en el corte** | ídem | apagado **por decisión**: Iván eligió constancia, no acuse |
+| **Cierre de mes** | ídem | fila de valor: la app cierra por mes natural, y no es un ajuste |
 
 Tres detalles de la ejecución que no son obvios:
 
@@ -333,14 +333,30 @@ Tres detalles de la ejecución que no son obvios:
   la fila dice algo verdadero.
 - **Solo iPad.** Son del handoff de iPad; el teléfono no los pidió y no se le
   meten controles muertos.
-- **Dos de los cuatro últimos van ENCENDIDOS**, y no por descuido. "Avisar de
-  gastos sin comprobante" y "Avisar de posibles duplicados" describen algo que
-  la app **ya hace**: `UMBRAL_COMPROBANTE` vale de verdad y Por revisar señala
-  los gastos que lo pasan, y la regla `duplicado` de `alertas.ts` está viva.
-  Apagarlos sería mentir en la otra dirección. Lo que no se puede es cambiar
-  la cifra ni desactivar el aviso — y eso lo dice el pie del grupo. El importe
-  sale de la constante interpolada, no de un `$1,000` copiado del prototipo:
-  si el umbral cambia, la fila cambia con él.
+- **Dos de los cuatro últimos iban ENCENDIDOS**, y no por descuido: "Avisar de
+  gastos sin comprobante" y "Avisar de posibles duplicados" describían algo
+  que la app **ya hacía**, así que apagarlos habría sido mentir en la otra
+  dirección. Lo que no se podía era cambiarlos. **Cableados el 24 de agosto de
+  2026** (migración 45: `avisar_sin_comprobante`, `umbral_comprobante`,
+  `avisar_duplicados`), y ahora apagar uno apaga de verdad su alerta en Por
+  revisar — la sección 39 del arnés lo comprueba moviéndolos y contando lo que
+  sale.
+
+  Dos detalles de esa migración:
+
+  - **Son tres columnas y no dos.** La de más es la que evita una mentira: sin
+    `avisar_sin_comprobante`, apagar el aviso habría que representarlo con un
+    umbral imposible (0, o −1), y un umbral que en realidad significa "no
+    avises" es la clase de dato que se malinterpreta seis meses después.
+  - **`umbral_comprobante` en NULL significa "el de la constante", no cero.**
+    Una iglesia que nunca tocó el ajuste sigue con el comportamiento de
+    siempre, y si la constante cambia, cambia con ella. Solo deja de seguirla
+    quien elige un número. El pie del grupo dice cuál es esa cifra.
+
+  Y el importe **salió de la etiqueta**: tiene campo propio, porque ahora se
+  escribe. De paso arregló el recorte que la guarda vigilaba —"Avisar de
+  gastos sin comprobante desde $1,000.00 USD" no cabía en la columna de 190—,
+  esta vez quitando la causa en vez del síntoma.
 - **"Cierre de mes" no es un interruptor**, es una fila de valor: la app
   cierra por **mes natural** (el porqué está en `services/inicio/periodo.ts`)
   y "último domingo" del prototipo no es un ajuste, es otra forma de contar.

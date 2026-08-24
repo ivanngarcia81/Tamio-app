@@ -282,8 +282,15 @@ export default function Configuracion({
     // 0 se muestra vacío: el caso común (arrancar de cero) no obliga a nadie
     // a entender qué es un "saldo de apertura".
     saldoInicial: church.saldo_inicial ? aTextoTecleado(church.saldo_inicial) : "",
+    /* Controles de tesorería (v45). El umbral vacío significa "el de la
+       constante", igual que el saldo vacío significa cero: es la diferencia
+       entre no haber tocado el ajuste y haber elegido un número. */
+    avisarSinComprobante: church.avisar_sin_comprobante !== 0,
+    umbralComprobante: church.umbral_comprobante != null ? aTextoTecleado(church.umbral_comprobante) : "",
+    avisarDuplicados: church.avisar_duplicados !== 0,
   });
   const [saldoError, setSaldoError] = useState<string | null>(null);
+  const [umbralError, setUmbralError] = useState<string | null>(null);
   const [treasurerForm, setTreasurerForm] = useState<TreasurerFormValues>({
     nombre: church.tesorero_nombre ?? "",
     cargo: church.tesorero_cargo ?? "Tesorero",
@@ -377,8 +384,16 @@ export default function Configuracion({
       const saldoTexto = f.churchForm.saldoInicial.trim();
       const saldoNum = saldoTexto === "" ? CERO : deTextoTecleado(saldoTexto);
       const saldoErr = saldoNum !== null ? null : t("validacion.saldoInvalido");
-      if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); }
-      if (nombreErr || saldoErr) return { patch: {}, valido: false };
+      /* El umbral del comprobante, con el MISMO parser que el saldo: es un
+         importe tecleado por una persona y la coma decimal de media Europa
+         tiene que valer aquí igual que allí. Vacío = null = la constante. */
+      const umbralTexto = f.churchForm.umbralComprobante.trim();
+      const umbralNum = umbralTexto === "" ? null : deTextoTecleado(umbralTexto);
+      const umbralErr = umbralTexto === "" || umbralNum !== null
+        ? null
+        : t("controlesTesoreria.umbralInvalido");
+      if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); setUmbralError(umbralErr); }
+      if (nombreErr || saldoErr || umbralErr) return { patch: {}, valido: false };
       return {
         valido: true,
         patch: {
@@ -390,6 +405,9 @@ export default function Configuracion({
           ein: f.churchForm.ein.trim() || null,
           moneda: f.churchForm.moneda,
           saldo_inicial: saldoNum ?? CERO,
+          avisar_sin_comprobante: f.churchForm.avisarSinComprobante ? 1 : 0,
+          umbral_comprobante: umbralNum,
+          avisar_duplicados: f.churchForm.avisarDuplicados ? 1 : 0,
         },
       };
     }
@@ -791,6 +809,7 @@ export default function Configuracion({
                 onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
                 error={churchError}
                 saldoError={saldoError}
+                umbralError={umbralError}
                 logoPath={logoPath}
                 onLogoPathChange={cambiarLogo}
                 showCurrency={verTesoreria}

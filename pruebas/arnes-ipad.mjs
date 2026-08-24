@@ -1992,39 +1992,44 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   chk(!!om && !om.apagada, `"Ocultar montos" ya no está apagada (${om?.apagada})`);
   if (DIR) await pg.screenshot({ path: `${DIR}/config-presentacion-1366x1024.png` });
 
-  /* Los cuatro del handoff 1 en "Iglesia". Dos de ellos van ENCENDIDOS a
-     propósito: describen algo que la app ya hace (el aviso de comprobante
-     sobre `UMBRAL_COMPROBANTE` y el de duplicados), así que apagarlos sería
-     mentir en la otra dirección. Lo que no se puede es cambiarlos. */
+  /* **Los cuatro de "Iglesia" se partieron en dos el 24 ago 2026** (migración
+     45). Los DOS AVISOS —comprobante y duplicados— tienen motor: se
+     encienden, se apagan y el umbral se escribe, y lo que se cambia llega a
+     Por revisar. Los otros dos siguen apagados, y no por deuda sino por
+     decisión: la doble firma es la opción que no se eligió (constancia, no
+     acuse) y el mes se cierra por calendario.
+
+     Lo que esta comprobación vigila cambió con ellos: antes exigía cuatro
+     filas apagadas y "ninguna pulsable"; ahora exige DOS apagadas y que las
+     otras dos sí se puedan tocar. El flujo entero va en la sección 39. */
   await irA(/Iglesia|Church/i);
   const igl = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
-    const filas = [...z.querySelectorAll(".ios-field--apagado")];
+    const apagadas = [...z.querySelectorAll(".ios-field--apagado")];
+    const interruptores = [...z.querySelectorAll('[role="switch"]')];
     return {
-      filas: filas.length,
-      vivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
-      encendidos: filas.filter((f) => f.querySelector('[role="switch"][aria-checked="true"]')).length,
-      apagados: filas.filter((f) => f.querySelector('[role="switch"][aria-checked="false"]')).length,
-      // El importe sale de la constante, no de un literal "$1,000" copiado
-      // del prototipo: si el umbral cambia, la fila cambia con él.
-      conMonto: filas.some((f) => /\d/.test(f.querySelector(".ios-field-label")?.textContent || "")),
-      subs: filas.filter((f) => f.querySelector(".ios-field-sub")).length,
-      opacidad: filas[0] ? Number(getComputedStyle(filas[0]).opacity) : 1,
+      apagadas: apagadas.length,
+      // Los dos avisos: interruptores vivos, no adornos.
+      vivos: interruptores.filter((b) => !b.disabled).length,
+      subs: [...z.querySelectorAll(".ios-field-sub")].length,
+      opacidad: apagadas[0] ? Number(getComputedStyle(apagadas[0]).opacity) : 1,
+      // El importe ya NO va en la etiqueta: tiene su propio campo, porque
+      // ahora se escribe. En el pie sigue saliendo el valor de siempre.
+      pie: [...z.querySelectorAll(".ios-section-footer")].some((p) => /\d/.test(p.textContent ?? "")),
     };
   });
-  chk(igl.filas === 4, `Controles de tesorería trae sus cuatro filas (${igl.filas})`);
-  chk(igl.vivos === 0, "ninguna pulsable");
-  chk(igl.encendidos === 2, `dos encendidas, las que describen algo real (${igl.encendidos})`);
-  chk(igl.apagados === 1, `una apagada, la que no existe (${igl.apagados})`);
-  chk(igl.conMonto, "el umbral sale de la constante, no de un literal");
-  chk(igl.subs === 4, `las cuatro explican qué pasa hoy (${igl.subs})`);
-  chk(igl.opacidad < 0.7, `y van a media tinta como las demás (${igl.opacidad})`);
-  /* Y que la etiqueta larga QUEPA: con la columna fija de 190 de las demás
-     filas, "Avisar de gastos sin comprobante desde $1,000.00 USD" salía
-     cortado en la primera palabra. */
+  chk(igl.apagadas === 2, `Controles de tesorería: solo las dos que son DECISIÓN siguen apagadas (${igl.apagadas})`);
+  chk(igl.vivos === 2, `y los dos avisos son interruptores vivos (${igl.vivos})`);
+  chk(igl.subs >= 4, `las filas siguen explicando qué hacen (${igl.subs})`);
+  chk(igl.opacidad < 0.7, `las apagadas van a media tinta (${igl.opacidad})`);
+  chk(igl.pie, "y el pie dice cuál es el umbral de siempre, con su cifra");
+  /* Y que ninguna etiqueta se recorte: con la columna fija de 190 de las
+     demás filas, "Avisar de gastos sin comprobante desde $1,000.00 USD"
+     salía cortado en la primera palabra. Fue justo lo que llevó a sacar el
+     importe de la etiqueta y darle campo propio. */
   const recorte = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
-    const ls = [...z.querySelectorAll(".ios-field--apagado .ios-field-label")];
+    const ls = [...z.querySelectorAll(".ios-field-label")];
     return ls.filter((l) => l.scrollWidth > l.clientWidth + 1).length;
   });
   chk(recorte === 0, `ninguna etiqueta recortada (${recorte})`);
@@ -3584,6 +3589,87 @@ console.log("\n== Recopilar las firmas del acta ==");
   chk(/\d+ de \d+|\d+ of \d+/.test(tras.boton ?? ""),
     `y el botón lleva la cuenta (${tras.boton})`);
   await ctxF.close();
+}
+
+/* ---------- 39. Los dos avisos de tesorería, ajustables de verdad ----------
+   La trampa de un interruptor con motor es que se mueva y no cambie nada.
+   Esto no comprueba que el interruptor se pinte —eso ya lo hace la sección
+   22— sino que apagarlo APAGA la alerta en Por revisar, que es lo único que
+   el control promete.
+
+   Probada al revés: dejando `calcularAlertas` sin mirar `avisarDuplicados`,
+   la comprobación de después de apagarlo sale en rojo. */
+console.log("\n== Los dos avisos de tesorería cambian lo que sale en Por revisar ==");
+{
+  const ctxT = await nuevoContexto("ipad");
+  const pg = await ctxT.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /** Cuántas alertas de ese tipo enseña Por revisar ahora mismo. */
+  const cuantas = async (tipo) => {
+    await pg.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".md-bandeja", { timeout: 10000 });
+    await pg.waitForTimeout(500);
+    return pg.evaluate((t) => {
+      const chip = [...document.querySelectorAll(".al-chips .chip")]
+        .find((c) => new RegExp(t, "i").test(c.textContent ?? ""));
+      if (!chip) return 0;
+      const n = (chip.textContent ?? "").match(/\d+/);
+      return n ? Number(n[0]) : 0;
+    }, tipo);
+  };
+
+  const dupAntes = await cuantas("duplicad");
+  const compAntes = await cuantas("comprobante|receipt");
+  chk(dupAntes > 0, `los datos de prueba traen duplicados que avisar (${dupAntes})`);
+  chk(compAntes > 0, `y gastos sin comprobante por encima del umbral (${compAntes})`);
+
+  /** Ir a Configuración → Iglesia y devolver el grupo de tesorería. */
+  const irAIglesia = async () => {
+    await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".settings-nav-item", { timeout: 10000 });
+    const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+    const i = zonas.findIndex((z) => /Iglesia|Church/i.test(z));
+    await pg.locator(".settings-nav-item").nth(i).click();
+    await pg.waitForTimeout(500);
+  };
+
+  // --- Apagar el aviso de duplicados ---
+  await irAIglesia();
+  await pg.locator(".ios-field", { hasText: /duplicad/i }).locator('[role="switch"]').click();
+  // El guardado es automático y con retardo: hay que dejarlo escribir.
+  await pg.waitForTimeout(1800);
+  const dupDespues = await cuantas("duplicad");
+  chk(dupDespues === 0, `apagarlo quita las alertas de duplicado (${dupAntes} → ${dupDespues})`);
+
+  /* --- Subir el umbral por encima del gasto más caro de la siembra ---
+     El campo solo existe con el aviso encendido, que es lo que hace que un
+     umbral no pueda quedarse describiendo un aviso apagado. */
+  await irAIglesia();
+  const hayCampo = await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).count();
+  chk(hayCampo === 1, `el umbral tiene campo propio mientras el aviso está encendido (${hayCampo})`);
+  await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).locator("input").fill("99999");
+  await pg.waitForTimeout(1800);
+  const compDespues = await cuantas("comprobante|receipt");
+  chk(compDespues === 0,
+    `subir el umbral a 99.999 deja de señalar los gastos de siempre (${compAntes} → ${compDespues})`);
+
+  /* Y al revés: bajarlo los devuelve. Un ajuste que solo sabe apagar cosas
+     no es un ajuste, es un interruptor de un solo sentido. */
+  await irAIglesia();
+  await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).locator("input").fill("1");
+  await pg.waitForTimeout(1800);
+  const compVuelta = await cuantas("comprobante|receipt");
+  chk(compVuelta > 0, `y bajarlo a 1 los devuelve (${compVuelta})`);
+
+  // Con el aviso apagado, el campo del umbral desaparece: no describe nada.
+  await irAIglesia();
+  await pg.locator(".ios-field", { hasText: /comprobante|receipt/i }).first().locator('[role="switch"]').click();
+  await pg.waitForTimeout(800);
+  const sinCampo = await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).count();
+  chk(sinCampo === 0, `apagado el aviso, su umbral deja de pedirse (${sinCampo})`);
+  await ctxT.close();
 }
 
 await browser.close();

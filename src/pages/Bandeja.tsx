@@ -97,13 +97,21 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
      aquí solo se le dan las cuatro listas y se pinta lo que devuelve. La
      bandeja deja de ser "pendientes + archivados" y pasa a ser la lista de
      cosas que alguien tiene que mirar, que es lo que el diseño pide. */
+  /* Los dos controles de tesorería (migración 45) salen de la iglesia, no de
+     la constante: quien los apague en Ajustes deja de ver esas alertas aquí,
+     que es justo lo que el interruptor promete. */
+  const umbralIglesia = church.umbral_comprobante ?? UMBRAL_COMPROBANTE;
   const alertas: Alerta[] = useMemo(() => calcularAlertas({
     pendientes,
     recientes,
     archivados,
     recurrentes,
     hoyMes: currentMonth(),
-  }), [pendientes, recientes, archivados, recurrentes]);
+    umbralComprobante: umbralIglesia,
+    avisarSinComprobante: church.avisar_sin_comprobante !== 0,
+    avisarDuplicados: church.avisar_duplicados !== 0,
+  }), [pendientes, recientes, archivados, recurrentes, umbralIglesia,
+       church.avisar_sin_comprobante, church.avisar_duplicados]);
   const conteos = useMemo(() => conteoPorTipo(alertas), [alertas]);
   const visiblesAl = filtroTipo ? alertas.filter((a) => a.tipo === filtroTipo) : alertas;
 
@@ -371,7 +379,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                     const cab = (
                       <PanelAlerta
                         alerta={a}
-                        umbral={UMBRAL_COMPROBANTE}
+                        umbral={umbralIglesia}
                         moneda={church.moneda}
                         acciones={accionesDe(a)}
                       />

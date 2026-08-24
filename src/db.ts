@@ -59,6 +59,12 @@ export interface Church {
    *  movimiento registrado en Tamio. Se suma al acumulado de movimientos para
    *  el "saldo anterior" del estado financiero. 0 = arrancó de cero. */
   saldo_inicial: Centavos;
+  /** Controles de tesorería (migración v45). Los dos avisos de Por revisar,
+   *  ahora ajustables desde Configuración → Iglesia.
+   *  `umbral_comprobante` en NULL = el de `UMBRAL_COMPROBANTE`, no cero. */
+  avisar_sin_comprobante: number;
+  umbral_comprobante: Centavos | null;
+  avisar_duplicados: number;
 }
 
 export interface Member {
@@ -553,6 +559,9 @@ export interface ChurchUpdate {
   secretaria_nombre?: string | null;
   secretaria_cargo?: string | null;
   saldo_inicial?: Centavos;
+  avisar_sin_comprobante?: number;
+  umbral_comprobante?: Centavos | null;
+  avisar_duplicados?: number;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -567,8 +576,15 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        direccion = $16, region = $17, telefono = $18, email = $19,
        pie_institucional = $20, secretaria_nombre = $21, secretaria_cargo = $22,
        saldo_inicial = COALESCE($23, saldo_inicial),
-       ein = $24, estado_provincia = $25, codigo_postal = $26
-     WHERE id = $27`,
+       ein = $24, estado_provincia = $25, codigo_postal = $26,
+       -- Los tres controles de tesorería (v45) van con el mismo COALESCE que
+       -- el saldo: quien no los manda —la bienvenida, el alta de iglesia— no
+       -- puede reiniciarlos sin querer. El umbral NO puede usar COALESCE para
+       -- volver a NULL, así que lleva su propia bandera en $28.
+       avisar_sin_comprobante = COALESCE($27, avisar_sin_comprobante),
+       umbral_comprobante = CASE WHEN $28 = 1 THEN $29 ELSE umbral_comprobante END,
+       avisar_duplicados = COALESCE($30, avisar_duplicados)
+     WHERE id = $31`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
@@ -581,6 +597,13 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       // cuando el llamador (p. ej. la bienvenida) no incluye el campo.
       c.saldo_inicial ?? null,
       c.ein ?? null, c.estado_provincia ?? null, c.codigo_postal ?? null,
+      c.avisar_sin_comprobante ?? null,
+      // $28: "el llamador SÍ trae umbral" (aunque sea null, que significa
+      // "vuelve a la constante"). Sin esta bandera no habría forma de
+      // distinguir "no lo mandes" de "ponlo en NULL".
+      "umbral_comprobante" in c ? 1 : 0,
+      c.umbral_comprobante ?? null,
+      c.avisar_duplicados ?? null,
       id,
     ]
   );
