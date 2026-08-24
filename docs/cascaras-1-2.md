@@ -64,10 +64,22 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 
 - **Nada de cáscara.** El segmentado Mes/Trimestre/Año, las dos gráficas, los
   cuatro KPI y "Esta semana" salen de datos reales.
-- **`Folio 1042` bajo cada movimiento** — el handoff lo pone; `transactions`
-  no tiene columna `folio` (las cartas sí). **NO se pintó**, y no como cáscara
-  sino porque un folio inventado se lee como un dato de contabilidad. Pide
-  migración + numerador. **Pendiente de tu decisión.**
+- ~~**`Folio 1042` bajo cada movimiento**~~ → **cableado el 24 ago 2026**
+  (migración 48), y era lo último del handoff sin pintar. Decidido con Iván:
+  **`2026-0042`** —la forma de los demás folios de la app, sin prefijo— y **el
+  pasado NO se numera**.
+
+  Lo segundo es la decisión que más se nota: numerar hacia atrás obligaría a
+  inventar un orden dentro de cada día, y ese orden inventado se leería como el
+  que tuvieron. Los movimientos anteriores se quedan sin folio y la pantalla no
+  pinta la fila cuando falta, en vez de enseñar un hueco que parezca un folio
+  perdido.
+
+  De paso salió una cáscara que nadie había apuntado: en Depósitos → Pendientes
+  cada movimiento llevaba un número al lado, con la clase `dep-mov-folio`, y no
+  era un folio — era `m.id`, el número de fila de esa base. El mismo ingreso
+  era el 47 en un iPad y el 91 en otro. **Un folio de mentira, y a la vista.**
+  Ya lleva el de verdad.
 
 ## Ingresos y Gastos (§15)
 
@@ -596,9 +608,8 @@ comprobación falla sola.
 
 ## Lo que sigue sin pintarse
 
-- **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:
-  es un **dato de contabilidad**, y uno inventado se lee como verdadero. Pide
-  columna y numerador.
+- ~~**`Folio 1042`**~~ → **hecho el 24 ago 2026** (migración 48). Con esto la
+  lista de "lo que sigue sin pintarse" se queda vacía.
 - ~~**"Registrado por"** y **el chip "Sin depositar"**~~ → **los dos cableados
   el 24 ago 2026** (migraciones 38 y 39).
 - ~~**La sincronización de "Registrado por"**~~ → **cerrada el 24 ago 2026.**

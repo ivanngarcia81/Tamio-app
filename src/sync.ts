@@ -17,7 +17,10 @@
 // se sincronizan primero los miembros y luego las transacciones.
 // ============================================================================
 
-import { getDb, dedupPlantillasIniciales, loadCategoriasCustom, repararFoliosDuplicados } from "./db";
+import {
+  getDb, dedupPlantillasIniciales, loadCategoriasCustom, repararFoliosDuplicados,
+  repararFoliosMovimiento,
+} from "./db";
 import { supabase } from "./supabase";
 
 // Columnas de datos que existen igual en local (SQLite) y en la nube (Postgres).
@@ -220,6 +223,9 @@ const TX_DATA_COLS = [
      el `upsert` manda una columna que Supabase no conoce y la sincronización
      entera falla, no solo esta tabla. Se crearon el 24 ago 2026. */
   "registrado_por", "registrado_rol",
+  /* El folio (migración 48). La columna remota se creó ANTES que esta línea,
+     que es la regla que `verificar-sync` vigila. */
+  "folio", "folio_seq",
 ] as const;
 
 /** Sincroniza las transacciones de una iglesia local contra Supabase, mapeando
@@ -313,6 +319,12 @@ export async function sincronizarTransacciones(churchIdLocal: number): Promise<R
       }
       bajados++;
     }
+
+    /* Dos aparatos sin conexión emiten el mismo folio —cada uno calculó el
+       mismo MAX+1— y al juntarse aquí hay que renumerar los repetidos. Con las
+       cartas era raro; con los movimientos es lo normal. Un fallo reparando no
+       debe tumbar la sincronización, así que va con su try. */
+    try { await repararFoliosMovimiento(churchIdLocal); } catch { /* noop */ }
 
     return { ok: true, subidos: aSubir.length, bajados };
   } catch (e) {

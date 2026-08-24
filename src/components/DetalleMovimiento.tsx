@@ -146,6 +146,15 @@ export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar,
         <p className="dm-sub">
           {[fmtFechaCorta(tx.fecha), hora || null, metodoTexto].filter(Boolean).join(" · ")}
         </p>
+        {/* El folio del handoff ("Folio 1042"), con motor desde la migración
+            48 y con la forma del resto de la app: `2026-0042`.
+
+            Sin folio no se pinta la línea, y eso NO es un descuido: los
+            movimientos anteriores a esa migración no se numeraron —el pasado
+            no se numera hacia atrás, porque habría que inventar un orden
+            dentro de cada día— y una fila vacía se leería como un folio
+            perdido. */}
+        {tx.folio && <p className="dm-sub dm-folio">{t("tx.folioN", { folio: tx.folio })}</p>}
         {/* "Registrado por · Rosa Elena Vega · tesorera", del handoff 1. Lo
             pone la app con quien tenía la sesión abierta al guardar, así que
             no se teclea ni se puede atribuir a otro; y es una INSTANTÁNEA —lo

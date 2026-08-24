@@ -315,6 +315,11 @@ export interface Tx {
    *  a la migración 39 y en modo local, donde no hay sesión. */
   registrado_por?: string | null;
   registrado_rol?: string | null;
+  /** Folio "2026-0042" (migración 48). Null en los movimientos anteriores a
+   *  esa migración: el pasado no se numeró, y la pantalla no pinta la fila
+   *  cuando falta en vez de inventar uno. */
+  folio?: string | null;
+  folio_seq?: number | null;
 }
 
 // ---------- Catálogos ----------
@@ -683,15 +688,98 @@ export interface NewTx {
   recurrente_id?: number | null;
 }
 
+/**
+ * El siguiente folio de movimiento del año: `2026-0042`.
+ *
+ * Es `nextCartaSeq` con otro prefijo, y hereda sus dos lecciones —las dos
+ * costaron un bug de verdad en las cartas:
+ *
+ *  1. **El año sale del FOLIO ya emitido, no de `fecha`.** Un folio no cambia
+ *     nunca; la fecha de un movimiento sí se corrige. Filtrando por fecha,
+ *     mover un movimiento a otro año lo sacaba del filtro y el siguiente
+ *     número de ese año se repetía.
+ *  2. **Se comprueba la colisión directa** y se avanza hasta el primer libre:
+ *     con la sincronización encendida pueden haber bajado movimientos de otro
+ *     aparato que ya ocuparon ese número.
+ *
+ * Los huecos son aceptados a propósito: se numera con MAX+1 y no con COUNT,
+ * para que borrar un movimiento no haga que el siguiente repita número. Un
+ * libro contable prefiere un hueco a un folio repetido.
+ *
+ * **Cuál de las dos cosas sostiene qué**, medido rompiéndolas por separado:
+ * quien impide los duplicados es el BUCLE, no el MAX+1 —con COUNT y el bucle
+ * intacto siguen sin repetirse—. El MAX+1 sirve para lo otro: que la serie no
+ * RETROCEDA a un número que se purgó y que puede estar escrito en un recibo.
+ * Las dos hacen falta, pero no para lo mismo.
+ */
+async function nextFolioMovimiento(churchId: number, fecha: string): Promise<{ seq: number; folio: string }> {
+  const d = await getDb();
+  const anio = fecha.slice(0, 4);
+  const rows = await d.select<{ m: number | null }[]>(
+    "SELECT MAX(folio_seq) AS m FROM transactions WHERE church_id = $1 AND folio LIKE $2 || '-%'",
+    [churchId, anio]
+  );
+  let seq = (rows[0]?.m ?? 0) + 1;
+  for (;;) {
+    const folio = `${anio}-${String(seq).padStart(4, "0")}`;
+    const dup = await d.select<{ n: number }[]>(
+      "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND folio = $2",
+      [churchId, folio]
+    );
+    if ((dup[0]?.n ?? 0) === 0) return { seq, folio };
+    seq++;
+  }
+}
+
+/**
+ * Repara folios de movimiento duplicados: conserva el de la fila más antigua
+ * (menor id) y renumera las demás con el siguiente libre de su año.
+ *
+ * Los duplicados nacen cuando dos aparatos registran sin conexión —cada uno
+ * calculó el mismo MAX+1— y la sincronización los junta. Con las cartas era
+ * raro (veinte al año); con los movimientos es lo normal, así que esto corre
+ * al terminar de bajar transacciones. Devuelve cuántos se renumeraron.
+ *
+ * Renumera el MÁS NUEVO, no el más viejo, y eso importa: el folio de un
+ * movimiento ya puede estar escrito en un recibo de papel, y el que lleva más
+ * tiempo emitido es el que más probablemente lo esté.
+ */
+export async function repararFoliosMovimiento(churchId: number): Promise<number> {
+  const d = await getDb();
+  const dups = await d.select<{ id: number; folio: string }[]>(
+    `SELECT t.id, t.folio FROM transactions t
+      WHERE t.church_id = $1 AND t.folio IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM transactions o
+           WHERE o.church_id = t.church_id AND o.folio = t.folio AND o.id < t.id
+        )
+      ORDER BY t.id`,
+    [churchId]
+  );
+  for (const x of dups) {
+    const anio = x.folio.slice(0, 4);
+    const { seq, folio } = await nextFolioMovimiento(churchId, `${anio}-01-01`);
+    await d.execute(
+      "UPDATE transactions SET folio = $1, folio_seq = $2, updated_at = datetime('now') WHERE id = $3",
+      [folio, seq, x.id]
+    );
+  }
+  return dups.length;
+}
+
 export async function insertTx(churchId: number, moneda: string, tx: NewTx): Promise<void> {
   const d = await getDb();
+  /* El folio se emite al REGISTRAR, con el año de la fecha del movimiento —no
+     con el de hoy—: un ingreso de diciembre capturado en enero pertenece al
+     libro de diciembre, y su folio tiene que decirlo. */
+  const { seq, folio } = await nextFolioMovimiento(churchId, tx.fecha);
   await d.execute(
     `INSERT INTO transactions
       (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
        member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
-       registrado_por, registrado_rol,
+       registrado_por, registrado_rol, folio, folio_seq,
        uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,datetime('now'))`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,datetime('now'))`,
     [
       churchId,
       tx.tipo,
@@ -713,6 +801,8 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
       tx.recurrente_id ?? null,
       quienRegistra()?.nombre ?? null,
       quienRegistra()?.rol ?? null,
+      folio,
+      seq,
       crypto.randomUUID(),
     ]
   );
@@ -4224,16 +4314,21 @@ async function materializarDef(
     def.mes_inicio, def.ultimo_mes_generado, currentMonth(), skipMes
   );
   for (const mes of meses) {
+    /* Un movimiento generado por una serie es un movimiento como los demás y
+       lleva su folio. Se emite dentro del bucle porque cada mes es una fila y
+       cada fila necesita el siguiente número, no el mismo repetido. */
+    const fecha = fechaEnMes(mes, def.dia);
+    const { seq, folio } = await nextFolioMovimiento(def.church_id, fecha);
     await d.execute(
       `INSERT INTO transactions
         (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
          member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
-         uid, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13,$14,datetime('now'))`,
+         folio, folio_seq, uid, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13,$14,$15,$16,datetime('now'))`,
       [
         def.church_id, def.tipo, def.categoria, def.subcategoria, def.concepto, def.detalle,
-        fechaEnMes(mes, def.dia), def.monto, moneda, def.metodo_pago,
-        def.beneficiario, def.beneficiario_rfc, def.id, crypto.randomUUID(),
+        fecha, def.monto, moneda, def.metodo_pago,
+        def.beneficiario, def.beneficiario_rfc, def.id, folio, seq, crypto.randomUUID(),
       ]
     );
   }

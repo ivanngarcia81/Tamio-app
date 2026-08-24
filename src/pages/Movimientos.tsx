@@ -256,7 +256,11 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     tx.concepto.toLowerCase().includes(q) ||
     (tx.detalle ?? "").toLowerCase().includes(q) ||
     (tx.beneficiario ?? "").toLowerCase().includes(q) ||
-    (tx.member_nombre ?? "").toLowerCase().includes(q);
+    (tx.member_nombre ?? "").toLowerCase().includes(q) ||
+    /* Por folio, que es la razón de tenerlo: alguien dice "revisa el 0042"
+       por teléfono y hay que poder encontrarlo. Basta con teclear las cuatro
+       cifras — `includes` casa "0042" dentro de "2026-0042". */
+    (tx.folio ?? "").toLowerCase().includes(q);
   const buscados = txs.filter(coincide);
   const esSinDepositar = (x: Tx) =>
     x.tipo === "ingreso" && x.estado === "aprobado"

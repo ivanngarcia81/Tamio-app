@@ -263,7 +263,11 @@ export default function PendientesDeposito({
                     <span className="dep-mov-textos">
                       <span className="dep-mov-concepto">
                         {m.concepto}
-                        <span className="dep-mov-folio"> · {m.id}</span>
+                        {/* El folio DE VERDAD (migración 48). Aquí había
+                            `m.id`, el número de fila de esta base: el mismo
+                            ingreso era el 47 en un iPad y el 91 en otro. Era
+                            un folio de mentira, y encima a la vista. */}
+                        {m.folio && <span className="dep-mov-folio"> · {m.folio}</span>}
                       </span>
                       <span className="dep-mov-sub truncate">
                         {[m.member_nombre, m.detalle, m.fecha.slice(11, 16)].filter(Boolean).join(" · ")}

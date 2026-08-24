@@ -3974,6 +3974,203 @@ console.log("\n== La doble firma del corte ==");
   await ctxDF.close();
 }
 
+/* ---------- 43. El folio del movimiento ----------
+   "Folio 1042" es lo último que quedaba del handoff sin pintar, y llevaba ahí
+   desde el primer día por una razón buena: un folio inventado se lee como un
+   dato de contabilidad. Con la migración 48 es real, y tiene la forma del
+   resto de la app: `2026-0042`.
+
+   Lo que se comprueba es lo que hace que un folio sirva de algo:
+
+     · que NO se repita —es lo único imperdonable en un libro contable—;
+     · que se pueda buscar, que es para lo que existe ("revisa el 0042");
+     · que el pasado siga SIN numerar, porque numerarlo hacia atrás obligaría
+       a inventar un orden dentro de cada día;
+     · y que los huecos no rompan la serie: borrar un movimiento no puede hacer
+       que el siguiente repita número.
+
+   **Qué prueba esto y qué no**, porque al probarlo al revés salió que dos de
+   las tres capas no son las que sostienen la garantía:
+
+     · Cambiar MAX+1 por COUNT —el fallo clásico— NO pone nada en rojo, y no
+       es que la prueba sea mala: el BUCLE DE COLISIÓN avanza hasta el primer
+       número libre y arregla el resultado aunque el cálculo esté mal. Quien
+       impide los duplicados es el bucle. MAX+1 sirve para otra cosa: que la
+       serie no retroceda a un número purgado que quizá está en un recibo.
+     · El primer intento de "hueco" tampoco probaba nada, porque `deleteTx` es
+       un borrado SUAVE: la fila sigue ahí y COUNT no baja. Ahora se purga de
+       verdad, como hace la compactación.
+     · Lo que SÍ sale en rojo al romperlo es la reparación de duplicados, que
+       es el fallo real de un correlativo con sincronización — y por eso es la
+       comprobación más larga de esta sección. */
+console.log("\n== El folio del movimiento ==");
+{
+  const ctxF = await nuevoContexto("ipad");
+  const pg = await ctxF.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+
+  /* La siembra creó sus movimientos ANTES de que la migración 48 existiera en
+     esa base, así que no tienen folio — igual que los de una iglesia real que
+     actualiza. Eso es justo lo que hay que comprobar. */
+  const antes = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    return { total: txs.length, conFolio: txs.filter((t) => t.folio).length };
+  });
+  chk(antes.total > 0, `hay movimientos sembrados (${antes.total})`);
+
+  // --- Registrar tres y mirar sus folios ---
+  const nuevos = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const hechos = [];
+    for (let i = 0; i < 3; i++) {
+      await db.insertTx(ig.id, ig.moneda, {
+        tipo: "ingreso", categoria: "ofrenda", concepto: `Folio de prueba ${i}`,
+        fecha: "2026-03-1" + i, monto: 1000 + i, metodo_pago: "efectivo",
+      });
+    }
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    for (const t of txs) if (/^Folio de prueba/.test(t.concepto)) hechos.push(t.folio);
+    return hechos.sort();
+  });
+  chk(nuevos.length === 3, `se registran tres movimientos (${nuevos.length})`);
+  chk(nuevos.every((f) => /^2026-\d{4}$/.test(f ?? "")),
+    `y los tres llevan folio con la forma AAAA-NNNN (${nuevos.join(", ")})`);
+  chk(new Set(nuevos).size === 3, `sin repetirse (${nuevos.join(", ")})`);
+  /* El año sale de la FECHA del movimiento, no de hoy: un ingreso de 2026
+     capturado en otro año pertenece al libro de 2026 y su folio lo dice. */
+  chk(nuevos.every((f) => f.startsWith("2026-")),
+    "y el año es el de la fecha del movimiento, no el de hoy");
+
+  /* --- El pasado sigue sin numerar ---
+     La siembra usa `insertTx`, así que sus movimientos YA nacen con folio y no
+     sirven para probar esto. Hay que fabricar la fila como la tiene una
+     iglesia que actualiza: registrada antes de la migración 48, con `folio` en
+     NULL. Lo que se comprueba es que nadie se la numera por detrás y que la
+     pantalla no le inventa una. */
+  const despues = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "gasto", categoria: "servicios", concepto: "Movimiento de antes del folio",
+      fecha: "2025-06-01", monto: 7700, metodo_pago: "efectivo",
+    });
+    let txs = await db.listTx(ig.id, { limit: 400 });
+    const viejo = txs.find((t) => t.concepto === "Movimiento de antes del folio");
+    // Se le quita el folio a mano: así queda igual que una fila anterior a la
+    // migración, que es lo que hay en la base de una iglesia real.
+    const d = await db.getDb();
+    await d.execute("UPDATE transactions SET folio = NULL, folio_seq = NULL WHERE id = $1", [viejo.id]);
+    // Y se registra otro DESPUÉS, para ver que la serie no lo cuenta.
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Folio despues del viejo",
+      fecha: "2026-04-01", monto: 2200, metodo_pago: "efectivo",
+    });
+    txs = await db.listTx(ig.id, { limit: 400 });
+    return {
+      sinFolio: txs.find((t) => t.concepto === "Movimiento de antes del folio")?.folio ?? null,
+      siguiente: txs.find((t) => t.concepto === "Folio despues del viejo")?.folio ?? null,
+    };
+  });
+  chk(despues.sinFolio === null,
+    `un movimiento anterior a la migración se queda SIN folio, nadie lo numera por detrás (${despues.sinFolio})`);
+  chk(/^2026-\d{4}$/.test(despues.siguiente ?? ""),
+    `y el siguiente se emite igual, sin tropezar con él (${despues.siguiente})`);
+
+  /* --- Los huecos no rompen la serie ---
+     La fila se PURGA de verdad (`DELETE`), no se borra en blando: el borrado
+     suave deja la fila en su sitio y entonces hasta un COUNT mal hecho acierta.
+     Purgada —que es lo que hace la compactación— el hueco es real, y numerar
+     con COUNT reutilizaría el número del muerto. */
+  const trasHueco = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    const ultimo = txs.filter((t) => /^Folio de prueba/.test(t.concepto))
+      .sort((a, b) => (a.folio < b.folio ? 1 : -1))[0];
+    const folioBorrado = ultimo.folio;
+    const d = await db.getDb();
+    await d.execute("DELETE FROM transactions WHERE id = $1", [ultimo.id]);
+    /* Fechado HOY, no en marzo: la lista de Ingresos filtra por mes y un
+       movimiento de otro mes no saldría por mucho que la búsqueda funcione.
+       Los de arriba sí van en marzo, que es lo que prueba que el año del folio
+       sale de la fecha del movimiento y no de hoy. */
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Folio tras el hueco",
+      fecha: db.hoyISO(), monto: 5000, metodo_pago: "efectivo",
+    });
+    const otra = await db.listTx(ig.id, { limit: 400 });
+    const nuevo = otra.find((t) => t.concepto === "Folio tras el hueco");
+    return { folioBorrado, folioNuevo: nuevo?.folio };
+  });
+  chk(trasHueco.folioNuevo !== trasHueco.folioBorrado,
+    `borrar uno no hace que el siguiente repita su número (${trasHueco.folioBorrado} → ${trasHueco.folioNuevo})`);
+
+  // --- Se puede buscar por folio, que es para lo que existe ---
+  const cuatro = (trasHueco.folioNuevo ?? "").slice(-4);
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-ingresos, .md-movimientos, .md-filas", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+  await pg.locator(".md-buscar input").first().fill(cuatro);
+  await pg.waitForTimeout(600);
+  const encontrados = await pg.evaluate(() =>
+    [...document.querySelectorAll(".md-fila .md-fila-titular")].map((x) => x.textContent.trim()));
+  chk(encontrados.some((x) => /Folio tras el hueco/.test(x)),
+    `tecleando las cuatro cifras del folio se encuentra el movimiento (${cuatro} → ${encontrados.length} fila(s))`);
+
+  /* --- Dos aparatos, el mismo folio ---
+     El fallo de verdad de un numerador correlativo con sincronización: dos
+     iPads sin conexión calculan el mismo MAX+1 y al juntarse hay dos
+     movimientos con el mismo folio. Se fabrica esa situación y se comprueba
+     que `repararFoliosMovimiento` la deshace — conservando el del MÁS ANTIGUO,
+     porque ese número ya puede estar escrito en un recibo de papel. */
+  const reparado = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    const dos = txs.filter((t) => t.folio).sort((a, b) => a.id - b.id).slice(-2);
+    const repetido = dos[0].folio;
+    // El segundo se queda con el folio del primero: el choque exacto.
+    await d.execute(
+      "UPDATE transactions SET folio = $1, folio_seq = $2 WHERE id = $3",
+      [repetido, dos[0].folio_seq, dos[1].id],
+    );
+    const antesDeReparar = (await db.listTx(ig.id, { limit: 400 }))
+      .filter((t) => t.folio === repetido).length;
+    const cuantos = await db.repararFoliosMovimiento(ig.id);
+    const despuesDeReparar = await db.listTx(ig.id, { limit: 400 });
+    return {
+      antesDeReparar,
+      cuantos,
+      viejo: despuesDeReparar.find((t) => t.id === dos[0].id)?.folio,
+      nuevo: despuesDeReparar.find((t) => t.id === dos[1].id)?.folio,
+      repetido,
+      repetidosQueQuedan: despuesDeReparar.filter((t) => t.folio === repetido).length,
+    };
+  });
+  chk(reparado.antesDeReparar === 2, `se fabrica el choque de dos aparatos (${reparado.antesDeReparar} con el mismo folio)`);
+  chk(reparado.cuantos === 1, `la reparación renumera uno solo (${reparado.cuantos})`);
+  chk(reparado.viejo === reparado.repetido,
+    `el MÁS ANTIGUO conserva su folio, que puede estar en un recibo (${reparado.viejo})`);
+  chk(reparado.nuevo !== reparado.repetido && /^2026-\d{4}$/.test(reparado.nuevo ?? ""),
+    `y el otro recibe uno libre (${reparado.repetido} → ${reparado.nuevo})`);
+  chk(reparado.repetidosQueQuedan === 1, `no queda ningún folio repetido (${reparado.repetidosQueQuedan})`);
+
+  // --- Y en el panel sale con su rótulo ---
+  await pg.locator(".md-fila", { hasText: "Folio tras el hueco" }).first().click();
+  await pg.waitForTimeout(600);
+  const enPanel = await pg.evaluate(() =>
+    document.querySelector(".dm-folio")?.textContent.trim());
+  chk(/^Folio 2026-\d{4}$/.test(enPanel ?? ""), `el panel lo enseña con su rótulo (${enPanel})`);
+  await ctxF.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

@@ -1093,6 +1093,40 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- la que decide si a ese corte le falta una firma.
             ALTER TABLE churches ADD COLUMN pedir_doble_firma INTEGER NOT NULL DEFAULT 0;
         "#,
+    }, motordb::Migracion {
+        version: 48,
+        description: "folio del movimiento: 2026-0042",
+        sql: r#"
+            -- El folio que el handoff dibuja bajo cada movimiento ("Folio
+            -- 1042") y que se dejó sin pintar desde el primer día, porque un
+            -- número inventado se lee como un dato de contabilidad. Decidido
+            -- con Iván el 24 ago 2026, con la forma de los demás folios de la
+            -- app pero sin prefijo: `2026-0042`.
+            --
+            -- Sirve para lo que sirve un folio: poder decir "revisa el 0042"
+            -- por teléfono, escribirlo en el recibo de papel y que un auditor
+            -- señale una línea sin ambigüedad.
+            --
+            -- **Nullable, y el pasado NO se numera.** Decisión suya. Numerar
+            -- hacia atrás obligaría a inventar un orden dentro de cada día, y
+            -- ese orden inventado se leería como el que tuvieron. Los
+            -- movimientos de antes de hoy se quedan sin folio y la serie
+            -- arranca aquí; la pantalla no pinta la fila cuando falta.
+            --
+            -- `folio_seq` guarda el correlativo suelto para hacer MAX+1 sin
+            -- parsear el texto, igual que `numero_seq` en cartas.
+            --
+            -- SIN índice único, y no por descuido: dos aparatos sin conexión
+            -- calculan el mismo número y la sincronización los junta. Es el
+            -- mismo caso que el "bug del CAR duplicado" de las cartas, que se
+            -- resuelve reparando después (`repararFoliosMovimiento`) y no
+            -- impidiendo la escritura — un único aquí convertiría la
+            -- reparación en un error de subida que corta la sincronización de
+            -- todas las tablas.
+            ALTER TABLE transactions ADD COLUMN folio     TEXT;
+            ALTER TABLE transactions ADD COLUMN folio_seq INTEGER;
+            CREATE INDEX IF NOT EXISTS idx_tx_folio ON transactions(church_id, folio);
+        "#,
     }]
 }
 
