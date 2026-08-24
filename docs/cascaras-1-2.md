@@ -151,10 +151,14 @@ fecha, no.
 
 ## Actas (§20)
 
-- **Renglón de firma "Testigo"** — `DetalleActa.tsx`, `da-firma--sinmotor`,
-  raya discontinua y cargo en cursiva. **Construido como plantilla**, y se
-  imprime igual para poder firmarlo a mano (`actas.testigoAyuda`). Falta
-  **una columna**: `actas.testigo`, junto a `preside` y `secretario`.
+- ~~**Renglón de firma "Testigo"**~~ → **cableado el 24 ago 2026** (migración
+  41, y la columna también en Supabase). Campo opcional en las dos formas de
+  alta, nombre en el detalle y tercera columna en el PDF **solo si se llena**:
+  añadirla siempre habría cambiado la forma del PDF de todas las actas ya
+  firmadas, y un documento contable no cambia retroactivamente.
+  La raya discontinua se queda cuando no hay nombre, pero ya no significa
+  "sin motor" sino "todavía nadie ha firmado aquí" — que es lo que siempre
+  debió significar, y sigue sirviendo para firmar a mano.
 - **"Recopilar firmas"** — **construido y DESHABILITADO**, con su `title`. No
   hay flujo de recolección de firmas. Cuando lo haya, se le quita el
   `disabled` y ya está en su sitio.
@@ -401,7 +405,7 @@ la lista está ahí porque le falta dato, no porque sea mala idea.
    ella se apaga también el rastro de auditoría del handoff 1, que solo
    necesitaba esto más `updated_at` —que ya existía—. Lo que queda de la lista
    empieza en el 3.
-3. **`actas.testigo`** — una columna, un renglón.
+3. ~~**`actas.testigo`**~~ — **hecho el 24 de agosto de 2026** (migración 41).
 4. **Tres columnas personales en `members`** — nacimiento, dirección, estado
    civil.
 5. **Roster por puestos y orden del culto** — la más grande de las cinco;

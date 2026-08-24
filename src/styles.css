@@ -10765,8 +10765,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* El tercer renglón de firma, el del testigo: la raya se imprime igual
      —un acta lleva tres firmas— pero se marca a media tinta para que se vea
      que ahí no hay nombre guardado, solo sitio para firmar a mano. */
-  :root.ipad .da-firma--sinmotor .da-firma-raya { border-top-style: dashed; opacity: 0.7; }
-  :root.ipad .da-firma--sinmotor .da-firma-cargo { font-style: italic; }
+  /* El renglón de firma SIN nombre: raya discontinua, para que se lea como
+     "esto se firma a mano" y no como un dato que falta. Antes esto era la
+     marca de "sin motor" (`--sinmotor`); desde la migración 41 el testigo se
+     puede guardar, así que la raya discontinua ya no dice "la app no sabe"
+     sino "todavía nadie ha firmado aquí" — que es su significado de verdad,
+     y vale igual para un acta que se imprime para llevarla a la reunión. */
+  :root.ipad .da-firma--enblanco .da-firma-raya { border-top-style: dashed; opacity: 0.7; }
+  :root.ipad .da-firma--enblanco .da-firma-cargo { font-style: italic; }
 
   /* ---- El roster y el orden del culto (.sv-*) — handoff 2 ---- */
   :root.ipad .sv-roster,

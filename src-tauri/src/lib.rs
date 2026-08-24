@@ -856,6 +856,16 @@ fn migraciones() -> Vec<motordb::Migracion> {
             CREATE INDEX IF NOT EXISTS idx_corte_movs_sync
                 ON corte_movimientos(church_id, updated_at);
         "#,
+    }, motordb::Migracion {
+        version: 41,
+        description: "el testigo del acta, la tercera firma",
+        sql: r#"
+            -- El renglón de "Testigo" ya se imprimía —con su raya, para
+            -- firmarlo a mano— pero no tenía dónde guardar el nombre: `actas`
+            -- solo conocía a quien preside y a quien redacta. Es la columna
+            -- que le faltaba, al lado de las otras dos.
+            ALTER TABLE actas ADD COLUMN testigo TEXT;
+        "#,
     }]
 }
 

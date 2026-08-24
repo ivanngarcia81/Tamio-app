@@ -416,6 +416,10 @@ const ACTA_DATA_COLS = [
   "preside", "secretario", "presentes", "ausentes", "invitados", "quorum",
   "agenda", "resumen", "mociones", "acuerdos", "estado", "confidencial",
   "fecha_aprobacion", "creado_en",
+  // El tercer firmante (migración 41). La columna remota se creó antes que
+  // esta línea: al revés, el upsert manda una columna que Supabase no conoce
+  // y se corta la sincronización entera.
+  "testigo",
 ] as const;
 
 /** Sincroniza las actas de una iglesia local contra Supabase. */

@@ -1276,7 +1276,7 @@ console.log("\n== Actas del iPad (handoff) ==");
       texto: b.textContent.trim(), apagado: b.disabled,
     })),
     firmas: document.querySelectorAll(".da-firma").length,
-    testigo: !!document.querySelector(".da-firma--sinmotor"),
+    testigo: !!document.querySelector(".da-firma--enblanco"),
     desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
   }));
   chk(m.barra, "el acta lleva su barra de trámite");
@@ -1288,7 +1288,11 @@ console.log("\n== Actas del iPad (handoff) ==");
   const firmas = m.botones.find((b) => /firmas|signatures/i.test(b.texto));
   chk(firmas?.apagado === true, `"Recopilar firmas" está apagado hasta tener motor (${firmas?.apagado})`);
   chk(m.firmas === 3, `el documento lleva las tres rayas de firma (${m.firmas})`);
-  chk(m.testigo, "y la del testigo se marca como pendiente");
+  /* **Cambió de sentido el 24 ago 2026.** La raya discontinua era la marca de
+     "sin motor"; ahora el testigo SÍ se guarda (migración 41) y esa raya
+     significa lo que siempre debió significar: todavía nadie ha firmado ahí.
+     El acta sembrada no trae testigo, así que sale en blanco. */
+  chk(m.testigo, "y la del testigo sale en blanco mientras nadie la firme");
   chk(m.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/actas-1366x1024.png` });
   await ctxAc.close();
@@ -2926,6 +2930,76 @@ console.log("\n== El ☰ abre la barra en vertical ==");
   chk(ancho.ancho === 318, `con sus 318 (${ancho.ancho})`);
   chk(!ancho.hamVisible, "y el ☰ ni se pinta, porque no hace falta");
   await ctxH.close();
+}
+
+/* ---------- 33. El testigo del acta, con motor (migración 41) ----------
+   Era el renglón de firma que se imprimía en blanco porque `actas` solo
+   conocía a quien preside y a quien redacta. Ahora tiene columna, campo en
+   las dos formas de alta y sitio en el PDF.
+
+   Se comprueban las dos caras, que es donde está el valor: con nombre se
+   firma con él; SIN nombre el renglón sigue saliendo —en un acta, una raya
+   sin nombre sigue sirviendo para firmar a mano, y hacerlo desaparecer
+   habría sido perder algo que ya funcionaba. */
+console.log("\n== El testigo del acta ==");
+{
+  const ctxT = await nuevoContexto("ipad");
+  const pg = await ctxT.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+
+  // Guardar un testigo desde el formulario de edición y ver que vuelve.
+  await pg.locator(".md-actas .md-fila").first().click();
+  await pg.waitForTimeout(500);
+  const leer = () => pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".da-firma")].find(
+      (x) => /testigo|witness/i.test(x.querySelector(".da-firma-cargo")?.textContent ?? ""));
+    if (!f) return null;
+    return {
+      nombre: (f.querySelector(".da-firma-nombre")?.textContent ?? "").trim(),
+      enBlanco: f.classList.contains("da-firma--enblanco"),
+      raya: getComputedStyle(f.querySelector(".da-firma-raya")).borderTopStyle,
+    };
+  });
+
+  const vacio = await leer();
+  chk(!!vacio, "el acta trae su renglón de testigo");
+  if (vacio) {
+    chk(vacio.enBlanco && vacio.nombre === "", "sin nombre, sale en blanco");
+    chk(vacio.raya === "dashed", `con la raya discontinua (${vacio.raya})`);
+  }
+
+  /* Escribirlo por la vía real: el mismo `updateActa` que usa el formulario,
+     para que lo que se comprueba sea el camino que recorre un usuario y no
+     un INSERT de laboratorio. */
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const actas = await db.listActas(ig.id);
+    const a = actas[0];
+    await db.updateActa(a.id, ig.id, {
+      tipo: a.tipo, titulo: a.titulo, fecha: a.fecha,
+      hora_inicio: a.hora_inicio, hora_cierre: a.hora_cierre, lugar: a.lugar,
+      preside: a.preside, secretario: a.secretario, testigo: "Jorge Hernández",
+      presentes: JSON.parse(a.presentes), ausentes: JSON.parse(a.ausentes),
+      invitados: JSON.parse(a.invitados), quorum: a.quorum === 1,
+      agenda: a.agenda, resumen: a.resumen,
+      mociones: JSON.parse(a.mociones), acuerdos: JSON.parse(a.acuerdos),
+      estado: a.estado, confidencial: a.confidencial, fecha_aprobacion: a.fecha_aprobacion,
+    });
+  });
+  await pg.reload({ waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.locator(".md-actas .md-fila").first().click();
+  await pg.waitForTimeout(600);
+
+  const conNombre = await leer();
+  chk(conNombre?.nombre === "Jorge Hernández",
+    `guardado el testigo, se firma con su nombre (${conNombre?.nombre})`);
+  chk(conNombre?.enBlanco === false, "y la raya deja de ser la de 'sin firmar'");
+  await ctxT.close();
 }
 
 await browser.close();

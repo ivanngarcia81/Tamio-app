@@ -34,7 +34,7 @@ export default function ActaModal(props: PropsActa) {
     iaAbierta, setIaAbierta, iaPuntos, setIaPuntos, iaGenerando, iaError, setIaError, generarActaIA,
     tipo, setTipo, titulo, setTitulo, fecha, setFecha,
     horaInicio, setHoraInicio, horaCierre, setHoraCierre, lugar, setLugar,
-    preside, setPreside, secretario, setSecretario,
+    preside, setPreside, secretario, setSecretario, testigo, setTestigo,
     presentes, setPresentes, ausentes, setAusentes, invitados, setInvitados, quorum, setQuorum,
     agenda, setAgenda, resumen, setResumen,
     mociones, setMociones, setMocion, acuerdos, setAcuerdos, setAcuerdo,
@@ -102,6 +102,14 @@ export default function ActaModal(props: PropsActa) {
               <div className="form-group">
                 <label className="form-label">{t("actas.secretarioRedacta")}</label>
                 <input className="form-input" value={secretario} onChange={(e) => setSecretario(e.target.value)} />
+              </div>
+              <div className="form-group">
+                {/* El tercer firmante. Opcional: su renglón ya se imprimía en
+                    blanco para firmarlo a mano, y así sigue si se deja vacío. */}
+                <label className="form-label">
+                  {t("actas.testigo")} <span className="opt">{t("common.opcional")}</span>
+                </label>
+                <input className="form-input" value={testigo} onChange={(e) => setTestigo(e.target.value)} />
               </div>
               <div className="form-group">
                 <SwitchRow label={t("actas.quorum")} value={quorum} onChange={setQuorum} />

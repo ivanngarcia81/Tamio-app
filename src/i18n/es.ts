@@ -1606,7 +1606,7 @@ export const es = {
     cerrarMensaje: "El acta pasará a Aprobada y quedará sellada con la fecha de hoy. Sigue pudiendo corregirse desde el formulario si hiciera falta.",
     toastCerrada: "Acta {{folio}} cerrada",
     testigo: "Testigo",
-    testigoAyuda: "El acta todavía no guarda quién firma como testigo. El renglón se imprime igual, para poder firmarlo a mano.",
+    testigoAyuda: "Quien firma como testigo, además de quien preside y quien redacta. Si se deja vacío, el renglón se imprime en blanco para firmarlo a mano.",
     editarActa: "Editar acta",
     guardarActa: "Guardar acta",
     buscarPlaceholder: "Buscar por folio, título o quien presidió…",

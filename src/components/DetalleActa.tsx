@@ -229,9 +229,15 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
                 <div className="da-firma-cargo">{t("actas.secretarioRedacta")}</div>
               </div>
             )}
-            <div className="da-firma da-firma--sinmotor" title={t("actas.testigoAyuda")}>
+            {/* El testigo. Con motor desde la migración 41: si el acta lo
+                trae, se firma con su nombre como las otras dos; si no, el
+                renglón sigue saliendo en blanco para firmarlo a mano, que es
+                como se usaba antes de que la columna existiera. Por eso no
+                desaparece cuando está vacío: en un acta, un renglón de firma
+                sin nombre sigue sirviendo. */}
+            <div className={`da-firma${acta.testigo ? "" : " da-firma--enblanco"}`}>
               <div className="da-firma-raya" />
-              <div className="da-firma-nombre">&nbsp;</div>
+              <div className="da-firma-nombre">{acta.testigo || "\u00a0"}</div>
               <div className="da-firma-cargo">{t("actas.testigo")}</div>
             </div>
           </footer>

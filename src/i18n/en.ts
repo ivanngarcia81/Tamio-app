@@ -1571,7 +1571,7 @@ export const en: Resources = {
     cerrarMensaje: "The minutes will move to Approved and be stamped with today's date. They can still be corrected from the form if needed.",
     toastCerrada: "Minutes {{folio}} closed",
     testigo: "Witness",
-    testigoAyuda: "The minutes do not store who signs as witness yet. The line is printed anyway, so it can be signed by hand.",
+    testigoAyuda: "Whoever signs as witness, besides the chair and the person taking the minutes. Left empty, the line is printed blank so it can be signed by hand.",
     editarActa: "Edit minutes",
     guardarActa: "Save minutes",
     buscarPlaceholder: "Search by number, title, or presider…",

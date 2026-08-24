@@ -1792,6 +1792,8 @@ export interface Acta {
   lugar: string | null;
   preside: string | null;
   secretario: string | null;
+  /** El tercer firmante (migración 41). El renglón se imprimía desde antes. */
+  testigo: string | null;
   /** Arreglos JSON de nombres. */
   presentes: string;
   ausentes: string;
@@ -1819,6 +1821,7 @@ export interface NewActa {
   lugar: string | null;
   preside: string | null;
   secretario: string | null;
+  testigo: string | null;
   presentes: string[];
   ausentes: string[];
   invitados: string[];
@@ -1859,6 +1862,11 @@ function actaParams(a: NewActa): unknown[] {
     a.quorum ? 1 : 0, a.agenda, a.resumen,
     JSON.stringify(a.mociones), JSON.stringify(a.acuerdos),
     a.estado, a.confidencial ? 1 : 0, a.fecha_aprobacion,
+    /* `testigo` va al FINAL y no junto a `preside`/`secretario`, que sería su
+       sitio natural: metido en medio habría que renumerar los veintidós
+       marcadores de las dos consultas, y renumerar a mano es exactamente
+       cómo se cuelan los desajustes silenciosos entre columna y valor. */
+    a.testigo,
   ];
 }
 
@@ -1869,8 +1877,8 @@ export async function insertActa(churchId: number, a: NewActa): Promise<void> {
     `INSERT INTO actas (
        tipo, titulo, fecha, hora_inicio, hora_cierre, lugar, preside, secretario,
        presentes, ausentes, invitados, quorum, agenda, resumen, mociones, acuerdos,
-       estado, confidencial, fecha_aprobacion, church_id, folio, uid, updated_at
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,datetime('now'))`,
+       estado, confidencial, fecha_aprobacion, testigo, church_id, folio, uid, updated_at
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,datetime('now'))`,
     [...actaParams(a), churchId, folio, crypto.randomUUID()]
   );
 }
@@ -1906,8 +1914,9 @@ export async function updateActa(id: number, churchId: number, a: NewActa): Prom
        tipo = $1, titulo = $2, fecha = $3, hora_inicio = $4, hora_cierre = $5, lugar = $6,
        preside = $7, secretario = $8, presentes = $9, ausentes = $10, invitados = $11,
        quorum = $12, agenda = $13, resumen = $14, mociones = $15, acuerdos = $16,
-       estado = $17, confidencial = $18, fecha_aprobacion = $19, updated_at = datetime('now')
-     WHERE id = $20 AND church_id = $21`,
+       estado = $17, confidencial = $18, fecha_aprobacion = $19, testigo = $20,
+       updated_at = datetime('now')
+     WHERE id = $21 AND church_id = $22`,
     [...actaParams(a), id, churchId]
   );
 }

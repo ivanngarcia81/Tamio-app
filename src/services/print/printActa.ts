@@ -44,6 +44,7 @@ export async function printActaPdf(church: Church, acta: Acta): Promise<void> {
       { label: t("actas.horaCierre"), value: acta.hora_cierre ?? "—" },
       { label: t("actas.preside"), value: acta.preside ?? "—" },
       { label: t("actas.secretarioRedacta"), value: acta.secretario ?? "—" },
+      ...(acta.testigo ? [{ label: t("actas.testigo"), value: acta.testigo }] : []),
       { label: t("actas.quorum"), value: acta.quorum === 1 ? t("common.si") : t("common.no") },
       { label: t("actas.estadoActa"), value: t(`actas.estado.${acta.estado}`) },
     ],
@@ -118,6 +119,11 @@ export async function printActaPdf(church: Church, acta: Acta): Promise<void> {
 
   // Mismo aire que los reportes de tesorería antes del bloque de firmas.
   doc.addGap(75);
+  /* El testigo entra como TERCERA columna **solo si el acta lo trae**. Se
+     podría pintar siempre en blanco —es lo que hace la pantalla—, pero eso
+     cambiaría el PDF de todas las actas ya firmadas: dos columnas anchas
+     pasarían a tres estrechas de golpe. Un documento contable no cambia de
+     forma retroactivamente. Quien quiera el renglón, escribe el nombre. */
   doc.signatureBlock([
     { nombre: acta.secretario, rol: t("actas.rolSecretario"), firmaDataUrl: null },
     {
@@ -125,6 +131,9 @@ export async function printActaPdf(church: Church, acta: Acta): Promise<void> {
       rol: acta.preside ? t("actas.rolPreside") : church.pastor_cargo ?? i18n.t("rol.pastor"),
       firmaDataUrl: !acta.preside || acta.preside === church.pastor_nombre ? pastorFirmaDataUrl : null,
     },
+    ...(acta.testigo
+      ? [{ nombre: acta.testigo, rol: t("actas.testigo"), firmaDataUrl: null }]
+      : []),
   ]);
 
   const now = new Date();

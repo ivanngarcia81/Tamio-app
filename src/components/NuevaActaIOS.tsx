@@ -290,6 +290,9 @@ export default function NuevaActaIOS({
             <Section header={t("actas.secQuien")} footer={avisoDe("preside", "secretario")}>
               <TextField label={t("actas.filaPreside")} value={h.preside} onChange={h.setPreside} />
               <TextField label={t("actas.filaRedacto")} value={h.secretario} onChange={h.setSecretario} />
+              {/* El tercer firmante, opcional: si se deja vacío, su renglón se
+                  sigue imprimiendo en blanco para firmarlo a mano. */}
+              <TextField label={t("actas.testigo")} value={h.testigo} onChange={h.setTestigo} optional />
               <FilaConteo label={t("actas.filaPresentes")} conteo={h.presentes.length} vacio={t("common.ninguno")} onPress={() => setLista("presentes")} />
               <FilaConteo label={t("actas.filaAusentes")} conteo={h.ausentes.length} vacio={t("common.ninguno")} onPress={() => setLista("ausentes")} />
               <FilaConteo label={t("actas.filaInvitados")} conteo={h.invitados.length} vacio={t("common.ninguno")} onPress={() => setLista("invitados")} />

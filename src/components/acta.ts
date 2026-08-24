@@ -90,6 +90,10 @@ export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
   const [lugar, setLugar] = useState(acta?.lugar ?? "");
   const [preside, setPreside] = useState(acta?.preside ?? "");
   const [secretario, setSecretario] = useState(acta?.secretario ?? "");
+  /* El tercer firmante (migración 41). No es obligatorio: muchas actas se
+     firman solo con quien preside y quien redacta, y exigirlo bloquearía
+     el cierre de un acta perfectamente válida. */
+  const [testigo, setTestigo] = useState(acta?.testigo ?? "");
   const [presentes, setPresentes] = useState<string[]>(() => (acta ? parseNombres(acta.presentes) : []));
   const [ausentes, setAusentes] = useState<string[]>(() => (acta ? parseNombres(acta.ausentes) : []));
   const [invitados, setInvitados] = useState<string[]>(() => (acta ? parseNombres(acta.invitados) : []));
@@ -157,6 +161,7 @@ export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
         lugar: lugar.trim() || null,
         preside: preside.trim() || null,
         secretario: secretario.trim() || null,
+        testigo: testigo.trim() || null,
         presentes,
         ausentes,
         invitados,
@@ -188,7 +193,7 @@ export function useActa({ church, acta, onClose, onSaved }: PropsActa) {
     iaAbierta, setIaAbierta, iaPuntos, setIaPuntos, iaGenerando, iaError, setIaError, generarActaIA,
     tipo, setTipo, titulo, setTitulo, fecha, setFecha,
     horaInicio, setHoraInicio, horaCierre, setHoraCierre, lugar, setLugar,
-    preside, setPreside, secretario, setSecretario,
+    preside, setPreside, secretario, setSecretario, testigo, setTestigo,
     presentes, setPresentes, ausentes, setAusentes, invitados, setInvitados, quorum, setQuorum,
     agenda, setAgenda, resumen, setResumen,
     mociones, setMociones, setMocion, acuerdos, setAcuerdos, setAcuerdo,
