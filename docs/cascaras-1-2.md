@@ -300,6 +300,15 @@ el tesorero por definición. La fuente natural es `usuarios` —ya existe con
 `nombre` y `rol`, y `listUsuarios()` ya funciona— más texto libre para quien
 no esté dada de alta: el mismo patrón que la cuenta bancaria del depósito.
 
+**En IPDFV, quien deposita es el pastor** (confirmado por Iván el 24 ago,
+después de preguntarlo en su iglesia). Eso NO cambia lo de arriba —el campo
+sigue siendo elegible, porque la app es para muchas iglesias y en la suya el
+encargado puede cambiar—, pero sí añade un detalle que conviene: **el campo
+propone al último responsable**, como la cuenta bancaria propone la del último
+depósito. Si casi siempre es la misma persona, teclearla cada domingo es
+trabajo inventado; y si un domingo va otro, se cambia y esa pasa a ser la
+propuesta.
+
 ### Qué cuesta, en concreto
 
 No cambia el tamaño de la pieza 1 de la lista de abajo; la afina:
