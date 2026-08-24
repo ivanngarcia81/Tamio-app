@@ -51,6 +51,7 @@ import { authHabilitado } from "./supabase";
 import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync, SYNC_HABILITADO } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
 import { setQuienRegistra } from "./sesion";
+import { vigilarPrivacidad } from "./privacidad";
 import Login from "./components/Login";
 import "./styles.css";
 
@@ -177,6 +178,12 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
      movimiento, un depósito o un corte. Único sitio que lo escribe. Sin
      sesión —modo local— se queda en null y los registros nacen sin nombre,
      que es lo correcto: mejor "no lo sé" que un nombre prestado. */
+  /* "Ocultar montos al bloquear": tapa el contenido cuando la app se va a
+     segundo plano, para que la instantánea del selector de apps no enseñe la
+     contabilidad. Se engancha siempre; la preferencia se consulta dentro,
+     así que encenderla o apagarla no obliga a recargar. */
+  useEffect(() => vigilarPrivacidad(), []);
+
   useEffect(() => {
     setQuienRegistra(
       authEstado.autenticado && authEstado.nombre

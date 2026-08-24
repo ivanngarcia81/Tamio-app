@@ -1919,11 +1919,28 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
       seg: z.querySelectorAll(".pf-seg button").length,
     };
   });
-  chk(pres.filas === 3, `Presentación trae sus tres filas (${pres.filas})`);
-  chk(pres.conTitulo === 3, "las tres con su explicación");
+  /* **Bajó de tres a dos el 24 ago 2026**: "Ocultar montos al bloquear" ya
+     tiene motor (sección 31) y por tanto ya no puede estar apagada. Las que
+     siguen esperando son "Tamaño de texto" y "Barra lateral siempre visible".
+     La comprobación no se borra, se ajusta: lo que vigila —que lo dibujado
+     sin motor esté apagado y explicado— sigue valiendo para las dos. */
+  chk(pres.filas === 2, `Presentación: las que siguen sin motor, apagadas (${pres.filas})`);
+  chk(pres.conTitulo === pres.filas, "las dos con su explicación");
   chk(pres.mandosVivos === 0, `y ningún mando vivo dentro (${pres.mandosVivos})`);
   chk(pres.opacidad < 0.7, `la fila entera a media tinta (${pres.opacidad})`);
   chk(pres.seg === 3, `el segmentado de tamaño de texto (${pres.seg})`);
+  /* Y la que SÍ tiene motor está viva y se puede tocar. */
+  const om = await pg.evaluate(() => {
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const fila = [...z.querySelectorAll(".ios-field")]
+      .find((f) => /ocultar/i.test(f.querySelector(".ios-field-label")?.textContent ?? ""));
+    if (!fila) return null;
+    return {
+      apagada: fila.classList.contains("ios-field--apagado"),
+      mando: !!fila.querySelector("button:not([disabled]), .ios-switch"),
+    };
+  });
+  chk(!!om && !om.apagada, `"Ocultar montos" ya no está apagada (${om?.apagada})`);
   if (DIR) await pg.screenshot({ path: `${DIR}/config-presentacion-1366x1024.png` });
 
   /* Los cuatro del handoff 1 en "Iglesia". Dos de ellos van ENCENDIDOS a
@@ -2755,6 +2772,91 @@ console.log("\n== Registrado por: con sesión y sin ella ==");
   const DIR = process.env.CAPTURAS || "";
   if (DIR) await pg.screenshot({ path: `${DIR}/registrado-por.png` });
   await ctxR.close();
+}
+
+/* ---------- 31. "Ocultar montos al bloquear", con motor (24 ago 2026) ----
+   Era uno de los controles que se pintaron apagados. Ahora tapa el contenido
+   cuando la app se va a segundo plano, para que la instantánea que iOS pone
+   en el selector de aplicaciones no enseñe la contabilidad.
+
+   Lo que se comprueba es lo que puede fallar de verdad: que **ninguna cifra
+   se salga**. Se buscan todos los textos que parecen dinero y se exige que
+   cada uno esté dentro de algo difuminado. Una lista de selectores de "clases
+   de monto" se habría quedado corta —hay más de veinte repartidas por la
+   app— y quedarse corto aquí es enseñar justo lo que se prometió tapar. */
+console.log("\n== Ocultar montos al bloquear ==");
+{
+  const ctxP = await nuevoContexto("ipad");
+  const pg = await ctxP.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-movimientos .md-fila", { timeout: 10000 });
+
+  /** ¿Cuántos textos con pinta de dinero hay, y cuántos quedan sin tapar? */
+  const medir = () => pg.evaluate(() => {
+    const tapado = (el) => {
+      for (let e = el; e; e = e.parentElement) {
+        const f = getComputedStyle(e).filter;
+        if (f && f !== "none" && /blur/.test(f)) return true;
+      }
+      return false;
+    };
+    const dinero = [...document.querySelectorAll("body *")].filter((e) => {
+      if (e.children.length > 0) return false;              // solo hojas
+      const t = (e.textContent || "").trim();
+      return /^[-−+]?\$[\d,]+\.\d{2}$/.test(t);          // "$1,200.00"
+    });
+    return {
+      total: dinero.length,
+      sueltos: dinero.filter((e) => !tapado(e)).length,
+      privado: document.documentElement.getAttribute("data-privado"),
+    };
+  });
+
+  const antes = await medir();
+  chk(antes.total > 0, `hay cifras que tapar (${antes.total})`);
+  chk(antes.sueltos === antes.total, "con la app delante se ven todas, como debe ser");
+
+  // Encender la preferencia y mandar la app a segundo plano.
+  await pg.evaluate(async () => {
+    const p = await import("/src/privacidad.ts");
+    p.setOcultarMontos(true);
+  });
+  await pg.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await pg.waitForTimeout(300);
+
+  const durante = await medir();
+  chk(durante.privado === "1", `la app se marca como tapada (${durante.privado})`);
+  chk(durante.sueltos === 0,
+    `y NINGUNA cifra se queda a la vista (${durante.sueltos} de ${durante.total} sueltas)`);
+
+  // Volver al frente destapa.
+  await pg.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await pg.waitForTimeout(300);
+  const despues = await medir();
+  chk(despues.privado === null, "y al volver al frente se destapa");
+  chk(despues.sueltos === despues.total, `con sus cifras otra vez (${despues.total})`);
+
+  /* Y con la preferencia APAGADA no tapa nada: es un ajuste, no una imposición. */
+  await pg.evaluate(async () => {
+    const p = await import("/src/privacidad.ts");
+    p.setOcultarMontos(false);
+  });
+  await pg.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await pg.waitForTimeout(300);
+  const apagada = await medir();
+  chk(apagada.privado === null, "con la preferencia apagada no tapa nada");
+  await ctxP.close();
 }
 
 await browser.close();

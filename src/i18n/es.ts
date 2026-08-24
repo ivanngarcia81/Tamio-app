@@ -3124,7 +3124,7 @@ export const es = {
     sidebarFijo: "Barra lateral siempre visible",
     sidebarFijoSub: "También en orientación vertical",
     ocultarMontos: "Ocultar montos al bloquear",
-    ocultarMontosSub: "Difumina las cifras al salir de la app",
+    ocultarMontosSub: "Al mandar Tamio a segundo plano, el contenido se difumina: la instantánea del selector de aplicaciones no enseña la contabilidad",
   },
   permisos: {
     titulo: "Permisos del rol Tesorería",

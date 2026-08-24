@@ -3049,7 +3049,7 @@ export const en: Resources = {
     sidebarFijo: "Always show the sidebar",
     sidebarFijoSub: "In portrait orientation too",
     ocultarMontos: "Hide amounts when locked",
-    ocultarMontosSub: "Blurs the figures when you leave the app",
+    ocultarMontosSub: "When Tamio goes to the background, the content is blurred: the app switcher snapshot doesn't show the books",
   },
   permisos: {
     titulo: "Treasury role permissions",

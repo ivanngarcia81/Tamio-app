@@ -17567,6 +17567,40 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    allí, no lo que se ve aquí. */
 :root.ipad { --barra-inset: env(safe-area-inset-top, 0px); }
 
+/* ============================================================
+   "Ocultar montos al bloquear" (`data-privado`)
+   ============================================================
+   Con la app en segundo plano se difumina el CONTENIDO y se pone un aviso
+   encima. La barra lateral se deja: no lleva dinero, y verla hace que en el
+   selector de aplicaciones se reconozca que eso es Tamio.
+
+   `filter` y no `visibility: hidden` porque la instantánea que hace iOS es de
+   lo que se está pintando: difuminado se ve que hay algo y que está tapado a
+   propósito; en blanco parecería que la app se rompió. Y 18px no es adorno —
+   con menos, una cifra grande como el saldo del mes todavía se adivina. */
+:root[data-privado="1"] .main,
+:root[data-privado="1"] .content,
+:root[data-privado="1"] .md-split {
+  filter: blur(18px);
+  /* Que no se pueda copiar ni tocar lo que hay debajo mientras está tapado. */
+  pointer-events: none;
+  user-select: none;
+}
+/* Las hojas y modales cuelgan de <body>, fuera de `.main`: se tapan aparte o
+   se saldrían con la suya. */
+:root[data-privado="1"] .ios-sheet-overlay,
+:root[data-privado="1"] .modal-overlay,
+:root[data-privado="1"] .ios-menu { filter: blur(18px); pointer-events: none; }
+
+:root[data-privado="1"] .app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  pointer-events: none;
+}
+
 /* El relleno gris de iOS, con nombre. El archivo lo repite a mano veinte
    veces —0.12 en claro, 0.24 en oscuro, porque a 0.12 sobre negro no se ve—
    y cada copia es una ocasión de olvidar la variante oscura, que es

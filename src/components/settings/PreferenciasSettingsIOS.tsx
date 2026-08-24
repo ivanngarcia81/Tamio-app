@@ -29,6 +29,7 @@ import {
 } from "../../sound";
 import { Section, SwitchField } from "../ios/FormularioIOS";
 import { esIPad } from "../../movil";
+import { ocultarMontosActivado, setOcultarMontos } from "../../privacidad";
 
 /**
  * Las tres miniaturas de tema del handoff de iPad: un rectángulo de 104px
@@ -130,6 +131,7 @@ interface Props {
 export default function PreferenciasSettingsIOS({
   themePref, onThemePrefChange, acento, onAcentoChange, langPref, onLangPrefChange,
 }: Props) {
+  const [ocultarMontos, setOcultarMontosEstado] = useState(ocultarMontosActivado());
   const { t } = useTranslation();
   const [sonidoOn, setSonidoOn] = useState(sonidoActivado());
   const [juego, setJuego] = useState<JuegoSonido>(juegoSonido);
@@ -238,13 +240,13 @@ export default function PreferenciasSettingsIOS({
             disabled
             title={t("presentacion.hint")}
           />
+          {/* Con motor desde el 24 ago 2026: tapa el contenido cuando la app
+              se va a segundo plano. Ver `src/privacidad.ts`. */}
           <SwitchField
             label={t("presentacion.ocultarMontos")}
             sub={t("presentacion.ocultarMontosSub")}
-            checked={false}
-            onChange={() => {}}
-            disabled
-            title={t("presentacion.hint")}
+            checked={ocultarMontos}
+            onChange={(v) => { setOcultarMontos(v); setOcultarMontosEstado(v); }}
           />
         </Section>
       )}

@@ -218,7 +218,7 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | **Asignar encargado** ×4 | Servicios, puestos sin motor | botón apagado, uno por puesto |
 | **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
 | **Barra lateral siempre visible** | ídem | interruptor apagado |
-| **Ocultar montos al bloquear** | ídem | interruptor apagado |
+| ~~**Ocultar montos al bloquear**~~ | ídem | **cableado el 24 ago** — tapa el contenido en segundo plano (`src/privacidad.ts`) |
 | **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
 | **Avisar de gastos sin comprobante desde $X** | Config → Iglesia → Controles de tesorería | interruptor apagado, **encendido** |
 | **Avisar de posibles duplicados** | ídem | interruptor apagado, **encendido** |
