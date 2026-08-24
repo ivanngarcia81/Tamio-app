@@ -213,7 +213,9 @@ Una sola consulta agrupada, con la misma clave que guarda
 
 ### Cómo quedó el arnés
 
-De **799 comprobaciones a 862**. Seis guardas cambiaron de sentido —las que
+De **799 comprobaciones a 843** (contadas, no estimadas: los números que
+fueron apareciendo en los mensajes de commit de esta tanda se escribieron
+sumando de cabeza y no todos cuadran; el bueno es el que imprime el arnés). Seis guardas cambiaron de sentido —las que
 exigían que un botón estuviera apagado ahora exigen lo contrario— y entraron
 seis secciones nuevas (36 a 41). Las seis se probaron **volviendo a meter el
 fallo**: sin escribir el puesto, ordenando el culto por hora, sin el `onClick`
