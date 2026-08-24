@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  countDepositos, currentMonth, currentYear, efectivoDisponibleHasta, fmtFechaCorta, fmtMoney,
-  hoyISO, listDepositos, mesLegible, monthDepositos,
-  type Church, type Deposito,
+  countDepositos, countPendingTx, currentMonth, currentYear, efectivoDisponibleHasta, fmtFechaCorta, fmtMoney,
+  hoyISO, listDepositos, listTx, mesLegible, monthDepositos,
+  type Church, type Deposito, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import DepositoTable from "../components/DepositoTable";
@@ -18,6 +19,8 @@ import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import { esIPad, esIPhone, esMac } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import DetalleDeposito from "../components/DetalleDeposito";
+import PendientesDeposito, { type Corte } from "../components/PendientesDeposito";
+import NuevoCorteIOS from "../components/NuevoCorteIOS";
 import ComprobantePreview from "../components/ComprobantePreview";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { deleteDeposito, undeleteDeposito } from "../db";
@@ -71,6 +74,101 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
        puede dar aunque no sepa repartirlo en cortes. */
     efectivoDisponibleHasta(church, hoyISO()).then(setPorDepositar).catch(console.error);
   }, [church, refreshKey]);
+
+  /* ---- Pendientes: el dinero en caja, agrupado por día (handoff 3) ----
+     Los movimientos son reales: ingresos aprobados cobrados en efectivo o en
+     cheque. Lo que NO existe es saber cuál de ellos ya fue al banco —ni
+     `transactions` ni `depositos_bancarios` guardan ese vínculo—, así que la
+     lista no puede esconder lo ya depositado y lo dice en su propio aviso.
+     Ver `PendientesDeposito.tsx`. */
+  const navigate = useNavigate();
+  const [enCaja, setEnCaja] = useState<Tx[]>([]);
+  const [porRevisar, setPorRevisar] = useState(0);
+  const [corteSel, setCorteSel] = useState<string | null>(null);
+  /** Ids marcados. Empieza con TODO el corte marcado, que es el caso normal:
+   *  se lleva al banco lo que hay, y se desmarca la excepción. */
+  const [marcados, setMarcados] = useState<Set<number>>(new Set());
+  const [hojaCorte, setHojaCorte] = useState(false);
+  const [prefill, setPrefill] = useState<{ monto: Centavos; cuenta: string; fecha: string; periodo: string } | null>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    Promise.all([listTx(church.id, { tipo: "ingreso", limit: 400 }), countPendingTx(church.id)])
+      .then(([txs, n]) => {
+        if (cancelado) return;
+        setEnCaja(txs.filter((x) => x.estado === "aprobado"
+          && (x.metodo_pago === "efectivo" || x.metodo_pago === "cheque")));
+        setPorRevisar(n);
+      })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [church.id, refreshKey]);
+
+  /** Un corte por día con dinero en caja, del más reciente al más viejo. */
+  const cortes = useMemo<Corte[]>(() => {
+    const mapa = new Map<string, Tx[]>();
+    for (const m of enCaja) {
+      const dia = m.fecha.slice(0, 10);
+      const g = mapa.get(dia);
+      if (g) g.push(m); else mapa.set(dia, [m]);
+    }
+    return [...mapa.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([fecha, movs]) => ({
+        fecha,
+        titulo: t("depositos.corteDel", { fecha: fmtFechaCorta(fecha) }),
+        movs,
+      }));
+  }, [enCaja, t]);
+
+  const corte = cortes.find((c) => c.fecha === corteSel) ?? null;
+
+  /* Al cambiar de corte se marca todo lo suyo. Se hace en un efecto y no al
+     pulsar la fila porque el corte también puede llegar elegido de vuelta de
+     una recarga. */
+  useEffect(() => {
+    if (!corte) return;
+    setMarcados(new Set(corte.movs.map((m) => m.id)));
+  }, [corte?.fecha]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function alternarMov(id: number) {
+    setMarcados((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
+  }
+
+  /** La cuenta del último depósito: es la que se va a proponer. */
+  const cuentaSugerida = useMemo(() => {
+    const ult = depositos.reduce<Deposito | null>(
+      (mejor, d) => (mejor === null || d.fecha > mejor.fecha ? d : mejor), null);
+    return ult?.cuenta_banco ?? "";
+  }, [depositos]);
+
+  const totalMarcado = useMemo(
+    () => sumar(...(corte?.movs ?? []).filter((m) => marcados.has(m.id)).map((m) => m.monto)),
+    [corte, marcados],
+  );
+
+  /* Entrar en Pendientes sin nada elegido abre el corte más reciente: es el
+     que se viene a revisar, y un panel vacío en una pantalla de dos columnas
+     es medio iPad desperdiciado. */
+  useEffect(() => {
+    if (vista === "pendientes" && corteSel == null && cortes.length > 0) setCorteSel(cortes[0].fecha);
+  }, [vista, corteSel, cortes]);
+
+  /** "Marcar depositado": abre el formulario con lo que el corte ya sabe. */
+  function marcarDepositado() {
+    setPrefill({
+      monto: totalMarcado,
+      cuenta: cuentaSugerida,
+      fecha: hoyISO(),
+      periodo: currentMonth(),
+    });
+    setEditing(null);
+    setModalOpen(true);
+  }
   const [previewSel, setPreviewSel] = useState<string | null>(null);
   const [pendingDeleteSel, setPendingDeleteSel] = useState<Deposito | null>(null);
 
@@ -117,18 +215,21 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
 
   function abrirNuevo() {
     setEditing(null);
+    setPrefill(null);
     setModalOpen(true);
   }
   useAbrirCrearDesdeMas(abrirNuevo);
 
   function abrirEditar(dep: Deposito) {
     setEditing(dep);
+    setPrefill(null);
     setModalOpen(true);
   }
 
   function cerrarModal() {
     setModalOpen(false);
     setEditing(null);
+    setPrefill(null);
   }
 
   /* ---- Piezas del maestro-detalle ---- */
@@ -257,7 +358,19 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                 lleva un DATO corto y no la frase que explica la pantalla —esa
                 se fue al pie de la ventana, junto al recuento (BarraEstado).
                 Mismo criterio que las otras nueve pantallas convertidas. */}
-            <div className="page-sub">{esMac() ? mesLegible(mes) : t("depositos.sub")}</div>
+            {/* El subtítulo del handoff 3: cuántos cortes esperan y a qué
+                cuenta van. Es dato real —los cortes son días con dinero en
+                caja, la cuenta es la del último depósito— y dice más que la
+                frase fija que explicaba la pantalla. En Mac sigue el mes,
+                que es donde comparte renglón con los botones. */}
+            <div className="page-sub">
+              {esMac()
+                ? mesLegible(mes)
+                : cortes.length > 0
+                  ? [t("depositos.cortesPendientes", { count: cortes.length }), cuentaSugerida]
+                      .filter(Boolean).join(" · ")
+                  : t("depositos.sub")}
+            </div>
           </div>
         )}
         {/* El botón se queda: `.btn-nuevo-cabecera` ya lo oculta en el
@@ -312,17 +425,47 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                 <div className="md-filas">
                   {angosto && <div className="md-extra">{resumenEscritorio}</div>}
                   {vista === "pendientes" ? (
-                    /* La pestaña que espera motor. No se queda muda: da el
-                       número que sí se sabe —el efectivo por depositar— y
-                       dice qué paso falta para que aquí haya cortes. */
-                    <div className="fm-vacio fm-vacio--pendiente dep-pendientes">
-                      <span className="fm-vacio-titulo">{t("depositos.pendientesTitulo")}</span>
-                      <span className="fm-vacio-sub">
-                        {t("depositos.pendientesSub", {
-                          monto: `${fmtMoney(porDepositar ?? CERO)} ${church.moneda}`,
-                        })}
-                      </span>
-                    </div>
+                    /* Los cortes: un día con dinero en caja es una fila. El
+                       monto y el conteo son reales; "Sin depositar" es lo que
+                       el diseño pide y lo que el esquema NO puede confirmar
+                       movimiento a movimiento — el panel lo explica. */
+                    cortes.length === 0 ? (
+                      <div className="fm-vacio fm-vacio--pendiente dep-pendientes">
+                        <span className="fm-vacio-titulo">{t("depositos.sinCortesTitulo")}</span>
+                        <span className="fm-vacio-sub">
+                          {t("depositos.sinCortesSub", {
+                            monto: `${fmtMoney(porDepositar ?? CERO)} ${church.moneda}`,
+                          })}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        {cortes.map((c) => (
+                          <div
+                            key={c.fecha}
+                            className={`md-fila${corteSel === c.fecha ? " sel" : ""}`}
+                            onClick={() => setCorteSel(c.fecha)}
+                          >
+                            <div className="md-fila-textos">
+                              <div className="md-fila-titular">{c.titulo}</div>
+                              <div className="md-fila-sub truncate">
+                                {t("depositos.movsDelCorte", { count: c.movs.length })}
+                                {cuentaSugerida ? ` · ${cuentaSugerida}` : ""}
+                              </div>
+                            </div>
+                            <span className="md-fila-cola">
+                              <span className="md-fila-monto">
+                                {fmtMoney(sumar(...c.movs.map((m) => m.monto)))}
+                              </span>
+                              <span className="dep-estado dep-estado--pendiente">{t("depositos.sinDepositar")}</span>
+                            </span>
+                          </div>
+                        ))}
+                        <div className="dep-lista-pie">
+                          {t("depositos.cortesPie", { monto: `${fmtMoney(porDepositar ?? CERO)} ${church.moneda}` })}
+                        </div>
+                      </>
+                    )
                   ) : visibles.length === 0 ? (
                     <div className="md-filas-vacio">{estadoVacio}</div>
                   ) : (
@@ -362,7 +505,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                 {/* El pie cuenta y suma lo VISIBLE, no lo que hay: con una
                     búsqueda puesta, el total del historial contradiría a la
                     lista que tienes delante. Mismo trato que en Ingresos. */}
-                {visibles.length > 0 && (
+                {vista === "depositados" && visibles.length > 0 && (
                   <div className="md-pie">
                     <span>{t("depositos.conteoVisible", { count: visibles.length })}</span>
                     <span className="md-pie-total">{fmtMoney(totalVisible)} {church.moneda}</span>
@@ -372,6 +515,39 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
 
               <div className="md-detalle">
                 {(() => {
+                  /* Pendientes tiene su propio panel: no es un depósito lo que
+                     se mira, es el dinero que todavía no lo es. */
+                  if (vista === "pendientes") {
+                    if (!corte) {
+                      if (angosto) return null;
+                      return (
+                        <div className="md-vacio">
+                          <div className="md-vacio-hint">
+                            <h3>{t("depositos.eligeCorte")}</h3>
+                            <p>{t("depositos.eligeCorteSub")}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <PendientesDeposito
+                        church={church}
+                        corte={corte}
+                        sel={marcados}
+                        onToggle={alternarMov}
+                        porRevisar={porRevisar}
+                        efectivoEnCaja={porDepositar ?? CERO}
+                        cuenta={cuentaSugerida}
+                        fechaRegistro={fmtFechaCorta(hoyISO())}
+                        periodo={mes}
+                        tituloLista={t("depositos.titulo")}
+                        onVolver={() => setCorteSel(null)}
+                        onIrPorRevisar={() => navigate("/bandeja")}
+                        onNuevoCorte={() => setHojaCorte(true)}
+                        onMarcarDepositado={marcarDepositado}
+                      />
+                    );
+                  }
                   const det = angosto ? sel ?? ultimoSel.current : sel;
                   if (det) {
                     return (
@@ -492,10 +668,24 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
         />
       )}
 
+      {hojaCorte && corte && (
+        <NuevoCorteIOS
+          church={church}
+          movs={corte.movs}
+          sel={marcados}
+          onToggle={alternarMov}
+          nombre={corte.titulo}
+          cuenta={cuentaSugerida}
+          fecha={hoyISO()}
+          onClose={() => setHojaCorte(false)}
+        />
+      )}
+
       {modalOpen && (
         <DepositoModal
           church={church}
           editing={editing}
+          prefill={prefill}
           onClose={cerrarModal}
           onSaved={onChanged}
         />

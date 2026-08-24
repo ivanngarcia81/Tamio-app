@@ -41,6 +41,12 @@ export interface PropsDeposito {
   church: Church;
   /** null = depósito nuevo. */
   editing: Deposito | null;
+  /** Valores de arranque para un depósito NUEVO. Los pone "Marcar
+   *  depositado" desde la pestaña Pendientes: el corte que acabas de revisar
+   *  ya sabe su total, su cuenta y su periodo, y volver a teclearlos sería
+   *  pedir dos veces lo mismo —y con ello la primera ocasión de que las dos
+   *  cifras no cuadren—. No toca nada al EDITAR: ahí manda `editing`. */
+  prefill?: { monto?: Centavos; cuenta?: string; fecha?: string; periodo?: string } | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -48,7 +54,7 @@ export interface PropsDeposito {
 /** Los campos que pueden bloquear el guardado (o avisar sin bloquear). */
 export type CampoDeposito = "fecha" | "monto" | "cuenta" | "periodo";
 
-export function useDeposito({ church, editing, onClose, onSaved }: PropsDeposito) {
+export function useDeposito({ church, editing, prefill, onClose, onSaved }: PropsDeposito) {
   const { t } = useTranslation();
   const isEdit = editing !== null;
   const hoy = nowLocalIso().slice(0, 10);
@@ -56,10 +62,12 @@ export function useDeposito({ church, editing, onClose, onSaved }: PropsDeposito
    *  formateador que lee el campo. */
   const placeholderMonto = currencySymbol(church.moneda) + aTextoTecleado(CERO);
 
-  const [fecha, setFecha] = useState(editing?.fecha.slice(0, 10) ?? hoy);
-  const [periodo, setPeriodo] = useState(editing?.periodo ?? hoy.slice(0, 7));
-  const [monto, setMonto] = useState(editing ? aTextoTecleado(editing.monto) : "");
-  const [cuentaBanco, setCuentaBanco] = useState(editing?.cuenta_banco ?? "");
+  const [fecha, setFecha] = useState(editing?.fecha.slice(0, 10) ?? prefill?.fecha ?? hoy);
+  const [periodo, setPeriodo] = useState(editing?.periodo ?? prefill?.periodo ?? hoy.slice(0, 7));
+  const [monto, setMonto] = useState(
+    editing ? aTextoTecleado(editing.monto) : prefill?.monto != null ? aTextoTecleado(prefill.monto) : ""
+  );
+  const [cuentaBanco, setCuentaBanco] = useState(editing?.cuenta_banco ?? prefill?.cuenta ?? "");
   const [referencia, setReferencia] = useState(editing?.referencia ?? "");
   const [notas, setNotas] = useState(editing?.notas ?? "");
   const [comprobantePath, setComprobantePath] = useState<string | null>(editing?.comprobante_path ?? null);

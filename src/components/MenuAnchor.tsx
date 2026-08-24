@@ -6,6 +6,13 @@ export type MenuItem = {
   label: string;
   icon?: ReactNode;
   destructive?: boolean;
+  /** Apagado con su explicación en `title`: la acción está en su sitio del
+   *  menú pero todavía no tiene motor. Es el mismo trato que damos a los
+   *  botones sin motor en el resto de la app —apagado y diciendo por qué—,
+   *  en vez de esconder la opción y que el menú mienta sobre lo que se puede
+   *  hacer con un depósito. */
+  disabled?: boolean;
+  title?: string;
   onPress: () => void;
 };
 
@@ -168,6 +175,8 @@ export function MenuAnchor({
                   type="button"
                   role="menuitem"
                   className={`ios-menu-item${item.destructive ? " ios-menu-item--destructive" : ""}`}
+                  disabled={item.disabled}
+                  title={item.title}
                   onClick={() => { onOpenChange(false); item.onPress(); }}
                 >
                   <span className="ios-menu-label">{item.label}</span>

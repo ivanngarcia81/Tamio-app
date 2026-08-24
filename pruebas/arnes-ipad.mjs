@@ -218,6 +218,30 @@ const ctxSeed = await nuevoContexto("ipad");
       fecha: hace(5), monto: 96000, metodo_pago: "efectivo",
     });
 
+    /* Dos ingresos en CHEQUE. Sin ellos la pestaña Pendientes de Depósitos
+       sale con "Cheques $0.00" siempre y no hay forma de comprobar ni el
+       desglose ni la insignia CH de la fila: todo lo demás que se siembra
+       entra en efectivo o por transferencia. */
+    await db.insertTx(id, iglesia.moneda, {
+      tipo: "ingreso", categoria: "diezmo", concepto: "Diezmo en cheque",
+      fecha: hace(0), monto: 250000, metodo_pago: "cheque",
+      member_id: miembros[0].id,
+    });
+    await db.insertTx(id, iglesia.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Ofrenda en cheque",
+      fecha: hace(3), monto: 90000, metodo_pago: "cheque",
+    });
+
+    /* Y un movimiento en estado PENDIENTE. `countPendingTx` cuenta filas con
+       `estado = 'pendiente'`, no las alertas que calcula Por revisar: sin uno
+       de verdad, el aviso "N movimientos marcados por revisar" del panel de
+       Depósitos no tiene nada que contar y no se pinta —que es lo correcto,
+       pero deja la guarda sin qué medir. */
+    await db.insertTx(id, iglesia.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Ofrenda por confirmar",
+      fecha: hace(1), monto: 64000, metodo_pago: "efectivo", estado: "pendiente",
+    });
+
     // Depósitos (uno de período distinto al mes de su fecha)
     await db.insertDeposito(id, iglesia.moneda, {
       fecha: hace(2), periodo: hace(2).slice(0, 7), monto: 1854000,
@@ -523,6 +547,16 @@ for (const { ruta, nombre } of [
   }
   if (nombre === "miembro") {
     chk(m.cuentaBg && m.cuentaBg !== "rgba(0, 0, 0, 0)", "miembro: cuenta \"n de m\" teñida");
+  }
+  if (nombre === "deposito") {
+    /* Las cuentas ya usadas, a un toque: el handoff las dibuja como chips y
+       sin ellas hay que abrir una hoja para no cambiar nada. Se comprueba que
+       están Y que una sale marcada cuando el campo ya trae esa cuenta. */
+    const cu = await page.evaluate(() => {
+      const chips = [...document.querySelectorAll(".ios-sheet .dia-chip")];
+      return { n: chips.length, textos: chips.map((c) => c.textContent.trim()) };
+    });
+    chk(cu.n > 0, `deposito: chips de cuentas ya usadas (${cu.textos.join(" · ")})`);
   }
   await cierraHoja();
 }
@@ -1090,7 +1124,7 @@ console.log("\n== Depósitos del iPad (handoff) ==");
     titular: document.querySelector(".dm-titular")?.textContent.trim(),
     cifras: document.querySelectorAll(".dep-cifra").length,
     sinMotor: document.querySelectorAll(".dep-cifra--sinmotor").length,
-    tarjetas: document.querySelectorAll(".dep-cuerpo .dm-tarjeta").length,
+    tarjetas: document.querySelectorAll(".dep-cuerpo .dep-carta").length,
     ficha: !!document.querySelector(".dm-comp-falta, .dm-comp-hay"),
     desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
   }));
@@ -1099,20 +1133,30 @@ console.log("\n== Depósitos del iPad (handoff) ==");
   /* Dos de las tres esperan la relación depósito↔movimientos, y tienen que
      DECIRLO en vez de enseñar un cero que parecería un dato. */
   chk(det.sinMotor === 2, `dos dicen que esperan motor (${det.sinMotor})`);
-  chk(det.tarjetas === 2, `movimientos incluidos y ficha del banco (${det.tarjetas})`);
+  /* Cuatro con el handoff 3: datos del depósito y movimientos a la
+     izquierda, ficha del banco y conciliación a la derecha. */
+  chk(det.tarjetas === 4, `las cuatro tarjetas del detalle (${det.tarjetas})`);
   chk(det.ficha, "la ficha del banco tiene su hueco o su archivo");
   chk(det.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/depositos-1366x1024.png` });
 
-  // La pestaña Pendientes explica qué le falta, con la cifra real.
+  /* La pestaña Pendientes. **Esta comprobación cambió de sentido el 24 ago**:
+     hasta la 1.2.8 exigía CERO filas —la pestaña era un bloque que explicaba
+     que le faltaba motor— y el handoff 3 la convirtió en la lista de cortes
+     por día. Dejarla como estaba habría sido una guarda protegiendo el
+     estado viejo, que es la tercera vez que pasa en este archivo. Lo que
+     sigue valiendo, y es lo que se mide: hay una fila por día con dinero en
+     caja, y el pie sigue dando el efectivo por depositar. */
   await pg.click(".md-depositos .md-seg-tipo button:nth-child(1)");
   await pg.waitForTimeout(350);
   const pend = await pg.evaluate(() => ({
-    texto: (document.querySelector(".dep-pendientes")?.textContent || "").trim(),
+    pie: (document.querySelector(".dep-lista-pie")?.textContent || "").trim(),
     filas: document.querySelectorAll(".md-depositos .md-fila").length,
+    estados: [...document.querySelectorAll(".md-depositos .dep-estado--pendiente")].length,
   }));
-  chk(pend.filas === 0, `"Pendientes" no finge cortes que no hay (${pend.filas} filas)`);
-  chk(/\$/.test(pend.texto), "y da el efectivo por depositar, que sí se sabe");
+  chk(pend.filas > 0, `"Pendientes" lista los cortes por día (${pend.filas} filas)`);
+  chk(pend.estados === pend.filas, `todas dicen "Sin depositar" (${pend.estados}/${pend.filas})`);
+  chk(/\$/.test(pend.pie), "y el pie sigue dando el efectivo por depositar");
   if (DIR) await pg.screenshot({ path: `${DIR}/depositos-pendientes-1366x1024.png` });
   await ctxDp.close();
 }
@@ -1801,11 +1845,24 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
     }
   };
 
+  /* **Esta comprobación cambió el 24 ago.** "Marcar depositado" era la
+     cáscara de esta pantalla: un botón apagado en el detalle de un depósito
+     ya hecho. El handoff 3 lo mueve a Pendientes, donde SÍ tiene motor —abre
+     el formulario con el total del corte— y lo comprueba la sección 28. Lo
+     que queda sin motor aquí es "Compartir", que necesita una hoja de
+     compartir que la app no tiene. */
   await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
   await pg.click(".md-depositos .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".dm-acciones button[disabled]", "Marcar depositado");
+  await apagado(".dep-det-acciones button[disabled]", "Compartir");
+  /* Y "Reabrir el corte", dentro del menú de "⋯": el mismo trato, apagado y
+     con su explicación, en vez de esconder la opción y que el menú mienta. */
+  await pg.click(".dep-det-acciones .ios-bar-button");
+  await pg.waitForTimeout(400);
+  await apagado(".ios-menu-item[disabled]", "Reabrir el corte");
+  await pg.keyboard.press("Escape");
+  await pg.waitForTimeout(200);
 
   await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
@@ -2259,6 +2316,132 @@ console.log("\n== La raya de la barra deja aire bajo los botones ==");
     }
   }
   await ctxB.close();
+}
+
+/* ---------- 28. Depósitos › Pendientes, la revisión previa (handoff 3) ----
+   La pestaña era un bloque que explicaba que le faltaba motor; el handoff 3
+   la convierte en la pantalla donde se revisa el dinero ANTES de ir al banco.
+   Lo que se comprueba es lo que la hace útil: que las tres cifras salen de la
+   MISMA selección que la lista —marcar y desmarcar no las puede descuadrar—,
+   que los avisos que sí tienen dato aparecen, y que "Marcar depositado" abre
+   el formulario con el total ya puesto, que es lo único que evita teclear dos
+   veces la misma cifra. */
+console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco ==");
+{
+  const ctxD = await nuevoContexto("ipad");
+  const pg = await ctxD.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos", { timeout: 10000 });
+  await pg.locator(".md-seg-tipo button", { hasText: "Pendientes" }).click();
+  await pg.waitForTimeout(600);
+
+  /** Las tres cifras del panel y el total del pie de la lista de movimientos. */
+  const leer = () => pg.evaluate(() => {
+    const num = (s) => Number(String(s).replace(/[^0-9.-]/g, ""));
+    const cifras = [...document.querySelectorAll(".dep-cifra")].map((c) => ({
+      et: c.querySelector(".dep-cifra-et").textContent.trim(),
+      val: num(c.querySelector(".dep-cifra-val").textContent),
+    }));
+    const movs = [...document.querySelectorAll(".dep-mov")];
+    return {
+      cifras,
+      pie: num(document.querySelector(".dep-carta-pie-total")?.textContent ?? "0"),
+      movs: movs.length,
+      marcados: movs.filter((m) => m.classList.contains("sel")).length,
+      // El monto de cada fila y si es cheque, para poder rehacer la suma aquí.
+      filas: movs.map((m) => ({
+        sel: m.classList.contains("sel"),
+        ch: m.querySelector(".dep-mov-metodo").textContent.trim(),
+        monto: num(m.querySelector(".dep-mov-monto").textContent),
+      })),
+      avisos: [...document.querySelectorAll(".dep-aviso-titulo")].map((a) => a.textContent.trim()),
+      registrado: num(document.querySelector(".dep-par--fuerte span:last-child")?.textContent ?? "0"),
+    };
+  });
+
+  const cortes = await pg.locator(".md-fila").count();
+  chk(cortes > 0, `hay cortes en la lista (${cortes})`);
+
+  const a = await leer();
+  chk(a.movs > 0, `el corte abierto trae sus movimientos (${a.movs})`);
+  chk(a.marcados === a.movs, `arrancan todos marcados (${a.marcados}/${a.movs})`);
+  chk(a.cifras.length === 3, `las tres cifras del diseño (${a.cifras.map((c) => c.et).join(" · ")})`);
+
+  /* La comprobación que importa: efectivo + cheques = total, y el total del
+     panel = el del pie de la lista = el de "Se registrará así". Si alguna
+     saliera de otro sitio, marcar una fila las descuadraría. */
+  const cuadra = (m, nombre) => {
+    const ef = m.cifras[0].val, ch = m.cifras[1].val, tot = m.cifras[2].val;
+    chk(Math.abs(ef + ch - tot) < 0.01, `${nombre}: efectivo + cheques = total (${ef} + ${ch} = ${tot})`);
+    chk(Math.abs(tot - m.pie) < 0.01, `${nombre}: el pie de la lista da lo mismo (${m.pie})`);
+    chk(Math.abs(tot - m.registrado) < 0.01, `${nombre}: y "Se registrará así" también (${m.registrado})`);
+    const suma = m.filas.filter((f) => f.sel).reduce((x, f) => x + f.monto, 0);
+    chk(Math.abs(tot - suma) < 0.01, `${nombre}: y es la suma de lo marcado (${suma})`);
+    const chSuma = m.filas.filter((f) => f.sel && f.ch === "CH").reduce((x, f) => x + f.monto, 0);
+    chk(Math.abs(ch - chSuma) < 0.01, `${nombre}: los cheques son los CH marcados (${chSuma})`);
+  };
+  cuadra(a, "con todo marcado");
+  chk(a.filas.some((f) => f.ch === "CH"), "y hay al menos un cheque que desglosar");
+
+  // Desmarcar la primera fila tiene que bajar las tres cifras a la vez.
+  await pg.locator(".dep-mov").first().click();
+  await pg.waitForTimeout(300);
+  const b = await leer();
+  chk(b.marcados === a.marcados - 1, `desmarcar una baja el conteo (${b.marcados})`);
+  chk(b.cifras[2].val < a.cifras[2].val, `y el total (${a.cifras[2].val} → ${b.cifras[2].val})`);
+  cuadra(b, "con una desmarcada");
+
+  const avisosEsperados = ["por revisar", "efectivo", "Periodo contable", "ya fueron al banco"];
+  for (const frag of avisosEsperados) {
+    chk(b.avisos.some((x) => x.toLowerCase().includes(frag.toLowerCase())),
+      `aviso "${frag}" presente (${b.avisos.length} avisos)`);
+  }
+
+  const DIR = process.env.CAPTURAS || "";
+  if (DIR) await pg.screenshot({ path: `${DIR}/depositos-pendientes.png` });
+
+  /* "Marcar depositado" abre el formulario con el total del corte puesto: es
+     lo único que impide que lo revisado y lo registrado se separen. */
+  await pg.locator(".dep-carta-accion .btn.primary").click();
+  await pg.waitForTimeout(700);
+  const pre = await pg.evaluate(() => {
+    const hoja = document.querySelector(".ios-sheet");
+    if (!hoja) return null;
+    const campo = hoja.querySelector(".nm-monto-campo");
+    return { hoja: true, monto: Number(String(campo?.value ?? "").replace(/[^0-9.-]/g, "")) };
+  });
+  chk(!!pre, "\"Marcar depositado\" abre el formulario de depósito");
+  if (pre) chk(Math.abs(pre.monto - b.cifras[2].val) < 0.01,
+    `y llega con el total del corte puesto (${pre.monto} = ${b.cifras[2].val})`);
+  await pg.locator(".ios-sheet .ios-sheet-cancelar").click();
+  await pg.waitForTimeout(400);
+
+  /* La hoja "Nuevo corte": se construye entera y "Crear" sale apagado, que es
+     el trato de la casa para lo que todavía no tiene dónde guardarse. */
+  await pg.locator(".dep-pen-cab .btn.secondary").click();
+  await pg.waitForTimeout(700);
+  const corte = await pg.evaluate(() => {
+    const hoja = document.querySelector(".ios-sheet");
+    if (!hoja) return null;
+    const accion = hoja.querySelector(".ios-nav-action");
+    return {
+      ancho: Math.round(hoja.getBoundingClientRect().width),
+      crearApagado: accion ? accion.disabled : null,
+      secciones: [...hoja.querySelectorAll(".ios-section-header")].map((h) => h.textContent.trim()),
+      marcables: hoja.querySelectorAll(".ios-field--marcar").length,
+    };
+  });
+  chk(!!corte, "\"Nuevo corte\" abre su hoja");
+  if (corte) {
+    chk(corte.ancho === 600, `hoja de 600 (${corte.ancho})`);
+    chk(corte.crearApagado === true, `"Crear" sale apagado: no hay dónde guardar un corte (${corte.crearApagado})`);
+    chk(corte.marcables === b.movs, `con los mismos movimientos que el panel (${corte.marcables} = ${b.movs})`);
+    chk(corte.secciones.length === 3, `y sus tres secciones (${corte.secciones.join(" · ")})`);
+  }
+  if (DIR) await pg.screenshot({ path: `${DIR}/depositos-nuevo-corte.png` });
+  await ctxD.close();
 }
 
 await browser.close();

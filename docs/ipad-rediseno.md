@@ -2398,3 +2398,102 @@ menos 6px. Sale 9 en quince y 7 en Cartas, cuyo bloque de acciones es más
 alto. Probada al revés, con el `min-height: 56px` de antes, canta los
 **treinta y dos**. El arnés pasa de 630 a **694**.
 
+---
+
+## 34. Depósitos, rehecha con el handoff 3 (24 ago 2026)
+
+Iván mandó un paquete nuevo de Claude Design —`Tamio Depositos.dc.html`— con
+el encargo de siempre: construir **todas** las pantallas que trae, y construir
+también los botones que todavía no tienen función ("no te detengas porque no
+le veas función al botón"), dejándolas apuntadas para cablearlas después.
+
+El prototipo rehace **las dos pestañas** de Depósitos. Hasta la 1.2.8,
+"Pendientes" era un bloque de texto explicando que le faltaba motor.
+
+### Lo que el handoff pide, y de dónde sale cada cosa
+
+| Pieza del diseño | Qué se hizo | Dato |
+|---|---|---|
+| Lista de cortes pendientes | una fila **por día con dinero en caja** | real (`transactions`) |
+| Tres cifras: efectivo, cheques, listo | se recalculan con las palomitas | real |
+| "N movimientos marcados por revisar" + Ir a Por revisar | aviso con su botón | real (`countPendingTx`) |
+| "El efectivo alcanza / no alcanza" | aviso que compara | real (`efectivoDisponibleHasta`) |
+| "Periodo contable: agosto 2026" | aviso explicativo | real |
+| "Movimientos en caja" con palomita | lista con EF/CH, concepto, folio y monto | real |
+| "Se registrará así" + **Marcar depositado** | abre el formulario **prellenado** | **cableado** |
+| "Ficha del banco" (recuadro punteado) | hueco con su leyenda | real (se adjunta al guardar) |
+| Chip "Depositado", "Compartir", menú "⋯" | cabecera del detalle | mixto (ver abajo) |
+| "Datos del depósito" (5 filas) | tarjeta con cabecera | real salvo "Registró" |
+| "Movimientos depositados" | tarjeta con su explicación | **sin motor** |
+| "Conciliación" | tarjeta con su explicación | **sin motor** |
+| Hoja "Nuevo corte" | completa y navegable, "Crear" apagado | **sin motor** |
+| Chips de cuentas ya usadas | añadidos a la hoja de depósito | real (`cuentasUsadas`) |
+
+### Las tres contradicciones entre el handoff y el esquema
+
+No se resolvieron en silencio; se resolvieron a favor del dato real y quedan
+apuntadas en `docs/cascaras-1-2.md`.
+
+1. **Un "corte" no existe.** El diseño lo trata como una entidad con nombre
+   propio ("Corte del domingo 23"), cuenta asignada y estado. En el repo no
+   hay tabla de cortes. Lo que sí existe es el **día**: agrupar por fecha da
+   exactamente las mismas filas sin inventar nada. Los nombres propios y la
+   cuenta por corte quedan sin pintar, por el mismo criterio que `Folio 1042`:
+   un nombre inventado se lee como verdadero.
+
+2. **"Sin depositar" no se puede saber por movimiento.** Ni `transactions`
+   guarda si un movimiento fue al banco, ni `depositos_bancarios` guarda de
+   qué se compone. La cifra **agregada** de caja sí descuenta los depósitos
+   registrados (`efectivoDisponibleHasta` = apertura + aprobados − depositado),
+   pero el detalle no. Así que la lista **no puede** esconder lo ya
+   depositado, y en vez de dejar que se suponga, hay un cuarto aviso —que el
+   diseño no trae— diciéndolo con todas las letras. Es lo único que se añadió
+   al handoff en vez de quitarlo.
+
+3. **El diseño dibuja el formulario como diálogo de escritorio de 620px.** En
+   el iPad todos los formularios de Tamio son hojas de 600 centradas, y eso
+   está decidido desde el handoff 1 y vigilado por el arnés. Gana la casa.
+
+### La cáscara que dejó de serlo
+
+**"Marcar depositado"** llevaba desde la 1.2.5 apagado en el detalle de un
+depósito **ya hecho**, donde no significaba nada: la fila *es* el depósito. El
+handoff 3 lo pone donde tiene sentido —al final de la revisión— y ahí sí puede
+hacer algo: abre el formulario con el total marcado, la cuenta del último
+depósito y el periodo en curso. Para eso `useDeposito` acepta ahora un
+`prefill`, que solo actúa al crear.
+
+Sin eso, el número que acabas de revisar y el que registras dependen de que
+alguien lo teclee bien dos veces. Es la primera entrada que se tacha del
+registro de cáscaras.
+
+### Un token que faltaba
+
+El archivo repetía a mano veinte veces el relleno gris de iOS —`rgba(118, 118,
+128, .12)` en claro, `.24` en oscuro porque a `.12` sobre negro no se ve— y
+cada copia es una ocasión de olvidar la variante oscura. Es literalmente lo
+que ya había pasado con `--fill-gray`, un token que este repo nunca tuvo y que
+siempre caía en su respaldo, sin oscuro. Lo nuevo usa **`--relleno-ios`** y
+**`--relleno-ios-suave`**, definidos en los tres estados de tema.
+
+### Lo medido
+
+La guarda nueva (**sección 28**) abre Pendientes y comprueba lo que hace útil
+a la pantalla: que **efectivo + cheques = total**, que el total del panel, el
+del pie de la lista y el de "Se registrará así" son **el mismo número**, y que
+ese número es la suma de lo marcado — todo eso otra vez después de desmarcar
+una fila, que es cuando una cifra sacada de otro sitio se delataría. Más los
+cuatro avisos, que "Marcar depositado" abre el formulario **con ese total
+puesto**, y que la hoja "Nuevo corte" trae los mismos movimientos que el panel
+con "Crear" apagado.
+
+Y **dos guardas viejas cambiaron de sentido**, que es lo que hay que hacer
+cuando el comportamiento cambia a propósito: la que exigía que Pendientes
+tuviera **cero** filas ahora exige que tenga una por día; la que exigía
+"Marcar depositado" **apagado** ahora vigila "Compartir" y "Reabrir el corte",
+que son las cáscaras que quedan. Dejarlas como estaban habría sido conservar
+una guarda que protege el estado viejo — el mismo error que ya se cometió dos
+veces en este arnés.
+
+El arnés pasa de 694 a **727**.
+

@@ -2928,6 +2928,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 .ios-menu-item--destructive,
 .ios-menu-item--destructive .ios-menu-icon { color: var(--neg); }
+/* Ítem apagado: sigue en su sitio, con su explicación en el `title`, pero
+   ni se tiñe al pasar por encima ni finge que hace algo. */
+.ios-menu-item:disabled { opacity: 0.4; cursor: default; }
+.ios-menu-item:disabled:hover,
+.ios-menu-item:disabled:active { background: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .ios-menu { animation: none; }
@@ -4442,6 +4447,44 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-size: 13px;
   color: var(--text-2);
 }
+/* La misma cabecera de importe, pero de LECTURA: la hoja "Nuevo corte" no
+   teclea el total, lo calcula de las palomitas. Sin `input` no hay nada que
+   enfocar, así que va como texto y con su etiqueta encima —que en el
+   formulario no hace falta porque el teclado ya dice qué se escribe. */
+:root.movil .nm-monto--lectura { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+:root.movil .nm-monto-et { font-size: 13px; color: var(--text-2); }
+:root.movil .nm-monto-cifra {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -1.4px;
+  font-variant-numeric: tabular-nums;
+}
+:root.movil .nm-monto--lectura .nm-monto-pie { margin-top: 0; color: var(--text-3); font-size: 12.5px; }
+/* El aviso que informa en vez de advertir: mismo sitio y mismo cuerpo que
+   `.nm-aviso`, pero sin el rojo — lo que dice no es un error del que rellena
+   el formulario. */
+/* Fila de lista que se marca: el cuadrito a la izquierda y la fila entera
+   como objetivo. Es la misma pieza que `.dep-mov` en el panel, para que
+   marcar en la hoja y marcar en el panel se vean igual. */
+:root.movil .ios-field--marcar { cursor: pointer; }
+:root.movil .ios-field--marcar:active { opacity: 0.6; }
+:root.movil .ios-field--marcar .dep-mov-check {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  color: transparent;
+}
+:root.movil .ios-field--marcar.sel .dep-mov-check {
+  background: var(--brand);
+  color: var(--brand-contrast);
+  box-shadow: none;
+}
 
 /* Fecha, hora y mes: el control del sistema, alineado a la derecha como el
    valor de cualquier otra fila. No se sustituye por una hoja propia — en
@@ -4841,6 +4884,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 6px;
   color: var(--warn);
 }
+/* El aviso que INFORMA en vez de advertir: mismo sitio y mismo cuerpo, sin el
+   color de aviso — lo que dice no es un error de quien rellena el formulario,
+   es una limitación de la app. Va después de la regla de arriba a propósito:
+   si fuera antes, el `color: var(--warn)` la pisaría. */
+:root.movil .nm-aviso--info { color: var(--text-2); }
 
 /* ============================================================
    Idioma de PANEL (tipo Salud/Wallet), solo iPhone — Cartas.tsx (resumen)
@@ -10294,6 +10342,307 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dep-vacio { box-shadow: none; margin-top: 14px; }
   :root.ipad .dep-ficha-falta { min-height: 190px; }
   :root.ipad .dep-pendientes { margin: 16px 14px; }
+
+  /* ============================================================
+     Depósitos › Pendientes — la revisión previa (handoff 3, 24 ago 2026)
+     ============================================================
+     El diseño reparte el panel en 1.4fr / 1fr: a la izquierda lo que se
+     revisa (avisos y movimientos), a la derecha lo que va a quedar
+     registrado. Solo a partir de 1000px, que es donde las dos columnas del
+     maestro-detalle ya conviven; por debajo el panel es una sola columna y
+     apilarlo es lo correcto. */
+  :root.ipad .dep-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  :root.ipad .dep-pen-cab {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+  :root.ipad .dep-pen-titulos { min-width: 0; }
+  :root.ipad .dep-pen-linea { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  :root.ipad .dep-pen .dm-titular { margin: 0; }
+  :root.ipad .dep-pen .dm-sub { margin: 6px 0 0; }
+
+  /* La pastilla de estado del titular. Dos tonos: el aviso mientras el
+     dinero está en caja, el acento cuando ya entró al banco. */
+  :root.ipad .dep-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 25px;
+    padding: 0 11px;
+    border-radius: 13px;
+    font-size: 12.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  :root.ipad .dep-chip--pendiente {
+    background: color-mix(in srgb, var(--warn) 16%, transparent);
+    color: var(--warn);
+  }
+  :root.ipad .dep-chip--hecho {
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
+  }
+  :root.ipad .dep-estado--pendiente { color: var(--warn); }
+
+  :root.ipad .dep-cifra-pie { font-size: 12px; color: var(--text-3); }
+
+  /* La tarjeta con cabecera del diseño: rótulo en versalitas sobre un filete,
+     y las filas debajo separadas por su propia línea. Es la misma pieza que
+     usan "Antes de depositar", "Movimientos en caja" y "Se registrará así",
+     así que se declara una vez. */
+  :root.ipad .dep-carta {
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    min-width: 0;
+  }
+  :root.ipad .dep-carta--acolchada { padding: 16px 18px; }
+  :root.ipad .dep-carta-cab {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    margin: 0;
+    padding: 0 16px;
+    border-bottom: 0.5px solid var(--line);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  :root.ipad .dep-carta-cab-t { flex: 1; }
+  /* En una tarjeta acolchada el rótulo no lleva filete: no hay filas debajo
+     de las que separarse. */
+  :root.ipad .dep-carta-cab--suelta {
+    min-height: 0;
+    padding: 0;
+    border-bottom: 0;
+    font-size: 13px;
+  }
+  :root.ipad .dep-carta-vacio {
+    margin: 0;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--text-3);
+    line-height: 1.45;
+  }
+  :root.ipad .dep-carta-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 50px;
+    padding: 0 16px;
+    background: var(--relleno-ios-suave);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  :root.ipad .dep-carta-pie-total {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  :root.ipad .dep-carta-accion { padding: 12px 16px 16px; }
+  :root.ipad .dep-carta-accion .btn { width: 100%; justify-content: center; }
+
+  /* Un aviso de "Antes de depositar": punto redondo con su glifo, título,
+     explicación y —si la hay— una acción a la derecha. */
+  :root.ipad .dep-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  :root.ipad .dep-aviso:last-child { border-bottom: 0; }
+  :root.ipad .dep-aviso-punto {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    margin-top: 1px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  :root.ipad .dep-aviso-punto--warn { background: var(--warn); }
+  /* El "sí alcanza" va con el acento, no con negro: es un estado activo, y la
+     regla de la casa es que esos no usan negro puro (ver `--brand`). */
+  :root.ipad .dep-aviso-punto--ok { background: var(--brand); color: var(--brand-contrast); }
+  :root.ipad .dep-aviso-punto--info {
+    background: var(--relleno-ios);
+    color: var(--text-2);
+  }
+  :root.ipad .dep-aviso-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  :root.ipad .dep-aviso-titulo { font-size: 15px; font-weight: 600; }
+  :root.ipad .dep-aviso-texto { font-size: 13px; color: var(--text-2); line-height: 1.4; }
+  :root.ipad .dep-aviso-accion {
+    flex: 0 0 auto;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--relleno-ios);
+    color: var(--text);
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* Una fila de "Movimientos en caja": palomita, método, concepto y monto.
+     La fila ENTERA es el objetivo de marcar, no solo el cuadrito: en táctil
+     un objetivo de 22px es un objetivo fallado. */
+  :root.ipad .dep-mov {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 0 16px;
+    border: 0;
+    border-bottom: 0.5px solid var(--line-soft);
+    background: none;
+    font: inherit;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  :root.ipad .dep-mov:hover { background: var(--relleno-ios-suave); }
+  :root.ipad .dep-mov-check {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: inset 0 0 0 1.5px var(--line);
+    color: transparent;
+  }
+  /* La versión de la hoja vive con el resto de `.ios-field--marcar`, en el
+     bloque de `:root.movil`: aquí solo va la del panel. */
+  :root.ipad .dep-mov.sel .dep-mov-check {
+    background: var(--brand);
+    color: var(--brand-contrast);
+    box-shadow: none;
+  }
+  :root.ipad .dep-mov-metodo {
+    width: 28px;
+    flex: 0 0 28px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--relleno-ios-suave);
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  :root.ipad .dep-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  :root.ipad .dep-mov-concepto { font-size: 15px; }
+  :root.ipad .dep-mov-folio { color: var(--text-3); }
+  :root.ipad .dep-mov-sub { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .dep-mov-monto { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* Desmarcado, la fila se apaga entera: es lo que separa de un vistazo lo
+     que va al banco de lo que se queda. */
+  :root.ipad .dep-mov:not(.sel) .dep-mov-concepto,
+  :root.ipad .dep-mov:not(.sel) .dep-mov-monto { color: var(--text-2); }
+
+  /* Un par etiqueta/valor de "Se registrará así". */
+  :root.ipad .dep-par {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-bottom: 0.5px solid var(--line-soft);
+    font-size: 14.5px;
+  }
+  :root.ipad .dep-par > span:first-child { flex: 1; color: var(--text-2); }
+  :root.ipad .dep-par--fuerte { border-bottom: 0; }
+  :root.ipad .dep-par--fuerte > span:last-child {
+    font-size: 15.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* El recuadro punteado de la ficha del banco: el hueco con nombre del
+     diseño, que dice qué va a ir ahí en vez de quedarse en blanco. */
+  :root.ipad .dep-ficha-hueco {
+    margin-top: 14px;
+    min-height: 150px;
+    border-radius: 11px;
+    border: 1.5px dashed var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    padding: 12px;
+  }
+  :root.ipad .dep-ficha-hueco-t {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  :root.ipad .dep-ficha-hueco-s { font-size: 13px; color: var(--text-2); }
+
+  :root.ipad .dep-nota {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12.5px;
+    color: var(--text-3);
+    line-height: 1.5;
+  }
+  :root.ipad .dep-lista-pie {
+    padding: 16px;
+    font-size: 12.5px;
+    color: var(--text-3);
+    line-height: 1.45;
+  }
+
+  /* --- Depositados: lo que el handoff 3 añade al detalle --- */
+  :root.ipad .dep-det-acciones { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+  :root.ipad .dep-det-puntos { font-size: 19px; line-height: 1; letter-spacing: 1px; }
+  :root.ipad .dep-par-valor { text-align: right; }
+  /* La fila que espera dato: mismo gris en cursiva que las cifras sin motor,
+     para que se lea como un hueco con nombre y no como un valor. */
+  :root.ipad .dep-par--sinmotor .dep-par-valor { font-style: italic; color: var(--text-3); }
+  :root.ipad .dep-concilia { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; }
+  :root.ipad .dep-ficha-grande {
+    width: 100%;
+    margin-top: 12px;
+    height: 38px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--relleno-ios);
+    color: var(--text);
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  :root.ipad .dep-det-pie {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+  }
 
   /* ============================================================
      Por revisar (.al-*) — la taxonomía de alertas del handoff 2
@@ -16392,7 +16741,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 2px;
   padding: 2px;
   border-radius: 9px;
-  background: var(--fill-2, rgba(118, 118, 128, 0.08));
+  background: rgba(118, 118, 128, 0.08);
 }
 :root.ipad .mb-seg-opcion {
   flex: 1;
@@ -16770,7 +17119,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: flex-end;
   border-radius: 4px 4px 0 0;
-  background: var(--fill-2, rgba(118, 118, 128, 0.08));
+  background: rgba(118, 118, 128, 0.08);
   overflow: hidden;
 }
 :root.ipad .mb-barras.alta .mb-barra-hueco { height: 120px; border-radius: 5px 5px 0 0; }
@@ -17183,6 +17532,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    prueba puede fijarlo a los 24px que mide el aparato y medir lo que se ve
    allí, no lo que se ve aquí. */
 :root.ipad { --barra-inset: env(safe-area-inset-top, 0px); }
+
+/* El relleno gris de iOS, con nombre. El archivo lo repite a mano veinte
+   veces —0.12 en claro, 0.24 en oscuro, porque a 0.12 sobre negro no se ve—
+   y cada copia es una ocasión de olvidar la variante oscura, que es
+   exactamente lo que pasó en su día con `--fill-gray` (un token que este repo
+   nunca tuvo y que siempre caía en su respaldo, sin oscuro). El suave es el
+   mismo gris a la mitad: pies de tarjeta y filas al pasar el ratón. */
+:root.ipad { --relleno-ios: rgba(118, 118, 128, 0.12); --relleno-ios-suave: rgba(118, 118, 128, 0.06); }
+:root.ipad[data-theme="dark"] { --relleno-ios: rgba(118, 118, 128, 0.24); --relleno-ios-suave: rgba(118, 118, 128, 0.14); }
+@media (prefers-color-scheme: dark) {
+  :root.ipad:not([data-theme="light"]) {
+    --relleno-ios: rgba(118, 118, 128, 0.24);
+    --relleno-ios-suave: rgba(118, 118, 128, 0.14);
+  }
+}
 :root.ipad[data-theme="dark"] { --ipad-cromo: #131315; }
 @media (prefers-color-scheme: dark) {
   :root.ipad:not([data-theme="light"]) { --ipad-cromo: #131315; }

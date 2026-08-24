@@ -21,7 +21,7 @@
  */
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
-import { ActionField, FilaNativa, Section, TextAreaField, TextField } from "./ios/FormularioIOS";
+import { ActionField, FilaChips, FilaNativa, Section, TextAreaField, TextField } from "./ios/FormularioIOS";
 import { IOSBuscadorField } from "./ios/IOSBuscadorSheet";
 import { IconWarn } from "../icons";
 import { useEscapeClose } from "../hooks/useEscapeClose";
@@ -120,6 +120,21 @@ export default function NuevoDepositoIOS({
                 etiquetaTextoLibre={(tx) => t("depositos.cuentaNueva", { texto: tx })}
                 onLimpiar={h.cuentaBanco ? () => h.setCuentaBanco("") : undefined}
               />
+              {/* Las cuentas ya usadas, a un toque (handoff 3, 24 ago 2026).
+                  El buscador de arriba se queda: es el que permite escribir
+                  una cuenta nueva y el que sirve cuando hay diez. Pero la
+                  iglesia que deposita siempre en la misma tenía que abrir una
+                  hoja y elegir para no cambiar nada — dos toques para dejar
+                  las cosas como estaban. */}
+              {h.cuentasUsadas.length > 0 && (
+                <FilaChips
+                  label={t("depositos.cuentasUsadas")}
+                  opciones={h.cuentasUsadas.map((c, i) => ({ valor: i, etiqueta: c }))}
+                  activos={h.cuentasUsadas.map((c, i) => (c === h.cuentaBanco ? i : -1)).filter((i) => i >= 0)}
+                  onToggle={(i) => h.setCuentaBanco(h.cuentasUsadas[i])}
+                  pie={t("depositos.cuentasUsadasPie")}
+                />
+              )}
               <FilaNativa
                 label={t("depositos.periodoCorrespondiente")}
                 tipo="month"

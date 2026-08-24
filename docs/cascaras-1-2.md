@@ -103,11 +103,40 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 - **Pestaña "Pendientes"** — **construida**, y da el número que sí se sabe
   (`efectivoDisponibleHasta`, el efectivo por depositar) más la explicación de
   por qué no hay lista.
-- **"Marcar depositado"** — **NO se construyó.** Ver el recuadro del final.
+- **"Marcar depositado"** — ~~NO se construyó~~ → **cableado el 24 ago 2026**
+  (handoff 3). Ya no es una cáscara: vive en el panel de **Pendientes** y abre
+  el formulario de depósito con el total, la cuenta y el periodo del corte
+  puestos. Lo que era un botón apagado en un depósito ya hecho —donde no
+  significaba nada— pasó a ser el paso que cierra la revisión.
 
 Las tres primeras se resuelven con **una sola pieza**: guardar qué movimientos
 componen cada depósito (tabla puente `deposito_movimientos` + estado del
 corte). Esa pieza también apaga el chip "Sin depositar" de §15.
+
+### Lo que añade el handoff 3 (24 ago 2026)
+
+El handoff de Depósitos rehace las dos pestañas. Lo que se cableó de verdad
+está en §34 de `docs/ipad-rediseno.md`; aquí va lo que quedó **dibujado y
+apagado**, con lo que le falta a cada uno:
+
+| Cáscara | Dónde | Cómo quedó | Qué le falta |
+|---|---|---|---|
+| **"Compartir"** | Depositados, cabecera del detalle | `btn secondary` apagado + `title` | una hoja de compartir; la app no tiene ninguna |
+| **"Reabrir el corte"** | Depositados, menú de "⋯" | ítem de menú apagado + `title` | estado del corte (abierto/cerrado); la fila **es** el depósito |
+| **"Registró"** | Depositados, Datos del depósito | fila en gris cursiva, "Sin capturar todavía" | `depositos_bancarios.usuario_id`; es el mismo "Registrado por" de §4 |
+| **"Conciliación"** | Depositados, columna derecha | tarjeta con su explicación | importar el estado de cuenta del banco |
+| **Hoja "Nuevo corte"** entera | Pendientes, botón "Nuevo corte" | se llena y se navega; **"Crear" apagado** | tabla de cortes + marca de "ya depositado" por movimiento |
+| **"Responsable"** | dentro de esa hoja | fila apagada | lo mismo que "Registró" |
+| **"Adjuntar foto de la ficha"** | dentro de esa hoja | `ActionField` apagado | el comprobante vive en el depósito, y un corte todavía no lo es |
+| **"Pedir doble firma"** | dentro de esa hoja | interruptor apagado | ya estaba en la lista de los diez (handoff 1) |
+
+**Lo que NO se pintó, y por qué.** El diseño enseña en Pendientes una lista de
+cortes con nombre propio ("Corte del domingo 23", "Ofrendas de miércoles 19")
+y su cuenta asignada. Un corte con nombre no existe: lo que sí existe es el
+día. Así que la lista agrupa por **fecha** —dato real— en vez de inventar
+nombres, y el panel dice con todas las letras que la app todavía no sabe qué
+movimientos fueron ya al banco. Un nombre inventado se lee como verdadero; una
+fecha, no.
 
 ## Por revisar (§19)
 
@@ -179,7 +208,7 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 
 | Control | Dónde | Cómo quedó |
 |---|---|---|
-| **Marcar depositado** | Depósitos, acciones del corte | `btn secondary` apagado + `title` |
+| ~~**Marcar depositado**~~ | ~~Depósitos, acciones del corte~~ | **cableado el 24 ago** — abre el formulario con el corte puesto |
 | **Asignar encargado** ×4 | Servicios, puestos sin motor | botón apagado, uno por puesto |
 | **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
 | **Barra lateral siempre visible** | ídem | interruptor apagado |
@@ -228,9 +257,17 @@ a segundo plano, y permisos por acción en vez de por rol.
 > menos. Antes de enviar a revisión: o tienen motor, o se ocultan detrás de
 > una bandera. A TestFlight no le afecta.
 >
-> El arnés tiene una guarda para esto (**sección 22**): comprueba que los
-> diez —más "Recopilar firmas"— siguen **apagados y con explicación**. Si
-> alguien le quita el `disabled` a uno sin ponerle motor, sale en rojo.
+> El arnés tiene una guarda para esto (**sección 22**): comprueba que siguen
+> **apagados y con explicación**. Si alguien le quita el `disabled` a uno sin
+> ponerle motor, sale en rojo.
+>
+> **Actualizado el 24 ago 2026.** "Marcar depositado" salió de la lista —ya
+> tiene motor— y en su sitio entraron los dos que trajo el handoff 3:
+> **"Compartir"** y **"Reabrir el corte"**. La guarda cambió con ellos; si se
+> hubiera dejado como estaba, habría seguido pidiendo que un botón cableado
+> estuviera apagado. Es la tercera guarda de este arnés que envejece con el
+> código en dos días, y las tres se arreglaron igual: comprobando la regla
+> nueva, no borrando la comprobación.
 
 ## Lo que sigue sin pintarse
 
@@ -239,12 +276,19 @@ a segundo plano, y permisos por acción en vez de por rol.
   columna y numerador.
 - **"Registrado por"** y **el chip "Sin depositar"** — aplazados por ti hasta
   después del diseño, no por este criterio.
+- **Los nombres de corte** del handoff 3 ("Corte del domingo 23", "Ofrendas de
+  miércoles 19") y su **cuenta asignada por corte**. Mismo criterio que
+  `Folio 1042`: un nombre inventado se lee como verdadero. Llegan con la tabla
+  de cortes.
 
 ## Cuando toque cablear, el orden que rinde más
 
-1. **`deposito_movimientos` + estado del corte** — apaga cuatro entradas de
-   una vez: desglose, movimientos incluidos, "Sin depositar" y "Marcar
-   depositado".
+1. **`deposito_movimientos` + estado del corte** — sigue siendo la primera, y
+   con el handoff 3 rinde todavía más: apaga el desglose, "Movimientos
+   incluidos", el chip "Sin depositar" de §15, **"Reabrir el corte"**, la hoja
+   **"Nuevo corte"** entera y el aviso de "Tamio todavía no marca qué
+   movimientos ya fueron al banco" del panel de Pendientes. Seis de una.
+   ("Marcar depositado" ya se cableó sin ella.)
 2. **`transactions.usuario_id`** — "Registrado por", y de paso el rastro de
    auditoría que el handoff 1 pedía.
 3. **`actas.testigo`** — una columna, un renglón.
