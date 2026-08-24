@@ -2836,3 +2836,89 @@ que los pintan. Quitando las tres columnas del `UPDATE` de `updateMemberFicha`,
 caen cinco comprobaciones: es exactamente el fallo que esta guarda existe para
 cazar. Y una sexta vigila que no vuelva ninguna fila gris a la ficha. Pasa de
 787 a **799**.
+
+## 39. El header, con el handoff en la mano (24 ago 2026)
+
+Iván mandó el handoff del header con dos instrucciones: cambiar el ☰ por el
+icono de menú del mockup, y **no** pintar los iconos fantasma (Aspecto y Rotar)
+que el diseño dibuja a la derecha. Antes de tocar nada se midió la barra de
+hoy en las dos orientaciones y en tres pantallas, y el resultado fue que el
+grueso ya coincidía —56 de alto, 20 de margen, radio 10, línea de 0.5, título
+17 sobre subtítulo 12— y que lo que fallaba eran seis detalles.
+
+**El botón de menú.** Era una ficha de 40×40 flotando *fuera* de la barra, con
+las tres rayas, y la barra le hacía un hueco de 56 con relleno. Ahora mide
+**38×38**, cae en **x=20** —el margen de la barra— centrado en la fila (y=9,
+que es (56−38)/2), con **relleno en reposo** al 6% y el glifo de **barra
+lateral**: el rectángulo con la columna marcada, el mismo `IconSidebar` que el
+Mac ya usa en su toolbar. En iPadOS ese botón abre una **columna** que existe,
+no un menú, y es el glifo de Notas, Archivos y Mail. La barra le reserva
+**70 = 20 + 38 + 12**, los tres números del handoff.
+
+Sigue siendo `position: fixed` y no un hijo de la barra, por lo mismo que
+`.btn-sidebar` en el Mac: `.header` lo pintan las dieciséis páginas, y meterlo
+dentro serían dieciséis copias del mismo botón. Geométricamente cae donde
+caería si fuera el primer hijo.
+
+**El token equivocado.** El ☰ salía **negro** mientras "Nuevo ingreso" salía
+verde, y los dos son "el acento": el botón usaba `--ink` y con el acento de
+fábrica ("neutro") eso vale `#0f0f0f`; el resto de la app usa `--brand`. Dos
+miembros de la misma familia y uno mal elegido. La guarda no compara contra un
+verde literal sino contra **el fondo del botón primario**, para que siga
+diciendo la verdad si algún día se cambia la marca.
+
+**Los 38 contra los 44 del sistema, y el punto ciego que destapó.** El diseño
+pide botones de 38 y `@media (pointer: coarse)` le pone **44 de mínimo** a todo
+`.btn`. En el iPad de verdad esa regla entra; en el navegador del arnés no,
+porque **el arnés nunca simuló pantalla táctil**. O sea que ninguna regla de
+`pointer: coarse` se había probado jamás — el mismo punto ciego que `env()`,
+que dio verde durante diez versiones sobre una barra con la raya pegada a los
+botones (§33). `nuevoContexto` acepta ahora `{ tactil: true }`, apagado por
+omisión para no mover medio arnés de golpe, y la guarda del header lo enciende.
+Con el `min-height` quitado a mano, la guarda canta **44 · 44**: es el fallo
+que el arnés no podía ver.
+
+Y los 38 no se pagan con la zona tocable. El handoff lo dice: *"esa fila entera
+es zona tocable"*. Un `::before` de `inset: -9px` la devuelve a los 56 de alto
+sin mover un píxel de lo que se pinta, y la guarda lo comprueba **tocando**:
+le pide al navegador qué hay en el píxel de arriba de la barra y tiene que
+contestar que el botón.
+
+**Una trampa que costó seis pantallas.** Poner `position: relative` en los
+botones de la barra —para que el `::before` cuelgue de ellos— revivió el `top`
+que "Imprimir" trae de su versión de teléfono, donde es `position: fixed`; el
+iPad lo devolvía al flujo con `static`, donde los desplazamientos se ignoran.
+El botón bajó 48px y se salió de la barra en seis pantallas. Lo cazó la guarda
+§27, la del aire bajo la raya. El arreglo es `inset: auto` junto al
+`position: relative`.
+
+**Lo demás.** Título al **600** con interletraje **−0.2** (venía en 700, que es
+peso de título de página y a 17px dentro de una barra se lee como un grito);
+**6 px** entre acciones en vez de 16; el primario a **38** con relleno
+asimétrico 12/15, etiqueta **14.5** y el "+" a **17 con trazo 2** —venía a 14
+con trazo 2.4, más chico que el resto de la barra y más gordo, que es la
+combinación que lo hacía parecer de otra familia—. El signo ya estaba: los ocho
+botones de alta llevan `IconPlus` desde siempre. Y la etiqueta se queda
+completa —«Nuevo ingreso», no «Nuevo»— por decisión de Iván: en el dibujo solo
+hay una pantalla, en la app el mismo botón crea cosas distintas en cada sitio.
+
+**Dos cosas que se quitaron por no poder demostrarlas.** El ☰ tenía dos glifos
+—el nuevo y las tres rayas de antes— con la idea de dejarle al iPhone el suyo;
+al comprobarlo, el iPhone esconde ese botón con `!important` y el Mac también,
+en todos sus anchos: **el ☰ es solo del iPad** y el segundo glifo era código
+muerto con un comentario que mentía. Y se probó `flex-wrap: nowrap` en la barra
+para que el título cediera antes que el alto; con el `min-width: 0` puesto no
+cambiaba nada, ni forzando un título larguísimo ni metiendo una acción ancha a
+mano, así que tampoco está.
+
+**El recorte del título tuvo que reescribirse.** La primera versión medía los
+títulos de verdad y daba verde con la regla puesta **y sin ella**: hoy ninguno
+de los dieciséis es lo bastante largo. Una guarda que no puede fallar no está
+guardando nada, y esta se pilló quitando el `min-width` y viendo que no se
+enteraba. Ahora inyecta un título que no cabe y comprueba las dos mitades: que
+recorta con puntos suspensivos y que no empuja la barra. Sin `min-width: 0` se
+desborda **348px**.
+
+Los iconos fantasma no se pintan, y hay guarda para que no aparezcan de buena
+fe: en la barra no puede haber ningún botón sin texto que no sea el ☰. Pasa de
+799 a **825**.

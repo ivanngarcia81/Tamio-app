@@ -101,9 +101,26 @@ const browser = await chromium.launch(
 );
 
 /** Contexto con la plataforma pedida. */
-async function nuevoContexto(plataforma) {
+/**
+ * @param plataforma  "ipad" | "iphone"
+ * @param opciones.tactil  Emular pantalla táctil, o sea `pointer: coarse`.
+ *
+ * Lo táctil va apagado por omisión y NO por descuido: encenderlo en todas las
+ * secciones cambiaría las medidas de medio arnés de golpe (`@media (pointer:
+ * coarse)` sube a 44 el alto mínimo de cada `.btn`, `.chip` y `.icon-btn`), y
+ * esa es una revisión que se hace pantalla por pantalla, no de un tirón.
+ *
+ * Pero tenerlo es necesario: sin él, ninguna regla de `pointer: coarse` se
+ * había probado NUNCA, y ahí vive el mínimo de 44 px de todos los botones.
+ * Es el mismo punto ciego que `env()` —verde durante diez versiones sobre una
+ * barra que en el iPad tenía la raya pegada a los botones (§33)—, y salió a la
+ * luz midiendo el header: el diseño pide botones de 38 y en el aparato de
+ * verdad la regla de 44 los estaba estirando sin que nadie lo viera.
+ */
+async function nuevoContexto(plataforma, opciones = {}) {
   const ctx = await browser.newContext({
     viewport: { width: 1366, height: 1024 },
+    hasTouch: opciones.tactil === true,
     userAgent: plataforma === "iphone"
       ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
       : undefined,
@@ -3237,6 +3254,222 @@ console.log("\n== Los tres datos personales del miembro ==");
   chk(!exp.some((e) => /Direcci/i.test(e)),
     `y el expediente sigue con sus cuatro requisitos, sin la dirección (${exp.length} renglones)`);
   await ctxD.close();
+}
+
+/* ---------- 36. El header, con las medidas del handoff ----------------
+   Iván mandó el handoff del header el 24 ago con dos instrucciones: cambiar
+   el ☰ por el icono de menú del mockup, y NO pintar los iconos fantasma
+   (Aspecto y Rotar) que el diseño dibuja a la derecha.
+
+   Lo que se comprueba, y por qué cada cosa:
+
+    - **Las medidas con PANTALLA TÁCTIL.** Es la comprobación que da sentido a
+      todas las demás. El diseño pide botones de 38 y `@media (pointer:
+      coarse)` le pone 44 de mínimo a todo `.btn` — una regla que en el
+      navegador del arnés no entraba y en el iPad sí. Sin `tactil: true` esta
+      guarda mediría 38 y el aparato pintaría 44, que es exactamente el
+      engaño que ya costó diez versiones con `env()` (§33).
+
+    - **La zona tocable, tocándola.** Los 38 px de alto quedan por debajo de
+      los 44 del sistema, y el handoff lo resuelve diciendo que la fila entera
+      es sensible. Eso no se comprueba leyendo el CSS: se comprueba pidiéndole
+      al navegador qué hay en el píxel de arriba de la barra.
+
+    - **El recorte del título, con un título que de verdad no cabe.** Poner
+      `text-overflow: ellipsis` no basta —hace falta además que el bloque
+      pueda encoger— y las dos mitades se rompen por separado.
+
+    - **El iPhone, que no se tocó.** El glifo nuevo es solo del iPad. */
+console.log("\n== El header con las medidas del handoff ==");
+{
+  const ctxH = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxH.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+
+  const leer = () => pg.evaluate(() => {
+    const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+    const hd = document.querySelector(".header");
+    const ham = document.querySelector(".menu-hamburguesa");
+    const acc = document.querySelector(".header-actions");
+    const prim = document.querySelector(".header .btn.primary");
+    const svg = prim ? prim.querySelector("svg") : null;
+    const visible = (e) => e && cs(e).display !== "none" && rc(e).width > 0;
+    return {
+      padIzq: cs(hd).paddingLeft,
+      menuVisible: visible(ham),
+      menu: visible(ham) ? {
+        w: Math.round(rc(ham).width), h: Math.round(rc(ham).height),
+        x: Math.round(rc(ham).left), y: Math.round(rc(ham).top),
+        radio: cs(ham).borderRadius,
+        relleno: cs(ham).backgroundColor,
+        color: cs(ham).color,
+        // El icono de barra lateral son DOS trazos (rectángulo + la columna
+        // marcada); las tres rayas de antes eran tres `<line>`.
+        glifo: (() => {
+          const svg = ham.querySelector("svg");
+          if (!svg) return "sin glifo";
+          const rect = svg.querySelectorAll("rect").length;
+          const lineas = svg.querySelectorAll("line").length;
+          return rect === 1 && lineas === 0 ? "barra lateral" : `${lineas} rayas`;
+        })(),
+      } : null,
+      gap: acc ? cs(acc).columnGap : null,
+      primario: prim ? {
+        h: Math.round(rc(prim).height), pad: cs(prim).padding,
+        gap: cs(prim).columnGap, fs: cs(prim).fontSize, borde: cs(prim).borderTopWidth,
+        fondo: cs(prim).backgroundColor,
+      } : null,
+      glifo: svg ? { px: Math.round(svg.getBoundingClientRect().width), trazo: cs(svg).strokeWidth } : null,
+      // Todos los botones de la barra a la misma altura: es lo que los alinea.
+      altos: [...document.querySelectorAll(".header .btn")]
+        .filter((b) => rc(b).width > 0).map((b) => Math.round(rc(b).height)),
+    };
+  });
+
+  // --- APAISADO: sin ☰, la barra arranca en su margen de 20 ---
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".header .btn.primary", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const a = await leer();
+  chk(!a.menuVisible, "apaisado: sin ☰, que la barra lateral está puesta");
+  chk(a.padIzq === "20px", `y el margen de la barra son sus 20 (${a.padIzq})`);
+  chk(a.gap === "6px", `6 px entre acciones (${a.gap})`);
+  chk(a.altos.length > 0 && a.altos.every((h) => h === 38),
+    `todos los botones a 38, con pantalla táctil (${a.altos.join(" · ")})`);
+  chk(a.primario.pad === "0px 15px 0px 12px", `el primario con su relleno 12/15 (${a.primario.pad})`);
+  chk(a.primario.gap === "6px" && a.primario.fs === "14.5px",
+    `y su etiqueta a 14.5 con 6 hasta el signo (${a.primario.fs}, ${a.primario.gap})`);
+  chk(a.primario.borde === "0px", `sin el borde que le robaba el píxel 38 (${a.primario.borde})`);
+  chk(a.glifo.px === 17 && a.glifo.trazo === "2px",
+    `el "+" a 17 con trazo 2 (${a.glifo.px}px / ${a.glifo.trazo})`);
+
+  /* Los iconos fantasma del handoff —Aspecto y Rotar— NO se pintan: es la
+     otra instrucción de Iván, y el propio handoff la respalda ("ni un tercer
+     icono fantasma"). Se vigila que nadie los añada de buena fe: en la barra
+     no puede haber ningún botón sin texto que no sea el ☰. */
+  const mudos = await pg.evaluate(() =>
+    [...document.querySelectorAll(".header button")]
+      .filter((b) => b.getBoundingClientRect().width > 0 && !b.textContent.trim())
+      .map((b) => b.className || b.getAttribute("aria-label") || "?"));
+  chk(mudos.length === 0, `ningún icono fantasma en la barra (${mudos.join(" · ") || "ninguno"})`);
+
+  // --- VERTICAL: entra el ☰, con las medidas del handoff ---
+  await pg.setViewportSize({ width: 1024, height: 1366 });
+  await pg.waitForTimeout(500);
+  const v = await leer();
+  chk(v.menuVisible, "vertical: entra el botón de menú");
+  chk(v.menu.w === 38 && v.menu.h === 38, `de 38 × 38 (${v.menu.w}×${v.menu.h})`);
+  chk(v.menu.x === 20, `en el margen de 20 de la barra (x=${v.menu.x})`);
+  /* 9 = (56 − 38) / 2. En el arnés el inset vale 0, así que aquí y=9; en el
+     aparato la regla lo suma y el botón baja con la barra. */
+  chk(v.menu.y === 9, `centrado en la fila de 56 (y=${v.menu.y})`);
+  chk(v.menu.radio === "10px", `radio 10 (${v.menu.radio})`);
+  chk(v.padIzq === "70px", `y la barra le reserva 20 + 38 + 12 (${v.padIzq})`);
+
+  /* El glifo: el rectángulo con la columna marcada, no las tres rayas. En
+     iPadOS ese botón abre una COLUMNA, no un menú. */
+  chk(v.menu.glifo === "barra lateral",
+    `con el icono de barra lateral del mockup y no las tres rayas (${v.menu.glifo})`);
+
+  /* Tiene relleno en reposo —al revés que los botones de la derecha— y va del
+     color de acento. El acento se compara contra el fondo del botón primario
+     en vez de contra un literal: si algún día se cambia la marca, esta guarda
+     sigue diciendo la verdad en vez de quedarse clavada en un verde. */
+  chk(v.menu.relleno !== "rgba(0, 0, 0, 0)", `con relleno en reposo (${v.menu.relleno})`);
+  chk(v.menu.color === v.primario.fondo,
+    `y del mismo acento que "Nuevo ingreso" (${v.menu.color} vs ${v.primario.fondo})`);
+
+  /* La zona tocable, tocándola de verdad: el píxel de arriba de la barra,
+     sobre el botón, tiene que devolver el botón. Con los 38 px pelados
+     devolvería la barra, y el control quedaría por debajo del mínimo del
+     sistema aunque se viera igual. */
+  const enElFilo = await pg.evaluate(() => {
+    const b = document.querySelector(".menu-hamburguesa").getBoundingClientRect();
+    const el = document.elementFromPoint(b.left + b.width / 2, 2);
+    return el ? (el.closest(".menu-hamburguesa") ? "el botón" : (el.className || el.tagName)) : "nada";
+  });
+  chk(enElFilo === "el botón", `y la fila entera es tocable, no solo los 38 (${enElFilo})`);
+
+  // --- El título: peso, recorte y que el recorte SIRVA ---
+  const t = await pg.evaluate(() => {
+    const el = document.querySelector(".page-title");
+    const cs = getComputedStyle(el);
+    return { peso: cs.fontWeight, ls: cs.letterSpacing, ov: cs.textOverflow, ws: cs.whiteSpace };
+  });
+  chk(t.peso === "600", `el título al 600 de las barras de iOS (${t.peso})`);
+  chk(t.ls === "-0.2px", `con el interletraje del diseño (${t.ls})`);
+  chk(t.ov === "ellipsis" && t.ws === "nowrap", `y con puntos suspensivos (${t.ov} / ${t.ws})`);
+
+  /* Y que de verdad recorte, que es la mitad que se rompe sola.
+     `text-overflow: ellipsis` NO basta: el bloque del título es hijo de un
+     flex y sin `min-width: 0` se niega a encoger, así que empuja y se sale de
+     la barra en vez de recortarse. Son dos reglas en dos sitios distintos.
+
+     El título largo se INYECTA, y hay que decir por qué: hoy ninguno de los
+     dieciséis lo es —el más largo, "Información de Membresía", cabe de sobra
+     a 744—, así que medir los títulos de verdad daba verde con la regla
+     puesta y verde también sin ella. Una guarda que no puede fallar no está
+     guardando nada; se comprobó quitando el `min-width` y no se enteró. Lo
+     que se prueba aquí es el mecanismo, para el día en que una pantalla
+     nueva traiga un título que no quepa. */
+  await pg.setViewportSize({ width: 744, height: 1133 });
+  await pg.goto(`${URL_BASE}/#/reporte-miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".header .page-title", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+  const largo = await pg.evaluate(() => {
+    const el = document.querySelector(".page-title");
+    el.textContent = "Informes de membresía y asistencia del trimestre de septiembre a noviembre, con el detalle por ministerio y por grupo de edad";
+    const bar = document.querySelector(".header");
+    const r = el.getBoundingClientRect(), rb = bar.getBoundingClientRect();
+    return {
+      recortado: el.scrollWidth > el.clientWidth,
+      desborde: Math.round(r.right - (rb.right - parseFloat(getComputedStyle(bar).paddingRight))),
+    };
+  });
+  chk(largo.recortado, "un título que no cabe se recorta con puntos suspensivos");
+  chk(largo.desborde <= 0, `y no empuja la barra ni un píxel (desborda ${largo.desborde})`);
+
+  /* La otra mitad de la misma regla: el ALTO tampoco cambia. `.header` es
+     `flex-wrap: wrap` en la base —de cuando era una cabecera de página—, y
+     envolver es lo contrario de recortar: si las acciones crecen, el título
+     se va a una segunda fila (donde vuelve a caber entero) y la barra pasa de
+     56 a ~100. Hoy no le pasa a ninguna de las dieciséis, así que la
+     condición se fuerza metiendo una acción ancha, igual que se forzó el
+     título largo. Sin esto, `flex-wrap: nowrap` sería una línea de CSS que
+     nadie puede demostrar que hace falta. */
+  const conAccionAncha = await pg.evaluate(() => {
+    const acc = document.querySelector(".header-actions");
+    const b = document.createElement("button");
+    b.className = "btn secondary";
+    b.textContent = "Una acción deliberadamente larguísima para empujar la fila";
+    acc.appendChild(b);
+    const alto = Math.round(document.querySelector(".header").getBoundingClientRect().height);
+    b.remove();
+    return alto;
+  });
+  chk(conAccionAncha === 56, `y la barra sigue midiendo 56 (${conAccionAncha})`);
+  await ctxH.close();
+
+  /* El glifo se cambió SIN condicionarlo al iPad, y eso hay que sostenerlo:
+     vale porque este botón es solo del iPad. En el iPhone el sidebar no
+     existe —su contenido se mudó a Ajustes— y el ☰ está escondido con
+     `!important`. Si algún día alguien se lo devuelve al teléfono, esta
+     guarda cae y obliga a decidir qué glifo le toca, en vez de heredar el del
+     iPad por descuido. */
+  const ctxF = await nuevoContexto("iphone");
+  const pf = await ctxF.newPage();
+  pf.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pf.setViewportSize({ width: 430, height: 932 });
+  await pf.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pf.waitForTimeout(600);
+  const enFono = await pf.evaluate(() => {
+    const ham = document.querySelector(".menu-hamburguesa");
+    return !ham || getComputedStyle(ham).display === "none";
+  });
+  chk(enFono, "en el iPhone no hay ☰ ninguno, que es por lo que hay un solo glifo");
+  await ctxF.close();
 }
 
 await browser.close();

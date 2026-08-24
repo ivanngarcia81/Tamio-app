@@ -9554,6 +9554,65 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      teléfono, donde la fila de glifos va arriba del todo. En una barra van
      a la derecha, que es su sitio en el marcado. */
   :root.ipad .header-actions { order: 0; }
+  /* 6 px entre acciones, el número del handoff. Venía de 16 —el espacio de
+     una cabecera de escritorio, donde los botones son islas sueltas—; en una
+     barra de 56 forman UN grupo pegado a la derecha, y con 16 se leían como
+     tres cosas sin relación. El `row-gap` se queda en 12 para cuando la barra
+     parte en dos líneas (Reportes en vertical). */
+  :root.ipad .header-actions { gap: 12px 6px; }
+
+  /* --------------------------------------------------------------
+     Los botones de la barra, con las medidas del handoff del header
+     --------------------------------------------------------------
+     38 de alto los tres tipos —el primario, los de texto y el "···"—, que es
+     lo que los alinea entre sí y dentro de los 56.
+
+     El `min-height` hay que anularlo a mano: `@media (pointer: coarse)` le
+     pone 44 a todo `.btn`, y en un iPad de verdad esa regla SÍ entra (en el
+     navegador del arnés no, que es justo por qué esto no se veía). Sin la
+     anulación, el diseño diría 38 y el aparato pintaría 44. La zona tocable
+     no se pierde: la recupera el `::before` de más abajo, igual que el ☰. */
+  :root.ipad .header .btn {
+    height: 38px;
+    min-height: 38px;
+    padding: 0 14px;
+    /* 14.5 y no 15. Medio píxel no se ve suelto; se ve al lado del título de
+       17, que es de lo que va esta barra. */
+    font-size: 14.5px;
+    /* `relative` es para que el `::before` de abajo cuelgue del botón. Y el
+       `inset: auto` NO es adorno: "Imprimir" es `position: fixed` en el
+       teléfono con su `top` puesto, y el iPad lo devolvía al flujo con
+       `position: static` —donde los desplazamientos se ignoran—. Al pasarlo a
+       `relative` ese `top` revive y baja el botón 48px, fuera de la barra.
+       Lo cazó la guarda §27, la del aire bajo la raya, en seis pantallas. */
+    position: relative;
+    inset: auto;
+  }
+  :root.ipad .header .btn::before {
+    content: "";
+    position: absolute;
+    inset: -9px 0;
+  }
+  /* El primario: relleno asimétrico —12 antes del signo, 15 después del
+     texto— porque un "+" pesa menos que una letra y con 14 a los dos lados
+     el botón se ve descentrado hacia la izquierda. Y sin borde: el de 1px
+     transparente que hereda de `.btn` no se ve, pero sí cuenta en la caja, y
+     era el píxel que dejaba el botón en 37 en vez de 38. */
+  :root.ipad .header .btn.primary {
+    padding: 0 15px 0 12px;
+    gap: 6px;
+    border: 0;
+  }
+  /* El glifo del "+" a 17 con trazo 2. Venía a 14 con trazo 2.4: más chico
+     que el resto de la barra y más gordo, que es la combinación que lo hacía
+     parecer de otra familia. Se corrige aquí y no en los ocho botones de las
+     páginas —`stroke-width` es atributo de presentación y el CSS le gana—
+     para que el Mac y el teléfono conserven el suyo. */
+  :root.ipad .header .btn.primary > svg {
+    width: 17px;
+    height: 17px;
+    stroke-width: 2;
+  }
   /* Los chips, a alto de dedo. Con `padding: 6px 12px` y nada más medían
      **29px**: por debajo de cualquier objetivo táctil razonable, y encima
      dejaban las filas de filtros desalineadas —los `select` de al lado miden
@@ -9571,10 +9630,35 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .page-title {
     font-size: 17px;
     line-height: 22px;
-    letter-spacing: -0.022em;
+    /* 600 y no 700. El 700 es el peso de un título de PÁGINA; a 17px dentro
+       de una barra se lee como un grito, y el handoff pide el 600 de las
+       barras de iOS. Cambia en las dieciséis pantallas a la vez. */
+    font-weight: 600;
+    letter-spacing: -0.2px;
     opacity: 1;
   }
   :root.ipad .page-sub { font-size: 12px; margin-top: 1px; }
+  /* El título CEDE antes que las acciones, con puntos suspensivos. Antes se
+     cortaba en seco (`text-overflow: clip` heredado), así que un título largo
+     —"Informes de membresía y asistencia"— se partía a media palabra y no se
+     veía que faltaba nada. Los tres van juntos porque el recorte necesita las
+     tres piezas: el bloque que puede encoger (`min-width: 0`, que es lo que
+     un hijo de flex NO hace por su cuenta) y las dos líneas que recortan. */
+  :root.ipad .header > div:has(> .page-title) { min-width: 0; }
+  /* El `min-width: 0` de arriba es lo que hace TODO el trabajo, y conviene
+     dejarlo escrito porque no es obvio: se probó además a poner `flex-wrap:
+     nowrap` en la barra y en las acciones —el handoff dice "el título cede
+     antes que las acciones" y "el alto nunca cambia"—, y con el título
+     encogiendo no cambiaba nada: ni forzando un título larguísimo ni metiendo
+     una acción ancha a mano. Dos líneas de CSS que nadie podía demostrar que
+     hicieran falta, así que no están. La guarda §36 comprueba el resultado
+     —recorta y la barra sigue en 56— en vez de las reglas. */
+  :root.ipad .page-title,
+  :root.ipad .page-sub {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   /* Con barra propia, la fila fija de glifos sobra entera: el "+" vuelve a
      ser el botón "Nuevo ingreso" con su texto, y el título viajero no tiene
@@ -12495,22 +12579,59 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     justify-content: center;
     position: fixed;
-    top: calc(8px + env(safe-area-inset-top));
-    left: 10px;
-    width: 40px;
-    height: 40px;
+    /* 9 = (56 − 38) / 2: centrado en la fila de la barra, que empieza donde
+       acaba el inset de la barra de estado. El mismo token que usa el
+       relleno de `.header`, para que los dos se muevan juntos. */
+    top: calc(var(--barra-inset) + 9px);
+    /* 20 y no 10: es el margen lateral de la barra. El botón cae donde caería
+       si fuera el primer hijo del header — que es donde el handoff lo dibuja
+       — sin serlo. Ver el comentario del `padding-left` de abajo. */
+    left: 20px;
+    width: 38px;
+    height: 38px;
     border: 0;
     border-radius: 10px;
-    background: none;
+    /* Con relleno en reposo, al revés que los botones de icono de la
+       derecha. Es lo que lo distingue en el handoff: el ☰ no es cromo
+       callado, es la única forma de navegar cuando la barra está escondida.
+       `--relleno-ios-suave` es el gris de sistema al 6% (14% en oscuro); el
+       diseño dibuja 8/16, dos puntos de un gris al 6% que no se ven. */
+    background: var(--relleno-ios-suave);
     box-shadow: none;
-    color: var(--ink);
+    /* `--brand` y NO `--ink`. Los dos son acento, pero con el acento de
+       fábrica ("neutro") `--ink` vale #0f0f0f y el botón salía NEGRO,
+       mientras "Nuevo ingreso" —que usa `--brand`— salía verde: dos miembros
+       de la misma familia y uno mal elegido. Medido el 24 ago. */
+    color: var(--brand);
     cursor: pointer;
     z-index: 40;
+    transition: background-color var(--dur) ease;
   }
-  :root.ipad .menu-hamburguesa:active { opacity: 0.3; }
-  /* La barra le reserva el hueco al ☰, el mismo trato que la toolbar del
-     Mac con .btn-sidebar. */
-  :root.ipad .header { padding-left: 56px; }
+  /* 38 px de alto es menos que los 44 que pide el sistema, y el handoff lo
+     resuelve diciendo que la fila ENTERA es tocable. Esto es esa fila: 56 de
+     alto y 44 de ancho de zona sensible, sin mover un píxel de lo que se
+     pinta. Sin ella el botón se ve como el diseño y se toca peor que antes,
+     que es el peor de los dos mundos. */
+  :root.ipad .menu-hamburguesa::before {
+    content: "";
+    position: absolute;
+    inset: -9px -3px;
+  }
+  :root.ipad .menu-hamburguesa:hover { background: var(--relleno-ios); }
+  /* Con el cajón abierto, teñido del acento: el botón dice en qué estado
+     está, no solo qué hace. */
+  :root.ipad .app.menu-abierto .menu-hamburguesa {
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+  }
+  :root.ipad .menu-hamburguesa:active { opacity: 0.6; }
+  /* 70 = 20 de margen + 38 del botón + 12 hasta el título, los tres números
+     del handoff. El ☰ sigue siendo `position: fixed` y no un hijo de la
+     barra, y no por pereza: `.header` lo pintan las DIECISÉIS páginas, así
+     que meterlo dentro serían dieciséis copias del mismo botón que habría
+     que mantener a la vez. Es la misma decisión —y el mismo comentario— que
+     `.btn-sidebar` en la toolbar del Mac. Geométricamente cae en el mismo
+     sitio; el hueco se lo reserva la barra. */
+  :root.ipad .header { padding-left: 70px; }
 }
 @media (prefers-reduced-motion: reduce) {
   :root.ipad .sidebar { transition: none; }

@@ -662,7 +662,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         aria-expanded={menuAbierto}
         onClick={() => setMenuAbierto((v) => !v)}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></svg>
+        {/* El icono de BARRA LATERAL del handoff del header (24 ago), no las
+            tres rayas de antes: en iPadOS este botón abre una COLUMNA que
+            existe, no un menú, y es el glifo que usan Notas, Archivos y Mail.
+            Es el mismo `IconSidebar` que el Mac ya usa en su toolbar, así que
+            el gesto se llama igual en los dos sitios.
+
+            Va sin condicionar al iPad aunque el diseño sea suyo, porque este
+            botón es SOLO del iPad: el iPhone lo esconde con `!important` (ahí
+            el sidebar no existe, su contenido se mudó a Ajustes) y el Mac
+            también, en todos sus anchos. Se comprobó antes de simplificar;
+            un segundo glifo para los otros casos habría sido código muerto. */}
+        <IconSidebar size={19} strokeWidth={1.6} />
       </button>
       {menuAbierto && <div className="menu-telon" onClick={() => setMenuAbierto(false)} />}
       {/* Esconder la barra lateral, el primer control de la toolbar en el
