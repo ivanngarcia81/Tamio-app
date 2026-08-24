@@ -3046,8 +3046,6 @@ export const en: Resources = {
     hint: "These three settings are in the design and have no effect yet. They will turn on as soon as the app knows how to apply them.",
     tamanoTexto: "Text size",
     tamano: { chico: "Small", normal: "Normal", grande: "Large" },
-    sidebarFijo: "Always show the sidebar",
-    sidebarFijoSub: "In portrait orientation too",
     ocultarMontos: "Hide amounts when locked",
     ocultarMontosSub: "When Tamio goes to the background, the content is blurred: the app switcher snapshot doesn't show the books",
   },

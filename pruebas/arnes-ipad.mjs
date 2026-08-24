@@ -1924,8 +1924,20 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
      siguen esperando son "Tamaño de texto" y "Barra lateral siempre visible".
      La comprobación no se borra, se ajusta: lo que vigila —que lo dibujado
      sin motor esté apagado y explicado— sigue valiendo para las dos. */
-  chk(pres.filas === 2, `Presentación: las que siguen sin motor, apagadas (${pres.filas})`);
-  chk(pres.conTitulo === pres.filas, "las dos con su explicación");
+  /* **Bajó otra vez el 24 ago**: "Barra lateral siempre visible" se QUITÓ —no
+     se cableó—, porque fijar la barra en vertical se come 318px y deja el
+     contenido por debajo de los 700 que el maestro-detalle necesita; y porque
+     Notas, Archivos y Correo hacen lo que Tamio ya hace. Queda una sola fila
+     apagada: "Tamaño de texto". */
+  chk(pres.filas === 1, `Presentación: la única que sigue sin motor, apagada (${pres.filas})`);
+  chk(pres.conTitulo === pres.filas, "con su explicación");
+  /* Y la que se quitó no puede volver por la puerta de atrás. */
+  const sinFijo = await pg.evaluate(() => {
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    return ![...z.querySelectorAll(".ios-field-label")]
+      .some((l) => /siempre visible|always show/i.test(l.textContent ?? ""));
+  });
+  chk(sinFijo, "y \"Barra lateral siempre visible\" ya no está");
   chk(pres.mandosVivos === 0, `y ningún mando vivo dentro (${pres.mandosVivos})`);
   chk(pres.opacidad < 0.7, `la fila entera a media tinta (${pres.opacidad})`);
   chk(pres.seg === 3, `el segmentado de tamaño de texto (${pres.seg})`);

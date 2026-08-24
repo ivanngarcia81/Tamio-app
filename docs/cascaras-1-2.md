@@ -217,7 +217,7 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | ~~**Marcar depositado**~~ | ~~Depósitos, acciones del corte~~ | **cableado el 24 ago** — abre el formulario con el corte puesto |
 | **Asignar encargado** ×4 | Servicios, puestos sin motor | botón apagado, uno por puesto |
 | **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
-| **Barra lateral siempre visible** | ídem | interruptor apagado |
+| ~~**Barra lateral siempre visible**~~ | ídem | **RETIRADO el 24 ago** — no se cableó: se quitó. Ver abajo |
 | ~~**Ocultar montos al bloquear**~~ | ídem | **cableado el 24 ago** — tapa el contenido en segundo plano (`src/privacidad.ts`) |
 | **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
 | **Avisar de gastos sin comprobante desde $X** | Config → Iglesia → Controles de tesorería | interruptor apagado, **encendido** |
@@ -334,6 +334,33 @@ sigue apagado.
 En la conversación llegué a decir que, si la iglesia deposita el mismo día sin
 paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
 **No sobra.** Así trabajan, y es de lo más útil que le falta a la app.
+
+## Lo primero que se RETIRA en vez de cablearse (24 ago 2026)
+
+**"Barra lateral siempre visible"**, de Configuración → Preferencias →
+Presentación. Es la primera vez que un control del handoff sale de la app en
+vez de recibir motor, así que conviene dejar escrito por qué — y que la
+decisión fue de Iván.
+
+La regla suya —construir aunque no se le vea función— existe para no descartar
+por pereza. Aquí se examinó la función, y sale perdiendo:
+
+- **No cabe.** Fijar la barra en vertical se come 318px. En un iPad de 11°
+  quedan 516px de contenido y en el mini 426, por debajo de los **700** que el
+  maestro-detalle necesita para partirse en lista + panel. O sea que
+  cambiarías el panel de detalle por un menú. En el de 13" quedan 706: cabe
+  por **seis píxeles**, que es no caber.
+- **Va contra el sistema.** Notas, Archivos y Correo hacen exactamente lo que
+  Tamio ya hace: barra fija en apaisado, cajón con ☰ en vertical. Y lo hacen
+  por esta misma cuenta.
+
+Palabras de Iván: *"En portrait, dejar fija la barra lateral quitaría mucho
+espacio visualmente. Es mejor dejar la hamburguesa. Así lo hacen muchas
+aplicaciones de Apple."*
+
+Un control que empeora la app y contradice al sistema **no es una cáscara
+esperando motor**. La distinción importa para las que quedan: lo que sigue en
+la lista está ahí porque le falta dato, no porque sea mala idea.
 
 ## Lo que sigue sin pintarse
 

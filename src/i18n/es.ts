@@ -3121,8 +3121,6 @@ export const es = {
     hint: "Estos tres ajustes están en el diseño y todavía no tienen efecto. Aparecerán encendidos en cuanto la app sepa aplicarlos.",
     tamanoTexto: "Tamaño de texto",
     tamano: { chico: "Chico", normal: "Normal", grande: "Grande" },
-    sidebarFijo: "Barra lateral siempre visible",
-    sidebarFijoSub: "También en orientación vertical",
     ocultarMontos: "Ocultar montos al bloquear",
     ocultarMontosSub: "Al mandar Tamio a segundo plano, el contenido se difumina: la instantánea del selector de aplicaciones no enseña la contabilidad",
   },

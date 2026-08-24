@@ -232,14 +232,23 @@ export default function PreferenciasSettingsIOS({
               ))}
             </span>
           </div>
-          <SwitchField
-            label={t("presentacion.sidebarFijo")}
-            sub={t("presentacion.sidebarFijoSub")}
-            checked={false}
-            onChange={() => {}}
-            disabled
-            title={t("presentacion.hint")}
-          />
+          {/* **"Barra lateral siempre visible" se quitó el 24 ago 2026**, y es
+              el primer control del handoff que se retira en vez de cablearse.
+              La regla de Iván —construir aunque no se le vea función— existe
+              para no descartar por pereza; aquí se examinó la función y sale
+              perdiendo, y la decisión la tomó él:
+
+              En vertical, fijar la barra se come 318px. En un iPad de 11" o
+              en el mini deja el contenido en 516 y 426, por debajo de los 700
+              que el maestro-detalle necesita para partirse — o sea que
+              cambiarías el panel de detalle por un menú. Y en el de 13" cabe
+              por SEIS píxeles, que es no caber.
+
+              Además va contra la convención del sistema: Notas, Archivos y
+              Correo hacen exactamente lo que Tamio ya hace —barra fija en
+              apaisado, cajón con ☰ en vertical—, y por esta misma cuenta.
+              Un control que empeora la app y contradice al sistema no es una
+              cáscara esperando motor. */}
           {/* Con motor desde el 24 ago 2026: tapa el contenido cuando la app
               se va a segundo plano. Ver `src/privacidad.ts`. */}
           <SwitchField
