@@ -692,6 +692,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                     return (
                       <DetalleDeposito
                         dep={det}
+                        church={church}
                         tituloLista={t("depositos.titulo")}
                         onVolver={() => setSelId(null)}
                         onEditar={abrirEditar}

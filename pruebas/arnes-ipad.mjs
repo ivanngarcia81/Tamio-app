@@ -1874,11 +1874,21 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
      el formulario con el total del corte— y lo comprueba la sección 28. Lo
      que queda sin motor aquí es "Compartir", que necesita una hoja de
      compartir que la app no tiene. */
+  /* **"Compartir" salió de esta lista el 24 ago 2026.** El botón se apagaba
+     diciendo que la app no tenía hoja de compartir; la tenía —`openForPrint`
+     entrega por la hoja nativa desde que existen los reportes—, lo que
+     faltaba era el DOCUMENTO, y ahora está (`printDeposito.ts`). Aquí queda
+     la vuelta del guante: que no vuelva a apagarse. */
   await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
   await pg.click(".md-depositos .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".dep-det-acciones button[disabled]", "Compartir");
+  const comp = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".dep-det-acciones button")]
+      .find((x) => /Compartir|Share/i.test(x.textContent ?? ""));
+    return b ? { off: b.disabled } : null;
+  });
+  chk(!!comp && !comp.off, `Compartir: dibujado y VIVO, ya tiene documento (${comp?.off})`);
   /* Y "Reabrir el corte", dentro del menú de "⋯": el mismo trato, apagado y
      con su explicación, en vez de esconder la opción y que el menú mienta. */
   await pg.click(".dep-det-acciones .ios-bar-button");
@@ -3417,6 +3427,77 @@ console.log("\n== El roster por puestos y el orden del culto ==");
     await pg.screenshot({ path: `${process.env.CAPTURAS}/servicios-roster-1366x1024.png` });
   }
   await ctxR.close();
+}
+
+/* ---------- 37. "Compartir" un depósito entrega un PDF de verdad ----------
+   El botón estuvo apagado dos días con la explicación de que la app no tenía
+   hoja de compartir. La tenía desde siempre (`openForPrint` → `entregarArchivo`
+   → Web Share API); lo que faltaba era el documento. Esto comprueba las dos
+   mitades a la vez: que el botón está vivo y que lo que sale por la hoja es un
+   PDF con nombre de comprobante y peso de PDF de verdad.
+
+   La hoja nativa no existe en un Chromium de escritorio, así que se suplanta
+   `navigator.share` ANTES de cargar la página y se mira qué se le pasa. Es la
+   única forma de ver el archivo sin un iPad delante.
+
+   Probada al revés: quitando el `onClick` del botón, la espera del `share`
+   agota su tiempo y las tres salen en rojo. */
+console.log("\n== Compartir un depósito entrega un PDF ==");
+{
+  const ctxC = await nuevoContexto("ipad");
+  const pg = await ctxC.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.addInitScript(() => {
+    window.__compartido = null;
+    /* Con `navigator.share = …` a secas NO basta, y costó un rato: este
+       Chromium YA trae `share` en el prototipo, así que la asignación se
+       pierde en silencio (script clásico, sin modo estricto) y lo que se
+       llama es el nativo, que en un navegador sin escritorio no hace nada.
+       `defineProperty` sobre la instancia sí lo tapa. */
+    const propiedad = (nombre, valor) =>
+      Object.defineProperty(navigator, nombre, { value: valor, configurable: true, writable: true });
+    propiedad("canShare", () => true);
+    propiedad("share", async (data) => {
+      const f = data.files?.[0];
+      window.__compartido = f
+        ? { nombre: f.name, tipo: f.type, bytes: f.size }
+        : { nombre: null, tipo: null, bytes: 0 };
+    });
+  });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".dep-det-acciones button", { hasText: /Compartir|Share/ }).click();
+
+  /* En un iPad, "Compartir" un PDF **abre primero el visor de la app** y la
+     hoja nativa sale de su propio botón: iOS no tiene Vista Previa, así que
+     `entregarArchivo` enseña el documento antes de repartirlo. Es lo que hace
+     cada reporte desde siempre, y este comprobante no iba a ser la excepción.
+     La guarda sigue ese camino entero en vez de fingir que hay un atajo. */
+  await pg.waitForSelector(".visor-pdf-overlay", { timeout: 15000 })
+    .catch(() => { /* lo dicen las comprobaciones de abajo */ });
+  const visor = await pg.evaluate(() => {
+    const v = document.querySelector(".visor-pdf-overlay");
+    return v ? { nombre: v.querySelector(".visor-pdf-nombre")?.textContent?.trim() } : null;
+  });
+  chk(!!visor, "el comprobante se abre en el visor de la app, como cualquier otro PDF");
+  chk(/^comprobante-|^deposito-/.test(visor?.nombre ?? ""),
+    `con nombre de comprobante de depósito (${visor?.nombre})`);
+  chk(/\.pdf$/.test(visor?.nombre ?? ""), `y extensión .pdf (${visor?.nombre})`);
+
+  // Y de ahí, la hoja nativa.
+  await pg.locator(".visor-pdf-barra .btn.primary").click();
+  await pg.waitForFunction(() => window.__compartido !== null, null, { timeout: 15000 })
+    .catch(() => { /* idem */ });
+  const salida = await pg.evaluate(() => window.__compartido);
+  chk(!!salida, "y su botón entrega el archivo a la hoja del sistema");
+  chk(salida?.tipo === "application/pdf", `con su tipo MIME (${salida?.tipo})`);
+  /* Un PDF con membrete, tabla y bloque de firmas no baja de unos pocos KB.
+     El umbral es flojo a propósito: lo que caza es el archivo vacío. */
+  chk((salida?.bytes ?? 0) > 1500, `y peso de documento, no de archivo vacío (${salida?.bytes} bytes)`);
+  await ctxC.close();
 }
 
 await browser.close();

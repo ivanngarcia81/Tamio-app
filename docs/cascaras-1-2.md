@@ -144,7 +144,7 @@ apagado**, con lo que le falta a cada uno:
 
 | Cáscara | Dónde | Cómo quedó | Qué le falta |
 |---|---|---|---|
-| **"Compartir"** | Depositados, cabecera del detalle | `btn secondary` apagado + `title` | una hoja de compartir; la app no tiene ninguna |
+| ~~**"Compartir"**~~ | Depositados, cabecera del detalle | **cableado el 24 ago** — saca el comprobante en PDF y lo entrega por la hoja del sistema | nada: lo que faltaba no era la hoja, era el documento |
 | ~~**"Reabrir el corte"**~~ | Depositados, menú de "⋯" | **cableado el 24 ago** — devuelve el corte a "entregado". Sigue apagado en un depósito sin corte, donde no hay nada que reabrir | — |
 | ~~**"Registró"**~~ | Depositados, Datos del depósito | **cableado el 24 ago** (migración 39) — sale con quien tenía la sesión abierta. En un depósito anterior a esa migración la fila no se pinta, en vez de repetir que no se sabe | — |
 | ~~**"Conciliación"**~~ | Depositados, columna derecha | **cableada el 24 ago** — compara lo contado contra lo registrado y canta la diferencia. Cuadrar no demuestra que el banco lo recibió, y el texto no lo dice | casar contra el banco, si algún día se importa el estado de cuenta |
@@ -152,6 +152,28 @@ apagado**, con lo que le falta a cada uno:
 | ~~**"Responsable"**~~ | dentro de esa hoja | **cableado el 24 ago** — se elige de `usuarios` o se escribe, y se propone el del corte anterior | — |
 | **"Adjuntar foto de la ficha"** | dentro de esa hoja | sigue apagado, con una razón más precisa | **ninguna**: la ficha la da el banco, así que en el corte todavía no hay ninguna. Se adjunta un paso después, al registrar el depósito, donde el campo lleva funcionando desde siempre |
 | **"Pedir doble firma"** | dentro de esa hoja | apagado por **decisión**, no por hueco | Iván eligió *constancia* (se anota a quién se le entregó) y no *acuse* (que el que recibe confirme). Si algún día quiere lo segundo, esto es lo que se enciende |
+
+> ✅ **"Compartir", cableado el 24 de agosto de 2026** — y con una corrección
+> que vale la pena dejar escrita, porque el diagnóstico de la tabla de arriba
+> estaba mal. Decía que faltaba "una hoja de compartir; la app no tiene
+> ninguna". **La tenía desde siempre**: `openForPrint` → `entregarArchivo`
+> (`services/entrega.ts`) usa la Web Share API en el iPad y el diálogo de
+> guardar en el Mac, y por ahí salen todos los reportes desde que existen. Lo
+> que faltaba de verdad era el **documento**, y por eso el botón se encendió
+> sin una dependencia nueva: `services/print/printDeposito.ts`.
+>
+> El comprobante lleva los datos del depósito, el desglose efectivo/cheques y
+> la lista de movimientos **del corte** que lo cerró, y firma a quien registró
+> y a quien llevó el dinero al banco — el par que un comprobante de depósito
+> necesita enfrentar, y el hueco que los cortes vinieron a cubrir. Un depósito
+> registrado sin corte no tiene desglose, y el PDF **lo dice** en vez de
+> imprimir un cero. Si lo contado y lo registrado no cuadran, la diferencia va
+> escrita en el papel: la copia que se archiva es el peor sitio para
+> esconderla.
+>
+> Y en un iPad "Compartir" **abre primero el visor** de la app; la hoja nativa
+> sale de su botón. No es un rodeo: iOS no tiene Vista Previa, y es lo que
+> hace cada PDF de Tamio desde el primer día.
 
 **Lo que NO se pintó, y por qué** *(escrito antes de la migración 38: los
 nombres de corte ya existen desde que existe la tabla; lo que sigue valiendo
