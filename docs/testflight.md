@@ -162,7 +162,8 @@ en las tres fuentes:
 | esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
 | esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
 | esta | **1.2.9** — Depósitos rehecha con el **handoff 3**: "Pendientes" deja de ser un cartel y pasa a ser la revisión previa al banco (cortes por día, tres cifras vivas, los cuatro avisos, y "Marcar depositado" abriendo el formulario ya prellenado, que tacha la primera cáscara del registro); "Depositados" gana la pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y se construye la hoja "Nuevo corte" entera. Más los dos textos que no respiraban en el iPad: "Elige un día" pegado al filo y la fila de filtros de Informes con los chips a 29px |
-| la siguiente | 1.3.0 |
+| esta | **1.2.10** — la build de REVISIÓN de todo lo que se encendió el 24 de agosto: los **cortes, la doble firma y la sincronización entera** (las 16 tablas viajan, con `verificar-sync` vigilando la paridad de columnas), el **folio** del movimiento (`2026-0042`, sin numerar el pasado), los **dos permisos del rol Tesorería** —de los cuatro que dibujó el handoff— con el borrado frenado en el servidor, y las cáscaras que quedaban del handoff: puestos del culto, orden del culto, pestaña Familia, "Recopilar firmas", "Compartir" un depósito y los conteos por categoría. **Nada de esto se ha visto nunca en un iPad de verdad**: es exactamente para eso que sube |
+| cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -352,6 +353,31 @@ deja de comprobar lo que se acaba de escribir.
 En la 1.2.0, las mismas comprobaciones y una más, porque esta versión salió
 de una fusión y una fusión puede compilar perfectamente y aun así haber
 perdido la mitad de una pantalla.
+
+En la **1.2.10**, las mismas y con la lista de clases alargada otra vez, que
+es la parte que se olvida: buscar `:root.ipad` y `md-split` habría salido en
+verde con TODO el trabajo de esta tanda fuera del bundle, porque esas clases
+llevan ahí desde la 1.1.6. Así que se buscó, en el bundle construido con
+`VITE_CANAL=appstore`, una marca por cada pieza nueva —`dm-folio` (el folio en
+el panel), `cat-conteo` (los conteos por categoría), y en el JS
+"Permisos del rol Tesorería", `fijar_permisos_tesoreria`,
+`tesorero_puede_eliminar` ×9, `tesorero_ve_padron` ×9, "Segunda firma",
+"Recopilar firmas", `servicio_puestos` ×9 y `parentescos` ×14—. Las once
+salieron, y `ipad-ancho` ×201 con ellas, que es la prueba de que el rediseño
+no se perdió por el camino.
+
+**El bump salió limpio, y se comprobó ANTES de tocar nada** (siete de doce):
+`version = "1.2.9"` aparecía **una sola vez** en `Cargo.lock` —la línea 3852,
+justo bajo `name = "tesoreria"`— y **dos** en `package-lock.json`, las dos de
+Tamio. Ninguna colisión con otro crate y ningún paquete en `1.2.9x`, que es la
+trampa de prefijo de la 1.2.7. Aun así se cambió **por número de línea**, no
+por búsqueda: el bump limpio y el envenenado se ven idénticos hasta que miras.
+
+**Y el número es 1.2.10, no 1.3.0**, aunque la tabla dijera "la siguiente,
+1.3.0". El `1.3.0` está reservado para los siete puntos de
+`docs/plan-1-3.md`, y esta tanda no es ninguno de ellos: es la continuación
+del handoff de iPad, que es la serie 1.2.x. Gastar el 1.3.0 aquí habría
+dejado al plan sin su número.
 
 **La comprobación de la fusión: que el bundle lleve clases de LAS DOS ramas.**
 El CSS construido (`index-Cb9x1AEA.css`, 279 kB frente a los 273 de la
