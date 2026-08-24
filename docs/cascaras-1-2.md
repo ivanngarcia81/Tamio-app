@@ -414,6 +414,12 @@ La guarda (arnés §34) prueba las tres por separado, y la tercera la prueba
 se queda puesta. Quitando cada `:root.mac`/`esMac()` por turno, cada
 comprobación falla sola.
 
+> 📋 **El balance completo —qué se hizo desde el handoff y qué falta— está en
+> [`docs/balance-handoff.md`](balance-handoff.md)**, escrito el 24 ago 2026 a
+> petición de Iván. Este archivo sigue siendo el registro fino, cáscara por
+> cáscara; aquél junta las tres entregas de diseño, las cinco migraciones de
+> motor y lo que queda, ordenado por lo que cuesta.
+
 ## Lo que sigue sin pintarse
 
 - **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:
