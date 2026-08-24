@@ -80,6 +80,14 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > **`1.2.77`**, una versión que no existe, sin que ninguna colisión exacta lo
 > avisara. Anclar en `name = "tesoreria"` y tocar una sola línea vale también
 > para esto; buscar el número, no.
+>
+> **En la 1.2.8, limpia**: `1.2.7` salía **diez** veces en total y las diez
+> eran de Tamio —una por sitio, dos en los archivos que llevan dos claves—.
+> Ni colisión exacta ni prefijo: `1.2.8` no existía en ningún `lock` y ningún
+> paquete andaba por el `1.2.7x`. Seis de once. Lo que no cambia es el
+> método: se comprueba ANTES de tocar y se cambia por número de línea, no por
+> búsqueda, porque el bump limpio y el envenenado se ven exactamente igual
+> hasta que miras.
 
 ### Generados — Tauri los reescribe al compilar para iOS
 
@@ -132,7 +140,8 @@ en las tres fuentes:
 | esta | **1.2.5** — el panel de detalle pasa al gris del lienzo (`#F2F2F7` / `#000`) y deja de fundirse con la barra y la columna maestra; de paso, la barra de vistas de la Agenda, el índice de zonas de Ajustes y la columna del día recuperan el suyo — cuatro superficies que pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Y se pintan los **diez controles** que el handoff dibuja y la app no tiene —"Marcar depositado", "Asignar encargado" ×4, los tres de Presentación, los cuatro permisos del rol y los cuatro Controles de tesorería del handoff 1—, **apagados y con su explicación**. Todo salió de revisar la 1.2.4 en el iPad |
 | esta | **1.2.6** — el cromo, terminado: la barra de vistas de la Agenda, el índice de zonas de Ajustes, la barrita de Informes y las dos superficies translúcidas que mezclaban el gris equivocado. Las cinco pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Con guarda **sobre el archivo**, no sobre la pantalla: ninguna regla de `:root.ipad` puede volver a nombrar ese token. Y dos del chip del mes: deja de salirse 38px del panel (`.ios-bar-button` medía 44×44 fijos) y su menú deja de abrirse recortado detrás del panel (`MenuAnchor` pasa a colgar de `<body>` en `fixed`, como los otros menús de la casa) |
 | esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
-| la siguiente | 1.2.8 |
+| esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
+| la siguiente | 1.2.9 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -367,6 +376,22 @@ veces y `iphone .ios-row` solo 5: las cinco que se quedan a propósito
 
 Y las once pantallas del handoff quedan recorridas con esta versión. El
 repaso pantalla por pantalla está en `docs/ipad-rediseno.md` §14–§24.
+
+En la **1.2.8**, lo de siempre, y dos comprobaciones del bundle: en el CSS,
+`--barra-inset` y `min-height:calc(56px` —el inset con nombre y la suma que
+despega la raya de los botones— más `ios-field-nota`; en el JS, las tres
+claves nuevas de la hoja de ficha (`iosExpediente`, `iosHistorialFila`,
+`iosRegistrado`). Las tres son de la EDICIÓN: si el bundle no las lleva, lo
+que viajó es la hoja de alta de siempre y el arreglo se quedó en casa.
+
+Y una comprobación que esta tanda añade al arnés y que no es del bundle sino
+del método: **`--barra-inset` existe para poder medir un `env()`**. En un
+navegador de escritorio `env(safe-area-inset-top)` vale 0, así que todo lo que
+dependa del inset da verde aquí y falla en el aparato — que es exactamente lo
+que pasó durante diez versiones con la raya de la barra. Con el inset detrás
+de una variable, la prueba le pone los 24px del iPad y mide lo que se ve allí.
+Cualquier cosa nueva que dependa de la zona segura debería colgar de ese token
+por el mismo motivo.
 
 En la **1.2.7**, lo de siempre, y la lista del bundle con lo de esta tanda:
 `ios-bar-button{…min-width:44px}` (el disparador que ya no se desborda),
