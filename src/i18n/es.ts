@@ -112,6 +112,7 @@ export const es = {
     rechazado: "Rechazado",
     eliminarTitulo: "Eliminar movimiento",
     eliminarMensaje: "¿Eliminar \"{{concepto}}\" por {{monto}}? Esta acción no se puede deshacer.",
+    registradoPor: "Registrado por {{quien}}",
     verComprobante: "Ver comprobante",
     comprobante: "Comprobante",
   },

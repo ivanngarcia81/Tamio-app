@@ -2682,3 +2682,99 @@ comportamiento cambia a propósito: la que exigía que todas las filas dijeran
 
 El arnés pasa de 735 a **751**.
 
+---
+
+## 37. "Registrado por": quién tecleó la cifra (24 ago 2026)
+
+Lo segundo de la lista, y como el corte, sale de una conversación y no de un
+handoff. §4 lo había marcado desde el principio como **lo único del documento
+que no era maquetación**: "pide tabla nueva y escrituras en cada punto de
+mutación. Si se quiere, es su propia tarea."
+
+Resultó ser más pequeño de lo apuntado, y por una razón que solo se ve
+mirando el código: **la app ya sabe quién eres**. `useSupabaseAuth` lleva
+`nombre` y `role` del perfil, y es lo que hace que el sidebar diga "Ivan
+García". Lo que faltaba no era saberlo — era guardarlo.
+
+### La condición que decidía si esto sirve o miente
+
+Antes de escribir una línea había que resolver una cosa: "Registrado por" solo
+dice la verdad si **cada persona entra con su propia cuenta**. Si toda la
+iglesia comparte un login, cada ingreso diría el mismo nombre, lo hubiera hecho
+esa persona o no — y eso es **peor que la fila vacía**: un rastro de auditoría
+falso hace daño justo el día que hay que revisar algo.
+
+Iván lo confirmó, y de paso describió el modelo mejor de lo que yo lo había
+planteado:
+
+> El administrador invita a la persona que va a ser la tesorera, así que la
+> tesorera tiene su propia cuenta. El administrador es el supervisor mayor: si
+> un día entra porque la tesorera estuvo enferma, el nombre queda como
+> registrado por.
+
+Eso es exactamente lo que lo hace valer. **No es "la página de la tesorera",
+es quién lo hizo de verdad.** Y Tamio ya lo soportaba: Configuración → Acceso
+y áreas → Invitar, con los tres roles de `role.ts`.
+
+### Instantánea, no referencia
+
+Se guardan **el nombre y el rol tal como eran al registrar** (`registrado_por`,
+`registrado_rol`), no un id que apunte a `perfiles`. Dos razones, y las dos
+son de fondo:
+
+- un rastro de auditoría tiene que **seguir diciendo quién fue** aunque esa
+  persona deje la iglesia y su perfil desaparezca;
+- si alguien cambia de puesto, **lo que se hizo siendo tesorera se hizo siendo
+  tesorera**. Un `JOIN` contra el perfil de hoy reescribiría el pasado cada
+  vez que alguien asciende.
+
+Es el mismo criterio que ya se usó en `cortes.responsable`.
+
+Y nacen vacías: **no se rellena el pasado**. Lo anterior a la migración 39 no
+tiene a quién atribuirse, y suponerlo sería inventar.
+
+### Un valor global, y por qué aquí sí
+
+Quien sabe la sesión es React (`App.tsx`); quien la necesita es `db.ts`, que no
+es un componente y no puede leer un contexto. Las dos salidas eran pasar el
+nombre por parámetro en cada `insert*` —una veintena de puntos de llamada, y el
+día que alguien añada el veintiuno se le olvida— o un módulo con estado.
+
+Es lo segundo (`src/sesion.ts`). Un global es mala idea cuando cualquiera lo
+escribe; aquí lo escribe **un solo sitio** —el efecto de `App.tsx` que mira la
+sesión— y el resto solo lee. De paso es lo que permite comprobarlo: el arnés
+corre en modo local, sin sesión de verdad, y puede ponerla a mano exactamente
+como hace `App.tsx`.
+
+### Dónde sale
+
+- **Ingresos y Gastos**, bajo el subtítulo del panel: *"Registrado por Rosa
+  Elena Vega · Tesorero"*, que es la línea del handoff 1.
+- **Depósitos**, la fila "Registró" — que hasta hoy decía "Sin capturar
+  todavía".
+- **El corte**, que ahora distingue dos personas: quien lo **contó** y quien lo
+  **lleva** al banco.
+
+Sin sesión **no se pinta nada**, ni un hueco. Callar es decir "no lo sé";
+un renglón con nombre de nadie sería peor.
+
+### Lo que todavía no cruza entre aparatos
+
+Las seis columnas viven solo en el aparato donde se escribieron. `sync.ts`
+sube **columna por columna** (`TX_DATA_COLS`, `DEP_DATA_COLS`) y las nuevas no
+están en esas listas, porque las columnas remotas no existen. O sea: la
+tesorera ve su nombre en su iPad, y el administrador ve ese mismo movimiento
+sin nombre en el suyo.
+
+Cerrarlo son dos pasos, **y el orden importa**: primero añadir las columnas en
+Supabase, después meterlas en las dos listas. Al revés, `sync.ts` intentaría
+subir una columna que no existe y la sincronización entera fallaría. Queda
+apuntado en `docs/cascaras-1-2.md` junto al mismo pendiente de los cortes.
+
+### Lo medido
+
+Las **dos** ramas, porque la mitad del valor está en la segunda: con sesión, el
+panel enseña el nombre **y el rol**; sin sesión, no se pinta **nada**. El arnés
+siembra un ingreso con la sesión puesta y otros sin ella, y comprueba las dos.
+Pasa de 751 a **755**.
+

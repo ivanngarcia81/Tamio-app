@@ -67,14 +67,12 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 
 ## Ingresos y Gastos (§15)
 
-- **"Registrado por · Rosa Elena Vega · tesorera"** en la cabecera del panel —
-  la tabla `usuarios` ya existe con `nombre` y `rol`; falta
-  `transactions.usuario_id` y escribirlo al insertar. **NO se pintó.**
-  Decisión tuya del 23 de agosto: *"déjalo registrado y cuando terminemos con
-  el diseño se le agregan los usuarios"*. Aquí queda registrado.
-- **Chip "Sin depositar"** en la lista de Ingresos — necesita la relación
-  depósito↔movimiento. **NO se pintó.** Decisión tuya: *"se lo ponemos después
-  del diseño"*.
+- ~~**"Registrado por · Rosa Elena Vega · tesorera"**~~ → **cableado el 24 ago
+  2026** (migración 39). Lo pone la app con quien tiene la sesión abierta; no
+  se teclea. Ver §37 de `docs/ipad-rediseno.md`.
+- ~~**Chip "Sin depositar"**~~ → **cableado el 24 ago 2026** con los cortes
+  (migración 38). Cuenta y filtra los ingresos en efectivo o cheque que no
+  están en ningún corte.
 
 ## Aportantes / ficha de miembro (§16)
 
@@ -129,7 +127,7 @@ apagado**, con lo que le falta a cada uno:
 |---|---|---|---|
 | **"Compartir"** | Depositados, cabecera del detalle | `btn secondary` apagado + `title` | una hoja de compartir; la app no tiene ninguna |
 | ~~**"Reabrir el corte"**~~ | Depositados, menú de "⋯" | **cableado el 24 ago** — devuelve el corte a "entregado". Sigue apagado en un depósito sin corte, donde no hay nada que reabrir | — |
-| **"Registró"** | Depositados, Datos del depósito | fila en gris cursiva, "Sin capturar todavía" | `depositos_bancarios.usuario_id`; es el mismo "Registrado por" de §4 |
+| ~~**"Registró"**~~ | Depositados, Datos del depósito | **cableado el 24 ago** (migración 39) — sale con quien tenía la sesión abierta. En un depósito anterior a esa migración la fila no se pinta, en vez de repetir que no se sabe | — |
 | ~~**"Conciliación"**~~ | Depositados, columna derecha | **cableada el 24 ago** — compara lo contado contra lo registrado y canta la diferencia. Cuadrar no demuestra que el banco lo recibió, y el texto no lo dice | casar contra el banco, si algún día se importa el estado de cuenta |
 | ~~**Hoja "Nuevo corte"** entera~~ | Pendientes | **cableada el 24 ago** — "Crear" guarda el corte y engancha sus movimientos | — |
 | ~~**"Responsable"**~~ | dentro de esa hoja | **cableado el 24 ago** — se elige de `usuarios` o se escribe, y se propone el del corte anterior | — |
@@ -342,8 +340,16 @@ paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
 - **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:
   es un **dato de contabilidad**, y uno inventado se lee como verdadero. Pide
   columna y numerador.
-- **"Registrado por"** y **el chip "Sin depositar"** — aplazados por ti hasta
-  después del diseño, no por este criterio.
+- ~~**"Registrado por"** y **el chip "Sin depositar"**~~ → **los dos cableados
+  el 24 ago 2026** (migraciones 38 y 39).
+- **La sincronización de "Registrado por".** Las seis columnas nuevas viven
+  solo en el aparato: `sync.ts` sube columna por columna (`TX_DATA_COLS`,
+  `DEP_DATA_COLS`) y no están en esas listas, porque las columnas remotas no
+  existen. O sea que la tesorera ve su nombre en SU iPad y el administrador
+  ve el movimiento sin nombre en el suyo. Para cerrarlo hacen falta dos
+  cosas, en este orden: añadir las columnas en Supabase y luego meterlas en
+  las dos listas. **El orden importa**: al revés, `sync.ts` intentaría subir
+  una columna que no existe y la sincronización entera fallaría.
 - ~~**Los nombres de corte**~~ y su **cuenta asignada** → **llegaron con la
   tabla de cortes** el 24 ago 2026. Ya no son inventados: los escribe quien
   hace el corte.
@@ -359,11 +365,13 @@ paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
 1. ~~**Tabla de cortes + `corte_movimientos` + `responsable`**~~ — **hecho el
    24 de agosto de 2026** (migración 38). Apagó ocho entradas de una vez. Lo
    que queda de esta lista empieza en el 2.
-2. **`transactions.usuario_id`** — "Registrado por", y de paso el rastro de
-   auditoría que el handoff 1 pedía. Ahora es la primera. En Depósitos el
-   corte ya dice **quién LLEVÓ** el dinero; lo que sigue sin saberse es quién
-   lo REGISTRÓ en la app, que son dos personas distintas y por eso son dos
-   filas.
+2. ~~**`transactions.usuario_id`**~~ — **hecho el 24 de agosto de 2026**
+   (migración 39), aunque no como se había apuntado: no es un `usuario_id` que
+   apunte a una tabla, son el **nombre y el rol como instantánea**, para que el
+   registro siga diciendo quién fue aunque esa persona deje la iglesia. Con
+   ella se apaga también el rastro de auditoría del handoff 1, que solo
+   necesitaba esto más `updated_at` —que ya existía—. Lo que queda de la lista
+   empieza en el 3.
 3. **`actas.testigo`** — una columna, un renglón.
 4. **Tres columnas personales en `members`** — nacimiento, dirección, estado
    civil.

@@ -232,6 +232,20 @@ const ctxSeed = await nuevoContexto("ipad");
       fecha: hace(3), monto: 90000, metodo_pago: "cheque",
     });
 
+    /* Un ingreso registrado CON sesión abierta, para que "Registrado por"
+       tenga algo que enseñar. El arnés corre en modo local —sin credenciales
+       de Supabase— así que no hay sesión de verdad; `sesion.ts` es justo el
+       módulo que permite ponerla a mano, que es lo que hace `App.tsx` cuando
+       alguien entra. Se pone, se inserta y se quita: así quedan filas con
+       nombre y filas sin él, que son los dos casos que hay que comprobar. */
+    const ses = await import("/src/sesion.ts");
+    ses.setQuienRegistra({ nombre: "Rosa Elena Vega", rol: "tesorero" });
+    await db.insertTx(id, iglesia.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Ofrenda con firma",
+      fecha: hace(1), monto: 45000, metodo_pago: "efectivo",
+    });
+    ses.setQuienRegistra(null);
+
     /* Y un movimiento en estado PENDIENTE. `countPendingTx` cuenta filas con
        `estado = 'pendiente'`, no las alertas que calcula Por revisar: sin uno
        de verdad, el aviso "N movimientos marcados por revisar" del panel de
@@ -2658,6 +2672,54 @@ console.log("\n== Los textos con su aire ==");
   const DIR = process.env.CAPTURAS || "";
   if (DIR) await pg.screenshot({ path: `${DIR}/informes-filtros.png` });
   await ctxA.close();
+}
+
+/* ---------- 30. "Registrado por": quién tecleó la cifra (migración 39) ----
+   Decidido con Iván el 24 ago: la administradora invita a la tesorera, cada
+   una entra con SU cuenta, y lo pone la app sola con quien tiene la sesión
+   abierta. Si un día cubre el administrador porque la tesorera está enferma,
+   el registro dice su nombre — que es justo lo que lo hace valer.
+
+   Se comprueban las DOS ramas, porque la mitad del valor está en la segunda:
+   con sesión, el nombre y el rol salen; sin sesión, **no se pinta nada**. Un
+   hueco con nombre de nadie sería un rastro de auditoría falso, y eso es peor
+   que no tener ninguno. */
+console.log("\n== Registrado por: con sesión y sin ella ==");
+{
+  const ctxR = await nuevoContexto("ipad");
+  const pg = await ctxR.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-movimientos .md-fila", { timeout: 10000 });
+
+  /** Abre la fila que dice `texto` y devuelve la línea de "Registrado por". */
+  const abrir = async (texto) => {
+    await pg.locator(".md-movimientos .md-fila", { hasText: texto }).first().click();
+    await pg.waitForTimeout(400);
+    return pg.evaluate(() => {
+      const el = document.querySelector(".dm-registrado");
+      return el ? el.textContent.trim() : null;
+    });
+  };
+
+  const conSesion = await abrir("Ofrenda con firma");
+  chk(!!conSesion, `con sesión, el movimiento dice quién lo registró (${conSesion})`);
+  if (conSesion) {
+    chk(/Rosa Elena Vega/.test(conSesion), `con su nombre (${conSesion})`);
+    /* Y con su ROL, que es la otra mitad: "Rosa Elena Vega · tesorera". El rol
+       se guarda como instantánea, así que sigue diciendo la verdad aunque esa
+       persona cambie de puesto después. */
+    chk(/Tesorero|tesorer/i.test(conSesion), `y con su rol (${conSesion})`);
+  }
+
+  const sinSesion = await abrir("Diezmo");
+  chk(sinSesion === null,
+    `sin sesión no se pinta nada, ni un hueco (${sinSesion ?? "nada"})`);
+
+  const DIR = process.env.CAPTURAS || "";
+  if (DIR) await pg.screenshot({ path: `${DIR}/registrado-por.png` });
+  await ctxR.close();
 }
 
 await browser.close();

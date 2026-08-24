@@ -118,6 +118,7 @@ export const en: Resources = {
     rechazado: "Rejected",
     eliminarTitulo: "Delete transaction",
     eliminarMensaje: "Delete \"{{concepto}}\" for {{monto}}? This action cannot be undone.",
+    registradoPor: "Recorded by {{quien}}",
     verComprobante: "View receipt",
     comprobante: "Receipt",
   },

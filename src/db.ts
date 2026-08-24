@@ -2,6 +2,7 @@ import Database from "./dbmotor";
 import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
 import { CERO, aDecimal, fijarMonedaDeEntrada, localeDeNumeros, restar, sumar, type Centavos } from "./dinero";
+import { quienRegistra } from "./sesion";
 import { tonoCategoria } from "./colores";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
@@ -281,6 +282,10 @@ export interface Tx {
      `updated_at` es null en las filas creadas antes de la migración 20. */
   created_at?: string | null;
   updated_at?: string | null;
+  /** Quién lo registró, como estaba en su perfil ese día. Null en lo anterior
+   *  a la migración 39 y en modo local, donde no hay sesión. */
+  registrado_por?: string | null;
+  registrado_rol?: string | null;
 }
 
 // ---------- Catálogos ----------
@@ -610,8 +615,9 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
     `INSERT INTO transactions
       (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
        member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
+       registrado_por, registrado_rol,
        uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,datetime('now'))`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,datetime('now'))`,
     [
       churchId,
       tx.tipo,
@@ -631,6 +637,8 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
       tx.estado ?? "aprobado",
       tx.comprobante_path ?? null,
       tx.recurrente_id ?? null,
+      quienRegistra()?.nombre ?? null,
+      quienRegistra()?.rol ?? null,
       crypto.randomUUID(),
     ]
   );
@@ -818,6 +826,8 @@ export interface Deposito {
   referencia: string | null;
   comprobante_path: string | null;
   notas: string | null;
+  registrado_por?: string | null;
+  registrado_rol?: string | null;
 }
 
 export interface NewDeposito {
@@ -868,8 +878,9 @@ export async function insertDeposito(churchId: number, moneda: string, dep: NewD
   const d = await getDb();
   await d.execute(
     `INSERT INTO depositos_bancarios
-      (church_id, fecha, periodo, monto, moneda, cuenta_banco, referencia, comprobante_path, notas, uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,datetime('now'))`,
+      (church_id, fecha, periodo, monto, moneda, cuenta_banco, referencia, comprobante_path, notas,
+       registrado_por, registrado_rol, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,datetime('now'))`,
     [
       churchId,
       dep.fecha,
@@ -880,6 +891,8 @@ export async function insertDeposito(churchId: number, moneda: string, dep: NewD
       dep.referencia?.trim() || null,
       dep.comprobante_path ?? null,
       dep.notas?.trim() || null,
+      quienRegistra()?.nombre ?? null,
+      quienRegistra()?.rol ?? null,
       crypto.randomUUID(),
     ]
   );
@@ -1059,6 +1072,8 @@ export interface Corte {
   deposito_id: number | null;
   notas: string | null;
   created_at?: string | null;
+  registrado_por?: string | null;
+  registrado_rol?: string | null;
 }
 
 export interface NewCorte {
@@ -1106,8 +1121,9 @@ export async function insertCorte(
 ): Promise<number | null> {
   const d = await getDb();
   await d.execute(
-    `INSERT INTO cortes (church_id, fecha, nombre, cuenta_banco, responsable, notas, uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,datetime('now'))`,
+    `INSERT INTO cortes (church_id, fecha, nombre, cuenta_banco, responsable, notas,
+                         registrado_por, registrado_rol, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'))`,
     [
       churchId,
       corte.fecha,
@@ -1115,6 +1131,8 @@ export async function insertCorte(
       corte.cuenta_banco?.trim() || null,
       corte.responsable?.trim() || null,
       corte.notas?.trim() || null,
+      quienRegistra()?.nombre ?? null,
+      quienRegistra()?.rol ?? null,
       crypto.randomUUID(),
     ]
   );

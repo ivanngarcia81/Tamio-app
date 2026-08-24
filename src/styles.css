@@ -10408,6 +10408,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dep-carta-accion { display: flex; flex-direction: column; gap: 8px; }
   /* Una fila de movimientos que solo se lee: la del depósito ya hecho. Sin
      puntero ni resalte, porque no hay nada que pulsar. */
+  /* La línea de "Registrado por": misma familia que el subtítulo pero un
+     punto más apagada, porque es procedencia y no el dato que se viene a
+     leer. Vale para el panel de movimientos y para el del corte. */
+  :root.ipad .dm-registrado { margin-top: 2px; color: var(--text-3); font-size: 13px; }
   :root.ipad .dep-mov--fijo { cursor: default; }
   :root.ipad .dep-mov--fijo:hover { background: none; }
   :root.ipad .dep-mov-check.sel { background: var(--brand); color: var(--brand-contrast); box-shadow: none; }

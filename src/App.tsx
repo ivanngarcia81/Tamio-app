@@ -50,6 +50,7 @@ import { IconSidebar } from "./icons";
 import { authHabilitado } from "./supabase";
 import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync, SYNC_HABILITADO } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
+import { setQuienRegistra } from "./sesion";
 import Login from "./components/Login";
 import "./styles.css";
 
@@ -171,6 +172,18 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
   // Con login activo el rol viene del servidor; sin login, del selector manual.
   const { estado: authEstado, salir, guardarPerfil, borrarCuenta } = useSupabaseAuth();
+
+  /* Quién está usando la app, donde `db.ts` pueda leerlo al escribir un
+     movimiento, un depósito o un corte. Único sitio que lo escribe. Sin
+     sesión —modo local— se queda en null y los registros nacen sin nombre,
+     que es lo correcto: mejor "no lo sé" que un nombre prestado. */
+  useEffect(() => {
+    setQuienRegistra(
+      authEstado.autenticado && authEstado.nombre
+        ? { nombre: authEstado.nombre, rol: authEstado.role }
+        : null
+    );
+  }, [authEstado.autenticado, authEstado.nombre, authEstado.role]);
   const [perfilAbierto, setPerfilAbierto] = useState(false);
   // Cajón lateral en pantallas angostas (iPhone): la sidebar se oculta y se
   // abre con el botón de menú; navegar la cierra sola.

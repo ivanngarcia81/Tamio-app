@@ -796,6 +796,38 @@ fn migraciones() -> Vec<motordb::Migracion> {
             CREATE UNIQUE INDEX IF NOT EXISTS idx_corte_movs_tx ON corte_movimientos(tx_id);
             CREATE INDEX IF NOT EXISTS idx_corte_movs_church ON corte_movimientos(church_id);
         "#,
+    }, motordb::Migracion {
+        version: 39,
+        description: "quién registró cada movimiento, depósito y corte",
+        sql: r#"
+            -- "Registrado por". Lo pone la app sola con quien tiene la sesión
+            -- abierta: nadie lo teclea y nadie puede atribuírselo a otro.
+            --
+            -- Es lo que el handoff 1 dibujaba como "Registrado por · Rosa
+            -- Elena Vega · tesorera" y como rastro de auditoría, y lo que §4
+            -- del rediseño apuntó como "lo único del documento que no es
+            -- maquetación". Decidido con Iván el 24 ago 2026: la
+            -- administradora invita a la tesorera, cada una entra con SU
+            -- cuenta, y si un día cubre el administrador porque la tesorera
+            -- está enferma, el registro dice su nombre. Eso es justo lo que lo
+            -- hace valer: no es "la página de la tesorera", es quién lo hizo.
+            --
+            -- **Instantánea, no referencia.** Se guarda el NOMBRE y el ROL tal
+            -- como eran al registrar, no un id que apunte a `perfiles`. Un
+            -- rastro de auditoría tiene que seguir diciendo quién fue aunque
+            -- esa persona deje la iglesia y su perfil desaparezca; y si
+            -- alguien cambia de rol, lo que se hizo siendo tesorera se hizo
+            -- siendo tesorera. Es el mismo criterio que `cortes.responsable`.
+            --
+            -- Nacen vacías y solo se llenan de aquí en adelante: rellenar el
+            -- pasado con suposiciones sería peor que dejarlo en blanco.
+            ALTER TABLE transactions ADD COLUMN registrado_por TEXT;
+            ALTER TABLE transactions ADD COLUMN registrado_rol TEXT;
+            ALTER TABLE depositos_bancarios ADD COLUMN registrado_por TEXT;
+            ALTER TABLE depositos_bancarios ADD COLUMN registrado_rol TEXT;
+            ALTER TABLE cortes ADD COLUMN registrado_por TEXT;
+            ALTER TABLE cortes ADD COLUMN registrado_rol TEXT;
+        "#,
     }]
 }
 

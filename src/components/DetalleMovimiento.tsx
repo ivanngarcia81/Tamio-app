@@ -146,6 +146,22 @@ export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar,
         <p className="dm-sub">
           {[fmtFechaCorta(tx.fecha), hora || null, metodoTexto].filter(Boolean).join(" · ")}
         </p>
+        {/* "Registrado por · Rosa Elena Vega · tesorera", del handoff 1. Lo
+            pone la app con quien tenía la sesión abierta al guardar, así que
+            no se teclea ni se puede atribuir a otro; y es una INSTANTÁNEA —lo
+            que se hizo siendo tesorera se hizo siendo tesorera, aunque esa
+            persona cambie de rol o deje la iglesia—.
+            Sin nombre no se pinta la línea: lo anterior a la migración 39 y
+            lo registrado en modo local no tienen a quién atribuirse, y decir
+            "no lo sé" callando es mejor que un hueco con nombre de nadie. */}
+        {tx.registrado_por && (
+          <p className="dm-sub dm-registrado">
+            {t("tx.registradoPor", {
+              quien: [tx.registrado_por, tx.registrado_rol ? t(`rol.${tx.registrado_rol}`, { defaultValue: tx.registrado_rol }) : null]
+                .filter(Boolean).join(" · "),
+            })}
+          </p>
+        )}
         <div className="dm-acciones">
           {tx.comprobante_path && (
             <button type="button" className="btn secondary" onClick={() => onVerComprobante(tx.comprobante_path!)}>

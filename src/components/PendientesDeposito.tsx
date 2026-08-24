@@ -153,6 +153,17 @@ export default function PendientesDeposito({
                 : t("depositos.entregadoSinQuien", { fecha: fmtFechaCorta(entregado.fecha) })
               : t("depositos.pendienteSub")}
           </p>
+          {/* Quién hizo el corte: no es lo mismo que quién se llevó el dinero
+              —una lo contó, el otro lo lleva— y por eso son dos líneas. */}
+          {entregado?.registrado_por && (
+            <p className="dm-sub dm-registrado">
+              {t("tx.registradoPor", {
+                quien: [entregado.registrado_por, entregado.registrado_rol
+                  ? t(`rol.${entregado.registrado_rol}`, { defaultValue: entregado.registrado_rol })
+                  : null].filter(Boolean).join(" · "),
+              })}
+            </p>
+          )}
         </div>
       </div>
 

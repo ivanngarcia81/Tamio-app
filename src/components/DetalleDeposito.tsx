@@ -220,10 +220,18 @@ export default function DetalleDeposito({
             {corte?.responsable
               ? fila(t("depositos.llevado"), corte.responsable)
               : null}
-            <div className="dep-par dep-par--sinmotor" title={t("depositos.responsableSinMotor")}>
-              <span>{t("depositos.registro")}</span>
-              <span className="dep-par-valor">{t("detalleMiembro.sinCapturar")}</span>
-            </div>
+            {/* Quién lo REGISTRÓ en la app. Sin nombre —lo anterior a la
+                migración 39, o el modo local— la fila no se pinta: un hueco
+                con "sin capturar" era correcto mientras no existía la
+                columna, pero ahora que existe, callar es más honesto que
+                repetir en cada depósito viejo que no se sabe. */}
+            {dep.registrado_por
+              ? fila(
+                  t("depositos.registro"),
+                  [dep.registrado_por, dep.registrado_rol ? t(`rol.${dep.registrado_rol}`, { defaultValue: dep.registrado_rol }) : null]
+                    .filter(Boolean).join(" · "),
+                )
+              : null}
             {fila(t("depositos.periodoContableCorto"), mesLegible(dep.periodo))}
             {fila(t("depositos.colNotas"), dep.notas)}
           </section>
