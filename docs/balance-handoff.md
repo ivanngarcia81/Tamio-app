@@ -153,7 +153,7 @@ capricho: cada uno de los tres primeros es de una tarde.
 |---|---|---|
 | **Roster por puestos** | Servicios | **Cuatro de seis puestos son plantilla**: Predicación y Dirección salen de `servicios.predica`/`.dirige`; Alabanza, Ujieres, Ofrenda y Sonido dicen "Sin asignar". Pide catálogo de puestos + asignación por servicio. Con él se encienden los cuatro **"Asignar encargado"** |
 | **Orden del culto** | Servicios | `servicios` no guarda el minuto a minuto |
-| **Pestaña "Familia"** | Ficha del miembro | Tabla de parentescos. `members` no guarda relaciones |
+| ~~**Pestaña "Familia"**~~ | Ficha del miembro | **hecho** (migración 46, `parentescos`): una fila por relación, leída al revés desde la otra ficha |
 | **Mensajería dirigida** | Mensajes | `mensajes` no tiene destinatario: es un hilo único por iglesia. El aviso "lo ven las tres áreas" **dice la verdad** |
 
 ### Lo que está apagado por DECISIÓN, no por hueco

@@ -3389,6 +3389,115 @@ export async function listCandidatosPuesto(
   );
 }
 
+// ---------- Parentescos: la pestaña Familia (migración 46) ----------
+
+/**
+ * El catálogo de parentescos, y su inverso.
+ *
+ * **Los términos son neutros** —"Padre o madre", "Hijo o hija"— y no por
+ * corrección: `members` no guarda sexo, así que "hija" sería un dato que
+ * inventa la interfaz. De regalo, cada inverso queda ÚNICO: el inverso de
+ * "hijo" es "padre" y punto. Con términos con sexo habría que adivinar cuál
+ * de los dos poner, y adivinar es justo lo que esta app no hace.
+ */
+export const INVERSO_PARENTESCO: Record<string, string> = {
+  conyuge: "conyuge",
+  padre: "hijo",
+  hijo: "padre",
+  hermano: "hermano",
+  abuelo: "nieto",
+  nieto: "abuelo",
+  tio: "sobrino",
+  sobrino: "tio",
+  primo: "primo",
+  otro: "otro",
+};
+
+/** Las claves del catálogo, en el orden en que se ofrecen. */
+export const TIPOS_PARENTESCO = [
+  "conyuge", "padre", "hijo", "hermano", "abuelo", "nieto", "tio", "sobrino", "primo", "otro",
+] as const;
+
+export interface Pariente {
+  /** Id de la fila de `parentescos`, para poder soltarla. */
+  id: number;
+  member_id: number;
+  nombre: string;
+  /** Clave del catálogo, YA vista desde la ficha que pregunta. */
+  tipo: string;
+  /** true si la fila estaba guardada al revés y se leyó con el inverso. */
+  invertida: boolean;
+}
+
+/**
+ * La familia de un miembro: las relaciones donde aparece, mire por donde se
+ * mire. Las guardadas al revés se devuelven con el tipo INVERTIDO, que es lo
+ * que permite guardar una sola fila por relación.
+ */
+export async function listParientes(memberId: number, churchId: number): Promise<Pariente[]> {
+  const d = await getDb();
+  const filas = await d.select<{ id: number; otro_id: number; nombre: string; tipo: string; invertida: number }[]>(
+    `SELECT p.id, p.pariente_id AS otro_id, m.nombre, p.tipo, 0 AS invertida
+       FROM parentescos p
+       JOIN members m ON m.id = p.pariente_id
+      WHERE p.member_id = $1 AND p.church_id = $2 AND p.deleted = 0 AND m.deleted = 0
+      UNION ALL
+     SELECT p.id, p.member_id AS otro_id, m.nombre, p.tipo, 1 AS invertida
+       FROM parentescos p
+       JOIN members m ON m.id = p.member_id
+      WHERE p.pariente_id = $1 AND p.church_id = $2 AND p.deleted = 0 AND m.deleted = 0
+      ORDER BY nombre`,
+    [memberId, churchId]
+  );
+  return filas.map((f) => ({
+    id: f.id,
+    member_id: f.otro_id,
+    nombre: f.nombre,
+    tipo: f.invertida === 1 ? (INVERSO_PARENTESCO[f.tipo] ?? "otro") : f.tipo,
+    invertida: f.invertida === 1,
+  }));
+}
+
+/**
+ * Guarda "X es el `tipo` de Y". Devuelve `false` si esas dos personas ya
+ * están relacionadas —da igual en qué dirección esté guardada la fila—, para
+ * que la pantalla lo diga en vez de tropezar con el índice único.
+ *
+ * Nadie es pariente de sí mismo, y eso se corta aquí: una relación reflexiva
+ * saldría dos veces en la propia lista y el inverso no significaría nada.
+ */
+export async function insertParentesco(
+  churchId: number,
+  memberId: number,
+  parienteId: number,
+  tipo: string
+): Promise<boolean> {
+  if (memberId === parienteId) return false;
+  const d = await getDb();
+  const previas = await d.select<{ n: number }[]>(
+    `SELECT count(*) AS n FROM parentescos
+      WHERE church_id = $1 AND deleted = 0
+        AND ((member_id = $2 AND pariente_id = $3) OR (member_id = $3 AND pariente_id = $2))`,
+    [churchId, memberId, parienteId]
+  );
+  if ((previas[0]?.n ?? 0) > 0) return false;
+  await d.execute(
+    `INSERT INTO parentescos (church_id, member_id, pariente_id, tipo, uid, updated_at, deleted)
+     VALUES ($1,$2,$3,$4,$5,datetime('now'),0)`,
+    [churchId, memberId, parienteId, tipo, crypto.randomUUID()]
+  );
+  return true;
+}
+
+/** Suelta una relación. Borrado en BLANDO, para que viaje entre aparatos. */
+export async function deleteParentesco(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE parentescos SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
 /** Miembros que entran al roster de un servicio NUEVO: solo estado Activo
  *  (excluye inactivos, visitantes y cualquier baja: trasladado, fallecido…). */
 export async function listMembersRoster(churchId: number): Promise<{ id: number; nombre: string }[]> {
@@ -4277,7 +4386,7 @@ export function mesLegible(yyyyMm: string): string {
  *  `transactions`, `cortes` a `depositos_bancarios`, y los dos de servicio a
  *  `servicios` y a `members`. */
 const TABLAS_DATOS = [
-  "corte_movimientos", "cortes", "servicio_puestos", "servicio_orden",
+  "corte_movimientos", "cortes", "servicio_puestos", "servicio_orden", "parentescos",
   "transactions", "depositos_bancarios", "members", "actas", "cartas",
   "solicitudes", "traslados_salida", "traslados_entrada", "servicios",
   "agenda", "mensajes", "gastos_recurrentes",

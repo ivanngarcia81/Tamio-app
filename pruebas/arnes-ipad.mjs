@@ -3672,6 +3672,93 @@ console.log("\n== Los dos avisos de tesorería cambian lo que sale en Por revisa
   await ctxT.close();
 }
 
+/* ---------- 40. La pestaña Familia ----------
+   Llevaba desde el handoff construida y vacía, con su explicación. Con la
+   migración 46 (`parentescos`) se llena, y lo que aquí se comprueba es lo que
+   hace especial a esta tabla: **una sola fila por relación**, leída al revés
+   desde la otra ficha. Si alguien la cambiara por dos filas, o se olvidara de
+   invertir el tipo, esto lo caza.
+
+   Probada al revés dos veces: sin invertir el tipo, la ficha del hijo dice
+   "Hijo o hija" de su padre y sale en rojo; y quitando la comprobación de
+   pareja repetida, el aviso de "ya están relacionadas" no aparece. */
+console.log("\n== La pestaña Familia ==");
+{
+  const ctxFa = await nuevoContexto("ipad");
+  const pg = await ctxFa.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /** Abre la ficha de Aportantes de esa persona y su pestaña Familia. */
+  const abrirFamilia = async (nombre) => {
+    await pg.goto(`${URL_BASE}/#/miembros`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".md-miembros .md-fila", { timeout: 10000 });
+    await pg.locator(".md-miembros .md-fila", { hasText: nombre }).first().click();
+    await pg.waitForTimeout(500);
+    await pg.locator(".fm-tabs button, .fm-seg button", { hasText: /Familia|Family/ }).first().click();
+    await pg.waitForTimeout(500);
+  };
+
+  await abrirFamilia("Ana Martínez");
+  const vacia = await pg.evaluate(() => ({
+    vacio: !!document.querySelector(".fm-vacio--pendiente"),
+    anadir: !!document.querySelector(".fm-anadir"),
+  }));
+  chk(vacia.vacio, "sin parientes, la pestaña sigue explicando qué es");
+  chk(vacia.anadir, "y ofrece añadir uno, que es lo que le faltaba");
+
+  // --- Ana es madre de Juan ---
+  await pg.locator(".fm-anadir").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet").getByText("Juan Pérez").first().click();
+  await pg.waitForTimeout(500);
+  const opciones = await pg.locator(".action-sheet .action-sheet-opcion").count();
+  chk(opciones >= 10, `el catálogo de parentescos se ofrece entero (${opciones})`);
+  await pg.locator(".action-sheet").getByText(/^Hijo o hija$/).first().click();
+  await pg.waitForTimeout(800);
+
+  const enAna = await pg.evaluate(() => [...document.querySelectorAll(".fm-pariente")].map((f) => ({
+    tipo: f.querySelector(".dm-campo-etiqueta")?.textContent.trim(),
+    nombre: f.querySelector(".dm-campo-valor")?.textContent.trim(),
+  })));
+  chk(enAna.length === 1 && enAna[0].nombre === "Juan Pérez",
+    `queda en la ficha de Ana (${enAna[0]?.nombre})`);
+  chk(enAna[0]?.tipo === "Hijo o hija", `con el parentesco que se eligió (${enAna[0]?.tipo})`);
+
+  /* --- Y AL REVÉS, que es lo que prueba la fila única --- */
+  await abrirFamilia("Juan Pérez");
+  const enJuan = await pg.evaluate(() => [...document.querySelectorAll(".fm-pariente")].map((f) => ({
+    tipo: f.querySelector(".dm-campo-etiqueta")?.textContent.trim(),
+    nombre: f.querySelector(".dm-campo-valor")?.textContent.trim(),
+  })));
+  chk(enJuan.length === 1 && enJuan[0].nombre === "Ana Martínez",
+    `y sale también en la de Juan, sin haberla escrito dos veces (${enJuan[0]?.nombre})`);
+  chk(enJuan[0]?.tipo === "Padre o madre",
+    `leída con el tipo INVERTIDO, que es lo que la hace verdad (${enJuan[0]?.tipo})`);
+
+  /* Ana ya no puede volver a aparecer en la hoja: relacionarlas dos veces
+     sería la misma relación contada dos veces. */
+  await pg.locator(".fm-anadir").click();
+  await pg.waitForTimeout(400);
+  const ofrecidos = await pg.evaluate(() =>
+    [...document.querySelectorAll(".ios-sheet .ios-buscador-fila")].map((b) => b.textContent.trim()));
+  chk(!ofrecidos.some((x) => /Ana Mart/.test(x)),
+    `quien ya es pariente deja de ofrecerse (${ofrecidos.length} en la lista)`);
+  chk(!ofrecidos.some((x) => /Juan P/.test(x)), "y uno mismo tampoco: nadie es pariente de sí mismo");
+  await pg.keyboard.press("Escape");
+  await pg.waitForTimeout(300);
+
+  // --- Soltarla la quita de las DOS fichas ---
+  await pg.locator(".fm-pariente-quitar").first().click();
+  await pg.waitForTimeout(800);
+  const trasQuitar = await pg.locator(".fm-pariente").count();
+  chk(trasQuitar === 0, `soltarla la quita de la ficha de Juan (${trasQuitar})`);
+  await abrirFamilia("Ana Martínez");
+  const enAnaTras = await pg.locator(".fm-pariente").count();
+  chk(enAnaTras === 0, `y de la de Ana, porque era la misma fila (${enAnaTras})`);
+  await ctxFa.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

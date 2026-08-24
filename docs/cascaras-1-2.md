@@ -100,8 +100,29 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
     `updateMemberFicha`, que corre en los dos modos. La guarda del arnés (§35)
     comprueba exactamente eso: abre un miembro que YA existe, escribe los tres
     por la interfaz, guarda, **recarga** y los busca.
-- **Pestaña "Familia"** — **construida vacía y con su explicación**. `members`
-  no tiene relaciones ni columna de familia. Pide tabla de parentescos.
+- ~~**Pestaña "Familia"**~~ → **cableada el 24 ago 2026** (migración 46, tabla
+  `parentescos`). Se añade a alguien del padrón y se dice qué es de esta
+  persona; la relación sale en **las dos fichas**.
+
+  Dos decisiones que quedan escritas, porque las dos se podrían haber tomado
+  al revés y habría costado caro:
+
+  - **Una fila por relación, no dos.** La fila dice "`pariente_id` es el
+    `tipo` de `member_id`", y la ficha del otro la lee al revés con el
+    inverso. Guardar las dos direcciones habría duplicado cada escritura y,
+    con ella, la posibilidad de que se separen: corriges una y la otra sigue
+    contando otra historia. La guarda del arnés (§40) comprueba exactamente
+    esto — mira la relación desde las dos fichas y desde la segunda exige el
+    tipo INVERTIDO.
+  - **El catálogo es neutro** —"Padre o madre", "Hijo o hija"— y no por
+    corrección: `members` no guarda sexo, así que "hija" sería un dato que
+    inventa la interfaz. De regalo, cada inverso queda único: el inverso de
+    "hijo" es "padre" y punto.
+
+  Elegir va en dos pasos —primero la persona, después el parentesco— porque
+  el padrón son cuatrocientos nombres y el catálogo son diez opciones;
+  juntarlos en una hoja obligaría a elegir el parentesco primero, que es al
+  revés de como se piensa ("Ana… es mi hermana").
 
 ## Reportes (§17)
 

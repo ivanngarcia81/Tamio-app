@@ -10282,6 +10282,43 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   /* El vacío que NO es un vacío: la pestaña que existe y todavía no tiene
      motor. Se distingue del "no hay nada este año" porque explica por qué. */
+  /* ---- La pestaña Familia con motor (migración 46) ---- */
+  /* La fila del pariente reusa `.dm-campo` —la misma que las demás fichas—
+     y solo añade el botón de soltar a la derecha. Un renglón de familia no
+     tiene por qué inventarse una anatomía propia. */
+  :root.ipad .fm-pariente { align-items: center; gap: 10px; }
+  :root.ipad .fm-pariente-quitar {
+    margin-left: auto;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--neg);
+    cursor: pointer;
+  }
+  :root.ipad .fm-pariente-quitar:active { opacity: 0.55; }
+  /* "Añadir familiar": va DEBAJO de la lista y no en la cabecera de la ficha,
+     porque la cabecera es del miembro y esto es de una pestaña suya. */
+  :root.ipad .fm-anadir {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brand);
+    cursor: pointer;
+  }
+  :root.ipad .fm-anadir:active { opacity: 0.55; }
+
   :root.ipad .fm-vacio--pendiente {
     display: flex;
     flex-direction: column;

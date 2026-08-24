@@ -1000,6 +1000,49 @@ fn migraciones() -> Vec<motordb::Migracion> {
             ALTER TABLE churches ADD COLUMN umbral_comprobante INTEGER;
             ALTER TABLE churches ADD COLUMN avisar_duplicados INTEGER NOT NULL DEFAULT 1;
         "#,
+    }, motordb::Migracion {
+        version: 46,
+        description: "parentescos: la pestaña Familia de la ficha del miembro",
+        sql: r#"
+            -- La pestaña "Familia" del handoff llevaba desde el primer día
+            -- construida y vacía, con su explicación: `members` no guardaba
+            -- relaciones. Esta es la tabla que le faltaba.
+            --
+            -- **Una fila por relación, no dos.** La fila dice "`pariente_id`
+            -- es el `tipo` de `member_id`" y la ficha del OTRO la lee al revés
+            -- con el inverso del tipo (ver `INVERSO_PARENTESCO` en db.ts).
+            -- Guardar las dos direcciones habría duplicado cada escritura y,
+            -- con ella, la posibilidad de que se separen: corriges una y la
+            -- otra se queda contando otra historia.
+            --
+            -- **El catálogo es NEUTRO** —"Padre o madre", "Hijo o hija",
+            -- "Hermano o hermana"— y no por corrección: `members` no guarda
+            -- sexo, así que "hija" sería un dato inventado por la interfaz.
+            -- Además hace que cada inverso sea único: el inverso de "hijo" es
+            -- "padre" y punto, sin tener que adivinar de quién.
+            --
+            -- El índice único es PARCIAL y sobre el PAR, en las dos
+            -- direcciones no: dos personas se relacionan una vez, pero la
+            -- comprobación de "ya está al revés" la hace `insertParentesco`,
+            -- que es donde se puede dar un mensaje en vez de un error de SQL.
+            CREATE TABLE IF NOT EXISTS parentescos (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                member_id   INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                pariente_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                tipo        TEXT NOT NULL,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                uid         TEXT,
+                updated_at  TEXT,
+                deleted     INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_parentescos_par_vivo
+                ON parentescos(member_id, pariente_id) WHERE deleted = 0;
+            CREATE INDEX IF NOT EXISTS idx_parentescos_pariente
+                ON parentescos(pariente_id);
+            CREATE INDEX IF NOT EXISTS idx_parentescos_sync
+                ON parentescos(church_id, updated_at);
+        "#,
     }]
 }
 
