@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { esIPhone, esMovil } from "../movil";
+import { esIPad, esIPhone, esMovil } from "../movil";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import { fmtFechaCorta } from "../db";
 import { IconCalendar, IconChevronDown, IconClose, IconMail, IconPrinter } from "../icons";
@@ -8,7 +8,7 @@ import { showToast } from "../toast";
 import { printInformeIndividual } from "../services/informes/printInforme";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 import { ESTADOS_REGISTRO, useFichaMiembro, type PropsFicha } from "./fichaMiembro";
-import NuevoMiembroIOS from "./NuevoMiembroIOS";
+import FichaMiembroIOS from "./FichaMiembroIOS";
 
 /** Constante de módulo, no una lambda nueva por render: `useEscapeClose`
  *  lleva la función en las dependencias de su efecto, y una lambda inline
@@ -200,7 +200,8 @@ export function SwitchRow({ label, value, onChange }: { label: string; value: bo
  *
  *  Esta es la versión de ESCRITORIO, y también la del iPhone al EDITAR: la
  *  ficha completa —las siete secciones— sigue siendo la misma en las dos
- *  plataformas. Solo el ALTA en el teléfono se va a su propia hoja. */
+ *  plataformas. Lo táctil se va a `FichaMiembroIOS` para el ALTA siempre, y
+ *  para la EDICIÓN solo en el iPad; el porqué está en `enHoja`, más abajo. */
 export default function FichaMiembroModal(props: PropsFicha) {
   const { church, member, onClose, onFusionar } = props;
   const { t } = useTranslation();
@@ -219,11 +220,32 @@ export default function FichaMiembroModal(props: PropsFicha) {
     asistencia, docs, guardar,
   } = h;
 
-  // El ALTA en lo táctil se va a su propia hoja; la EDICIÓN no, que ahí la
-  // ficha completa es justamente lo que se viene a ver.
-  const enHoja = esMovil() && crear;
+  /* Cuándo se va a la hoja de iOS en vez de a este modal:
+   *
+   *  - **Alta**, en todo lo táctil (iPhone e iPad). Es como estaba.
+   *  - **Edición**, solo en el **iPad** (23 ago 2026). Este modal era lo
+   *    último del diseño viejo que seguía saliendo en la pantalla de
+   *    Membresía del iPad, encima del maestro-detalle: la misma ficha en dos
+   *    lenguajes distintos según se estuviera creando o corrigiendo.
+   *
+   *  El **iPhone sigue editando aquí**, y no por descuido: en el teléfono no
+   *  hay panel detrás: este modal es el único sitio donde se ven la
+   *  asistencia, el historial y los documentos del miembro. En el iPad esos
+   *  tres están en el panel de detalle y, lo que no está, la hoja lo lleva en
+   *  su pantalla de solo lectura. */
+  const enHoja = crear ? esMovil() : esIPad();
   useEscapeClose(enHoja ? NO_HACE_NADA : onClose);
-  if (enHoja) return <NuevoMiembroIOS onClose={onClose} h={h} />;
+  if (enHoja) {
+    return (
+      <FichaMiembroIOS
+        onClose={onClose}
+        h={h}
+        church={church}
+        member={member}
+        onFusionar={onFusionar}
+      />
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

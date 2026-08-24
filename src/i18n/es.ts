@@ -1394,6 +1394,11 @@ export const es = {
     iosMasPersonales: "Más datos personales",
     iosCompletar: "Completar ahora (opcional)",
     iosCompletarPie: "El ID fiscal, las notas, la iglesia anterior y la fecha en que se le recibió están aquí dentro.",
+    /* Al EDITAR no hay "Completar ahora": lo que queda dentro ya no es lo que
+       falta por llenar, es el expediente del miembro. */
+    iosExpediente: "Expediente",
+    iosHistorialFila: "Asistencia, historial y documentos",
+    iosRegistrado: "Registrado",
     /* En la fila de un bloque: cuántos de sus campos llevan ya algo escrito. */
     iosConDato: "{{n}} de {{total}}",
     fechaCongregacion: "Comenzó a congregarse",

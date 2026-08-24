@@ -2104,6 +2104,93 @@ console.log("\n== Las barras van con el acento, no en negro ==");
   await ctxG.close();
 }
 
+/* ---------- 26. Editar un miembro en el iPad va a la hoja, no al modal ----
+   Lo último del diseño viejo que seguía saliendo sobre el maestro-detalle de
+   Membresía: al crear salía la hoja de iOS y al editar salía el modal de
+   escritorio —la misma ficha en dos lenguajes según se estuviera creando o
+   corrigiendo—. Iván mandó las dos fotos juntas el 23 ago.
+
+   Lo que se vigila, y por qué cada cosa:
+
+    - que sale la hoja y NO queda ningún `.modal-card`;
+    - que "Guardar" está ENCENDIDO. Es la trampa real de este cambio: la hoja
+      apagaba el botón mientras el nombre estuviera vacío, y al editar el
+      nombre no se carga a propósito (`updateMemberFicha` no lo escribe), así
+      que la condición de siempre habría dejado "Guardar" muerto para siempre;
+    - que "Guardar y agregar otro" NO está —es del alta— y "Generar informe"
+      SÍ —es la acción del pie del modal, que no se puede perder por el
+      camino—;
+    - que la pantalla de solo lectura se abre y trae las cartas y traslados,
+      que es lo único del modal viejo que el panel de detrás no enseña. */
+console.log("\n== Editar miembro en el iPad: hoja, no modal ==");
+{
+  const ctxE = await nuevoContexto("ipad");
+  const pg = await ctxE.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".mb-fila", { timeout: 10000 });
+  await pg.locator(".mb-fila").first().click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".mb-cab-acciones .btn.primary").click();
+  await pg.waitForTimeout(600);
+
+  const e = await pg.evaluate(() => {
+    const hoja = document.querySelector(".ios-sheet.nm-hoja");
+    if (!hoja) return { hoja: false, modal: !!document.querySelector(".modal-card") };
+    const txt = (sel) => [...hoja.querySelectorAll(sel)].map((n) => n.textContent.trim());
+    const guardar = hoja.querySelector(".ios-nav-action");
+    return {
+      hoja: true,
+      modal: !!document.querySelector(".modal-card"),
+      titulo: hoja.querySelector(".ios-nav-title")?.textContent.trim(),
+      guardarApagado: guardar ? guardar.disabled : null,
+      cabeceras: txt(".ios-section-header"),
+      acciones: txt(".ios-field--action"),
+      etiquetas: txt(".ios-field-label"),
+    };
+  });
+  chk(e.hoja, "editar abre la hoja de iOS");
+  chk(!e.modal, "y no queda ningún modal de escritorio detrás");
+  if (e.hoja) {
+    chk(e.guardarApagado === false, `"Guardar" queda encendido al editar (disabled=${e.guardarApagado})`);
+    chk(e.titulo && e.titulo.length > 0 && e.titulo !== "Nuevo miembro",
+      `el título es el miembro, no "Nuevo miembro" (${e.titulo})`);
+    chk(!e.cabeceras.includes("Quién es"),
+      `sin "Quién es": esos campos no se guardan al editar (${e.cabeceras.join(" · ")})`);
+    chk(e.cabeceras.includes("Expediente"), "y con la sección Expediente");
+    chk(!e.acciones.some((a) => a.includes("agregar otro")),
+      `sin "Guardar y agregar otro" (${e.acciones.join(" · ")})`);
+    chk(e.acciones.some((a) => a.includes("Generar informe")), "y con \"Generar informe\"");
+    /* Los dos campos de membresía que en el alta viven dentro de "Más datos
+       personales": esa pantalla no existe al editar, así que si no subieran
+       aquí se perderían sin hacer ruido. */
+    chk(e.etiquetas.includes("Recibido como miembro") && e.etiquetas.includes("Iglesia anterior"),
+      `con ingreso e iglesia anterior en Membresía (${e.etiquetas.join(" · ")})`);
+
+    await pg.locator(".ios-sheet .ios-field--link", { hasText: "Asistencia, historial" }).first().click();
+    await pg.waitForTimeout(500);
+    const lect = await pg.evaluate(() => {
+      const p = [...document.querySelectorAll(".ios-sheet")].pop();
+      return {
+        n: document.querySelectorAll(".ios-sheet").length,
+        cabeceras: [...p.querySelectorAll(".ios-section-header")].map((n) => n.textContent.trim()),
+      };
+    });
+    chk(lect.n === 2, `la pantalla de lectura se apila (${lect.n} hojas)`);
+    chk(lect.cabeceras.includes("Cartas y traslados"),
+      `y trae lo que el panel de detrás no enseña (${lect.cabeceras.join(" · ")})`);
+    const DIR = process.env.CAPTURAS || "";
+    if (DIR) {
+      await pg.screenshot({ path: `${DIR}/editar-miembro-lectura.png` });
+      await pg.locator(".ios-sheet").last().locator(".ios-back").click();
+      await pg.waitForTimeout(400);
+      await pg.screenshot({ path: `${DIR}/editar-miembro-hoja.png` });
+    }
+  }
+  await ctxE.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

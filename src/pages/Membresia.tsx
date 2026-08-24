@@ -1041,8 +1041,11 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           member={ficha}
           onClose={() => setFicha(null)}
           onSaved={onChanged}
-          /* Solo en el teléfono: en Mac fusionar sigue en el menú de la fila. */
-          onFusionar={enIPhone ? () => { const m = ficha; setFicha(null); setFusionando(m); } : undefined}
+          /* Donde la fila NO tiene menú de "···": el teléfono y el iPad
+             partido. En Mac —y en el iPad sin partir— fusionar sigue en el
+             menú de la fila y esto no se pasa, para no ofrecer la misma
+             acción dos veces. */
+          onFusionar={enIPhone || partido ? () => { const m = ficha; setFicha(null); setFusionando(m); } : undefined}
         />
       )}
 

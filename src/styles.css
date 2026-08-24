@@ -3881,6 +3881,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-field--stacked .ios-field-label { font-size: 13px; color: var(--text-2); }
 :root.movil .ios-field--stacked .ios-field-input { text-align: left; }
 
+/* Un texto largo de SOLO LECTURA dentro de un grupo: la nota administrativa
+   con su fecha encima, el aviso de que una sección todavía no tiene nada.
+   Va con `--stacked`, que ya coloca la etiqueta arriba; lo único que hace
+   falta es que el texto envuelva, cosa que `.ios-field-value` no hace porque
+   está pensado para un dato corto pegado a la derecha. */
+:root.movil .ios-field-nota {
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* Texto largo dentro de la propia fila. `resize: none` porque el tirador de
    redimensionar es de escritorio: en un teléfono no hay puntero con el que
    agarrarlo y solo estorba en la esquina. */

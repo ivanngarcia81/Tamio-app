@@ -85,7 +85,7 @@ lo único propio de cada hoja son sus filas:
 | Solicitud de carta | `SolicitudModal` | `NuevaSolicitudIOS` |
 | Traslado de salida | `TrasladoSalidaModal` | `NuevoTrasladoSalidaIOS` |
 | Traslado de entrada | `TrasladoEntradaModal` | `NuevoTrasladoIOS` |
-| Alta de miembro (solo CREAR, como en iPhone) | `FichaMiembroModal` | `NuevoMiembroIOS` |
+| Ficha de miembro (alta en todo lo táctil; edición solo en iPad, §32) | `FichaMiembroModal` | `FichaMiembroIOS` |
 
 Las subpantallas (el buscador de nombres, "Tomar asistencia", los textos
 largos, horario/mociones/acuerdos) también son `.ios-sheet`, así que en el
@@ -2246,3 +2246,93 @@ La guarda mira las barras por su **color computado** y exige que ninguna sea
 `rgb(15, 15, 15)`, en Informes y en Inicio; y la geometría de la barrita
 contra el panel. Probada al revés —devolviendo `--ink` y el padding— canta los
 cuatro fallos. El arnés pasa de 613 a **619**.
+
+---
+
+## 32. Editar un miembro seguía abriendo el modal viejo (23 ago 2026)
+
+Iván mandó las dos fotos juntas: la hoja de iOS de **Nuevo miembro** —*Quién
+es*, *Membresía*, *Completar ahora*— y, en círculo, el modal de escritorio que
+salía al pulsar **Editar** sobre el maestro-detalle de Membresía: campos de
+fecha con borde, un `<select>` de estado, filas de chips y un pie con *Generar
+informe / Cancelar / Guardar cambios*. "Son la misma página y la del círculo es
+del diseño viejo."
+
+Y lo era, a propósito. `FichaMiembroModal` decidía así:
+
+```tsx
+// El ALTA en lo táctil se va a su propia hoja; la EDICIÓN no, que ahí la
+// ficha completa es justamente lo que se viene a ver.
+const enHoja = esMovil() && crear;
+```
+
+El argumento valía cuando lo táctil era solo el iPhone: ahí el modal es el
+único sitio donde se ven asistencia, historial y documentos, porque no hay
+panel detrás. En el iPad sí lo hay —`DetalleMembresia` enseña asistencia,
+expediente y movimientos— y ese argumento se cae. Ahora:
+
+```tsx
+const enHoja = crear ? esMovil() : esIPad();
+```
+
+**El iPhone se queda como estaba**, y no por olvido: sigue sin panel detrás.
+
+### La hoja pasa a servir para las dos cosas
+
+El archivo se llamaba `NuevoMiembroIOS.tsx`; con la edición dentro, el nombre
+mentía. Ahora es `FichaMiembroIOS.tsx`. Lo que cambia según el modo:
+
+| | Alta | Edición |
+|---|---|---|
+| Título | "Nuevo miembro" | el nombre del miembro |
+| "Quién es" (nombre, teléfono, correo) | sí | **no** |
+| "Membresía" | estado + fecha de congregación | más fecha de ingreso e iglesia anterior |
+| Tercera sección | "Completar ahora (opcional)", con *Más datos personales* | "Expediente", con *Asistencia, historial y documentos* |
+| Acciones del pie | "Guardar y agregar otro" | "Generar informe" y, si llega, "Fusionar duplicado…" |
+
+Lo de "Quién es" no es una simplificación: **al editar, esos campos no se
+guardan**. `updateMemberFicha` solo escribe la ficha, y el hook ni siquiera
+precarga `nombre`, `email`, `telefono`, `rfc` ni `notas` —arrancan en `""`
+tanto al crear como al editar—. El modal de escritorio lleva desde siempre
+pintando esa sección bajo `{crear && …}`; pintarla en la hoja habría enseñado
+cinco campos vacíos que además se habrían tragado lo que se escribiera en
+ellos. Por eso "Iglesia anterior" y "Recibido como miembro", que sí son de la
+ficha, suben a "Membresía" al editar: son justo los cuatro campos que el modal
+de Mac pinta en esa misma sección.
+
+### La trampa, y la guarda que la vigila
+
+La hoja apagaba "Guardar" mientras el nombre estuviera vacío. Al editar, el
+nombre está vacío **a propósito** y para siempre: la condición de siempre
+habría dejado el botón muerto. Ahora es `h.crear && !h.nombre.trim()`, y el
+arnés lo comprueba pidiendo `disabled === false`; devolviéndola a
+`!h.nombre.trim()` el arnés canta.
+
+### Lo que no se podía perder por el camino
+
+El panel de detrás enseña asistencia y movimientos, pero **no** las notas
+administrativas, ni los cambios de estado, ni las cartas y traslados. Sin eso,
+pasar la edición a la hoja los habría borrado de la vista. Van a una pantalla
+empujada de solo lectura, *Asistencia, historial y documentos*, en vez de
+alargar la hoja: lo que se viene a hacer aquí es cambiar algo, y tres bloques
+de lectura entre medias empujan los campos fuera de la pantalla.
+
+### Una cosa que decidí y hay que confirmar
+
+"Fusionar duplicado…" solo se pasaba a la ficha **en el iPhone**, porque ahí la
+fila perdió su menú de "···". En el iPad partido pasa exactamente lo mismo —la
+fila del maestro solo selecciona— así que fusionar no tenía ninguna forma de
+llegar. Ahora también se pasa cuando `partido`. Es la única cosa de esta tanda
+que **añade** algo en vez de mover lo que ya había.
+
+### Lo medido
+
+La guarda abre Membresía en el iPad, selecciona un miembro, pulsa *Editar* y
+exige: que salga `.ios-sheet.nm-hoja` y **no quede ningún `.modal-card`**; que
+"Guardar" esté encendido; que el título no sea "Nuevo miembro"; que no haya
+cabecera "Quién es" y sí "Expediente"; que no esté "Guardar y agregar otro" y
+sí "Generar informe"; que ingreso e iglesia anterior estén en Membresía; y que
+la pantalla de lectura se apile trayendo "Cartas y traslados". Probada al revés
+—devolviendo `esMovil() && crear`— canta las dos primeras; devolviendo el
+`sinNombre` de antes, canta la del botón. El arnés pasa de 619 a **630**.
+

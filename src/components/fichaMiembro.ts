@@ -41,10 +41,12 @@ export interface PropsFicha {
   member: Member | null;
   onClose: () => void;
   onSaved: () => void;
-  /** Fusionar este miembro con otro. Opcional y solo lo pasa Membresía en el
-   *  teléfono: ahí los "···" de la fila desaparecieron —el deslizamiento ya
-   *  da Editar y Eliminar— y fusionar se quedaría sin ninguna forma de
-   *  llegar. En Mac la acción sigue en el menú de la fila y esto no se pasa. */
+  /** Fusionar este miembro con otro. Opcional, y solo lo pasa Membresía donde
+   *  la fila se ha quedado sin menú de "···": el teléfono (el deslizamiento ya
+   *  da Editar y Eliminar) y el iPad partido (la fila del maestro solo
+   *  selecciona). Sin esto, ahí fusionar no tendría ninguna forma de llegar.
+   *  En Mac —y en el iPad sin partir— la acción sigue en el menú de la fila y
+   *  esto no se pasa. */
   onFusionar?: () => void;
 }
 
