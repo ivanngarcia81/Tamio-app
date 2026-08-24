@@ -41,14 +41,14 @@ import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { ACENTOS, type Acento } from "./components/settings/AccentSettings";
 import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
-import { HOME_POR_ROL, initialRole, puedeVer, saveRole, type Role } from "./role";
+import { HOME_POR_ROL, initialRole, permisosDe, puedeEliminarMovimientos, puedeVer, saveRole, type Role } from "./role";
 import { areaDeRuta, seccionesVisibles } from "./navegacion";
 import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { esMac } from "./movil";
 import { IconSidebar } from "./icons";
 import { authHabilitado } from "./supabase";
-import { configurarSync, ejecutarSync, iniciarAutoSync, programarSync, SYNC_HABILITADO } from "./syncManager";
+import { configurarSync, ejecutarSync, getSyncSnapshot, iniciarAutoSync, programarSync, subscribeSync, SYNC_HABILITADO } from "./syncManager";
 import { useSupabaseAuth } from "./auth";
 import { setQuienRegistra } from "./sesion";
 import { vigilarPrivacidad } from "./privacidad";
@@ -219,6 +219,13 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const location = useLocation();
   useEffect(() => { setMenuAbierto(false); }, [location.pathname]);
   const role: Role = authHabilitado ? (authEstado.role ?? "secretaria") : rolManual;
+  /** Los permisos del rol que abren una puerta (migración 49). Salen del
+   *  espejo local de la iglesia, que solo se escribe bajando de la nube. */
+  const permisos = permisosDe(church);
+  /** El otro permiso (49): al tesorero se le puede quitar el borrado de
+   *  movimientos. Se resuelve una vez aquí, donde están el rol y la iglesia,
+   *  y baja resuelto a las pantallas — que así no tienen que saber de roles. */
+  const puedeBorrarMovs = puedeEliminarMovimientos(role, church);
   // El carrusel de secciones (bug de teléfono corregido más abajo: ahora vive
   // FUERA de <main>, fijo bajo la fila de "+"/compartir) no siempre pinta
   // algo — CarruselSecciones.tsx devuelve null fuera de un área o con una
@@ -227,7 +234,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // la misma cuenta que hace ese componente, repetida aquí porque el CSS no
   // puede leer el resultado de un render ajeno.
   const areaActual = areaDeRuta(location.pathname);
-  const hayCarrusel = areaActual !== null && seccionesVisibles(areaActual, role).length >= 2;
+  const hayCarrusel = areaActual !== null && seccionesVisibles(areaActual, role, permisos).length >= 2;
 
   // Large Title que se reubica de verdad en la barra fija al hacer scroll
   // (iPhone/iPad): nada de esto pasa por estado de React — con setState en
@@ -337,6 +344,44 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     return iniciarAutoSync();
   }, [church.id, authEstado.autenticado, authEstado.sinRol]);
 
+  /* Al terminar una sincronización, releer la iglesia.
+   *
+   * Hay dos cosas que bajan de la nube DENTRO de la fila de `churches` y que
+   * la app no se entera de que han cambiado: el **plan** y, desde la
+   * migración 49, los **permisos del rol**. `sincronizarPlan` y
+   * `sincronizarPermisosTesoreria` escriben la fila, pero el estado de React
+   * se cargó al arrancar y se quedaba viejo hasta reiniciar.
+   *
+   * Con el plan eso ya era molesto (una suscripción renovada tardaba en
+   * abrirse). Con un permiso es peor: el administrador se lo quita al
+   * tesorero, y el iPad del tesorero seguiría enseñando el botón Eliminar
+   * —que el servidor ya rechaza— hasta que alguien cerrara la app. Un botón
+   * que no funciona es exactamente lo que este permiso existe para no tener.
+   *
+   * Se relee solo cuando la sincronización TERMINA bien, y solo si algo
+   * cambió de verdad: sin esa comparación, cada pasada del reloj recrearía el
+   * objeto `church` y redibujaría el shell entero cada pocos minutos. */
+  useEffect(() => {
+    let vivo = true;
+    let ultima = getSyncSnapshot().ultima;
+    const off = subscribeSync(() => {
+      const s = getSyncSnapshot();
+      if (s.estado !== "ok" || s.ultima === ultima) return;
+      ultima = s.ultima;
+      void getOrCreateChurch().then((fresca) => {
+        if (!vivo || !fresca) return;
+        const cambio = fresca.plan !== church.plan
+          || fresca.sub_estado !== church.sub_estado
+          || fresca.sub_vence !== church.sub_vence
+          || fresca.tesorero_ve_padron !== church.tesorero_ve_padron
+          || fresca.tesorero_puede_eliminar !== church.tesorero_puede_eliminar;
+        if (cambio) onChurchUpdated(fresca);
+      }).catch(() => {});
+    });
+    return () => { vivo = false; off(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [church, onChurchUpdated]);
+
   // La preferencia se guarda en cuanto cambia, no al cerrar: si la app se cae
   // o se reinicia, la ventana vuelve como el usuario la dejó.
   useEffect(() => {
@@ -387,7 +432,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   // Bloquea una ruta según el rol Y el plan contratado (redirige al inicio).
   // El gate por plan evita entrar al área no contratada tecleando la URL.
   const guard = (path: string, element: ReactNode) =>
-    puedeVer(role, path) && rutaPermitidaPorPlan(church.plan, path)
+    puedeVer(role, path, permisos) && rutaPermitidaPorPlan(church.plan, path)
       ? element
       : <Navigate to={HOME_POR_ROL[role]} replace />;
 
@@ -487,6 +532,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
                 onEditTx={openEditTx}
                 onChanged={onChanged}
                 onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
+                puedeEliminar={puedeBorrarMovs}
               />
             // Plan "solo Secretaría": el administrador aterriza en el
             // inicio de Secretaría; el tesorero no tiene área contratada.
@@ -505,6 +551,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             onNew={() => setModalMode({ kind: "create", tab: "ingreso" })}
             onEditTx={openEditTx}
             onChanged={onChanged}
+            puedeEliminar={puedeBorrarMovs}
           />
         )}
       />
@@ -518,6 +565,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             onNew={() => setModalMode({ kind: "create", tab: "gasto" })}
             onEditTx={openEditTx}
             onChanged={onChanged}
+            puedeEliminar={puedeBorrarMovs}
           />
         )}
       />
@@ -691,6 +739,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           carrusel → recién ahí el área con scroll. */}
       <CarruselSecciones
         role={role}
+        permisos={permisos}
         memberCount={memberCount}
         pendingCount={pendingCount}
         unreadCount={unreadCount}
@@ -728,6 +777,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
 
       <BarraInferior
         role={role}
+        permisos={permisos}
         memberCount={memberCount}
         pendingCount={pendingCount}
         unreadCount={unreadCount}

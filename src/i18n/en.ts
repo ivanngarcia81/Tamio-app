@@ -3105,11 +3105,13 @@ export const en: Resources = {
   },
   permisos: {
     titulo: "Treasury role permissions",
-    hint: "Access is granted by whole role today, not permission by permission. What you see here is what the treasury role can already do; changing it comes later.",
-    registrar: "Record income and expenses",
-    cortes: "Close batches and deposits",
-    padron: "See the full member roll",
+    sub: "What the person running this church's treasury can do",
+    hint: "They belong to the church, not the person: they apply to whoever holds the post. The server stores them, so they change on every device.",
+    padron: "See the Secretary's roll",
+    padronPie: "Opens Membership, with addresses, baptisms and families. For the church where the same person handles treasury and the roll. That screen only: Minutes, Letters and Services stay out.",
     eliminar: "Delete transactions",
+    eliminarPie: "When off, the Delete button disappears from Income, Expenses and the detail panel, and the server rejects the removal even if it arrives another way. Editing is still allowed.",
+    error: "Could not save. Only the administrator changes permissions, and a connection is required.",
   },
   /** Family-link catalogue. The terms are NEUTRAL on purpose: `members` does
    *  not store sex, so "daughter" would be data the interface made up. */

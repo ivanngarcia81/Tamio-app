@@ -39,11 +39,14 @@ interface Props {
   onNew: () => void;
   onEditTx: (tx: Tx) => void;
   onChanged: () => void;
+  /** Permiso de la iglesia (migración 49). Lo calcula App con el rol; aquí
+   *  llega ya resuelto para que la página no tenga que saber de roles. */
+  puedeEliminar?: boolean;
 }
 
 const PAGE_SIZE = 40;
 
-export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx, onChanged }: Props) {
+export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx, onChanged, puedeEliminar = true }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   // El carrusel de secciones ya muestra "Ingresos"/"Gastos" como pastilla
@@ -163,7 +166,10 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     // Si la serie ya generó movimientos, se pregunta qué hacer con ellos
     // ANTES de borrar la definición (al borrarla pierden su recurrente_id).
     const generados = await countTxDeSerie(pendingDeleteRec.id, church.id);
-    if (generados > 0) {
+    // Sin permiso de borrado no se pregunta: borrar la serie CON sus
+    // movimientos es el mismo poder por otra puerta. Se borra solo la
+    // definición y los movimientos ya generados se quedan donde están.
+    if (generados > 0 && puedeEliminar) {
       setPendingDeleteSerie({ def: pendingDeleteRec, generados });
       setPendingDeleteRec(null);
       return;
@@ -180,7 +186,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   async function eliminarSerie(conMovimientos: boolean) {
     if (!pendingDeleteSerie) return;
     const { def } = pendingDeleteSerie;
-    if (conMovimientos) await deleteTxDeSerie(def.id, church.id);
+    if (conMovimientos && puedeEliminar) await deleteTxDeSerie(def.id, church.id);
     await deleteMovimientoRecurrente(def.id, church.id);
     setPendingDeleteSerie(null);
     showToast(conMovimientos ? t("recurrente.toastSerieEliminada") : t("recurrente.toastEliminado"));
@@ -736,7 +742,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                         tituloLista={titulo}
                         onVolver={() => setSelId(null)}
                         onEditar={onEditTx}
-                        onEliminar={setPendingDeleteSel}
+                        onEliminar={puedeEliminar ? setPendingDeleteSel : undefined}
                         onVerComprobante={setPreviewSel}
                         onVerFicha={(mid) => navigate("/miembros", { state: { verMiembro: mid } })}
                         onCompartir={compartirMovimiento}
@@ -961,7 +967,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
             {visibles.length === 0 ? estadoVacio : (
               <>
-                <TxTable tipo={tipo} txs={pagina} onEdit={onEditTx} onChanged={onChanged} />
+                <TxTable tipo={tipo} txs={pagina} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
                 <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
               </>
             )}

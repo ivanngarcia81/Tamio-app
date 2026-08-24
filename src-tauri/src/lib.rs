@@ -1127,6 +1127,35 @@ fn migraciones() -> Vec<motordb::Migracion> {
             ALTER TABLE transactions ADD COLUMN folio_seq INTEGER;
             CREATE INDEX IF NOT EXISTS idx_tx_folio ON transactions(church_id, folio);
         "#,
+    }, motordb::Migracion {
+        version: 49,
+        description: "los dos permisos del rol Tesorería",
+        sql: r#"
+            -- Los cuatro interruptores que el rediseño de iPad dibujó en
+            -- "Permisos del rol Tesorería" se quedan en DOS, porque los otros
+            -- dos nunca fueron permisos: registrar ingresos y cerrar cortes
+            -- SON el rol. Apagarlos no le quita un permiso a la tesorera; la
+            -- deja dentro de Tesorería sin poder hacer nada, que es otro rol
+            -- —uno de solo lectura— y no un permiso suyo.
+            --
+            -- Viven en la IGLESIA y no en la persona (Iván, 24 ago 2026): una
+            -- regla que el administrador enciende una vez y que vale para
+            -- quien ocupe el puesto, hoy y el año que viene.
+            --
+            -- **Estas dos columnas son un ESPEJO, no la verdad.** La verdad
+            -- vive en `iglesias` de Supabase y baja con el plan, por el mismo
+            -- camino y por el mismo motivo: un permiso que el aparato pudiera
+            -- cambiar no sería un permiso, sería una preferencia. Aquí se
+            -- guardan para que la interfaz sepa qué esconder sin señal.
+            --
+            -- Los valores por omisión son EXACTAMENTE lo de hoy. Ver el
+            -- padrón: 0, porque el tesorero no entra a Membresía. Poder
+            -- eliminar: 1, porque hoy sí puede. Una migración no le retira en
+            -- silencio a nadie algo que ya venía usando; que se lo quite el
+            -- administrador, a propósito y sabiendo que lo hace.
+            ALTER TABLE churches ADD COLUMN tesorero_ve_padron      INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE churches ADD COLUMN tesorero_puede_eliminar INTEGER NOT NULL DEFAULT 1;
+        "#,
     }]
 }
 

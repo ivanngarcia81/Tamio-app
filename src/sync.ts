@@ -118,6 +118,69 @@ export async function sincronizarPlan(churchIdLocal: number): Promise<void> {
 }
 
 /**
+ * Baja los dos permisos del rol Tesorería desde la nube (migración 49).
+ *
+ * Mismo trato que el plan, y por el mismo motivo: **la nube es la autoridad**.
+ * Las columnas locales de `churches` son un espejo para que la interfaz sepa
+ * qué esconder sin señal; si el aparato pudiera escribirlas, el permiso no
+ * sería un permiso sino una preferencia, y bastaría con volar en avión para
+ * quitárselo.
+ *
+ * Como `sincronizarPlan`, si las columnas todavía no existen arriba (SQL P1
+ * sin correr) no hace nada y no rompe la sincronización.
+ */
+export async function sincronizarPermisosTesoreria(churchIdLocal: number): Promise<void> {
+  if (!supabase) return;
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return;
+  const { data, error } = await supabase
+    .from("iglesias")
+    .select("tesorero_ve_padron, tesorero_puede_eliminar")
+    .eq("id", remoteChurch)
+    .single();
+  if (error || !data) return; // columnas ausentes o sin permiso: se ignora
+  const fila = data as { tesorero_ve_padron?: boolean; tesorero_puede_eliminar?: boolean };
+  if (typeof fila.tesorero_ve_padron !== "boolean") return;
+  if (typeof fila.tesorero_puede_eliminar !== "boolean") return;
+  const d = await getDb();
+  await d.execute(
+    "UPDATE churches SET tesorero_ve_padron = $1, tesorero_puede_eliminar = $2 WHERE id = $3",
+    [fila.tesorero_ve_padron ? 1 : 0, fila.tesorero_puede_eliminar ? 1 : 0, churchIdLocal],
+  );
+}
+
+/**
+ * Cambia los dos permisos. Lo llama el administrador desde Ajustes.
+ *
+ * Pasa por una FUNCIÓN del servidor (`fijar_permisos_tesoreria`) y no por un
+ * UPDATE directo, porque `iglesias` no tiene política de escritura y no
+ * conviene que la tenga: el permiso de UPDATE de Supabase es de tabla, no de
+ * columna, así que abrirla para el administrador abriría también `plan` y
+ * cualquiera con ese rol podría regalarse la suscripción. La función expone
+ * exactamente dos columnas y comprueba el rol ella misma.
+ *
+ * El espejo local se refresca solo si el servidor aceptó. Si el servidor dice
+ * que no —porque quien lo pide no es administrador—, la pantalla se queda como
+ * estaba, que es la verdad.
+ */
+export async function fijarPermisosTesoreria(
+  churchIdLocal: number,
+  v: { vePadron: boolean; puedeEliminar: boolean },
+): Promise<void> {
+  if (!supabase) throw new Error("sin-login");
+  const { error } = await supabase.rpc("fijar_permisos_tesoreria", {
+    p_ve_padron: v.vePadron,
+    p_puede_eliminar: v.puedeEliminar,
+  });
+  if (error) throw error;
+  const d = await getDb();
+  await d.execute(
+    "UPDATE churches SET tesorero_ve_padron = $1, tesorero_puede_eliminar = $2 WHERE id = $3",
+    [v.vePadron ? 1 : 0, v.puedeEliminar ? 1 : 0, churchIdLocal],
+  );
+}
+
+/**
  * Sincroniza la tabla de miembros de una iglesia local contra Supabase.
  * No lanza excepciones: siempre devuelve un ResultadoSync (ok/motivo) para que
  * la UI pueda mostrar un estado claro.
@@ -1603,6 +1666,10 @@ function combinar(a: ResultadoSync, b: ResultadoSync): ResultadoSync {
 export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoSync> {
   // El plan baja primero (nube = autoridad); si falla, no afecta a los datos.
   await sincronizarPlan(churchIdLocal).catch(() => {});
+  // Y con él los permisos del rol, que son de la misma naturaleza: la nube
+  // manda y el aparato solo guarda copia. Van fuera del array de pasos porque
+  // un fallo aquí no debe cortar la sincronización de los datos.
+  await sincronizarPermisosTesoreria(churchIdLocal).catch(() => {});
   const m = await sincronizarMiembros(churchIdLocal);
   if (!m.ok) return etiquetarTabla("members", m);
   // Categorías antes que las transacciones, para que sus referencias

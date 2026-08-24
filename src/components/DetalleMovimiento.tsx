@@ -14,7 +14,10 @@ interface Props {
   tituloLista: string;
   onVolver: () => void;
   onEditar: (tx: Tx) => void;
-  onEliminar: (tx: Tx) => void;
+  /** Opcional: sin permiso de borrado (migración 49) el botón no se pinta.
+   *  Va como función ausente y no como bandera para que el compilador impida
+   *  ofrecer el botón sin tener a quién llamar. */
+  onEliminar?: (tx: Tx) => void;
   onVerComprobante: (path: string) => void;
   /** "Ver ficha" en la fila del aportante (diseño de iPad): salta a la ficha
    *  del miembro en Aportantes. Solo tiene sentido en ingresos con miembro
@@ -184,9 +187,11 @@ export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar,
           )}
           {acciones ?? (
             <>
-              <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(tx)}>
-                <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
-              </button>
+              {onEliminar && (
+                <button type="button" className="btn secondary dm-eliminar" onClick={() => onEliminar(tx)}>
+                  <IconTrash size={14} strokeWidth={2} /> {t("common.eliminar")}
+                </button>
+              )}
               <button type="button" className="btn primary" onClick={() => onEditar(tx)}>
                 <IconEdit size={14} strokeWidth={2} /> {t("common.editar")}
               </button>

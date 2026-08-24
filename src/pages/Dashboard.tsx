@@ -33,6 +33,9 @@ interface Props {
   onEditTx: (tx: Tx) => void;
   onChanged: () => void;
   onNew: () => void;
+  /** Permiso de la iglesia (migración 49): sin él la lista de movimientos
+   *  recientes no ofrece Eliminar. */
+  puedeEliminar?: boolean;
 }
 
 const IosChevron = () => (
@@ -85,7 +88,7 @@ function toCumulativeBalance(dias: DailyPoint[]) {
   });
 }
 
-export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew }: Props) {
+export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew, puedeEliminar = true }: Props) {
   const { t, i18n } = useTranslation();
   // Igual que en Miembros.tsx: el carrusel/la barra ya sitúan la pantalla, y
   // en el teléfono manda el idioma de panel. Mac no cambia.
@@ -981,7 +984,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             duplicaCrear
           />
         ) : (
-          <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} />
+          <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
         )}
           </>
         )}

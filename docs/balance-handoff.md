@@ -125,18 +125,19 @@ pero nunca tuvo campo en un formulario, así que se podía leer y jamás escribi
 
 ## 4. Lo que TODAVÍA necesita motor
 
-> **Puesta al día del 24 de agosto de 2026, por la tarde.** Esta sección se
-> escribió por la mañana con doce entradas. Quedan **cuatro**, y ninguna de
-> las cuatro es "falta escribirlo": tres esperan a otra cosa (una decisión
-> tuya, el login de Supabase, un refactor de tipografía) y la cuarta es una
-> pantalla que el diseño no pidió. Lo hecho en la tanda va en la §3 bis.
+> **Puesta al día del 24 de agosto de 2026, por la noche.** Esta sección se
+> escribió por la mañana con doce entradas. Quedan **tres**, y ninguna es
+> "falta escribirlo": el **tamaño de texto** espera un refactor de tipografía,
+> el **asa de arrastre** rehacer la pantalla de Categorías como lista, y la
+> **mensajería dirigida** una columna de destinatario que el diseño no pidió.
+> Lo hecho en la tanda va en la §3 bis.
 
 ### Lo que queda, y a qué espera cada uno
 
 | Qué | Dónde | A qué espera |
 |---|---|---|
 | ~~**`Folio 1042`**~~ | Inicio y panel de Movimientos | **hecho el 24 ago 2026** (migración 48): `2026-0042`, sin numerar el pasado. Decisión de Iván |
-| **4 permisos del rol Tesorería** | Config → Acceso y áreas | **Al login de verdad.** Hoy el rol se elige en un desplegable de Ajustes que cualquiera puede cambiar, así que un permiso por acción no sería un control: sería un interruptor que aparenta proteger algo. Va con Supabase (§5), no antes. Mientras tanto las cuatro filas siguen enseñando el estado que YA se cumple con el rol |
+| ~~**4 permisos del rol Tesorería**~~ | ~~Config → Acceso y áreas~~ | **hechos el 24 ago 2026** (migración 49), y son **DOS**: ver el padrón de Secretaría y eliminar movimientos. Los otros dos no eran permisos sino la definición del rol. Viven en la iglesia (no en la persona), la verdad está en Supabase y el borrado lo frena el servidor, no la interfaz. **Solo se enseñan con login**, porque sin él el rol se elige en un desplegable de la misma pantalla |
 | **Tamaño de texto** | Config → Preferencias | **A que las pantallas del iPad usen los tokens `--fs-*`.** Hoy llevan px literales; encenderlo escalaría la mitad de la app y la otra mitad no, que se ve peor que no tenerlo |
 | **Asa de arrastre para reordenar categorías** | Config → Categorías | **A que la pantalla sea la lista del diseño.** En el iPad las categorías son pastillas que fluyen en varias líneas, y ahí "arriba/abajo" no significa nada. Pide una columna de orden Y rehacer la pantalla; el conteo, que era la otra mitad de esa fila, ya está |
 | **Mensajería dirigida** | Mensajes | A columna de destinatario. El aviso "lo ven las tres áreas" **dice la verdad** mientras tanto |

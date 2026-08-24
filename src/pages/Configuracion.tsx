@@ -33,6 +33,7 @@ import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
 import PreferenciasSettingsIOS from "../components/settings/PreferenciasSettingsIOS";
 import RoleSettings from "../components/settings/RoleSettings";
+import PermisosSettings from "../components/settings/PermisosSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import ComprobantesPendientes from "../components/settings/ComprobantesPendientes";
 import RestoreSettings from "../components/settings/RestoreSettings";
@@ -870,6 +871,14 @@ export default function Configuracion({
                   sin login, quien usa la app en su propia instalación. */}
               {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
               {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
+              {/* Los dos permisos del rol Tesorería (49). Esta sí tiene cara de
+                  escritorio, y las de las migraciones 45 y 47 no, porque no es
+                  un aviso: es un permiso, y quien lo pone es el administrador
+                  —que muy probablemente trabaja en un Mac—. Sin esta tarjeta,
+                  una iglesia sin iPad no podría usarlos nunca.
+                  Mismas dos condiciones que en la lista de iOS: sin login el
+                  rol se elige en un desplegable de esta misma zona. */}
+              {esAdmin && authActivo && <PermisosSettings church={church} onChurchUpdated={onChurchUpdated} />}
               {/* El directorio de usuarios hoy no controla el acceso (el login
                   está desactivado en la 1.0): una tarjeta que no hace nada no
                   merece sitio. Vuelve sola cuando el login regrese en la 1.1. */}

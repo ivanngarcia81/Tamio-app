@@ -3182,13 +3182,18 @@ export const es = {
     ocultarMontos: "Ocultar montos al bloquear",
     ocultarMontosSub: "Al mandar Tamio a segundo plano, el contenido se difumina: la instantánea del selector de aplicaciones no enseña la contabilidad",
   },
+  /** Los dos permisos del rol Tesorería (migración 49). De los cuatro que
+   *  dibujó el handoff quedan dos: registrar y cerrar cortes no eran permisos
+   *  sino la definición del rol. Ver `PermisosSettings.tsx`. */
   permisos: {
     titulo: "Permisos del rol Tesorería",
-    hint: "Hoy el acceso se da por rol completo, no permiso a permiso. Lo que se ve aquí es lo que el rol de tesorería ya puede hacer; poder cambiarlo llegará después.",
-    registrar: "Registrar ingresos y gastos",
-    cortes: "Cerrar cortes y depósitos",
-    padron: "Ver el padrón completo",
+    sub: "Qué puede hacer quien lleva la tesorería de esta iglesia",
+    hint: "Son de la iglesia, no de la persona: valen para quien ocupe el puesto. Los guarda el servidor, así que cambian en todos los dispositivos.",
+    padron: "Ver el padrón de Secretaría",
+    padronPie: "Le abre Membresía, con domicilios, bautismos y familias. Para la iglesia donde la misma persona lleva la tesorería y el padrón. Solo esa pantalla: Actas, Cartas y Servicios siguen fuera.",
     eliminar: "Eliminar movimientos",
+    eliminarPie: "Apagado, el botón Eliminar desaparece de Ingresos, Gastos y del detalle, y el servidor rechaza la baja aunque llegue de otro modo. Editar sigue permitido.",
+    error: "No se pudo guardar. Solo el administrador cambia los permisos, y hace falta conexión.",
   },
   /** Catálogo de parentescos. Los términos son NEUTROS a propósito: `members`
    *  no guarda sexo, así que "hija" sería un dato que inventa la interfaz. */

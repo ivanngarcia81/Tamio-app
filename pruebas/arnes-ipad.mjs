@@ -2043,17 +2043,36 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   await pg.waitForTimeout(300);
   if (DIR) await pg.screenshot({ path: `${DIR}/config-tesoreria-1366x1024.png` });
 
+  /* **Los cuatro permisos salieron de esta lista el 24 ago 2026** (migración
+     49), y no bajando a dos como los de arriba: **desaparecieron de esta
+     pantalla**. Dos de los cuatro no eran permisos sino la definición del rol
+     —un tesorero que no registra no es un tesorero con un permiso menos— y los
+     otros dos, ya con motor, **solo se enseñan con login**: sin él el rol se
+     elige en un desplegable de ESTA MISMA zona, así que el permiso se quitaría
+     cambiando el desplegable. Este arnés corre sin Supabase, o sea sin login,
+     y por eso aquí no tiene que quedar ninguno.
+
+     La comprobación no se borra: cambia de signo. Antes exigía cuatro filas
+     apagadas; ahora exige CERO filas apagadas en la zona —lo que también
+     vigila que no vuelva a colarse una cáscara aquí— y que el selector de rol
+     —"Vista de este dispositivo", que es la razón de esconderlos— siga en su
+     sitio. El flujo entero de los dos permisos va en la sección 44. */
   await irA(/Acceso|Access/i);
   const perm = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
-    const filas = [...z.querySelectorAll(".ios-field--apagado")];
     return {
-      filas: filas.length,
-      vivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
+      apagadas: z.querySelectorAll(".ios-field--apagado").length,
+      hayGrupoPermisos: [...z.querySelectorAll(".ios-section-header")]
+        .some((h) => /Permisos del rol|role permissions/i.test(h.textContent ?? "")),
+      /* El selector de rol se llama "Vista de este dispositivo" —no "Rol"—,
+         y ese nombre es de por sí el argumento: es una VISTA que se elige en
+         el aparato, no una identidad que dé permisos. */
+      hayVista: /Vista de este dispositivo|view/i.test(z.textContent ?? ""),
     };
   });
-  chk(perm.filas === 4, `los cuatro permisos del rol (${perm.filas})`);
-  chk(perm.vivos === 0, "ninguno pulsable");
+  chk(perm.apagadas === 0, `Acceso y áreas: ni una fila apagada (${perm.apagadas})`);
+  chk(perm.hayGrupoPermisos === false, "y sin login el grupo de permisos no se enseña");
+  chk(perm.hayVista, "mientras \"Vista de este dispositivo\" —la razón de esconderlos— sigue ahí");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-permisos-1366x1024.png` });
   await ctxSm.close();
 }
@@ -4169,6 +4188,183 @@ console.log("\n== El folio del movimiento ==");
     document.querySelector(".dm-folio")?.textContent.trim());
   chk(/^Folio 2026-\d{4}$/.test(enPanel ?? ""), `el panel lo enseña con su rótulo (${enPanel})`);
   await ctxF.close();
+}
+
+/* ---------- 44. Los dos permisos del rol Tesorería ----------
+   El grupo "Permisos del rol Tesorería" del rediseño llevaba CUATRO
+   interruptores apagados y sin motor. Con la migración 49 quedan dos y
+   funcionan, porque los otros dos nunca fueron permisos: registrar ingresos y
+   cerrar cortes SON el rol de tesorería, y apagarlos no le habría quitado un
+   permiso a nadie —habría dejado a la tesorera dentro de Tesorería sin poder
+   hacer nada, que es otro rol y no un permiso—.
+
+   Los dos que quedan tiran para lados opuestos y por eso se prueban distinto:
+   ver el padrón ABRE una pantalla que hoy está cerrada; eliminar movimientos
+   CIERRA algo que hoy está abierto.
+
+   **Qué sostiene qué**, que es lo que hay que decir en voz alta:
+
+     · Lo de aquí es la INTERFAZ. Que el botón Eliminar desaparezca no impide
+       borrar: el aparato podría escribir la fila igual. Quien lo impide de
+       verdad es el disparador `frenar_borrado_tesorero` de Supabase, que
+       deshace la baja y devuelve el movimiento vivo — y eso vive en el
+       servidor, así que este arnés NO puede probarlo. Lo que sí prueba es que
+       la interfaz no ofrece un botón que el servidor va a rechazar.
+     · El del padrón NO es una barrera de datos y no puede serlo: los miembros
+       ya se sincronizan enteros a todos los aparatos porque el tesorero los
+       necesita en Aportantes. Abre una PANTALLA. Por eso se comprueba con
+       especial cuidado que abra UNA y no el área entera: un permiso que de
+       regalo abriera Actas y Cartas sería un cambio de rol disfrazado.
+     · El espejo local NO es la verdad. La comprobación de `updateChurch` es la
+       que impide el fallo más fácil de cometer aquí: que un día alguien meta
+       estas dos columnas en el formulario de la iglesia y el permiso se
+       convierta en una preferencia que se quita sin conexión. */
+console.log("\n== Los dos permisos del rol Tesorería ==");
+{
+  const ctxP = await nuevoContexto("ipad");
+  // El rol se fija ANTES de montar: `initialRole()` lee localStorage al nacer.
+  await ctxP.addInitScript(() => {
+    try { localStorage.setItem("tamio-rol", "tesorero"); } catch { /* noop */ }
+  });
+  const pg = await ctxP.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+
+  // --- Las dos puertas, en su lógica pura ---
+  const puertas = await pg.evaluate(async () => {
+    const r = await import("/src/role.ts");
+    return {
+      tesoreroSinPermiso: r.puedeEliminarMovimientos("tesorero", { tesorero_puede_eliminar: 0 }),
+      tesoreroConPermiso: r.puedeEliminarMovimientos("tesorero", { tesorero_puede_eliminar: 1 }),
+      adminAunqueEsteApagado: r.puedeEliminarMovimientos("administrador", { tesorero_puede_eliminar: 0 }),
+      porOmisionPuede: r.puedeEliminarMovimientos("tesorero", {}),
+      padronCerrado: r.puedeVer("tesorero", "/membresia"),
+      padronAbierto: r.puedeVer("tesorero", "/membresia", { vePadron: true }),
+      actasFuera: r.puedeVer("tesorero", "/actas", { vePadron: true }),
+      cartasFuera: r.puedeVer("tesorero", "/cartas", { vePadron: true }),
+      serviciosFuera: r.puedeVer("tesorero", "/servicios", { vePadron: true }),
+      secretariaIgual: r.puedeVer("secretaria", "/ingresos", { vePadron: true }),
+    };
+  });
+  chk(puertas.tesoreroSinPermiso === false, "con el permiso apagado, el tesorero no puede eliminar");
+  chk(puertas.tesoreroConPermiso === true, "encendido, sí");
+  /* El límite es del ROL Tesorería: el administrador es quien lo pone, y
+     quitárselo a sí mismo lo dejaría sin poder deshacerlo. */
+  chk(puertas.adminAunqueEsteApagado === true, "y al administrador no le afecta: es quien pone el límite");
+  /* Por omisión SÍ puede, que es lo que la app ha hecho siempre. Una
+     migración no le retira en silencio a nadie algo que venía usando. */
+  chk(puertas.porOmisionPuede === true, "sin columna —una base vieja— se conserva lo de hoy: sí puede");
+  chk(puertas.padronCerrado === false, "sin permiso, Membresía sigue cerrada al tesorero");
+  chk(puertas.padronAbierto === true, "con permiso, se le abre");
+  chk(puertas.actasFuera === false && puertas.cartasFuera === false && puertas.serviciosFuera === false,
+    "y solo esa pantalla: Actas, Cartas y Servicios siguen fuera");
+  chk(puertas.secretariaIgual === false, "el permiso no toca a la secretaria: Ingresos le sigue cerrado");
+
+  /* --- El espejo no lo escribe el aparato ---
+     `updateChurch` es lo que guarda el formulario de la iglesia. Si un día
+     estas dos columnas se colaran ahí, el permiso dejaría de ser un permiso:
+     se quitaría desde Ajustes, sin conexión y sin ser administrador. */
+  const espejo = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    await d.execute(
+      "UPDATE churches SET tesorero_puede_eliminar = 0, tesorero_ve_padron = 1 WHERE id = $1",
+      [ig.id],
+    );
+    const tras = await db.updateChurch(ig.id, { nombre: ig.nombre, moneda: ig.moneda });
+    return { puedeEliminar: tras.tesorero_puede_eliminar, vePadron: tras.tesorero_ve_padron };
+  });
+  chk(espejo.puedeEliminar === 0 && espejo.vePadron === 1,
+    `guardar la iglesia desde Ajustes NO toca los permisos (eliminar=${espejo.puedeEliminar}, padrón=${espejo.vePadron})`);
+
+  /* --- Y la interfaz obedece ---
+     Con el permiso apagado (lo dejó así el bloque de arriba) el panel de
+     detalle no puede pintar Eliminar. Se prueba en las dos direcciones para
+     que no pase por buena una pantalla que simplemente no cargó. */
+  /* RECARGA, no `goto` con otro hash: la iglesia se lee al ARRANCAR y vive en
+     el estado de React. Cambiar la columna por debajo y navegar dentro de la
+     misma sesión dejaba el permiso viejo en memoria — que es exactamente el
+     fallo que esta prueba encontró y que se arregló en `App.tsx`, releyendo la
+     iglesia cuando termina una sincronización. Aquí no hay sincronización que
+     esperar, así que se recarga. */
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.reload({ waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-fila", { timeout: 10000 });
+  await pg.locator(".md-fila").first().click();
+  await pg.waitForTimeout(500);
+  const sinBoton = await pg.evaluate(() => ({
+    hayPanel: !!document.querySelector(".dm"),
+    hayEliminar: !!document.querySelector(".dm-eliminar"),
+    hayEditar: !!document.querySelector(".dm .btn.primary"),
+  }));
+  chk(sinBoton.hayPanel && sinBoton.hayEditar, "el panel de detalle abre y conserva Editar");
+  chk(sinBoton.hayEliminar === false, "y sin el permiso NO pinta Eliminar");
+
+  // El mismo botón, con el permiso encendido: si no vuelve, lo de arriba
+  // estaba pasando por otro motivo.
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    await d.execute("UPDATE churches SET tesorero_puede_eliminar = 1 WHERE id = $1", [ig.id]);
+  });
+  await pg.reload({ waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-fila", { timeout: 10000 });
+  await pg.locator(".md-fila").first().click();
+  await pg.waitForTimeout(500);
+  const conBoton = await pg.evaluate(() => !!document.querySelector(".dm-eliminar"));
+  chk(conBoton === true, "y encendido vuelve a aparecer");
+
+  // Se deja como estaba para no ensuciar lo que venga detrás.
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    await d.execute("UPDATE churches SET tesorero_ve_padron = 0 WHERE id = $1", [ig.id]);
+  });
+  await ctxP.close();
+
+  /* --- Sin login, el grupo de permisos no se enseña ---
+     Es la decisión de Iván y tiene motivo: sin login el rol se elige en un
+     desplegable de ESTA MISMA zona, así que un permiso ahí se quitaría
+     cambiando el desplegable. Enseñar un candado que cualquiera abre es peor
+     que no enseñarlo.
+
+     **Va en su propio contexto, con el rol de ADMINISTRADOR**, y eso es lo que
+     hace que la comprobación valga. La condición real es `esAdmin &&
+     authActivo`: mirándolo como tesorero el grupo faltaría por las DOS
+     razones, y la prueba pasaría igual aunque la mitad del login no
+     existiera. Como administrador solo queda una razón en pie, que es la que
+     se quiere probar.
+
+     Se comprueba además que la zona SÍ está: sin eso, esto pasaría también si
+     Ajustes no hubiera cargado. La otra mitad —que CON login sí aparece— no la
+     puede probar este arnés, que corre sin Supabase. */
+  const ctxA = await nuevoContexto("ipad");
+  await ctxA.addInitScript(() => {
+    try { localStorage.setItem("tamio-rol", "administrador"); } catch { /* noop */ }
+  });
+  const pgA = await ctxA.newPage();
+  pgA.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pgA.setViewportSize({ width: 1366, height: 1024 });
+  await pgA.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pgA.waitForSelector(".settings-nav-item", { timeout: 10000 });
+  const zonasP = await pgA.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+  const iAcceso = zonasP.findIndex((z) => /Acceso/i.test(z));
+  chk(iAcceso >= 0, `la zona "Acceso y áreas" existe (${zonasP.length} zonas)`);
+  await pgA.locator(".settings-nav-item").nth(iAcceso).click();
+  await pgA.waitForTimeout(700);
+  const enAcceso = await pgA.evaluate(() => document.body.innerText);
+  /* El desplegable de rol es la prueba de que la zona cargó Y de que el
+     argumento es cierto: está ahí, en la misma pantalla, y cualquiera lo
+     cambia. */
+  chk(/Acceso y áreas/.test(enAcceso), "y su contenido cargó");
+  chk(/Permisos del rol/.test(enAcceso) === false,
+    "siendo ADMINISTRADOR y sin login, el grupo de permisos no se enseña");
+  await ctxA.close();
 }
 
 await browser.close();

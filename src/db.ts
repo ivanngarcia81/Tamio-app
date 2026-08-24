@@ -68,6 +68,14 @@ export interface Church {
   /** Si los cortes nacen pidiendo la segunda firma (migración 47). Es el valor
    *  por omisión de `cortes.doble_firma_pedida`, no una orden. */
   pedir_doble_firma: number;
+  /** Los dos permisos del rol Tesorería (migración 49). **Espejo de la nube,
+   *  no la verdad**: se escriben solo bajando desde `iglesias`, igual que el
+   *  plan. Aquí están para que la interfaz sepa qué esconder sin señal.
+   *
+   *  `tesorero_ve_padron` ABRE Membresía al tesorero (0 = lo de hoy);
+   *  `tesorero_puede_eliminar` le QUITA el borrado (1 = lo de hoy). */
+  tesorero_ve_padron: number;
+  tesorero_puede_eliminar: number;
 }
 
 export interface Member {

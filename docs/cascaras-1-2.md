@@ -351,7 +351,7 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
 | ~~**Barra lateral siempre visible**~~ | ídem | **RETIRADO el 24 ago** — no se cableó: se quitó. Ver abajo |
 | ~~**Ocultar montos al bloquear**~~ | ídem | **cableado el 24 ago** — tapa el contenido en segundo plano (`src/privacidad.ts`) |
-| **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
+| ~~**4 permisos del rol Tesorería**~~ | ~~Config → Acceso y áreas~~ | **cableados el 24 ago** (migración 49) — y quedaron DOS. Ver abajo |
 | ~~**Avisar de gastos sin comprobante desde $X**~~ | Config → Iglesia → Controles de tesorería | **cableado el 24 ago** (migración 45) — se enciende, se apaga y el importe se escribe |
 | ~~**Avisar de posibles duplicados**~~ | ídem | **cableado el 24 ago** — interruptor vivo |
 | ~~**Doble firma en el corte**~~ | ídem | **cableado el 24 ago** (migración 47) — dejó de ser una decisión al aclararse qué era |
@@ -367,11 +367,15 @@ Tres detalles de la ejecución que no son obvios:
 - **Se apaga la FILA entera, no solo el mando** (`.ios-field--apagado`, media
   tinta). Un interruptor gris dentro de una fila normal se lee como "está
   roto"; la fila entera a media tinta se lee como "esto todavía no".
-- **Los cuatro permisos enseñan el estado que YA se cumple** con el rol de
-  tesorería (dos sí, dos no), no un estado inventado. Mientras espera motor,
-  la fila dice algo verdadero.
-- **Solo iPad.** Son del handoff de iPad; el teléfono no los pidió y no se le
-  meten controles muertos.
+- **Los cuatro permisos enseñaban el estado que YA se cumplía** con el rol de
+  tesorería (dos sí, dos no), no un estado inventado. Mientras esperaban
+  motor, la fila decía algo verdadero. **Cableados el 24 de agosto de 2026**
+  (migración 49) — y al cablearlos quedaron dos, que es la historia de más
+  abajo.
+- **Eran solo iPad.** Al encenderlos dejaron de serlo, y por un motivo que no
+  es de diseño sino de uso: quien pone un permiso es el administrador, que
+  probablemente trabaja en un Mac. Un permiso que solo se pudiera poner desde
+  un iPad no lo tendría nunca una iglesia sin iPad.
 - **Dos de los cuatro últimos iban ENCENDIDOS**, y no por descuido: "Avisar de
   gastos sin comprobante" y "Avisar de posibles duplicados" describían algo
   que la app **ya hacía**, así que apagarlos habría sido mentir en la otra
@@ -402,15 +406,61 @@ Tres detalles de la ejecución que no son obvios:
   Se enseña lo que hace hoy.
 
 Lo que hace falta detrás de cada uno: los dos primeros, la pieza de
-`deposito_movimientos` y el roster por puestos (ya listados arriba). Los
-cuatro de Configuración son **funciones nuevas**, no columnas: escalar el
-tipo de letra, fijar la barra lateral en vertical, difuminar cifras al pasar
-a segundo plano, y permisos por acción en vez de por rol.
+`deposito_movimientos` y el roster por puestos (ya listados arriba). De los
+cuatro de Configuración quedan **uno**: escalar el tipo de letra. Los otros
+tres —fijar la barra lateral, difuminar cifras en segundo plano y los
+permisos— se resolvieron: el primero retirándolo, los otros dos con motor.
+
+### Cuatro interruptores que al encenderse resultaron ser dos
+
+**24 de agosto de 2026, migración 49.** Al ir a construir los cuatro permisos
+salió que dos de ellos no eran permisos:
+
+| Interruptor | Qué resultó ser |
+|---|---|
+| Registrar ingresos y gastos | **la definición del rol.** Un tesorero que no registra no es un tesorero con un permiso menos |
+| Cerrar cortes y depósitos | ídem |
+| Ver el padrón completo | permiso de verdad, y **DA**: le abre Membresía, que hoy tiene cerrada |
+| Eliminar movimientos | permiso de verdad, y **QUITA**: hoy sí puede |
+
+Apagar los dos primeros habría dejado a la tesorera dentro de Tesorería sin
+poder hacer nada. Eso no es quitarle un permiso: es otro rol —uno de solo
+lectura— y se resuelve creando el rol, no apagando un interruptor. Se
+quitaron de la lista con esa explicación en el pie.
+
+Los dos que quedaron llevan además una **advertencia sobre hasta dónde llega
+cada uno**, porque no llegan igual de lejos:
+
+- **El del borrado es un control de verdad.** Esconder el botón no impide
+  nada: el aparato puede escribir la fila igual. Quien lo impide es el
+  disparador `frenar_borrado_tesorero` de Supabase, que deshace la baja y
+  devuelve el movimiento vivo. Y **no lanza excepción a propósito** — una
+  excepción tumbaría el lote entero y con él la sincronización de
+  `transactions`, en un caso muy real: un movimiento borrado ANTES de que el
+  permiso se apagara y aún sin subir. Que el movimiento reaparezca ES el
+  aviso.
+- **El del padrón NO es una barrera de datos, y no puede serlo.** Los miembros
+  ya se sincronizan enteros a todos los aparatos de la iglesia, porque el
+  tesorero los necesita en Aportantes. El permiso abre una PANTALLA. Hacerlo
+  barrera real significaría no bajarle los miembros, y entonces Aportantes
+  dejaría de funcionar. Está dicho así en el código y en el pie del ajuste.
+
+Y una tercera decisión, la que hace que esto sea un permiso y no una
+preferencia: **la verdad vive en Supabase**, en `iglesias`, y baja a los
+aparatos como el plan. Las dos columnas locales de `churches` son un espejo
+para que la interfaz sepa qué esconder sin señal, y `updateChurch` **no las
+toca** — si un día se colaran en el formulario de la iglesia, el permiso se
+quitaría desde Ajustes, sin conexión y sin ser administrador. El arnés (§44)
+lo comprueba guardando la iglesia y mirando que los permisos no se muevan.
+
+**Sin login no se enseñan.** Ahí el rol se elige en un desplegable de esa
+misma zona, así que un permiso se quitaría cambiando el desplegable. Un
+candado que cualquiera abre es peor que ningún candado.
 
 > ⚠️ **Esto sube la apuesta de revisar este archivo antes de mandar a
 > REVISIÓN del App Store.** Un control apagado con explicación es defendible
 > ante la guideline 2.1; seis controles apagados en una pantalla de Ajustes,
-> menos. Antes de enviar a revisión: o tienen motor, o se ocultan detrás de
+> menos. (A 24 de agosto de 2026 queda **uno**: "Tamaño de texto".) Antes de enviar a revisión: o tienen motor, o se ocultan detrás de
 > una bandera. A TestFlight no le afecta.
 >
 > El arnés tiene una guarda para esto (**sección 22**): comprueba que siguen

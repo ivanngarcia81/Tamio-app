@@ -1,8 +1,10 @@
 /**
  * AccesosSettingsIOS.tsx — zona "Accesos y áreas" con el patrón de lista
- * agrupada de iOS, SOLO para iPhone. Mac/iPad siguen con las cuatro tarjetas
- * de escritorio (`PlanSettings`, `RoleSettings`, `InvitarUsuario`,
- * `SyncSettings`), que no se tocan.
+ * agrupada de iOS. **Corrección del 24 ago 2026:** esta cabecera decía "solo
+ * para iPhone", y no era verdad desde hacía tiempo — `Configuracion.tsx` la
+ * pinta con `enIPhone || esIPad()`. El Mac es el que sigue con las tarjetas de
+ * escritorio (`PlanSettings`, `RoleSettings`, `PermisosSettings`,
+ * `InvitarUsuario`, `SyncSettings`).
  *
  * Era la última de las seis zonas de Ajustes sin variante de iPhone: ahí se
  * pintaban los componentes de escritorio dentro de `settings-masonry`, con
@@ -17,7 +19,6 @@
  * las mismas cuatro que aplica Configuracion.tsx en el camino de Mac.
  */
 import { useState } from "react";
-import { esIPad } from "../../movil";
 import { useTranslation } from "react-i18next";
 import { updateSuscripcion, type Church } from "../../db";
 import { authHabilitado } from "../../supabase";
@@ -28,6 +29,7 @@ import { playSound } from "../../sound";
 import { ActionField, Section, SwitchField, TextField } from "../ios/FormularioIOS";
 import { IOSPickerField } from "../ios/IOSPickerField";
 import { useInvitacion } from "./InvitarUsuario";
+import { usePermisosTesoreria } from "./PermisosSettings";
 
 interface Props {
   church: Church;
@@ -56,6 +58,7 @@ export default function AccesosSettingsIOS({
   const { t } = useTranslation();
   const inv = useInvitacion();
   const snap = useSync();
+  const permisos = usePermisosTesoreria(church, onChurchUpdated);
 
   // Mismas cuatro guardas que Configuracion.tsx aplica a las tarjetas de
   // escritorio. Si una deja su grupo vacío, el grupo no se pinta.
@@ -63,6 +66,9 @@ export default function AccesosSettingsIOS({
   const verRol = !authActivo;
   const verInvitar = esAdmin && authActivo;
   const verSync = authActivo && SYNC_HABILITADO;
+  /* Los dos permisos del rol (49). Misma forma que las cuatro guardas de
+     arriba: si la condición no se cumple, el grupo no se pinta. */
+  const verPermisos = esAdmin && authActivo;
 
   // Mismo criterio que PlanSettings: con login manda la nube y esto es solo
   // lectura; en modo local solo se eligen áreas.
@@ -213,32 +219,44 @@ export default function AccesosSettingsIOS({
         </Section>
       )}
 
-      {/* "Permisos del rol Tesorería": los cuatro interruptores del handoff de
-          iPad. No existen —el rol se elige entero, no por permisos— así que
-          van APAGADOS y con su explicación, por decisión de Iván (23 ago):
-          se construye lo que el diseño dibuja y el motor viene después. El
-          estado que enseñan es el que YA se cumple hoy con el rol de
-          tesorería, para que la fila no mienta mientras espera.
+      {/* "Permisos del rol Tesorería" (migración 49), ya con motor.
+          De los CUATRO que dibujó el handoff quedan dos: registrar y cerrar
+          cortes no eran permisos sino la definición del rol —ver
+          `PermisosSettings.tsx`—.
 
-          Solo iPad, y apuntados en `docs/cascaras-1-2.md`. */}
-      {esIPad() && (
-        <Section header={t("permisos.titulo")} footer={t("permisos.hint")}>
-          {([
-            ["registrar", true],
-            ["cortes", true],
-            ["padron", false],
-            ["eliminar", false],
-          ] as const).map(([clave, activo]) => (
+          Se enseñan **solo con login y solo al administrador**, y las dos
+          condiciones son la misma: sin login el rol se elige en el desplegable
+          de dos filas más arriba, así que un permiso ahí no protegería nada;
+          se quitaría cambiando el desplegable, en la misma pantalla. Enseñar
+          un candado que cualquiera abre es peor que no enseñarlo. */}
+      {verPermisos && (
+        <>
+          {/* El error va FUERA del grupo: dentro sería una fila más de la
+              tarjeta y se leería como un ajuste. */}
+          {permisos.error && <p className="nm-aviso" role="alert">{t("permisos.error")}</p>}
+          <Section header={t("permisos.titulo")} footer={t("permisos.hint")}>
+            {/* La explicación va en `sub`, no en `title`: en un iPad no hay
+                puntero, así que un `title` no lo lee nadie — y aquí lo que
+                explica cada pie es justo lo que hay que saber antes de tocar
+                el interruptor.
+                Y NO se usa `disabled` mientras guarda: esa clase
+                (`ios-field--apagado`) significa "dibujado y sin motor" en toda
+                la app, y prestársela a un guardado de medio segundo diría lo
+                contrario de lo que pasa. El clic repetido lo frena el hook. */}
             <SwitchField
-              key={clave}
-              label={t(`permisos.${clave}`)}
-              checked={activo}
-              onChange={() => {}}
-              disabled
-              title={t("permisos.hint")}
+              label={t("permisos.padron")}
+              sub={t("permisos.padronPie")}
+              checked={permisos.vePadron}
+              onChange={(v) => permisos.cambiar("padron", v)}
             />
-          ))}
-        </Section>
+            <SwitchField
+              label={t("permisos.eliminar")}
+              sub={t("permisos.eliminarPie")}
+              checked={permisos.puedeEliminar}
+              onChange={(v) => permisos.cambiar("eliminar", v)}
+            />
+          </Section>
+        </>
       )}
     </div>
   );
