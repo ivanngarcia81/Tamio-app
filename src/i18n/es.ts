@@ -22,6 +22,7 @@ export const es = {
     no: "No",
     continuar: "Continuar",
     opcional: "(opcional)",
+    sinEspecificar: "Sin especificar",
     requerido: "Obligatorio",
     sinCorreo: "Sin correo",
     sinTelefono: "Sin teléfono",
@@ -1480,6 +1481,21 @@ export const es = {
   ficha: {
     sub: "Ficha de membresía, vida espiritual y servicio",
     secPersonal: "Datos personales",
+    /* La sección de nacimiento, dirección y estado civil. Se llama distinto
+       que `secPersonal` a propósito: aquella es el bloque del ALTA (nombre,
+       correo, teléfono, ID fiscal, notas) y esta sale también al editar. */
+    secDatosPersonales: "Datos de la persona",
+    iosDatosPersonalesPie: "Se pueden cambiar cuando quieras: una dirección se muda y un estado civil cambia.",
+    direccionPlaceholder: "Calle, número, colonia, ciudad",
+    /* Catálogo abierto: si el valor guardado no está aquí, se enseña tal cual. */
+    estadoCivil: {
+      soltero: "Soltero(a)",
+      casado: "Casado(a)",
+      unionLibre: "Unión libre",
+      divorciado: "Divorciado(a)",
+      viudo: "Viudo(a)",
+      separado: "Separado(a)",
+    },
     secMembresia: "Información de membresía",
     secEspiritual: "Información espiritual",
     secServicio: "Servicio y habilidades",

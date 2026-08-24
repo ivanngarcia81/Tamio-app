@@ -31,6 +31,11 @@ const DATA_COLS = [
   "ministerios_interes", "instrumentos", "habilidades", "disponibilidad",
   "interes_servir", "cargos", "historial_estados", "seguimiento_revisado_en",
   "seguimiento_notas",
+  // Migración 42. Van AL FINAL y solo después de haberlas creado en Supabase:
+  // esta lista se usa igual para subir que para bajar, y una columna que aquí
+  // esté y allá no rompe el `upsert` entero —los miembros no se sincronizan,
+  // no "todo menos ese campo"—. `direccion` ya estaba desde el primer día.
+  "fecha_nacimiento", "estado_civil",
 ] as const;
 
 type FilaLocal = Record<string, unknown> & {

@@ -2776,3 +2776,63 @@ panel enseña el nombre **y el rol**; sin sesión, no se pinta **nada**. El arn�
 siembra un ingreso con la sesión puesta y otros sin ella, y comprueba las dos.
 Pasa de 751 a **755**.
 
+
+## 38. Nacimiento, dirección y estado civil, con motor (24 ago 2026)
+
+Las tres filas grises de la ficha del miembro —"Sin capturar todavía", en
+cursiva y con su `title` explicándolo— llevaban ahí desde que se dibujó el
+maestro-detalle. Iván las mandó construir así: *"déjalo construida la plantilla
+y después se le pone motor"*. Este es el después.
+
+**Migración 42, y son dos columnas, no tres.** Lo primero fue leer el esquema
+antes de escribir nada, y salió la sorpresa: `direccion` existe en `members`
+**desde la migración 1**, y hasta viajaba en `DATA_COLS` de la sincronización.
+Lo que nunca tuvo fue campo en un formulario: se podía leer y jamás escribir.
+Las columnas nuevas de verdad son `fecha_nacimiento` y `estado_civil`. Las dos
+van sueltas (NULL) a propósito: un valor por omisión —una fecha, un
+"soltero"— se leería como un dato capturado, y la ficha tiene que distinguir
+"no lo sabemos" de "lo preguntamos y es esto".
+
+**Dónde viven, que es la decisión que importa.** El formulario de miembro tiene
+dos sacos y no se parecen en nada:
+
+| Saco | Lo escribe | Cuándo |
+|---|---|---|
+| `NewMember` | `insertMember` | **solo al dar de alta** |
+| `MemberFicha` | `updateMemberFicha` | alta **y** edición |
+
+Nombre, correo, teléfono, ID fiscal y notas están en el primero, y por eso el
+modal de escritorio pinta "Datos personales" bajo `{crear && …}` y la hoja de
+iOS hereda esa regla. Los tres nuevos se metieron en el **segundo**. Puestos en
+el primero habrían sido tres campos que solo se pueden llenar el día del
+registro —justo el día en que menos se sabe de una persona— y una dirección,
+que es lo que más cambia de las tres, habría nacido congelada.
+
+De ahí sale todo lo demás: la pantalla **"Datos de la persona"** existe en los
+dos modos, en la hoja de iOS y en el modal de Mac.
+
+**El estado civil es un catálogo ABIERTO**, como ministerios y cargos: seis
+claves traducidas y texto libre para lo demás. Y su primera opción es "Sin
+especificar", sin relleno: un desplegable que arrancara en "Soltero(a)"
+convertiría el hueco en un dato en cuanto alguien guardara la ficha por
+cualquier otro motivo.
+
+**Lo que NO entró: el expediente.** El prototipo lista "Dirección" entre los
+campos del expediente, y ahora que tiene columna cabría meterla en
+`camposFaltantes`. No se hizo. Esa función marca lo **obligatorio**, y añadirla
+habría puesto el padrón entero en rojo de un día para otro por un campo que
+nadie había tenido forma de llenar. Se pinta entre los datos, con los otros
+dos, y el expediente sigue con sus cuatro requisitos.
+
+**Se retira `filaSinMotor()`.** Era el ayudante que pintaba las filas en gris y
+estos tres eran su único usuario. Se va con ellos, en vez de quedarse esperando
+otro caso.
+
+**La guarda (§35 del arnés) prueba el recorrido entero de un usuario**, no los
+campos: abre un miembro que **ya existe**, escribe los tres por la interfaz
+—la fecha en su `input`, el estado civil en su selector, la dirección en su
+pantalla de texto—, guarda, **recarga la página** y los busca en las dos fichas
+que los pintan. Quitando las tres columnas del `UPDATE` de `updateMemberFicha`,
+caen cinco comprobaciones: es exactamente el fallo que esta guarda existe para
+cazar. Y una sexta vigila que no vuelva ninguna fila gris a la ficha. Pasa de
+787 a **799**.

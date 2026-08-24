@@ -25,6 +25,14 @@ import { playSound } from "../sound";
  *  (trasladado, retirado, fallecido) los pone el sistema. */
 export const ESTADOS_REGISTRO = ["activo", "inactivo", "visitante", "enProceso"] as const;
 
+/** Estado civil. Catálogo ABIERTO, como ministerios y cargos: la clave se
+ *  traduce si está aquí y si no se enseña tal cual, porque ninguna lista de
+ *  seis casillas cubre lo que una secretaría se encuentra en la práctica.
+ *  Sin valor no es "soltero": es que no se ha preguntado. */
+export const ESTADOS_CIVILES = [
+  "soltero", "casado", "unionLibre", "divorciado", "viudo", "separado",
+] as const;
+
 export function parseLista(json: string): string[] {
   try {
     const v = JSON.parse(json);
@@ -62,6 +70,13 @@ export function useFichaMiembro({ church, member, onClose, onSaved }: PropsFicha
   const [telefono, setTelefono] = useState("");
   const [rfc, setRfc] = useState("");
   const [notas, setNotas] = useState("");
+
+  /* Los tres del handoff, que SÍ se editan en los dos modos: viajan dentro de
+     `MemberFicha` —ver el porqué en su definición— y por eso, al contrario que
+     los cinco de arriba, aquí se precargan desde el miembro. */
+  const [fechaNacimiento, setFechaNacimiento] = useState(member?.fecha_nacimiento ?? "");
+  const [direccion, setDireccion] = useState(member?.direccion ?? "");
+  const [estadoCivil, setEstadoCivil] = useState(member?.estado_civil ?? "");
 
   const [estado, setEstado] = useState(
     ESTADOS_REGISTRO.includes(member?.estado_membresia as (typeof ESTADOS_REGISTRO)[number])
@@ -108,6 +123,7 @@ export function useFichaMiembro({ church, member, onClose, onSaved }: PropsFicha
   /** Deja el formulario de alta limpio para registrar otro miembro sin cerrar. */
   function limpiarParaOtro() {
     setNombre(""); setEmail(""); setTelefono(""); setRfc(""); setNotas("");
+    setFechaNacimiento(""); setDireccion(""); setEstadoCivil("");
     setEstado("activo");
     setFechaCongregacion(""); setFechaIngreso(""); setIglesiaAnterior("");
     setBautizadoAgua(false); setFechaBautismoAgua("");
@@ -139,6 +155,9 @@ export function useFichaMiembro({ church, member, onClose, onSaved }: PropsFicha
         habilidades,
         disponibilidad: disponibilidad.trim() || null,
         interes_servir: interesServir,
+        fecha_nacimiento: fechaNacimiento || null,
+        direccion: direccion.trim() || null,
+        estado_civil: estadoCivil.trim() || null,
       };
       if (crear) {
         const nuevo: NewMember = {
@@ -174,6 +193,8 @@ export function useFichaMiembro({ church, member, onClose, onSaved }: PropsFicha
     ministerios, setMinisterios, cargos, setCargos, ministeriosInteres, setMinisteriosInteres,
     instrumentos, setInstrumentos, habilidades, setHabilidades,
     disponibilidad, setDisponibilidad, interesServir, setInteresServir,
+    fechaNacimiento, setFechaNacimiento, direccion, setDireccion,
+    estadoCivil, setEstadoCivil,
     asistencia, docs,
     limpiarParaOtro, guardar,
   };

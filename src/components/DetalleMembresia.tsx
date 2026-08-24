@@ -60,9 +60,12 @@ function inicialesDe(nombre: string): string {
  *  - la asistencia (barras por mes, roster, racha, última visita) sale de
  *    `AsistenciaLigera`, que la página ya tiene cargada;
  *  - el expediente usa `camposFaltantes()`, la MISMA regla del informe de
- *    membresía — no la lista de cinco campos del prototipo, porque el
- *    requisito real es "correo O teléfono", no los dos, y "Dirección" no
- *    existe como columna (queda apuntada en docs/cascaras-1-2.md);
+ *    membresía, y no la lista de cinco campos del prototipo: el requisito real
+ *    es "correo O teléfono", no los dos. "Dirección" ya tiene columna desde el
+ *    24 ago 2026 y se pinta entre los datos, pero **no entra en el expediente**
+ *    y eso es a propósito: `camposFaltantes` marca lo OBLIGATORIO, y meterla
+ *    ahí dejaría el padrón entero en rojo de un día para otro por un campo que
+ *    nadie había podido llenar nunca;
  *  - las alertas son las dos computables hoy: racha ≥ umbral, y nuevo en el
  *    periodo sin revisión de seguimiento (`seguimiento_revisado_en`).
  */
@@ -236,6 +239,11 @@ export default function DetalleMembresia({
           </section>
 
           <section className="mb-carta mb-carta-lisa">
+            {fila(t("detalleMiembro.nacimiento"), m.fecha_nacimiento ? fmtFechaCorta(m.fecha_nacimiento) : null)}
+            {fila(t("detalleMiembro.estadoCivil"), m.estado_civil
+              ? t(`ficha.estadoCivil.${m.estado_civil}`, { defaultValue: m.estado_civil })
+              : null)}
+            {fila(t("detalleMiembro.direccion"), m.direccion)}
             {fila(t("membresia.colIngreso"), m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : null)}
             {fila(t("ficha.fechaCongregacion"), m.fecha_congregacion ? fmtFechaCorta(m.fecha_congregacion) : null)}
             {fila(t("membresia.labelBautismo"), m.fecha_bautismo_agua ? fmtFechaCorta(m.fecha_bautismo_agua) : (m.bautizado_agua === 1 ? t("common.si") : null))}

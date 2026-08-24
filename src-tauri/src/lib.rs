@@ -866,6 +866,26 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- que le faltaba, al lado de las otras dos.
             ALTER TABLE actas ADD COLUMN testigo TEXT;
         "#,
+    }, motordb::Migracion {
+        version: 42,
+        description: "nacimiento y estado civil del miembro",
+        sql: r#"
+            -- Las dos columnas que le faltaban a la ficha personal. La
+            -- tercera del diseño, `direccion`, existe desde la migración 1:
+            -- estaba en la tabla y en la sincronización, pero sin campo en
+            -- ningún formulario, así que nunca se pudo llenar. Con estas dos
+            -- se cablean las tres a la vez.
+            --
+            -- Las dos van sueltas (NULL) a propósito: son datos de una
+            -- persona, no del sistema. Un valor por omisión —una fecha, un
+            -- "soltero"— se leería como un dato capturado, y la ficha
+            -- distingue "no lo sabemos" de "lo preguntamos y es esto".
+            ALTER TABLE members ADD COLUMN fecha_nacimiento TEXT;
+            -- Clave del catálogo (soltero|casado|unionLibre|divorciado|
+            -- viudo|separado) o texto libre, igual que ministerios y cargos:
+            -- el catálogo no puede prever todos los casos de una iglesia.
+            ALTER TABLE members ADD COLUMN estado_civil TEXT;
+        "#,
     }]
 }
 

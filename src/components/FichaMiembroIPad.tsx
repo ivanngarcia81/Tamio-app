@@ -24,13 +24,13 @@ import type { Centavos } from "../dinero";
  *     y dice qué le falta, en vez de desaparecer: una sección sin datos
  *     todavía no es lo mismo que una que no aplica.
  *
- * Y tres campos del diseño —nacimiento, dirección y estado civil— **se pintan
- * sin motor**, por decisión de Iván (23 ago): primero la plantilla, el dato
- * después. `members` no tiene esas columnas; la fila sale con su etiqueta y
- * dice que todavía no se captura, para que se vea el hueco que va a llenarse
- * y no parezca que el campo no existe. Mismo trato que la pestaña Familia.
- * Cuando lleguen las columnas, solo cambia de qué se lee.
- * Ver docs/ipad-rediseno.md §16.
+ * Los tres campos del diseño —nacimiento, dirección y estado civil— nacieron
+ * aquí **sin motor**, por decisión de Iván (23 ago): primero la plantilla, el
+ * dato después. El dato llegó el 24 de agosto (migración 42) y con él se fue
+ * `filaSinMotor`, el ayudante que los pintaba en gris: ya son tres filas como
+ * las demás. Se capturan en "Datos personales", una pantalla de la ficha que
+ * existe en el alta Y en la edición.
+ * Ver docs/ipad-rediseno.md §16 y §38.
  */
 
 export type PestanaFicha = "datos" | "aportes" | "familia" | "asistencia";
@@ -127,6 +127,12 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
     new Date(2000, i, 1).toLocaleDateString(i18n.language.startsWith("en") ? "en-US" : "es-ES", { month: "short" })
       .replace(".", "");
 
+  /* Catálogo abierto, como ministerios y cargos: si la clave está en la lista
+     se traduce, y si es texto libre se enseña tal cual. */
+  const estadoCivil = member.estado_civil
+    ? t(`ficha.estadoCivil.${member.estado_civil}`, { defaultValue: member.estado_civil })
+    : null;
+
   const ministerios = lista(member.ministerios);
   const cargos = lista(member.cargos);
   const etiquetas = lista(member.etiquetas);
@@ -139,22 +145,6 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
         <span className="dm-campo-valor">{valor}</span>
       </div>
     ) : null;
-
-  /**
-   * Una fila del diseño que TODAVÍA no tiene columna detrás.
-   *
-   * No es lo mismo que `fila()` con el valor vacío: aquella se esconde porque
-   * el campo existe y esta ficha no lo trae; esta se enseña porque el campo va
-   * a existir y el hueco es la información. Se distingue a la vista (valor en
-   * gris claro, en cursiva) para que nadie la confunda con un dato borrado, y
-   * lleva `title` explicando por qué.
-   */
-  const filaSinMotor = (etiqueta: string) => (
-    <div className="dm-campo dm-campo--sinmotor" key={etiqueta} title={t("detalleMiembro.sinCapturarAyuda")}>
-      <span className="dm-campo-etiqueta">{etiqueta}</span>
-      <span className="dm-campo-valor">{t("detalleMiembro.sinCapturar")}</span>
-    </div>
-  );
 
   const PESTANAS: PestanaFicha[] = ["datos", "aportes", "familia", "asistencia"];
 
@@ -185,11 +175,13 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
             <div className="dm-ficha">
               {fila(t("detalleMiembro.telefono"), member.telefono)}
               {fila(t("detalleMiembro.correo"), member.email)}
-              {/* Los tres del diseño que esperan columna. Van aquí, entre el
-                  correo y el expediente, que es su sitio en el handoff. */}
-              {filaSinMotor(t("detalleMiembro.nacimiento"))}
-              {filaSinMotor(t("detalleMiembro.direccion"))}
-              {filaSinMotor(t("detalleMiembro.estadoCivil"))}
+              {/* Los tres del handoff. Estuvieron en gris —`filaSinMotor`—
+                  desde que se dibujó esta ficha hasta la migración 42, que les
+                  dio columna. Ahora son filas normales: sin dato no se pintan,
+                  como las diez de alrededor. */}
+              {fila(t("detalleMiembro.nacimiento"), member.fecha_nacimiento ? fmtFechaCorta(member.fecha_nacimiento) : null)}
+              {fila(t("detalleMiembro.direccion"), member.direccion)}
+              {fila(t("detalleMiembro.estadoCivil"), estadoCivil)}
               {fila(t("detalleMiembro.idFiscal"), member.rfc)}
               {fila(t("detalleMiembro.desde"), member.fecha_ingreso ? fmtFechaCorta(member.fecha_ingreso) : null)}
               {fila(t("detalleMiembro.congregaDesde"), member.fecha_congregacion ? fmtFechaCorta(member.fecha_congregacion) : null)}

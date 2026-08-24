@@ -7,7 +7,7 @@ import { IconCalendar, IconChevronDown, IconClose, IconMail, IconPrinter } from 
 import { showToast } from "../toast";
 import { printInformeIndividual } from "../services/informes/printInforme";
 import { useEscapeClose } from "../hooks/useEscapeClose";
-import { ESTADOS_REGISTRO, useFichaMiembro, type PropsFicha } from "./fichaMiembro";
+import { ESTADOS_CIVILES, ESTADOS_REGISTRO, useFichaMiembro, type PropsFicha } from "./fichaMiembro";
 import FichaMiembroIOS from "./FichaMiembroIOS";
 
 /** Constante de módulo, no una lambda nueva por render: `useEscapeClose`
@@ -217,6 +217,8 @@ export default function FichaMiembroModal(props: PropsFicha) {
     ministerios, setMinisterios, cargos, setCargos, ministeriosInteres, setMinisteriosInteres,
     instrumentos, setInstrumentos, habilidades, setHabilidades,
     disponibilidad, setDisponibilidad, interesServir, setInteresServir,
+    fechaNacimiento, setFechaNacimiento, direccion, setDireccion,
+    estadoCivil, setEstadoCivil,
     asistencia, docs, guardar,
   } = h;
 
@@ -309,6 +311,58 @@ export default function FichaMiembroModal(props: PropsFicha) {
               </div>
             </Seccion>
           )}
+
+          {/* Nacimiento, dirección y estado civil: los tres del handoff que
+              hasta el 24 ago 2026 se pintaban en gris como "sin capturar".
+              Al contrario que "Datos personales", esta sección sale TAMBIÉN al
+              editar, y puede: los tres viajan dentro de `MemberFicha`, que es
+              lo que `updateMemberFicha` escribe. Sin eso serían tres campos
+              que solo se pueden llenar el día del alta —justo el día en que
+              menos se sabe de alguien—. */}
+          <Seccion titulo={t("ficha.secDatosPersonales")}>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">
+                  {t("detalleMiembro.nacimiento")} <span className="opt">{t("common.opcional")}</span>
+                </label>
+                <input type="date" className="form-input" value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">
+                  {t("detalleMiembro.estadoCivil")} <span className="opt">{t("common.opcional")}</span>
+                </label>
+                {/* La opción vacía va PRIMERO y sin texto de relleno: es el
+                    valor de verdad de casi todas las fichas viejas, y un
+                    desplegable que arranca en "Soltero" convertiría "no lo
+                    sabemos" en un dato en cuanto alguien guardara la ficha por
+                    cualquier otro motivo. */}
+                {esIPhone() ? (
+                  <IOSPickerInput
+                    ariaLabel={t("detalleMiembro.estadoCivil")}
+                    options={[
+                      { value: "", label: t("common.sinEspecificar") },
+                      ...ESTADOS_CIVILES.map((e) => ({ value: e, label: t(`ficha.estadoCivil.${e}`) })),
+                    ]}
+                    value={estadoCivil}
+                    onSelect={setEstadoCivil}
+                  />
+                ) : (
+                  <select className="form-input" value={estadoCivil} onChange={(e) => setEstadoCivil(e.target.value)}>
+                    <option value="">{t("common.sinEspecificar")}</option>
+                    {ESTADOS_CIVILES.map((e) => (
+                      <option key={e} value={e}>{t(`ficha.estadoCivil.${e}`)}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="form-group full">
+                <label className="form-label">
+                  {t("detalleMiembro.direccion")} <span className="opt">{t("common.opcional")}</span>
+                </label>
+                <textarea className="form-textarea" value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder={t("ficha.direccionPlaceholder")} />
+              </div>
+            </div>
+          </Seccion>
 
           <Seccion titulo={t("ficha.secMembresia")}>
             <div className="form-grid">

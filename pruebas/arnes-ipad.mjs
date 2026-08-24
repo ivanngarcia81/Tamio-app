@@ -3088,6 +3088,157 @@ console.log("\n== Esconder la barra: solo en el Mac ==");
   await ctxF.close();
 }
 
+/* ---------- 35. Nacimiento, dirección y estado civil, con motor (mig. 42) ----
+   Eran las tres filas grises de la ficha —`filaSinMotor`, "Sin capturar
+   todavía"— desde que se dibujó el maestro-detalle. Iván las dejó así a
+   propósito ("déjalo construida la plantilla y después se le pone motor"), y
+   este es el después.
+
+   La comprobación importante NO es que los campos existan: es que se puedan
+   llenar DESPUÉS del alta. Es la trampa concreta de esta ficha y ya mordió una
+   vez: los datos personales del formulario (nombre, correo, ID fiscal, notas)
+   viven en `NewMember`, que solo se escribe al crear, así que un campo puesto
+   ahí solo se podría llenar el día del registro —justo el día en que menos se
+   sabe de una persona—. Los tres se metieron en `MemberFicha`, que es lo que
+   `updateMemberFicha` escribe también al editar, y por eso la pantalla "Datos
+   de la persona" sale en los dos modos.
+
+   Así que el recorrido es el de un usuario entero: abrir un miembro que YA
+   existe, escribir los tres por la interfaz —fecha, selector y pantalla de
+   texto—, guardar, recargar, y encontrarlos en las dos fichas que los pintan
+   (Aportantes y Membresía). Si alguno se cayera del `UPDATE`, se vería aquí. */
+console.log("\n== Los tres datos personales del miembro ==");
+{
+  const ctxD = await nuevoContexto("ipad");
+  const pg = await ctxD.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".mb-fila", { timeout: 10000 });
+  await pg.locator(".mb-fila").first().click();
+  await pg.waitForTimeout(400);
+  const quien = await pg.locator(".mb-cab-nombre").first().textContent().catch(() => null);
+  await pg.locator(".mb-cab-acciones .btn.primary").click();
+  await pg.waitForTimeout(600);
+
+  const enHoja = await pg.evaluate(() => {
+    const hoja = document.querySelector(".ios-sheet.nm-hoja");
+    return hoja ? [...hoja.querySelectorAll(".ios-field-label")].map((n) => n.textContent.trim()) : [];
+  });
+  chk(enHoja.includes("Datos de la persona"),
+    "editando un miembro que ya existe, la pantalla de datos personales está ahí");
+
+  await pg.locator(".ios-sheet .ios-field--link", { hasText: "Datos de la persona" }).first().click();
+  await pg.waitForTimeout(500);
+
+  const dentro = await pg.evaluate(() => {
+    const p = [...document.querySelectorAll(".ios-sheet")].pop();
+    return {
+      etiquetas: [...p.querySelectorAll(".ios-field-label")].map((n) => n.textContent.trim()),
+      // Sin valor, el estado civil dice "Sin especificar" y no "Soltero(a)":
+      // una ficha vacía no debe inventar el dato más común.
+      civil: [...p.querySelectorAll(".ios-field")]
+        .find((f) => f.querySelector(".ios-field-label")?.textContent.includes("Estado civil"))
+        ?.querySelector(".ios-field-value")?.textContent.trim(),
+    };
+  });
+  chk(dentro.etiquetas.includes("Nacimiento") && dentro.etiquetas.includes("Dirección")
+    && dentro.etiquetas.includes("Estado civil"),
+    `con los tres campos dentro (${dentro.etiquetas.join(" · ")})`);
+  chk(dentro.civil === "Sin especificar",
+    `y el estado civil arranca sin inventarse nada (${dentro.civil})`);
+
+  // --- Escribirlos por la interfaz, los tres de la forma que le toca ---
+  await pg.locator(".ios-sheet").last().locator('input[type="date"]').fill("1985-03-14");
+
+  await pg.locator(".ios-sheet").last().locator(".ios-field--link", { hasText: "Estado civil" }).click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".action-sheet-opcion", { hasText: "Casado" }).first().click();
+  await pg.waitForTimeout(400);
+
+  await pg.locator(".ios-sheet").last().locator(".ios-field", { hasText: "Dirección" }).first().click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-texto-campo").fill("Av. Juárez 120, Centro, Puebla");
+  await pg.locator(".ios-sheet").last().locator(".ios-nav-action").click();
+  await pg.waitForTimeout(400);
+
+  const escrito = await pg.evaluate(() => {
+    const p = [...document.querySelectorAll(".ios-sheet")].pop();
+    const val = (et) => [...p.querySelectorAll(".ios-field")]
+      .find((f) => f.querySelector(".ios-field-label")?.textContent.includes(et))
+      ?.querySelector(".ios-field-value, input")?.value
+      ?? [...p.querySelectorAll(".ios-field")]
+        .find((f) => f.querySelector(".ios-field-label")?.textContent.includes(et))
+        ?.querySelector(".ios-field-value")?.textContent.trim();
+    return { civil: val("Estado civil"), dir: val("Dirección") };
+  });
+  chk(escrito.civil === "Casado(a)", `el selector deja el estado civil puesto (${escrito.civil})`);
+  chk((escrito.dir ?? "").includes("Juárez"), `y la pantalla de texto la dirección (${escrito.dir})`);
+
+  // Volver a la hoja y guardar.
+  await pg.locator(".ios-sheet").last().locator(".ios-back").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(800);
+
+  /* Recargar de verdad, no releer el estado de React: lo que se comprueba es
+     que los tres llegaron a `members`, no que el formulario los recuerda. */
+  await pg.goto(`${URL_BASE}/#/miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-miembros .md-fila", { timeout: 10000 });
+  await pg.locator(".md-miembros .md-fila", { hasText: quien ?? "" }).first().click();
+  await pg.waitForTimeout(600);
+
+  const ficha = await pg.evaluate(() => {
+    const campos = [...document.querySelectorAll(".dm-ficha .dm-campo")].map((c) => ({
+      et: c.querySelector(".dm-campo-etiqueta")?.textContent.trim(),
+      v: c.querySelector(".dm-campo-valor")?.textContent.trim(),
+      gris: c.classList.contains("dm-campo--sinmotor"),
+    }));
+    return {
+      campos,
+      grises: campos.filter((c) => c.gris).length,
+      sinCapturar: campos.filter((c) => /Sin capturar/i.test(c.v ?? "")).length,
+    };
+  });
+  const dato = (et) => ficha.campos.find((c) => c.et === et)?.v;
+  chk(dato("Dirección") === "Av. Juárez 120, Centro, Puebla",
+    `la ficha de Aportantes trae la dirección (${dato("Dirección")})`);
+  chk(dato("Estado civil") === "Casado(a)", `y el estado civil traducido (${dato("Estado civil")})`);
+  chk(!!dato("Nacimiento") && /1985/.test(dato("Nacimiento")),
+    `y la fecha de nacimiento (${dato("Nacimiento")})`);
+  /* La otra mitad del cambio: `filaSinMotor` se retiró. Que no quede ninguna
+     fila gris es lo que prueba que estos tres dejaron de ser una plantilla —y
+     que no se coló una cuarta por el camino. */
+  chk(ficha.grises === 0 && ficha.sinCapturar === 0,
+    `y no queda ninguna fila "sin capturar" en la ficha (${ficha.grises} grises)`);
+
+  // Y en Membresía, que es la otra ficha que los pinta.
+  await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".mb-fila", { timeout: 10000 });
+  await pg.locator(".mb-fila", { hasText: quien ?? "" }).first().click();
+  await pg.waitForTimeout(600);
+  const mb = await pg.evaluate(() => {
+    const out = {};
+    for (const d of document.querySelectorAll(".mb-dato")) {
+      out[d.querySelector(".mb-dato-k")?.textContent.trim()] = d.querySelector(".mb-dato-v")?.textContent.trim();
+    }
+    return out;
+  });
+  chk(mb["Dirección"] === "Av. Juárez 120, Centro, Puebla",
+    `Membresía también los pinta (${mb["Dirección"]})`);
+  chk(mb["Estado civil"] === "Casado(a)" && /1985/.test(mb["Nacimiento"] ?? ""),
+    `con los otros dos (${mb["Estado civil"]} · ${mb["Nacimiento"]})`);
+
+  /* El expediente NO se toca: `camposFaltantes` marca lo OBLIGATORIO, y meter
+     la dirección ahí habría dejado el padrón entero en rojo por un campo que
+     nadie pudo llenar nunca hasta hoy. */
+  const exp = await pg.evaluate(() =>
+    [...document.querySelectorAll(".mb-exp-campo")].map((n) => n.textContent.trim()));
+  chk(!exp.some((e) => /Direcci/i.test(e)),
+    `y el expediente sigue con sus cuatro requisitos, sin la dirección (${exp.length} renglones)`);
+  await ctxD.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

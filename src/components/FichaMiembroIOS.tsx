@@ -47,7 +47,7 @@ import { ActionField, FilaNativa, IOSPantalla, IosChevron, Section, SwitchField,
 import { IOSPickerField } from "./ios/IOSPickerField";
 import { IOSFilaTexto } from "./ios/IOSPantallaTexto";
 import { ChipGroup, CARGOS, HABILIDADES, INSTRUMENTOS, MINISTERIOS } from "./FichaMiembroModal";
-import { ESTADOS_REGISTRO, type useFichaMiembro } from "./fichaMiembro";
+import { ESTADOS_CIVILES, ESTADOS_REGISTRO, type useFichaMiembro } from "./fichaMiembro";
 import { fmtFechaCorta, type Church, type Member } from "../db";
 import { printInformeIndividual } from "../services/informes/printInforme";
 import { showToast } from "../toast";
@@ -148,6 +148,53 @@ export function BloqueServicio({ h }: { h: Ficha }) {
         <SwitchField label={t("ficha.interesServir")} checked={h.interesServir} onChange={h.setInteresServir} />
       </Section>
     </>
+  );
+}
+
+/** Nacimiento, dirección y estado civil: los tres del handoff que hasta el 24
+ *  ago 2026 se pintaban en gris como "sin capturar".
+ *
+ *  Esta pantalla sale en los DOS modos, al revés que "Más datos personales".
+ *  No es una excepción caprichosa: los tres viajan dentro de `MemberFicha`, y
+ *  la ficha es lo que `updateMemberFicha` escribe también al editar. Los cinco
+ *  de la otra pantalla van en `NewMember`, que solo se escribe en el alta.
+ *
+ *  Y hacía falta que fuera así: la dirección y el estado civil de alguien
+ *  cambian, y la fecha de nacimiento es justo de lo que menos se sabe el día
+ *  que se registra a una persona. Tres campos que solo se pudieran llenar ese
+ *  día habrían nacido incompletos para siempre. */
+export function BloqueDatosPersonales({ h }: { h: Ficha }) {
+  const { t } = useTranslation();
+  return (
+    <Section footer={t("ficha.iosDatosPersonalesPie")}>
+      <FilaNativa
+        label={t("detalleMiembro.nacimiento")}
+        tipo="date"
+        valor={h.fechaNacimiento}
+        onChange={h.setFechaNacimiento}
+      />
+      {/* Sin valor es la primera opción y no lleva relleno: en una ficha que
+          nadie ha completado, "no lo sabemos" es el dato verdadero. Un
+          selector que arrancara en "Soltero" lo inventaría en cuanto la ficha
+          se guardara por cualquier otro motivo. */}
+      <IOSPickerField
+        label={t("detalleMiembro.estadoCivil")}
+        options={[
+          { value: "", label: t("common.sinEspecificar") },
+          ...ESTADOS_CIVILES.map((e) => ({ value: e, label: t(`ficha.estadoCivil.${e}`) })),
+        ]}
+        value={h.estadoCivil}
+        onSelect={h.setEstadoCivil}
+      />
+      <IOSFilaTexto
+        label={t("detalleMiembro.direccion")}
+        valor={h.direccion}
+        vacio={t("common.opcional")}
+        placeholder={t("ficha.direccionPlaceholder")}
+        multilinea
+        onChange={h.setDireccion}
+      />
+    </Section>
   );
 }
 
@@ -280,7 +327,7 @@ export function BloqueHistorial({ h, member }: { h: Ficha; member: Member }) {
    Las filas y sus pantallas
    ============================================================ */
 
-type Bloque = "espiritual" | "servicio" | "personales" | "historial";
+type Bloque = "espiritual" | "servicio" | "personales" | "datosPersonales" | "historial";
 
 /** Cuántos campos tiene cada bloque y cuántos llevan ya algo escrito.
  *
@@ -295,7 +342,9 @@ function cuentaBloque(b: Bloque, h: Ficha): { total: number; conDato: number } {
       : b === "servicio"
         ? [h.ministerios.length, h.cargos.length, h.ministeriosInteres.length,
            h.instrumentos.length, h.habilidades.length, h.disponibilidad.trim(), h.interesServir]
-        : [h.rfc.trim(), h.notas.trim(), h.iglesiaAnterior.trim(), h.fechaIngreso];
+        : b === "datosPersonales"
+          ? [h.fechaNacimiento, h.direccion.trim(), h.estadoCivil.trim()]
+          : [h.rfc.trim(), h.notas.trim(), h.iglesiaAnterior.trim(), h.fechaIngreso];
   return { total: campos.length, conDato: campos.filter(Boolean).length };
 }
 
@@ -471,12 +520,14 @@ export default function FichaMiembroIOS({ onClose, h, church, member, onFusionar
               <Section header={t("ficha.iosExpediente")}>
                 <FilaBloque titulo={t("ficha.iosVidaEspiritual")} bloque="espiritual" h={h} onPress={() => setBloque("espiritual")} />
                 <FilaBloque titulo={t("ficha.secServicio")} bloque="servicio" h={h} onPress={() => setBloque("servicio")} />
+                <FilaBloque titulo={t("ficha.secDatosPersonales")} bloque="datosPersonales" h={h} onPress={() => setBloque("datosPersonales")} />
                 <FilaPantalla titulo={t("ficha.iosHistorialFila")} onPress={() => setBloque("historial")} />
               </Section>
             ) : (
               <Section header={t("ficha.iosCompletar")} footer={t("ficha.iosCompletarPie")}>
                 <FilaBloque titulo={t("ficha.iosVidaEspiritual")} bloque="espiritual" h={h} onPress={() => setBloque("espiritual")} />
                 <FilaBloque titulo={t("ficha.secServicio")} bloque="servicio" h={h} onPress={() => setBloque("servicio")} />
+                <FilaBloque titulo={t("ficha.secDatosPersonales")} bloque="datosPersonales" h={h} onPress={() => setBloque("datosPersonales")} />
                 <FilaBloque titulo={t("ficha.iosMasPersonales")} bloque="personales" h={h} onPress={() => setBloque("personales")} />
               </Section>
             )}
@@ -520,6 +571,11 @@ export default function FichaMiembroIOS({ onClose, h, church, member, onFusionar
       {bloque === "servicio" && (
         <IOSPantalla volverA={titulo} titulo={t("ficha.secServicio")} onVolver={() => setBloque(null)}>
           <BloqueServicio h={h} />
+        </IOSPantalla>
+      )}
+      {bloque === "datosPersonales" && (
+        <IOSPantalla volverA={titulo} titulo={t("ficha.secDatosPersonales")} onVolver={() => setBloque(null)}>
+          <BloqueDatosPersonales h={h} />
         </IOSPantalla>
       )}
       {bloque === "personales" && (

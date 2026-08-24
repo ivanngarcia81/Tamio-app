@@ -19,10 +19,14 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
   alertas (racha ≥ umbral y nuevo sin revisar, con `seguimiento_revisado_en`),
   movimientos (`historial_estados` + hitos de la ficha), las ocho tarjetas
   (`resumenMembresia`) y la analítica (`resumenAsistencia`).
-- **"Dirección" en el expediente** — el prototipo la lista como campo del
-  expediente; `members` no tiene columna de dirección. NO se pintó (un campo
-  que jamás puede llenarse no es cáscara, es mentira permanente). Si se
-  quiere, es una migración + campo en la ficha; entonces entra al expediente.
+- ~~**"Dirección" en el expediente**~~ → **resuelto el 24 ago 2026, y no como
+  se esperaba.** La columna `direccion` resultó existir desde la migración 1 y
+  hasta viajaba en la sincronización: lo que faltaba era **campo en algún
+  formulario**, así que se podía leer y nunca escribir. Ya se captura (ver
+  "Aportantes / ficha de miembro"). Lo que **no** entró es el EXPEDIENTE:
+  `camposFaltantes` marca lo obligatorio, y meterla ahí habría dejado el padrón
+  entero en rojo de un día para otro por un campo que nadie había podido
+  llenar. Se pinta entre los datos, con los otros dos.
 - **Paginación ‹ › del pie** — en el prototipo pagina; aquí la lista es de
   desplazamiento continuo y los botones desplazan una página de alto. No es
   cáscara (hacen algo real), pero se anota porque el gesto difiere del
@@ -76,11 +80,26 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 
 ## Aportantes / ficha de miembro (§16)
 
-- **Nacimiento, dirección y estado civil** — `FichaMiembroIPad.tsx`,
-  `filaSinMotor()`. **Construidos como plantilla**, en gris cursiva y con
-  `title` que lo explica (`detalleMiembro.sinCapturarAyuda`). Falta migración
-  de `members` con las tres columnas. Decisión tuya: *"déjalo construida la
-  plantilla y después se le pone motor"*.
+- ~~**Nacimiento, dirección y estado civil**~~ → **cableados el 24 ago 2026**
+  (migración 42). Se capturan en **"Datos de la persona"**, una pantalla de la
+  ficha que existe en el ALTA y en la EDICIÓN, y se pintan como filas normales
+  en las dos fichas que los enseñan (Aportantes y Membresía). Con ellos se
+  retiró `filaSinMotor()`, el ayudante que los dibujaba en gris: era su único
+  usuario.
+
+  Dos cosas que costaron más de lo que parecía:
+
+  - **`direccion` ya existía** en la tabla desde la migración 1 y en
+    `DATA_COLS`. Las columnas nuevas de verdad fueron dos, no tres. Se
+    descubrió leyendo el esquema antes de escribir la migración.
+  - **Los tres van en `MemberFicha`, no en `NewMember`.** `NewMember` solo se
+    escribe al dar de alta —el modal de escritorio pinta "Datos personales"
+    bajo `{crear && …}` y la hoja de iOS hereda esa regla—, así que puestos ahí
+    solo se habrían podido llenar el día del registro, que es justo el día en
+    que menos se sabe de una persona. `MemberFicha` la escribe
+    `updateMemberFicha`, que corre en los dos modos. La guarda del arnés (§35)
+    comprueba exactamente eso: abre un miembro que YA existe, escribe los tres
+    por la interfaz, guarda, **recarga** y los busca.
 - **Pestaña "Familia"** — **construida vacía y con su explicación**. `members`
   no tiene relaciones ni columna de familia. Pide tabla de parentescos.
 
@@ -435,7 +454,7 @@ comprobación falla sola.
    necesitaba esto más `updated_at` —que ya existía—. Lo que queda de la lista
    empieza en el 3.
 3. ~~**`actas.testigo`**~~ — **hecho el 24 de agosto de 2026** (migración 41).
-4. **Tres columnas personales en `members`** — nacimiento, dirección, estado
-   civil.
+4. ~~**Tres columnas personales en `members`**~~ — **hecho el 24 de agosto de
+   2026** (migración 42). Eran dos columnas, no tres: `direccion` ya estaba.
 5. **Roster por puestos y orden del culto** — la más grande de las cinco;
    estructura nueva, no columnas.

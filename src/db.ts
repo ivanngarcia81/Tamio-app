@@ -68,6 +68,14 @@ export interface Member {
   email: string | null;
   telefono: string | null;
   rfc: string | null;
+  /** Los tres datos personales de la ficha del handoff. `direccion` existe en
+   *  la tabla desde el primer día y viajaba en la sincronización, pero hasta
+   *  la migración 42 no tenía campo en ningún formulario: se podía leer y
+   *  nunca escribir. Las otras dos llegaron con esa migración. */
+  direccion: string | null;
+  fecha_nacimiento: string | null;
+  /** Clave del catálogo `ESTADOS_CIVILES` o texto libre. */
+  estado_civil: string | null;
   etiquetas: string; // JSON string
   fecha_ingreso: string | null;
   notas: string | null;
@@ -110,6 +118,14 @@ export interface Member {
 export interface MemberFicha {
   estado_membresia: string;
   cargos: string[];
+  /* Los tres personales viven en la FICHA y no en `NewMember` a propósito.
+     `NewMember` solo se escribe al dar de alta —el modal de escritorio pinta
+     "Datos personales" bajo `{crear && …}` y la hoja de iOS hereda esa regla—,
+     así que un campo puesto ahí no se podría corregir nunca después. La ficha
+     se guarda en las dos direcciones, alta y edición, con la misma función. */
+  fecha_nacimiento: string | null;
+  direccion: string | null;
+  estado_civil: string | null;
   fecha_congregacion: string | null;
   fecha_ingreso: string | null;
   iglesia_anterior: string | null;
@@ -143,6 +159,7 @@ export async function updateMemberFicha(id: number, churchId: number, f: MemberF
        bautizado_agua = $5, fecha_bautismo_agua = $6, bautizado_espiritu = $7, fecha_bautismo_espiritu = $8,
        curso_membresia = $9, ministerios = $10, ministerios_interes = $11, instrumentos = $12,
        habilidades = $13, disponibilidad = $14, interes_servir = $15, cargos = $18,
+       fecha_nacimiento = $19, direccion = $20, estado_civil = $21,
        updated_at = datetime('now')
      WHERE id = $16 AND church_id = $17`,
     [
@@ -164,6 +181,9 @@ export async function updateMemberFicha(id: number, churchId: number, f: MemberF
       id,
       churchId,
       JSON.stringify(f.cargos),
+      f.fecha_nacimiento,
+      f.direccion,
+      f.estado_civil,
     ]
   );
 }
