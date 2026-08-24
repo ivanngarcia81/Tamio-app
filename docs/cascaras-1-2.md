@@ -366,6 +366,35 @@ Un control que empeora la app y contradice al sistema **no es una cáscara
 esperando motor**. La distinción importa para las que quedan: lo que sigue en
 la lista está ahí porque le falta dato, no porque sea mala idea.
 
+### Y su hermano de sangre: ⌃⌘S se queda en el Mac (24 ago 2026)
+
+Al medir el ☰ salió a la luz que el Mac **sí** tiene forma de plegar la barra:
+el botón `.btn-sidebar` de la toolbar y el atajo ⌃⌘S, con la preferencia
+guardada en `tamio-sidebar-oculta`. Se ofreció llevarlo al iPad y la respuesta
+de Iván fue: *"No ponerle eso al iPad, eso es solo exclusivo de la Mac."*
+
+Es la misma cuenta de arriba leída al revés. En el Mac la barra es una
+**columna fija** y plegarla gana 220px de ancho útil; en el iPad, en vertical
+ya es un cajón que el ☰ abre y cierra —plegar lo plegado— y en apaisado es la
+única navegación que hay: esconderla sin un botón que la devuelva deja al
+usuario encerrado.
+
+**No hizo falta cambiar código: ya estaba bien.** Lo que se añadió es la
+guarda, porque son **tres cerraduras independientes** y ninguna se ve desde
+las otras — se puede quitar cualquiera en un refactor y no notarlo mirando
+solo el Mac:
+
+| Cerradura | Dónde | Qué la protege |
+|---|---|---|
+| El botón | `.btn-sidebar { display: none }` + `:root.mac .btn-sidebar` | `styles.css` |
+| El atajo | `&& esMac()` en el `keydown` | `App.tsx` |
+| El plegado | todas las reglas `[data-sidebar-oculta]` bajo `:root.mac` | `styles.css` |
+
+La guarda (arnés §34) prueba las tres por separado, y la tercera la prueba
+**forzando el atributo a mano**: aunque el atajo se colara, en el iPad la barra
+se queda puesta. Quitando cada `:root.mac`/`esMac()` por turno, cada
+comprobación falla sola.
+
 ## Lo que sigue sin pintarse
 
 - **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:

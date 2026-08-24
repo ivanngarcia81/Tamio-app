@@ -3002,6 +3002,92 @@ console.log("\n== El testigo del acta ==");
   await ctxT.close();
 }
 
+/* ---------- 34. ⌃⌘S y el botón de esconder la barra son solo del Mac ----------
+   Lo dijo Iván el 24 ago sin rodeos: "eso es solo exclusivo de la Mac". Y es
+   la decisión correcta por una razón de forma, no de gusto: en el Mac la barra
+   lateral es una COLUMNA fija que se puede plegar para ganar ancho; en el iPad
+   en vertical ya es un cajón que el ☰ abre y cierra, y apaisado es la única
+   navegación que hay. Un segundo control para esconderla sería o redundante o
+   una trampa —dejar al usuario sin forma de volver.
+
+   El código ya lo hacía bien cuando se escribió esta guarda; no se cambió
+   nada. Lo que se comprueba es que siga siendo así, porque son TRES sitios
+   distintos los que tendrían que fallar a la vez y ninguno se ve desde el
+   otro: el botón (`.btn-sidebar`, escondido salvo `:root.mac`), el atajo de
+   teclado (`esMac()` en App.tsx) y las reglas de plegado
+   (`[data-sidebar-oculta]`, todas bajo `:root.mac`). Quitar el `:root.mac` de
+   cualquiera de ellos en un refactor es fácil y no se nota mirando el Mac. */
+console.log("\n== Esconder la barra: solo en el Mac ==");
+{
+  const ctxS = await nuevoContexto("ipad");
+  const pg = await ctxS.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const medir = () => pg.evaluate(() => {
+    const b = document.querySelector(".btn-sidebar");
+    const sb = document.querySelector(".sidebar");
+    const r = sb.getBoundingClientRect();
+    return {
+      hayBoton: !!b,
+      botonVisible: b ? getComputedStyle(b).display !== "none" && b.getBoundingClientRect().width > 0 : false,
+      plegada: document.querySelector(".app").hasAttribute("data-sidebar-oculta"),
+      barraX: Math.round(r.left),
+      barraAncho: Math.round(r.width),
+      guardado: localStorage.getItem("tamio-sidebar-oculta"),
+    };
+  });
+
+  const antes = await medir();
+  chk(antes.hayBoton, "el botón existe en el árbol (es el mismo App para las dos cáscaras)");
+  chk(!antes.botonVisible, "pero en el iPad no se pinta");
+  chk(antes.barraAncho === 318 && antes.barraX === 0,
+    `y la barra está entera en su sitio (x=${antes.barraX}, ancho ${antes.barraAncho})`);
+
+  // El atajo, tecleado de verdad: Control+Meta+S es lo que escucha App.tsx.
+  await pg.keyboard.down("Control");
+  await pg.keyboard.down("Meta");
+  await pg.keyboard.press("s");
+  await pg.keyboard.up("Meta");
+  await pg.keyboard.up("Control");
+  await pg.waitForTimeout(400);
+
+  const tras = await medir();
+  chk(!tras.plegada, "⌃⌘S no pliega nada en el iPad");
+  chk(tras.barraAncho === 318 && tras.barraX === 0,
+    `la barra ni se entera (x=${tras.barraX}, ancho ${tras.barraAncho})`);
+  chk(tras.guardado !== "1", `y no se guarda la preferencia (${tras.guardado})`);
+
+  /* La tercera cerradura, la estructural: aunque alguien lograra encender el
+     atributo —un `localStorage` heredado de una sesión de Mac, un refactor que
+     se lleve el `esMac()`—, las reglas de plegado son `:root.mac` y en el iPad
+     no aplican. La barra se queda puesta. */
+  await pg.evaluate(() => document.querySelector(".app").setAttribute("data-sidebar-oculta", "true"));
+  await pg.waitForTimeout(300);
+  const forzado = await medir();
+  chk(forzado.barraAncho === 318 && forzado.barraX === 0,
+    `forzando el atributo a mano, la barra sigue puesta (x=${forzado.barraX}, ancho ${forzado.barraAncho})`);
+  chk(!forzado.botonVisible, "y el botón sigue sin pintarse");
+  await ctxS.close();
+
+  // El iPhone, de paso: ahí la barra es el cajón del ☰ y menos aún hay que plegar.
+  const ctxF = await nuevoContexto("iphone");
+  const pf = await ctxF.newPage();
+  pf.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pf.setViewportSize({ width: 430, height: 932 });
+  await pf.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pf.waitForTimeout(600);
+  const enFono = await pf.evaluate(() => {
+    const b = document.querySelector(".btn-sidebar");
+    return b ? getComputedStyle(b).display !== "none" && b.getBoundingClientRect().width > 0 : false;
+  });
+  chk(!enFono, "en el iPhone tampoco se pinta");
+  await ctxF.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
