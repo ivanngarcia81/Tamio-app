@@ -161,8 +161,7 @@ en las tres fuentes:
 | esta | **1.2.6** — el cromo, terminado: la barra de vistas de la Agenda, el índice de zonas de Ajustes, la barrita de Informes y las dos superficies translúcidas que mezclaban el gris equivocado. Las cinco pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Con guarda **sobre el archivo**, no sobre la pantalla: ninguna regla de `:root.ipad` puede volver a nombrar ese token. Y dos del chip del mes: deja de salirse 38px del panel (`.ios-bar-button` medía 44×44 fijos) y su menú deja de abrirse recortado detrás del panel (`MenuAnchor` pasa a colgar de `<body>` en `fixed`, como los otros menús de la casa) |
 | esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
 | esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
-| esta | **1.2.9** — Depósitos rehecha con el **handoff 3**: "Pendientes" deja de ser un cartel y pasa a ser la revisión previa al banco (cortes por día, tres cifras vivas, los cuatro avisos, y "Marcar depositado" abriendo el formulario ya prellenado, que tacha la primera cáscara del registro); "Depositados" gana la pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y se construye la hoja "Nuevo corte" entera. Más los dos textos que no respiraban en el iPad: "Elige un día" pegado al filo y la fila de filtros de Informes con los chips a 29px |
-| esta | **1.2.10** — la build de REVISIÓN de todo lo que se encendió el 24 de agosto: los **cortes, la doble firma y la sincronización entera** (las 16 tablas viajan, con `verificar-sync` vigilando la paridad de columnas), el **folio** del movimiento (`2026-0042`, sin numerar el pasado), los **dos permisos del rol Tesorería** —de los cuatro que dibujó el handoff— con el borrado frenado en el servidor, y las cáscaras que quedaban del handoff: puestos del culto, orden del culto, pestaña Familia, "Recopilar firmas", "Compartir" un depósito y los conteos por categoría. **Nada de esto se ha visto nunca en un iPad de verdad**: es exactamente para eso que sube |
+| **la que sube** | **1.2.9** — Depósitos rehecha con el **handoff 3** (Pendientes como revisión previa al banco: cortes por día, tres cifras vivas, los cuatro avisos y "Marcar depositado" abriendo el formulario prellenado; Depositados con su pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y la hoja "Nuevo corte" entera), **más TODO lo del 24 de agosto** — porque la 1.2.9 se preparó el 24 y **nunca se subió**, así que el número sigue libre y se lo lleva todo junto: la sincronización entera (las 16 tablas viajan, con `verificar-sync` vigilando la paridad de columnas), la **doble firma** del corte, el **folio** del movimiento (`2026-0042`, sin numerar el pasado), los **dos permisos del rol Tesorería** —de los cuatro que dibujó el handoff— con el borrado frenado por un disparador del servidor, y las cáscaras que quedaban: puestos del culto, orden del culto, pestaña Familia, "Recopilar firmas", "Compartir" un depósito y los conteos por categoría. **Nada de esto se ha visto nunca en un iPad de verdad**: es exactamente para eso que sube |
 | cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
@@ -354,7 +353,8 @@ En la 1.2.0, las mismas comprobaciones y una más, porque esta versión salió
 de una fusión y una fusión puede compilar perfectamente y aun así haber
 perdido la mitad de una pantalla.
 
-En la **1.2.10**, las mismas y con la lista de clases alargada otra vez, que
+En la **1.2.9** —la que sube de verdad, con todo el trabajo del 24 de agosto
+dentro— las mismas y con la lista de clases alargada otra vez, que
 es la parte que se olvida: buscar `:root.ipad` y `md-split` habría salido en
 verde con TODO el trabajo de esta tanda fuera del bundle, porque esas clases
 llevan ahí desde la 1.1.6. Así que se buscó, en el bundle construido con
@@ -366,18 +366,36 @@ el panel), `cat-conteo` (los conteos por categoría), y en el JS
 salieron, y `ipad-ancho` ×201 con ellas, que es la prueba de que el rediseño
 no se perdió por el camino.
 
-**El bump salió limpio, y se comprobó ANTES de tocar nada** (siete de doce):
-`version = "1.2.9"` aparecía **una sola vez** en `Cargo.lock` —la línea 3852,
-justo bajo `name = "tesoreria"`— y **dos** en `package-lock.json`, las dos de
-Tamio. Ninguna colisión con otro crate y ningún paquete en `1.2.9x`, que es la
-trampa de prefijo de la 1.2.7. Aun así se cambió **por número de línea**, no
-por búsqueda: el bump limpio y el envenenado se ven idénticos hasta que miras.
+> ⚠️ **El 24 de agosto por la noche este documento MINTIÓ, y merece quedar
+> escrito.** Al preparar la build de revisión de esa tanda, la tabla de arriba
+> daba por subidas la 1.1.9 y toda la serie 1.2 hasta la 1.2.9, así que se
+> subió el número a **1.2.10**. Iván lo corrigió: en App Store Connect lo más
+> alto es la **1.2.8**, y la 1.2.9 se preparó pero nunca llegó a subir. El
+> bump se deshizo entero.
+>
+> **La regla que falló ya estaba escrita aquí**, en la nota de la 1.2.1: *"el
+> número solo avanza cuando algo sube DE VERDAD a App Store Connect"*. Lo que
+> falta no es la regla, es la PRUEBA: cada fila de la tabla se escribió al
+> **preparar** la build, no al confirmarla, y "preparada" y "subida" se ven
+> exactamente igual desde dentro del repositorio. Ningún `verificar-*` puede
+> cazarlo — el dato vive en App Store Connect, fuera del repo.
+>
+> Por eso la última fila ya no dice "esta" sino **"la que sube"**, y ese
+> marbete solo se mueve cuando Iván confirma que subió. **Antes de tocar el
+> número, pregúntale cuál es el más alto que ve en TestFlight.** No lo deduzcas
+> de esta tabla.
 
-**Y el número es 1.2.10, no 1.3.0**, aunque la tabla dijera "la siguiente,
-1.3.0". El `1.3.0` está reservado para los siete puntos de
-`docs/plan-1-3.md`, y esta tanda no es ninguno de ellos: es la continuación
-del handoff de iPad, que es la serie 1.2.x. Gastar el 1.3.0 aquí habría
-dejado al plan sin su número.
+**Esta vez no hay bump que auditar, y esa es la noticia.** El número se queda
+en la **1.2.9** que el repositorio ya tenía, porque esa versión nunca subió.
+El bump a 1.2.10 llegó a hacerse —auditado y todo: `version = "1.2.9"` salía
+**una sola vez** en `Cargo.lock`, la línea 3852 bajo `name = "tesoreria"`, y
+**dos** en `package-lock.json`, las dos de Tamio, sin colisión y sin ningún
+paquete en `1.2.9x`— y se deshizo entero al saber que sobraba. La auditoría
+estaba bien hecha; lo que estaba mal era el dato de partida.
+
+**Y el 1.3.0 sigue reservado** para los siete puntos de `docs/plan-1-3.md`.
+Esta tanda no es ninguno de ellos: es la continuación del handoff de iPad, que
+es la serie 1.2.x.
 
 **La comprobación de la fusión: que el bundle lleve clases de LAS DOS ramas.**
 El CSS construido (`index-Cb9x1AEA.css`, 279 kB frente a los 273 de la

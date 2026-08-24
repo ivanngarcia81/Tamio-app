@@ -39,7 +39,9 @@ Los seis de la derecha se quedan documentados aquí hasta que la 1.1 cierre;
 entonces se mueven a un `docs/plan-1-2.md` propio.
 
 > **Movidos el 22 ago 2026, y no a la 1.2 sino a `docs/plan-1-3.md`.** La 1.1
-> cerró —la 1.1.9 está en TestFlight— así que tocaba mudarlos. El número que
+> cerró —el trabajo, no una subida: esto decía "la 1.1.9 está en TestFlight" y
+> **era falso**, corregido el 24 ago; ver `docs/testflight.md`— así que tocaba
+> mudarlos. El número que
 > les correspondía se lo llevó el rediseño de iPad, que se hizo entre el 21 y
 > el 22 de agosto y no estaba en ninguna lista: la 1.2 es esa. Estos siete
 > corren un puesto y nada de su contenido cambió al mudarse.

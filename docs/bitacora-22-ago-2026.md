@@ -579,6 +579,13 @@ en orden:
   revisión del App Store — ver "TestFlight no es publicar" en
   `docs/testflight.md`.
 
+  > **Nota del 24 ago 2026.** Lo de arriba se escribió el 22 creyéndolo, y no
+  > era verdad: la 1.1.9 **nunca subió**. Iván lo comprobó en App Store Connect
+  > al preparar la build de esa noche — lo más alto ahí es la **1.2.8**. Se
+  > deja tal cual porque una bitácora registra lo que se creía ese día; la
+  > corrección vive en `docs/testflight.md`, que es donde se mira antes de
+  > compilar.
+
 ---
 
 ## 12. Cómo se fusionaron, y qué quedó a medias
