@@ -40,3 +40,13 @@ pruebas/*.png
 
 # Arneses de verificación temporales (Playwright/esbuild)
 .tmp-*
+
+# Configuración de servidores MCP de Claude Code. La escribe la HERRAMIENTA,
+# no la app: no entra en el .ipa y no cambia lo que se compila. Va aquí porque
+# este repositorio es PÚBLICO y ese archivo puede llevar tokens dentro — misma
+# razón que `.env`. Y porque sin ignorarlo aborta `verificar-rama` en cada
+# build, que es como se descubrió (24 ago 2026).
+#
+# Si algún día no lleva secretos y quieres compartirlo con quien trabaje en
+# Tamio, quita esta línea a propósito: es una decisión, no un descuido.
+.mcp.json
