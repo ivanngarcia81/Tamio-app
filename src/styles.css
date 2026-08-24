@@ -9445,7 +9445,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    min-height: 56px;
+    /* **56 de barra MÁS el inset**, no 56 contándolo dentro. El inset es
+       material que se mete debajo de la barra de estado del iPad; si se lo
+       come del mismo 56, la caja de contenido se queda en 32, el contenido
+       (título + subtítulo, o un botón de 36) la desborda, la barra crece
+       hasta el alto justo de su contenido y la raya de abajo termina pegada
+       a los botones. Es lo que Iván vio en Ingresos: 1px de aire bajo
+       "Imprimir" y "Nuevo ingreso", medido en las siete pantallas y en los
+       dos tamaños. Sumándolo, el contenido tiene sus 56 de siempre y se
+       centra dentro con 8px por arriba y por abajo, que es el aire que el
+       diseño dibuja. En el arnés `--barra-inset` es 0 y esto vale 56, igual
+       que antes. */
+    min-height: calc(56px + var(--barra-inset));
     /* `min-height` en un hijo de `.main` —que es flex en columna— SUSTITUYE
        al mínimo automático de contenido, así que sin esto la barra se
        encogía a 56 y su contenido se salía por debajo. Se veía en Inicio,
@@ -9466,7 +9477,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        pegado al borde ni cuando la barra crece a dos líneas (Reportes en
        vertical). Añadir aquí un relleno fijo subiría las dieciséis barras de
        56 a 61 y el diseño pide 56. */
-    padding: env(safe-area-inset-top) 20px 0;
+    padding: var(--barra-inset) 20px 0;
     /* Fondo y línea son lo que la vuelve CHROME en vez de contenido: sin
        ellos el título flota sobre el lienzo y la barra no se lee como
        barra. El gris es el del sidebar, un punto más claro que el `--bg`
@@ -17165,6 +17176,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    Los tres estados de tema, como manda la casa: claro por defecto, oscuro
    explícito, y oscuro del sistema cuando no hay elección guardada. */
 :root.ipad { --ipad-cromo: #f7f7f9; }
+/* El inset de la barra de estado, con nombre. Escrito a pelo como `env()` no
+   hay forma de comprobarlo: en un navegador de escritorio env() vale 0, y
+   justo por eso el arnés dio verde durante diez versiones sobre una barra que
+   en el iPad tenía la raya pegada a los botones (§33). Con el token, la
+   prueba puede fijarlo a los 24px que mide el aparato y medir lo que se ve
+   allí, no lo que se ve aquí. */
+:root.ipad { --barra-inset: env(safe-area-inset-top, 0px); }
 :root.ipad[data-theme="dark"] { --ipad-cromo: #131315; }
 @media (prefers-color-scheme: dark) {
   :root.ipad:not([data-theme="light"]) { --ipad-cromo: #131315; }

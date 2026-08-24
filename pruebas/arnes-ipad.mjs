@@ -2191,6 +2191,76 @@ console.log("\n== Editar miembro en el iPad: hoja, no modal ==");
   await ctxE.close();
 }
 
+/* ---------- 27. La línea de la barra no toca los botones --------------
+   Iván lo vio en Ingresos: la raya de abajo de la barra pasaba pegada al
+   "Imprimir" y al "Nuevo ingreso", sin un pelo de aire.
+
+   Por qué el arnés no lo había cazado nunca: la barra se apoyaba en
+   `min-height: 56px` con `padding: env(safe-area-inset-top) 20px 0`, y en
+   Chromium **env() vale 0**, así que aquí la barra medía 56 con 40 de
+   contenido —8px de aire arriba y abajo— y todo se veía bien. En un iPad de
+   verdad el inset son ~24px, que salen del MISMO 56: la caja de contenido se
+   quedaba en 32, el contenido la desbordaba, la barra crecía justo hasta el
+   alto del contenido y la raya acababa lamiendo los botones.
+
+   Para poder medirlo, el inset dejó de escribirse a pelo y pasa por
+   `--barra-inset`, que aquí se fija a 24px —lo que mide en el aparato— y
+   deja el fallo a la vista en un navegador que no tiene muesca. */
+console.log("\n== La raya de la barra deja aire bajo los botones ==");
+{
+  const ctxB = await nuevoContexto("ipad");
+  const pg = await ctxB.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  /* Los dos tamaños de las fotos de Iván: el 13" apaisado (ancho) y el 11"
+     vertical, que es el que además lleva el ☰ y la barra en dos líneas. */
+  for (const [w, h] of [[1366, 1024], [834, 1194]]) {
+    await pg.setViewportSize({ width: w, height: h });
+    /* Todas las pantallas con barra, que es lo que pidió Iván: "y hacer lo
+       mismo en todas las páginas". La regla es una sola (`:root.ipad
+       .header`), pero eso hay que comprobarlo, no suponerlo: cada página
+       mete cosas distintas en la barra —un buscador, dos botones, un menú,
+       el saldo del mes— y cualquiera de ellas puede ser la más baja. */
+    for (const ruta of [
+      "", "ingresos", "gastos", "miembros", "reportes", "depositos", "membresia",
+      "actas", "servicios", "cartas", "reporte-miembros", "agenda", "inbox",
+      "bandeja", "ayuda", "configuracion",
+    ]) {
+      await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+      await pg.waitForSelector(".header", { timeout: 10000 });
+      await pg.evaluate(() => document.documentElement.style.setProperty("--barra-inset", "24px"));
+      await pg.waitForTimeout(300);
+      const m = await pg.evaluate(() => {
+        const bar = document.querySelector(".header");
+        const r = bar.getBoundingClientRect();
+        const cs = getComputedStyle(bar);
+        /* Lo que se mide es el hueco entre lo MÁS BAJO que pinta la barra y
+           su raya de abajo: da igual que sea un botón, el subtítulo o un
+           chip, ninguno puede tocarla. */
+        let bajo = -Infinity, quien = null;
+        for (const el of bar.querySelectorAll("*")) {
+          const q = el.getBoundingClientRect();
+          if (q.height === 0 || q.width === 0) continue;
+          if (q.bottom > bajo) { bajo = q.bottom; quien = el.className || el.tagName; }
+        }
+        return {
+          hueco: Math.round(r.bottom - bajo),
+          alto: Math.round(r.height),
+          padTop: cs.paddingTop,
+          quien: String(quien).slice(0, 40),
+        };
+      });
+      const nombre = `${ruta || "inicio"} ${w}×${h}`;
+      chk(m.padTop === "24px", `${nombre}: la barra respeta el inset (${m.padTop})`);
+      chk(m.hueco >= 6, `${nombre}: ${m.hueco}px entre "${m.quien}" y la raya (alto ${m.alto})`);
+      const DIR = process.env.CAPTURAS || "";
+      if (DIR && ruta === "ingresos") {
+        await pg.screenshot({ path: `${DIR}/barra-inset-${w}x${h}.png`, clip: { x: 0, y: 0, width: w, height: 240 } });
+      }
+    }
+  }
+  await ctxB.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

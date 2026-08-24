@@ -2336,3 +2336,65 @@ la pantalla de lectura se apile trayendo "Cartas y traslados". Probada al revés
 —devolviendo `esMovil() && crear`— canta las dos primeras; devolviendo el
 `sinNombre` de antes, canta la del botón. El arnés pasa de 619 a **630**.
 
+---
+
+## 33. La raya de la barra iba pegada a los botones (23 ago 2026)
+
+Foto de Iván, Ingresos en el iPad: la línea de abajo de la barra pasando
+rozando "Imprimir" y "Nuevo ingreso". "Hacer que los botones tengan espacio
+moviendo esa línea un poco hacia abajo, como lo tiene el handoff, y hacer lo
+mismo en todas las páginas."
+
+La barra estaba escrita así:
+
+```css
+min-height: 56px;
+padding: env(safe-area-inset-top) 20px 0;
+```
+
+El inset **se comía los 56**. En el iPad son ~24px, así que la caja de
+contenido se quedaba en 32; el contenido de la barra (título + subtítulo son
+39px, y un botón son 36) la desbordaba, la barra crecía justo hasta el alto de
+lo que llevaba dentro —65px— y, sin relleno abajo, la raya acababa a **1px**
+de los botones. Medido, no deducido: 1px en las dieciséis pantallas y en los
+dos tamaños.
+
+La corrección es una suma:
+
+```css
+min-height: calc(56px + var(--barra-inset));
+```
+
+El inset es material que se mete DEBAJO de la barra de estado; la barra sigue
+midiendo sus 56 de contenido y lo centra dentro, con ~9px por arriba y por
+abajo. Es una sola regla —`:root.ipad .header`— así que "todas las páginas"
+salen con ella; lo que había que comprobar es que ninguna barra mete algo más
+bajo que los botones, y eso sí se comprueba una por una.
+
+### Por qué el arnés lo dejó pasar diez versiones
+
+Porque **en un navegador de escritorio `env(safe-area-inset-top)` vale 0**. Sin
+muesca, la barra medía 56 con 39 de contenido: 8px de aire arriba y abajo, todo
+correcto. El fallo solo existía donde el arnés no llegaba.
+
+Así que el inset dejó de escribirse a pelo y pasa a tener nombre:
+
+```css
+:root.ipad { --barra-inset: env(safe-area-inset-top, 0px); }
+```
+
+Un `env()` no se puede fijar desde fuera; una variable sí. La guarda le pone
+los 24px que mide el aparato y entonces mide en Chromium lo que se ve en el
+iPad. Es la misma jugada que el barrido de `--sidebar-bg` (§25): convertir en
+comprobable algo que antes solo se podía mirar.
+
+### Lo medido
+
+Para cada una de las **dieciséis** rutas con barra, en 1366×1024 y en
+834×1194: que el relleno de arriba sea de verdad el inset, y que entre lo más
+bajo que pinta la barra —sea un botón, el subtítulo o un chip; se busca
+recorriendo sus hijos, no suponiendo cuál es— y la raya de abajo queden al
+menos 6px. Sale 9 en quince y 7 en Cartas, cuyo bloque de acciones es más
+alto. Probada al revés, con el `min-height: 56px` de antes, canta los
+**treinta y dos**. El arnés pasa de 630 a **694**.
+
