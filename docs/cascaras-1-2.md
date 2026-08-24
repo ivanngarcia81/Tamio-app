@@ -269,6 +269,57 @@ a segundo plano, y permisos por acción en vez de por rol.
 > código en dos días, y las tres se arreglaron igual: comprobando la regla
 > nueva, no borrando la comprobación.
 
+## Qué es un "corte", decidido con Iván (24 ago 2026)
+
+La palabra vino del handoff y durante dos días la usé sin que nadie dijera
+qué significaba en ESTA iglesia. Iván preguntó, y de ahí salió la definición
+que manda a partir de ahora:
+
+> **Un corte es el dinero que sale de la caja en manos de alguien.** La
+> tesorera cuenta lo que hay, se lo entrega a una persona, y esa persona va al
+> banco. El corte cubre el hueco entre las dos cosas.
+
+Ese hueco hoy **no se registra en absoluto**: un depósito aparece de la nada,
+sin rastro de quién llevó el dinero. Es justo donde una tesorera necesita
+estar protegida, y por eso esto no es adorno del diseño — es la pieza que
+falta.
+
+### La decisión: constancia, NO acuse
+
+Se le pusieron dos opciones y eligió la primera:
+
+| | Qué implica | Elegido |
+|---|---|---|
+| **Constancia** | La tesorera anota a quién se lo entregó. El que recibe no confirma nada. El corte se cierra al registrar el depósito. | **sí** |
+| **Acuse** | El corte queda abierto hasta que el que recibió confirma que depositó. Dos personas respondiendo — la "doble firma" del handoff. | no |
+
+**Y el responsable no es un rol fijo.** Palabras suyas: *"no necesariamente
+tiene que ser el pastor, puede ser cualquier persona que esté asignada a ese
+trabajo"*. O sea que "Responsable" es un nombre que se ELIGE, no el pastor ni
+el tesorero por definición. La fuente natural es `usuarios` —ya existe con
+`nombre` y `rol`, y `listUsuarios()` ya funciona— más texto libre para quien
+no esté dada de alta: el mismo patrón que la cuenta bancaria del depósito.
+
+### Qué cuesta, en concreto
+
+No cambia el tamaño de la pieza 1 de la lista de abajo; la afina:
+
+- tabla de **cortes** (fecha, nombre, cuenta, **responsable**, estado
+  abierto/depositado, y el depósito que lo cerró);
+- la tabla puente **corte↔movimientos**, que ya estaba apuntada como
+  `deposito_movimientos`;
+- el campo **responsable** eligiendo de `usuarios` o escribiendo.
+
+Lo que la opción "acuse" habría añadido —y que NO se hace— es el estado de
+confirmación por parte de quien recibe, y con él "Pedir doble firma", que
+sigue apagado.
+
+### Lo que esto descarta
+
+En la conversación llegué a decir que, si la iglesia deposita el mismo día sin
+paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
+**No sobra.** Así trabajan, y es de lo más útil que le falta a la app.
+
 ## Lo que sigue sin pintarse
 
 - **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:
@@ -283,7 +334,8 @@ a segundo plano, y permisos por acción en vez de por rol.
 
 ## Cuando toque cablear, el orden que rinde más
 
-1. **`deposito_movimientos` + estado del corte** — sigue siendo la primera, y
+1. **Tabla de cortes + `corte_movimientos` + `responsable`** — sigue siendo la
+   primera, y
    con el handoff 3 rinde todavía más: apaga el desglose, "Movimientos
    incluidos", el chip "Sin depositar" de §15, **"Reabrir el corte"**, la hoja
    **"Nuevo corte"** entera y el aviso de "Tamio todavía no marca qué
