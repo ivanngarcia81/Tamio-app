@@ -592,19 +592,21 @@ for (const { ruta, nombre } of [
   await cierraHoja();
 }
 
-// Cartas: solicitud y los dos traslados salen del menú de crear de la
-// cabecera — el mismo MenuAnchor del Mac, que a partir de 700 vuelve a ser
-// la única entrada de crear de esa pantalla (el "+" fijo muere ahí).
+/* Cartas: solicitud y los dos traslados. El camino cambió el 24 ago y esta
+   guarda con él —no se borra, se pone al día—: ya no hay un menú de "+" en la
+   cabecera del que salgan las tres, sino UN botón por sección que dice qué
+   crea. Así que ahora se entra a la sección y se pulsa su botón, que es lo que
+   hace quien usa la app. Lo que se comprueba de la hoja es lo mismo. */
 await page.goto(`${URL_BASE}/#/cartas`);
 await page.waitForTimeout(700);
-for (const [etiqueta, nombre] of [
-  ["Nueva solicitud", "solicitud"],
-  ["Registrar traslado de salida", "traslado salida"],
-  ["Registrar traslado de entrada", "traslado entrada"],
+for (const [seccion, nombre] of [
+  ["Solicitudes", "solicitud"],
+  ["Traslado de salida", "traslado salida"],
+  ["Traslado de entrada", "traslado entrada"],
 ]) {
-  await page.locator(".cartas-menu-crear button").first().click();
-  await page.waitForTimeout(300);
-  await page.getByText(etiqueta, { exact: true }).first().click();
+  await page.locator(".md-indice-item", { hasText: seccion }).first().click();
+  await page.waitForTimeout(400);
+  await page.locator(".header .btn.primary").first().click();
   await esperaHoja();
   chkHoja(nombre, await medirHoja());
   await cierraHoja();
@@ -1369,15 +1371,15 @@ console.log("\n== Cartas del iPad (handoff) ==");
   await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-cartas .md-indice-item", { timeout: 10000 });
 
-  /* Redactar NO está en el índice: desde la 1.2.2 crear vive solo en el "+"
-     de la cabecera (había dos entradas para lo mismo). Se abre por ahí, que
-     es como lo abre una persona. */
-  await pg.click(".cartas-menu-crear button");
-  await pg.waitForTimeout(300);
-  await pg.locator(".ios-menu button, .menu-anclado button, [role=menuitem]").first().click();
-  await pg.waitForTimeout(400);
+  /* Redactar NO está en el índice: desde la 1.2.2 crear vive solo en la
+     cabecera (había dos entradas para lo mismo). El camino se acortó otra vez
+     el 24 ago: aquel "+" desplegaba un menú y ahora el botón de la barra ya
+     dice qué crea según la sección —en Resumen, "Nueva carta"—, así que abre
+     el editor de un toque en vez de dos. */
+  await pg.locator(".header .btn.primary").first().click();
+  await pg.waitForTimeout(500);
   const abierto = await pg.locator(".ce-split").count();
-  chk(abierto > 0, `el "+" de la cabecera abre el editor (${abierto})`);
+  chk(abierto > 0, `el botón de la barra abre el editor de un toque (${abierto})`);
   // El papel se pinta con freno de medio segundo; se le da margen.
   await pg.waitForTimeout(1600);
 
@@ -3470,6 +3472,104 @@ console.log("\n== El header con las medidas del handoff ==");
   });
   chk(enFono, "en el iPhone no hay ☰ ninguno, que es por lo que hay un solo glifo");
   await ctxF.close();
+}
+
+/* ---------- 37. Un solo botón de crear, y con nombre --------------------
+   Iván mandó dos fotos de "Cartas y traslados" el 24 ago con los dos botones
+   circulados: un "+" pelado en la esquina de la barra y, debajo, un botón
+   verde con nombre dentro de la lista. Los dos hacían lo mismo.
+
+   Es la SEGUNDA vez que esta pantalla pone la misma orden en dos sitios: la
+   primera fue "Nueva carta" como pestaña del índice, que también circuló (22
+   ago). Por eso la guarda no comprueba "que el botón X ya no está" —eso se
+   arregla una vez y vuelve—, sino la regla: en cada sección de cada pantalla
+   puede haber **como mucho un** control de alta a la vista, y si lo hay tiene
+   que decir qué crea. Un "+" sin palabra era el único botón de la app que no
+   lo decía.
+
+   Se recorren las seis secciones de Cartas, que es donde vivía el problema, y
+   de paso las otras pantallas con alta, para que la regla valga en todas. */
+console.log("\n== Un solo botón de crear, y con nombre ==");
+{
+  const ctxC = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxC.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /* Un control de alta es cualquier cosa pulsable que abre un formulario de
+     alta. Se reconocen por el verbo, que es como los reconoce quien mira la
+     pantalla: "Nueva…", "Nuevo…", "Registrar…". Y se cuenta también lo que no
+     tiene texto pero lleva un "+": ese es justo el caso que se retiró. */
+  const controlesDeAlta = () => pg.evaluate(() => {
+    const visible = (el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    };
+    const out = [];
+    for (const el of document.querySelectorAll("button, a[role='button']")) {
+      if (!visible(el)) continue;
+      const txt = el.textContent.trim();
+      const etiqueta = el.getAttribute("aria-label") || "";
+      const masPelado = !txt && /nuev|crear|registrar|\+/i.test(etiqueta);
+      if (/^(Nueva|Nuevo|Registrar)\b/i.test(txt) || masPelado) {
+        out.push({
+          texto: txt || `(sin texto: ${etiqueta})`,
+          conNombre: txt.length > 0,
+          enBarra: !!el.closest(".header"),
+        });
+      }
+    }
+    return out;
+  });
+
+  const SECCIONES = [
+    ["resumen", "Resumen"], ["archivo", "Archivo"], ["plantillas", "Plantillas"],
+    ["solicitudes", "Solicitudes"], ["salida", "Traslado de salida"], ["entrada", "Traslado de entrada"],
+  ];
+  await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-indice", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+
+  const vistos = new Set();
+  for (const [, rotulo] of SECCIONES) {
+    await pg.locator(".md-indice-item", { hasText: rotulo }).first().click();
+    await pg.waitForTimeout(450);
+    const c = await controlesDeAlta();
+    chk(c.length <= 1, `Cartas · ${rotulo}: un solo control de alta (${c.map((x) => x.texto).join(" · ") || "ninguno"})`);
+    if (c.length === 1) {
+      chk(c[0].conNombre, `y dice qué crea: "${c[0].texto}"`);
+      chk(c[0].enBarra, "y vive en la barra, no dentro de la lista");
+      vistos.add(c[0].texto);
+    }
+  }
+  /* Y el nombre CAMBIA con la sección: si fuera siempre el mismo, el botón
+     estaría mintiendo en cinco de las seis. */
+  chk(vistos.size >= 4, `el nombre cambia con la sección (${[...vistos].join(" · ")})`);
+
+  /* Que además funcione: en Traslado de salida, el botón de la barra abre el
+     formulario que antes abría el botón de dentro de la lista. */
+  await pg.locator(".md-indice-item", { hasText: "Traslado de salida" }).first().click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".header .btn.primary").click();
+  await pg.waitForTimeout(600);
+  const abrio = await pg.evaluate(() =>
+    !!document.querySelector(".modal-card, .ios-sheet, .nm-hoja"));
+  chk(abrio, "y el botón de la barra abre el formulario de alta");
+  await pg.keyboard.press("Escape");
+  await pg.waitForTimeout(300);
+
+  /* La misma regla en las otras pantallas con alta. No es de más: si mañana
+     alguien vuelve a poner un botón de crear dentro de una lista, aquí se ve
+     el día que lo haga y no seis semanas después en una foto. */
+  for (const ruta of ["ingresos", "gastos", "membresia", "miembros", "actas", "servicios", "depositos", "agenda"]) {
+    await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".header", { timeout: 10000 });
+    await pg.waitForTimeout(400);
+    const c = await controlesDeAlta();
+    chk(c.length <= 1, `${ruta}: un solo control de alta (${c.map((x) => x.texto).join(" · ") || "ninguno"})`);
+    if (c.length === 1) chk(c[0].conNombre, `${ruta}: y dice qué crea ("${c[0].texto}")`);
+  }
+  await ctxC.close();
 }
 
 await browser.close();

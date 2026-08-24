@@ -33,7 +33,7 @@ import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services
 import { IconChevronLeft, IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
-import { MenuAnchor, type MenuItem } from "../components/MenuAnchor";
+import { type MenuItem } from "../components/MenuAnchor";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
@@ -233,10 +233,10 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   /* ---- Maestro-detalle del iPad: los dos umbrales de siempre. ---- */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
   const partido = esIPad() && anchoPartido;
-  const [menuCrearAbierto, setMenuCrearAbierto] = useState(false);
-  // El "+" fijo de iPhone (BotonCrear, ver App.tsx) no puede anclar el menú
-  // de escritorio (MenuAnchor cuelga del botón de la cabecera, que en móvil
-  // no se pinta): en su lugar abre esta hoja de acciones, mismo contenido.
+  /* El "+" fijo de iPhone (BotonCrear, ver App.tsx) abre esta hoja de
+     acciones con las cinco cosas que esta pantalla crea. En el teléfono es la
+     ÚNICA forma de crear: ni la barra de 56 existe ahí, ni quedan ya botones
+     dentro de las listas. */
   const [hojaCrearAbierta, setHojaCrearAbierta] = useState(false);
   const [editando, setEditando] = useState<Carta | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Carta | null>(null);
@@ -624,7 +624,39 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
       icon: <ArrowDownLeftIcon />,
       onPress: () => { cambiarTab("entrada"); setTeModal({ open: true, traslado: null }); },
     },
+    /* La quinta llegó el 24 ago con el botón único. En el teléfono este menú
+       ES la única forma de crear —el "+" flotante lo abre— y "Nueva
+       plantilla" solo vivía en un botón dentro de la lista de plantillas. Al
+       retirar ese botón, sin esta entrada el iPhone se habría quedado sin
+       manera de crear una plantilla. */
+    {
+      label: t("plantillas.nuevaPlantilla"),
+      icon: <DocPlusIcon />,
+      onPress: () => { cambiarTab("plantillas"); setPlantillaModal({ open: true, plantilla: null, base: null }); },
+    },
   ];
+
+  /* Qué crea el botón de la barra, según la sección abierta.
+   *
+   * Antes eran DOS controles para lo mismo: un "+" pelado en la cabecera, que
+   * desplegaba un menú de cuatro acciones, y un botón verde con nombre dentro
+   * de cada lista. Iván los circuló los dos en la misma foto (24 ago) —"hay
+   * doble botón que hacen lo mismo"—, y es la segunda vez que esta pantalla
+   * pone la misma orden en dos sitios: la primera fue "Nueva carta" como
+   * pestaña, ver la nota de SECCIONES_CARTAS.
+   *
+   * Queda uno solo, y CON NOMBRE, que es lo que hacen las otras quince
+   * pantallas: "Nuevo ingreso", "Nueva acta", "Nuevo servicio". Un "+" sin
+   * palabra era el único botón de la app que no decía qué iba a crear.
+   *
+   * En el editor no sale ninguno: ahí ya estás escribiendo una carta. */
+  const accionCrear: { label: string; onPress: () => void } | null =
+    tab === "solicitudes" ? { label: t("solicitudes.nuevaSolicitud"), onPress: () => setSolicitudModal({ open: true, solicitud: null }) }
+    : tab === "salida" ? { label: t("traslados.registrarSalida"), onPress: () => setTsModal({ open: true, traslado: null }) }
+    : tab === "entrada" ? { label: t("traslados.registrarEntrada"), onPress: () => setTeModal({ open: true, traslado: null }) }
+    : tab === "plantillas" ? { label: t("plantillas.nuevaPlantilla"), onPress: () => setPlantillaModal({ open: true, plantilla: null, base: null }) }
+    : tab === "nueva" ? null
+    : { label: t("cartas.nuevaCartaMenu"), onPress: () => cambiarTab("nueva") };
 
   // Mismas cuatro acciones que menuCrearItems, para la hoja del "+" fijo de
   // iPhone (ver hojaCrearAbierta arriba) — un ActionSheet no tiene "icono",
@@ -801,9 +833,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("solicitudes.pendientes")}: <b>{solicitudes.filter((s) => !["entregada", "cancelada"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setSolicitudModal({ open: true, solicitud: null })}>
-                <IconPlus size={14} /> {t("solicitudes.nuevaSolicitud")}
-              </button>
             </div>
             {solicitudes.length === 0 ? (
               <EmptyState
@@ -918,9 +947,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("traslados.enProceso")}: <b>{trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setTsModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarSalida")}
-              </button>
             </div>
             {trasladosSalida.length === 0 ? (
               <EmptyState
@@ -1001,9 +1027,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("traslados.enRevision")}: <b>{trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setTeModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarEntrada")}
-              </button>
             </div>
             {trasladosEntrada.length === 0 ? (
               <EmptyState
@@ -1085,9 +1108,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("plantillas.activas")}: <b>{plantillas.filter((p) => p.activa === 1).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setPlantillaModal({ open: true, plantilla: null, base: null })}>
-                <IconPlus size={14} /> {t("plantillas.nuevaPlantilla")}
-              </button>
             </div>
             <div className="data-table roomy">
               <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px" }}>
@@ -1300,15 +1320,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <MacFiltros campos={camposFiltro} onRestablecer={restablecerFiltros} />
               </>
             )}
-            <div className="cartas-menu-crear">
-              <MenuAnchor
-                open={menuCrearAbierto}
-                onOpenChange={setMenuCrearAbierto}
-                button={<IconPlus size={22} strokeWidth={2.1} />}
-                ariaLabel={t("cartas.nuevaCarta")}
-                items={menuCrearItems}
-              />
-            </div>
+            {accionCrear && (
+              <button className="btn primary btn-nuevo-cabecera" onClick={accionCrear.onPress}>
+                <IconPlus size={14} /> {accionCrear.label}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1529,9 +1545,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("solicitudes.pendientes")}: <b>{solicitudes.filter((s) => !["entregada", "cancelada"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setSolicitudModal({ open: true, solicitud: null })}>
-                <IconPlus size={14} /> {t("solicitudes.nuevaSolicitud")}
-              </button>
             </div>
             {solicitudes.length === 0 ? (
               <EmptyState
@@ -1646,9 +1659,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("traslados.enProceso")}: <b>{trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setTsModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarSalida")}
-              </button>
             </div>
             {trasladosSalida.length === 0 ? (
               <EmptyState
@@ -1729,9 +1739,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("traslados.enRevision")}: <b>{trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setTeModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarEntrada")}
-              </button>
             </div>
             {trasladosEntrada.length === 0 ? (
               <EmptyState
@@ -1813,9 +1820,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("plantillas.activas")}: <b>{plantillas.filter((p) => p.activa === 1).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setPlantillaModal({ open: true, plantilla: null, base: null })}>
-                <IconPlus size={14} /> {t("plantillas.nuevaPlantilla")}
-              </button>
             </div>
             <div className="data-table roomy">
               <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px" }}>

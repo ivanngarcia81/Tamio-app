@@ -2922,3 +2922,56 @@ desborda **348px**.
 Los iconos fantasma no se pintan, y hay guarda para que no aparezcan de buena
 fe: en la barra no puede haber ningún botón sin texto que no sea el ☰. Pasa de
 799 a **825**.
+
+## 40. Un solo botón de crear, y con nombre (24 ago 2026)
+
+Iván mandó dos fotos de "Cartas y traslados" con los dos botones circulados: un
+**"+" pelado** en la esquina de la barra y, debajo, un **botón verde con
+nombre** dentro de la lista. Los dos abrían el mismo formulario. Palabras
+suyas: *"prácticamente en todo el menú hay doble botón que hacen lo mismo; en
+el símbolo de más poner '+ nuevo' y elimina los otros botones"*.
+
+**Es la segunda vez que esta pantalla pone la misma orden en dos sitios.** La
+primera fue "Nueva carta" como pestaña del índice, que también circuló el 22
+ago. Por eso lo que se arregla no es "quitar ese botón" —eso se hace una vez y
+vuelve— sino la regla.
+
+**Lo que se midió antes de tocar nada.** Se recorrieron las doce pantallas con
+alta buscando el patrón. La duplicación estaba **solo en Cartas**, en cuatro
+secciones (Solicitudes, Traslado de salida, Traslado de entrada, Plantillas) y
+por partida doble, porque el cuerpo se pinta en dos ramas —la del Mac/teléfono
+y la del maestro-detalle del iPad—: **ocho botones**. Los `btn primary` de
+Bandeja, Mensajes y Reportes no son de alta (Aprobar, Enviar, Exportar), así
+que la generalización "en todo el menú" no se cumplía; se dice porque conviene
+que quede escrito qué se revisó.
+
+**Queda uno solo, y con nombre.** El "+" del menú se retira y en su sitio va un
+`.btn-nuevo-cabecera` normal cuyo texto **cambia con la sección**: "Nueva carta
+de recomendación", "Nueva plantilla", "Nueva solicitud", "Registrar traslado de
+salida", "Registrar traslado de entrada". En el editor no sale ninguno: ahí ya
+estás escribiendo una carta.
+
+Se eligió el botón contextual en vez de un "+ Nuevo" genérico con su menú por
+dos razones: es lo que hacen las otras quince pantallas ("Nuevo ingreso",
+"Nueva acta", "Nuevo servicio"), y un "+" sin palabra era **el único botón de
+la app que no decía qué iba a crear**. De paso el editor se abre de un toque en
+vez de dos.
+
+**La trampa que casi se cuela.** Quitar el botón de "Nueva plantilla" del
+contenido habría dejado al **iPhone sin ninguna forma de crear una plantilla**:
+ahí no hay barra de 56, y el "+" flotante abre una hoja de acciones que solo
+llevaba cuatro. Se añadió la quinta. Es exactamente el fallo que ya pasó una
+vez en esta misma pantalla —el iPad de 13" sin un solo control de alta a la
+vista— y por eso se buscó a propósito.
+
+**Tres guardas viejas se pusieron al día, ninguna se borró.** Dos abrían el
+menú del "+" para llegar a las hojas de solicitud y traslados; ahora entran por
+la sección y pulsan su botón, que es lo que hace una persona. La tercera
+comprobaba que el "+" abría el editor; ahora comprueba que lo abre de un toque.
+
+**La guarda nueva (§37) vigila la REGLA, no el botón.** Recorre las seis
+secciones de Cartas y las ocho pantallas con alta y exige tres cosas: **como
+mucho un** control de alta a la vista, que **diga qué crea** (se cuentan también
+los que no tienen texto pero llevan un "+", que es justo el caso retirado), y
+que **viva en la barra**. Devolviendo uno solo de los ocho botones, canta
+`Nueva solicitud · Nueva solicitud`. Pasa de 825 a **861**.

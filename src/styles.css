@@ -7942,11 +7942,6 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    (marcados a mano en cada página). */
 :root.movil .btn-nuevo-cabecera,
 :root.movil .empty-accion.duplica-crear,
-/* El menú de Cartas.tsx (MenuAnchor con las 4 acciones de crear) es el
-   mismo caso: en el teléfono el "+" fijo ya cubre "Nueva carta" (mismo
-   destino, cambiarTab("nueva")), así que su versión de cabecera se
-   esconde igual que .btn-nuevo-cabecera para no duplicar el botón. */
-:root.movil .cartas-menu-crear { display: none; }
 
 /* Orden visual del encabezado en iPhone/iPad: fila fija de "+"/compartir
    arriba, título grande y subtítulo debajo — al revés que en Mac, donde
@@ -9672,15 +9667,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .titulo-fijo,
   :root.ipad .app::after { display: none; }
   :root.ipad .btn-nuevo-cabecera { display: inline-flex; }
-  /* Y con él, el menú de crear de Cartas y traslados, que es su equivalente
-     en esa página (MenuAnchor con las cuatro acciones de alta). Se escondía
-     junto a `.btn-nuevo-cabecera` bajo `:root.movil` porque en el teléfono
-     el "+" fijo ya las cubre — pero el "+" fijo en el iPad no existe (dos
-     reglas más arriba), así que Cartas se quedaba SIN NINGUNA forma de
-     crear: ni botón de cabecera, ni "+" flotante, ni acción en el estado
-     vacío. Medido: en un iPad de 13" no había un solo control de alta
-     visible en toda la pantalla. */
-  :root.ipad .cartas-menu-crear { display: inline-flex; }
+  /* Cartas y traslados ya no necesita regla propia: su menú de "+" pelado
+     (`.cartas-menu-crear`) se retiró el 24 ago y en su sitio hay un
+     `.btn-nuevo-cabecera` normal, que la regla de arriba enciende. La razón
+     de aquella regla sigue vigente y por eso se anota aquí: sin un control de
+     alta en la barra, en el iPad esa pantalla se quedaba SIN NINGUNA forma de
+     crear —el "+" flotante del teléfono no existe aquí—, y se midió en un
+     iPad de 13" sin un solo botón de alta a la vista. */
 
   /* Imprimir y "···" vuelven al flujo de la barra como botones normales.
      Se les deshace una por una la conversión a glifo fijo de `:root.movil`
