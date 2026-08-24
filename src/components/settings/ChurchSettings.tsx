@@ -29,6 +29,8 @@ export interface ChurchFormValues {
   avisarSinComprobante: boolean;
   umbralComprobante: string;
   avisarDuplicados: boolean;
+  /** Si los cortes nacen pidiendo la segunda firma (migración 47). */
+  pedirDobleFirma: boolean;
 }
 
 interface Props {

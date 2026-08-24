@@ -217,13 +217,15 @@ export default function ChurchSettingsIOS({
               · Cierre de mes — la app cierra por mes natural (ver
                 `services/inicio/periodo.ts`, y ahí está el porqué); "último
                 domingo" no es una opción, es otra forma de contar. */}
+          {/* **Encendido desde la migración 47.** Es la POLÍTICA: los cortes
+              nacen pidiendo la segunda firma o no. La hoja del corte puede
+              cambiarlo suelto — el handoff dibuja un control en cada sitio y
+              ahora los dos significan algo. */}
           <SwitchField
             label={t("controlesTesoreria.dobleFirma")}
             sub={t("controlesTesoreria.dobleFirmaSub")}
-            checked={false}
-            onChange={() => {}}
-            disabled
-            title={t("controlesTesoreria.dobleFirmaSub")}
+            checked={value.pedirDobleFirma}
+            onChange={(v) => onChange({ pedirDobleFirma: v })}
           />
           <div className="ios-field ios-field--apagado" title={t("controlesTesoreria.cierreMesSub")}>
             <span className="ios-field-textos">

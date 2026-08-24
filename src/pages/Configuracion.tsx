@@ -288,6 +288,7 @@ export default function Configuracion({
     avisarSinComprobante: church.avisar_sin_comprobante !== 0,
     umbralComprobante: church.umbral_comprobante != null ? aTextoTecleado(church.umbral_comprobante) : "",
     avisarDuplicados: church.avisar_duplicados !== 0,
+    pedirDobleFirma: church.pedir_doble_firma === 1,
   });
   const [saldoError, setSaldoError] = useState<string | null>(null);
   const [umbralError, setUmbralError] = useState<string | null>(null);
@@ -408,6 +409,7 @@ export default function Configuracion({
           avisar_sin_comprobante: f.churchForm.avisarSinComprobante ? 1 : 0,
           umbral_comprobante: umbralNum,
           avisar_duplicados: f.churchForm.avisarDuplicados ? 1 : 0,
+          pedir_doble_firma: f.churchForm.pedirDobleFirma ? 1 : 0,
         },
       };
     }

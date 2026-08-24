@@ -46,6 +46,10 @@ export default function PanelAlerta({ alerta, umbral, moneda, acciones }: Props)
     miembro: alerta.miembro?.nombre ?? "",
     recurrente: alerta.recurrente?.concepto ?? "",
     meses: (alerta.meses ?? []).length,
+    /* El corte al que le falta la segunda firma. `registro` dice quién lo
+       hizo, que es la mitad del mensaje: la firma le toca a alguien más. */
+    corte: alerta.corte?.nombre ?? "",
+    registro: alerta.corte?.registrado_por ?? t("common.sinEspecificar"),
   };
 
   return (

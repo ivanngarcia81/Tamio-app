@@ -227,7 +227,10 @@ salieron en rojo, que es lo único que demuestra que una guarda sirve.
 
 Estos no son deuda. Están así porque se decidió que estén así:
 
-- **"Pedir doble firma"** en el corte — Iván eligió constancia, no acuse.
+- ~~**"Pedir doble firma"** en el corte~~ → **cableado el 24 ago por la tarde**
+  (migración 47). No se encendió el acuse: se descubrió que la segunda firma
+  era otra cosa —un doble conteo, y lo da la asistente de tesorería—. El
+  porqué está en `docs/cascaras-1-2.md`.
 - **"Adjuntar foto de la ficha"** en el corte — la ficha la da el banco, así que
   en el corte todavía no existe. Se adjunta un paso después, al registrar el
   depósito, donde el campo lleva funcionando desde siempre.

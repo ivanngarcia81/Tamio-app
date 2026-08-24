@@ -1,6 +1,6 @@
 import {
   mesesPendientesRecurrente, normalizarTexto,
-  type Member, type MovimientoRecurrente, type Tx,
+  type Corte, type Member, type MovimientoRecurrente, type Tx,
 } from "../../db";
 import type { Centavos } from "../../dinero";
 
@@ -34,7 +34,9 @@ export type TipoAlerta =
   | "categoriaVacia"
   | "miembroSinVincular"
   | "recurrenteVencido"
-  | "miembroArchivado";
+  | "miembroArchivado"
+  /** Un corte que pidió segunda firma y sigue sin ella (migración 47). */
+  | "firmaPendiente";
 
 export interface Alerta {
   /** Estable entre recargas: la lista lo usa de `key` y de selección. */
@@ -45,6 +47,8 @@ export interface Alerta {
   gemelo?: Tx;
   miembro?: Member;
   recurrente?: MovimientoRecurrente;
+  /** El corte al que le falta la segunda firma. */
+  corte?: Corte;
   /** Meses "YYYY-MM" que un recurrente lleva sin generar. */
   meses?: string[];
 }
@@ -96,6 +100,10 @@ export interface EntradaAlertas {
    *  ajustables, y lo que tiene que seguir haciendo por omisión. */
   avisarSinComprobante?: boolean;
   avisarDuplicados?: boolean;
+  /** Cortes que pidieron segunda firma y siguen sin ella. Sin pasarlos no se
+   *  calcula la regla — que es lo que hacía la bandeja antes de que la doble
+   *  firma existiera. */
+  cortesSinFirma?: Corte[];
 }
 
 /**
@@ -180,7 +188,18 @@ export function calcularAlertas(e: EntradaAlertas): Alerta[] {
     }
   }
 
-  // 7. Miembros archivados: lo que la pantalla ya listaba abajo.
+  /* 8. Cortes que pidieron segunda firma y siguen sin ella (migración 47).
+        Va ANTES de los miembros archivados porque pide una acción de alguien
+        —contar o revisar y firmar— y lo archivado solo pide enterarse.
+
+        Solo los que la PIDIERON: un corte que nació sin la marca no está
+        incompleto, y anunciarlo como pendiente convertiría una opción en un
+        reproche. */
+  for (const c of e.cortesSinFirma ?? []) {
+    out.push({ clave: `co-${c.id}-firma`, tipo: "firmaPendiente", corte: c });
+  }
+
+  // 9. Miembros archivados: lo que la pantalla ya listaba abajo.
   for (const m of e.archivados) {
     out.push({ clave: `m-${m.id}-archivado`, tipo: "miembroArchivado", miembro: m });
   }

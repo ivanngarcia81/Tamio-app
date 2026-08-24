@@ -148,6 +148,33 @@ export async function printDepositoPdf(church: Church, dep: Deposito): Promise<v
     doc.addGap(PDF_SPACE.md);
   }
 
+  /* La segunda firma del corte (migración 47), dicha en el papel con las
+     palabras exactas de lo que se hizo: CONTÓ el dinero, o REVISÓ el
+     registro. Son dos controles distintos y el comprobante que se archiva es
+     el peor sitio para confundirlos.
+
+     Si el corte la pidió y nadie firmó, el papel lo dice en vez de callarlo:
+     un hueco silencioso se lee como que no hacía falta. */
+  if (corte?.doble_firma_pedida === 1 || corte?.segunda_firma) {
+    const fecha = fmtFechaCorta((corte.segunda_firma_en ?? "").slice(0, 10));
+    doc.heading(t("dobleFirma.filaComprobante"));
+    doc.keyValueGrid(
+      [{
+        label: corte.segunda_firma ?? t("dobleFirma.pdfPendiente"),
+        value: !corte.segunda_firma
+          ? "—"
+          : corte.segunda_firma_modo === "conteo"
+            ? t("dobleFirma.pdfConteo", {
+                monto: `${fmtMoneyPdf((corte.segunda_conteo ?? 0) as Centavos, moneda)} ${moneda}`,
+                fecha,
+              })
+            : t("dobleFirma.pdfRevision", { fecha }),
+      }],
+      1
+    );
+    doc.addGap(PDF_SPACE.md);
+  }
+
   doc.addGap(75);
   /* Quien registró y quien llevó el dinero. El segundo solo aparece si hubo
      corte: en un depósito registrado a mano nadie ha dicho quién lo llevó, y
@@ -160,6 +187,16 @@ export async function printDepositoPdf(church: Church, dep: Deposito): Promise<v
     },
     ...(corte?.responsable
       ? [{ nombre: corte.responsable, rol: t("depositos.responsable"), firmaDataUrl: null }]
+      : []),
+    /* La tercera raya solo si alguien firmó. En blanco no sirve de nada aquí
+       —a diferencia de un acta, que se firma a mano sobre el papel— porque
+       esta firma certifica un conteo que ya pasó. */
+    ...(corte?.segunda_firma
+      ? [{
+          nombre: corte.segunda_firma,
+          rol: t("dobleFirma.filaComprobante"),
+          firmaDataUrl: null,
+        }]
       : []),
   ]);
 

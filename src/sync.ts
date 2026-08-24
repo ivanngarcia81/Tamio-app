@@ -438,6 +438,12 @@ export async function sincronizarDepositos(churchIdLocal: number): Promise<Resul
 const CORTE_DATA_COLS = [
   "fecha", "nombre", "cuenta_banco", "responsable", "estado", "notas",
   "registrado_por", "registrado_rol", "created_at",
+  /* La doble firma (migración 47). Las seis columnas remotas se crearon ANTES
+     que esta línea, que es la regla de la casa: al revés, el upsert manda una
+     columna que Supabase no conoce y se corta la sincronización de todas las
+     tablas. `npm run verificar-sync-cortes` lo comprueba en cada cambio. */
+  "doble_firma_pedida", "segunda_firma", "segunda_firma_rol", "segunda_firma_en",
+  "segunda_firma_modo", "segunda_conteo",
 ] as const;
 
 /** Mapas id ↔ uid de una tabla local cualquiera con columna `uid`. */
@@ -490,6 +496,10 @@ export async function sincronizarCortes(churchIdLocal: number): Promise<Resultad
       if (r && !(epoch(l.updated_at) > epoch(r.updated_at))) continue;
       const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
       for (const c of CORTE_DATA_COLS) fila[c] = l[c] ?? null;
+      /* `doble_firma_pedida` es INTEGER aquí y boolean allá, como `deleted`.
+         Mandar el 0/1 crudo lo dejaría a merced de la coerción de PostgREST,
+         que es justo el tipo de detalle que se guarda mal en silencio. */
+      fila.doble_firma_pedida = l.doble_firma_pedida === 1;
       /* El depósito que cerró el corte, por uid. Si el depósito todavía no
          tiene uid —no debería, lo pone la migración 22— se manda null antes
          que un id que allá no significa nada. */
@@ -518,7 +528,8 @@ export async function sincronizarCortes(churchIdLocal: number): Promise<Resultad
       if (depUid && !idPorDepUid.has(depUid)) continue;
       const depIdLocal = depUid ? idPorDepUid.get(depUid)! : null;
 
-      const valores = CORTE_DATA_COLS.map((c) => r[c] ?? null);
+      const valores = CORTE_DATA_COLS.map((c) =>
+        c === "doble_firma_pedida" ? (r[c] ? 1 : 0) : r[c] ?? null);
       const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
       const del = r.deleted ? 1 : 0;
       const n = CORTE_DATA_COLS.length;

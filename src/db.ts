@@ -65,6 +65,9 @@ export interface Church {
   avisar_sin_comprobante: number;
   umbral_comprobante: Centavos | null;
   avisar_duplicados: number;
+  /** Si los cortes nacen pidiendo la segunda firma (migración 47). Es el valor
+   *  por omisión de `cortes.doble_firma_pedida`, no una orden. */
+  pedir_doble_firma: number;
 }
 
 export interface Member {
@@ -587,6 +590,7 @@ export interface ChurchUpdate {
   avisar_sin_comprobante?: number;
   umbral_comprobante?: Centavos | null;
   avisar_duplicados?: number;
+  pedir_doble_firma?: number;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -608,8 +612,9 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        -- volver a NULL, así que lleva su propia bandera en $28.
        avisar_sin_comprobante = COALESCE($27, avisar_sin_comprobante),
        umbral_comprobante = CASE WHEN $28 = 1 THEN $29 ELSE umbral_comprobante END,
-       avisar_duplicados = COALESCE($30, avisar_duplicados)
-     WHERE id = $31`,
+       avisar_duplicados = COALESCE($30, avisar_duplicados),
+       pedir_doble_firma = COALESCE($31, pedir_doble_firma)
+     WHERE id = $32`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
@@ -629,6 +634,7 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       "umbral_comprobante" in c ? 1 : 0,
       c.umbral_comprobante ?? null,
       c.avisar_duplicados ?? null,
+      c.pedir_doble_firma ?? null,
       id,
     ]
   );
@@ -1142,6 +1148,18 @@ export interface Corte {
   created_at?: string | null;
   registrado_por?: string | null;
   registrado_rol?: string | null;
+  /* ---- Doble firma (migración 47) ----
+     La segunda persona vuelve a contar el dinero —o revisa el registro cuando
+     ya no está— y firma. `pedida` es la marca de ESTE corte; su valor por
+     omisión lo pone la política de la iglesia, y la hoja puede cambiarlo. */
+  doble_firma_pedida?: number;
+  segunda_firma?: string | null;
+  segunda_firma_rol?: string | null;
+  segunda_firma_en?: string | null;
+  /** "conteo" (contó el dinero) | "revision" (revisó el registro). */
+  segunda_firma_modo?: string | null;
+  /** Lo que contó, en centavos. Se guarda AUNQUE no cuadre y no haya firma. */
+  segunda_conteo?: Centavos | null;
 }
 
 export interface NewCorte {
@@ -1150,6 +1168,8 @@ export interface NewCorte {
   cuenta_banco?: string | null;
   responsable?: string | null;
   notas?: string | null;
+  /** Si este corte nace pidiendo la segunda firma. */
+  dobleFirma?: boolean;
 }
 
 /** Los cortes de la iglesia, del más reciente al más viejo. */
@@ -1190,8 +1210,8 @@ export async function insertCorte(
   const d = await getDb();
   await d.execute(
     `INSERT INTO cortes (church_id, fecha, nombre, cuenta_banco, responsable, notas,
-                         registrado_por, registrado_rol, uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'))`,
+                         registrado_por, registrado_rol, doble_firma_pedida, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,datetime('now'))`,
     [
       churchId,
       corte.fecha,
@@ -1201,6 +1221,7 @@ export async function insertCorte(
       corte.notas?.trim() || null,
       quienRegistra()?.nombre ?? null,
       quienRegistra()?.rol ?? null,
+      corte.dobleFirma ? 1 : 0,
       crypto.randomUUID(),
     ]
   );
@@ -1258,6 +1279,100 @@ export async function deleteCorte(corteId: number, churchId: number): Promise<vo
     "UPDATE cortes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [corteId, churchId]
   );
+}
+
+/**
+ * La segunda firma de un corte (migración 47).
+ *
+ * Dos modos, y la diferencia no es cosmética:
+ *
+ *  - **`conteo`** — volvió a contar el dinero. Trae SU cifra, que la pantalla
+ *    le pidió sin enseñarle el total. Compara el efectivo físico contra lo
+ *    registrado, que es el único control que hace eso en toda la app.
+ *  - **`revision`** — revisó el registro. Es lo único que cabe cuando la firma
+ *    llega días después y el dinero ya está en el banco: puede decir que lo
+ *    apuntado es coherente consigo mismo, no que el dinero estuviera.
+ *
+ * **Cuando lo contado no cuadra, la cifra se guarda y la firma NO se da.** Es
+ * la mitad del control que más se cae de las implementaciones: si un descuadre
+ * borrara el número, contar dos veces no habría servido de nada. Se llama con
+ * `nombre: null` y el conteo puesto.
+ */
+export async function firmarCorte(
+  corteId: number,
+  churchId: number,
+  firma: {
+    nombre: string | null;
+    rol: string | null;
+    modo: "conteo" | "revision";
+    conteo?: Centavos | null;
+  }
+): Promise<void> {
+  const d = await getDb();
+  const nombre = firma.nombre?.trim() || null;
+  await d.execute(
+    `UPDATE cortes SET
+       segunda_firma = $1, segunda_firma_rol = $2, segunda_firma_modo = $3,
+       segunda_conteo = $4,
+       segunda_firma_en = CASE WHEN $1 IS NULL THEN NULL ELSE datetime('now') END,
+       updated_at = datetime('now')
+     WHERE id = $5 AND church_id = $6`,
+    [nombre, nombre ? firma.rol : null, firma.modo, firma.conteo ?? null, corteId, churchId]
+  );
+}
+
+/** Deshace la segunda firma: vuelve a quedar pendiente. Para el caso honesto
+ *  de haberla dado por error, o de haber contado mal. */
+export async function quitarFirmaCorte(corteId: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE cortes SET segunda_firma = NULL, segunda_firma_rol = NULL,
+            segunda_firma_en = NULL, segunda_firma_modo = NULL, segunda_conteo = NULL,
+            updated_at = datetime('now')
+      WHERE id = $1 AND church_id = $2`,
+    [corteId, churchId]
+  );
+}
+
+/**
+ * Los cortes que PIDIERON segunda firma y siguen sin ella. Es lo que Por
+ * revisar lista como su octava regla.
+ *
+ * Solo los que la pidieron: un corte que nació sin la marca no está incompleto
+ * —esa iglesia no usa doble firma, o ese domingo no hacía falta— y anunciarlo
+ * como pendiente sería convertir una opción en un reproche.
+ */
+export async function cortesSinSegundaFirma(churchId: number): Promise<Corte[]> {
+  const d = await getDb();
+  return d.select<Corte[]>(
+    `SELECT * FROM cortes
+      WHERE church_id = $1 AND deleted = 0
+        AND doble_firma_pedida = 1 AND segunda_firma IS NULL
+      ORDER BY fecha DESC, id DESC`,
+    [churchId]
+  );
+}
+
+/**
+ * Quién puede dar la segunda firma de este corte, propuesto.
+ *
+ * La regla es una: **quien firma no puede ser quien registró.** Con la
+ * tesorera y su asistente —que es quien la sustituye cuando falta— eso se
+ * resuelve solo: se propone al otro miembro del par. El domingo que la
+ * asistente cubrió, la app propone a la tesorera para que firme a la vuelta.
+ *
+ * Devuelve la lista del directorio SIN quien registró. Que sea una propuesta y
+ * no una imposición es a propósito: una iglesia pequeña puede tener a una sola
+ * persona en tesorería, y entonces firma el pastor.
+ */
+export async function candidatosSegundaFirma(
+  churchId: number,
+  registradoPor: string | null | undefined
+): Promise<Usuario[]> {
+  const usuarios = await listUsuarios(churchId);
+  const quien = registradoPor?.trim().toLowerCase();
+  if (!quien) return usuarios;
+  return usuarios.filter((u) => u.nombre.trim().toLowerCase() !== quien);
 }
 
 /** Los movimientos de un corte, con el nombre del aportante si lo tiene. */
@@ -1582,6 +1697,9 @@ export async function lastActivityAt(churchId: number): Promise<string | null> {
 
 export const ROLES_USUARIO = [
   { id: "tesorero", nombre: "Tesorero" },
+  /* La que cubre a la tesorera cuando falta, y la que da la segunda firma del
+     corte (migración 47). Va justo detrás porque es el mismo trabajo. */
+  { id: "asistente", nombre: "Asistente de tesorería" },
   { id: "pastor", nombre: "Pastor" },
   { id: "secretario", nombre: "Secretario" },
   { id: "auditor", nombre: "Auditor" },

@@ -2018,8 +2018,13 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
       pie: [...z.querySelectorAll(".ios-section-footer")].some((p) => /\d/.test(p.textContent ?? "")),
     };
   });
-  chk(igl.apagadas === 2, `Controles de tesorería: solo las dos que son DECISIÓN siguen apagadas (${igl.apagadas})`);
-  chk(igl.vivos === 2, `y los dos avisos son interruptores vivos (${igl.vivos})`);
+  /* **Bajó de dos a una el 24 ago por la tarde**: "Doble firma en el corte"
+     dejó de ser una decisión y pasó a ser una función (migración 47). Queda
+     UNA fila apagada, y no espera motor: "Cierre de mes" no es un interruptor
+     sino una fila de valor — la app cierra por mes natural y "último domingo"
+     no es un ajuste, es otra forma de contar. */
+  chk(igl.apagadas === 1, `Controles de tesorería: solo queda apagado el cierre de mes (${igl.apagadas})`);
+  chk(igl.vivos === 3, `y los tres interruptores están vivos (${igl.vivos})`);
   chk(igl.subs >= 4, `las filas siguen explicando qué hacen (${igl.subs})`);
   chk(igl.opacidad < 0.7, `las apagadas van a media tinta (${igl.opacidad})`);
   chk(igl.pie, "y el pie dice cuál es el umbral de siempre, con su cifra");
@@ -3789,6 +3794,184 @@ console.log("\n== N movimientos por categoría ==");
   const algunoConDatos = conteos.some((c) => !/^0 /.test(c));
   chk(algunoConDatos, `y alguno cuenta de verdad (${conteos.filter((c) => !/^0 /.test(c)).join(" · ")})`);
   await ctxN.close();
+}
+
+/* ---------- 42. La doble firma del corte ----------
+   El interruptor "Pedir doble firma" estuvo apagado dos veces y por motivos
+   distintos: primero por falta de columna, y después un día entero por
+   decisión. La conversación del 24 de agosto la cambió al aclarar qué es la
+   segunda firma en esta iglesia — no que el que recibe acuse, sino que otra
+   persona vuelva a CONTAR el dinero antes de que salga.
+
+   Lo que se comprueba aquí es lo único que hace que esto valga algo:
+
+     · que el total del corte **NO se enseña** en la hoja de firmar. Si se
+       viera, "contar dos veces" sería copiar un número de la línea de arriba,
+       y todo el control se caería sin que nada fallara;
+     · que una cifra equivocada NO deja firmar, y aun así **se guarda** — es la
+       mitad que más se cae de las implementaciones: si el descuadre borrara el
+       número, contar dos veces no habría servido de nada;
+     · que la cifra correcta sí firma, y que la firma **llega a la base**
+       (se recarga de verdad y se busca allí);
+     · y que un corte sin firmar aparece en Por revisar.
+
+   Probada al revés cuatro veces: enseñando el total en la hoja, dejando
+   firmar con la cifra mal, sin guardar el descuadre, y con `firmarCorte`
+   devolviendo sin escribir. */
+console.log("\n== La doble firma del corte ==");
+{
+  const ctxDF = await nuevoContexto("ipad");
+  const pg = await ctxDF.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /* Un usuario en el directorio para poder firmar: el buscador de la hoja se
+     nutre de `usuarios`, y la siembra no crea ninguno. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const ya = await db.listUsuarios(ig.id);
+    if (!ya.some((u) => u.rol === "asistente")) {
+      await db.insertUsuario(ig.id, { nombre: "Rosa Elena Vega", rol: "asistente" });
+    }
+  });
+
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos", { timeout: 10000 });
+  await pg.locator(".md-seg-tipo button", { hasText: "Pendientes" }).click();
+  await pg.waitForTimeout(700);
+
+  // --- Entregar un corte PIDIENDO la segunda firma ---
+  await pg.locator(".dep-carta-accion .btn.primary", { hasText: /Entregar/ }).first().click();
+  await pg.waitForTimeout(600);
+  const interruptor = await pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".ios-sheet .ios-field")]
+      .find((x) => /Doble firma|Two signatures/i.test(x.textContent ?? ""));
+    const sw = f?.querySelector('[role="switch"]');
+    return f ? { apagada: f.classList.contains("ios-field--apagado"), viva: sw && !sw.disabled } : null;
+  });
+  chk(!!interruptor && !interruptor.apagada && !!interruptor.viva,
+    `"Pedir doble firma" está VIVO en la hoja del corte (apagada=${interruptor?.apagada})`);
+  /* El total del corte SÍ se ve aquí: quien lo arma tiene que verlo. Lo que
+     no puede verse es en la hoja de firmar, que es lo de más abajo. */
+  const totalCorte = await pg.evaluate(() =>
+    document.querySelector(".nm-monto-cifra")?.textContent.trim());
+  chk(!!totalCorte, `el corte tiene su total (${totalCorte})`);
+
+  await pg.locator(".ios-sheet .ios-field", { hasText: /Doble firma|Two signatures/i })
+    .locator('[role="switch"]').click();
+  await pg.waitForTimeout(300);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(1200);
+
+  /* Crear el corte cierra el panel y vuelve a la lista —el dinero cambió de
+     sitio, así que la vista de antes ya no describe nada—. El corte entregado
+     es ahora una fila propia: se abre para firmarlo. */
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(700);
+
+  // --- La tarjeta de la segunda firma aparece, y pide firma ---
+  const tarjeta = await pg.evaluate(() => {
+    const c = [...document.querySelectorAll(".dep-carta")]
+      .find((x) => /Segunda firma|Second signature/i.test(x.querySelector(".dep-carta-cab")?.textContent ?? ""));
+    return c ? { texto: c.textContent, boton: !!c.querySelector(".btn") } : null;
+  });
+  chk(!!tarjeta, "el corte entregado enseña su tarjeta de segunda firma");
+  chk(!!tarjeta?.boton, "con el botón para darla");
+
+  // --- Abrir la hoja: el total NO puede estar a la vista ---
+  await pg.locator(".dep-carta", { hasText: /Segunda firma|Second signature/i })
+    .locator(".btn").click();
+  await pg.waitForTimeout(600);
+  const cifras = (totalCorte ?? "").replace(/[^0-9]/g, "");
+  const hoja = await pg.evaluate(() => {
+    const h = document.querySelector(".ios-sheet.nm-hoja");
+    return h ? { texto: h.textContent ?? "" } : null;
+  });
+  chk(!!hoja, "la hoja de firmar se abre");
+  chk(!!hoja && !hoja.texto.replace(/[^0-9]/g, "").includes(cifras),
+    "y el total del corte NO aparece en ninguna parte de ella");
+
+  // --- Elegir quién firma ---
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--link", { hasText: /Firma|Signed by/ }).first().click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet").getByText("Rosa Elena Vega").first().click();
+  await pg.waitForTimeout(500);
+
+  // --- Una cifra equivocada: no cuadra y NO deja firmar ---
+  await pg.locator('.ios-sheet.nm-hoja input[inputmode="decimal"]').fill("1");
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action", { hasText: /Comprobar|Check/ }).click();
+  await pg.waitForTimeout(500);
+  const mal = await pg.evaluate(() => ({
+    aviso: document.querySelector(".ios-sheet .dep-aviso-titulo")?.textContent.trim(),
+    firmarApagado: document.querySelector(".ios-sheet.nm-hoja .ios-nav-action")?.disabled,
+    hayDescuadre: !!document.querySelector(".ios-sheet .ios-field--destructive"),
+  }));
+  chk(/No cuadra|does not add up/i.test(mal.aviso ?? ""), `una cifra mal dice que no cuadra (${mal.aviso})`);
+  chk(mal.firmarApagado === true, `y "Firmar" sigue apagado (${mal.firmarApagado})`);
+  chk(mal.hayDescuadre, "pero se ofrece dejar constancia del descuadre");
+
+  // --- La cifra correcta: cuadra y firma ---
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action", { hasText: /Contar otra vez|Count again/ }).click();
+  await pg.waitForTimeout(300);
+  await pg.locator('.ios-sheet.nm-hoja input[inputmode="decimal"]').fill(totalCorte.replace(/[^0-9.,]/g, ""));
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action", { hasText: /Comprobar|Check/ }).click();
+  await pg.waitForTimeout(500);
+  const bien = await pg.evaluate(() => ({
+    aviso: document.querySelector(".ios-sheet .dep-aviso-titulo")?.textContent.trim(),
+    firmarApagado: document.querySelector(".ios-sheet.nm-hoja .ios-nav-action")?.disabled,
+  }));
+  chk(/Cuadra|adds up/i.test(bien.aviso ?? ""), `la cifra buena cuadra (${bien.aviso})`);
+  chk(bien.firmarApagado === false, `y ahora sí se puede firmar (${bien.firmarApagado})`);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(1000);
+
+  /* Recargar de verdad: lo que se comprueba es que llegó a `cortes`. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(300);
+  const enBase = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const cortes = await db.listCortes(ig.id);
+    const c = cortes.find((x) => x.segunda_firma);
+    return c ? {
+      firma: c.segunda_firma, rol: c.segunda_firma_rol,
+      modo: c.segunda_firma_modo, conteo: c.segunda_conteo,
+      pedida: c.doble_firma_pedida, cuando: c.segunda_firma_en,
+    } : null;
+  });
+  chk(enBase?.firma === "Rosa Elena Vega", `la firma llegó a la base (${enBase?.firma})`);
+  chk(enBase?.rol === "asistente", `con su rol del directorio (${enBase?.rol})`);
+  chk(enBase?.modo === "conteo", `y marcada como CONTEO, no como revisión (${enBase?.modo})`);
+  chk((enBase?.conteo ?? 0) > 0, `con la cifra que contó guardada (${enBase?.conteo})`);
+  chk(enBase?.pedida === 1, `y el corte quedó marcado como que la pedía (${enBase?.pedida})`);
+  chk(!!enBase?.cuando, `con la hora de la firma (${enBase?.cuando})`);
+
+  /* Y la regla de Por revisar: un corte que pidió firma y no la tiene sale
+     en la bandeja. Se comprueba con uno nuevo, porque el de arriba ya firmó. */
+  const antes = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    return (await db.cortesSinSegundaFirma(ig.id)).length;
+  });
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    await db.insertCorte(ig.id, {
+      fecha: "2026-08-20", nombre: "Corte de prueba sin firmar", dobleFirma: true,
+    }, []);
+  });
+  await pg.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-bandeja", { timeout: 10000 });
+  await pg.waitForTimeout(700);
+  const enBandeja = await pg.evaluate(() =>
+    [...document.querySelectorAll(".md-bandeja .al-fila .md-fila-titular")]
+      .map((x) => x.textContent.trim())
+      .filter((x) => /segunda firma|second signature/i.test(x)).length);
+  chk(enBandeja > antes, `el corte sin firmar sale en Por revisar (${antes} → ${enBandeja})`);
+  await ctxDF.close();
 }
 
 await browser.close();

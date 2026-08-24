@@ -1043,6 +1043,56 @@ fn migraciones() -> Vec<motordb::Migracion> {
             CREATE INDEX IF NOT EXISTS idx_parentescos_sync
                 ON parentescos(church_id, updated_at);
         "#,
+    }, motordb::Migracion {
+        version: 47,
+        description: "doble firma del corte: la segunda persona que cuenta",
+        sql: r#"
+            -- "Pedir doble firma", el interruptor que el handoff 1 dibujó y que
+            -- llevaba desde entonces apagado. Primero por falta de columna;
+            -- después, un día, por decisión —Iván eligió constancia y no
+            -- acuse—. Esta migración llega de una conversación que cambió esa
+            -- decisión, y el porqué está en docs/cascaras-1-2.md.
+            --
+            -- Qué es la segunda firma en esta iglesia, con sus palabras: la
+            -- tesorera cuenta el dinero y hay una segunda persona —la
+            -- asistente, la que la sustituye cuando falta— que lo vuelve a
+            -- contar y confirma que todo está bien.
+            --
+            -- **`segunda_firma_modo` es la columna que hace honesto el
+            -- documento.** Contar el dinero y revisar el registro son dos
+            -- controles distintos: el primero compara el efectivo físico
+            -- contra lo apuntado; el segundo solo puede decir que lo apuntado
+            -- es coherente consigo mismo. Cuando la firma llega días después
+            -- —desde la bandeja, con el dinero ya en el banco— solo cabe el
+            -- segundo. Guardar los dos bajo la misma etiqueta convertiría el
+            -- comprobante en un papel que dice más de lo que sabe.
+            --
+            -- **`segunda_conteo` se guarda AUNQUE no haya firma.** Si lo
+            -- contado no cuadra con el total, la cifra queda escrita y la
+            -- firma no se da: perder ese número sería perder justo el dato por
+            -- el que se cuenta dos veces.
+            --
+            -- Todas nullables y aditivas: ningún corte existente cambia, y un
+            -- corte sin segunda firma sigue siendo válido. El control avisa,
+            -- no bloquea — decisión de Iván.
+            ALTER TABLE cortes ADD COLUMN doble_firma_pedida INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE cortes ADD COLUMN segunda_firma      TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_firma_rol  TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_firma_en   TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_firma_modo TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_conteo     INTEGER;
+
+            -- La política de la iglesia: si los cortes nacen pidiendo la
+            -- segunda firma. Es el valor POR OMISIÓN de la marca de arriba, no
+            -- una orden: la hoja del corte puede cambiarlo suelto — el handoff
+            -- dibuja un control en cada sitio y los dos significan algo.
+            --
+            -- Local a propósito, como los otros tres controles de tesorería:
+            -- `churches` no viaja por columnas sino como configuración de la
+            -- instalación. Lo que SÍ viaja es la marca de cada corte, que es
+            -- la que decide si a ese corte le falta una firma.
+            ALTER TABLE churches ADD COLUMN pedir_doble_firma INTEGER NOT NULL DEFAULT 0;
+        "#,
     }]
 }
 

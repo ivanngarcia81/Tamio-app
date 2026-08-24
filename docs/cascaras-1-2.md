@@ -172,7 +172,7 @@ apagado**, con lo que le falta a cada uno:
 | ~~**Hoja "Nuevo corte"** entera~~ | Pendientes | **cableada el 24 ago** — "Crear" guarda el corte y engancha sus movimientos | — |
 | ~~**"Responsable"**~~ | dentro de esa hoja | **cableado el 24 ago** — se elige de `usuarios` o se escribe, y se propone el del corte anterior | — |
 | **"Adjuntar foto de la ficha"** | dentro de esa hoja | sigue apagado, con una razón más precisa | **ninguna**: la ficha la da el banco, así que en el corte todavía no hay ninguna. Se adjunta un paso después, al registrar el depósito, donde el campo lleva funcionando desde siempre |
-| **"Pedir doble firma"** | dentro de esa hoja | apagado por **decisión**, no por hueco | Iván eligió *constancia* (se anota a quién se le entregó) y no *acuse* (que el que recibe confirme). Si algún día quiere lo segundo, esto es lo que se enciende |
+| ~~**"Pedir doble firma"**~~ | dentro de esa hoja | **cableado el 24 ago por la tarde** (migración 47) | Ver el recuadro del final: no se encendió el *acuse*, se descubrió que la segunda firma era otra cosa — un doble conteo |
 
 > ✅ **"Compartir", cableado el 24 de agosto de 2026** — y con una corrección
 > que vale la pena dejar escrita, porque el diagnóstico de la tabla de arriba
@@ -342,7 +342,7 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
 | ~~**Avisar de gastos sin comprobante desde $X**~~ | Config → Iglesia → Controles de tesorería | **cableado el 24 ago** (migración 45) — se enciende, se apaga y el importe se escribe |
 | ~~**Avisar de posibles duplicados**~~ | ídem | **cableado el 24 ago** — interruptor vivo |
-| **Doble firma en el corte** | ídem | apagado **por decisión**: Iván eligió constancia, no acuse |
+| ~~**Doble firma en el corte**~~ | ídem | **cableado el 24 ago** (migración 47) — dejó de ser una decisión al aclararse qué era |
 | **Cierre de mes** | ídem | fila de valor: la app cierra por mes natural, y no es un ajuste |
 
 Tres detalles de la ejecución que no son obvios:
@@ -463,15 +463,74 @@ No cambia el tamaño de la pieza 1 de la lista de abajo; la afina:
   `deposito_movimientos`;
 - el campo **responsable** eligiendo de `usuarios` o escribiendo.
 
-Lo que la opción "acuse" habría añadido —y que NO se hace— es el estado de
-confirmación por parte de quien recibe, y con él "Pedir doble firma", que
-sigue apagado.
+Lo que la opción "acuse" habría añadido —y que sigue sin hacerse— es el estado
+de confirmación por parte de quien RECIBE el dinero.
+
+> ⚠️ **Y "Pedir doble firma" se encendió igual, el 24 de agosto por la tarde**,
+> sin que esa decisión cambiara. Resulta que las dos cosas no eran la misma:
+> el acuse lo daría quien recibe, y la segunda firma la da **la asistente de
+> tesorería**, que vuelve a CONTAR el dinero antes de que salga. Está en el
+> recuadro del final de este archivo.
 
 ### Lo que esto descarta
 
 En la conversación llegué a decir que, si la iglesia deposita el mismo día sin
 paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
 **No sobra.** Así trabajan, y es de lo más útil que le falta a la app.
+
+## El control que salió de la lista cambiando de significado (24 ago 2026)
+
+**"Pedir doble firma"** es el único de todo este archivo que no se encendió
+llenando un hueco, sino **entendiendo mejor la pregunta**. Merece quedar
+escrito porque el error estuvo en el diseño, no en el código.
+
+Estuvo apagado dos veces por motivos distintos: primero por falta de columna, y
+después un día entero por decisión —*constancia, no acuse*—. Lo que cambió no
+fue la decisión: fue descubrir que se había contestado a otra pregunta. Al
+describirlo con sus palabras, Iván no hablaba de que el que recibe el dinero
+acuse recibo:
+
+> *"La tesorera cuenta el dinero y verifica que todo esté bien, entonces tiene
+> a una segunda persona que verifica y cuenta con el dinero y confirma que todo
+> está bien, y esa persona es la segunda firma."*
+
+Eso no es un acuse: es un **doble conteo**. Y no lo da quien recibe el dinero
+sino la **asistente de tesorería** — *"la persona que cuando la tesorera falta,
+esa persona toma el cargo por ese día"*. Son tres papeles distintos en la misma
+hoja, y hasta entonces el diseño confundía dos:
+
+| Papel | Quién | Qué hace |
+|---|---|---|
+| **Registra** | la tesorera | cuenta y arma el corte (`registrado_por`) |
+| **Verifica** | la asistente | vuelve a contar y firma (migración 47) |
+| **Recibe** | el pastor, u otro | se lleva el dinero al banco (`responsable`) |
+
+De ahí salieron las decisiones que están en el código:
+
+- **El total NO se enseña en la hoja de firmar.** Si se viera, contar dos veces
+  sería copiar un número de la línea de arriba y el control se caería sin que
+  nada fallara. Es la primera comprobación de la §42 del arnés, probada al
+  revés enseñando el total.
+- **Un descuadre no deja firmar, pero SÍ guarda la cifra.** Es la mitad que más
+  se cae de estas implementaciones: si el descuadre borrara el número, contar
+  dos veces no habría servido de nada.
+- **`segunda_firma_modo` distingue "contó el dinero" de "revisó el registro".**
+  Cuando la firma llega días después —desde Por revisar, con el dinero ya en el
+  banco— solo cabe lo segundo, y el comprobante lo dice con esas palabras.
+  Guardar los dos bajo la misma etiqueta convertiría el papel en algo que dice
+  más de lo que sabe.
+- **Quien firma no puede ser quien registró**, así que el domingo que la
+  asistente sustituye a la tesorera, la app propone a la tesorera para que
+  firme a la vuelta. Se resuelve solo, sin configurar nada.
+- **No bloquea.** Un corte sin segunda firma se crea y se deposita igual; lo
+  que hace es notarse — en el panel del corte, en Por revisar (que gana su
+  octava regla) y en el comprobante.
+
+Y su límite, dicho también en la propia hoja para que nadie lo descubra tarde:
+es ciego al **teclear**, no a mirar. Quien arma el corte vio el total un
+momento antes en su pantalla. Contra un error honesto —que es de lo que protege
+contar dos veces— funciona; contra dos personas puestas de acuerdo, no. Ninguna
+app lo hace, y fingir lo contrario sería peor que no tenerlo.
 
 ## Lo primero que se RETIRA en vez de cablearse (24 ago 2026)
 

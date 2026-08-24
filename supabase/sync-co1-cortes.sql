@@ -40,9 +40,33 @@ create table if not exists public.cortes (
   registrado_por  text,
   registrado_rol  text,
   created_at      text,
+  -- ---- Doble firma del corte (migración local 47) ----
+  -- La segunda persona vuelve a contar el dinero —o revisa el registro cuando
+  -- ya no está— y firma. `segunda_firma_modo` ('conteo' | 'revision') es la
+  -- que hace honesto el comprobante: son dos controles distintos y el papel
+  -- lo dice con esas palabras.
+  doble_firma_pedida boolean not null default false,
+  segunda_firma      text,
+  segunda_firma_rol  text,
+  segunda_firma_en   text,
+  segunda_firma_modo text,
+  -- Centavos enteros, como todo el dinero desde la migración 36. Se guarda
+  -- aunque NO haya firma: si lo contado no cuadra, la cifra queda escrita y
+  -- la firma no se da.
+  segunda_conteo     bigint,
   updated_at      timestamptz not null default now(),
   deleted         boolean not null default false
 );
+
+-- Para una base que ya tenía la tabla antes de la doble firma (el caso real:
+-- las tablas se crearon el 24 de agosto por la mañana y estas seis columnas
+-- llegaron por la tarde). En una base nueva no hacen nada.
+alter table public.cortes add column if not exists doble_firma_pedida boolean not null default false;
+alter table public.cortes add column if not exists segunda_firma       text;
+alter table public.cortes add column if not exists segunda_firma_rol   text;
+alter table public.cortes add column if not exists segunda_firma_en    text;
+alter table public.cortes add column if not exists segunda_firma_modo  text;
+alter table public.cortes add column if not exists segunda_conteo      bigint;
 
 create index if not exists idx_cortes_church on public.cortes (church_id);
 create index if not exists idx_cortes_deposito on public.cortes (deposito_uid);
