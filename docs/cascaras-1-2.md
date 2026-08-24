@@ -303,11 +303,17 @@ fecha, no.
 
 - **Nada de cáscara**, y a propósito: lo que el handoff dibuja de más aquí son
   **interruptores**, no adornos. Ver el recuadro del final.
-- **"N movimientos" por categoría** — el conteo se puede calcular
-  (`conteoCategoriaIngreso`/`Gasto` ya existen); no se pintó por no meter una
-  consulta nueva en la pantalla de Ajustes. Es trabajo pequeño si lo quieres.
-- **Asa de arrastre para reordenar categorías** — pide una columna de orden en
-  la tabla de categorías. No se pintó.
+- ~~**"N movimientos" por categoría**~~ → **pintado el 24 ago 2026**. Una sola
+  consulta agrupada (`conteoPorCategoria`) y no una por fila, que serían veinte
+  para pintar una lista. La clave es la MISMA que guarda
+  `transactions.categoria` —el id del catálogo, o `customCatRef(uid)` para las
+  propias—, que es justo lo que la guarda del arnés (§41) vigila: si se
+  buscara por la clave equivocada, todos los conteos saldrían en cero sin que
+  nada fallara.
+- **Asa de arrastre para reordenar categorías** — sigue sin pintarse, y ahora
+  se sabe por qué: en el iPad las categorías son **pastillas que fluyen en
+  varias líneas**, y ahí "arriba/abajo" no significa nada. No es solo la
+  columna de orden: pide rehacer la pantalla con la lista del diseño.
 - **Cabecera de logo de "Iglesia"** (tile de 64 con iniciales + nombre a 22px
   + "Cambiar logo · Eliminar") — no se construyó porque el héroe de zona ya
   ocupa ese sitio con el mismo tamaño. Es presentación, no motor.

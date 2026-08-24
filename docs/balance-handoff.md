@@ -125,36 +125,101 @@ pero nunca tuvo campo en un formulario, así que se podía leer y jamás escribi
 
 ## 4. Lo que TODAVÍA necesita motor
 
-Ordenado por lo que cuesta, de menos a más. **Lo pequeño primero** no es
-capricho: cada uno de los tres primeros es de una tarde.
+> **Puesta al día del 24 de agosto de 2026, por la tarde.** Esta sección se
+> escribió por la mañana con doce entradas. Quedan **cuatro**, y ninguna de
+> las cuatro es "falta escribirlo": tres esperan a otra cosa (una decisión
+> tuya, el login de Supabase, un refactor de tipografía) y la cuarta es una
+> pantalla que el diseño no pidió. Lo hecho en la tanda va en la §3 bis.
 
-### Pequeño — una consulta o una columna
+### Lo que queda, y a qué espera cada uno
 
-| Qué | Dónde | Qué le falta exactamente |
+| Qué | Dónde | A qué espera |
 |---|---|---|
-| **"N movimientos" por categoría** | Config → Categorías | Nada nuevo: `conteoCategoriaIngreso`/`Gasto` **ya existen**. Es pintarlo |
-| **Asa de arrastre para reordenar categorías** | ídem | Una columna de orden en la tabla de categorías |
-| **`Folio 1042`** | Inicio y panel de Movimientos | Columna `folio` en `transactions` + un numerador. **NO se pintó** a propósito: un folio inventado se lee como un dato de contabilidad. **Pendiente de tu decisión** |
+| **`Folio 1042`** | Inicio y panel de Movimientos | **A tu decisión, no a código.** Columna `folio` + numerador es media tarde; lo que frena es que un folio inventado se lee como un dato de contabilidad, y los movimientos ya registrados no tendrían ninguno. Dime si lo quieres y con qué serie empieza |
+| **4 permisos del rol Tesorería** | Config → Acceso y áreas | **Al login de verdad.** Hoy el rol se elige en un desplegable de Ajustes que cualquiera puede cambiar, así que un permiso por acción no sería un control: sería un interruptor que aparenta proteger algo. Va con Supabase (§5), no antes. Mientras tanto las cuatro filas siguen enseñando el estado que YA se cumple con el rol |
+| **Tamaño de texto** | Config → Preferencias | **A que las pantallas del iPad usen los tokens `--fs-*`.** Hoy llevan px literales; encenderlo escalaría la mitad de la app y la otra mitad no, que se ve peor que no tenerlo |
+| **Asa de arrastre para reordenar categorías** | Config → Categorías | **A que la pantalla sea la lista del diseño.** En el iPad las categorías son pastillas que fluyen en varias líneas, y ahí "arriba/abajo" no significa nada. Pide una columna de orden Y rehacer la pantalla; el conteo, que era la otra mitad de esa fila, ya está |
+| **Mensajería dirigida** | Mensajes | A columna de destinatario. El aviso "lo ven las tres áreas" **dice la verdad** mientras tanto |
+| **La sincronización de los cortes** | invisible, pero real | **Media hecha.** Las dos tablas existen en Supabase y la base local ya lleva `uid`/`updated_at`/borrado en blando; falta el paso en `sincronizarTodo`. Hasta entonces un corte vive en el aparato donde se hizo. Lo mismo vale para todo lo de esta tanda: `servicio_puestos`, `servicio_orden`, `actas.firmas`, `parentescos` y los tres controles de `churches` llevan sus metadatos, pero todavía no viajan |
 
-### Mediano — una función nueva, sin estructura nueva
+## 3 bis. La segunda tanda de motor (24 ago, tarde)
 
-| Qué | Dónde | Qué le falta exactamente |
-|---|---|---|
-| **Compartir un depósito** | Depositados, cabecera del detalle | Una hoja de compartir. La app no tiene ninguna todavía |
-| **La sincronización de los cortes** | invisible, pero real | **Media hecha.** Las dos tablas ya existen en Supabase y la base local ya lleva `uid`/`updated_at`/borrado en blando. Falta **el paso en `sincronizarTodo`**: mapear ids locales ↔ uids, como ya hace `sincronizarRoster`. Hasta entonces, un corte vive en el aparato donde se hizo |
-| **4 permisos del rol Tesorería** | Config → Acceso y áreas | Permisos **por acción** en vez de por rol. Hoy las cuatro filas enseñan el estado que YA se cumple con el rol (dos sí, dos no), no un estado inventado |
-| **Tamaño de texto** | Config → Preferencias | **Aplazado con razón**: las pantallas del iPad usan px literales, no los tokens `--fs-*`. Encenderlo hoy escalaría la mitad de la app y la otra mitad no |
-| ~~**"Recopilar firmas"**~~ | Actas | **hecho** (migración 44): recoge la constancia —quién firmó y cuándo—, no una firma digital |
-| **Cierre de mes** | Config → Controles de tesorería | Hoy la app cierra por **mes natural** y la fila lo dice. "Último domingo" no es un ajuste: es otra forma de contar |
+Seis piezas más, cuatro migraciones. Con ellas **no queda ni un solo control
+dibujado y apagado por falta de columna**: los que siguen apagados lo están
+por decisión (ver más abajo) o esperando el login.
 
-### Grande — estructura nueva
+### Migración 43 — el roster por puestos y el orden del culto
 
-| Qué | Dónde | Qué le falta exactamente |
-|---|---|---|
-| **Roster por puestos** | Servicios | **Cuatro de seis puestos son plantilla**: Predicación y Dirección salen de `servicios.predica`/`.dirige`; Alabanza, Ujieres, Ofrenda y Sonido dicen "Sin asignar". Pide catálogo de puestos + asignación por servicio. Con él se encienden los cuatro **"Asignar encargado"** |
-| **Orden del culto** | Servicios | `servicios` no guarda el minuto a minuto |
-| ~~**Pestaña "Familia"**~~ | Ficha del miembro | **hecho** (migración 46, `parentescos`): una fila por relación, leída al revés desde la otra ficha |
-| **Mensajería dirigida** | Mensajes | `mensajes` no tiene destinatario: es un hilo único por iglesia. El aviso "lo ven las tres áreas" **dice la verdad** |
+Los dos huecos grandes que quedaban del handoff, y son el mismo visto de dos
+maneras: QUIÉN hace cada cosa en el culto y CUÁNDO. Se encendieron los cuatro
+**"Asignar encargado"** y la tarjeta **"Orden del culto"** dejó de ser un
+cartel explicando lo que faltaba.
+
+Tres decisiones que quedaron escritas: Predicación y Dirección **no se
+movieron** de sus columnas (salen impresas en los informes desde la primera
+versión); el catálogo de puestos **no es una tabla** (son los seis del diseño,
+viven en una constante); y el orden del culto lo manda `posicion` y **no la
+hora**, porque un culto tiene pasos que van "cuando toque" y ordenarlos por
+una hora vacía los mandaría todos al principio.
+
+### "Compartir" un depósito — y un diagnóstico que estaba mal
+
+El botón llevaba dos días apagado diciendo que la app no tenía hoja de
+compartir. **La tenía desde siempre**: `entregarArchivo` usa la Web Share API
+en el iPad y el diálogo de guardar en el Mac, y por ahí salen todos los
+reportes. Lo que faltaba era el **documento**. Con `printDeposito.ts` el botón
+se encendió sin una dependencia nueva.
+
+El comprobante lleva el desglose y los movimientos **del corte**, y firma a
+quien registró y a quien llevó el dinero al banco. Si el depósito se registró
+sin corte, el PDF **lo dice** en vez de imprimir un cero; y si lo contado no
+cuadra con lo registrado, la diferencia va escrita — la copia que se archiva
+es el peor sitio para esconderla.
+
+### Migración 44 — "Recopilar firmas"
+
+El acta sabía QUIÉNES firman y no si habían firmado. Recoge una **constancia,
+no una firma digital** (la misma elección que en los cortes: un acta se firma
+con bolígrafo delante de la mesa). Es JSON y no tres columnas de fecha porque
+las cartas ya resolvían esto igual, y el nombre no entra en el JSON: sigue en
+`preside`, `secretario` y `testigo`, para que no haya dos copias que se
+separen a la primera corrección.
+
+### Migración 45 — los dos avisos de tesorería, ajustables
+
+Eran las dos filas raras del grupo: iban encendidas Y apagadas como mando,
+porque describían algo que la app ya hacía y no se podía cambiar. Ahora se
+encienden, se apagan y el umbral se escribe.
+
+Son **tres columnas y no dos**, y la de más evita una mentira: sin
+`avisar_sin_comprobante`, apagar el aviso habría que representarlo con un
+umbral imposible. Y `umbral_comprobante` en NULL significa "el de la
+constante", no cero: quien nunca tocó el ajuste sigue con el comportamiento de
+siempre.
+
+### Migración 46 — la pestaña Familia
+
+**Una fila por relación, no dos**: la ficha del otro la lee al revés con el
+inverso. Guardar las dos direcciones habría duplicado cada escritura y con
+ella la posibilidad de que se separen. El catálogo es **neutro** —"Padre o
+madre", "Hijo o hija"— porque `members` no guarda sexo, y de regalo cada
+inverso queda único.
+
+### Y el conteo por categoría
+
+La entrada más pequeña de la lista de la mañana ("nada nuevo, es pintarlo").
+Una sola consulta agrupada, con la misma clave que guarda
+`transactions.categoria`.
+
+### Cómo quedó el arnés
+
+De **799 comprobaciones a 862**. Seis guardas cambiaron de sentido —las que
+exigían que un botón estuviera apagado ahora exigen lo contrario— y entraron
+seis secciones nuevas (36 a 41). Las seis se probaron **volviendo a meter el
+fallo**: sin escribir el puesto, ordenando el culto por hora, sin el `onClick`
+de Compartir, sin guardar la firma, ignorando la bandera de duplicados, sin
+invertir el parentesco y con la clave de categoría equivocada. Las siete
+salieron en rojo, que es lo único que demuestra que una guarda sirve.
 
 ### Lo que está apagado por DECISIÓN, no por hueco
 

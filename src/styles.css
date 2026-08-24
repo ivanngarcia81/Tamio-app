@@ -10319,6 +10319,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .fm-anadir:active { opacity: 0.55; }
 
+  /* "N movimientos" junto a cada categoría. Va DENTRO de la pastilla y a
+     media tinta: es un dato de apoyo, no el nombre. Tabular para que las
+     cifras no bailen entre pastillas de una fila. */
+  :root.ipad .cat-conteo {
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.65;
+  }
+
   :root.ipad .fm-vacio--pendiente {
     display: flex;
     flex-direction: column;

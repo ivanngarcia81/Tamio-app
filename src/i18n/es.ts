@@ -1012,6 +1012,8 @@ export const es = {
   },
 
   categorias: {
+    nMovimientos_one: "{{count}} movimiento",
+    nMovimientos_other: "{{count}} movimientos",
     titulo: "Categorías",
     sub: "Agrega categorías propias además de las integradas",
     nombrePlaceholder: "Nombre de la nueva categoría…",

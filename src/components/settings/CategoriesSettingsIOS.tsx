@@ -22,10 +22,11 @@
  * exactamente la misma regla que ya tenía v1 (bloqueado si está en uso) —
  * nada de eso cambia aquí, solo el marcado.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, countTxByCategoria, deleteCategoriaCustom, getCategoriasGasto, getCategoriasIngreso,
+  catNombre, conteoPorCategoria, countTxByCategoria, customCatRef, deleteCategoriaCustom,
+  getCategoriasGasto, getCategoriasIngreso,
   insertCategoriaCustom, updateCategoriaCustom, type CategoriaUI, type Church,
 } from "../../db";
 import { showToast } from "../../toast";
@@ -51,10 +52,12 @@ interface Props {
 /* ---------------- Fila ---------------- */
 
 function CategoryRow({
-  cat, activo, onPress, onDelete,
+  cat, activo, conteo, onPress, onDelete,
 }: {
   cat: CategoriaUI;
   activo: boolean;
+  /** Cuántos movimientos la usan. El handoff lo pone bajo el nombre. */
+  conteo: number;
   onPress: () => void;
   onDelete: () => void;
 }) {
@@ -73,6 +76,7 @@ function CategoryRow({
         <div className="ios-row ios-row--dot ios-row--static">
           <span className="ios-dot" style={{ color: colorDot }} />
           <span className="ios-row-label">{nombre}</span>
+          <span className="cat-conteo">{t("categorias.nMovimientos", { count: conteo })}</span>
         </div>
       </div>
     );
@@ -91,6 +95,7 @@ function CategoryRow({
       >
         <span className="ios-dot" style={{ color: colorDot }} />
         <span className="ios-row-label">{nombre}</span>
+        <span className="cat-conteo">{t("categorias.nMovimientos", { count: conteo })}</span>
         <IosChevron />
       </button>
     </div>
@@ -276,6 +281,20 @@ export default function CategoriesSettingsIOS({ church, onChanged }: Props) {
     }
   }
 
+  /* "N movimientos" por categoría (handoff de iPad): una sola consulta
+     agrupada y no una por fila, que serían veinte para pintar una lista. */
+  const [conteos, setConteos] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let cancelado = false;
+    conteoPorCategoria(church.id)
+      .then((c) => { if (!cancelado) setConteos(c); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [church.id]);
+  /** Con la MISMA clave que guarda `transactions.categoria`: el id del
+   *  catálogo, o la referencia de la personalizada. */
+  const conteoDe = (c: CategoriaUI) => conteos[c.custom && c.uid ? customCatRef(c.uid) : c.id] ?? 0;
+
   const Grupo = ({ tipo, lista }: { tipo: Kind; lista: CategoriaUI[] }) => (
     <div className="ios-group">
       {lista.map((c) => (
@@ -283,6 +302,7 @@ export default function CategoriesSettingsIOS({ church, onChanged }: Props) {
           key={c.id}
           cat={c}
           activo={gesto}
+          conteo={conteoDe(c)}
           onPress={() => abrirEditar(c)}
           onDelete={() => pedirBorrar(c)}
         />

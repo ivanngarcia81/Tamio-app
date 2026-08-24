@@ -992,6 +992,8 @@ export const en: Resources = {
   },
 
   categorias: {
+    nMovimientos_one: "{{count}} entry",
+    nMovimientos_other: "{{count}} entries",
     titulo: "Categories",
     sub: "Add your own categories alongside the built-in ones",
     nombrePlaceholder: "New category name…",

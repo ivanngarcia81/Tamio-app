@@ -460,6 +460,31 @@ export async function deleteCategoriaCustom(uid: string, churchId: number): Prom
   await loadCategoriasCustom(churchId);
 }
 
+/**
+ * Cuántos movimientos usa CADA categoría, en una sola consulta.
+ *
+ * `countTxByCategoria` responde por una y se llama antes de borrar; esto
+ * responde por todas y es lo que la pantalla de Categorías necesita para
+ * poner "12 movimientos" junto a cada una. Con la de una sola serían
+ * veinte consultas para pintar una lista.
+ *
+ * La clave es la MISMA que guarda `transactions.categoria`: el id del
+ * catálogo ("diezmo") o la referencia de una personalizada
+ * (`customCatRef`). Así el llamador busca con lo que ya tiene en la mano.
+ */
+export async function conteoPorCategoria(churchId: number): Promise<Record<string, number>> {
+  const d = await getDb();
+  const filas = await d.select<{ categoria: string; n: number }[]>(
+    `SELECT categoria, count(*) AS n FROM transactions
+      WHERE church_id = $1 AND deleted = 0 AND categoria IS NOT NULL AND categoria != ''
+      GROUP BY categoria`,
+    [churchId]
+  );
+  const out: Record<string, number> = {};
+  for (const f of filas) out[f.categoria] = f.n;
+  return out;
+}
+
 /** Cuántos movimientos usan una categoría (para impedir borrar las en uso). */
 export async function countTxByCategoria(churchId: number, categoriaId: string): Promise<number> {
   const d = await getDb();

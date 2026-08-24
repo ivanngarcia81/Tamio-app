@@ -3759,6 +3759,38 @@ console.log("\n== La pestaña Familia ==");
   await ctxFa.close();
 }
 
+/* ---------- 41. "N movimientos" por categoría ----------
+   La entrada más pequeña de la lista del balance: "Nada nuevo, es pintarlo".
+   Lo que puede salir mal no es la consulta sino la CLAVE — `transactions`
+   guarda el id del catálogo para las de sistema y `customCatRef(uid)` para
+   las personalizadas—, así que esto comprueba que los números no son todos
+   cero, que es lo que pasaría si se buscara por la clave equivocada. */
+console.log("\n== N movimientos por categoría ==");
+{
+  const ctxN = await nuevoContexto("ipad");
+  const pg = await ctxN.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".settings-nav-item", { timeout: 10000 });
+  const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+  const i = zonas.findIndex((z) => /Categor/i.test(z));
+  await pg.locator(".settings-nav-item").nth(i).click();
+  await pg.waitForTimeout(700);
+
+  const conteos = await pg.evaluate(() =>
+    [...document.querySelectorAll(".cat-conteo")].map((c) => c.textContent.trim()));
+  chk(conteos.length > 0, `cada categoría lleva su conteo (${conteos.length})`);
+  chk(conteos.every((c) => /^\d+ /.test(c)),
+    `y todos son un número con su palabra, no una clave sin traducir (${conteos[0]})`);
+  /* El que importa: la siembra registra diezmos y gastos de servicios, así
+     que al menos uno tiene que pasar de cero. Todos a cero es exactamente el
+     síntoma de buscar por la clave equivocada. */
+  const algunoConDatos = conteos.some((c) => !/^0 /.test(c));
+  chk(algunoConDatos, `y alguno cuenta de verdad (${conteos.filter((c) => !/^0 /.test(c)).join(" · ")})`);
+  await ctxN.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
