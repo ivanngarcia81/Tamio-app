@@ -35,12 +35,15 @@
  * volver a teclearlas.
  */
 import { useTranslation } from "react-i18next";
-import { fmtMoney, mesLegible, metodoAbr, type Church, type Tx } from "../db";
+import { fmtFechaCorta, fmtMoney, mesLegible, metodoAbr, type Church, type Corte, type Tx } from "../db";
 import { sumar, type Centavos } from "../dinero";
 import { IconChevronLeft, IconPlus } from "../icons";
 
-export interface Corte {
-  /** El día del que es el dinero, "YYYY-MM-DD". Es la identidad del corte. */
+/** Un día con dinero que TODAVÍA está en la caja: los movimientos de esa
+ *  fecha que no han entrado en ningún corte. No confundir con `Corte`, que es
+ *  la fila de la base — el dinero que ya salió de la caja. */
+export interface DiaEnCaja {
+  /** El día del que es el dinero, "YYYY-MM-DD". Es su identidad. */
   fecha: string;
   /** Título ya formateado ("Corte del 23 ago"). */
   titulo: string;
@@ -49,7 +52,11 @@ export interface Corte {
 
 interface Props {
   church: Church;
-  corte: Corte;
+  dia: DiaEnCaja;
+  /** Si lo que se está mirando es un corte YA ENTREGADO, su fila. Cambia lo
+   *  que se puede hacer: su composición es fija —el dinero ya salió de la
+   *  caja— y lo que queda es cerrarlo contra el depósito o deshacerlo. */
+  entregado?: Corte | null;
   /** Ids de los movimientos marcados. Vive en la página, no aquí: el modal de
    *  depósito lo necesita para prellenarse. */
   sel: Set<number>;
@@ -58,6 +65,9 @@ interface Props {
   porRevisar: number;
   /** Efectivo estimado en caja hasta hoy. */
   efectivoEnCaja: Centavos;
+  /** Cuántos depósitos hay registrados sin corte detrás. Mientras haya
+   *  alguno, parte del dinero de la lista puede estar ya en el banco. */
+  depSinCorte: number;
   /** La cuenta que se va a proponer: la del último depósito. */
   cuenta: string;
   /** Fecha y periodo con los que se registraría, ya formateados. */
@@ -68,6 +78,8 @@ interface Props {
   onIrPorRevisar: () => void;
   onNuevoCorte: () => void;
   onMarcarDepositado: () => void;
+  /** Solo para un corte entregado: devolver su dinero a la caja. */
+  onDeshacer?: () => void;
 }
 
 /** Suma de los movimientos marcados que cumplen el filtro. */
@@ -78,11 +90,12 @@ function suma(movs: Tx[], sel: Set<number>, filtro: (t: Tx) => boolean): Centavo
 const esCheque = (t: Tx) => t.metodo_pago === "cheque";
 
 export default function PendientesDeposito({
-  church, corte, sel, onToggle, porRevisar, efectivoEnCaja, cuenta,
+  church, dia, entregado, sel, onToggle, porRevisar, efectivoEnCaja, depSinCorte, cuenta,
   fechaRegistro, periodo, tituloLista, onVolver, onIrPorRevisar, onNuevoCorte, onMarcarDepositado,
+  onDeshacer,
 }: Props) {
   const { t } = useTranslation();
-  const movs = corte.movs;
+  const movs = dia.movs;
 
   const efectivo = suma(movs, sel, (m) => !esCheque(m));
   const cheques = suma(movs, sel, esCheque);
@@ -125,14 +138,22 @@ export default function PendientesDeposito({
       <div className="dep-pen-cab">
         <div className="dep-pen-titulos">
           <div className="dep-pen-linea">
-            <h1 className="dm-titular">{corte.titulo}</h1>
-            <span className="dep-chip dep-chip--pendiente">{t("depositos.sinDepositar")}</span>
+            <h1 className="dm-titular">{dia.titulo}</h1>
+            <span className={`dep-chip dep-chip--${entregado ? "pendiente" : "caja"}`}>
+              {entregado ? t("depositos.sinDepositar") : t("depositos.enCaja")}
+            </span>
           </div>
-          <p className="dm-sub">{t("depositos.pendienteSub")}</p>
+          <p className="dm-sub">
+            {entregado
+              ? entregado.responsable
+                ? t("depositos.entregadoA", {
+                    quien: entregado.responsable,
+                    fecha: fmtFechaCorta(entregado.fecha),
+                  })
+                : t("depositos.entregadoSinQuien", { fecha: fmtFechaCorta(entregado.fecha) })
+              : t("depositos.pendienteSub")}
+          </p>
         </div>
-        <button type="button" className="btn secondary" onClick={onNuevoCorte}>
-          <IconPlus size={14} /> {t("depositos.nuevoCorte")}
-        </button>
       </div>
 
       <div className="dep-cifras">
@@ -182,15 +203,25 @@ export default function PendientesDeposito({
                    formulario al guardar, dicha antes de empezar. */}
             {aviso("info", "?", t("depositos.periodoContable", { periodo: mesLegible(periodo) }), t("depositos.periodoContableSub"))}
 
-            {/* 4. Éste no está en el diseño: lo pide el esquema. Sin él, la
-                   lista de abajo parece prometer que sabe qué falta por
-                   depositar, y no lo sabe. */}
-            {aviso("info", "i", t("depositos.sinVinculoTitulo"), t("depositos.sinVinculoSub"))}
+            {/* 4. Éste no está en el diseño y ya no es permanente: solo sale
+                   mientras queden depósitos registrados SIN corte detrás —los
+                   de antes de que los cortes existieran, o los que se
+                   registraron con "Nuevo depósito" a secas—. De ese dinero la
+                   app no sabe de qué movimientos salió, así que puede seguir
+                   apareciendo aquí. Cuando todos los depósitos tengan corte,
+                   el aviso desaparece solo. */}
+            {depSinCorte > 0 && aviso(
+              "info", "i",
+              t("depositos.depSinCorteTitulo", { count: depSinCorte }),
+              t("depositos.depSinCorteSub"),
+            )}
           </section>
 
           <section className="dep-carta">
             <h2 className="dep-carta-cab">
-              <span className="dep-carta-cab-t">{t("depositos.movsEnCaja")}</span>
+              <span className="dep-carta-cab-t">
+                {entregado ? t("depositos.movsDelCorteTitulo") : t("depositos.movsEnCaja")}
+              </span>
               <span>{t("tx.colMonto")}</span>
             </h2>
             {movs.length === 0 ? (
@@ -204,6 +235,11 @@ export default function PendientesDeposito({
                     type="button"
                     className={`dep-mov${marcado ? " sel" : ""}`}
                     aria-pressed={marcado}
+                    /* Un corte entregado no se re-marca: ese dinero ya salió
+                       de la caja y cambiarlo aquí sería reescribir lo que se
+                       contó delante de dos personas. Para corregirlo está
+                       "Deshacer el corte". */
+                    disabled={!!entregado}
                     onClick={() => onToggle(m.id)}
                   >
                     <span className="dep-mov-check" aria-hidden="true">{marcado ? "✓" : ""}</span>
@@ -240,10 +276,35 @@ export default function PendientesDeposito({
             <div className="dep-par dep-par--fuerte">
               <span>{t("tx.colMonto")}</span><span>{fmtMoney(total)} {church.moneda}</span>
             </div>
+            {/* Las dos formas de que el dinero llegue al banco:
+                  · **Entregar el corte** — alguien se lo lleva. Es el camino
+                    normal y por eso es el botón primario mientras el dinero
+                    sigue en la caja.
+                  · **Marcar depositado** — fue directo al banco, sin entrega.
+                Sobre un corte ya entregado solo queda cerrarlo, o deshacerlo
+                si el corte se hizo por error. */}
             <div className="dep-carta-accion">
-              <button type="button" className="btn primary" onClick={onMarcarDepositado} disabled={nSel === 0}>
-                {t("depositos.marcarDepositado")}
-              </button>
+              {entregado ? (
+                <>
+                  <button type="button" className="btn primary" onClick={onMarcarDepositado}>
+                    {t("depositos.marcarDepositado")}
+                  </button>
+                  {onDeshacer && (
+                    <button type="button" className="btn secondary dm-eliminar" onClick={onDeshacer}>
+                      {t("depositos.deshacerCorte")}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button type="button" className="btn primary" onClick={onNuevoCorte} disabled={nSel === 0}>
+                    <IconPlus size={14} /> {t("depositos.entregarCorte")}
+                  </button>
+                  <button type="button" className="btn secondary" onClick={onMarcarDepositado} disabled={nSel === 0}>
+                    {t("depositos.marcarDepositado")}
+                  </button>
+                </>
+              )}
             </div>
           </section>
 

@@ -2573,3 +2573,112 @@ Agenda: que el texto quede a ≥16px de los tres filos del panel (sale 21 / 20 /
 chips de ≥32px de alto (sale 34). Probadas al revés, devolviendo las tres
 declaraciones: caen las **seis**. El arnés pasa de 727 a **735**.
 
+---
+
+## 36. El corte, con motor (24 ago 2026)
+
+La primera cáscara de la lista, y la que más rendía. Sale de una conversación,
+no de un handoff: Iván preguntó **qué significa "nuevo corte"** —una palabra
+que yo llevaba dos días usando porque venía en el prototipo—, y de ahí salió
+la definición que faltaba:
+
+> Un corte es el dinero que sale de la caja en manos de alguien. La tesorera
+> cuenta lo que hay, se lo entrega a una persona, y esa persona va al banco.
+
+Ese hueco —entre que el dinero sale de la caja y aparece un depósito— **no se
+registraba en ningún sitio**. Un depósito se materializaba de la nada, sin
+rastro de quién lo llevó. Es justo donde una tesorera necesita estar
+protegida.
+
+### La decisión que fijó el tamaño
+
+Se le pusieron dos formas y eligió la primera:
+
+- **Constancia** — se anota a quién se le entregó; quien recibe no confirma
+  nada. El corte se cierra al registrar el depósito.
+- **Acuse** — el corte queda abierto hasta que el que recibió confirma. Dos
+  personas respondiendo; es la "doble firma" del handoff.
+
+Por eso **"Pedir doble firma" sigue apagado**: no es un hueco pendiente, es la
+opción que no se eligió. Y el **responsable no es un rol**: *"puede ser
+cualquier persona que esté asignada a ese trabajo"*. Se elige de `usuarios`, se
+puede escribir uno que no esté dado de alta, y se propone el del corte
+anterior — en IPDFV es casi siempre el pastor, y teclearlo cada domingo sería
+trabajo inventado.
+
+### El esquema (migración 38)
+
+```sql
+cortes(id, church_id, fecha, nombre, cuenta_banco, responsable,
+       estado 'abierto'|'depositado', deposito_id, notas, …)
+corte_movimientos(corte_id, tx_id, church_id)  -- UNIQUE(tx_id)
+```
+
+El índice único sobre `tx_id` es el que sostiene todo lo demás: **un
+movimiento pertenece a un corte como mucho**. Sin él, el mismo billete podría
+contarse en dos cortes y las cifras de "efectivo por depositar" dejarían de
+cuadrar en silencio. Está comprobado en el arnés aplicando las migraciones
+reales e intentando el doble enganche.
+
+`responsable` es texto y no una referencia a `usuarios`: quien lleva el dinero
+puede no usar la app, y el nombre tiene que quedar escrito aunque esa persona
+se borre después.
+
+### Lo que se encendió, ocho de una
+
+| Cáscara | Ahora |
+|---|---|
+| Desglose Efectivo / Cheques | sale de los movimientos del corte |
+| "Movimientos incluidos" | lista real, con método, folio y total |
+| Pestaña "Pendientes" | dos grupos: entregado sin depositar, y en caja |
+| Chip "Sin depositar" en Ingresos | cuenta y filtra los que no están en ningún corte |
+| "Reabrir el corte" | devuelve el dinero a "entregado" |
+| Hoja "Nuevo corte" | "Crear" guarda de verdad |
+| "Responsable" | se elige, y se propone el anterior |
+| El aviso "todavía no se marca qué fue al banco" | desaparece; solo queda mientras haya depósitos sin corte |
+
+Y una de regalo: **"Conciliación"**. Sin importar ningún estado de cuenta, se
+puede comparar **lo contado en el corte contra lo registrado como depositado**.
+Cuadrar no demuestra que el banco lo recibió —y el texto no lo dice—, pero una
+diferencia sí demuestra que algo está mal, que es a lo que se viene.
+
+### Dos cosas que el arnés cazó, y que valen más que el resto
+
+**Un corte huérfano en cada cancelación.** "Marcar depositado" desde un día en
+caja creaba el corte y ABRÍA el formulario. Quien cancelaba se quedaba con un
+corte creado: el dinero había salido de la caja sin que se depositara nada. El
+arnés lo destapó por reutilizar la misma pantalla para dos comprobaciones —el
+segundo corte salía con cero movimientos, porque el índice único ya los había
+dado por enganchados—. Ahora el corte se crea **dentro de `alGuardar`**, con el
+depósito ya escrito: cancelar no deja nada.
+
+**Y el depósito se cierra contra SU id**, no contra "el último": `insertDeposito`
+devuelve el id recién creado y `alGuardar` lo recibe. Con dos personas
+registrando a la vez, "el último" no tiene por qué ser el tuyo.
+
+### Lo que NO sube a la nube todavía
+
+`cortes` y `corte_movimientos` **no se sincronizan**. `src/sync.ts` lleva una
+lista explícita de tablas y estas dos no están, porque su tabla remota no
+existe. Un corte vive en el aparato donde se hizo. Para una tesorera con un
+iPad basta; en cuanto haya dos aparatos hay que crearlas en Supabase y añadir
+su paso a `sincronizarTodo`. Queda apuntado en `docs/cascaras-1-2.md`.
+
+### Lo medido
+
+El arnés recorre el **ciclo entero**, y no por piezas: crear el corte → sale
+bajo "Entregado, sin depositar" → sus movimientos no se pueden re-marcar
+(el dinero ya salió) → "Marcar depositado" → el depósito se guarda → no queda
+ningún corte abierto → el detalle del depósito enseña sus movimientos, su
+desglose real y "Cuadra con el corte". Más el chip de Ingresos, que tiene que
+contar **uno menos** después de meter un movimiento en un corte — que es lo que
+demuestra que mira el vínculo y no un cálculo aparte.
+
+Y tres guardas viejas cambiaron de sentido, como manda cuando el
+comportamiento cambia a propósito: la que exigía que todas las filas dijeran
+"Sin depositar" ahora distingue "En caja"; la del cuarto aviso ahora busca
+"sin corte"; y la que exigía **"Crear" apagado** ahora exige que esté
+**encendido**.
+
+El arnés pasa de 735 a **751**.
+

@@ -862,7 +862,9 @@ export async function findDuplicateDeposito(
   return (rows[0]?.n ?? 0) > 0;
 }
 
-export async function insertDeposito(churchId: number, moneda: string, dep: NewDeposito): Promise<void> {
+/** Devuelve el id del depósito recién creado: lo necesita el cierre de un
+ *  corte, que tiene que apuntar a ÉL y no al último que hubiera. */
+export async function insertDeposito(churchId: number, moneda: string, dep: NewDeposito): Promise<number | null> {
   const d = await getDb();
   await d.execute(
     `INSERT INTO depositos_bancarios
@@ -881,6 +883,8 @@ export async function insertDeposito(churchId: number, moneda: string, dep: NewD
       crypto.randomUUID(),
     ]
   );
+  const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
+  return rows[0]?.id ?? null;
 }
 
 export async function updateDeposito(id: number, churchId: number, moneda: string, dep: NewDeposito): Promise<void> {
@@ -1028,6 +1032,217 @@ export async function efectivoDisponibleHasta(
     params
   );
   return restar(saldo, deps[0]?.total ?? CERO);
+}
+
+// ---------- Cortes de caja ----------
+
+/**
+ * Un **corte** es el dinero en efectivo y cheques que la tesorera cuenta junto
+ * y entrega a una persona para que lo lleve al banco. Cubre el hueco entre que
+ * el dinero sale de la caja y aparece un depósito: hasta la migración 38 ese
+ * hueco no se registraba en ningún sitio.
+ *
+ * `responsable` es texto y no una referencia a `usuarios` a propósito: quien
+ * lleva el dinero puede no estar dado de alta, y el nombre tiene que quedar
+ * escrito aunque esa persona se borre después.
+ */
+export interface Corte {
+  id: number;
+  church_id: number;
+  /** El día que el dinero sale de la caja. */
+  fecha: string; // "YYYY-MM-DD"
+  nombre: string;
+  cuenta_banco: string | null;
+  responsable: string | null;
+  estado: "abierto" | "depositado";
+  /** El depósito que lo cerró, si ya se hizo. */
+  deposito_id: number | null;
+  notas: string | null;
+  created_at?: string | null;
+}
+
+export interface NewCorte {
+  fecha: string;
+  nombre: string;
+  cuenta_banco?: string | null;
+  responsable?: string | null;
+  notas?: string | null;
+}
+
+/** Los cortes de la iglesia, del más reciente al más viejo. */
+export async function listCortes(churchId: number): Promise<Corte[]> {
+  const d = await getDb();
+  return d.select<Corte[]>(
+    `SELECT * FROM cortes WHERE church_id = $1 AND deleted = 0
+      ORDER BY fecha DESC, id DESC`,
+    [churchId]
+  );
+}
+
+/** Solo los que siguen fuera de la caja y todavía no están en el banco. */
+export async function cortesAbiertos(churchId: number): Promise<Corte[]> {
+  const d = await getDb();
+  return d.select<Corte[]>(
+    `SELECT * FROM cortes
+      WHERE church_id = $1 AND deleted = 0 AND estado = 'abierto'
+      ORDER BY fecha DESC, id DESC`,
+    [churchId]
+  );
+}
+
+/**
+ * Crea el corte y engancha sus movimientos. Devuelve el id, o null si no se
+ * pudo crear.
+ *
+ * Los movimientos que ya pertenezcan a OTRO corte se ignoran en silencio: el
+ * índice único de `corte_movimientos` lo impediría de todas formas, y hacer
+ * fallar el corte entero por un movimiento que alguien enganchó desde otra
+ * pantalla sería perder el trabajo de contar el dinero.
+ */
+export async function insertCorte(
+  churchId: number,
+  corte: NewCorte,
+  txIds: number[]
+): Promise<number | null> {
+  const d = await getDb();
+  await d.execute(
+    `INSERT INTO cortes (church_id, fecha, nombre, cuenta_banco, responsable, notas, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,datetime('now'))`,
+    [
+      churchId,
+      corte.fecha,
+      corte.nombre.trim(),
+      corte.cuenta_banco?.trim() || null,
+      corte.responsable?.trim() || null,
+      corte.notas?.trim() || null,
+      crypto.randomUUID(),
+    ]
+  );
+  const rows = await d.select<{ id: number }[]>("SELECT last_insert_rowid() AS id");
+  const id = rows[0]?.id ?? null;
+  if (!id) return null;
+  for (const tx of txIds) {
+    await d.execute(
+      `INSERT OR IGNORE INTO corte_movimientos (corte_id, tx_id, church_id) VALUES ($1,$2,$3)`,
+      [id, tx, churchId]
+    );
+  }
+  return id;
+}
+
+/** Lo cierra contra el depósito que ya entró al banco. */
+export async function cerrarCorte(corteId: number, churchId: number, depositoId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE cortes SET estado = 'depositado', deposito_id = $1, updated_at = datetime('now')
+      WHERE id = $2 AND church_id = $3`,
+    [depositoId, corteId, churchId]
+  );
+}
+
+/** Lo devuelve a "abierto" y lo suelta de su depósito. */
+export async function reabrirCorte(corteId: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE cortes SET estado = 'abierto', deposito_id = NULL, updated_at = datetime('now')
+      WHERE id = $1 AND church_id = $2`,
+    [corteId, churchId]
+  );
+}
+
+/**
+ * Borra el corte. Los enganches se borran DE VERDAD, no en blando: mientras
+ * existan, sus movimientos siguen contando como "ya en un corte" y no
+ * volverían a salir en caja — un corte borrado que se lleva el dinero con él.
+ */
+export async function deleteCorte(corteId: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute("DELETE FROM corte_movimientos WHERE corte_id = $1 AND church_id = $2", [corteId, churchId]);
+  await d.execute(
+    "UPDATE cortes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [corteId, churchId]
+  );
+}
+
+/** Los movimientos de un corte, con el nombre del aportante si lo tiene. */
+export async function movimientosDeCorte(corteId: number, churchId: number): Promise<Tx[]> {
+  const d = await getDb();
+  return d.select<Tx[]>(
+    `SELECT t.*, m.nombre AS member_nombre
+       FROM corte_movimientos cm
+       JOIN transactions t ON t.id = cm.tx_id
+       LEFT JOIN members m ON m.id = t.member_id
+      WHERE cm.corte_id = $1 AND cm.church_id = $2 AND t.deleted = 0
+      ORDER BY t.fecha DESC, t.id DESC`,
+    [corteId, churchId]
+  );
+}
+
+/** Los movimientos del corte que cerró ESE depósito. Vacío si se registró sin corte. */
+export async function movimientosDeDeposito(depositoId: number, churchId: number): Promise<Tx[]> {
+  const d = await getDb();
+  return d.select<Tx[]>(
+    `SELECT t.*, m.nombre AS member_nombre
+       FROM cortes c
+       JOIN corte_movimientos cm ON cm.corte_id = c.id
+       JOIN transactions t ON t.id = cm.tx_id
+       LEFT JOIN members m ON m.id = t.member_id
+      WHERE c.deposito_id = $1 AND c.church_id = $2 AND c.deleted = 0 AND t.deleted = 0
+      ORDER BY t.fecha DESC, t.id DESC`,
+    [depositoId, churchId]
+  );
+}
+
+/** El corte que cerró ese depósito, si lo hubo. */
+export async function corteDeDeposito(depositoId: number, churchId: number): Promise<Corte | null> {
+  const d = await getDb();
+  const rows = await d.select<Corte[]>(
+    "SELECT * FROM cortes WHERE deposito_id = $1 AND church_id = $2 AND deleted = 0 LIMIT 1",
+    [depositoId, churchId]
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Cuántos depósitos hay registrados SIN corte detrás.
+ *
+ * Sirve para una advertencia que solo tiene sentido mientras existan: los
+ * depósitos hechos antes de que existieran los cortes —o los registrados
+ * directamente con "Nuevo depósito"— no dicen de qué movimientos se
+ * componen, así que ese dinero puede seguir apareciendo en "Movimientos en
+ * caja" aunque ya esté en el banco. En cuanto todos los depósitos tengan su
+ * corte, el aviso desaparece solo.
+ */
+export async function depositosSinCorte(churchId: number): Promise<number> {
+  const d = await getDb();
+  const rows = await d.select<{ n: number }[]>(
+    `SELECT count(*) AS n FROM depositos_bancarios dep
+      WHERE dep.church_id = $1 AND dep.deleted = 0
+        AND NOT EXISTS (
+          SELECT 1 FROM cortes c
+           WHERE c.deposito_id = dep.id AND c.deleted = 0
+        )`,
+    [churchId]
+  );
+  return rows[0]?.n ?? 0;
+}
+
+/**
+ * Los ids de los movimientos que YA están en algún corte. Es lo que permite
+ * que "Movimientos en caja" enseñe solo lo que de verdad sigue en la caja, y
+ * lo que enciende el chip "Sin depositar" de Ingresos: un movimiento sin
+ * corte es dinero que todavía no ha salido.
+ */
+export async function txEnCorte(churchId: number): Promise<Set<number>> {
+  const d = await getDb();
+  const rows = await d.select<{ tx_id: number }[]>(
+    `SELECT cm.tx_id
+       FROM corte_movimientos cm
+       JOIN cortes c ON c.id = cm.corte_id
+      WHERE cm.church_id = $1 AND c.deleted = 0`,
+    [churchId]
+  );
+  return new Set(rows.map((r) => r.tx_id));
 }
 
 export async function yearDepositos(churchId: number, yyyy: string): Promise<Centavos> {

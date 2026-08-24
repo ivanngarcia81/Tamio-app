@@ -49,12 +49,17 @@ export interface PropsDeposito {
   prefill?: { monto?: Centavos; cuenta?: string; fecha?: string; periodo?: string } | null;
   onClose: () => void;
   onSaved: () => void;
+  /** Se llama justo después de crear el depósito, con su id, y antes de
+   *  `onSaved()`. Lo usa Depósitos para CERRAR el corte contra este depósito
+   *  y no contra "el último que hubiera": si dos personas registran a la vez,
+   *  el último no tiene por qué ser el tuyo. Solo se llama al CREAR. */
+  alGuardar?: (depositoId: number | null) => void | Promise<void>;
 }
 
 /** Los campos que pueden bloquear el guardado (o avisar sin bloquear). */
 export type CampoDeposito = "fecha" | "monto" | "cuenta" | "periodo";
 
-export function useDeposito({ church, editing, prefill, onClose, onSaved }: PropsDeposito) {
+export function useDeposito({ church, editing, prefill, onClose, onSaved, alGuardar }: PropsDeposito) {
   const { t } = useTranslation();
   const isEdit = editing !== null;
   const hoy = nowLocalIso().slice(0, 10);
@@ -191,7 +196,8 @@ export function useDeposito({ church, editing, prefill, onClose, onSaved }: Prop
       if (isEdit) {
         await updateDeposito(editing.id, church.id, church.moneda, payload);
       } else {
-        await insertDeposito(church.id, church.moneda, payload);
+        const nuevoId = await insertDeposito(church.id, church.moneda, payload);
+        await alGuardar?.(nuevoId);
       }
       showToast(isEdit ? t("toast.cambiosGuardados") : t("toast.depositoGuardado"));
       playSound("guardado");

@@ -96,22 +96,28 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 
 ## Depósitos (§18)
 
-- **Desglose Efectivo / Cheques** — `DetalleDeposito.tsx`,
-  `dep-cifra--sinmotor`. **Construido como plantilla** con su explicación
-  (`depositos.sinDesgloseAyuda`).
-- **"Movimientos incluidos"** — **construido como plantilla**.
-- **Pestaña "Pendientes"** — **construida**, y da el número que sí se sabe
-  (`efectivoDisponibleHasta`, el efectivo por depositar) más la explicación de
-  por qué no hay lista.
+- ~~**Desglose Efectivo / Cheques**~~ → **cableado el 24 ago 2026**
+  (migración 38). Sale de los movimientos del corte que cerró el depósito. Si
+  el depósito se registró SIN corte, sigue diciendo que no se sabe — que es la
+  verdad, no un cero.
+- ~~**"Movimientos incluidos"**~~ → **cableado el 24 ago 2026**. Lista real,
+  con su método, su folio y su total.
+- ~~**Pestaña "Pendientes"**~~ → **cableada el 24 ago 2026**. Dos grupos: lo
+  entregado y sin depositar, y lo que sigue en la caja.
 - **"Marcar depositado"** — ~~NO se construyó~~ → **cableado el 24 ago 2026**
   (handoff 3). Ya no es una cáscara: vive en el panel de **Pendientes** y abre
   el formulario de depósito con el total, la cuenta y el periodo del corte
   puestos. Lo que era un botón apagado en un depósito ya hecho —donde no
   significaba nada— pasó a ser el paso que cierra la revisión.
 
-Las tres primeras se resuelven con **una sola pieza**: guardar qué movimientos
-componen cada depósito (tabla puente `deposito_movimientos` + estado del
-corte). Esa pieza también apaga el chip "Sin depositar" de §15.
+> ✅ **La pieza se construyó el 24 de agosto de 2026** (migración 38: `cortes`
+> + `corte_movimientos`). Era la primera de la lista del final y la que más
+> rendía; el detalle está en §36 de `docs/ipad-rediseno.md`. Lo que apagó, de
+> una vez: el desglose efectivo/cheques, "Movimientos incluidos", la pestaña
+> Pendientes, el chip "Sin depositar" de §15, "Reabrir el corte", la hoja
+> "Nuevo corte" entera, el aviso de "todavía no se marca qué fue al banco" y
+> —de regalo, sin necesitar el banco— la tarjeta "Conciliación", que ahora
+> compara lo contado contra lo registrado. **Ocho.**
 
 ### Lo que añade el handoff 3 (24 ago 2026)
 
@@ -122,15 +128,17 @@ apagado**, con lo que le falta a cada uno:
 | Cáscara | Dónde | Cómo quedó | Qué le falta |
 |---|---|---|---|
 | **"Compartir"** | Depositados, cabecera del detalle | `btn secondary` apagado + `title` | una hoja de compartir; la app no tiene ninguna |
-| **"Reabrir el corte"** | Depositados, menú de "⋯" | ítem de menú apagado + `title` | estado del corte (abierto/cerrado); la fila **es** el depósito |
+| ~~**"Reabrir el corte"**~~ | Depositados, menú de "⋯" | **cableado el 24 ago** — devuelve el corte a "entregado". Sigue apagado en un depósito sin corte, donde no hay nada que reabrir | — |
 | **"Registró"** | Depositados, Datos del depósito | fila en gris cursiva, "Sin capturar todavía" | `depositos_bancarios.usuario_id`; es el mismo "Registrado por" de §4 |
-| **"Conciliación"** | Depositados, columna derecha | tarjeta con su explicación | importar el estado de cuenta del banco |
-| **Hoja "Nuevo corte"** entera | Pendientes, botón "Nuevo corte" | se llena y se navega; **"Crear" apagado** | tabla de cortes + marca de "ya depositado" por movimiento |
-| **"Responsable"** | dentro de esa hoja | fila apagada | lo mismo que "Registró" |
-| **"Adjuntar foto de la ficha"** | dentro de esa hoja | `ActionField` apagado | el comprobante vive en el depósito, y un corte todavía no lo es |
-| **"Pedir doble firma"** | dentro de esa hoja | interruptor apagado | ya estaba en la lista de los diez (handoff 1) |
+| ~~**"Conciliación"**~~ | Depositados, columna derecha | **cableada el 24 ago** — compara lo contado contra lo registrado y canta la diferencia. Cuadrar no demuestra que el banco lo recibió, y el texto no lo dice | casar contra el banco, si algún día se importa el estado de cuenta |
+| ~~**Hoja "Nuevo corte"** entera~~ | Pendientes | **cableada el 24 ago** — "Crear" guarda el corte y engancha sus movimientos | — |
+| ~~**"Responsable"**~~ | dentro de esa hoja | **cableado el 24 ago** — se elige de `usuarios` o se escribe, y se propone el del corte anterior | — |
+| **"Adjuntar foto de la ficha"** | dentro de esa hoja | sigue apagado, con una razón más precisa | **ninguna**: la ficha la da el banco, así que en el corte todavía no hay ninguna. Se adjunta un paso después, al registrar el depósito, donde el campo lleva funcionando desde siempre |
+| **"Pedir doble firma"** | dentro de esa hoja | apagado por **decisión**, no por hueco | Iván eligió *constancia* (se anota a quién se le entregó) y no *acuse* (que el que recibe confirme). Si algún día quiere lo segundo, esto es lo que se enciende |
 
-**Lo que NO se pintó, y por qué.** El diseño enseña en Pendientes una lista de
+**Lo que NO se pintó, y por qué** *(escrito antes de la migración 38: los
+nombres de corte ya existen desde que existe la tabla; lo que sigue valiendo
+es el criterio)*. El diseño enseñaba en Pendientes una lista de
 cortes con nombre propio ("Corte del domingo 23", "Ofrendas de miércoles 19")
 y su cuenta asignada. Un corte con nombre no existe: lo que sí existe es el
 día. Así que la lista agrupa por **fecha** —dato real— en vez de inventar
@@ -336,22 +344,26 @@ paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
   columna y numerador.
 - **"Registrado por"** y **el chip "Sin depositar"** — aplazados por ti hasta
   después del diseño, no por este criterio.
-- **Los nombres de corte** del handoff 3 ("Corte del domingo 23", "Ofrendas de
-  miércoles 19") y su **cuenta asignada por corte**. Mismo criterio que
-  `Folio 1042`: un nombre inventado se lee como verdadero. Llegan con la tabla
-  de cortes.
+- ~~**Los nombres de corte**~~ y su **cuenta asignada** → **llegaron con la
+  tabla de cortes** el 24 ago 2026. Ya no son inventados: los escribe quien
+  hace el corte.
+- **La sincronización de los cortes.** `cortes` y `corte_movimientos` **no
+  suben a Supabase todavía**: `src/sync.ts` lleva una lista explícita de
+  tablas y estas dos no están en ella, porque la tabla remota no existe. Un
+  corte vive en el aparato donde se hizo. Para una tesorera con un iPad basta;
+  en cuanto haya dos aparatos hace falta crear las dos tablas en Supabase y
+  añadir su paso a `sincronizarTodo`.
 
 ## Cuando toque cablear, el orden que rinde más
 
-1. **Tabla de cortes + `corte_movimientos` + `responsable`** — sigue siendo la
-   primera, y
-   con el handoff 3 rinde todavía más: apaga el desglose, "Movimientos
-   incluidos", el chip "Sin depositar" de §15, **"Reabrir el corte"**, la hoja
-   **"Nuevo corte"** entera y el aviso de "Tamio todavía no marca qué
-   movimientos ya fueron al banco" del panel de Pendientes. Seis de una.
-   ("Marcar depositado" ya se cableó sin ella.)
+1. ~~**Tabla de cortes + `corte_movimientos` + `responsable`**~~ — **hecho el
+   24 de agosto de 2026** (migración 38). Apagó ocho entradas de una vez. Lo
+   que queda de esta lista empieza en el 2.
 2. **`transactions.usuario_id`** — "Registrado por", y de paso el rastro de
-   auditoría que el handoff 1 pedía.
+   auditoría que el handoff 1 pedía. Ahora es la primera. En Depósitos el
+   corte ya dice **quién LLEVÓ** el dinero; lo que sigue sin saberse es quién
+   lo REGISTRÓ en la app, que son dos personas distintas y por eso son dos
+   filas.
 3. **`actas.testigo`** — una columna, un renglón.
 4. **Tres columnas personales en `members`** — nacimiento, dirección, estado
    civil.

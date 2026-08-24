@@ -1,33 +1,38 @@
 /**
- * NuevoCorteIOS.tsx — la hoja "Nuevo corte" del handoff 3 (24 ago 2026).
+ * NuevoCorteIOS.tsx — la hoja "Nuevo corte".
  *
- * Un **corte** es, en el diseño, un grupo con nombre de los movimientos que
- * van juntos al banco: se le pone nombre, cuenta, fecha y responsable, se
- * marcan los movimientos que entran, y queda esperando a que alguien lo
- * deposite.
+ * Un **corte** es el dinero en efectivo y cheques que la tesorera cuenta junto
+ * y entrega a una persona para que lo lleve al banco. Definido con Iván el 24
+ * de agosto de 2026, después de dos días usando la palabra del handoff sin que
+ * nadie hubiera dicho qué significaba en esta iglesia.
  *
- * **En el repo no existe.** No hay tabla de cortes, `transactions` no guarda
- * si un movimiento ya fue al banco y `depositos_bancarios` no guarda qué
- * movimientos lo componen. Así que la hoja se construye entera —por decisión
- * de Iván (23 ago): primero la plantilla, el motor después— y **"Crear" sale
- * apagado con su explicación**, el mismo trato que "Recopilar firmas" en
- * Actas.
+ * **Tiene motor desde la migración 38.** Hasta la 1.2.9 la hoja se llenaba y
+ * "Crear" salía apagado, porque no había dónde guardarla. Ahora crea el corte
+ * y engancha sus movimientos: a partir de ese momento ese dinero deja de estar
+ * "en caja" y pasa a estar "entregado, todavía no en el banco".
  *
- * Lo que sí es real dentro de la hoja, y no es poco: los movimientos que
- * lista, sus montos, el desglose efectivo/cheques y el total, que se
- * recalculan al marcar igual que en el panel de Pendientes —salen de la misma
- * selección, así que la hoja y el panel no se pueden descuadrar—. Lo que no
- * se puede es GUARDARLO.
+ * Dos decisiones de la conversación que se ven aquí:
  *
- * "Pedir doble firma" es uno de los interruptores que el handoff 1 ya traía
- * inventados (§4): no existe en el esquema ni como ajuste. Va apagado con su
- * explicación, como los otros cuatro Controles de tesorería.
+ * - **Constancia, no acuse.** Se anota a quién se le entregó; esa persona no
+ *   confirma nada en la app. Por eso "Pedir doble firma" sigue apagado: es la
+ *   opción que Iván NO eligió, no un hueco pendiente.
+ * - **El responsable se elige, no es un rol.** *"No necesariamente tiene que
+ *   ser el pastor, puede ser cualquier persona que esté asignada a ese
+ *   trabajo."* Sale de `usuarios`, se puede escribir uno que no esté dado de
+ *   alta, y **se propone el del corte anterior** — si casi siempre es la misma
+ *   persona, teclearla cada domingo es trabajo inventado.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Portal from "./Portal";
 import { ActionField, Section, SwitchField, TextField } from "./ios/FormularioIOS";
-import { fmtFechaCorta, fmtMoney, metodoAbr, type Church, type Tx } from "../db";
+import { IOSBuscadorField } from "./ios/IOSBuscadorSheet";
+import { showToast } from "../toast";
+import { playSound } from "../sound";
+import {
+  fmtFechaCorta, fmtMoney, insertCorte, listUsuarios, metodoAbr,
+  type Church, type Tx, type Usuario,
+} from "../db";
 import { sumar, type Centavos } from "../dinero";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 
@@ -41,19 +46,33 @@ interface Props {
   nombre: string;
   cuenta: string;
   fecha: string;
+  /** El responsable del corte anterior: se propone, no se impone. */
+  responsablePrevio: string;
   onClose: () => void;
+  /** Se llama con el corte ya creado, para recargar la pantalla. */
+  onCreado: () => void;
 }
 
 const esCheque = (t: Tx) => t.metodo_pago === "cheque";
 
-export default function NuevoCorteIOS({ church, movs, sel, onToggle, nombre, cuenta, fecha, onClose }: Props) {
+export default function NuevoCorteIOS({
+  church, movs, sel, onToggle, nombre, cuenta, fecha, responsablePrevio, onClose, onCreado,
+}: Props) {
   const { t } = useTranslation();
   const titulo = t("depositos.nuevoCorte");
-  /* El nombre se puede escribir aunque no se pueda guardar: un campo que
-     ignora lo que tecleas es peor que uno apagado, y la hoja entera ya dice
-     con todas las letras que no hay dónde guardarla. */
   const [nombreCorte, setNombreCorte] = useState(nombre);
+  const [responsable, setResponsable] = useState(responsablePrevio);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [guardando, setGuardando] = useState(false);
   useEscapeClose(onClose);
+
+  useEffect(() => {
+    let cancelado = false;
+    listUsuarios(church.id)
+      .then((us) => { if (!cancelado) setUsuarios(us); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [church.id]);
 
   const marcados = movs.filter((m) => sel.has(m.id));
   const suma = (f: (x: Tx) => boolean): Centavos =>
@@ -62,6 +81,31 @@ export default function NuevoCorteIOS({ church, movs, sel, onToggle, nombre, cue
   const cheques = suma(esCheque);
   const total = sumar(efectivo, cheques);
   const nCheques = marcados.filter(esCheque).length;
+  const sinNada = marcados.length === 0 || !nombreCorte.trim();
+
+  async function crear() {
+    setGuardando(true);
+    try {
+      const id = await insertCorte(
+        church.id,
+        {
+          fecha,
+          nombre: nombreCorte.trim(),
+          cuenta_banco: cuenta || null,
+          responsable: responsable.trim() || null,
+        },
+        marcados.map((m) => m.id),
+      );
+      if (id == null) throw new Error("sin id");
+      playSound("guardado");
+      showToast(t("depositos.toastCorteCreado", { n: marcados.length }));
+      onCreado();
+      onClose();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+      setGuardando(false);
+    }
+  }
 
   return (
     <Portal>
@@ -75,10 +119,17 @@ export default function NuevoCorteIOS({ church, movs, sel, onToggle, nombre, cue
             </button>
             <h1 className="ios-nav-title">{titulo}</h1>
             <span className="ios-nav-status">
-              {/* Apagado a propósito: no hay dónde guardar un corte. Con su
-                  `title`, para que el botón explique en vez de prometer. */}
-              <button type="button" className="ios-nav-action" disabled title={t("depositos.corteSinMotorAyuda")}>
-                {t("depositos.crearCorte")}
+              {/* Encendido desde la migración 38. Solo se apaga si no hay
+                  nada marcado o el corte se quedó sin nombre: un corte vacío
+                  no dice nada y uno sin nombre no se distingue del de al
+                  lado en la lista. */}
+              <button
+                type="button"
+                className="ios-nav-action"
+                onClick={() => void crear()}
+                disabled={guardando || sinNada}
+              >
+                {guardando ? t("common.guardando") : t("depositos.crearCorte")}
               </button>
             </span>
           </div>
@@ -92,10 +143,9 @@ export default function NuevoCorteIOS({ church, movs, sel, onToggle, nombre, cue
               </span>
             </div>
 
-            {/* El aviso que hace honesta a la hoja entera: se puede llenar,
-                no se puede guardar. Va arriba, no al final, porque decidirlo
-                después de rellenar cuatro campos es peor. */}
-            <p className="nm-aviso nm-aviso--info" role="note">{t("depositos.corteSinMotorAyuda")}</p>
+            {/* Lo que va a pasar al pulsar Crear, dicho antes de pulsarlo:
+                ese dinero deja de contar como "en caja". */}
+            <p className="nm-aviso nm-aviso--info" role="note">{t("depositos.corteQueHace")}</p>
 
             <Section header={t("depositos.datosDelCorte")}>
               <TextField label={t("depositos.nombreCorte")} value={nombreCorte} onChange={setNombreCorte} stacked />
@@ -107,12 +157,24 @@ export default function NuevoCorteIOS({ church, movs, sel, onToggle, nombre, cue
                 <span className="ios-field-label">{t("depositos.fechaDeposito")}</span>
                 <span className="ios-field-value">{fmtFechaCorta(fecha)}</span>
               </div>
-              {/* "Responsable" es el mismo dato que §4 ya marcó como
-                  inexistente: no hay usuario en el registro. */}
-              <div className="ios-field ios-field--apagado" title={t("depositos.responsableSinMotor")}>
-                <span className="ios-field-label">{t("depositos.responsable")}</span>
-                <span className="ios-field-value">{t("detalleMiembro.sinCapturar")}</span>
-              </div>
+              {/* Quién se lleva el dinero. Sale de `usuarios` y se puede
+                  escribir uno que no esté dado de alta —quien lleva el dinero
+                  no tiene por qué usar la app—, con el del corte anterior ya
+                  propuesto. Mismo trato que la cuenta bancaria del depósito. */}
+              <IOSBuscadorField
+                label={t("depositos.responsable")}
+                valor={responsable}
+                vacio={t("depositos.responsableElegir")}
+                title={t("depositos.responsable")}
+                placeholder={t("depositos.responsableBuscar")}
+                opciones={usuarios.map((u) => ({ id: String(u.id), titulo: u.nombre, sub: t(`rol.${u.rol}`, { defaultValue: u.rol }) }))}
+                seleccionado={usuarios.find((u) => u.nombre === responsable) ? responsable : null}
+                textoInicial={responsable}
+                onElegir={(o) => setResponsable(o.titulo)}
+                onTextoLibre={(tx) => setResponsable(tx)}
+                etiquetaTextoLibre={(tx) => t("depositos.responsableNuevo", { texto: tx })}
+                onLimpiar={responsable ? () => setResponsable("") : undefined}
+              />
             </Section>
 
             <Section header={t("depositos.movsSinDepositar")}>
@@ -152,16 +214,27 @@ export default function NuevoCorteIOS({ church, movs, sel, onToggle, nombre, cue
                 </span>
                 <span className="ios-field-value">{fmtMoney(cheques)}</span>
               </div>
-              {/* Adjuntar aquí tampoco tiene dónde caer: el comprobante vive
-                  en el depósito, y el corte no es un depósito todavía. */}
-              <ActionField label={t("depositos.adjuntarFotoFicha")} onPress={() => { }} disabled />
+              {/* Sigue apagado, y ahora se sabe POR QUÉ mejor: la ficha la da
+                  el banco, así que en el corte todavía no hay ninguna que
+                  adjuntar. Se adjunta un paso después, al registrar el
+                  depósito, donde el campo lleva funcionando desde siempre. */}
+              <ActionField
+                label={t("depositos.adjuntarFotoFicha")}
+                onPress={() => { }}
+                disabled
+                title={t("depositos.fichaLaDaElBanco")}
+              />
+              {/* Apagado por DECISIÓN, no por hueco: Iván eligió constancia
+                  —se anota a quién se le entregó— y no acuse —que el que
+                  recibe confirme—. Si algún día quiere lo segundo, esto es
+                  donde se enciende. */}
               <SwitchField
                 label={t("controlesTesoreria.dobleFirma")}
-                sub={t("controlesTesoreria.dobleFirmaSub")}
+                sub={t("depositos.dobleFirmaDecision")}
                 checked={false}
                 onChange={() => { }}
                 disabled
-                title={t("controlesTesoreria.dobleFirmaSub")}
+                title={t("depositos.dobleFirmaDecision")}
               />
             </Section>
 

@@ -741,6 +741,61 @@ fn migraciones() -> Vec<motordb::Migracion> {
             ALTER TABLE churches ADD COLUMN estado_provincia TEXT;
             ALTER TABLE churches ADD COLUMN codigo_postal TEXT;
         "#,
+    }, motordb::Migracion {
+        version: 38,
+        description: "cortes de caja: el dinero que sale de la caja en manos de alguien",
+        sql: r#"
+            -- Un CORTE es el dinero en efectivo y cheques que la tesorera
+            -- cuenta junto y entrega a una persona para que lo lleve al
+            -- banco. Definido con Iván el 24 ago 2026; el porqué está en
+            -- docs/cascaras-1-2.md.
+            --
+            -- Cubre el hueco que hasta ahora no se registraba: entre que el
+            -- dinero sale de la caja y aparece un depósito en el banco no
+            -- había ningún rastro de quién lo llevó. Ese hueco es justo donde
+            -- una tesorera necesita estar protegida.
+            --
+            -- `responsable` es TEXTO, no una referencia a `usuarios`: quien
+            -- lleva el dinero puede no estar dado de alta en la app, y el
+            -- nombre tiene que quedar escrito aunque esa persona se borre
+            -- después. La interfaz propone los de `usuarios` y deja escribir
+            -- uno nuevo — el mismo trato que `cuenta_banco` en los depósitos.
+            --
+            -- `estado`: 'abierto' (entregado, todavía no en el banco) o
+            -- 'depositado' (cerrado, con su `deposito_id`). No hay un estado
+            -- previo: crear el corte ES entregarlo.
+            CREATE TABLE IF NOT EXISTS cortes (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id    INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                fecha        TEXT NOT NULL,   -- YYYY-MM-DD: el día que sale de la caja
+                nombre       TEXT NOT NULL,
+                cuenta_banco TEXT,
+                responsable  TEXT,
+                estado       TEXT NOT NULL DEFAULT 'abierto',
+                deposito_id  INTEGER REFERENCES depositos_bancarios(id) ON DELETE SET NULL,
+                notas        TEXT,
+                created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+                uid          TEXT,
+                updated_at   TEXT,
+                deleted      INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_cortes_church_estado ON cortes(church_id, estado);
+            CREATE INDEX IF NOT EXISTS idx_cortes_deposito ON cortes(deposito_id);
+            CREATE INDEX IF NOT EXISTS idx_cortes_sync ON cortes(church_id, updated_at);
+
+            -- La puente. Un movimiento pertenece a UN corte como mucho: por
+            -- eso el índice único sobre `tx_id` y no sobre el par. Sin él,
+            -- el mismo billete podría contarse en dos cortes y las cifras de
+            -- "efectivo por depositar" dejarían de cuadrar en silencio.
+            CREATE TABLE IF NOT EXISTS corte_movimientos (
+                corte_id  INTEGER NOT NULL REFERENCES cortes(id) ON DELETE CASCADE,
+                tx_id     INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+                church_id INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                PRIMARY KEY (corte_id, tx_id)
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_corte_movs_tx ON corte_movimientos(tx_id);
+            CREATE INDEX IF NOT EXISTS idx_corte_movs_church ON corte_movimientos(church_id);
+        "#,
     }]
 }
 
@@ -1740,6 +1795,7 @@ mod pruebas_migraciones {
         for tabla in [
             "churches", "members", "transactions", "depositos_bancarios",
             "servicios", "servicio_asistencia", "actas", "cartas", "agenda",
+            "cortes", "corte_movimientos",
         ] {
             assert!(tiene_tabla(&conn, tabla), "falta la tabla {tabla}");
         }

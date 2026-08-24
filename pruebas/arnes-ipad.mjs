@@ -1153,9 +1153,14 @@ console.log("\n== Depósitos del iPad (handoff) ==");
     pie: (document.querySelector(".dep-lista-pie")?.textContent || "").trim(),
     filas: document.querySelectorAll(".md-depositos .md-fila").length,
     estados: [...document.querySelectorAll(".md-depositos .dep-estado--pendiente")].length,
+    enCaja: [...document.querySelectorAll(".md-depositos .dep-estado--caja")].length,
   }));
-  chk(pend.filas > 0, `"Pendientes" lista los cortes por día (${pend.filas} filas)`);
-  chk(pend.estados === pend.filas, `todas dicen "Sin depositar" (${pend.estados}/${pend.filas})`);
+  chk(pend.filas > 0, `"Pendientes" lista los días con dinero (${pend.filas} filas)`);
+  /* Con el motor del corte (migración 38) la lista tiene DOS grupos y el
+     estado ya no es el mismo para todos: "Sin depositar" es el dinero que ya
+     salió de la caja en manos de alguien, "En caja" el que sigue dentro. Sin
+     cortes creados, todo está en caja. */
+  chk(pend.enCaja === pend.filas, `sin cortes hechos, todas están "En caja" (${pend.enCaja}/${pend.filas})`);
   chk(/\$/.test(pend.pie), "y el pie sigue dando el efectivo por depositar");
   if (DIR) await pg.screenshot({ path: `${DIR}/depositos-pendientes-1366x1024.png` });
   await ctxDp.close();
@@ -2393,7 +2398,11 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
   chk(b.cifras[2].val < a.cifras[2].val, `y el total (${a.cifras[2].val} → ${b.cifras[2].val})`);
   cuadra(b, "con una desmarcada");
 
-  const avisosEsperados = ["por revisar", "efectivo", "Periodo contable", "ya fueron al banco"];
+  /* El cuarto aviso cambió de sentido con el motor del corte: antes decía
+     "Tamio todavía no marca qué movimientos ya fueron al banco" y era
+     permanente; ahora solo sale mientras queden depósitos SIN corte detrás
+     —los tres que siembra el arnés— y desaparece cuando todos lo tengan. */
+  const avisosEsperados = ["por revisar", "efectivo", "Periodo contable", "sin corte"];
   for (const frag of avisosEsperados) {
     chk(b.avisos.some((x) => x.toLowerCase().includes(frag.toLowerCase())),
       `aviso "${frag}" presente (${b.avisos.length} avisos)`);
@@ -2402,9 +2411,11 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
   const DIR = process.env.CAPTURAS || "";
   if (DIR) await pg.screenshot({ path: `${DIR}/depositos-pendientes.png` });
 
-  /* "Marcar depositado" abre el formulario con el total del corte puesto: es
-     lo único que impide que lo revisado y lo registrado se separen. */
-  await pg.locator(".dep-carta-accion .btn.primary").click();
+  /* "Marcar depositado" —el atajo: fue directo al banco, sin entrega— abre el
+     formulario con el total puesto. Es lo único que impide que lo revisado y
+     lo registrado se separen. Es el SECUNDARIO de la tarjeta desde que el
+     primario pasó a ser "Entregar el corte". */
+  await pg.locator(".dep-carta-accion .btn.secondary").click();
   await pg.waitForTimeout(700);
   const pre = await pg.evaluate(() => {
     const hoja = document.querySelector(".ios-sheet");
@@ -2418,9 +2429,9 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
   await pg.locator(".ios-sheet .ios-sheet-cancelar").click();
   await pg.waitForTimeout(400);
 
-  /* La hoja "Nuevo corte": se construye entera y "Crear" sale apagado, que es
-     el trato de la casa para lo que todavía no tiene dónde guardarse. */
-  await pg.locator(".dep-pen-cab .btn.secondary").click();
+  /* La hoja del corte. Desde la migración 38 "Crear" está ENCENDIDO: hasta la
+     1.2.9 salía apagado porque no había tabla donde guardarlo. */
+  await pg.locator(".dep-carta-accion .btn.primary").click();
   await pg.waitForTimeout(700);
   const corte = await pg.evaluate(() => {
     const hoja = document.querySelector(".ios-sheet");
@@ -2436,11 +2447,121 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
   chk(!!corte, "\"Nuevo corte\" abre su hoja");
   if (corte) {
     chk(corte.ancho === 600, `hoja de 600 (${corte.ancho})`);
-    chk(corte.crearApagado === true, `"Crear" sale apagado: no hay dónde guardar un corte (${corte.crearApagado})`);
+    chk(corte.crearApagado === false, `"Crear" está encendido: ya hay dónde guardar un corte (${corte.crearApagado})`);
     chk(corte.marcables === b.movs, `con los mismos movimientos que el panel (${corte.marcables} = ${b.movs})`);
     chk(corte.secciones.length === 3, `y sus tres secciones (${corte.secciones.join(" · ")})`);
   }
   if (DIR) await pg.screenshot({ path: `${DIR}/depositos-nuevo-corte.png` });
+
+  /* ---- El ciclo completo del corte (migración 38) ----
+     Crear → sale como "entregado" → cerrarlo con su depósito → aparece en
+     Depositados con SUS movimientos. Es el recorrido que enciende las ocho
+     cáscaras de una vez, así que se comprueba entero y no por piezas: cada
+     paso solo significa algo si el anterior dejó bien la base. */
+  await pg.locator(".ios-sheet .ios-nav-action").click();
+  await pg.waitForTimeout(900);
+  const tras = await pg.evaluate(() => {
+    const fila = (sel) => [...document.querySelectorAll(sel)];
+    return {
+      hoja: !!document.querySelector(".ios-sheet"),
+      grupos: fila(".md-depositos .md-grupo").map((g) => g.textContent.trim()),
+      entregados: fila(".md-depositos .dep-estado--pendiente").length,
+      enCaja: fila(".md-depositos .dep-estado--caja").length,
+    };
+  });
+  chk(!tras.hoja, "creado el corte, la hoja se cierra sola");
+  chk(tras.entregados === 1, `y aparece un corte entregado (${tras.entregados})`);
+  chk(tras.grupos.some((g) => /Entregado/i.test(g)),
+    `bajo su propio grupo (${tras.grupos.join(" · ")})`);
+
+  // El corte entregado: su composición es FIJA y ofrece cerrar o deshacer.
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(500);
+  const ent = await pg.evaluate(() => {
+    const movs = [...document.querySelectorAll(".dep-mov")];
+    return {
+      sub: document.querySelector(".dep-pen .dm-sub")?.textContent.trim(),
+      movs: movs.length,
+      bloqueados: movs.filter((m) => m.disabled).length,
+      acciones: [...document.querySelectorAll(".dep-carta-accion .btn")].map((b) => b.textContent.trim()),
+    };
+  });
+  chk(ent.movs > 0, `el corte entregado enseña sus movimientos (${ent.movs})`);
+  chk(ent.bloqueados === ent.movs,
+    `y no se pueden re-marcar: el dinero ya salió (${ent.bloqueados}/${ent.movs})`);
+  chk(/entregad|salió/i.test(ent.sub ?? ""), `dice a quién y cuándo (${ent.sub})`);
+  chk(ent.acciones.some((a) => /Deshacer/i.test(a)), `y ofrece deshacerlo (${ent.acciones.join(" · ")})`);
+
+  /* Cerrarlo: "Marcar depositado" → guardar el depósito → el corte pasa a
+     Depositados y el depósito enseña de qué se compone. */
+  await pg.locator(".dep-carta-accion .btn.primary").click();
+  await pg.waitForTimeout(700);
+  /* Guardar puede pedir DOS pulsaciones: el aviso de "el monto supera el
+     efectivo estimado en caja" no bloquea, avisa y espera confirmación —con
+     los datos que siembra el arnés, la caja sale en negativo y siempre
+     salta—. Es el comportamiento correcto y el usuario hace justo esto: lee
+     y vuelve a pulsar. */
+  await pg.locator(".ios-sheet .ios-nav-action").click();
+  await pg.waitForTimeout(700);
+  if (await pg.locator(".ios-sheet").count() > 0) {
+    await pg.locator(".ios-sheet .ios-nav-action").click();
+    await pg.waitForTimeout(1200);
+  }
+  const cerrado = await pg.evaluate(() => ({
+    entregados: document.querySelectorAll(".md-depositos .dep-estado--pendiente").length,
+    hoja: document.querySelectorAll(".ios-sheet").length,
+  }));
+  chk(cerrado.hoja === 0, `el formulario se cierra al guardar (${cerrado.hoja} hojas)`);
+  chk(cerrado.entregados === 0, `cerrado el depósito, no queda ningún corte abierto (${cerrado.entregados})`);
+
+  await pg.locator(".md-seg-tipo button", { hasText: "Depositados" }).click();
+  await pg.waitForTimeout(600);
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(600);
+  const det2 = await pg.evaluate(() => {
+    const num = (t) => Number(String(t).replace(/[^0-9.-]/g, ""));
+    const cifras = [...document.querySelectorAll(".dep-cifra")].map((c) => ({
+      et: c.querySelector(".dep-cifra-et").textContent.trim(),
+      val: c.querySelector(".dep-cifra-val").textContent.trim(),
+    }));
+    return {
+      cifras,
+      sinMotor: document.querySelectorAll(".dep-cifra--sinmotor").length,
+      movs: document.querySelectorAll(".dep-carta .dep-mov, .dep-carta .dep-dep-mov").length,
+      efectivo: num(cifras[0]?.val ?? "0"),
+      total: num(cifras[2]?.val ?? "0"),
+    };
+  });
+  chk(det2.sinMotor === 0,
+    `el detalle del depósito ya no tiene cifras sin motor (${det2.sinMotor})`);
+  chk(det2.movs > 0, `y enseña los movimientos que lo componen (${det2.movs})`);
+  chk(det2.efectivo > 0, `con el desglose de efectivo real (${det2.cifras[0]?.val})`);
+  if (DIR) await pg.screenshot({ path: `${DIR}/depositos-corte-cerrado.png` });
+
+  /* El chip "Sin depositar" de Ingresos: la cuarta cáscara que enciende esta
+     misma pieza. Cuenta los ingresos en efectivo o cheque que no están en
+     ningún corte — y como acabamos de meter uno en un corte, el chip tiene
+     que contar UNO MENOS que antes. Eso es lo que demuestra que el chip mira
+     el vínculo de verdad y no un cálculo aparte. */
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-movimientos", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+  const chip = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".md-chips .chip, .md-filtros .chip")]
+      .find((x) => /sin depositar/i.test(x.textContent));
+    if (!b) return null;
+    return { n: Number(b.querySelector(".count")?.textContent ?? "0"), ayuda: (b.getAttribute("title") || "").length };
+  });
+  chk(!!chip, "Ingresos: el chip \"Sin depositar\" está");
+  if (chip) {
+    chk(chip.n > 0, `y cuenta lo que sigue en caja (${chip.n})`);
+    chk(chip.ayuda > 40, `con su explicación de qué cuenta (${chip.ayuda} car.)`);
+    // Filtra de verdad: al pulsarlo, la lista se queda en esos.
+    await pg.locator(".md-chips .chip, .md-filtros .chip").filter({ hasText: /Sin depositar/i }).first().click();
+    await pg.waitForTimeout(500);
+    const filas = await pg.locator(".md-movimientos .md-fila").count();
+    chk(filas === chip.n, `y filtra la lista a esos mismos (${filas} = ${chip.n})`);
+  }
   await ctxD.close();
 }
 

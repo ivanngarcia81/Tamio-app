@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  countDepositos, countPendingTx, currentMonth, currentYear, efectivoDisponibleHasta, fmtFechaCorta, fmtMoney,
-  hoyISO, listDepositos, listTx, mesLegible, monthDepositos,
-  type Church, type Deposito, type Tx,
+  cerrarCorte, countDepositos, countPendingTx, currentMonth, currentYear, deleteCorte,
+  depositosSinCorte, efectivoDisponibleHasta, fmtFechaCorta, fmtMoney, hoyISO, listCortes,
+  insertCorte, listDepositos, listTx, mesLegible, monthDepositos, movimientosDeCorte, txEnCorte,
+  type Church, type Corte, type Deposito, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
 import DepositoTable from "../components/DepositoTable";
@@ -19,7 +20,7 @@ import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import { esIPad, esIPhone, esMac } from "../movil";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import DetalleDeposito from "../components/DetalleDeposito";
-import PendientesDeposito, { type Corte } from "../components/PendientesDeposito";
+import PendientesDeposito, { type DiaEnCaja } from "../components/PendientesDeposito";
 import NuevoCorteIOS from "../components/NuevoCorteIOS";
 import ComprobantePreview from "../components/ComprobantePreview";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -84,30 +85,64 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const navigate = useNavigate();
   const [enCaja, setEnCaja] = useState<Tx[]>([]);
   const [porRevisar, setPorRevisar] = useState(0);
-  const [corteSel, setCorteSel] = useState<string | null>(null);
-  /** Ids marcados. Empieza con TODO el corte marcado, que es el caso normal:
-   *  se lleva al banco lo que hay, y se desmarca la excepción. */
+  /** Los cortes ya creados y los movimientos que están dentro de alguno. */
+  const [cortes, setCortes] = useState<Corte[]>([]);
+  const [enCorte, setEnCorte] = useState<Set<number>>(new Set());
+  const [movsCorte, setMovsCorte] = useState<Tx[]>([]);
+  const [depSinCorte, setDepSinCorte] = useState(0);
+  /** Qué hay abierto en Pendientes: un corte ya entregado, o un día de caja. */
+  const [selPend, setSelPend] = useState<{ tipo: "corte"; id: number } | { tipo: "dia"; fecha: string } | null>(null);
+  /** Ids marcados de un día de caja. Empieza con TODO marcado, que es el caso
+   *  normal: se lleva al banco lo que hay, y se desmarca la excepción. */
   const [marcados, setMarcados] = useState<Set<number>>(new Set());
   const [hojaCorte, setHojaCorte] = useState(false);
   const [prefill, setPrefill] = useState<{ monto: Centavos; cuenta: string; fecha: string; periodo: string } | null>(null);
+  /**
+   * Qué corte hay que cerrar cuando se guarde el depósito que se está
+   * llenando. Dos formas: uno que YA existe (se entregó y ahora llega al
+   * banco), o uno que hay que crear en ese momento (nadie lo llevó, se fue
+   * directo al banco).
+   *
+   * **El corte nuevo se crea DENTRO de `alGuardar`, no antes.** Crearlo al
+   * abrir el formulario dejaba un corte huérfano cada vez que alguien
+   * cancelaba: el dinero salía de la caja sin que se hubiera depositado nada.
+   * Lo cazó el arnés al reutilizar la misma pantalla para dos comprobaciones.
+   */
+  const [corteACerrar, setCorteACerrar] = useState<
+    { tipo: "existente"; id: number } | { tipo: "nuevo"; fecha: string; nombre: string; ids: number[] } | null
+  >(null);
+  const [recargaCortes, setRecargaCortes] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
-    Promise.all([listTx(church.id, { tipo: "ingreso", limit: 400 }), countPendingTx(church.id)])
-      .then(([txs, n]) => {
+    Promise.all([
+      listTx(church.id, { tipo: "ingreso", limit: 400 }),
+      countPendingTx(church.id),
+      listCortes(church.id),
+      txEnCorte(church.id),
+      depositosSinCorte(church.id),
+    ])
+      .then(([txs, n, cs, dentro, sinCorte]) => {
         if (cancelado) return;
         setEnCaja(txs.filter((x) => x.estado === "aprobado"
           && (x.metodo_pago === "efectivo" || x.metodo_pago === "cheque")));
         setPorRevisar(n);
+        setCortes(cs);
+        setEnCorte(dentro);
+        setDepSinCorte(sinCorte);
       })
       .catch(console.error);
     return () => { cancelado = true; };
-  }, [church.id, refreshKey]);
+  }, [church.id, refreshKey, recargaCortes]);
 
-  /** Un corte por día con dinero en caja, del más reciente al más viejo. */
-  const cortes = useMemo<Corte[]>(() => {
+  const abiertos = useMemo(() => cortes.filter((c) => c.estado === "abierto"), [cortes]);
+
+  /** Los días con dinero que TODAVÍA está en la caja: lo que no entró en
+   *  ningún corte. Un día con todo entregado desaparece de aquí solo. */
+  const dias = useMemo<DiaEnCaja[]>(() => {
     const mapa = new Map<string, Tx[]>();
     for (const m of enCaja) {
+      if (enCorte.has(m.id)) continue;
       const dia = m.fecha.slice(0, 10);
       const g = mapa.get(dia);
       if (g) g.push(m); else mapa.set(dia, [m]);
@@ -119,17 +154,29 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
         titulo: t("depositos.corteDel", { fecha: fmtFechaCorta(fecha) }),
         movs,
       }));
-  }, [enCaja, t]);
+  }, [enCaja, enCorte, t]);
 
-  const corte = cortes.find((c) => c.fecha === corteSel) ?? null;
+  const corteAbierto = selPend?.tipo === "corte" ? abiertos.find((c) => c.id === selPend.id) ?? null : null;
+  const dia = selPend?.tipo === "dia" ? dias.find((d) => d.fecha === selPend.fecha) ?? null : null;
 
-  /* Al cambiar de corte se marca todo lo suyo. Se hace en un efecto y no al
-     pulsar la fila porque el corte también puede llegar elegido de vuelta de
-     una recarga. */
+  /* Los movimientos de un corte ya entregado se piden a la base: no salen de
+     `enCaja`, porque ese dinero ya NO está en la caja. */
   useEffect(() => {
-    if (!corte) return;
-    setMarcados(new Set(corte.movs.map((m) => m.id)));
-  }, [corte?.fecha]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!corteAbierto) { setMovsCorte([]); return; }
+    let cancelado = false;
+    movimientosDeCorte(corteAbierto.id, church.id)
+      .then((ms) => { if (!cancelado) setMovsCorte(ms); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [corteAbierto?.id, church.id, recargaCortes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Al abrir un día se marca todo lo suyo. En un efecto y no al pulsar la
+     fila, porque el día también puede llegar elegido de vuelta de una
+     recarga. */
+  useEffect(() => {
+    if (!dia) return;
+    setMarcados(new Set(dia.movs.map((m) => m.id)));
+  }, [dia?.fecha]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function alternarMov(id: number) {
     setMarcados((prev) => {
@@ -139,6 +186,9 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
     });
   }
 
+  /** El responsable del corte más reciente: se propone en el siguiente. */
+  const responsablePrevio = cortes.find((c) => c.responsable)?.responsable ?? "";
+
   /** La cuenta del último depósito: es la que se va a proponer. */
   const cuentaSugerida = useMemo(() => {
     const ult = depositos.reduce<Deposito | null>(
@@ -147,27 +197,63 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   }, [depositos]);
 
   const totalMarcado = useMemo(
-    () => sumar(...(corte?.movs ?? []).filter((m) => marcados.has(m.id)).map((m) => m.monto)),
-    [corte, marcados],
+    () => sumar(...(dia?.movs ?? []).filter((m) => marcados.has(m.id)).map((m) => m.monto)),
+    [dia, marcados],
   );
 
   /* Entrar en Pendientes sin nada elegido abre el corte más reciente: es el
      que se viene a revisar, y un panel vacío en una pantalla de dos columnas
      es medio iPad desperdiciado. */
   useEffect(() => {
-    if (vista === "pendientes" && corteSel == null && cortes.length > 0) setCorteSel(cortes[0].fecha);
-  }, [vista, corteSel, cortes]);
+    if (vista !== "pendientes" || selPend != null) return;
+    /* Primero un corte ya entregado: ese dinero está fuera de la caja y es lo
+       que hay que cerrar. Si no hay ninguno, el día más reciente. */
+    if (abiertos.length > 0) setSelPend({ tipo: "corte", id: abiertos[0].id });
+    else if (dias.length > 0) setSelPend({ tipo: "dia", fecha: dias[0].fecha });
+  }, [vista, selPend, abiertos, dias]);
 
-  /** "Marcar depositado": abre el formulario con lo que el corte ya sabe. */
+  /** Lo que se va a depositar: de un corte ya entregado, todo lo suyo; de un
+   *  día en caja, lo que esté marcado. */
+  const totalPanel = corteAbierto ? sumar(...movsCorte.map((m) => m.monto)) : totalMarcado;
+
+  /**
+   * "Marcar depositado" — abre el formulario con lo que ya se sabe, y deja
+   * apuntado qué corte hay que cerrar cuando se guarde.
+   *
+   * Desde un **día en caja** no hubo entrega a nadie: alguien contó el dinero
+   * y fue al banco. Aun así se crea el corte, en silencio y sin responsable,
+   * porque es lo que guarda QUÉ movimientos entraron. Sin él, el depósito
+   * quedaría otra vez siendo una cifra suelta y "Movimientos incluidos"
+   * volvería a estar vacío — que es justo lo que esta pieza vino a arreglar.
+   */
   function marcarDepositado() {
+    if (corteAbierto) {
+      setCorteACerrar({ tipo: "existente", id: corteAbierto.id });
+    } else if (dia) {
+      const ids = dia.movs.filter((m) => marcados.has(m.id)).map((m) => m.id);
+      if (ids.length === 0) return;
+      setCorteACerrar({ tipo: "nuevo", fecha: dia.fecha, nombre: dia.titulo, ids });
+    } else {
+      return;
+    }
     setPrefill({
-      monto: totalMarcado,
-      cuenta: cuentaSugerida,
+      monto: totalPanel,
+      cuenta: corteAbierto?.cuenta_banco || cuentaSugerida,
       fecha: hoyISO(),
       periodo: currentMonth(),
     });
     setEditing(null);
     setModalOpen(true);
+  }
+
+  /** Deshacer un corte: el dinero vuelve a la caja. Para el dedo equivocado,
+   *  que en una pantalla de dinero es el error más común de todos. */
+  async function deshacerCorte(c: Corte) {
+    await deleteCorte(c.id, church.id);
+    setSelPend(null);
+    setRecargaCortes((n) => n + 1);
+    playSound("eliminar");
+    showToast(t("depositos.toastCorteDeshecho"));
   }
   const [previewSel, setPreviewSel] = useState<string | null>(null);
   const [pendingDeleteSel, setPendingDeleteSel] = useState<Deposito | null>(null);
@@ -230,6 +316,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
     setModalOpen(false);
     setEditing(null);
     setPrefill(null);
+    setCorteACerrar(null);
   }
 
   /* ---- Piezas del maestro-detalle ---- */
@@ -425,11 +512,10 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                 <div className="md-filas">
                   {angosto && <div className="md-extra">{resumenEscritorio}</div>}
                   {vista === "pendientes" ? (
-                    /* Los cortes: un día con dinero en caja es una fila. El
-                       monto y el conteo son reales; "Sin depositar" es lo que
-                       el diseño pide y lo que el esquema NO puede confirmar
-                       movimiento a movimiento — el panel lo explica. */
-                    cortes.length === 0 ? (
+                    /* Dos grupos, y el orden importa: arriba el dinero que ya
+                       SALIÓ de la caja y está en manos de alguien —eso es lo
+                       que hay que cerrar—, debajo lo que sigue en la caja. */
+                    abiertos.length === 0 && dias.length === 0 ? (
                       <div className="fm-vacio fm-vacio--pendiente dep-pendientes">
                         <span className="fm-vacio-titulo">{t("depositos.sinCortesTitulo")}</span>
                         <span className="fm-vacio-sub">
@@ -440,27 +526,54 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                       </div>
                     ) : (
                       <>
-                        {cortes.map((c) => (
-                          <div
-                            key={c.fecha}
-                            className={`md-fila${corteSel === c.fecha ? " sel" : ""}`}
-                            onClick={() => setCorteSel(c.fecha)}
-                          >
-                            <div className="md-fila-textos">
-                              <div className="md-fila-titular">{c.titulo}</div>
-                              <div className="md-fila-sub truncate">
-                                {t("depositos.movsDelCorte", { count: c.movs.length })}
-                                {cuentaSugerida ? ` · ${cuentaSugerida}` : ""}
+                        {abiertos.length > 0 && (
+                          <>
+                            <div className="md-grupo">{t("depositos.grupoEntregado")}</div>
+                            {abiertos.map((c) => (
+                              <div
+                                key={c.id}
+                                className={`md-fila${selPend?.tipo === "corte" && selPend.id === c.id ? " sel" : ""}`}
+                                onClick={() => setSelPend({ tipo: "corte", id: c.id })}
+                              >
+                                <div className="md-fila-textos">
+                                  <div className="md-fila-titular">{c.nombre}</div>
+                                  <div className="md-fila-sub truncate">
+                                    {[c.responsable, c.cuenta_banco].filter(Boolean).join(" · ")
+                                      || fmtFechaCorta(c.fecha)}
+                                  </div>
+                                </div>
+                                <span className="md-fila-cola">
+                                  <span className="dep-estado dep-estado--pendiente">{t("depositos.sinDepositar")}</span>
+                                </span>
                               </div>
-                            </div>
-                            <span className="md-fila-cola">
-                              <span className="md-fila-monto">
-                                {fmtMoney(sumar(...c.movs.map((m) => m.monto)))}
-                              </span>
-                              <span className="dep-estado dep-estado--pendiente">{t("depositos.sinDepositar")}</span>
-                            </span>
-                          </div>
-                        ))}
+                            ))}
+                          </>
+                        )}
+                        {dias.length > 0 && (
+                          <>
+                            <div className="md-grupo">{t("depositos.grupoEnCaja")}</div>
+                            {dias.map((d) => (
+                              <div
+                                key={d.fecha}
+                                className={`md-fila${selPend?.tipo === "dia" && selPend.fecha === d.fecha ? " sel" : ""}`}
+                                onClick={() => setSelPend({ tipo: "dia", fecha: d.fecha })}
+                              >
+                                <div className="md-fila-textos">
+                                  <div className="md-fila-titular">{d.titulo}</div>
+                                  <div className="md-fila-sub truncate">
+                                    {t("depositos.movsDelCorte", { count: d.movs.length })}
+                                  </div>
+                                </div>
+                                <span className="md-fila-cola">
+                                  <span className="md-fila-monto">
+                                    {fmtMoney(sumar(...d.movs.map((m) => m.monto)))}
+                                  </span>
+                                  <span className="dep-estado dep-estado--caja">{t("depositos.enCaja")}</span>
+                                </span>
+                              </div>
+                            ))}
+                          </>
+                        )}
                         <div className="dep-lista-pie">
                           {t("depositos.cortesPie", { monto: `${fmtMoney(porDepositar ?? CERO)} ${church.moneda}` })}
                         </div>
@@ -518,7 +631,32 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                   /* Pendientes tiene su propio panel: no es un depósito lo que
                      se mira, es el dinero que todavía no lo es. */
                   if (vista === "pendientes") {
-                    if (!corte) {
+                    /* Un corte ya entregado: su composición es fija —el dinero
+                       ya salió— y lo único que queda es cerrarlo o deshacerlo. */
+                    if (corteAbierto) {
+                      return (
+                        <PendientesDeposito
+                          church={church}
+                          dia={{ fecha: corteAbierto.fecha, titulo: corteAbierto.nombre, movs: movsCorte }}
+                          entregado={corteAbierto}
+                          sel={new Set(movsCorte.map((m) => m.id))}
+                          onToggle={() => { }}
+                          porRevisar={porRevisar}
+                          efectivoEnCaja={porDepositar ?? CERO}
+                          depSinCorte={depSinCorte}
+                          cuenta={corteAbierto.cuenta_banco || cuentaSugerida}
+                          fechaRegistro={fmtFechaCorta(hoyISO())}
+                          periodo={mes}
+                          tituloLista={t("depositos.titulo")}
+                          onVolver={() => setSelPend(null)}
+                          onIrPorRevisar={() => navigate("/bandeja")}
+                          onNuevoCorte={() => setHojaCorte(true)}
+                          onMarcarDepositado={marcarDepositado}
+                          onDeshacer={() => void deshacerCorte(corteAbierto)}
+                        />
+                      );
+                    }
+                    if (!dia) {
                       if (angosto) return null;
                       return (
                         <div className="md-vacio">
@@ -532,16 +670,17 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                     return (
                       <PendientesDeposito
                         church={church}
-                        corte={corte}
+                        dia={dia}
                         sel={marcados}
                         onToggle={alternarMov}
                         porRevisar={porRevisar}
                         efectivoEnCaja={porDepositar ?? CERO}
+                        depSinCorte={depSinCorte}
                         cuenta={cuentaSugerida}
                         fechaRegistro={fmtFechaCorta(hoyISO())}
                         periodo={mes}
                         tituloLista={t("depositos.titulo")}
-                        onVolver={() => setCorteSel(null)}
+                        onVolver={() => setSelPend(null)}
                         onIrPorRevisar={() => navigate("/bandeja")}
                         onNuevoCorte={() => setHojaCorte(true)}
                         onMarcarDepositado={marcarDepositado}
@@ -558,6 +697,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                         onEditar={abrirEditar}
                         onEliminar={setPendingDeleteSel}
                         onVerComprobante={setPreviewSel}
+                        onCambiado={() => { setSelId(null); setRecargaCortes((n) => n + 1); onChanged(); }}
                       />
                     );
                   }
@@ -668,16 +808,18 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
         />
       )}
 
-      {hojaCorte && corte && (
+      {hojaCorte && dia && (
         <NuevoCorteIOS
           church={church}
-          movs={corte.movs}
+          movs={dia.movs}
           sel={marcados}
           onToggle={alternarMov}
-          nombre={corte.titulo}
+          nombre={dia.titulo}
           cuenta={cuentaSugerida}
-          fecha={hoyISO()}
+          fecha={dia.fecha}
+          responsablePrevio={responsablePrevio}
           onClose={() => setHojaCorte(false)}
+          onCreado={() => { setSelPend(null); setRecargaCortes((n) => n + 1); }}
         />
       )}
 
@@ -686,6 +828,22 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           church={church}
           editing={editing}
           prefill={prefill}
+          /* Cerrar el corte contra ESTE depósito, con su id recién creado. */
+          alGuardar={async (depositoId) => {
+            if (corteACerrar != null && depositoId != null) {
+              const id = corteACerrar.tipo === "existente"
+                ? corteACerrar.id
+                : await insertCorte(
+                    church.id,
+                    { fecha: corteACerrar.fecha, nombre: corteACerrar.nombre, cuenta_banco: cuentaSugerida || null },
+                    corteACerrar.ids,
+                  );
+              if (id != null) await cerrarCorte(id, church.id, depositoId);
+            }
+            setCorteACerrar(null);
+            setSelPend(null);
+            setRecargaCortes((n) => n + 1);
+          }}
           onClose={cerrarModal}
           onSaved={onChanged}
         />

@@ -8,7 +8,7 @@ import { MacBuscador, MacSegmentado } from "../components/mac/MacFiltros";
 import {
   catNombre, categoriaInfo, colorCategoria, currentMonth, countTxDeSerie, deleteMovimientoRecurrente, deleteTx, deleteTxDeSerie,
   fmtFecha, fmtMoney, getCategoriasGasto, getCategoriasIngreso, listMovimientosRecurrentes,
-  listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth, undeleteTx,
+  listTx, mesLegible, metodoNombre, monthTotals, nextMonth, prevMonth, txEnCorte, undeleteTx,
   type Church, type MovimientoRecurrente, type MonthTotals, type Tx,
 } from "../db";
 import { EmptyState } from "../components/TxList";
@@ -83,6 +83,21 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
      chip de estado, que aísla lo que espera visto bueno. */
   const [menuMes, setMenuMes] = useState(false);
   const [soloPendientes, setSoloPendientes] = useState(false);
+  /* "Sin depositar": el chip que el handoff pide en Ingresos y que hasta la
+     1.2.9 no se pudo pintar porque nadie guardaba qué movimientos habían ido
+     al banco. Con los cortes (migración 38) ya se sabe: un ingreso cobrado en
+     efectivo o en cheque que no está en ningún corte es dinero que sigue en
+     la caja. Las transferencias y las tarjetas nunca lo están — ese dinero
+     entra al banco solo. */
+  const [soloSinDepositar, setSoloSinDepositar] = useState(false);
+  const [enCorte, setEnCorte] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    let cancelado = false;
+    txEnCorte(church.id)
+      .then((s) => { if (!cancelado) setEnCorte(s); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [church.id, refreshKey]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const esMesActual = mes >= currentMonth();
@@ -141,7 +156,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   }, [church.id, tipo, refreshKey, mes]);
 
   // El filtro/búsqueda o el cambio de mes siempre regresan a la página 1.
-  useEffect(() => setPage(1), [tipo, mes, filtroCat, query, soloPendientes]);
+  useEffect(() => setPage(1), [tipo, mes, filtroCat, query, soloPendientes, soloSinDepositar]);
 
   async function confirmDeleteRecurrente() {
     if (!pendingDeleteRec) return;
@@ -243,13 +258,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
     (tx.beneficiario ?? "").toLowerCase().includes(q) ||
     (tx.member_nombre ?? "").toLowerCase().includes(q);
   const buscados = txs.filter(coincide);
+  const esSinDepositar = (x: Tx) =>
+    x.tipo === "ingreso" && x.estado === "aprobado"
+    && (x.metodo_pago === "efectivo" || x.metodo_pago === "cheque")
+    && !enCorte.has(x.id);
   const porEstado = soloPendientes ? buscados.filter((x) => x.estado === "pendiente") : buscados;
-  const visibles = filtroCat ? porEstado.filter((t) => t.categoria === filtroCat) : porEstado;
+  const porDeposito = soloSinDepositar ? porEstado.filter(esSinDepositar) : porEstado;
+  const visibles = filtroCat ? porDeposito.filter((t) => t.categoria === filtroCat) : porDeposito;
   const conteo = (id: string) => porEstado.filter((t) => t.categoria === id).length;
   /* Cuántos esperan visto bueno, para el chip. Se cuenta sobre `buscados` y
      NO sobre `porEstado`: si se contara sobre lo ya filtrado, el chip diría
      siempre el total de lo que él mismo dejó pasar. */
   const nPendientes = buscados.filter((x) => x.estado === "pendiente").length;
+  const nSinDepositar = buscados.filter(esSinDepositar).length;
   /* Las categorías que se ofrecen para filtrar: EXACTAMENTE la misma lista que
      ya calculaban los chips —solo las que tienen movimientos, más la activa
      aunque quede en cero, para que no desaparezca bajo el dedo al filtrar—.
@@ -585,6 +606,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                         onClick={() => setSoloPendientes((v) => !v)}
                       >
                         {t("tx.pendientes")} <span className="count">{nPendientes}</span>
+                      </button>
+                    )}
+                    {/* Solo en Ingresos y solo si hay algo: un filtro que
+                        nunca encuentra nada es ruido en la barra. */}
+                    {tipo === "ingreso" && nSinDepositar > 0 && (
+                      <button
+                        type="button"
+                        className={`chip${soloSinDepositar ? " active" : ""}`}
+                        aria-pressed={soloSinDepositar}
+                        title={t("depositos.sinDepositarAyuda")}
+                        onClick={() => setSoloSinDepositar((v) => !v)}
+                      >
+                        {t("depositos.sinDepositar")} <span className="count">{nSinDepositar}</span>
                       </button>
                     )}
                   </div>
