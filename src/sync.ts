@@ -413,6 +413,306 @@ export async function sincronizarDepositos(churchIdLocal: number): Promise<Resul
 }
 
 // ============================================================================
+// CORTES DE CAJA (CO1) — el primer paso con DOS vínculos por uid
+// ----------------------------------------------------------------------------
+// Un corte es el dinero que sale de la caja en manos de alguien (migración 38).
+// Hasta hoy no viajaba: las dos tablas existían en Supabase desde el 24 de
+// agosto, con RLS y sus políticas, pero nadie las subía ni las bajaba, así que
+// un corte vivía y moría en el aparato donde se hizo.
+//
+// **Por qué van por uid y no por id.** Un id local no significa nada fuera de
+// su base: el corte 7 del iPad de la tesorera es otro corte 7 en el del
+// administrador. Por eso la tabla remota guarda `deposito_uid` y no
+// `deposito_id`, y la puente guarda `corte_uid` + `tx_uid`. Es el patrón que
+// `sincronizarRoster` ya usa con `servicio_uid` y `member_uid`.
+//
+// **El orden importa.** Estos dos pasos van DESPUÉS de transacciones y
+// depósitos en `sincronizarTodo`: un corte que baja necesita que su depósito ya
+// exista localmente para saber a qué id apuntar, y un enganche necesita su
+// corte y su movimiento. Lo que no encuentra a su padre se salta y se
+// reintenta en la siguiente pasada — nunca se inventa un vínculo.
+// ============================================================================
+
+/** Columnas de datos de `cortes` que viajan tal cual (sin `deposito_id`, que
+ *  se traduce a uid, ni los metadatos de sincronización). */
+const CORTE_DATA_COLS = [
+  "fecha", "nombre", "cuenta_banco", "responsable", "estado", "notas",
+  "registrado_por", "registrado_rol", "created_at",
+] as const;
+
+/** Mapas id ↔ uid de una tabla local cualquiera con columna `uid`. */
+async function mapasUid(
+  d: Awaited<ReturnType<typeof getDb>>,
+  tabla: string,
+  churchIdLocal: number,
+): Promise<{ uidPorId: Map<number, string>; idPorUid: Map<string, number> }> {
+  const filas = await d.select<{ id: number; uid: string | null }[]>(
+    `SELECT id, uid FROM ${tabla} WHERE church_id = $1`,
+    [churchIdLocal],
+  );
+  const uidPorId = new Map<number, string>();
+  const idPorUid = new Map<string, number>();
+  for (const f of filas) if (f.uid) { uidPorId.set(f.id, f.uid); idPorUid.set(f.uid, f.id); }
+  return { uidPorId, idPorUid };
+}
+
+/** Sincroniza los cortes de caja, traduciendo `deposito_id` ↔ `deposito_uid`. */
+export async function sincronizarCortes(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const { uidPorId: uidPorDep, idPorUid: idPorDepUid } =
+      await mapasUid(d, "depositos_bancarios", churchIdLocal);
+
+    const locales = await d.select<FilaLocal[]>(
+      "SELECT * FROM cortes WHERE church_id = $1",
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("cortes").select("*").eq("church_id", remoteChurch);
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remotas = (remotasRaw ?? []) as FilaRemota[];
+
+    const remotasPorUid = new Map<string, FilaRemota>();
+    for (const r of remotas) remotasPorUid.set(r.uid, r);
+    const localesPorUid = new Map<string, FilaLocal>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid, l);
+
+    // PUSH
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      if (!l.uid) continue;
+      const r = remotasPorUid.get(l.uid);
+      if (r && !(epoch(l.updated_at) > epoch(r.updated_at))) continue;
+      const fila: Record<string, unknown> = { uid: l.uid, church_id: remoteChurch };
+      for (const c of CORTE_DATA_COLS) fila[c] = l[c] ?? null;
+      /* El depósito que cerró el corte, por uid. Si el depósito todavía no
+         tiene uid —no debería, lo pone la migración 22— se manda null antes
+         que un id que allá no significa nada. */
+      const depId = l.deposito_id as number | null;
+      fila.deposito_uid = depId != null ? uidPorDep.get(depId) ?? null : null;
+      fila.updated_at = new Date(epoch(l.updated_at) || Date.now()).toISOString();
+      fila.deleted = l.deleted === 1;
+      aSubir.push(fila);
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("cortes").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL
+    let bajados = 0;
+    for (const r of remotas) {
+      const l = localesPorUid.get(r.uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+
+      /* El depósito, de vuelta a id local. Si aún no ha bajado, el corte se
+         salta ENTERO en vez de entrar con el vínculo roto: un corte cerrado
+         cuyo `deposito_id` es null se leería como abierto, y ese dinero
+         volvería a contarse como pendiente de depositar. */
+      const depUid = r.deposito_uid as string | null;
+      if (depUid && !idPorDepUid.has(depUid)) continue;
+      const depIdLocal = depUid ? idPorDepUid.get(depUid)! : null;
+
+      const valores = CORTE_DATA_COLS.map((c) => r[c] ?? null);
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const n = CORTE_DATA_COLS.length;
+
+      if (l) {
+        const sets = CORTE_DATA_COLS.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        await d.execute(
+          `UPDATE cortes SET ${sets}, deposito_id = $${n + 1}, updated_at = $${n + 2},
+                  deleted = $${n + 3} WHERE uid = $${n + 4}`,
+          [...valores, depIdLocal, updatedAt, del, r.uid],
+        );
+      } else {
+        const cols = ["church_id", ...CORTE_DATA_COLS, "deposito_id", "uid", "updated_at", "deleted"];
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO cortes (${cols.join(", ")}) VALUES (${placeholders})`,
+          [churchIdLocal, ...valores, depIdLocal, r.uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+/**
+ * La tabla puente del corte: qué movimientos lo componen. Dos vínculos por
+ * uid, `corte_uid` y `tx_uid`, y ninguna columna de datos propia.
+ *
+ * **El conflicto que esta tabla sí puede tener.** Local hay un índice único
+ * PARCIAL sobre `tx_id` para las filas vivas: un movimiento pertenece a un
+ * corte vigente como mucho. Dos aparatos sin verse pueden meter el mismo
+ * movimiento en cortes distintos, y al encontrarse hay que elegir uno. Gana el
+ * más reciente por `updated_at` —la convención de toda la app— y el otro se
+ * marca borrado con la hora de ahora, para que esa resolución viaje también y
+ * los dos aparatos acaben contando lo mismo.
+ */
+export async function sincronizarCorteMovimientos(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const { uidPorId: uidPorCorte, idPorUid: idPorCorteUid } = await mapasUid(d, "cortes", churchIdLocal);
+    const { uidPorId: uidPorTx, idPorUid: idPorTxUid } = await mapasUid(d, "transactions", churchIdLocal);
+
+    const locales = await d.select<Record<string, unknown>[]>(
+      "SELECT corte_id, tx_id, uid, updated_at, deleted FROM corte_movimientos WHERE church_id = $1",
+      [churchIdLocal],
+    );
+
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("corte_movimientos").select("*").eq("church_id", remoteChurch);
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remotas = (remotasRaw ?? []) as Record<string, unknown>[];
+
+    const remotasPorUid = new Map<string, Record<string, unknown>>();
+    for (const r of remotas) remotasPorUid.set(r.uid as string, r);
+    const localesPorUid = new Map<string, Record<string, unknown>>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid as string, l);
+
+    /* Los enganches VIVOS de allá, por movimiento. La tabla remota lleva el
+       mismo índice único parcial que la local —un movimiento en un corte
+       vigente como mucho—, así que subir un enganche que allá ya tiene dueño
+       NO da un conflicto de uid que el upsert sepa resolver: rompe el índice y
+       devuelve error. Y un error aquí no para esta tabla, para la
+       sincronización entera. Por eso el choque se resuelve ANTES de subir. */
+    const vivasRemotasPorTx = new Map<string, Record<string, unknown>>();
+    for (const r of remotas) {
+      if (!r.deleted && r.tx_uid) vivasRemotasPorTx.set(r.tx_uid as string, r);
+    }
+
+    // PUSH — corte_id → corte_uid, tx_id → tx_uid.
+    const aSubir: Record<string, unknown>[] = [];
+    /** Enganches de allá que pierden el pulso y hay que enterrar antes. */
+    const perdedores: string[] = [];
+    for (const l of locales) {
+      const uid = l.uid as string | null;
+      if (!uid) continue;
+      const corteUid = uidPorCorte.get(l.corte_id as number);
+      const txUid = uidPorTx.get(l.tx_id as number);
+      if (!corteUid || !txUid) continue; // padre sin uid: se omite, no se inventa
+      const r = remotasPorUid.get(uid);
+      if (r && !(epoch(l.updated_at) > epoch(r.updated_at))) continue;
+
+      const vivo = (l.deleted as number) !== 1;
+      if (vivo) {
+        const rival = vivasRemotasPorTx.get(txUid);
+        if (rival && rival.uid !== uid) {
+          /* Ese movimiento ya está enganchado allá, en otro corte. Gana el más
+             reciente, la convención de toda la app. */
+          if (epoch(rival.updated_at) >= epoch(l.updated_at)) {
+            /* Manda el de allá: el nuestro se entierra aquí, con la hora de
+               ahora para que la resolución viaje en la próxima pasada. */
+            await d.execute(
+              "UPDATE corte_movimientos SET deleted = 1, updated_at = datetime('now') WHERE uid = $1",
+              [uid],
+            );
+            continue;
+          }
+          perdedores.push(rival.uid as string);
+          vivasRemotasPorTx.delete(txUid);
+        }
+      }
+
+      aSubir.push({
+        uid, church_id: remoteChurch, corte_uid: corteUid, tx_uid: txUid,
+        updated_at: new Date(epoch(l.updated_at) || Date.now()).toISOString(),
+        deleted: !vivo,
+      });
+    }
+
+    /* Los perdedores se entierran en su PROPIA llamada, antes del upsert. En
+       la misma sentencia no valdría: Postgres comprueba el índice único
+       mientras aplica las filas, y el enganche nuevo chocaría con el viejo
+       aunque el viejo se estuviera borrando en esa misma tanda. */
+    if (perdedores.length > 0) {
+      const { error } = await supabase
+        .from("corte_movimientos")
+        .update({ deleted: true, updated_at: new Date().toISOString() })
+        .in("uid", perdedores);
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("corte_movimientos").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL
+    let bajados = 0;
+    for (const r of remotas) {
+      const uid = r.uid as string;
+      const l = localesPorUid.get(uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+      const corteIdLocal = idPorCorteUid.get(r.corte_uid as string);
+      const txIdLocal = idPorTxUid.get(r.tx_uid as string);
+      if (!corteIdLocal || !txIdLocal) continue; // padre aún no bajado: luego
+
+      const del = r.deleted ? 1 : 0;
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+
+      /* El índice único parcial: si este movimiento ya está VIVO en otro corte
+         local, hay que decidir. Gana el más reciente; el perdedor se marca
+         borrado con la hora de ahora para que la resolución se propague. */
+      if (del === 0) {
+        const rivales = await d.select<{ uid: string; updated_at: string }[]>(
+          `SELECT uid, updated_at FROM corte_movimientos
+            WHERE church_id = $1 AND tx_id = $2 AND deleted = 0 AND uid != $3`,
+          [churchIdLocal, txIdLocal, uid],
+        );
+        const masNuevo = rivales.find((x) => epoch(x.updated_at) > epoch(updatedAt));
+        if (masNuevo) continue; // el enganche local es más reciente: manda él
+        for (const x of rivales) {
+          await d.execute(
+            "UPDATE corte_movimientos SET deleted = 1, updated_at = datetime('now') WHERE uid = $1",
+            [x.uid],
+          );
+        }
+      }
+
+      if (l) {
+        await d.execute(
+          `UPDATE corte_movimientos SET corte_id = $1, tx_id = $2, church_id = $3,
+                  updated_at = $4, deleted = $5 WHERE uid = $6`,
+          [corteIdLocal, txIdLocal, churchIdLocal, updatedAt, del, uid],
+        );
+      } else {
+        /* La clave primaria local es el par (corte_id, tx_id). Si ya hay una
+           fila para ese par con otro uid, la remota ocupa su lugar — el mismo
+           trato que da el roster de asistencia. */
+        await d.execute(
+          "DELETE FROM corte_movimientos WHERE corte_id = $1 AND tx_id = $2",
+          [corteIdLocal, txIdLocal],
+        );
+        await d.execute(
+          `INSERT INTO corte_movimientos (corte_id, tx_id, church_id, uid, updated_at, deleted)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [corteIdLocal, txIdLocal, churchIdLocal, uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+// ============================================================================
 // ACTAS (A1) — texto independiente, sin vínculos externos
 // ============================================================================
 
@@ -1060,6 +1360,11 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
     ["categorias", await sincronizarCategorias(churchIdLocal)],
     ["transactions", await sincronizarTransacciones(churchIdLocal)],
     ["depositos_bancarios", await sincronizarDepositos(churchIdLocal)],
+    /* Los cortes van AQUÍ y no antes: uno que baja necesita su depósito ya
+       local para traducir `deposito_uid` a un id, y la puente necesita además
+       las transacciones, que ya pasaron. */
+    ["cortes", await sincronizarCortes(churchIdLocal)],
+    ["corte_movimientos", await sincronizarCorteMovimientos(churchIdLocal)],
     ["actas", await sincronizarActas(churchIdLocal)],
     ["cartas", await sincronizarCartas(churchIdLocal)],
     ["solicitudes", await sincronizarSolicitudes(churchIdLocal)],

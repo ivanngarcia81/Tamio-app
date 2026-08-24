@@ -140,7 +140,7 @@ pero nunca tuvo campo en un formulario, así que se podía leer y jamás escribi
 | **Tamaño de texto** | Config → Preferencias | **A que las pantallas del iPad usen los tokens `--fs-*`.** Hoy llevan px literales; encenderlo escalaría la mitad de la app y la otra mitad no, que se ve peor que no tenerlo |
 | **Asa de arrastre para reordenar categorías** | Config → Categorías | **A que la pantalla sea la lista del diseño.** En el iPad las categorías son pastillas que fluyen en varias líneas, y ahí "arriba/abajo" no significa nada. Pide una columna de orden Y rehacer la pantalla; el conteo, que era la otra mitad de esa fila, ya está |
 | **Mensajería dirigida** | Mensajes | A columna de destinatario. El aviso "lo ven las tres áreas" **dice la verdad** mientras tanto |
-| **La sincronización de los cortes** | invisible, pero real | **Media hecha.** Las dos tablas existen en Supabase y la base local ya lleva `uid`/`updated_at`/borrado en blando; falta el paso en `sincronizarTodo`. Hasta entonces un corte vive en el aparato donde se hizo. Lo mismo vale para todo lo de esta tanda: `servicio_puestos`, `servicio_orden`, `actas.firmas`, `parentescos` y los tres controles de `churches` llevan sus metadatos, pero todavía no viajan |
+| ~~**La sincronización de los cortes**~~ | invisible, pero real | **hecha el 24 ago 2026 por la tarde.** `sincronizarCortes` y `sincronizarCorteMovimientos`, con su paso en `sincronizarTodo` y el script `sync-co1-cortes.sql` por fin en el repo. Lo que sigue sin viajar es el resto de la tanda: `servicio_puestos`, `servicio_orden`, `actas.firmas`, `parentescos` y los tres controles de `churches` llevan sus metadatos, pero nadie los sube todavía |
 
 ## 3 bis. La segunda tanda de motor (24 ago, tarde)
 
