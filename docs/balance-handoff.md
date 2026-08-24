@@ -144,7 +144,7 @@ capricho: cada uno de los tres primeros es de una tarde.
 | **La sincronización de los cortes** | invisible, pero real | **Media hecha.** Las dos tablas ya existen en Supabase y la base local ya lleva `uid`/`updated_at`/borrado en blando. Falta **el paso en `sincronizarTodo`**: mapear ids locales ↔ uids, como ya hace `sincronizarRoster`. Hasta entonces, un corte vive en el aparato donde se hizo |
 | **4 permisos del rol Tesorería** | Config → Acceso y áreas | Permisos **por acción** en vez de por rol. Hoy las cuatro filas enseñan el estado que YA se cumple con el rol (dos sí, dos no), no un estado inventado |
 | **Tamaño de texto** | Config → Preferencias | **Aplazado con razón**: las pantallas del iPad usan px literales, no los tokens `--fs-*`. Encenderlo hoy escalaría la mitad de la app y la otra mitad no |
-| **"Recopilar firmas"** | Actas | Un flujo de recolección de firmas. Cuando lo haya, se le quita el `disabled` y ya está en su sitio |
+| ~~**"Recopilar firmas"**~~ | Actas | **hecho** (migración 44): recoge la constancia —quién firmó y cuándo—, no una firma digital |
 | **Cierre de mes** | Config → Controles de tesorería | Hoy la app cierra por **mes natural** y la fila lo dice. "Último domingo" no es un ajuste: es otra forma de contar |
 
 ### Grande — estructura nueva

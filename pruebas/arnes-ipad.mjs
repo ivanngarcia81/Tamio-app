@@ -1282,11 +1282,13 @@ console.log("\n== Actas del iPad (handoff) ==");
   chk(m.barra, "el acta lleva su barra de trámite");
   chk(!!m.estado, `con el estado del documento (${m.estado})`);
   chk(m.botones.length >= 1, `y sus acciones (${m.botones.map((b) => b.texto).join(" · ")})`);
-  /* "Recopilar firmas" tiene que estar APAGADO: se dibuja porque el diseño lo
-     pide y no tiene motor. Un botón que promete y no cumple es peor que uno
-     apagado que explica. */
+  /* **Al revés desde el 24 ago 2026** (migración 44): "Recopilar firmas" tiene
+     motor, así que en un acta CON firmantes tiene que estar VIVO. Solo se
+     apaga cuando el acta no dice quién preside, quién redacta ni quién es
+     testigo — y entonces no es falta de columna, es que no hay a quién
+     recogerle la firma. El flujo entero va en la sección 38. */
   const firmas = m.botones.find((b) => /firmas|signatures/i.test(b.texto));
-  chk(firmas?.apagado === true, `"Recopilar firmas" está apagado hasta tener motor (${firmas?.apagado})`);
+  chk(firmas?.apagado === false, `"Recopilar firmas" está vivo: tiene motor (${firmas?.apagado})`);
   chk(m.firmas === 3, `el documento lleva las tres rayas de firma (${m.firmas})`);
   /* **Cambió de sentido el 24 ago 2026.** La raya discontinua era la marca de
      "sin motor"; ahora el testigo SÍ se guarda (migración 41) y esa raya
@@ -1915,11 +1917,22 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   chk(puestos.total === 4, `Asignar encargado: uno por cada puesto de tabla (${puestos.total})`);
   chk(puestos.apagados === 0, `y NINGUNO apagado: ya tienen motor (${puestos.apagados})`);
 
+  /* **"Recopilar firmas" salió de esta lista el 24 ago 2026** (migración 44).
+     Sigue pudiendo apagarse, pero por un motivo distinto y verdadero: un acta
+     sin ningún firmante con nombre no tiene firmas que recoger. Lo que aquí
+     se comprueba es que en un acta CON firmantes está vivo; el flujo entero
+     va en la sección 38. */
   await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
   await pg.click(".md-actas .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".ac-barra .chip[disabled]", "Recopilar firmas");
+  const firmasBtn = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".ac-barra .chip")]
+      .find((x) => /firma|Sign/i.test(x.textContent ?? ""));
+    return b ? { off: b.disabled, texto: b.textContent.trim() } : null;
+  });
+  chk(!!firmasBtn && !firmasBtn.off,
+    `Recopilar firmas: dibujado y VIVO (${firmasBtn?.texto})`);
 
   /* Configuración: los tres de Presentación y los cuatro de permisos. */
   await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
@@ -3498,6 +3511,79 @@ console.log("\n== Compartir un depósito entrega un PDF ==");
      El umbral es flojo a propósito: lo que caza es el archivo vacío. */
   chk((salida?.bytes ?? 0) > 1500, `y peso de documento, no de archivo vacío (${salida?.bytes} bytes)`);
   await ctxC.close();
+}
+
+/* ---------- 38. Recopilar las firmas del acta ----------
+   El botón llevaba desde el handoff 1 apagado: el acta sabía QUIÉNES firman
+   pero no si habían firmado. Con la migración 44 (`actas.firmas`) recoge la
+   constancia —firmó y en qué fecha—, y eso es lo que se comprueba aquí de
+   punta a punta: se marca por la interfaz, se RECARGA y se busca en la ficha.
+
+   Probada al revés: con `guardarFirmasActa` devolviendo sin escribir, las
+   dos comprobaciones de después de recargar salen en rojo. */
+console.log("\n== Recopilar las firmas del acta ==");
+{
+  const ctxF = await nuevoContexto("ipad");
+  const pg = await ctxF.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.locator(".md-actas .md-fila").first().click();
+  await pg.waitForTimeout(500);
+
+  /* Antes de firmar: los renglones existen y ninguno lleva pie de fecha. */
+  const antes = await pg.evaluate(() => ({
+    renglones: document.querySelectorAll(".da-firmas .da-firma").length,
+    fechas: document.querySelectorAll(".da-firma-fecha").length,
+  }));
+  chk(antes.renglones >= 2, `el acta trae sus renglones de firma (${antes.renglones})`);
+  chk(antes.fechas === 0, `y ninguno dice todavía que se firmó (${antes.fechas})`);
+
+  await pg.locator(".ac-barra .chip", { hasText: /firma|Sign/i }).first().click();
+  await pg.waitForTimeout(500);
+  const hoja = await pg.evaluate(() => {
+    const h = document.querySelector(".ios-sheet.nm-hoja");
+    return h ? {
+      secciones: h.querySelectorAll(".ios-section").length,
+      insignias: h.querySelectorAll(".ios-insignia").length,
+      // La hoja dice con todas las letras que esto NO es una firma digital.
+      aviso: (h.querySelector(".nm-aviso")?.textContent ?? "").length,
+    } : null;
+  });
+  chk(!!hoja && hoja.secciones >= 2,
+    `la hoja lista un firmante por renglón con nombre (${hoja?.secciones})`);
+  chk((hoja?.aviso ?? 0) > 40, "y explica que recoge una constancia, no una firma digital");
+
+  // Marcar la primera como firmada y confirmar con "Listo".
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action").first().click();
+  await pg.waitForTimeout(300);
+  const conFecha = await pg.locator('.ios-sheet.nm-hoja input[type="date"]').count();
+  chk(conFecha === 1, `al marcarla aparece su fecha, ya propuesta (${conFecha})`);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(800);
+
+  /* Recargar de verdad: lo que se comprueba es que llegó a `actas.firmas`. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(300);
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.locator(".md-actas .md-fila").first().click();
+  await pg.waitForTimeout(600);
+
+  const tras = await pg.evaluate(() => ({
+    fechas: [...document.querySelectorAll(".da-firma-fecha")].map((x) => x.textContent.trim()),
+    boton: [...document.querySelectorAll(".ac-barra .chip")]
+      .find((x) => /firma|Sign|1 de|1 of/i.test(x.textContent ?? ""))?.textContent.trim(),
+  }));
+  chk(tras.fechas.length === 1, `tras recargar, un renglón dice que se firmó (${tras.fechas.length})`);
+  chk(/Firmó el|Signed on/.test(tras.fechas[0] ?? ""),
+    `con su fecha bajo el cargo (${tras.fechas[0]})`);
+  /* Y el botón deja de invitar a recoger para decir cuántas van: la barra
+     del acta enseña el avance sin abrir nada. */
+  chk(/\d+ de \d+|\d+ of \d+/.test(tras.boton ?? ""),
+    `y el botón lleva la cuenta (${tras.boton})`);
+  await ctxF.close();
 }
 
 await browser.close();

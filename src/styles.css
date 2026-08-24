@@ -11149,6 +11149,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .da-firma-raya { border-top: 1px solid var(--text-3); margin-bottom: 7px; }
   :root.ipad .da-firma-nombre { font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
   :root.ipad .da-firma-cargo { font-size: 12.5px; color: var(--text-2); }
+  /* "Firmó el 24 ago" (migración 44). Va DEBAJO del cargo y en verde, que es
+     lo que distingue de un vistazo el renglón cerrado del que sigue por
+     firmar. Sin firma no se pinta nada: una raya sin pie es un renglón por
+     firmar, y eso ya lo decía antes. */
+  :root.ipad .da-firma-fecha {
+    margin-top: 3px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--pos, var(--text-2));
+  }
 
   :root.ipad .da-aprobada { margin: 22px 0 0; font-size: 13px; color: var(--text-2); }
 

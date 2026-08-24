@@ -306,6 +306,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                         onCerrar={det.estado === "borrador" || det.estado === "pendiente" || det.estado === "corregida"
                           ? setPendingCerrar
                           : undefined}
+                        onCambiado={onChanged}
                       />
                     );
                   }

@@ -1829,7 +1829,62 @@ export interface Acta {
   estado: string;
   confidencial: number;
   fecha_aprobacion: string | null;
+  /** JSON de `ActaFirma[]` (migración 44). Quién ha firmado y cuándo; los
+   *  NOMBRES no están aquí, siguen en preside/secretario/testigo. */
+  firmas: string;
   creado_en: string;
+}
+
+/**
+ * Una firma recogida del acta. Mismo molde que `CartaFirma`, a propósito:
+ * las cartas resuelven esto desde hace versiones y dos formas distintas de
+ * guardar lo mismo se acaban comportando distinto.
+ *
+ * No lleva `nombre`: el del firmante vive en la columna que le toca
+ * (`preside`, `secretario`, `testigo`). Copiarlo aquí dejaría dos versiones
+ * que se separan a la primera corrección de una letra.
+ */
+export interface ActaFirma {
+  /** preside | secretario | testigo */
+  rol: string;
+  firmado: boolean;
+  /** Día en que firmó, "YYYY-MM-DD". Null mientras no haya firmado. */
+  fecha: string | null;
+}
+
+/** Los tres renglones de firma de un acta, en el orden en que se imprimen. */
+export const ROLES_FIRMA_ACTA = ["preside", "secretario", "testigo"] as const;
+
+/** Lee el JSON de firmas sin romperse con una fila vieja o corrupta. */
+export function parseFirmasActa(json: string | null | undefined): ActaFirma[] {
+  if (!json) return [];
+  try {
+    const v = JSON.parse(json);
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((x) => x && typeof x.rol === "string")
+      .map((x) => ({ rol: String(x.rol), firmado: !!x.firmado, fecha: x.fecha ?? null }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Guarda las firmas recogidas. Va aparte de `updateActa` por lo mismo que
+ * `cerrarActa`: recoger una firma es UN gesto sobre un documento ya escrito,
+ * no una edición del acta. Reescribir las veinte columnas para marcar una
+ * casilla es la manera de perder algo por el camino.
+ */
+export async function guardarFirmasActa(
+  id: number,
+  churchId: number,
+  firmas: ActaFirma[]
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE actas SET firmas = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
+    [JSON.stringify(firmas), id, churchId]
+  );
 }
 
 export interface NewActa {

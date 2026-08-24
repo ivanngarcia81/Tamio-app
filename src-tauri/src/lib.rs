@@ -955,6 +955,26 @@ fn migraciones() -> Vec<motordb::Migracion> {
             CREATE INDEX IF NOT EXISTS idx_servicio_orden_sync
                 ON servicio_orden(church_id, updated_at);
         "#,
+    }, motordb::Migracion {
+        version: 44,
+        description: "firmas del acta: quién ha firmado y cuándo",
+        sql: r#"
+            -- "Recopilar firmas". El acta sabía QUIÉNES firman —preside,
+            -- secretario y, desde la 41, testigo— pero no si habían firmado
+            -- ni cuándo, así que el botón salía apagado y un acta aprobada no
+            -- se distinguía de una que sigue dando vueltas sin firmar.
+            --
+            -- Es JSON y no tres columnas de fecha, y la razón no es la pereza:
+            -- las cartas resuelven exactamente esto con `cartas.firmas` desde
+            -- hace versiones (ver `CartaFirma`), y dos formas distintas de
+            -- guardar lo mismo en la misma app se acaban comportando
+            -- distinto. El arreglo lleva {rol, firmado, fecha} por firmante.
+            --
+            -- El NOMBRE no entra en el JSON: sigue en `preside`, `secretario`
+            -- y `testigo`. Duplicarlo dejaría dos copias que se separan a la
+            -- primera corrección de un nombre mal escrito.
+            ALTER TABLE actas ADD COLUMN firmas TEXT NOT NULL DEFAULT '[]';
+        "#,
     }]
 }
 

@@ -200,9 +200,31 @@ fecha, no.
   La raya discontinua se queda cuando no hay nombre, pero ya no significa
   "sin motor" sino "todavía nadie ha firmado aquí" — que es lo que siempre
   debió significar, y sigue sirviendo para firmar a mano.
-- **"Recopilar firmas"** — **construido y DESHABILITADO**, con su `title`. No
-  hay flujo de recolección de firmas. Cuando lo haya, se le quita el
-  `disabled` y ya está en su sitio.
+- ~~**"Recopilar firmas"**~~ → **cableado el 24 ago 2026** (migración 44,
+  `actas.firmas`). Se le quitó el `disabled` y ya estaba en su sitio, que era
+  justo lo que decía esta línea.
+
+  Tres decisiones que quedan escritas:
+
+  - **Recoge una CONSTANCIA, no una firma digital.** Se anota que fulano
+    firmó el papel y en qué fecha. Es la misma elección que Iván hizo en los
+    cortes, y por el mismo motivo: un acta de asamblea se firma con bolígrafo
+    delante de la mesa, y pedirle a los tres firmantes que entren en la app a
+    confirmarlo convierte un trámite de un minuto en uno de tres días. La
+    hoja lo dice con todas las letras en su primer renglón.
+  - **Es JSON y no tres columnas de fecha**, porque las cartas resuelven
+    exactamente esto con `cartas.firmas` desde hace versiones. Dos formas de
+    guardar lo mismo en la misma app acaban comportándose distinto.
+  - **El nombre NO entra en el JSON**: sigue en `preside`, `secretario` y
+    `testigo`. Copiarlo dejaría dos versiones que se separan a la primera
+    corrección de una letra.
+
+  El botón se sigue pudiendo apagar, pero por un motivo verdadero: un acta
+  que no dice quién preside, quién redacta ni quién es testigo no tiene
+  firmas que recoger. Con firmas recogidas, deja de invitar y lleva la
+  cuenta ("Firmas: 1 de 3"). La fecha sale bajo el cargo en la ficha **y en
+  el PDF**: un acta que se manda por correo tiene que poder enseñar que está
+  firmada sin abrir la app.
 - **"Cerrar acta"** — real desde el primer día (`estado = 'aprobada'` +
   `fecha_aprobacion`).
 

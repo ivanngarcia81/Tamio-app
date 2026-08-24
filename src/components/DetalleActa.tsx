@@ -1,5 +1,12 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fmtFechaCorta, type Acta, type ActaAcuerdo, type ActaMocion, type Church } from "../db";
+import {
+  fmtFechaCorta, guardarFirmasActa, parseFirmasActa,
+  type Acta, type ActaAcuerdo, type ActaFirma, type ActaMocion, type Church,
+} from "../db";
+import RecopilarFirmasIOS from "./RecopilarFirmasIOS";
+import { showToast } from "../toast";
+import { playSound } from "../sound";
 import { IconChevronLeft, IconEdit, IconPrinter, IconTrash } from "../icons";
 
 interface Props {
@@ -16,6 +23,8 @@ interface Props {
   /** "Cerrar acta" del handoff. Solo se pasa cuando el acta puede cerrarse;
    *  una ya aprobada no vuelve a cerrarse. */
   onCerrar?: (acta: Acta) => void;
+  /** Recargar la lista tras recoger firmas: el acta cambia bajo el panel. */
+  onCambiado: () => void;
 }
 
 const BADGE_ESTADO: Record<string, string> = {
@@ -52,20 +61,59 @@ function lista<T>(json: string | null): T[] {
  * `acuerdos`, `preside` y `secretario`. Una sección sin dato NO se pinta —un
  * acta sin mociones no enseña un "Mociones" vacío.
  *
- * **La barra del handoff, con sus dos botones.** "Cerrar acta" SÍ existe: el
- * estado `aprobada` y `fecha_aprobacion` estaban en la tabla desde el
- * principio, y lo que faltaba era poder cambiarlos sin reabrir el formulario
- * entero (`cerrarActa` en db.ts). "Recopilar firmas" todavía no: el acta
- * guarda quién preside y quién es secretario, pero no si firmaron ni cuándo
- * —eso sí lo tienen las cartas (`cartas.firmas`)—, así que el botón se dibuja
- * y dice qué le falta, siguiendo la regla de Iván del 23 de agosto: primero
- * la plantilla, el motor después.
+ * **La barra del handoff, con sus dos botones, y los dos tienen motor.**
+ * "Cerrar acta" lo tuvo desde el principio: el estado `aprobada` y
+ * `fecha_aprobacion` estaban en la tabla, y lo que faltaba era poder
+ * cambiarlos sin reabrir el formulario entero (`cerrarActa` en db.ts).
+ * "Recopilar firmas" lo tiene desde la migración 44 (`actas.firmas`), que es
+ * el mismo molde que las cartas usaban desde hacía versiones.
  *
- * Lo mismo con el TERCER renglón de firma ("Testigo"): se dibuja porque el
- * diseño lo pide, marcado como pendiente de capturar. Ver §20.
+ * Lo que recoge es una **constancia, no una firma digital**: se marca que
+ * fulano firmó el papel y en qué fecha. Quien firma un acta de asamblea lo
+ * hace con un bolígrafo delante de la mesa; pedirle que entre en la app a
+ * confirmarlo convertiría un trámite de un minuto en uno de tres días. Es la
+ * misma elección que Iván hizo en los cortes.
+ *
+ * El TERCER renglón de firma ("Testigo") tiene columna desde la migración
+ * 41; sin nombre se sigue imprimiendo en blanco, para firmarlo a mano. Ver
+ * §20.
  */
-export default function DetalleActa({ acta, church, tituloLista, onVolver, onEditar, onEliminar, onImprimir, imprimiendo, onCerrar }: Props) {
+export default function DetalleActa({ acta, church, tituloLista, onVolver, onEditar, onEliminar, onImprimir, imprimiendo, onCerrar, onCambiado }: Props) {
   const { t } = useTranslation();
+  const [firmasAbierto, setFirmasAbierto] = useState(false);
+
+  /* Se leen de la fila en cada render y no en un estado propio: el panel
+     re-busca el acta por id en cada recarga (patrón de `Movimientos.tsx`),
+     así que una copia local se quedaría atrás en cuanto se guardara. */
+  const firmas = parseFirmasActa(acta.firmas);
+  const firmaDe = (rol: string) => firmas.find((f) => f.rol === rol && f.firmado) ?? null;
+  const cuantasFirmas = firmas.filter((f) => f.firmado).length;
+  /** Los renglones que el acta puede recoger: los que tienen nombre. */
+  const firmantes = [acta.preside, acta.secretario, acta.testigo].filter(Boolean).length;
+
+  /** El pie del renglón de firma: "Firmó el 24 ago". Solo cuando la hay —
+   *  una raya sin pie es un renglón por firmar, que es lo que era antes y
+   *  sigue siendo verdad. */
+  const pieFirma = (rol: string) => {
+    const f = firmaDe(rol);
+    if (!f) return null;
+    return (
+      <div className="da-firma-fecha">
+        {f.fecha ? t("actas.firmoEl", { fecha: fmtFechaCorta(f.fecha) }) : t("cartas.firmado")}
+      </div>
+    );
+  };
+
+  async function guardarFirmas(v: ActaFirma[]) {
+    try {
+      await guardarFirmasActa(acta.id, acta.church_id, v);
+      playSound("guardado");
+      onCambiado();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+    setFirmasAbierto(false);
+  }
 
   const presentes = lista<string>(acta.presentes);
   const ausentes = lista<string>(acta.ausentes);
@@ -105,11 +153,20 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
           <span className="ac-barra-nota">{t("actas.aprobadaEl", { fecha: fmtFechaCorta(acta.fecha_aprobacion) })}</span>
         )}
         <div className="ac-barra-hueco" />
-        {/* "Recopilar firmas": dibujado y sin motor. Deshabilitado a
-            propósito, no invisible — el `title` dice qué le falta. Un botón
-            que promete y no cumple es peor que uno apagado que explica. */}
-        <button type="button" className="chip" disabled title={t("actas.firmasAyuda")}>
-          {t("actas.recopilarFirmas")}
+        {/* "Recopilar firmas", con motor desde la migración 44. Se apaga en
+            un solo caso, y no por falta de columna: cuando el acta no tiene
+            ni un firmante con nombre. No se recoge la firma de alguien que
+            todavía no es nadie — y el `title` dice dónde se escriben. */}
+        <button
+          type="button"
+          className="chip"
+          onClick={() => setFirmasAbierto(true)}
+          disabled={firmantes === 0}
+          title={firmantes === 0 ? t("actas.firmasSinFirmantes") : undefined}
+        >
+          {cuantasFirmas > 0
+            ? t("actas.firmasRecogidas", { n: cuantasFirmas, total: firmantes })
+            : t("actas.recopilarFirmas")}
         </button>
         {onCerrar && (
           <button type="button" className="chip chip-mes" onClick={() => onCerrar(acta)}>
@@ -220,6 +277,7 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
                 <div className="da-firma-raya" />
                 <div className="da-firma-nombre">{acta.preside}</div>
                 <div className="da-firma-cargo">{t("actas.preside")}</div>
+                {pieFirma("preside")}
               </div>
             )}
             {acta.secretario && (
@@ -227,6 +285,7 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
                 <div className="da-firma-raya" />
                 <div className="da-firma-nombre">{acta.secretario}</div>
                 <div className="da-firma-cargo">{t("actas.secretarioRedacta")}</div>
+                {pieFirma("secretario")}
               </div>
             )}
             {/* El testigo. Con motor desde la migración 41: si el acta lo
@@ -239,6 +298,7 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
               <div className="da-firma-raya" />
               <div className="da-firma-nombre">{acta.testigo || "\u00a0"}</div>
               <div className="da-firma-cargo">{t("actas.testigo")}</div>
+              {pieFirma("testigo")}
             </div>
           </footer>
         )}
@@ -247,6 +307,14 @@ export default function DetalleActa({ acta, church, tituloLista, onVolver, onEdi
           <p className="da-aprobada">{t("actas.aprobadaEl", { fecha: fmtFechaCorta(acta.fecha_aprobacion) })}</p>
         )}
       </article>
+      {firmasAbierto && (
+        <RecopilarFirmasIOS
+          acta={acta}
+          firmas={firmas}
+          onGuardar={(v) => void guardarFirmas(v)}
+          onClose={() => setFirmasAbierto(false)}
+        />
+      )}
     </div>
   );
 }
