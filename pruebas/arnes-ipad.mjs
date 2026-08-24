@@ -3530,7 +3530,16 @@ console.log("\n== Compartir un depósito entrega un PDF ==");
      —con visor o sin él—, y entonces la comprobación mide lo que quiere medir
      en vez de medir la velocidad del portátil. Se espera cualquiera de las dos
      cosas, la que llegue antes, porque el orden entre reactivar el botón y
-     pintar el visor no está garantizado. */
+     pintar el visor no está garantizado.
+
+     **Comprobado el 24 ago 2026 borrando `node_modules/.vite`** —la condición
+     exacta del fallo— y corriendo la tanda entera: 892 ✓ / 0 ✗, con las seis
+     de esta sección en verde. Lo que eso prueba y lo que no, dicho con
+     precisión: prueba que la versión arreglada aguanta el arranque en frío.
+     NO prueba que la vieja falle en esta máquina — el rojo lo vio Iván en la
+     suya, y un fallo de tiempo depende del equipo, así que reproducirlo aquí
+     no estaba garantizado. Y una pasada verde no demuestra que no pueda haber
+     otra causa distinta algún día; demuestra que ESTA se atacó donde estaba. */
   await pg.waitForFunction(() => {
     const b = [...document.querySelectorAll(".dep-det-acciones button")]
       .find((x) => /Compartir|Share|Preparando|Preparing/i.test(x.textContent ?? ""));
