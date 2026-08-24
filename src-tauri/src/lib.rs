@@ -886,6 +886,75 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- el catálogo no puede prever todos los casos de una iglesia.
             ALTER TABLE members ADD COLUMN estado_civil TEXT;
         "#,
+    }, motordb::Migracion {
+        version: 43,
+        description: "roster por puestos y orden del culto",
+        sql: r#"
+            -- Los dos huecos grandes que quedaban de Servicios, y son el
+            -- mismo hueco visto de dos maneras: QUIÉN hace cada cosa en el
+            -- culto y CUÁNDO se hace.
+            --
+            -- Hasta aquí un servicio guardaba `predica` y `dirige` —dos
+            -- columnas sueltas— y una lista JSON de `participaciones` sin
+            -- forma. El handoff dibuja seis puestos; dos existían y cuatro
+            -- decían "Sin asignar" con un botón apagado al lado. El catálogo
+            -- de puestos NO es una tabla: vive en la constante `PUESTOS` de
+            -- `src/db.ts`, con los otros catálogos, porque son los seis del
+            -- diseño y
+            -- una iglesia no los inventa cada domingo. Lo que sí cambia cada
+            -- domingo —quién los cubre— es lo que se guarda aquí.
+            --
+            -- `nombre` es una INSTANTÁNEA, como `cortes.responsable` y como
+            -- `registrado_por`: quien toca el teclado el domingo puede no
+            -- estar en el padrón (un visitante que ayuda en sonido), y el
+            -- histórico tiene que seguir diciendo quién fue aunque esa
+            -- persona se dé de baja. `member_id` se guarda ADEMÁS cuando sale
+            -- del padrón, para poder contar después cuántas veces sirvió
+            -- alguien sin depender de cómo se escribió su nombre.
+            --
+            -- El índice único es PARCIAL —solo sobre las filas vivas—, la
+            -- lección de la migración 40: con el borrado en blando, un puesto
+            -- soltado seguiría ocupando su sitio y no se podría reasignar.
+            CREATE TABLE IF NOT EXISTS servicio_puestos (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                servicio_id INTEGER NOT NULL REFERENCES servicios(id) ON DELETE CASCADE,
+                puesto      TEXT NOT NULL,   -- clave del catálogo: alabanza|ujieres|ofrenda|sonido
+                nombre      TEXT NOT NULL,
+                member_id   INTEGER REFERENCES members(id) ON DELETE SET NULL,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                uid         TEXT,
+                updated_at  TEXT,
+                deleted     INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_servicio_puestos_vivo
+                ON servicio_puestos(servicio_id, puesto) WHERE deleted = 0;
+            CREATE INDEX IF NOT EXISTS idx_servicio_puestos_sync
+                ON servicio_puestos(church_id, updated_at);
+
+            -- El minuto a minuto. `posicion` manda sobre `hora`, y no al
+            -- revés: un culto puede tener pasos sin hora ("Ofrenda", después
+            -- de la predicación, cuando toque) y ordenarlos por una hora que
+            -- no existe los mandaría todos al principio. La hora es un dato
+            -- que se enseña; el orden es la posición.
+            CREATE TABLE IF NOT EXISTS servicio_orden (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                servicio_id INTEGER NOT NULL REFERENCES servicios(id) ON DELETE CASCADE,
+                posicion    INTEGER NOT NULL DEFAULT 0,
+                hora        TEXT,            -- "HH:MM", suelta a propósito
+                titulo      TEXT NOT NULL,
+                encargado   TEXT,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                uid         TEXT,
+                updated_at  TEXT,
+                deleted     INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_servicio_orden_servicio
+                ON servicio_orden(servicio_id, posicion);
+            CREATE INDEX IF NOT EXISTS idx_servicio_orden_sync
+                ON servicio_orden(church_id, updated_at);
+        "#,
     }]
 }
 

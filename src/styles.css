@@ -10823,15 +10823,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     font-weight: 700;
   }
   :root.ipad .sv-puesto-nombre { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; }
-  /* El puesto sin cubrir: gris en cursiva, NO un enlace azul. El diseño lo
-     pinta como acción ("Asignar encargado") y aquí todavía no hay dónde
-     guardar esa asignación — un enlace que no lleva a ningún sitio miente,
-     y un hueco descrito no. */
-  /* "Asignar encargado": el handoff lo pinta como enlace azul; aquí es un
-     BOTÓN apagado. Un enlace deshabilitado no existe en ninguna interfaz —o
-     lleva a un sitio o no es un enlace—, así que el hueco se dice con la
-     misma pieza que el resto de lo dibujado-sin-motor: apagado y con `title`.
-     Se le quita el `disabled` el día que haya dónde guardar la asignación. */
+  /* "Asignar encargado": el handoff lo pinta como enlace azul y hasta la
+     1.2.9 fue un botón APAGADO —no había dónde guardar la asignación—. Con la
+     migración 43 la hay, así que el botón se enciende y toma el color de
+     acción. Sigue siendo un botón y no un enlace: lleva a una hoja, no a una
+     dirección. Con alguien ya puesto dice "Cambiar", en el mismo sitio. */
   :root.ipad .sv-puesto-asignar {
     margin-left: auto;
     padding: 4px 0 4px 12px;
@@ -10844,9 +10840,97 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     opacity: 0.75;
     cursor: default;
   }
+  :root.ipad .sv-puesto-asignar--vivo {
+    color: var(--brand);
+    opacity: 1;
+    cursor: pointer;
+  }
+  :root.ipad .sv-puesto-asignar--vivo:active { opacity: 0.55; }
 
   :root.ipad .sv-puesto-sin { color: var(--text-3); font-style: italic; font-weight: 400; }
   :root.ipad .sv-orden-vacio { box-shadow: none; margin: 0 16px; }
+
+  /* ---- Orden del culto con motor (migración 43) ---- */
+  /* La cabecera deja de ser solo un rótulo: lleva "Añadir paso" a la derecha,
+     igual que el "+" de las listas. Es el único sitio desde el que se crea. */
+  :root.ipad .sv-orden-cab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  :root.ipad .sv-orden-anadir {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--brand);
+    cursor: pointer;
+  }
+  :root.ipad .sv-orden-anadir:active { opacity: 0.55; }
+  /* Misma altura y mismo margen que .sv-puesto: el orden y el roster son dos
+     listas de la misma ficha y desalinearlas las haría parecer dos módulos
+     pegados. */
+  :root.ipad .sv-paso {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 8px 16px;
+    border-top: 0.5px solid var(--line-soft);
+  }
+  /* La hora ocupa su columna aunque esté vacía: si no, los pasos con hora y
+     los de "cuando toque" arrancarían en dos márgenes y la lista dejaría de
+     leerse en vertical. Tabular para que las cifras no bailen. */
+  :root.ipad .sv-paso-hora {
+    width: 56px;
+    flex: 0 0 56px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+  }
+  :root.ipad .sv-paso-hora--sin { color: var(--text-3); font-weight: 400; }
+  :root.ipad .sv-paso-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  /* El título ES el botón de editar: tocar el renglón para corregirlo es el
+     gesto de toda la app, y un lápiz aparte habría metido un cuarto mando en
+     una fila que ya lleva tres. */
+  :root.ipad .sv-paso-titulo {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  :root.ipad .sv-paso-titulo:active { opacity: 0.55; }
+  :root.ipad .sv-paso-encargado { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .sv-paso-mandos { display: flex; align-items: center; gap: 2px; }
+  :root.ipad .sv-paso-mandos button {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font: inherit;
+    font-size: 15px;
+    color: var(--brand);
+    cursor: pointer;
+  }
+  :root.ipad .sv-paso-mandos button:disabled { color: var(--text-3); opacity: 0.4; cursor: default; }
+  :root.ipad .sv-paso-borrar { color: var(--neg); }
   /* El punto del culto incompleto. Naranja como en el diseño —es aviso, no
      error—: --accent-5, que es exactamente el #f97316 del prototipo. */
   :root.ipad .sv-punto-falta {

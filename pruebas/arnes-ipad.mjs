@@ -1887,13 +1887,23 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   await pg.keyboard.press("Escape");
   await pg.waitForTimeout(200);
 
+  /* **Servicios salió de esta lista el 24 ago 2026.** "Asignar encargado" era
+     la cáscara de la pantalla: cuatro botones apagados, uno por cada puesto
+     que la tabla no sabía guardar. La migración 43 les dio `servicio_puestos`
+     y ahora los cuatro están VIVOS —lo comprueba la sección 36—. Lo que se
+     queda aquí es la vuelta del guante: que ninguno haya quedado apagado por
+     el camino. Si alguien vuelve a poner un `disabled` sin quitarle el motor,
+     esto sale en rojo. */
   await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
   await pg.click(".md-servicios .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".sv-puesto-asignar", "Asignar encargado");
-  const cuantos = await pg.locator(".sv-puesto-asignar").count();
-  chk(cuantos === 4, `y uno por cada puesto que la tabla no sabe (${cuantos})`);
+  const puestos = await pg.evaluate(() => {
+    const bs = [...document.querySelectorAll(".sv-puesto-asignar")];
+    return { total: bs.length, apagados: bs.filter((b) => b.disabled).length };
+  });
+  chk(puestos.total === 4, `Asignar encargado: uno por cada puesto de tabla (${puestos.total})`);
+  chk(puestos.apagados === 0, `y NINGUNO apagado: ya tienen motor (${puestos.apagados})`);
 
   await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
@@ -3237,6 +3247,176 @@ console.log("\n== Los tres datos personales del miembro ==");
   chk(!exp.some((e) => /Direcci/i.test(e)),
     `y el expediente sigue con sus cuatro requisitos, sin la dirección (${exp.length} renglones)`);
   await ctxD.close();
+}
+
+/* ---------- 36. El roster por puestos y el orden del culto ----------
+   Los dos huecos grandes que quedaban del handoff, cableados con la
+   migración 43. Lo que se comprueba no es que los botones existan —eso ya lo
+   hacía la sección 22— sino que lo que se asigna LLEGA A LA BASE: se escribe
+   por la interfaz, se recarga la página de verdad y se busca allí. Un estado
+   de React que recuerda lo que acabas de teclear no prueba nada.
+
+   La guarda se probó al revés antes de darla por buena: con `asignarPuesto`
+   devolviendo sin escribir, las tres comprobaciones de después de recargar
+   salen en rojo. */
+console.log("\n== El roster por puestos y el orden del culto ==");
+{
+  const ctxR = await nuevoContexto("ipad");
+  const pg = await ctxR.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
+  await pg.locator(".md-servicios .md-fila").first().click();
+  await pg.waitForTimeout(500);
+
+  /* Los seis renglones del handoff, en su orden. Predicación y Dirección
+     salen de las columnas del servicio y NO llevan botón: se escriben en el
+     formulario del culto, que es de donde salen impresas. */
+  const filas = await pg.evaluate(() => [...document.querySelectorAll(".sv-roster .sv-puesto")]
+    .map((f) => ({
+      rol: f.querySelector(".sv-puesto-rol")?.textContent.trim(),
+      boton: !!f.querySelector(".sv-puesto-asignar"),
+    })));
+  const roles = filas.map((f) => f.rol);
+  chk(roles.slice(0, 6).join("·") === "Predicación·Dirección·Alabanza·Ujieres·Ofrenda·Sonido",
+    `los seis puestos, en el orden del handoff (${roles.slice(0, 6).join(" · ")})`);
+  chk(filas.filter((f) => f.boton).length === 4,
+    "y solo los cuatro de tabla llevan botón: los otros dos se escriben en el formulario");
+
+  // --- Asignar Alabanza eligiendo a alguien del padrón ---
+  await pg.locator(".sv-puesto", { hasText: "Alabanza" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  const hoja = await pg.evaluate(() => {
+    const h = document.querySelector(".ios-sheet");
+    return h ? { titulo: h.getAttribute("aria-label"), opciones: h.querySelectorAll(".ios-buscador-fila").length } : null;
+  });
+  chk(!!hoja && /Alabanza/.test(hoja.titulo ?? ""),
+    `la hoja se abre diciendo qué puesto se asigna (${hoja?.titulo})`);
+  await pg.locator(".ios-sheet").getByText("Ana Martínez").first().click();
+  await pg.waitForTimeout(600);
+  const puesto = await pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".sv-puesto")]
+      .find((x) => /Alabanza/.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""));
+    return {
+      nombre: f?.querySelector(".sv-puesto-nombre")?.textContent.trim(),
+      iniciales: f?.querySelector(".sv-puesto-avatar")?.textContent.trim(),
+      boton: f?.querySelector(".sv-puesto-asignar")?.textContent.trim(),
+    };
+  });
+  chk(puesto.nombre === "Ana Martínez", `queda puesta en el renglón (${puesto.nombre})`);
+  chk(puesto.iniciales === "AM", `con su círculo de iniciales (${puesto.iniciales})`);
+  chk(puesto.boton === "Cambiar", `y el botón pasa a "Cambiar" (${puesto.boton})`);
+
+  // --- Y a alguien que NO está en el padrón, escribiendo el nombre ---
+  await pg.locator(".sv-puesto", { hasText: "Sonido" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet input").first().fill("Beto el del sonido");
+  await pg.waitForTimeout(300);
+  await pg.locator(".ios-sheet").getByText(/Anotar a/).first().click();
+  await pg.waitForTimeout(600);
+
+  // --- Un paso del orden del culto ---
+  const vacio = await pg.locator(".sv-orden .fm-vacio-titulo").count();
+  chk(vacio === 1, "el orden del culto arranca vacío, con su invitación y no con un cartel de 'falta motor'");
+  await pg.locator(".sv-orden-anadir").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet.nm-hoja input").first().fill("Bienvenida");
+  await pg.locator('.ios-sheet.nm-hoja input[type="time"]').fill("10:00");
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(700);
+  await pg.locator(".sv-orden-anadir").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet.nm-hoja input").first().fill("Ofrenda");
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(700);
+
+  const pasos = await pg.evaluate(() => [...document.querySelectorAll(".sv-paso")].map((x) => ({
+    hora: x.querySelector(".sv-paso-hora")?.textContent.trim(),
+    titulo: x.querySelector(".sv-paso-titulo")?.textContent.trim(),
+    sinHora: !!x.querySelector(".sv-paso-hora--sin"),
+  })));
+  chk(pasos.length === 2, `los dos pasos entran en la lista (${pasos.length})`);
+  chk(pasos[0]?.hora === "10:00" && pasos[0]?.titulo === "Bienvenida",
+    `el primero con su hora (${pasos[0]?.hora} · ${pasos[0]?.titulo})`);
+  /* Un paso SIN hora no se cuela al principio ni desaparece: manda la
+     posición, no el reloj. Es justo lo que rompería ordenar por `hora`. */
+  chk(pasos[1]?.sinHora && pasos[1]?.titulo === "Ofrenda",
+    `y el segundo sin hora se queda en su sitio (${pasos[1]?.titulo})`);
+
+  // Subir el segundo: el orden lo manda la posición, y tiene que aguantar.
+  await pg.locator(".sv-paso").nth(1).locator("button", { hasText: "↑" }).click();
+  await pg.waitForTimeout(600);
+
+  /* Recargar de verdad: lo que se comprueba es que todo llegó a la base. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(300);
+  await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
+  await pg.locator(".md-servicios .md-fila").first().click();
+  await pg.waitForTimeout(600);
+
+  const tras = await pg.evaluate(() => {
+    const fila = (re) => [...document.querySelectorAll(".sv-puesto")]
+      .find((x) => re.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""));
+    const rol = (re) => fila(re)?.querySelector(".sv-puesto-nombre")?.textContent.trim();
+    return {
+      alabanza: rol(/Alabanza/),
+      sonido: rol(/Sonido/),
+      // Un puesto sin cubrir no lleva nombre NI "Sin asignar": lo dice su
+      // propio botón, "Asignar encargado". Repetirlo al lado sería decir dos
+      // veces lo mismo en un renglón de 58px.
+      ujieres: fila(/Ujieres/)?.querySelector(".sv-puesto-asignar")?.textContent.trim(),
+      ujieresNombre: rol(/Ujieres/) ?? null,
+      pasos: [...document.querySelectorAll(".sv-paso-titulo")].map((x) => x.textContent.trim()),
+    };
+  });
+  chk(tras.alabanza === "Ana Martínez", `tras recargar, Alabanza sigue asignada (${tras.alabanza})`);
+  chk(tras.sonido === "Beto el del sonido",
+    `y el nombre escrito a mano también (${tras.sonido})`);
+  chk(tras.ujieres === "Asignar encargado" && tras.ujieresNombre === null,
+    `los que nadie tocó siguen ofreciendo asignarlos (${tras.ujieres})`);
+  chk(tras.pasos.join(" · ") === "Ofrenda · Bienvenida",
+    `y el orden del culto conserva el que se le dio (${tras.pasos.join(" · ")})`);
+
+  // --- Soltar un puesto: vuelve a "Sin asignar", no se queda pegado ---
+  await pg.locator(".sv-puesto", { hasText: "Alabanza" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet .ios-buscador-grupo").first().locator(".ios-field--link").click();
+  await pg.waitForTimeout(700);
+  const suelto = await pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".sv-puesto")]
+      .find((x) => /Alabanza/.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""));
+    return {
+      nombre: f?.querySelector(".sv-puesto-nombre")?.textContent.trim() ?? null,
+      boton: f?.querySelector(".sv-puesto-asignar")?.textContent.trim(),
+    };
+  });
+  chk(suelto.nombre === null && suelto.boton === "Asignar encargado",
+    `soltarlo vacía el renglón y el botón vuelve a ofrecerlo (${suelto.boton})`);
+
+  /* Y se puede volver a asignar: el índice único es PARCIAL, solo sobre las
+     filas vivas. Con un índice completo, la lápida del puesto soltado
+     bloquearía la reasignación y esto fallaría con un error de la base — que
+     fue exactamente la lección de la migración 40. */
+  await pg.locator(".sv-puesto", { hasText: "Alabanza" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet").getByText("Juan Pérez").first().click();
+  await pg.waitForTimeout(700);
+  const rey = await pg.evaluate(() => [...document.querySelectorAll(".sv-puesto")]
+    .find((x) => /Alabanza/.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""))
+    ?.querySelector(".sv-puesto-nombre")?.textContent.trim());
+  chk(rey === "Juan Pérez", `y se puede reasignar sin chocar con la lápida (${rey})`);
+
+  // --- Quitar un paso ---
+  await pg.locator(".sv-paso").first().locator(".sv-paso-borrar").click();
+  await pg.waitForTimeout(700);
+  const quedan = await pg.locator(".sv-paso").count();
+  chk(quedan === 1, `quitar un paso deja el otro (${quedan})`);
+  if (process.env.CAPTURAS) {
+    await pg.screenshot({ path: `${process.env.CAPTURAS}/servicios-roster-1366x1024.png` });
+  }
+  await ctxR.close();
 }
 
 await browser.close();

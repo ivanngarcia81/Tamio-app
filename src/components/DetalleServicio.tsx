@@ -1,34 +1,27 @@
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fmtFechaCorta, type Servicio } from "../db";
-import { IconChevronLeft, IconEdit, IconTrash } from "../icons";
+import {
+  asignarPuesto, deletePasoOrden, fmtFechaCorta, insertPasoOrden, listCandidatosPuesto,
+  listOrdenCulto, listPuestosServicio, moverPasoOrden, quitarPuesto, updatePasoOrden,
+  PUESTOS, type PasoOrden, type PuestoAsignado, type Servicio,
+} from "../db";
+import { IOSBuscadorSheet } from "./ios/IOSBuscadorSheet";
+import PasoOrdenIOS from "./PasoOrdenIOS";
+import { showToast } from "../toast";
+import { playSound } from "../sound";
+import { IconChevronLeft, IconEdit, IconPlus, IconTrash } from "../icons";
 
 interface Props {
   servicio: Servicio;
   /** Los cultos anteriores (los mismos que ya tiene cargados la página), para
    *  la tira de asistencia. No se consultan aparte: se filtran de la lista. */
   historial: Servicio[];
+  churchId: number;
   tituloLista: string;
   onVolver: () => void;
   onEditar: (s: Servicio) => void;
   onEliminar: (s: Servicio) => void;
 }
-
-/**
- * Los cinco puestos que dibuja el handoff, y de qué columna sale cada uno.
- *
- * `campo: null` = el puesto existe en el diseño y la tabla no lo guarda
- * todavía. No se esconde: la fila sale con su nombre y "sin asignar", que es
- * lo que deja ver el hueco. Cuando haya roster por puesto, esto se cambia por
- * la consulta y el resto de la tarjeta no se entera.
- */
-const PUESTOS: { clave: string; campo: "predica" | "dirige" | null }[] = [
-  { clave: "predicacion", campo: "predica" },
-  { clave: "direccion", campo: "dirige" },
-  { clave: "alabanza", campo: null },
-  { clave: "ujieres", campo: null },
-  { clave: "ofrenda", campo: null },
-  { clave: "sonido", campo: null },
-];
 
 /** Las iniciales de un nombre, para el círculo de 30px del roster. */
 function inicialesDe(nombre: string): string {
@@ -52,22 +45,124 @@ function totalPresentes(s: Servicio): number {
 /**
  * DetalleServicio — la columna derecha del maestro-detalle de Servicios.
  *
- * **El Roster y el Orden del culto: dibujados, medio cableados.** El handoff
- * pide un roster por PUESTOS —Predicación, Alabanza, Ujieres, Ofrenda,
- * Sonido— y un orden del culto con horas. En Tamio un servicio guarda
- * `predica`, `dirige` y una lista de `participaciones`: dos de los cinco
- * puestos existen de verdad, el resto no, y del horario no hay nada.
+ * **El Roster y el Orden del culto: con motor desde la migración 43.** Eran
+ * los dos huecos grandes que quedaban del handoff. El roster pedía seis
+ * puestos y la tabla guardaba dos (`predica` y `dirige`); los otros cuatro
+ * decían "Sin asignar" con un botón apagado al lado. Del orden del culto no
+ * había nada: la tarjeta existía solo para explicar que faltaba.
  *
- * Por la regla de Iván del 23 de agosto —primero la plantilla, el motor
- * después— las dos secciones se construyen: los puestos con columna se
- * llenan, los que no la tienen dicen "sin asignar" en el gris de pendiente, y
- * el orden del culto explica qué le falta. Ver docs/ipad-rediseno.md §21.
+ * Cómo quedó repartido, y por qué no es una inconsistencia:
  *
- * "Asistencia del último mes" sí es real desde siempre: son los cultos
+ *  - **Predicación y Dirección siguen en sus columnas.** Se escriben en el
+ *    formulario del culto desde la primera versión y salen en los informes;
+ *    moverlos a la tabla nueva habría obligado a migrar datos reales para no
+ *    ganar nada. Se editan donde siempre: en el formulario.
+ *  - **Los otros cuatro viven en `servicio_puestos`** y se asignan desde
+ *    aquí, con la hoja del buscador — la misma que elige aportante en Nuevo
+ *    ingreso—, que además deja escribir un nombre que no está en el padrón.
+ *  - **El orden del culto vive en `servicio_orden`**, y lo manda `posicion`,
+ *    no la hora: hay pasos sin hora, y ordenarlos por una hora vacía los
+ *    mandaría todos al principio.
+ *
+ * "Asistencia del último mes" es real desde siempre: son los cultos
  * anteriores, que la página ya tiene cargados.
  */
-export default function DetalleServicio({ servicio: s, historial, tituloLista, onVolver, onEditar, onEliminar }: Props) {
+export default function DetalleServicio({ servicio: s, historial, churchId, tituloLista, onVolver, onEditar, onEliminar }: Props) {
   const { t } = useTranslation();
+
+  /* Lo que se guarda aparte del servicio. Se recarga con `recargar()` después
+     de cada cambio en vez de tocar el estado a mano: la lista es de seis
+     renglones y una consulta de seis filas cuesta menos que un bug de estado
+     desincronizado con la base. */
+  const [puestos, setPuestos] = useState<PuestoAsignado[]>([]);
+  const [orden, setOrden] = useState<PasoOrden[]>([]);
+  const [candidatos, setCandidatos] = useState<{ id: number; nombre: string; sub: string | null }[]>([]);
+  /** Clave del puesto que se está asignando, o null si la hoja está cerrada. */
+  const [asignando, setAsignando] = useState<string | null>(null);
+  /** Paso del orden en edición: `null` = cerrado, `"nuevo"` = alta. */
+  const [pasoEdit, setPasoEdit] = useState<PasoOrden | "nuevo" | null>(null);
+
+  const recargar = useCallback(async () => {
+    const [ps, os] = await Promise.all([listPuestosServicio(s.id), listOrdenCulto(s.id)]);
+    setPuestos(ps);
+    setOrden(os);
+  }, [s.id]);
+
+  useEffect(() => { void recargar().catch(console.error); }, [recargar]);
+
+  /* El padrón se pide una sola vez por iglesia y no por culto: es la misma
+     lista para todos, y volver a leer cuatrocientos nombres al cambiar de
+     fila de la lista se nota al deslizar. */
+  useEffect(() => {
+    let cancelado = false;
+    listCandidatosPuesto(churchId)
+      .then((ms) => {
+        if (cancelado) return;
+        setCandidatos(ms.map((m) => ({
+          id: m.id,
+          nombre: m.nombre,
+          // Cargo primero y ministerio después: lo que distingue a dos
+          // personas del mismo nombre es lo que hacen en la iglesia.
+          sub: [...lista(m.cargos), ...lista(m.ministerios)][0] ?? null,
+        })));
+      })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [churchId]);
+
+  const porPuesto = new Map(puestos.map((p) => [p.puesto, p]));
+
+  async function guardarPuesto(puesto: string, nombre: string, memberId: number | null) {
+    try {
+      await asignarPuesto(churchId, s.id, puesto, nombre, memberId);
+      playSound("guardado");
+      await recargar();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+    setAsignando(null);
+  }
+
+  async function soltarPuesto(puesto: string) {
+    try {
+      await quitarPuesto(s.id, puesto);
+      await recargar();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+    setAsignando(null);
+  }
+
+  async function guardarPaso(v: { hora: string | null; titulo: string; encargado: string | null }) {
+    try {
+      if (pasoEdit && pasoEdit !== "nuevo") await updatePasoOrden(pasoEdit.id, churchId, v);
+      else await insertPasoOrden(churchId, s.id, v);
+      playSound("guardado");
+      await recargar();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+    setPasoEdit(null);
+  }
+
+  async function borrarPaso(paso: PasoOrden) {
+    try {
+      await deletePasoOrden(paso.id, churchId);
+      playSound("eliminar");
+      await recargar();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+  }
+
+  async function moverPaso(paso: PasoOrden, direccion: -1 | 1) {
+    try {
+      await moverPasoOrden(s.id, churchId, paso.id, direccion);
+      await recargar();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+  }
 
   const participaciones = lista(s.participaciones);
   const asistentes = lista(s.asistentes);
@@ -133,37 +228,43 @@ export default function DetalleServicio({ servicio: s, historial, tituloLista, o
         </div>
       </div>
 
-      {/* El roster por puestos del handoff. Los dos que la tabla guarda se
-          llenan; los otros cuatro salen con su nombre y "sin asignar", para
-          que se vea el hueco que va a llenarse. */}
+      {/* El roster por puestos. Los seis renglones se llenan de dos sitios
+          distintos y el que lee no tiene por qué notarlo: Predicación y
+          Dirección de las columnas del servicio, los otros cuatro de
+          `servicio_puestos`. */}
       <section className="sv-roster">
         <div className="sv-roster-cab">{t("servicios.roster")}</div>
         {PUESTOS.map((p) => {
-          const valor = p.campo ? (p.campo === "predica" ? s.predica : s.dirige) : null;
+          const asignado = p.campo === null ? porPuesto.get(p.clave) ?? null : null;
+          const valor = p.campo
+            ? (p.campo === "predica" ? s.predica : s.dirige)
+            : asignado?.nombre ?? null;
           return (
             <div className={`sv-puesto${valor ? "" : " sin"}`} key={p.clave}>
               <span className="sv-puesto-rol">{t(`servicios.puesto.${p.clave}`)}</span>
-              {valor ? (
+              {valor && (
                 <>
                   <span className="sv-puesto-avatar">{inicialesDe(valor)}</span>
                   <span className="sv-puesto-nombre truncate">{valor}</span>
                 </>
-              ) : p.campo ? (
+              )}
+              {!valor && p.campo && (
+                /* Predicación y Dirección sin llenar. No llevan botón porque
+                   no se asignan aquí: se escriben en el formulario del culto,
+                   que es donde han estado siempre y de donde salen impresos. */
                 <span className="sv-puesto-nombre sv-puesto-sin">{t("servicios.sinAsignar")}</span>
-              ) : (
-                /* El puesto que la tabla todavía no sabe guardar. El handoff
-                   pone aquí "Asignar encargado" en azul; se pinta, pero como
-                   BOTÓN APAGADO y no como enlace —decisión de Iván (23 ago)—
-                   porque un enlace apagado no existe en ninguna interfaz y un
-                   enlace vivo llevaría a ningún sitio. El `title` dice qué le
-                   falta. Mismo trato que "Recopilar firmas" en Actas. */
+              )}
+              {p.campo === null && (
+                /* El botón del handoff, ya encendido. Con alguien puesto dice
+                   "Cambiar" y abre la misma hoja: reasignar y asignar son el
+                   mismo gesto, y separarlos en dos controles habría llenado
+                   la fila para no decir nada nuevo. */
                 <button
                   type="button"
-                  className="sv-puesto-asignar"
-                  disabled
-                  title={t("servicios.puestoAyuda")}
+                  className="sv-puesto-asignar sv-puesto-asignar--vivo"
+                  onClick={() => setAsignando(p.clave)}
                 >
-                  {t("servicios.asignarEncargado")}
+                  {valor ? t("common.cambiar") : t("servicios.asignarEncargado")}
                 </button>
               )}
             </div>
@@ -177,15 +278,71 @@ export default function DetalleServicio({ servicio: s, historial, tituloLista, o
         )}
       </section>
 
-      {/* "Orden del culto": el handoff lo dibuja con horas y el servicio no
-          guarda ninguna. Se construye la tarjeta con su explicación en vez de
-          desaparecer, igual que la pestaña Familia de Aportantes. */}
+      {/* "Orden del culto": el minuto a minuto, con motor desde la migración
+          43. Vacío enseña su invitación en vez de un cartel de "falta motor",
+          que es lo que decía hasta la 1.2.9. */}
       <section className="sv-orden">
-        <div className="sv-roster-cab">{t("servicios.ordenCulto")}</div>
-        <div className="fm-vacio fm-vacio--pendiente sv-orden-vacio">
-          <span className="fm-vacio-titulo">{t("servicios.sinOrdenTitulo")}</span>
-          <span className="fm-vacio-sub">{t("servicios.sinOrdenSub")}</span>
+        <div className="sv-roster-cab sv-orden-cab">
+          <span>{t("servicios.ordenCulto")}</span>
+          <button type="button" className="sv-orden-anadir" onClick={() => setPasoEdit("nuevo")}>
+            <IconPlus size={13} strokeWidth={2.4} /> {t("servicios.anadirPaso")}
+          </button>
         </div>
+        {orden.length === 0 ? (
+          <div className="fm-vacio fm-vacio--pendiente sv-orden-vacio">
+            <span className="fm-vacio-titulo">{t("servicios.sinOrdenTitulo")}</span>
+            <span className="fm-vacio-sub">{t("servicios.sinOrdenSub")}</span>
+          </div>
+        ) : (
+          orden.map((paso, i) => (
+            <div className="sv-paso" key={paso.id}>
+              {/* La hora ocupa su columna esté o no: sin ella, los títulos de
+                  los pasos con hora y los de sin hora arrancarían en dos
+                  márgenes distintos y la lista dejaría de leerse en vertical. */}
+              <span className={`sv-paso-hora${paso.hora ? "" : " sv-paso-hora--sin"}`}>
+                {paso.hora ?? "—"}
+              </span>
+              <span className="sv-paso-textos">
+                <button type="button" className="sv-paso-titulo" onClick={() => setPasoEdit(paso)}>
+                  {paso.titulo}
+                </button>
+                {paso.encargado && <span className="sv-paso-encargado truncate">{paso.encargado}</span>}
+              </span>
+              <span className="sv-paso-mandos">
+                {/* Dos flechas y no arrastre: en una lista de seis renglones
+                    en un iPad, una flecha se acierta siempre y un arrastre
+                    con el dedo, a veces. */}
+                <button
+                  type="button"
+                  aria-label={t("servicios.subirPaso")}
+                  title={t("servicios.subirPaso")}
+                  disabled={i === 0}
+                  onClick={() => void moverPaso(paso, -1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  aria-label={t("servicios.bajarPaso")}
+                  title={t("servicios.bajarPaso")}
+                  disabled={i === orden.length - 1}
+                  onClick={() => void moverPaso(paso, 1)}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="sv-paso-borrar"
+                  aria-label={t("servicios.quitarPaso")}
+                  title={t("servicios.quitarPaso")}
+                  onClick={() => void borrarPaso(paso)}
+                >
+                  <IconTrash size={13} strokeWidth={2} />
+                </button>
+              </span>
+            </div>
+          ))
+        )}
       </section>
 
       {/* El conteo, primero y en grande: es la cifra que sale en los informes
@@ -262,6 +419,37 @@ export default function DetalleServicio({ servicio: s, historial, tituloLista, o
       ])}
 
       {seccion(t("servicios.secEventos"), [campo(t("servicios.secEventos"), s.eventos)])}
+
+      {/* La hoja del buscador, la misma que elige aportante en Nuevo ingreso.
+          `onTextoLibre` es lo que hace que sirva aquí: quien ayuda en sonido
+          un domingo puede no estar en el padrón, y obligar a darlo de alta
+          para poder anotarlo convertiría un apunte en un trámite. */}
+      {asignando && (() => {
+        const actual = porPuesto.get(asignando) ?? null;
+        const puestoActual = asignando;
+        return (
+          <IOSBuscadorSheet
+            title={t("servicios.asignarTitulo", { puesto: t(`servicios.puesto.${puestoActual}`) })}
+            placeholder={t("servicios.asignarBuscar")}
+            opciones={candidatos.map((c) => ({ id: String(c.id), titulo: c.nombre, sub: c.sub }))}
+            seleccionado={actual?.member_id != null ? String(actual.member_id) : null}
+            textoInicial={actual?.nombre ?? ""}
+            onElegir={(op) => void guardarPuesto(puestoActual, op.titulo, Number(op.id))}
+            onTextoLibre={(texto) => void guardarPuesto(puestoActual, texto, null)}
+            etiquetaTextoLibre={(texto) => t("servicios.asignarLibre", { nombre: texto })}
+            onLimpiar={actual ? () => void soltarPuesto(puestoActual) : undefined}
+            onCancel={() => setAsignando(null)}
+          />
+        );
+      })()}
+
+      {pasoEdit && (
+        <PasoOrdenIOS
+          paso={pasoEdit === "nuevo" ? null : pasoEdit}
+          onGuardar={(v) => void guardarPaso(v)}
+          onClose={() => setPasoEdit(null)}
+        />
+      )}
     </div>
   );
 }

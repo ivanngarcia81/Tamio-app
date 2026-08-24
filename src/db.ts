@@ -3066,12 +3066,21 @@ export async function updateServicio(id: number, churchId: number, s: NewServici
   await replaceAsistencia(churchId, id, s.asistencia);
 }
 
-/** Borrado SUAVE del servicio y de su roster (ambos se propagan en la
- *  sincronización como lápidas). */
+/** Borrado SUAVE del servicio y de todo lo que cuelga de él —el roster de
+ *  asistencia, los puestos y el orden del culto—; los cuatro se propagan en
+ *  la sincronización como lápidas. */
 export async function deleteServicio(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
     "UPDATE servicio_asistencia SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
+    [id]
+  );
+  await d.execute(
+    "UPDATE servicio_puestos SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
+    [id]
+  );
+  await d.execute(
+    "UPDATE servicio_orden SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
     [id]
   );
   await d.execute(
@@ -3098,6 +3107,208 @@ export async function getServicioAsistencia(servicioId: number): Promise<Asisten
     seguimiento: r.seguimiento === 1,
     nombre_snapshot: r.nombre_snapshot,
   }));
+}
+
+// ---------- Roster por puestos y orden del culto (migración 43) ----------
+
+/**
+ * Los seis puestos del handoff, y de dónde sale cada uno.
+ *
+ * `campo` distingue los dos que el servicio guarda en una columna suya de los
+ * cuatro que viven en `servicio_puestos`. No es una inconsistencia que quedó
+ * ahí: quién predica y quién dirige se escriben en el formulario del culto
+ * desde la primera versión y salen impresos en los informes; moverlos a la
+ * tabla nueva habría obligado a migrar datos reales para no ganar nada.
+ *
+ * El catálogo es una CONSTANTE, no una tabla. Son los seis puestos del
+ * diseño; una iglesia que necesite otro (multimedia, transmisión) pide una
+ * línea aquí y su clave en los dos idiomas, no una pantalla de mantenimiento
+ * que nadie va a abrir dos veces.
+ */
+export const PUESTOS = [
+  { clave: "predicacion", campo: "predica" },
+  { clave: "direccion", campo: "dirige" },
+  { clave: "alabanza", campo: null },
+  { clave: "ujieres", campo: null },
+  { clave: "ofrenda", campo: null },
+  { clave: "sonido", campo: null },
+] as const satisfies readonly { clave: string; campo: "predica" | "dirige" | null }[];
+
+/** Las claves de los puestos que se guardan en `servicio_puestos`. */
+export const PUESTOS_CON_TABLA = PUESTOS.filter((p) => p.campo === null).map((p) => p.clave);
+
+export interface PuestoAsignado {
+  puesto: string;
+  nombre: string;
+  member_id: number | null;
+}
+
+/** Quién cubre cada puesto de un servicio. Solo los cuatro de tabla: los
+ *  otros dos los tiene el propio `Servicio` en sus columnas. */
+export async function listPuestosServicio(servicioId: number): Promise<PuestoAsignado[]> {
+  const d = await getDb();
+  return d.select<PuestoAsignado[]>(
+    `SELECT puesto, nombre, member_id FROM servicio_puestos
+      WHERE servicio_id = $1 AND deleted = 0 ORDER BY puesto`,
+    [servicioId]
+  );
+}
+
+/**
+ * Asigna (o reasigna) un puesto. `member_id` es null cuando el nombre se
+ * escribió a mano: quien ayuda en sonido un domingo puede no estar en el
+ * padrón, y obligarle a estarlo para poder anotarlo convertiría un apunte de
+ * treinta segundos en un alta de miembro.
+ *
+ * Reasignar REUSA la fila (y con ella su `uid`), no borra y crea otra: el uid
+ * es lo que identifica la asignación entre aparatos, y cambiarlo cada vez que
+ * alguien corrige un nombre convierte una corrección en un duplicado.
+ */
+export async function asignarPuesto(
+  churchId: number,
+  servicioId: number,
+  puesto: string,
+  nombre: string,
+  memberId: number | null
+): Promise<void> {
+  const d = await getDb();
+  const limpio = nombre.trim();
+  if (!limpio) return quitarPuesto(servicioId, puesto);
+  // Se busca incluso entre las borradas: si el puesto se soltó y se vuelve a
+  // asignar, esa fila revive con su uid en vez de dejar una lápida y un alta.
+  const previas = await d.select<{ id: number }[]>(
+    "SELECT id FROM servicio_puestos WHERE servicio_id = $1 AND puesto = $2 ORDER BY deleted, id LIMIT 1",
+    [servicioId, puesto]
+  );
+  const previa = previas[0]?.id;
+  if (previa != null) {
+    await d.execute(
+      `UPDATE servicio_puestos
+          SET nombre = $1, member_id = $2, deleted = 0, church_id = $3, updated_at = datetime('now')
+        WHERE id = $4`,
+      [limpio, memberId, churchId, previa]
+    );
+    return;
+  }
+  await d.execute(
+    `INSERT INTO servicio_puestos (church_id, servicio_id, puesto, nombre, member_id, uid, updated_at, deleted)
+     VALUES ($1,$2,$3,$4,$5,$6,datetime('now'),0)`,
+    [churchId, servicioId, puesto, limpio, memberId, crypto.randomUUID()]
+  );
+}
+
+/** Suelta el puesto: vuelve a "Sin asignar". Borrado en BLANDO, para que
+ *  soltarlo viaje a los demás aparatos igual que asignarlo. */
+export async function quitarPuesto(servicioId: number, puesto: string): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE servicio_puestos SET deleted = 1, updated_at = datetime('now')
+      WHERE servicio_id = $1 AND puesto = $2 AND deleted = 0`,
+    [servicioId, puesto]
+  );
+}
+
+export interface PasoOrden {
+  id: number;
+  posicion: number;
+  hora: string | null;
+  titulo: string;
+  encargado: string | null;
+}
+
+/** El orden del culto, de principio a fin. Ordena por `posicion` y no por
+ *  `hora`: hay pasos sin hora, y ordenarlos por una hora vacía los mandaría
+ *  todos al principio. */
+export async function listOrdenCulto(servicioId: number): Promise<PasoOrden[]> {
+  const d = await getDb();
+  return d.select<PasoOrden[]>(
+    `SELECT id, posicion, hora, titulo, encargado FROM servicio_orden
+      WHERE servicio_id = $1 AND deleted = 0 ORDER BY posicion, id`,
+    [servicioId]
+  );
+}
+
+/** Añade un paso al final. Devuelve su id. */
+export async function insertPasoOrden(
+  churchId: number,
+  servicioId: number,
+  paso: { hora: string | null; titulo: string; encargado: string | null }
+): Promise<number | null> {
+  const d = await getDb();
+  const filas = await d.select<{ siguiente: number | null }[]>(
+    "SELECT MAX(posicion) + 1 AS siguiente FROM servicio_orden WHERE servicio_id = $1 AND deleted = 0",
+    [servicioId]
+  );
+  const posicion = filas[0]?.siguiente ?? 0;
+  const res = await d.execute(
+    `INSERT INTO servicio_orden (church_id, servicio_id, posicion, hora, titulo, encargado, uid, updated_at, deleted)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,datetime('now'),0)`,
+    [churchId, servicioId, posicion, paso.hora?.trim() || null, paso.titulo.trim(),
+     paso.encargado?.trim() || null, crypto.randomUUID()]
+  );
+  return res.lastInsertId ?? null;
+}
+
+export async function updatePasoOrden(
+  id: number,
+  churchId: number,
+  paso: { hora: string | null; titulo: string; encargado: string | null }
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE servicio_orden SET hora = $1, titulo = $2, encargado = $3, updated_at = datetime('now')
+      WHERE id = $4 AND church_id = $5`,
+    [paso.hora?.trim() || null, paso.titulo.trim(), paso.encargado?.trim() || null, id, churchId]
+  );
+}
+
+export async function deletePasoOrden(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE servicio_orden SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
+/** Mueve un paso una posición arriba o abajo intercambiándolo con su vecino.
+ *  Sin arrastre: en un iPad, dos flechas en una lista de seis renglones se
+ *  aciertan siempre y un arrastre a veces. */
+export async function moverPasoOrden(
+  servicioId: number,
+  churchId: number,
+  id: number,
+  direccion: -1 | 1
+): Promise<void> {
+  const pasos = await listOrdenCulto(servicioId);
+  const i = pasos.findIndex((p) => p.id === id);
+  const j = i + direccion;
+  if (i < 0 || j < 0 || j >= pasos.length) return;
+  const d = await getDb();
+  // Se reescriben las posiciones de los DOS con el índice de la lista, no con
+  // el valor guardado: filas viejas pueden compartir posición (todas a 0 si
+  // algo falló a medias) y un intercambio de valores iguales no movería nada.
+  await d.execute(
+    "UPDATE servicio_orden SET posicion = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
+    [j, pasos[i].id, churchId]
+  );
+  await d.execute(
+    "UPDATE servicio_orden SET posicion = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
+    [i, pasos[j].id, churchId]
+  );
+}
+
+/** Candidatos para cubrir un puesto: el padrón activo, con su cargo o su
+ *  ministerio como segunda línea para distinguir dos nombres iguales. */
+export async function listCandidatosPuesto(
+  churchId: number
+): Promise<{ id: number; nombre: string; cargos: string; ministerios: string }[]> {
+  const d = await getDb();
+  return d.select<{ id: number; nombre: string; cargos: string; ministerios: string }[]>(
+    `SELECT id, nombre, cargos, ministerios FROM members
+      WHERE church_id = $1 AND activo = 1 AND estado_membresia != 'visitante' AND deleted = 0
+      ORDER BY nombre`,
+    [churchId]
+  );
 }
 
 /** Miembros que entran al roster de un servicio NUEVO: solo estado Activo
@@ -3981,8 +4192,14 @@ export function mesLegible(yyyyMm: string): string {
 // ---------- Borrado masivo (Ajustes → solo administrador) ----------
 
 /** Datos transaccionales de la iglesia, en orden seguro para borrar. Todas
- *  tienen columna church_id (servicio_asistencia se limpia por servicio). */
+ *  tienen columna church_id (servicio_asistencia se limpia por servicio).
+ *
+ *  Las HIJAS van primero, y en el borrado duro de `borrarTodoLocal` eso es lo
+ *  que evita chocar con una clave foránea: `corte_movimientos` apunta a
+ *  `transactions`, `cortes` a `depositos_bancarios`, y los dos de servicio a
+ *  `servicios` y a `members`. */
 const TABLAS_DATOS = [
+  "corte_movimientos", "cortes", "servicio_puestos", "servicio_orden",
   "transactions", "depositos_bancarios", "members", "actas", "cartas",
   "solicitudes", "traslados_salida", "traslados_entrada", "servicios",
   "agenda", "mensajes", "gastos_recurrentes",

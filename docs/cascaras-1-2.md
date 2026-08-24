@@ -186,16 +186,42 @@ fecha, no.
 
 ## Servicios (§21)
 
-- **Roster por puestos: cuatro de seis son plantilla.** Predicación y
-  Dirección salen de `servicios.predica` y `.dirige`; Alabanza, Ujieres,
-  Ofrenda y Sonido dicen **"Sin asignar"**. El mapeo vive en la constante
-  `PUESTOS` con `campo: null`: cuando exista el roster, se cambia esa tabla y
-  el resto de la tarjeta ni se entera. Pide estructura nueva (catálogo de
-  puestos + asignación por servicio).
-- **Tarjeta "Orden del culto"** — **construida como plantilla** con su
-  explicación. `servicios` no guarda el minuto a minuto.
-- **"Asignar encargado"** (el enlace azul del puesto vacío) — **NO se
-  construyó.** Ver el recuadro del final.
+- ~~**Roster por puestos: cuatro de seis son plantilla**~~ → **cableado el 24
+  ago 2026** (migración 43, tabla `servicio_puestos`). Alabanza, Ujieres,
+  Ofrenda y Sonido se asignan uno por uno desde la ficha del culto, con la
+  hoja del buscador —la misma que elige aportante en Nuevo ingreso—, que
+  además deja **escribir un nombre que no está en el padrón**: quien ayuda en
+  sonido un domingo no tiene por qué estar dado de alta, y obligarle a estarlo
+  convertía un apunte de treinta segundos en un trámite.
+
+  Lo que **no** cambió, y no es un descuido: **Predicación y Dirección siguen
+  en sus columnas** (`servicios.predica` y `.dirige`). Se escriben en el
+  formulario del culto desde la primera versión y salen impresas en los
+  informes; moverlas a la tabla nueva habría obligado a migrar datos reales
+  para no ganar nada. La constante `PUESTOS` —que ahora vive en `db.ts`, con
+  los demás catálogos— sigue siendo la que reparte: `campo` dice de dónde sale
+  cada renglón, y el que lee la ficha no tiene por qué notar que son dos
+  sitios.
+
+  El catálogo **no** se convirtió en tabla. Son los seis puestos del diseño;
+  una iglesia que necesite otro (multimedia, transmisión) pide una línea en la
+  constante y su clave en los dos idiomas, no una pantalla de mantenimiento
+  que nadie abre dos veces.
+- ~~**Tarjeta "Orden del culto"**~~ → **cableada el 24 ago 2026** (migración
+  43, tabla `servicio_orden`). Cada paso lleva momento, hora y encargado, y se
+  sube, se baja y se quita desde la propia tarjeta.
+
+  **La hora es opcional a propósito**, y de ahí sale la única decisión de
+  diseño que hubo aquí: un culto real tiene pasos con hora ("10:00,
+  Bienvenida") y pasos que van cuando toca ("Ofrenda, después de la
+  predicación"). Por eso el orden lo manda `posicion` y **no** `hora` — con
+  `ORDER BY hora`, los pasos sin hora se irían todos al principio, que es
+  justo el fallo con el que se probó la guarda de la sección 36 del arnés.
+- ~~**"Asignar encargado"**~~ → **encendido el 24 ago 2026**. Sigue siendo un
+  BOTÓN y no el enlace azul del handoff, por lo de siempre: lleva a una hoja,
+  no a una dirección. Con alguien ya puesto dice **"Cambiar"**, en el mismo
+  sitio — asignar y reasignar son el mismo gesto, y partirlo en dos controles
+  habría llenado un renglón de 58px para no decir nada nuevo.
 - **"Tomar asistencia"** — real; ya existía sin botón que lo dijera.
 
 ## Cartas (§22)
@@ -238,7 +264,7 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | Control | Dónde | Cómo quedó |
 |---|---|---|
 | ~~**Marcar depositado**~~ | ~~Depósitos, acciones del corte~~ | **cableado el 24 ago** — abre el formulario con el corte puesto |
-| **Asignar encargado** ×4 | Servicios, puestos sin motor | botón apagado, uno por puesto |
+| ~~**Asignar encargado** ×4~~ | ~~Servicios, puestos sin motor~~ | **cableados el 24 ago** (migración 43) — los cuatro abren la hoja que asigna el puesto |
 | **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
 | ~~**Barra lateral siempre visible**~~ | ídem | **RETIRADO el 24 ago** — no se cableó: se quitó. Ver abajo |
 | ~~**Ocultar montos al bloquear**~~ | ídem | **cableado el 24 ago** — tapa el contenido en segundo plano (`src/privacidad.ts`) |
@@ -252,7 +278,9 @@ Tres detalles de la ejecución que no son obvios:
 
 - **"Asignar encargado" es un BOTÓN, no el enlace azul del handoff.** Un
   enlace deshabilitado no existe en ninguna interfaz —o lleva a un sitio o no
-  es un enlace—, así que el hueco usa la misma pieza que todo lo demás.
+  es un enlace—, así que el hueco usa la misma pieza que todo lo demás. Con
+  motor (24 ago) **sigue siendo un botón**, por la otra mitad del mismo
+  argumento: lleva a una hoja, no a una dirección.
 - **Se apaga la FILA entera, no solo el mando** (`.ios-field--apagado`, media
   tinta). Un interruptor gris dentro de una fila normal se lee como "está
   roto"; la fila entera a media tinta se lee como "esto todavía no".
@@ -462,5 +490,10 @@ comprobación falla sola.
 3. ~~**`actas.testigo`**~~ — **hecho el 24 de agosto de 2026** (migración 41).
 4. ~~**Tres columnas personales en `members`**~~ — **hecho el 24 de agosto de
    2026** (migración 42). Eran dos columnas, no tres: `direccion` ya estaba.
-5. **Roster por puestos y orden del culto** — la más grande de las cinco;
-   estructura nueva, no columnas.
+5. ~~**Roster por puestos y orden del culto**~~ — **hecho el 24 de agosto de
+   2026** (migración 43: `servicio_puestos` + `servicio_orden`). Era la más
+   grande de las cinco, y la lista se termina aquí. Dos avisos para quien
+   venga detrás: el catálogo de puestos NO se hizo tabla (son los seis del
+   diseño, viven en la constante `PUESTOS` de `db.ts`), y Predicación y
+   Dirección se quedaron en sus columnas de siempre porque salen impresas en
+   los informes desde la primera versión.

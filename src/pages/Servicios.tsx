@@ -282,6 +282,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                       <DetalleServicio
                         servicio={det}
                         historial={servicios}
+                        churchId={church.id}
                         tituloLista={t("secretaria.servicios.titulo")}
                         onVolver={() => setSelId(null)}
                         onEditar={(s) => setModal({ open: true, servicio: s })}
