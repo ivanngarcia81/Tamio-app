@@ -81,6 +81,26 @@ preguntarse si ese cambio suelto importa. Se cambia con las otras tres.
 > avisara. Anclar en `name = "tesoreria"` y tocar una sola línea vale también
 > para esto; buscar el número, no.
 >
+> **Y en la 1.2.9, una trampa que no es de colisión sino de FORMATO.** Iván
+> pidió la **1.2.8.1** —cuatro números, la "1.2.8 con un arreglo encima"—. No
+> se puede, y no es opinión: `Cargo.toml` exige **semver**, que es exactamente
+> `MAJOR.MINOR.PATCH`, y con `version = "1.2.8.1"` cargo ni siquiera parsea el
+> manifiesto:
+>
+> ```
+> error: unexpected character '.' after patch version number
+> ```
+>
+> O sea que `tauri ios build` falla antes de compilar una sola línea.
+> `package.json` y `tauri.conf.json` piden lo mismo.
+>
+> Y la salida "misma versión, número de build distinto" —que en iOS es
+> `CFBundleShortVersionString` fijo con `CFBundleVersion` subiendo— **tampoco
+> está disponible aquí**, y ya estaba apuntada en `project.yml`: Tauri PISA
+> `CFBundleVersion` con la versión de `tauri.conf.json` en cada `ios build`.
+> Para subir dos veces, lo que sube es la versión. Por eso la 1.2.8.1 es
+> la **1.2.9**.
+>
 > **En la 1.2.8, limpia**: `1.2.7` salía **diez** veces en total y las diez
 > eran de Tamio —una por sitio, dos en los archivos que llevan dos claves—.
 > Ni colisión exacta ni prefijo: `1.2.8` no existía en ningún `lock` y ningún
@@ -141,7 +161,8 @@ en las tres fuentes:
 | esta | **1.2.6** — el cromo, terminado: la barra de vistas de la Agenda, el índice de zonas de Ajustes, la barrita de Informes y las dos superficies translúcidas que mezclaban el gris equivocado. Las cinco pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Con guarda **sobre el archivo**, no sobre la pantalla: ninguna regla de `:root.ipad` puede volver a nombrar ese token. Y dos del chip del mes: deja de salirse 38px del panel (`.ios-bar-button` medía 44×44 fijos) y su menú deja de abrirse recortado detrás del panel (`MenuAnchor` pasa a colgar de `<body>` en `fixed`, como los otros menús de la casa) |
 | esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
 | esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
-| la siguiente | 1.2.9 |
+| esta | **1.2.9** — Depósitos rehecha con el **handoff 3**: "Pendientes" deja de ser un cartel y pasa a ser la revisión previa al banco (cortes por día, tres cifras vivas, los cuatro avisos, y "Marcar depositado" abriendo el formulario ya prellenado, que tacha la primera cáscara del registro); "Depositados" gana la pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y se construye la hoja "Nuevo corte" entera. Más los dos textos que no respiraban en el iPad: "Elige un día" pegado al filo y la fila de filtros de Informes con los chips a 29px |
+| la siguiente | 1.3.0 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -376,6 +397,12 @@ veces y `iphone .ios-row` solo 5: las cinco que se quedan a propósito
 
 Y las once pantallas del handoff quedan recorridas con esta versión. El
 repaso pantalla por pantalla está en `docs/ipad-rediseno.md` §14–§24.
+
+En la **1.2.9**, lo de siempre, más las clases de Depósitos (`dep-carta`,
+`dep-aviso`, `dep-mov`) y el token `--relleno-ios` en el CSS; en el JS, las
+claves de la revisión previa (`sinVinculoTitulo`, `corteSinMotorAyuda`,
+`cuentasUsadas`). Las dos últimas son las que distinguen la pantalla nueva de
+la vieja: si el bundle no las lleva, lo que viajó es el cartel de antes.
 
 En la **1.2.8**, lo de siempre, y dos comprobaciones del bundle: en el CSS,
 `--barra-inset` y `min-height:calc(56px` —el inset con nombre y la suma que
