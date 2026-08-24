@@ -2859,6 +2859,63 @@ console.log("\n== Ocultar montos al bloquear ==");
   await ctxP.close();
 }
 
+/* ---------- 32. El ☰ abre y cierra la barra lateral ----------
+   Lo preguntó Iván el 24 ago mientras decidíamos qué hacer con "Barra lateral
+   siempre visible", y merecía una respuesta medida y no leída del código: en
+   vertical la barra es un CAJÓN y el ☰ es su única entrada, así que si el
+   botón se rompiera no habría forma de navegar. Apaisado y ancho, la barra
+   está fija y el ☰ ni se pinta. */
+console.log("\n== El ☰ abre la barra en vertical ==");
+{
+  const ctxH = await nuevoContexto("ipad");
+  const pg = await ctxH.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+
+  const estado = () => pg.evaluate(() => {
+    const sb = document.querySelector(".sidebar");
+    const ham = document.querySelector(".menu-hamburguesa");
+    const r = sb.getBoundingClientRect();
+    return {
+      // Dentro de la pantalla = visible; empujada a la izquierda = escondida.
+      visible: r.right > 1,
+      x: Math.round(r.left),
+      ancho: Math.round(r.width),
+      hamVisible: ham ? getComputedStyle(ham).display !== "none" : false,
+      telon: !!document.querySelector(".menu-telon"),
+    };
+  });
+
+  // --- 13" en VERTICAL: cajón ---
+  await pg.setViewportSize({ width: 1024, height: 1366 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const cerrado = await estado();
+  chk(cerrado.hamVisible, "vertical: el ☰ está a la vista");
+  chk(!cerrado.visible, `y la barra empieza escondida (x=${cerrado.x})`);
+
+  await pg.click(".menu-hamburguesa");
+  await pg.waitForTimeout(500);
+  const abierto = await estado();
+  chk(abierto.visible, `el ☰ la abre (x=${abierto.x}, ancho ${abierto.ancho})`);
+  chk(abierto.telon, "y pone el telón para cerrarla tocando fuera");
+
+  await pg.click(".menu-telon");
+  await pg.waitForTimeout(500);
+  const recerrado = await estado();
+  chk(!recerrado.visible, `tocar fuera la vuelve a cerrar (x=${recerrado.x})`);
+
+  // --- 13" APAISADO: fija, sin ☰ ---
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.waitForTimeout(500);
+  const ancho = await estado();
+  chk(ancho.visible && ancho.x === 0, `apaisado: la barra está fija (x=${ancho.x})`);
+  chk(ancho.ancho === 318, `con sus 318 (${ancho.ancho})`);
+  chk(!ancho.hamVisible, "y el ☰ ni se pinta, porque no hace falta");
+  await ctxH.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
