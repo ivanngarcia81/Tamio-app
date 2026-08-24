@@ -28,7 +28,7 @@
     "verificar-respaldo": "node --no-warnings scripts/verificar-respaldo.mjs",
     "verificar-estado-financiero": "node --experimental-strip-types --no-warnings scripts/verificar-estado-financiero.ts",
     "verificar-centavos": "npm run verificar-dinero && npm run verificar-migracion-36 && npm run verificar-csv-centavos && npm run verificar-respaldo && npm run verificar-estado-financiero",
-    "verificar-sync-cortes": "node scripts/verificar-sync-cortes.mjs",
+    "verificar-sync": "node scripts/verificar-sync.mjs",
     "verificar-rama": "node scripts/verificar-rama.mjs"
   },
   "dependencies": {

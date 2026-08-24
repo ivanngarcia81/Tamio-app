@@ -24,6 +24,10 @@ create table if not exists public.depositos_bancarios (
 create index if not exists idx_depositos_church_updated
   on public.depositos_bancarios (church_id, updated_at);
 
+-- "Registrado por" (migración local 39), igual que en transactions.
+alter table public.depositos_bancarios add column if not exists registrado_por text;
+alter table public.depositos_bancarios add column if not exists registrado_rol text;
+
 alter table public.depositos_bancarios enable row level security;
 
 drop policy if exists "dep_select" on public.depositos_bancarios;

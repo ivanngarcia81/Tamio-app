@@ -54,6 +54,12 @@ create index if not exists idx_members_church_updated
 -- ---------------------------------------------------------------------------
 -- Seguridad por iglesia (RLS): un usuario solo ve/escribe filas de SU iglesia.
 -- ---------------------------------------------------------------------------
+-- Nacimiento y estado civil (migración local 42). Se añaden aparte porque
+-- llegaron después de la tabla; en una base nueva el `create table` de arriba
+-- ya los trae. `direccion` existía desde el primer día.
+alter table public.members add column if not exists fecha_nacimiento text;
+alter table public.members add column if not exists estado_civil     text;
+
 alter table public.members enable row level security;
 
 drop policy if exists "members_select" on public.members;

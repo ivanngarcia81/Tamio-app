@@ -39,6 +39,12 @@ create index if not exists idx_tx_church_updated
 -- ---------------------------------------------------------------------------
 -- Seguridad por iglesia (RLS): cada usuario solo ve/escribe filas de SU iglesia.
 -- ---------------------------------------------------------------------------
+-- "Registrado por" (migración local 39): el nombre y el rol de quien tecleó la
+-- cifra, como INSTANTÁNEA y no como referencia a un perfil — un rastro de
+-- auditoría tiene que seguir diciendo quién fue aunque esa persona se vaya.
+alter table public.transactions add column if not exists registrado_por text;
+alter table public.transactions add column if not exists registrado_rol text;
+
 alter table public.transactions enable row level security;
 
 drop policy if exists "tx_select" on public.transactions;

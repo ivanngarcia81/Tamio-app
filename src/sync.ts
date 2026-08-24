@@ -724,6 +724,230 @@ export async function sincronizarCorteMovimientos(churchIdLocal: number): Promis
 }
 
 // ============================================================================
+// EL ROSTER POR PUESTOS, EL ORDEN DEL CULTO Y LOS PARENTESCOS
+// ----------------------------------------------------------------------------
+// Las tres tablas de la tanda del 24 de agosto que se construyeron con sus
+// metadatos de sincronización puestos —uid, updated_at, borrado en blando— y
+// se quedaron sin quien las subiera. Las tres siguen el patrón de
+// `sincronizarRoster`: vínculos por uid, y lo que no encuentra a su padre se
+// salta y se reintenta en la siguiente pasada.
+//
+// Las tres van DESPUÉS de sus padres en `sincronizarTodo`: servicios para las
+// dos primeras, miembros para la tercera.
+// ============================================================================
+
+/** Sincroniza una tabla hija de `servicios`, con sus columnas propias. */
+async function sincronizarHijaDeServicio(
+  churchIdLocal: number,
+  tabla: "servicio_puestos" | "servicio_orden",
+  dataCols: readonly string[],
+  /** Columnas que además traducen un id local a uid, con su tabla. */
+  extra?: { col: string; remota: string; tabla: string },
+): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const { uidPorId: uidPorServ, idPorUid: servPorUid } = await mapasUid(d, "servicios", churchIdLocal);
+    const mapaExtra = extra ? await mapasUid(d, extra.tabla, churchIdLocal) : null;
+
+    const locales = await d.select<Record<string, unknown>[]>(
+      `SELECT * FROM ${tabla} WHERE church_id = $1`,
+      [churchIdLocal],
+    );
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from(tabla).select("*").eq("church_id", remoteChurch);
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remotas = (remotasRaw ?? []) as Record<string, unknown>[];
+
+    const remotasPorUid = new Map<string, Record<string, unknown>>();
+    for (const r of remotas) remotasPorUid.set(r.uid as string, r);
+    const localesPorUid = new Map<string, Record<string, unknown>>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid as string, l);
+
+    // PUSH
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      const uid = l.uid as string | null;
+      if (!uid) continue;
+      const servUid = uidPorServ.get(l.servicio_id as number);
+      if (!servUid) continue; // servicio sin uid: se omite, no se inventa
+      const r = remotasPorUid.get(uid);
+      if (r && !(epoch(l.updated_at) > epoch(r.updated_at))) continue;
+      const fila: Record<string, unknown> = {
+        uid, church_id: remoteChurch, servicio_uid: servUid,
+        updated_at: new Date(epoch(l.updated_at) || Date.now()).toISOString(),
+        deleted: (l.deleted as number) === 1,
+      };
+      for (const c of dataCols) fila[c] = l[c] ?? null;
+      if (extra && mapaExtra) {
+        const id = l[extra.col] as number | null;
+        fila[extra.remota] = id != null ? mapaExtra.uidPorId.get(id) ?? null : null;
+      }
+      aSubir.push(fila);
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from(tabla).upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL
+    let bajados = 0;
+    for (const r of remotas) {
+      const uid = r.uid as string;
+      const l = localesPorUid.get(uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+      const servIdLocal = servPorUid.get(r.servicio_uid as string);
+      if (!servIdLocal) continue; // servicio aún no bajado: en la siguiente
+
+      let extraId: number | null = null;
+      if (extra && mapaExtra) {
+        const u = r[extra.remota] as string | null;
+        extraId = u ? mapaExtra.idPorUid.get(u) ?? null : null;
+      }
+      const valores = dataCols.map((c) => r[c] ?? null);
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      const cols = [...dataCols, ...(extra ? [extra.col] : [])];
+      const vals = [...valores, ...(extra ? [extraId] : [])];
+
+      if (l) {
+        const sets = cols.map((c, i) => `${c} = $${i + 1}`).join(", ");
+        const n = cols.length;
+        await d.execute(
+          `UPDATE ${tabla} SET ${sets}, servicio_id = $${n + 1}, church_id = $${n + 2},
+                  updated_at = $${n + 3}, deleted = $${n + 4} WHERE uid = $${n + 5}`,
+          [...vals, servIdLocal, churchIdLocal, updatedAt, del, uid],
+        );
+      } else {
+        const todas = ["church_id", "servicio_id", ...cols, "uid", "updated_at", "deleted"];
+        const ph = todas.map((_, i) => `$${i + 1}`).join(", ");
+        await d.execute(
+          `INSERT INTO ${tabla} (${todas.join(", ")}) VALUES (${ph})`,
+          [churchIdLocal, servIdLocal, ...vals, uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+const PUESTO_DATA_COLS = ["puesto", "nombre", "created_at"] as const;
+const ORDEN_DATA_COLS = ["posicion", "hora", "titulo", "encargado", "created_at"] as const;
+
+/** Quién cubre cada puesto del culto. `member_id` viaja como `member_uid`
+ *  cuando la persona salió del padrón; escrita a mano va solo el nombre. */
+export async function sincronizarPuestos(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarHijaDeServicio(churchIdLocal, "servicio_puestos", PUESTO_DATA_COLS, {
+    col: "member_id", remota: "member_uid", tabla: "members",
+  });
+}
+
+/** El minuto a minuto del culto. Sin vínculos más allá del servicio. */
+export async function sincronizarOrdenCulto(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarHijaDeServicio(churchIdLocal, "servicio_orden", ORDEN_DATA_COLS);
+}
+
+/**
+ * Los parentescos de la pestaña Familia. Los DOS vínculos son a miembros, así
+ * que no vale el ayudante de arriba.
+ *
+ * Una fila por relación: dice "`pariente_uid` es el `tipo` de `member_uid`" y
+ * la otra ficha la lee al revés con el inverso. Si alguno de los dos miembros
+ * no ha bajado todavía, la fila se salta entera — media relación no es una
+ * relación.
+ */
+export async function sincronizarParentescos(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const { uidPorId, idPorUid } = await cargarMapasMiembros(d, churchIdLocal);
+
+    const locales = await d.select<Record<string, unknown>[]>(
+      "SELECT * FROM parentescos WHERE church_id = $1",
+      [churchIdLocal],
+    );
+    const { data: remotasRaw, error: errPull } = await supabase
+      .from("parentescos").select("*").eq("church_id", remoteChurch);
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remotas = (remotasRaw ?? []) as Record<string, unknown>[];
+
+    const remotasPorUid = new Map<string, Record<string, unknown>>();
+    for (const r of remotas) remotasPorUid.set(r.uid as string, r);
+    const localesPorUid = new Map<string, Record<string, unknown>>();
+    for (const l of locales) if (l.uid) localesPorUid.set(l.uid as string, l);
+
+    // PUSH
+    const aSubir: Record<string, unknown>[] = [];
+    for (const l of locales) {
+      const uid = l.uid as string | null;
+      if (!uid) continue;
+      const mUid = uidPorId.get(l.member_id as number);
+      const pUid = uidPorId.get(l.pariente_id as number);
+      if (!mUid || !pUid) continue;
+      const r = remotasPorUid.get(uid);
+      if (r && !(epoch(l.updated_at) > epoch(r.updated_at))) continue;
+      aSubir.push({
+        uid, church_id: remoteChurch, member_uid: mUid, pariente_uid: pUid,
+        tipo: l.tipo ?? null, created_at: l.created_at ?? null,
+        updated_at: new Date(epoch(l.updated_at) || Date.now()).toISOString(),
+        deleted: (l.deleted as number) === 1,
+      });
+    }
+    if (aSubir.length > 0) {
+      const { error } = await supabase.from("parentescos").upsert(aSubir, { onConflict: "uid" });
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+    }
+
+    // PULL
+    let bajados = 0;
+    for (const r of remotas) {
+      const uid = r.uid as string;
+      const l = localesPorUid.get(uid);
+      if (l && !(epoch(r.updated_at) > epoch(l.updated_at))) continue;
+      const mId = idPorUid.get(r.member_uid as string);
+      const pId = idPorUid.get(r.pariente_uid as string);
+      if (!mId || !pId) continue; // media relación no es una relación
+
+      const updatedAt = typeof r.updated_at === "string" ? r.updated_at : new Date().toISOString();
+      const del = r.deleted ? 1 : 0;
+      if (l) {
+        await d.execute(
+          `UPDATE parentescos SET member_id = $1, pariente_id = $2, tipo = $3,
+                  church_id = $4, updated_at = $5, deleted = $6 WHERE uid = $7`,
+          [mId, pId, r.tipo ?? null, churchIdLocal, updatedAt, del, uid],
+        );
+      } else {
+        /* El índice único parcial es sobre el PAR vivo: si ya hay una fila
+           local para esa pareja con otro uid, la remota ocupa su lugar. Mismo
+           trato que el roster de asistencia. */
+        await d.execute(
+          "DELETE FROM parentescos WHERE member_id = $1 AND pariente_id = $2",
+          [mId, pId],
+        );
+        await d.execute(
+          `INSERT INTO parentescos (church_id, member_id, pariente_id, tipo, created_at, uid, updated_at, deleted)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [churchIdLocal, mId, pId, r.tipo ?? null, r.created_at ?? null, uid, updatedAt, del],
+        );
+      }
+      bajados++;
+    }
+    return { ok: true, subidos: aSubir.length, bajados };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+// ============================================================================
 // ACTAS (A1) — texto independiente, sin vínculos externos
 // ============================================================================
 
@@ -736,6 +960,12 @@ const ACTA_DATA_COLS = [
   // esta línea: al revés, el upsert manda una columna que Supabase no conoce
   // y se corta la sincronización entera.
   "testigo",
+  /* Las firmas recogidas (migración 44). Llegó un día tarde, y eso es lo que
+     hizo falta para convertir en guarda la regla que el comentario de arriba
+     ya decía: la columna local se añadió por la mañana y ésta por la tarde,
+     así que durante unas horas quien firmaba un acta en un iPad no lo veía
+     nadie más. `npm run verificar-sync` lo comprueba ahora en cada cambio. */
+  "firmas",
 ] as const;
 
 /** Sincroniza las actas de una iglesia local contra Supabase. */
@@ -1384,6 +1614,11 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
     ["servicios", await sincronizarServicios(churchIdLocal)],
     // El roster depende de servicios y miembros ya sincronizados (por uid).
     ["servicio_asistencia", await sincronizarRoster(churchIdLocal)],
+    /* Las otras dos hijas de servicios, y los parentescos. Van aquí por lo
+       mismo que el roster: sus padres —servicios y miembros— ya pasaron. */
+    ["servicio_puestos", await sincronizarPuestos(churchIdLocal)],
+    ["servicio_orden", await sincronizarOrdenCulto(churchIdLocal)],
+    ["parentescos", await sincronizarParentescos(churchIdLocal)],
     ["agenda", await sincronizarAgenda(churchIdLocal)],
     ["mensajes", await sincronizarMensajes(churchIdLocal)],
     ["plantillas", await sincronizarPlantillas(churchIdLocal)],
