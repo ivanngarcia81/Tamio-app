@@ -209,6 +209,12 @@ const TX_DATA_COLS = [
   "tipo", "categoria", "subcategoria", "concepto", "detalle", "fecha", "monto",
   "moneda", "metodo_pago", "beneficiario", "beneficiario_rfc", "comprobante_path",
   "emitir_constancia", "estado", "notas", "created_at",
+  /* Quién lo registró (migración 39). Sin esto, la tesorera veía su nombre en
+     SU iPad y el administrador el mismo movimiento sin nombre en el suyo.
+     **Las columnas remotas tienen que existir antes que esta línea**: si no,
+     el `upsert` manda una columna que Supabase no conoce y la sincronización
+     entera falla, no solo esta tabla. Se crearon el 24 ago 2026. */
+  "registrado_por", "registrado_rol",
 ] as const;
 
 /** Sincroniza las transacciones de una iglesia local contra Supabase, mapeando
@@ -316,6 +322,8 @@ export async function sincronizarTransacciones(churchIdLocal: number): Promise<R
 const DEP_DATA_COLS = [
   "fecha", "periodo", "monto", "moneda", "cuenta_banco", "referencia",
   "comprobante_path", "notas", "created_at",
+  // Mismo motivo y mismo requisito que en TX_DATA_COLS, arriba.
+  "registrado_por", "registrado_rol",
 ] as const;
 
 /** Sincroniza los depósitos bancarios de una iglesia local contra Supabase. */

@@ -828,6 +828,34 @@ fn migraciones() -> Vec<motordb::Migracion> {
             ALTER TABLE cortes ADD COLUMN registrado_por TEXT;
             ALTER TABLE cortes ADD COLUMN registrado_rol TEXT;
         "#,
+    }, motordb::Migracion {
+        version: 40,
+        description: "corte_movimientos con metadatos de sincronización",
+        sql: r#"
+            -- Para que un corte hecho en el iPad de la tesorera llegue al del
+            -- administrador, su tabla puente necesita lo mismo que todas las
+            -- demás: `uid` propio, `updated_at` y borrado en BLANDO. Las
+            -- referencias entre aparatos van por uid y nunca por el id local,
+            -- que no significa nada fuera de su base — es el patrón que ya
+            -- usa `servicio_asistencia` con `servicio_uid` y `member_uid`.
+            --
+            -- El borrado en blando obliga a cambiar el índice único: mientras
+            -- un enganche borrado siguiera contando, su movimiento no podría
+            -- volver a entrar en otro corte. Pasa a ser PARCIAL —solo sobre
+            -- las filas vivas—, que es lo que dice la regla de verdad: un
+            -- movimiento pertenece a un corte VIGENTE como mucho.
+            ALTER TABLE corte_movimientos ADD COLUMN uid TEXT;
+            ALTER TABLE corte_movimientos ADD COLUMN updated_at TEXT;
+            ALTER TABLE corte_movimientos ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+            UPDATE corte_movimientos SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+            UPDATE corte_movimientos SET updated_at = datetime('now') WHERE updated_at IS NULL;
+
+            DROP INDEX IF EXISTS idx_corte_movs_tx;
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_corte_movs_tx_vivo
+                ON corte_movimientos(tx_id) WHERE deleted = 0;
+            CREATE INDEX IF NOT EXISTS idx_corte_movs_sync
+                ON corte_movimientos(church_id, updated_at);
+        "#,
     }]
 }
 

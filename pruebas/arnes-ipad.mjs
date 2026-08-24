@@ -2567,6 +2567,10 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
     return { n: Number(b.querySelector(".count")?.textContent ?? "0"), ayuda: (b.getAttribute("title") || "").length };
   });
   chk(!!chip, "Ingresos: el chip \"Sin depositar\" está");
+  /* Y deshacer un corte devuelve su dinero a la caja. Es la prueba de que el
+     borrado en BLANDO de los enganches (migración 40) no deja el dinero
+     atrapado: el índice único es parcial, solo sobre los vivos. */
+  const antesDeDeshacer = chip?.n ?? 0;
   if (chip) {
     chk(chip.n > 0, `y cuenta lo que sigue en caja (${chip.n})`);
     chk(chip.ayuda > 40, `con su explicación de qué cuenta (${chip.ayuda} car.)`);
@@ -2576,6 +2580,37 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
     const filas = await pg.locator(".md-movimientos .md-fila").count();
     chk(filas === chip.n, `y filtra la lista a esos mismos (${filas} = ${chip.n})`);
   }
+
+  /* Deshacer el corte: el movimiento vuelve a la caja y el chip vuelve a
+     contarlo. Si el enganche borrado siguiera bloqueando —el índice único no
+     fuera parcial—, ese dinero se quedaría fuera de la caja para siempre. */
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos", { timeout: 10000 });
+  await pg.locator(".md-seg-tipo button", { hasText: "Depositados" }).click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".dep-det-acciones .ios-bar-button").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-menu-item", { hasText: "Reabrir" }).click();
+  await pg.waitForTimeout(900);
+  await pg.locator(".md-seg-tipo button", { hasText: "Pendientes" }).click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".dep-carta-accion .btn.secondary", { hasText: "Deshacer" }).click();
+  await pg.waitForTimeout(900);
+
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-movimientos .md-fila", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+  const despues = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".md-chips .chip, .md-filtros .chip")]
+      .find((x) => /sin depositar/i.test(x.textContent));
+    return b ? Number(b.querySelector(".count")?.textContent ?? "0") : 0;
+  });
+  chk(despues === antesDeDeshacer + 1,
+    `deshecho el corte, su movimiento vuelve a la caja (${antesDeDeshacer} → ${despues})`);
   await ctxD.close();
 }
 

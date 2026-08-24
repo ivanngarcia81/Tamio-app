@@ -1141,8 +1141,9 @@ export async function insertCorte(
   if (!id) return null;
   for (const tx of txIds) {
     await d.execute(
-      `INSERT OR IGNORE INTO corte_movimientos (corte_id, tx_id, church_id) VALUES ($1,$2,$3)`,
-      [id, tx, churchId]
+      `INSERT OR IGNORE INTO corte_movimientos (corte_id, tx_id, church_id, uid, updated_at)
+       VALUES ($1,$2,$3,$4,datetime('now'))`,
+      [id, tx, churchId, crypto.randomUUID()]
     );
   }
   return id;
@@ -1169,13 +1170,22 @@ export async function reabrirCorte(corteId: number, churchId: number): Promise<v
 }
 
 /**
- * Borra el corte. Los enganches se borran DE VERDAD, no en blando: mientras
- * existan, sus movimientos siguen contando como "ya en un corte" y no
- * volverían a salir en caja — un corte borrado que se lleva el dinero con él.
+ * Borra el corte y suelta sus movimientos, que vuelven a la caja.
+ *
+ * Los enganches se borran **en blando** (migración 40): un borrado de verdad
+ * no puede viajar a otro aparato —el otro nunca se enteraría— y el corte
+ * seguiría vivo allí, con el dinero fuera de la caja para siempre. Lo que
+ * hace que soltarlos funcione igual es que el índice único es PARCIAL, solo
+ * sobre las filas vivas: un movimiento pertenece a un corte VIGENTE como
+ * mucho, y uno soltado puede volver a entrar en otro.
  */
 export async function deleteCorte(corteId: number, churchId: number): Promise<void> {
   const d = await getDb();
-  await d.execute("DELETE FROM corte_movimientos WHERE corte_id = $1 AND church_id = $2", [corteId, churchId]);
+  await d.execute(
+    `UPDATE corte_movimientos SET deleted = 1, updated_at = datetime('now')
+      WHERE corte_id = $1 AND church_id = $2`,
+    [corteId, churchId]
+  );
   await d.execute(
     "UPDATE cortes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [corteId, churchId]
@@ -1190,7 +1200,7 @@ export async function movimientosDeCorte(corteId: number, churchId: number): Pro
        FROM corte_movimientos cm
        JOIN transactions t ON t.id = cm.tx_id
        LEFT JOIN members m ON m.id = t.member_id
-      WHERE cm.corte_id = $1 AND cm.church_id = $2 AND t.deleted = 0
+      WHERE cm.corte_id = $1 AND cm.church_id = $2 AND cm.deleted = 0 AND t.deleted = 0
       ORDER BY t.fecha DESC, t.id DESC`,
     [corteId, churchId]
   );
@@ -1205,7 +1215,8 @@ export async function movimientosDeDeposito(depositoId: number, churchId: number
        JOIN corte_movimientos cm ON cm.corte_id = c.id
        JOIN transactions t ON t.id = cm.tx_id
        LEFT JOIN members m ON m.id = t.member_id
-      WHERE c.deposito_id = $1 AND c.church_id = $2 AND c.deleted = 0 AND t.deleted = 0
+      WHERE c.deposito_id = $1 AND c.church_id = $2 AND c.deleted = 0
+        AND cm.deleted = 0 AND t.deleted = 0
       ORDER BY t.fecha DESC, t.id DESC`,
     [depositoId, churchId]
   );
@@ -1257,7 +1268,7 @@ export async function txEnCorte(churchId: number): Promise<Set<number>> {
     `SELECT cm.tx_id
        FROM corte_movimientos cm
        JOIN cortes c ON c.id = cm.corte_id
-      WHERE cm.church_id = $1 AND c.deleted = 0`,
+      WHERE cm.church_id = $1 AND cm.deleted = 0 AND c.deleted = 0`,
     [churchId]
   );
   return new Set(rows.map((r) => r.tx_id));

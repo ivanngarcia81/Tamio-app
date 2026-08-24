@@ -2758,18 +2758,16 @@ como hace `App.tsx`.
 Sin sesión **no se pinta nada**, ni un hueco. Callar es decir "no lo sé";
 un renglón con nombre de nadie sería peor.
 
-### Lo que todavía no cruza entre aparatos
+### Y sí cruza entre aparatos (mismo día)
 
-Las seis columnas viven solo en el aparato donde se escribieron. `sync.ts`
-sube **columna por columna** (`TX_DATA_COLS`, `DEP_DATA_COLS`) y las nuevas no
-están en esas listas, porque las columnas remotas no existen. O sea: la
-tesorera ve su nombre en su iPad, y el administrador ve ese mismo movimiento
-sin nombre en el suyo.
+Se cerró en la misma sesión, cuando resultó que **sí había acceso a Supabase**.
+Las columnas `registrado_por` y `registrado_rol` se crearon en `transactions` y
+`depositos_bancarios`, y después entraron en `TX_DATA_COLS` y `DEP_DATA_COLS`.
 
-Cerrarlo son dos pasos, **y el orden importa**: primero añadir las columnas en
-Supabase, después meterlas en las dos listas. Al revés, `sync.ts` intentaría
-subir una columna que no existe y la sincronización entera fallaría. Queda
-apuntado en `docs/cascaras-1-2.md` junto al mismo pendiente de los cortes.
+**El orden importa y no es opinión**: `sync.ts` sube columna por columna con un
+`upsert`, así que meter el nombre en la lista antes de que exista la columna
+remota no habría roto esa tabla — habría roto **la sincronización entera**, que
+se corta en el primer paso que falla. Primero la base, después el código.
 
 ### Lo medido
 

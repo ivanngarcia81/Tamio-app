@@ -342,23 +342,25 @@ paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
   columna y numerador.
 - ~~**"Registrado por"** y **el chip "Sin depositar"**~~ → **los dos cableados
   el 24 ago 2026** (migraciones 38 y 39).
-- **La sincronización de "Registrado por".** Las seis columnas nuevas viven
-  solo en el aparato: `sync.ts` sube columna por columna (`TX_DATA_COLS`,
-  `DEP_DATA_COLS`) y no están en esas listas, porque las columnas remotas no
-  existen. O sea que la tesorera ve su nombre en SU iPad y el administrador
-  ve el movimiento sin nombre en el suyo. Para cerrarlo hacen falta dos
-  cosas, en este orden: añadir las columnas en Supabase y luego meterlas en
-  las dos listas. **El orden importa**: al revés, `sync.ts` intentaría subir
-  una columna que no existe y la sincronización entera fallaría.
+- ~~**La sincronización de "Registrado por"**~~ → **cerrada el 24 ago 2026.**
+  Las columnas se crearon en Supabase (`transactions` y `depositos_bancarios`)
+  y entraron en `TX_DATA_COLS` y `DEP_DATA_COLS`, en ese orden — al revés,
+  `sync.ts` habría intentado subir una columna que no existe y la
+  sincronización entera habría fallado, no solo esa tabla.
 - ~~**Los nombres de corte**~~ y su **cuenta asignada** → **llegaron con la
   tabla de cortes** el 24 ago 2026. Ya no son inventados: los escribe quien
   hace el corte.
-- **La sincronización de los cortes.** `cortes` y `corte_movimientos` **no
-  suben a Supabase todavía**: `src/sync.ts` lleva una lista explícita de
-  tablas y estas dos no están en ella, porque la tabla remota no existe. Un
-  corte vive en el aparato donde se hizo. Para una tesorera con un iPad basta;
-  en cuanto haya dos aparatos hace falta crear las dos tablas en Supabase y
-  añadir su paso a `sincronizarTodo`.
+- **La sincronización de los cortes: media hecha.** Las dos tablas **ya
+  existen en Supabase** (creadas el 24 ago 2026, con RLS y sus cuatro
+  políticas cada una, y con `deposito_uid` / `corte_uid` / `tx_uid` en vez de
+  ids locales, que no significan nada fuera de su base). Y la base local ya
+  lleva los metadatos que hacen falta para viajar: `uid`, `updated_at` y
+  borrado en blando en `corte_movimientos` (migración 40), con el índice único
+  vuelto **parcial** para que soltar un enganche devuelva ese dinero a la caja.
+  Lo que falta es **el paso de `sincronizarTodo`**: una función que mapee ids
+  locales ↔ uids en las dos direcciones, como ya hace `sincronizarRoster` con
+  `servicio_uid` y `member_uid`. Hasta entonces, un corte vive en el aparato
+  donde se hizo.
 
 ## Cuando toque cablear, el orden que rinde más
 
