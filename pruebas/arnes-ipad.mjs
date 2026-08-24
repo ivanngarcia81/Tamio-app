@@ -2444,6 +2444,101 @@ console.log("\n== Depósitos › Pendientes: el corte se revisa antes del banco 
   await ctxD.close();
 }
 
+/* ---------- 29. Dos textos que respiraban mal (24 ago 2026) ----------
+   Los dos vienen de fotos de Iván en el iPad:
+
+    - **Agenda**, panel sin día abierto: "Elige un día" nacía pegado al filo
+      izquierdo de la columna. La columna del día lleva `padding: 0` a
+      propósito —su contenido (`.ag-dia`) pone el suyo—, pero el estado VACÍO
+      no ponía ninguno, así que se quedaba sin aire.
+    - **Informes de membresía**: la fila de chips ("Ausencias consecutivas",
+      "Información incompleta") caía encima de la fila de selectores.
+
+   Los dos se miden contra su contenedor, no contra un literal: lo que hay que
+   garantizar es que hay hueco, no que el hueco valga 20. */
+console.log("\n== Los textos con su aire ==");
+{
+  const ctxA = await nuevoContexto("ipad");
+  const pg = await ctxA.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  await pg.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-agenda .md-detalle", { timeout: 10000 });
+  const ag = await pg.evaluate(() => {
+    const panel = document.querySelector(".md-agenda .md-detalle");
+    const h3 = panel?.querySelector(".md-vacio-hint h3");
+    const p = panel?.querySelector(".md-vacio-hint p");
+    if (!panel || !h3 || !p) return null;
+    const rp = panel.getBoundingClientRect();
+    return {
+      izq: Math.round(h3.getBoundingClientRect().left - rp.left),
+      arriba: Math.round(h3.getBoundingClientRect().top - rp.top),
+      der: Math.round(rp.right - p.getBoundingClientRect().right),
+    };
+  });
+  chk(!!ag, "Agenda: el panel enseña \"Elige un día\"");
+  if (ag) {
+    chk(ag.izq >= 16, `Agenda: el texto despega del filo izquierdo (${ag.izq}px)`);
+    chk(ag.der >= 16, `Agenda: y del derecho (${ag.der}px)`);
+    chk(ag.arriba >= 16, `Agenda: y de la cabecera (${ag.arriba}px)`);
+  }
+
+  await pg.goto(`${URL_BASE}/#/reporte-miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".inf-item", { timeout: 10000 });
+  await pg.locator(".inf-item", { hasText: "Registro de miembros" }).first().click();
+  await pg.waitForTimeout(600);
+  const inf = await pg.evaluate(() => {
+    const fila = document.querySelector(".inf-cuerpo .tx-head");
+    if (!fila) return null;
+    const selects = [...fila.querySelectorAll("select")];
+    const chips = [...fila.querySelectorAll(".chip")];
+    if (!selects.length || !chips.length) return null;
+    const abajoSelects = Math.max(...selects.map((e) => e.getBoundingClientRect().bottom));
+    const arribaChips = Math.min(...chips.map((e) => e.getBoundingClientRect().top));
+    /* Cuántos RENGLONES hay de verdad y a qué distancia quedan. Medir "los
+       chips contra los selectores" no valía: con este ancho el último
+       selector se va abajo CON los chips, así que la fila no se parte en
+       "selectores arriba, chips abajo" y la resta salía negativa sin que
+       nada estuviera mal. Lo que sí es cierto pase lo que pase: dos piezas de
+       renglones distintos no pueden quedar a menos de 10px. */
+    const piezas = [...fila.children].map((e) => e.getBoundingClientRect());
+    const renglones = [];
+    for (const r of piezas) {
+      const y = Math.round(r.top);
+      const g = renglones.find((x) => Math.abs(x.top - y) <= 6);
+      if (g) g.bottom = Math.max(g.bottom, r.bottom);
+      else renglones.push({ top: y, bottom: r.bottom });
+    }
+    renglones.sort((a, b) => a.top - b.top);
+    let peor = Infinity;
+    for (let i = 1; i < renglones.length; i++) {
+      peor = Math.min(peor, Math.round(renglones[i].top - renglones[i - 1].bottom));
+    }
+    return {
+      alto: Math.round(chips[0].getBoundingClientRect().height),
+      rowGap: parseFloat(getComputedStyle(fila).rowGap) || 0,
+      renglones: renglones.length,
+      peor: renglones.length > 1 ? peor : null,
+      n: chips.length,
+      _sinUsar: [abajoSelects, arribaChips],
+    };
+  });
+  chk(!!inf, "Informes: la fila de filtros tiene selectores y chips");
+  if (inf) {
+    chk(inf.rowGap >= 12, `Informes: la fila de filtros separa sus renglones (row-gap ${inf.rowGap}px)`);
+    if (inf.renglones > 1) {
+      chk(inf.peor >= 10, `Informes: y ninguno se pega al de arriba (${inf.peor}px en ${inf.renglones} renglones)`);
+    }
+    /* Un chip de 29px es un objetivo táctil fallado, y era la mitad de por
+       qué la fila se leía apretada: no era solo el hueco. */
+    chk(inf.alto >= 32, `Informes: y con alto de dedo (${inf.alto}px, ${inf.n} chips)`);
+  }
+  const DIR = process.env.CAPTURAS || "";
+  if (DIR) await pg.screenshot({ path: `${DIR}/informes-filtros.png` });
+  await ctxA.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

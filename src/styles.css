@@ -9554,6 +9554,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      teléfono, donde la fila de glifos va arriba del todo. En una barra van
      a la derecha, que es su sitio en el marcado. */
   :root.ipad .header-actions { order: 0; }
+  /* Los chips, a alto de dedo. Con `padding: 6px 12px` y nada más medían
+     **29px**: por debajo de cualquier objetivo táctil razonable, y encima
+     dejaban las filas de filtros desalineadas —los `select` de al lado miden
+     36—, que es lo que se veía apretado en Informes de membresía. Es el mismo
+     arreglo de raíz que necesitó `.ios-bar-button`, y por el mismo motivo: un
+     control compartido dimensionado para el ratón. */
+  :root.ipad .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+  }
   /* 17px es el título de barra de iOS, el mismo que ya usa `.titulo-fijo`
      cuando aterriza. `opacity: 1` anula el atado a `--progreso-titulo`
      (línea ~7600): aquí el título no viaja a ningún sitio, siempre está. */
@@ -11624,6 +11635,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     flex-direction: column;
   }
+  /* `padding: 0` arriba es a propósito: la columna del día lo pone dentro
+     (`.ag-dia`), porque su cabecera va de filo a filo. Pero el estado VACÍO
+     no es `.ag-dia` y se quedaba sin ninguno: "Elige un día" nacía a 1px del
+     filo izquierdo y a 0 del derecho y de la cabecera. Medido en el iPad de
+     Iván y reproducido en el arnés. */
+  :root.ipad .md-split.md-agenda .md-detalle .md-vacio { padding: 24px 20px; }
   /* El lienzo del calendario: el mismo aire que .content, desplazando él. */
     /* ⚠️ SIN USAR desde la fusión del 22 ago 2026. Lo pedía la Agenda de la otra rama (la mía no envuelve el calendario),
      que no entró: ganó la otra implementación de la misma pantalla.

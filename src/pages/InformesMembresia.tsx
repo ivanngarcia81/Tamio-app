@@ -850,7 +850,10 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                 )}
               </>
             ) : enMac ? null : (
-              <div className="tx-head" style={{ flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+              /* `gap` con dos valores: 12 entre renglones y 8 entre piezas del
+                 mismo renglón. Con un solo 8, los chips que se van a la
+                 segunda línea quedaban pegados a los selectores de arriba. */
+              <div className="tx-head" style={{ flexWrap: "wrap", gap: "12px 8px", marginTop: 10 }}>
                 <div className="search-input-wrap" style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
                   <IconSearch size={15} strokeWidth={2} />
                   <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("informes.buscar"))} value={query} onChange={(e) => setQuery(e.target.value)} />

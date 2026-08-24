@@ -2497,3 +2497,79 @@ veces en este arnés.
 
 El arnés pasa de 694 a **727**.
 
+---
+
+## 35. Dos textos que no respiraban (24 ago 2026)
+
+Dos fotos de Iván en el iPad, las dos del mismo tipo de fallo: un texto sin
+aire. Y las dos con la misma lección detrás — el número exacto se mide, no se
+estima.
+
+### "Elige un día" pegado al filo
+
+En Agenda, con el panel del día sin nada abierto, el texto nacía a **1px** del
+filo izquierdo, **0** del derecho y **0** de la cabecera. Medido, no
+deducido.
+
+La causa estaba escrita y era correcta:
+
+```css
+:root.ipad .md-split.md-agenda .md-detalle { padding: 0; }
+```
+
+Ese `padding: 0` es deliberado: la columna del día tiene cabecera de filo a
+filo, así que el relleno lo pone su contenido (`.ag-dia`). Lo que nadie miró
+es que el estado **vacío** no es `.ag-dia` —es un `.md-vacio` suelto— y por
+tanto se quedaba sin ninguno. Es la única `.md-detalle` del iPad con
+`padding: 0`; las demás lo llevan de `.md-detalle` y por eso nunca dieron
+guerra.
+
+```css
+:root.ipad .md-split.md-agenda .md-detalle .md-vacio { padding: 24px 20px; }
+```
+
+### La fila de filtros de Informes, apretada
+
+Dos cosas a la vez, y la segunda es la que importa:
+
+1. **Sin `row-gap`.** La fila declaraba `gap: 8`, que en un `flex-wrap` vale
+   para las dos direcciones; cuando los filtros se van a un segundo renglón,
+   8px es nada. Ahora es `gap: "12px 8px"` — 12 entre renglones, 8 entre
+   piezas del mismo.
+
+2. **Los chips medían 29px.** `.chip` es `padding: 6px 12px` y ningún alto, o
+   sea 29 de caja. En un iPad eso es **un objetivo táctil fallado**, y encima
+   los dejaba desalineados con los `select` de al lado, que miden 36 — que es
+   la mitad de por qué la fila se leía apretada. Arreglado en la raíz:
+
+```css
+:root.ipad .chip { display: inline-flex; align-items: center; min-height: 34px; }
+```
+
+Esto **toca todos los chips del iPad**, no solo los de Informes: Ingresos,
+Reportes, Membresía. Es a propósito, y es exactamente el mismo caso que
+`.ios-bar-button` en §26 —un control compartido dimensionado para el ratón—
+resuelto en el mismo sitio: la clase, no la pantalla. El arnés confirmó que no
+movió ninguna de las geometrías que ya vigilaba.
+
+### La guarda, y por qué la primera versión no servía
+
+La primera versión medía "los chips contra los selectores": el fondo del
+selector más bajo contra el techo del chip más alto. Salía **−36px** con el
+fallo puesto… y también con el arreglo puesto. El motivo: con este ancho el
+**último selector se va abajo con los chips**, así que la fila no se parte en
+"selectores arriba, chips abajo" y la resta no significaba nada.
+
+La versión que quedó no supone ninguna partición: agrupa las piezas en
+**renglones** por su coordenada `top` y exige que entre dos renglones
+consecutivos haya al menos 10px, más un `row-gap` computado de 12. Eso es
+cierto con cualquier ancho, cualquier idioma y cualquier iPad — que es lo
+único que puede pedirle uno a una guarda de maquetación.
+
+### Lo medido
+
+Agenda: que el texto quede a ≥16px de los tres filos del panel (sale 21 / 20 /
+24). Informes: `row-gap` ≥ 12, ningún renglón a menos de 10px del de arriba, y
+chips de ≥32px de alto (sale 34). Probadas al revés, devolviendo las tres
+declaraciones: caen las **seis**. El arnés pasa de 727 a **735**.
+
