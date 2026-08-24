@@ -3518,8 +3518,27 @@ console.log("\n== Compartir un depósito entrega un PDF ==");
      `entregarArchivo` enseña el documento antes de repartirlo. Es lo que hace
      cada reporte desde siempre, y este comprobante no iba a ser la excepción.
      La guarda sigue ese camino entero en vez de fingir que hay un atajo. */
-  await pg.waitForSelector(".visor-pdf-overlay", { timeout: 15000 })
-    .catch(() => { /* lo dicen las comprobaciones de abajo */ });
+  /* **Se espera la SEÑAL, no un plazo** (arreglado el 24 ago 2026 tras verlo
+     fallar). Antes esto era un `waitForSelector` de 15 s a secas, y con el
+     servidor de desarrollo FRÍO no llegaba: la primera vez que se pide un PDF,
+     vite tiene que transformar `pdfjs-dist` entero, y eso se come el plazo. La
+     misma tanda pasaba en verde a la segunda sin tocar una línea de la app —
+     que es la firma de un fallo de tiempo, no de código.
+
+     La señal de verdad la da el propio botón: mientras genera se queda
+     `disabled` diciendo "Preparando…". Cuando sale de ahí, el trabajo terminó
+     —con visor o sin él—, y entonces la comprobación mide lo que quiere medir
+     en vez de medir la velocidad del portátil. Se espera cualquiera de las dos
+     cosas, la que llegue antes, porque el orden entre reactivar el botón y
+     pintar el visor no está garantizado. */
+  await pg.waitForFunction(() => {
+    const b = [...document.querySelectorAll(".dep-det-acciones button")]
+      .find((x) => /Compartir|Share|Preparando|Preparing/i.test(x.textContent ?? ""));
+    return !!document.querySelector(".visor-pdf-overlay") || (!!b && !b.disabled);
+  }, null, { timeout: 60000 }).catch(() => { /* lo dicen las comprobaciones de abajo */ });
+  // Y un respiro corto para que React pinte el visor si el botón se soltó antes.
+  await pg.waitForSelector(".visor-pdf-overlay", { timeout: 10000 })
+    .catch(() => { /* idem */ });
   const visor = await pg.evaluate(() => {
     const v = document.querySelector(".visor-pdf-overlay");
     return v ? { nombre: v.querySelector(".visor-pdf-nombre")?.textContent?.trim() } : null;
@@ -3529,8 +3548,14 @@ console.log("\n== Compartir un depósito entrega un PDF ==");
     `con nombre de comprobante de depósito (${visor?.nombre})`);
   chk(/\.pdf$/.test(visor?.nombre ?? ""), `y extensión .pdf (${visor?.nombre})`);
 
-  // Y de ahí, la hoja nativa.
-  await pg.locator(".visor-pdf-barra .btn.primary").click();
+  /* Y de ahí, la hoja nativa. Con `.catch()`, como los demás clics de riesgo
+     del archivo (líneas 518, 754…): si el visor no llegó a abrirse, este clic
+     lanzaba y **reventaba el proceso entero**. Eso ya pasó: un fallo de tiempo
+     aquí se llevó por delante las CATORCE secciones siguientes, que ni
+     llegaron a correr. Un fallo tiene que costar sus tres comprobaciones, no
+     media tanda. */
+  await pg.locator(".visor-pdf-barra .btn.primary").click({ timeout: 10000 })
+    .catch(() => { /* lo dicen las comprobaciones de abajo */ });
   await pg.waitForFunction(() => window.__compartido !== null, null, { timeout: 15000 })
     .catch(() => { /* idem */ });
   const salida = await pg.evaluate(() => window.__compartido);
