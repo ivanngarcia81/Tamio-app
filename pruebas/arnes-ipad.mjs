@@ -4594,7 +4594,7 @@ console.log("\n== El tamaño de texto mueve la app entera ==");
   await ctxT.close();
 }
 
-/* ---------- 36. El header, con las medidas del handoff ----------------
+/* ---------- 47. El header, con las medidas del handoff ----------------
    Iván mandó el handoff del header el 24 ago con dos instrucciones: cambiar
    el ☰ por el icono de menú del mockup, y NO pintar los iconos fantasma
    (Aspecto y Rotar) que el diseño dibuja a la derecha.
@@ -4810,7 +4810,7 @@ console.log("\n== El header con las medidas del handoff ==");
   await ctxF.close();
 }
 
-/* ---------- 37. Un solo botón de crear, y con nombre --------------------
+/* ---------- 48. Un solo botón de crear, y con nombre --------------------
    Iván mandó dos fotos de "Cartas y traslados" el 24 ago con los dos botones
    circulados: un "+" pelado en la esquina de la barra y, debajo, un botón
    verde con nombre dentro de la lista. Los dos hacían lo mismo.
@@ -4908,7 +4908,7 @@ console.log("\n== Un solo botón de crear, y con nombre ==");
   await ctxC.close();
 }
 
-/* ---------- 38. Cartas y traslados, rehecha con su handoff --------------
+/* ---------- 49. Cartas y traslados, rehecha con su handoff --------------
    Iván: "es la única página que no se diseñó bien". Al medirla salieron tres
    cosas de fondo, y ninguna era de estilo:
 
@@ -5261,6 +5261,132 @@ console.log("\n== El registro de lo que pasa en la iglesia ==");
     await pg.screenshot({ path: `${process.env.CAPTURAS}/registro-1366x1024.png` });
   }
   await ctxRg.close();
+}
+
+/* ---------- 50. De todo panel se puede salir --------------------------
+   Lo pidió Iván el 25 ago: "revisar en Reportes, Informes, Cartas… en toda
+   la página de secretaría, por si tiene botón de regreso".
+
+   Sale de lo que se vio en el editor de la carta: apaisado no había salida
+   CON NOMBRE. El índice seguía a la izquierda, así que atrapado no estabas,
+   pero la única forma de salir era saltar a otra sección —un destino, no un
+   "volver"— y encima con el aviso de cambios sin guardar de por medio. El
+   `.dm-volver` del panel solo se pinta por debajo de 1000.
+
+   La regla que se vigila no es "que haya un botón": es que **desde dentro de
+   un panel siempre se pueda salir**, y hay dos formas legítimas de cumplirla,
+   las dos del sistema:
+
+     · la columna maestra sigue A LA VISTA (vista partida de iPadOS: no hace
+       falta volver, la lista está ahí), o
+     · hay un control de VOLVER visible (modo de empuje, o un panel que ocupa
+       todo el ancho).
+
+   Se recorre cada pantalla con panel, en las DOS orientaciones, se abre lo
+   último de la lista y se exige una de las dos. Si un día alguien esconde la
+   lista sin poner el botón —que es exactamente lo que pasó— esto lo canta.
+
+   Las clases de volver van en una constante y no repartidas: son cinco
+   distintas (`dm-volver`, `inf-volver`, `ce-barra-volver`,
+   `settings-detail-volver`, `ios-back`) y la primera versión de esta guarda
+   solo miró tres, y acusó a Informes de membresía de estar atrapada cuando
+   tiene la suya propia. */
+const CLASES_VOLVER = ".dm-volver, .inf-volver, .ce-barra-volver, .settings-detail-volver, .ios-back";
+console.log("\n== De todo panel se puede salir ==");
+{
+  const ctxV = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxV.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+
+  /** ¿Hay salida? La lista a la vista o un botón de volver. */
+  const haySalida = () => pg.evaluate((sel) => {
+    const vis = (e) => {
+      if (!e) return false;
+      const r = e.getBoundingClientRect();
+      return r.width > 2 && r.height > 2 && getComputedStyle(e).visibility !== "hidden";
+    };
+    const lista = document.querySelector(".md-lista, .md-indice, .settings-nav");
+    /* "A la vista" se pregunta TOCÁNDOLA: se mira qué elemento hay en el
+       centro de la lista y se exige que sea ella. Mirar solo su rectángulo no
+       vale y la primera versión de esta guarda cayó ahí: en el modo de empuje
+       la lista sigue en el árbol, con su ancho y su sitio, y el panel se le
+       desliza ENCIMA. Su rectángulo decía "visible" en las veinticuatro
+       pantallas, o sea que la guarda no podía fallar nunca. */
+    let listaOk = false;
+    if (vis(lista)) {
+      const r = lista.getBoundingClientRect();
+      const x = Math.max(2, Math.min(r.left + r.width / 2, window.innerWidth - 2));
+      const y = Math.max(2, Math.min(r.top + r.height / 2, window.innerHeight - 2));
+      const arriba = document.elementFromPoint(x, y);
+      listaOk = !!arriba && lista.contains(arriba);
+    }
+    const v = [...document.querySelectorAll(sel)].filter(vis)[0];
+    return {
+      ok: listaOk || !!v,
+      lista: listaOk,
+      volver: v ? `${v.className.split(" ")[0]}` : "ninguno",
+    };
+  }, CLASES_VOLVER);
+
+  const PANTALLAS_PANEL = [
+    ["reportes", ".md-indice-item", "Reportes"],
+    ["reporte-miembros", ".md-indice-item", "Informes de membresía"],
+    ["cartas", ".md-indice-item", "Cartas y traslados"],
+    ["membresia", ".mb-fila", "Membresía"],
+    ["actas", ".md-fila", "Actas"],
+    ["servicios", ".md-fila", "Registro de servicios"],
+    ["agenda", ".agenda-cell:not(.fuera)", "Agenda y calendario"],
+    ["configuracion", ".settings-nav-item", "Configuración"],
+    ["bandeja", ".md-fila", "Por revisar"],
+    ["depositos", ".md-fila", "Depósito bancario"],
+    ["ingresos", ".md-fila", "Ingresos"],
+    ["miembros", ".md-fila", "Aportantes"],
+  ];
+
+  for (const [w, h, et] of [[1366, 1024, "apaisado"], [820, 1180, "vertical"]]) {
+    for (const [ruta, sel, nombre] of PANTALLAS_PANEL) {
+      await pg.setViewportSize({ width: w, height: h });
+      await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+      await pg.waitForTimeout(600);
+      /* Si no se puede abrir, la guarda FALLA en vez de saltárselo en
+         silencio: un selector que dejó de existir es justo lo que convierte
+         una comprobación en un adorno. */
+      let abrio = true;
+      try {
+        await pg.locator(sel).last().click({ timeout: 5000 });
+      } catch { abrio = false; }
+      chk(abrio, `${et} · ${nombre}: se puede abrir algo de la lista (${sel})`);
+      if (!abrio) continue;
+      await pg.waitForTimeout(700);
+      const s = await haySalida();
+      chk(s.ok, `${et} · ${nombre}: hay salida (lista=${s.lista}, volver=${s.volver})`);
+    }
+  }
+
+  /* Y el caso que arrancó todo: el editor de la carta, que ocupa las dos
+     columnas y tapa el índice. Es el único panel de la app que lo hace, y por
+     eso es el único que necesita su botón también apaisado. */
+  for (const [w, h, et] of [[1366, 1024, "apaisado"], [820, 1180, "vertical"]]) {
+    await pg.setViewportSize({ width: w, height: h });
+    /* `domcontentloaded` y no `networkidle`: con el editor abierto de la
+       vuelta anterior, la hoja del papel es un iframe que nunca deja la red
+       del todo quieta y el `goto` se colgaba 30s. Se espera al botón, que es
+       la señal que de verdad importa. */
+    await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "domcontentloaded" });
+    /* Y recarga de verdad. En la segunda vuelta la ruta ya es `#/cartas` —se
+       quedó abierta con el editor dentro—, así que el `goto` no cambia nada:
+       React sigue en la sección "nueva", donde el botón de alta NO existe (ahí
+       ya estás escribiendo una carta) y la espera se agotaba. Recargar tira el
+       estado y vuelve al Resumen. */
+    await pg.reload({ waitUntil: "domcontentloaded" });
+    await pg.waitForSelector(".header .btn.primary", { timeout: 15000 });
+    await pg.waitForTimeout(400);
+    await pg.locator(".header .btn.primary").first().click();
+    await pg.waitForTimeout(1600);
+    const s = await haySalida();
+    chk(s.ok, `${et} · editor de la carta: hay salida (lista=${s.lista}, volver=${s.volver})`);
+  }
+  await ctxV.close();
 }
 
 await browser.close();
