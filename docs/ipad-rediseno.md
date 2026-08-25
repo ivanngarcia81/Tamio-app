@@ -3099,9 +3099,10 @@ campo más chico pasa de ~50 a **324**.
 Con él, dos piezas del handoff que faltaban:
 
 - **"‹ Cartas y traslados" en la barra del editor.** El `.dm-volver` del panel
-  solo se pinta por debajo de 1000, así que **apaisado no había ninguna forma
-  de salir del editor** salvo tocar otra sección del índice —que además avisa
-  de cambios sin guardar—. Ahora es una salida con nombre.
+  solo se pinta por debajo de 1000, así que apaisado **no había salida con
+  nombre**: el índice seguía a la izquierda —atrapado no estabas— pero la única
+  forma de salir era saltar a otra sección, que es un destino y no un "volver",
+  y encima con el aviso de cambios sin guardar de por medio.
 - **El pie de la miniatura**: "Es la misma hoja que sale por la impresora y por
   el PDF." No es adorno: la hoja se ve a un tercio de tamaño y sin eso parece
   una vista previa aproximada, cuando es exactamente el HTML que se imprime.
@@ -3109,3 +3110,46 @@ Con él, dos piezas del handoff que faltaban:
 La guarda mide el **ancho de un campo**, que es lo que se usa, y no la rejilla.
 Devolviendo el reparto viejo caen dos comprobaciones y el riel canta 332.
 Arnés en **926**.
+
+
+## 42. De todo panel se puede salir (25 ago 2026)
+
+*"Revisar en Reportes, en Informes, en Cartas… en toda la página de secretaría,
+por si tiene botón de regreso a la página anterior."* Sale de lo que apareció
+en el editor de la carta, y la respuesta corta es **que sí, todas**: la única
+que no tenía salida con nombre era ese editor, y quedó arreglada en §41.
+
+Lo que se hizo fue convertirlo en guarda, porque es justo lo que se rompe sin
+que nadie lo note. La regla no es "que haya un botón" —eso sería falso en
+apaisado, donde no hace falta— sino que **desde dentro de un panel siempre se
+pueda salir**, con dos formas legítimas y las dos del sistema: la columna
+maestra sigue **a la vista** (vista partida de iPadOS: la lista está ahí), o
+hay un **control de volver** visible.
+
+Se recorren doce pantallas con panel en las dos orientaciones, más el editor.
+El resultado, medido:
+
+| | Apaisado | Vertical (empuje) |
+|---|---|---|
+| Reportes, Cartas, Membresía, Actas, Servicios, Agenda, Configuración, Depósitos, Ingresos, Aportantes | lista a la vista | `dm-volver` |
+| Informes de membresía | lista a la vista | `inf-volver` |
+| Por revisar | lista a la vista | lista a la vista (sus filas no empujan) |
+| Editor de la carta | `ce-barra-volver` | `dm-volver` |
+
+**Dos veces hubo que arreglar la guarda antes de que sirviera**, y las dos
+merecen quedar escritas porque son la misma clase de error:
+
+1. **Miraba tres clases de "volver" y hay cinco.** `dm-volver`, `inf-volver`,
+   `ce-barra-volver`, `settings-detail-volver` y `ios-back`. Con tres, acusó a
+   Informes de membresía de estar atrapada **cuando tiene la suya propia**.
+   Ahora la lista va en una constante.
+2. **Preguntaba si la lista estaba a la vista mirando su rectángulo**, y en el
+   modo de empuje la lista sigue en el árbol, con su ancho y su sitio, mientras
+   el panel se le desliza **encima**. Decía "visible" en las veinticuatro
+   pantallas: una guarda que no podía fallar. Ahora se pregunta **tocándola**
+   —qué elemento hay en el centro de la lista— y en vertical contesta `false`,
+   que es la verdad.
+
+Quitando el `display` de `.inf-volver`, la guarda canta
+`vertical · Informes de membresía: hay salida (lista=false, volver=ninguno)`.
+Arnés en **1076**.
