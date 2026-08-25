@@ -126,6 +126,28 @@ Info.plist a mano NO basta: al compilar vuelve el número viejo.
 > `Cargo.toml` (1.0.8, que no se había movido desde la 1.0.8 de verdad).
 > Con las tres fuentes de acuerdo esto deja de poder pasar.
 
+> ⚠️ **Y ha vuelto a pasar, al revés, en la 1.2.11 (24 ago 2026).** Esta vez
+> se movieron las tres fuentes y se dejaron los DOS generados clavados en
+> 1.2.9 — llevaban así desde la 1.2.9, o sea que las 1.2.10 y 1.2.11 los
+> ignoraron. El razonamiento equivocado fue este: "son generados, Tauri los
+> reescribe, así que da igual lo que digan". Y es verdad a medias.
+>
+> **Lo que NO da igual: si el valor guardado no coincide, la reescritura
+> ENSUCIA el árbol.** Iván fue a compilar la 1.2.11 y `verificar-rama` abortó
+> con `M src-tauri/gen/apple/tesoreria_iOS/Info.plist` — el rastro de su build
+> de la 1.2.10. Y aborta en CADA build mientras no coincidan, porque cada
+> compilación deja el mismo archivo modificado.
+>
+> Con los cinco en el mismo número, la reescritura de Tauri no cambia nada y
+> el árbol queda limpio. Así que el bump son **cinco sitios más los dos
+> lockfiles**, y los cinco se comprueban después:
+>
+> ```sh
+> grep -rn "1\.2\.11" package.json src-tauri/tauri.conf.json \
+>   src-tauri/Cargo.toml src-tauri/gen/apple/project.yml \
+>   src-tauri/gen/apple/tesoreria_iOS/Info.plist
+> ```
+
 ## El número de compilación NO se controla desde el repo
 
 `CFBundleVersion` (el número de compilación) **lo pisa Tauri en cada
