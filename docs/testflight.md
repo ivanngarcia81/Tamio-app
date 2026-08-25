@@ -310,9 +310,18 @@ SALTAR_VERIFICAR_RAMA=1 npm run ios:appstore
 npm run verificar-csp
 npm run verificar-hooks
 npm run verificar-traducciones
+npm run verificar-tipografia
 npm run verificar-navegacion
 npm run verificar-centavos
 ```
+
+`verificar-tipografia` se añadió el 24 de agosto de 2026 con "Tamaño de
+texto", y **está pensada para una fusión que todavía no ha ocurrido**: la
+rama de diseño `charming-sagan` se escribió ANTES de que existiera
+`--fs-escala`, así que sus reglas nuevas traen `font-size` con píxeles a
+pelo. Eso se fusiona sin un solo conflicto, compila sin avisos y se ve
+perfecto en "Normal" — y se rompe solo en el aparato de quien eligió la
+letra grande, que es justo quien menos va a saber explicarlo.
 
 `verificar-hooks` se añadió después de que la 1.1.3 saliera con un `useState`
 por debajo de la puerta de autenticación de `App.tsx`: React aborta con el

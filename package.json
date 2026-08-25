@@ -22,6 +22,7 @@
     "verificar-invitacion": "node scripts/verificar-invitacion.mjs",
     "verificar-navegacion": "npx esbuild scripts/verificar-navegacion.ts --bundle --platform=node --format=esm --log-level=warning | node --input-type=module",
     "verificar-traducciones": "node scripts/verificar-traducciones.mjs",
+    "verificar-tipografia": "node scripts/verificar-tipografia.mjs",
     "verificar-dinero": "node --experimental-strip-types scripts/verificar-dinero.ts",
     "verificar-migracion-36": "node --no-warnings scripts/verificar-migracion-36.mjs",
     "verificar-csv-centavos": "node --experimental-strip-types scripts/verificar-csv-centavos.ts",
