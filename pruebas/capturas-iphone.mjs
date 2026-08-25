@@ -216,6 +216,7 @@ const PANTALLAS = [
   { nombre: "7-ajustes", ruta: "/configuracion" },
   { nombre: "8-informes", ruta: "/reportes" },
   { nombre: "10-cartas-indice", ruta: "/cartas" },
+  { nombre: "13-reporte-miembros", ruta: "/reporte-miembros" },
 ];
 
 for (const tema of ["light", "dark"]) {
