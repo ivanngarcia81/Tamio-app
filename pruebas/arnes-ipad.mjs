@@ -101,9 +101,26 @@ const browser = await chromium.launch(
 );
 
 /** Contexto con la plataforma pedida. */
-async function nuevoContexto(plataforma) {
+/**
+ * @param plataforma  "ipad" | "iphone"
+ * @param opciones.tactil  Emular pantalla táctil, o sea `pointer: coarse`.
+ *
+ * Lo táctil va apagado por omisión y NO por descuido: encenderlo en todas las
+ * secciones cambiaría las medidas de medio arnés de golpe (`@media (pointer:
+ * coarse)` sube a 44 el alto mínimo de cada `.btn`, `.chip` y `.icon-btn`), y
+ * esa es una revisión que se hace pantalla por pantalla, no de un tirón.
+ *
+ * Pero tenerlo es necesario: sin él, ninguna regla de `pointer: coarse` se
+ * había probado NUNCA, y ahí vive el mínimo de 44 px de todos los botones.
+ * Es el mismo punto ciego que `env()` —verde durante diez versiones sobre una
+ * barra que en el iPad tenía la raya pegada a los botones (§33)—, y salió a la
+ * luz midiendo el header: el diseño pide botones de 38 y en el aparato de
+ * verdad la regla de 44 los estaba estirando sin que nadie lo viera.
+ */
+async function nuevoContexto(plataforma, opciones = {}) {
   const ctx = await browser.newContext({
     viewport: { width: 1366, height: 1024 },
+    hasTouch: opciones.tactil === true,
     userAgent: plataforma === "iphone"
       ? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
       : undefined,
@@ -329,6 +346,41 @@ const ctxSeed = await nuevoContexto("ipad");
       asunto: null, saludo: null, cuerpo_html: "<p>Constancia de membresía.</p>", despedida: null,
       firmas: [], observaciones: "Entregar en mano", estado: "entregada",
       entregada_a: miembros[0].nombre, fecha_entrega: hace(18),
+    });
+
+    /* Solicitudes y los dos traslados. Sin ellos, las tres tablas del handoff
+       no se pintan nunca —sale el estado vacío— y no hay nada que medir: las
+       columnas de solicitudes, salida y entrada llevaban meses sin que ninguna
+       comprobación las mirara. */
+    await db.insertSolicitud(id, {
+      member_id: miembros[0].id, solicitante_externo: null, tipo_carta: "recomendacion",
+      motivo: "Ingreso al instituto bíblico", fecha_solicitud: hace(6), fecha_requerida: hace(-8),
+      medio_entrega: "impresa", responsable: "Abel Ramos", prioridad: "urgente",
+      estado: "nueva", observaciones: null,
+    });
+    await db.insertSolicitud(id, {
+      member_id: null, solicitante_externo: "Hna. Lupita Sáenz", tipo_carta: "presentacion",
+      motivo: null, fecha_solicitud: hace(11), fecha_requerida: null,
+      medio_entrega: null, responsable: null, prioridad: "normal",
+      estado: "preparacion", observaciones: null,
+    });
+    await db.insertTrasladoSalida(id, {
+      member_id: miembros[1].id, fecha_solicitud: hace(5), motivo: "Cambio de ciudad",
+      iglesia_destino: "Iglesia El Buen Pastor", pastor_receptor: "Ptr. Elías Núñez",
+      direccion: null, ciudad: "Apodaca", region: "N.L.", pais: "México",
+      telefono: null, email: null, fecha_aprobacion: null, aprobado_por: null,
+      carta_id: null, fecha_entrega: null, metodo_entrega: null,
+      confirmacion_recibida: 0, fecha_confirmacion: null, observaciones: null,
+      estado: "cartaPreparacion", member_id_destino: undefined,
+    });
+    await db.insertTrasladoEntrada(id, {
+      nombre: "Nohemí Cárdenas Ibarra", fecha_nacimiento: null, telefono: null, correo: null,
+      direccion: null, iglesia_procedencia: "Iglesia Cristo Vive", pastor_anterior: null,
+      direccion_anterior: null, fecha_emision_carta: null, fecha_recepcion: hace(4),
+      referencia_carta: null, adjunto_path: null, adjunto_nombre: "carta-nohemi.pdf",
+      adjunto_fecha: null, fecha_congregacion: null, fecha_entrevista: null,
+      entrevistador: null, decision: null, fecha_aprobacion: null, observaciones: null,
+      estado: "revision", member_id: null,
     });
 
     // Agenda: hoy y esta semana
@@ -575,19 +627,21 @@ for (const { ruta, nombre } of [
   await cierraHoja();
 }
 
-// Cartas: solicitud y los dos traslados salen del menú de crear de la
-// cabecera — el mismo MenuAnchor del Mac, que a partir de 700 vuelve a ser
-// la única entrada de crear de esa pantalla (el "+" fijo muere ahí).
+/* Cartas: solicitud y los dos traslados. El camino cambió el 24 ago y esta
+   guarda con él —no se borra, se pone al día—: ya no hay un menú de "+" en la
+   cabecera del que salgan las tres, sino UN botón por sección que dice qué
+   crea. Así que ahora se entra a la sección y se pulsa su botón, que es lo que
+   hace quien usa la app. Lo que se comprueba de la hoja es lo mismo. */
 await page.goto(`${URL_BASE}/#/cartas`);
 await page.waitForTimeout(700);
-for (const [etiqueta, nombre] of [
-  ["Nueva solicitud", "solicitud"],
-  ["Registrar traslado de salida", "traslado salida"],
-  ["Registrar traslado de entrada", "traslado entrada"],
+for (const [seccion, nombre] of [
+  ["Solicitudes", "solicitud"],
+  ["Traslado de salida", "traslado salida"],
+  ["Traslado de entrada", "traslado entrada"],
 ]) {
-  await page.locator(".cartas-menu-crear button").first().click();
-  await page.waitForTimeout(300);
-  await page.getByText(etiqueta, { exact: true }).first().click();
+  await page.locator(".md-indice-item", { hasText: seccion }).first().click();
+  await page.waitForTimeout(400);
+  await page.locator(".header .btn.primary").first().click();
   await esperaHoja();
   chkHoja(nombre, await medirHoja());
   await cierraHoja();
@@ -1354,15 +1408,15 @@ console.log("\n== Cartas del iPad (handoff) ==");
   await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-cartas .md-indice-item", { timeout: 10000 });
 
-  /* Redactar NO está en el índice: desde la 1.2.2 crear vive solo en el "+"
-     de la cabecera (había dos entradas para lo mismo). Se abre por ahí, que
-     es como lo abre una persona. */
-  await pg.click(".cartas-menu-crear button");
-  await pg.waitForTimeout(300);
-  await pg.locator(".ios-menu button, .menu-anclado button, [role=menuitem]").first().click();
-  await pg.waitForTimeout(400);
+  /* Redactar NO está en el índice: desde la 1.2.2 crear vive solo en la
+     cabecera (había dos entradas para lo mismo). El camino se acortó otra vez
+     el 24 ago: aquel "+" desplegaba un menú y ahora el botón de la barra ya
+     dice qué crea según la sección —en Resumen, "Nueva carta"—, así que abre
+     el editor de un toque en vez de dos. */
+  await pg.locator(".header .btn.primary").first().click();
+  await pg.waitForTimeout(500);
   const abierto = await pg.locator(".ce-split").count();
-  chk(abierto > 0, `el "+" de la cabecera abre el editor (${abierto})`);
+  chk(abierto > 0, `el botón de la barra abre el editor de un toque (${abierto})`);
   // El papel se pinta con freno de medio segundo; se le da margen.
   await pg.waitForTimeout(1600);
 
@@ -4538,6 +4592,474 @@ console.log("\n== El tamaño de texto mueve la app entera ==");
     await pg.screenshot({ path: `${process.env.CAPTURAS}/tamano-texto-1366x1024.png` });
   }
   await ctxT.close();
+}
+
+/* ---------- 36. El header, con las medidas del handoff ----------------
+   Iván mandó el handoff del header el 24 ago con dos instrucciones: cambiar
+   el ☰ por el icono de menú del mockup, y NO pintar los iconos fantasma
+   (Aspecto y Rotar) que el diseño dibuja a la derecha.
+
+   Lo que se comprueba, y por qué cada cosa:
+
+    - **Las medidas con PANTALLA TÁCTIL.** Es la comprobación que da sentido a
+      todas las demás. El diseño pide botones de 38 y `@media (pointer:
+      coarse)` le pone 44 de mínimo a todo `.btn` — una regla que en el
+      navegador del arnés no entraba y en el iPad sí. Sin `tactil: true` esta
+      guarda mediría 38 y el aparato pintaría 44, que es exactamente el
+      engaño que ya costó diez versiones con `env()` (§33).
+
+    - **La zona tocable, tocándola.** Los 38 px de alto quedan por debajo de
+      los 44 del sistema, y el handoff lo resuelve diciendo que la fila entera
+      es sensible. Eso no se comprueba leyendo el CSS: se comprueba pidiéndole
+      al navegador qué hay en el píxel de arriba de la barra.
+
+    - **El recorte del título, con un título que de verdad no cabe.** Poner
+      `text-overflow: ellipsis` no basta —hace falta además que el bloque
+      pueda encoger— y las dos mitades se rompen por separado.
+
+    - **El iPhone, que no se tocó.** El glifo nuevo es solo del iPad. */
+console.log("\n== El header con las medidas del handoff ==");
+{
+  const ctxH = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxH.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+
+  const leer = () => pg.evaluate(() => {
+    const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+    const hd = document.querySelector(".header");
+    const ham = document.querySelector(".menu-hamburguesa");
+    const acc = document.querySelector(".header-actions");
+    const prim = document.querySelector(".header .btn.primary");
+    const svg = prim ? prim.querySelector("svg") : null;
+    const visible = (e) => e && cs(e).display !== "none" && rc(e).width > 0;
+    return {
+      padIzq: cs(hd).paddingLeft,
+      menuVisible: visible(ham),
+      menu: visible(ham) ? {
+        w: Math.round(rc(ham).width), h: Math.round(rc(ham).height),
+        x: Math.round(rc(ham).left), y: Math.round(rc(ham).top),
+        radio: cs(ham).borderRadius,
+        relleno: cs(ham).backgroundColor,
+        color: cs(ham).color,
+        // El icono de barra lateral son DOS trazos (rectángulo + la columna
+        // marcada); las tres rayas de antes eran tres `<line>`.
+        glifo: (() => {
+          const svg = ham.querySelector("svg");
+          if (!svg) return "sin glifo";
+          const rect = svg.querySelectorAll("rect").length;
+          const lineas = svg.querySelectorAll("line").length;
+          return rect === 1 && lineas === 0 ? "barra lateral" : `${lineas} rayas`;
+        })(),
+      } : null,
+      gap: acc ? cs(acc).columnGap : null,
+      primario: prim ? {
+        h: Math.round(rc(prim).height), pad: cs(prim).padding,
+        gap: cs(prim).columnGap, fs: cs(prim).fontSize, borde: cs(prim).borderTopWidth,
+        fondo: cs(prim).backgroundColor,
+      } : null,
+      glifo: svg ? { px: Math.round(svg.getBoundingClientRect().width), trazo: cs(svg).strokeWidth } : null,
+      // Todos los botones de la barra a la misma altura: es lo que los alinea.
+      altos: [...document.querySelectorAll(".header .btn")]
+        .filter((b) => rc(b).width > 0).map((b) => Math.round(rc(b).height)),
+    };
+  });
+
+  // --- APAISADO: sin ☰, la barra arranca en su margen de 20 ---
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".header .btn.primary", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+
+  const a = await leer();
+  chk(!a.menuVisible, "apaisado: sin ☰, que la barra lateral está puesta");
+  chk(a.padIzq === "20px", `y el margen de la barra son sus 20 (${a.padIzq})`);
+  chk(a.gap === "6px", `6 px entre acciones (${a.gap})`);
+  chk(a.altos.length > 0 && a.altos.every((h) => h === 38),
+    `todos los botones a 38, con pantalla táctil (${a.altos.join(" · ")})`);
+  chk(a.primario.pad === "0px 15px 0px 12px", `el primario con su relleno 12/15 (${a.primario.pad})`);
+  chk(a.primario.gap === "6px" && a.primario.fs === "14.5px",
+    `y su etiqueta a 14.5 con 6 hasta el signo (${a.primario.fs}, ${a.primario.gap})`);
+  chk(a.primario.borde === "0px", `sin el borde que le robaba el píxel 38 (${a.primario.borde})`);
+  chk(a.glifo.px === 17 && a.glifo.trazo === "2px",
+    `el "+" a 17 con trazo 2 (${a.glifo.px}px / ${a.glifo.trazo})`);
+
+  /* Los iconos fantasma del handoff —Aspecto y Rotar— NO se pintan: es la
+     otra instrucción de Iván, y el propio handoff la respalda ("ni un tercer
+     icono fantasma"). Se vigila que nadie los añada de buena fe: en la barra
+     no puede haber ningún botón sin texto que no sea el ☰. */
+  const mudos = await pg.evaluate(() =>
+    [...document.querySelectorAll(".header button")]
+      .filter((b) => b.getBoundingClientRect().width > 0 && !b.textContent.trim())
+      .map((b) => b.className || b.getAttribute("aria-label") || "?"));
+  chk(mudos.length === 0, `ningún icono fantasma en la barra (${mudos.join(" · ") || "ninguno"})`);
+
+  // --- VERTICAL: entra el ☰, con las medidas del handoff ---
+  await pg.setViewportSize({ width: 1024, height: 1366 });
+  await pg.waitForTimeout(500);
+  const v = await leer();
+  chk(v.menuVisible, "vertical: entra el botón de menú");
+  chk(v.menu.w === 38 && v.menu.h === 38, `de 38 × 38 (${v.menu.w}×${v.menu.h})`);
+  chk(v.menu.x === 20, `en el margen de 20 de la barra (x=${v.menu.x})`);
+  /* 9 = (56 − 38) / 2. En el arnés el inset vale 0, así que aquí y=9; en el
+     aparato la regla lo suma y el botón baja con la barra. */
+  chk(v.menu.y === 9, `centrado en la fila de 56 (y=${v.menu.y})`);
+  chk(v.menu.radio === "10px", `radio 10 (${v.menu.radio})`);
+  chk(v.padIzq === "70px", `y la barra le reserva 20 + 38 + 12 (${v.padIzq})`);
+
+  /* El glifo: el rectángulo con la columna marcada, no las tres rayas. En
+     iPadOS ese botón abre una COLUMNA, no un menú. */
+  chk(v.menu.glifo === "barra lateral",
+    `con el icono de barra lateral del mockup y no las tres rayas (${v.menu.glifo})`);
+
+  /* Tiene relleno en reposo —al revés que los botones de la derecha— y va del
+     color de acento. El acento se compara contra el fondo del botón primario
+     en vez de contra un literal: si algún día se cambia la marca, esta guarda
+     sigue diciendo la verdad en vez de quedarse clavada en un verde. */
+  chk(v.menu.relleno !== "rgba(0, 0, 0, 0)", `con relleno en reposo (${v.menu.relleno})`);
+  chk(v.menu.color === v.primario.fondo,
+    `y del mismo acento que "Nuevo ingreso" (${v.menu.color} vs ${v.primario.fondo})`);
+
+  /* La zona tocable, tocándola de verdad: el píxel de arriba de la barra,
+     sobre el botón, tiene que devolver el botón. Con los 38 px pelados
+     devolvería la barra, y el control quedaría por debajo del mínimo del
+     sistema aunque se viera igual. */
+  const enElFilo = await pg.evaluate(() => {
+    const b = document.querySelector(".menu-hamburguesa").getBoundingClientRect();
+    const el = document.elementFromPoint(b.left + b.width / 2, 2);
+    return el ? (el.closest(".menu-hamburguesa") ? "el botón" : (el.className || el.tagName)) : "nada";
+  });
+  chk(enElFilo === "el botón", `y la fila entera es tocable, no solo los 38 (${enElFilo})`);
+
+  // --- El título: peso, recorte y que el recorte SIRVA ---
+  const t = await pg.evaluate(() => {
+    const el = document.querySelector(".page-title");
+    const cs = getComputedStyle(el);
+    return { peso: cs.fontWeight, ls: cs.letterSpacing, ov: cs.textOverflow, ws: cs.whiteSpace };
+  });
+  chk(t.peso === "600", `el título al 600 de las barras de iOS (${t.peso})`);
+  chk(t.ls === "-0.2px", `con el interletraje del diseño (${t.ls})`);
+  chk(t.ov === "ellipsis" && t.ws === "nowrap", `y con puntos suspensivos (${t.ov} / ${t.ws})`);
+
+  /* Y que de verdad recorte, que es la mitad que se rompe sola.
+     `text-overflow: ellipsis` NO basta: el bloque del título es hijo de un
+     flex y sin `min-width: 0` se niega a encoger, así que empuja y se sale de
+     la barra en vez de recortarse. Son dos reglas en dos sitios distintos.
+
+     El título largo se INYECTA, y hay que decir por qué: hoy ninguno de los
+     dieciséis lo es —el más largo, "Información de Membresía", cabe de sobra
+     a 744—, así que medir los títulos de verdad daba verde con la regla
+     puesta y verde también sin ella. Una guarda que no puede fallar no está
+     guardando nada; se comprobó quitando el `min-width` y no se enteró. Lo
+     que se prueba aquí es el mecanismo, para el día en que una pantalla
+     nueva traiga un título que no quepa. */
+  await pg.setViewportSize({ width: 744, height: 1133 });
+  await pg.goto(`${URL_BASE}/#/reporte-miembros`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".header .page-title", { timeout: 10000 });
+  await pg.waitForTimeout(400);
+  const largo = await pg.evaluate(() => {
+    const el = document.querySelector(".page-title");
+    el.textContent = "Informes de membresía y asistencia del trimestre de septiembre a noviembre, con el detalle por ministerio y por grupo de edad";
+    const bar = document.querySelector(".header");
+    const r = el.getBoundingClientRect(), rb = bar.getBoundingClientRect();
+    return {
+      recortado: el.scrollWidth > el.clientWidth,
+      desborde: Math.round(r.right - (rb.right - parseFloat(getComputedStyle(bar).paddingRight))),
+    };
+  });
+  chk(largo.recortado, "un título que no cabe se recorta con puntos suspensivos");
+  chk(largo.desborde <= 0, `y no empuja la barra ni un píxel (desborda ${largo.desborde})`);
+
+  /* La otra mitad de la misma regla: el ALTO tampoco cambia. `.header` es
+     `flex-wrap: wrap` en la base —de cuando era una cabecera de página—, y
+     envolver es lo contrario de recortar: si las acciones crecen, el título
+     se va a una segunda fila (donde vuelve a caber entero) y la barra pasa de
+     56 a ~100. Hoy no le pasa a ninguna de las dieciséis, así que la
+     condición se fuerza metiendo una acción ancha, igual que se forzó el
+     título largo. Sin esto, `flex-wrap: nowrap` sería una línea de CSS que
+     nadie puede demostrar que hace falta. */
+  const conAccionAncha = await pg.evaluate(() => {
+    const acc = document.querySelector(".header-actions");
+    const b = document.createElement("button");
+    b.className = "btn secondary";
+    b.textContent = "Una acción deliberadamente larguísima para empujar la fila";
+    acc.appendChild(b);
+    const alto = Math.round(document.querySelector(".header").getBoundingClientRect().height);
+    b.remove();
+    return alto;
+  });
+  chk(conAccionAncha === 56, `y la barra sigue midiendo 56 (${conAccionAncha})`);
+  await ctxH.close();
+
+  /* El glifo se cambió SIN condicionarlo al iPad, y eso hay que sostenerlo:
+     vale porque este botón es solo del iPad. En el iPhone el sidebar no
+     existe —su contenido se mudó a Ajustes— y el ☰ está escondido con
+     `!important`. Si algún día alguien se lo devuelve al teléfono, esta
+     guarda cae y obliga a decidir qué glifo le toca, en vez de heredar el del
+     iPad por descuido. */
+  const ctxF = await nuevoContexto("iphone");
+  const pf = await ctxF.newPage();
+  pf.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pf.setViewportSize({ width: 430, height: 932 });
+  await pf.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pf.waitForTimeout(600);
+  const enFono = await pf.evaluate(() => {
+    const ham = document.querySelector(".menu-hamburguesa");
+    return !ham || getComputedStyle(ham).display === "none";
+  });
+  chk(enFono, "en el iPhone no hay ☰ ninguno, que es por lo que hay un solo glifo");
+  await ctxF.close();
+}
+
+/* ---------- 37. Un solo botón de crear, y con nombre --------------------
+   Iván mandó dos fotos de "Cartas y traslados" el 24 ago con los dos botones
+   circulados: un "+" pelado en la esquina de la barra y, debajo, un botón
+   verde con nombre dentro de la lista. Los dos hacían lo mismo.
+
+   Es la SEGUNDA vez que esta pantalla pone la misma orden en dos sitios: la
+   primera fue "Nueva carta" como pestaña del índice, que también circuló (22
+   ago). Por eso la guarda no comprueba "que el botón X ya no está" —eso se
+   arregla una vez y vuelve—, sino la regla: en cada sección de cada pantalla
+   puede haber **como mucho un** control de alta a la vista, y si lo hay tiene
+   que decir qué crea. Un "+" sin palabra era el único botón de la app que no
+   lo decía.
+
+   Se recorren las seis secciones de Cartas, que es donde vivía el problema, y
+   de paso las otras pantallas con alta, para que la regla valga en todas. */
+console.log("\n== Un solo botón de crear, y con nombre ==");
+{
+  const ctxC = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxC.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /* Un control de alta es cualquier cosa pulsable que abre un formulario de
+     alta. Se reconocen por el verbo, que es como los reconoce quien mira la
+     pantalla: "Nueva…", "Nuevo…", "Registrar…". Y se cuenta también lo que no
+     tiene texto pero lleva un "+": ese es justo el caso que se retiró. */
+  const controlesDeAlta = () => pg.evaluate(() => {
+    const visible = (el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    };
+    const out = [];
+    for (const el of document.querySelectorAll("button, a[role='button']")) {
+      if (!visible(el)) continue;
+      const txt = el.textContent.trim();
+      const etiqueta = el.getAttribute("aria-label") || "";
+      const masPelado = !txt && /nuev|crear|registrar|\+/i.test(etiqueta);
+      if (/^(Nueva|Nuevo|Registrar)\b/i.test(txt) || masPelado) {
+        out.push({
+          texto: txt || `(sin texto: ${etiqueta})`,
+          conNombre: txt.length > 0,
+          enBarra: !!el.closest(".header"),
+        });
+      }
+    }
+    return out;
+  });
+
+  const SECCIONES = [
+    ["resumen", "Resumen"], ["archivo", "Archivo"], ["plantillas", "Plantillas"],
+    ["solicitudes", "Solicitudes"], ["salida", "Traslado de salida"], ["entrada", "Traslado de entrada"],
+  ];
+  await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-indice", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+
+  const vistos = new Set();
+  for (const [, rotulo] of SECCIONES) {
+    await pg.locator(".md-indice-item", { hasText: rotulo }).first().click();
+    await pg.waitForTimeout(450);
+    const c = await controlesDeAlta();
+    chk(c.length <= 1, `Cartas · ${rotulo}: un solo control de alta (${c.map((x) => x.texto).join(" · ") || "ninguno"})`);
+    if (c.length === 1) {
+      chk(c[0].conNombre, `y dice qué crea: "${c[0].texto}"`);
+      chk(c[0].enBarra, "y vive en la barra, no dentro de la lista");
+      vistos.add(c[0].texto);
+    }
+  }
+  /* Y el nombre CAMBIA con la sección: si fuera siempre el mismo, el botón
+     estaría mintiendo en cinco de las seis. */
+  chk(vistos.size >= 4, `el nombre cambia con la sección (${[...vistos].join(" · ")})`);
+
+  /* Que además funcione: en Traslado de salida, el botón de la barra abre el
+     formulario que antes abría el botón de dentro de la lista. */
+  await pg.locator(".md-indice-item", { hasText: "Traslado de salida" }).first().click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".header .btn.primary").click();
+  await pg.waitForTimeout(600);
+  const abrio = await pg.evaluate(() =>
+    !!document.querySelector(".modal-card, .ios-sheet, .nm-hoja"));
+  chk(abrio, "y el botón de la barra abre el formulario de alta");
+  await pg.keyboard.press("Escape");
+  await pg.waitForTimeout(300);
+
+  /* La misma regla en las otras pantallas con alta. No es de más: si mañana
+     alguien vuelve a poner un botón de crear dentro de una lista, aquí se ve
+     el día que lo haga y no seis semanas después en una foto. */
+  for (const ruta of ["ingresos", "gastos", "membresia", "miembros", "actas", "servicios", "depositos", "agenda"]) {
+    await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".header", { timeout: 10000 });
+    await pg.waitForTimeout(400);
+    const c = await controlesDeAlta();
+    chk(c.length <= 1, `${ruta}: un solo control de alta (${c.map((x) => x.texto).join(" · ") || "ninguno"})`);
+    if (c.length === 1) chk(c[0].conNombre, `${ruta}: y dice qué crea ("${c[0].texto}")`);
+  }
+  await ctxC.close();
+}
+
+/* ---------- 38. Cartas y traslados, rehecha con su handoff --------------
+   Iván: "es la única página que no se diseñó bien". Al medirla salieron tres
+   cosas de fondo, y ninguna era de estilo:
+
+    1. El cuerpo entero estaba escrito DOS VECES —625 líneas idénticas byte
+       por byte, una para el iPad y otra para el Mac—, así que cada arreglo
+       había que hacerlo dos veces y el segundo se olvidaba.
+    2. El panel heredaba `max-width: 720px`, que es la medida de un DOCUMENTO
+       que se lee. Con cinco tablas dentro, los 224px que faltaban salían
+       todos de la única columna elástica: la del nombre.
+    3. Una regla de CSS se había quedado sin su bloque de declaraciones y el
+       navegador la fundía con la siguiente, dándole `flex-direction: column`
+       al botón de alta —el "+" encima de su etiqueta— y perdiendo por el
+       camino el `display: none` que escondía los botones duplicados en el
+       teléfono.
+
+   Lo que se vigila aquí es el RESULTADO de las tres, medido: que la columna
+   del nombre se pueda leer en las cinco tablas, que la fila mida lo que dice
+   el handoff, y que el botón de la barra quepa en una línea. */
+console.log("\n== Cartas y traslados, con su handoff ==");
+{
+  const ctxC = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxC.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-indice-item", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+
+  /* El índice: la sección abierta va del color de la app, no de gris.
+     El acento se compara contra el fondo del botón de alta en vez de contra
+     un verde literal, para que la guarda siga diciendo la verdad si algún
+     día se cambia la marca. */
+  const sel = await pg.evaluate(() => {
+    const cs = (e) => getComputedStyle(e);
+    const s = document.querySelector(".md-indice-item.sel");
+    const n = s ? s.querySelector(".md-indice-nombre") : null;
+    const b = document.querySelector(".header .btn.primary");
+    return {
+      relleno: s ? cs(s).backgroundColor : "ninguno",
+      nombre: n ? cs(n).color : "ninguno",
+      acento: b ? cs(b).backgroundColor : "ninguno",
+      radio: s ? cs(s).borderRadius : "-",
+    };
+  });
+  chk(sel.nombre === sel.acento,
+    `la sección abierta va del acento y no de gris (${sel.nombre} vs ${sel.acento})`);
+  chk(sel.relleno !== "rgba(0, 0, 0, 0)", `con su relleno teñido (${sel.relleno})`);
+  chk(sel.radio === "11px", `y el radio del handoff (${sel.radio})`);
+
+  /* El botón de la barra, en UNA línea. Es lo que destapó la regla rota: con
+     `flex-direction: column` el "+" se apilaba encima de la etiqueta y los
+     dos renglones se salían de un botón de 38. Se mide el alto del contenido
+     contra el del botón, que es lo que se ve. */
+  const boton = await pg.evaluate(() => {
+    const b = document.querySelector(".header .btn.primary");
+    const cs = getComputedStyle(b);
+    return { dir: cs.flexDirection, alto: Math.round(b.getBoundingClientRect().height), desborda: `${b.scrollHeight}>${b.clientHeight}` };
+  });
+  chk(boton.dir === "row", `el botón de alta pone el "+" al lado, no encima (${boton.dir})`);
+  /* Solo el alto de la caja: el `scrollHeight` de este botón vale 47 y no 38
+     a propósito —la zona tocable es un `::before` de `inset: -9px`, que
+     extiende el desbordamiento sin pintar nada—. Comprobarlo habría sido
+     acusar al arreglo de §39 de ser un fallo. */
+  chk(boton.alto === 38, `y cabe en sus 38 (${boton.alto})`);
+
+  /* Las cinco tablas. Lo que se mide es la columna que se LEE —la del nombre,
+     la única elástica— porque es la que pagaba los 224px del `max-width`:
+     con las columnas del handoff y el panel capado se quedaba en 32px.
+     El umbral de 200 no es redondo por gusto: por debajo, "Iglesia El Buen
+     Pastor" ya no cabe entero. */
+  const SECCIONES = [
+    ["Archivo", "tabla-cartas"],
+    ["Plantillas", "tabla-plantillas"],
+    ["Solicitudes", "tabla-solicitudes"],
+    ["Traslado de salida", "tabla-salida"],
+    ["Traslado de entrada", "tabla-entrada"],
+  ];
+  /* Se recorren DOS anchos, y el segundo no es de adorno.
+     A 1366 el panel mide 710 y entran las columnas reducidas; a 1600 mide 944
+     y entran las del handoff completas, que es donde el `max-width: 720px`
+     heredado hacía el destrozo: la columna del nombre bajaba a 32px. Con solo
+     el ancho chico, quitar ese cap no cambia nada y la guarda no lo notaría —
+     se comprobó devolviéndolo. */
+  for (const ancho of [1366, 1600]) {
+  await pg.setViewportSize({ width: ancho, height: 1024 });
+  await pg.waitForTimeout(300);
+  for (const [rotulo, clase] of SECCIONES) {
+    await pg.locator(".md-indice-item", { hasText: rotulo }).first().click();
+    await pg.waitForTimeout(450);
+    const m = await pg.evaluate((clase) => {
+      const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+      const t = document.querySelector(`.data-table.${clase}`);
+      if (!t) return null;
+      const th = t.querySelector(".thead");
+      const tr = t.querySelector(".tr");
+      const vivas = tr ? [...tr.children].filter((c) => cs(c).display !== "none") : [];
+      /* La columna que se lee es la segunda en cuatro de las cinco —la
+         primera es el folio—, pero en Plantillas no hay folio y el nombre es
+         la primera. Se dice aquí en vez de suponerlo: la primera versión de
+         esta guarda medía siempre la segunda y acusaba a Plantillas de tener
+         150px cuando su nombre tenía 240. */
+      const iNombre = clase === "tabla-plantillas" ? 0 : 1;
+      const nombre = vivas.length > iNombre ? Math.round(rc(vivas[iNombre]).width) : 0;
+      return {
+        cabecera: th ? Math.round(rc(th).height) : 0,
+        fila: tr ? Math.round(rc(tr).height) : 0,
+        nombre,
+        columnas: vivas.length,
+        scroll: t.scrollWidth > t.clientWidth + 1,
+      };
+    }, clase);
+    chk(m !== null, `${ancho} · ${rotulo}: la tabla se pinta`);
+    if (!m) continue;
+    chk(m.nombre >= 200, `${ancho} · ${rotulo}: la columna que se lee mide ${m.nombre}px`);
+    chk(m.cabecera === 40, `${ancho} · ${rotulo}: cabecera de 40 (${m.cabecera})`);
+    chk(m.fila <= 62, `${ancho} · ${rotulo}: filas de 58 y no de 75 (${m.fila})`);
+    chk(!m.scroll, `${ancho} · ${rotulo}: sin scroll horizontal`);
+  }
+  }
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.waitForTimeout(300);
+
+  /* El pie del archivo, dentro de la tarjeta: cuántas cartas hay. Sin él la
+     tabla terminaba en seco —`Pagination` se esconde con una sola página— y
+     no se veía cuántas contiene. */
+  await pg.locator(".md-indice-item", { hasText: "Archivo" }).first().click();
+  await pg.waitForTimeout(400);
+  const pie = await pg.evaluate(() => {
+    const p = document.querySelector(".data-table .tabla-pie");
+    return p ? p.textContent.trim() : "sin pie";
+  });
+  chk(/\d+\s+de\s+\d+/.test(pie), `el archivo dice cuántas cartas tiene ("${pie}")`);
+  await ctxC.close();
+
+  /* Y la regla reparada, por su otra mitad: en el teléfono el botón de alta
+     de la cabecera tiene que estar ESCONDIDO —ahí lo cubre el "+" flotante—,
+     que es lo que el `display: none` perdido debía hacer y no hacía. */
+  const ctxF = await nuevoContexto("iphone");
+  const pf = await ctxF.newPage();
+  pf.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pf.setViewportSize({ width: 430, height: 932 });
+  await pf.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pf.waitForTimeout(600);
+  const enFono = await pf.evaluate(() => {
+    const b = document.querySelector(".btn-nuevo-cabecera");
+    if (!b) return "no existe";
+    return getComputedStyle(b).display === "none" ? "escondido" : "VISIBLE";
+  });
+  chk(enFono !== "VISIBLE",
+    `en el teléfono el botón de cabecera no duplica al "+" flotante (${enFono})`);
+  await ctxF.close();
 }
 
 await browser.close();

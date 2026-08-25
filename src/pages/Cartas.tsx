@@ -33,12 +33,21 @@ import { buildCartaHtml, abrirCartaParaImprimir, parseFirmas } from "../services
 import { IconChevronLeft, IconMail, IconPlus, IconPrinter, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
 import CountUp from "../components/CountUp";
-import { MenuAnchor, type MenuItem } from "../components/MenuAnchor";
+import { type MenuItem } from "../components/MenuAnchor";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
-const COLS = "130px 1.8fr 110px 150px 130px 72px";
-const COLS_SOL = "120px 1.6fr 120px 110px 140px 72px";
+/* Las columnas de las cinco tablas ya NO viven aquí.
+ *
+ * Eran dos plantillas para cinco tablas —`COLS` para el archivo y `COLS_SOL`
+ * reutilizada por solicitudes, salida y entrada—, cuando el handoff da una
+ * distinta a cada una porque cada una lleva datos distintos. Y sobre todo:
+ * escritas en el `style` de cada fila, ninguna consulta de medios podía
+ * tocarlas, y el panel del iPad NO mide lo que mide el del dibujo.
+ *
+ * Ahora son clases (`.tabla-cartas`, `.tabla-plantillas`, …) y el CSS decide,
+ * que es donde se puede decidir por ancho. Ver el bloque "Cartas y traslados"
+ * de styles.css. */
 const PAGE_SIZE = 25;
 
 /** Glifos del menú "+" — el ícono va a la derecha del texto (convención de
@@ -233,10 +242,10 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   /* ---- Maestro-detalle del iPad: los dos umbrales de siempre. ---- */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
   const partido = esIPad() && anchoPartido;
-  const [menuCrearAbierto, setMenuCrearAbierto] = useState(false);
-  // El "+" fijo de iPhone (BotonCrear, ver App.tsx) no puede anclar el menú
-  // de escritorio (MenuAnchor cuelga del botón de la cabecera, que en móvil
-  // no se pinta): en su lugar abre esta hoja de acciones, mismo contenido.
+  /* El "+" fijo de iPhone (BotonCrear, ver App.tsx) abre esta hoja de
+     acciones con las cinco cosas que esta pantalla crea. En el teléfono es la
+     ÚNICA forma de crear: ni la barra de 56 existe ahí, ni quedan ya botones
+     dentro de las listas. */
   const [hojaCrearAbierta, setHojaCrearAbierta] = useState(false);
   const [editando, setEditando] = useState<Carta | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Carta | null>(null);
@@ -624,7 +633,42 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
       icon: <ArrowDownLeftIcon />,
       onPress: () => { cambiarTab("entrada"); setTeModal({ open: true, traslado: null }); },
     },
+    /* La quinta llegó el 24 ago con el botón único. En el teléfono este menú
+       ES la única forma de crear —el "+" flotante lo abre— y "Nueva
+       plantilla" solo vivía en un botón dentro de la lista de plantillas. Al
+       retirar ese botón, sin esta entrada el iPhone se habría quedado sin
+       manera de crear una plantilla. */
+    {
+      label: t("plantillas.nuevaPlantilla"),
+      icon: <DocPlusIcon />,
+      onPress: () => { cambiarTab("plantillas"); setPlantillaModal({ open: true, plantilla: null, base: null }); },
+    },
   ];
+
+  /* Qué crea el botón de la barra, según la sección abierta.
+   *
+   * Antes eran DOS controles para lo mismo: un "+" pelado en la cabecera, que
+   * desplegaba un menú de cuatro acciones, y un botón verde con nombre dentro
+   * de cada lista. Iván los circuló los dos en la misma foto (24 ago) —"hay
+   * doble botón que hacen lo mismo"—, y es la segunda vez que esta pantalla
+   * pone la misma orden en dos sitios: la primera fue "Nueva carta" como
+   * pestaña, ver la nota de SECCIONES_CARTAS.
+   *
+   * Queda uno solo, y CON NOMBRE, que es lo que hacen las otras quince
+   * pantallas: "Nuevo ingreso", "Nueva acta", "Nuevo servicio". Un "+" sin
+   * palabra era el único botón de la app que no decía qué iba a crear.
+   *
+   * En el editor no sale ninguno: ahí ya estás escribiendo una carta. */
+  const accionCrear: { label: string; onPress: () => void } | null =
+    tab === "solicitudes" ? { label: t("solicitudes.nuevaSolicitud"), onPress: () => setSolicitudModal({ open: true, solicitud: null }) }
+    : tab === "salida" ? { label: t("traslados.registrarSalida"), onPress: () => setTsModal({ open: true, traslado: null }) }
+    : tab === "entrada" ? { label: t("traslados.registrarEntrada"), onPress: () => setTeModal({ open: true, traslado: null }) }
+    : tab === "plantillas" ? { label: t("plantillas.nuevaPlantilla"), onPress: () => setPlantillaModal({ open: true, plantilla: null, base: null }) }
+    : tab === "nueva" ? null
+    /* "Nueva carta", no "Nueva carta de recomendación". El nombre largo es el
+       del menú del handoff, donde hay 302px de ancho; en la barra de 56 se
+       partía en dos líneas y se salía. Medido el 25 ago. */
+    : { label: t("cartas.nuevaCarta"), onPress: () => cambiarTab("nueva") };
 
   // Mismas cuatro acciones que menuCrearItems, para la hoja del "+" fijo de
   // iPhone (ver hojaCrearAbierta arriba) — un ActionSheet no tiene "icono",
@@ -756,7 +800,18 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </div>
             ) : (
               <div className="card enter" style={{ marginTop: 18 }}>
-                <div className="card-head"><span className="card-title">{t("cartas.actividadReciente")}</span></div>
+                <div className="card-head">
+                  <span className="card-title">{t("cartas.actividadReciente")}</span>
+                  {/* "Ver todo" estaba solo en el iPhone. El handoff lo pone en
+                      la cabecera de la tarjeta, y hace falta: la lista enseña
+                      cinco cartas de las que haya, y sin esto no se ve que hay
+                      más ni por dónde llegar a ellas. */}
+                  {cartas.length > 0 && (
+                    <button type="button" className="card-action" onClick={() => cambiarTab("archivo")}>
+                      {t("cartas.verTodo")}
+                    </button>
+                  )}
+                </div>
                 {cartas.length === 0 ? (
                   <EmptyState
                     titulo={t("cartas.aunNoHay")}
@@ -801,9 +856,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("solicitudes.pendientes")}: <b>{solicitudes.filter((s) => !["entregada", "cancelada"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setSolicitudModal({ open: true, solicitud: null })}>
-                <IconPlus size={14} /> {t("solicitudes.nuevaSolicitud")}
-              </button>
             </div>
             {solicitudes.length === 0 ? (
               <EmptyState
@@ -851,8 +903,8 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 })}
               </div>
             ) : (
-              <div className="data-table roomy">
-                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
+              <div className="data-table roomy tabla-solicitudes">
+                <div className="thead">
                   <div className="th">{t("actas.colFolio")}</div>
                   <div className="th">{t("solicitudes.colSolicitud")}</div>
                   <div className="th">{t("solicitudes.colFechas")}</div>
@@ -873,7 +925,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     <div
                       className="tr" data-fila
                       key={s.id}
-                      style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
+                      style={{ cursor: "pointer" }}
                       onClick={() => setSolicitudModal({ open: true, solicitud: s })}
                     >
                       <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
@@ -918,9 +970,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("traslados.enProceso")}: <b>{trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setTsModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarSalida")}
-              </button>
             </div>
             {trasladosSalida.length === 0 ? (
               <EmptyState
@@ -955,8 +1004,8 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 ))}
               </div>
             ) : (
-              <div className="data-table roomy">
-                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
+              <div className="data-table roomy tabla-salida">
+                <div className="thead">
                   <div className="th">{t("actas.colFolio")}</div>
                   <div className="th">{t("traslados.colTraslado")}</div>
                   <div className="th">{t("tx.colFecha")}</div>
@@ -968,7 +1017,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   <div
                     className="tr" data-fila
                     key={s.id}
-                    style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
+                    style={{ cursor: "pointer" }}
                     onClick={() => setTsModal({ open: true, traslado: s })}
                   >
                     <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
@@ -1001,9 +1050,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("traslados.enRevision")}: <b>{trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setTeModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarEntrada")}
-              </button>
             </div>
             {trasladosEntrada.length === 0 ? (
               <EmptyState
@@ -1039,8 +1085,8 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 ))}
               </div>
             ) : (
-              <div className="data-table roomy">
-                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
+              <div className="data-table roomy tabla-entrada">
+                <div className="thead">
                   <div className="th">{t("actas.colFolio")}</div>
                   <div className="th">{t("traslados.colProceso")}</div>
                   <div className="th">{t("traslados.fechaRecepcion")}</div>
@@ -1052,7 +1098,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   <div
                     className="tr" data-fila
                     key={s.id}
-                    style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
+                    style={{ cursor: "pointer" }}
                     onClick={() => setTeModal({ open: true, traslado: s })}
                   >
                     <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
@@ -1085,12 +1131,9 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               <span className="roster-counters">
                 <span>{t("plantillas.activas")}: <b>{plantillas.filter((p) => p.activa === 1).length}</b></span>
               </span>
-              <button className="btn primary" onClick={() => setPlantillaModal({ open: true, plantilla: null, base: null })}>
-                <IconPlus size={14} /> {t("plantillas.nuevaPlantilla")}
-              </button>
             </div>
-            <div className="data-table roomy">
-              <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px" }}>
+            <div className="data-table roomy tabla-plantillas">
+              <div className="thead">
                 <div className="th">{t("plantillas.colPlantilla")}</div>
                 <div className="th">{t("cartas.tipoCarta")}</div>
                 <div className="th">{t("membresia.colEstado")}</div>
@@ -1100,7 +1143,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <div
                   className="tr" data-fila
                   key={p.id}
-                  style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px", cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
+                  style={{ cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
                   onClick={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
                 >
                   <div className="td" style={{ minWidth: 0 }}>
@@ -1152,7 +1195,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 </div>
               </>
             ) : esMac() ? null : (
-              <div className="tx-head" style={{ flexWrap: "wrap", gap: 8 }}>
+              <div className="tx-head cartas-filtros" style={{ flexWrap: "wrap", gap: 8 }}>
                 <div className="search-input-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 340 }}>
                   <IconSearch size={15} strokeWidth={2} />
                   <input
@@ -1223,8 +1266,8 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 ))}
               </div>
             ) : (
-              <div className="data-table roomy tabla-doc">
-                <div className="thead" style={{ gridTemplateColumns: COLS }}>
+              <div className="data-table roomy tabla-doc tabla-cartas">
+                <div className="thead">
                   <div className="th">{t("actas.colFolio")}</div>
                   <div className="th">{t("cartas.colDocumento")}</div>
                   <div className="th">{t("tx.colFecha")}</div>
@@ -1236,7 +1279,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   <div
                     className="tr" data-fila
                     key={c.id}
-                    style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
+                    style={{ cursor: "pointer" }}
                     onClick={() => abrirCarta(c)}
                   >
                     <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{c.folio}</div>
@@ -1275,9 +1318,19 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     </div>
                   </div>
                 ))}
+                {/* El pie va DENTRO de la tarjeta, como en el handoff: cuántas
+                    cartas hay a la izquierda y la paginación a la derecha.
+                    `Pagination` sola no bastaba —se esconde cuando solo hay una
+                    página, que es casi siempre al principio— y la tabla
+                    terminaba en seco sin decir cuántas contiene. */}
+                <div className="tabla-pie">
+                  <span className="tabla-pie-cuenta">
+                    {t("cartas.pieCuenta", { n: pagina.length, total: visibles.length })}
+                  </span>
+                  <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                </div>
               </div>
             )}
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
     </>
@@ -1300,15 +1353,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 <MacFiltros campos={camposFiltro} onRestablecer={restablecerFiltros} />
               </>
             )}
-            <div className="cartas-menu-crear">
-              <MenuAnchor
-                open={menuCrearAbierto}
-                onOpenChange={setMenuCrearAbierto}
-                button={<IconPlus size={22} strokeWidth={2.1} />}
-                ariaLabel={t("cartas.nuevaCarta")}
-                items={menuCrearItems}
-              />
-            </div>
+            {accionCrear && (
+              <button className="btn primary btn-nuevo-cabecera" onClick={accionCrear.onPress}>
+                <IconPlus size={14} /> {accionCrear.label}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1367,647 +1416,14 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           )}
         </div>
       ) : (
+        /* El MISMO `contenido` que pinta el panel del iPad. Estuvo copiado
+           aquí, 625 líneas idénticas byte por byte a la constante de arriba, y
+           esa es la razón de fondo de que esta pantalla se fuera quedando
+           atrás: cada arreglo había que hacerlo dos veces y el segundo se
+           olvidaba. De ahí salieron los ocho botones de crear del 24 ago
+           —cuatro, duplicados— y un mismo cuerpo con dos edades. */
       <div className="content content-lienzo">
-        {loading ? (
-          <LoadingState />
-        ) : tab === "resumen" ? (
-          <>
-            {enIPhone ? (
-              <div className="ios-panel">
-                <div className="ios-panel-head"><h2>{t("cartas.seccionEstado")}</h2></div>
-                <div className="ios-panel-grid">
-                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("borrador")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardPreparacion")}</span></div>
-                    <span className="ios-stat-num"><CountUp value={resumen.enPreparacion} format={String} /></span>
-                  </button>
-                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("firma")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardFirma")}</span></div>
-                    <span className="ios-stat-num"><CountUp value={resumen.esperandoFirma} format={String} /></span>
-                  </button>
-                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("lista")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardListas")}</span></div>
-                    <span className="ios-stat-num"><CountUp value={resumen.listas} format={String} /></span>
-                  </button>
-                  <button type="button" className="ios-stat" onClick={() => cambiarTab("salida")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("traslados.cardEnProceso")}</span></div>
-                    <span className="ios-stat-num">
-                      <CountUp
-                        value={
-                          trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
-                          trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
-                        }
-                        format={String}
-                      />
-                    </span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="dash-canvas">
-              <div className="summary-4 enter">
-                <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
-                  <div className="stat-head"><span className="stat-label">{t("cartas.cardPreparacion")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.enPreparacion} format={String} /></div>
-                </button>
-                <button className="stat-card accent" style={accent("var(--accent-3)")} onClick={() => irAArchivoFiltrado("firma")}>
-                  <div className="stat-head"><span className="stat-label">{t("cartas.cardFirma")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.esperandoFirma} format={String} /></div>
-                </button>
-                <button className="stat-card accent" style={accent("var(--accent-1)")} onClick={() => irAArchivoFiltrado("lista")}>
-                  <div className="stat-head"><span className="stat-label">{t("cartas.cardListas")}</span></div>
-                  <div className="stat-value md"><CountUp value={resumen.listas} format={String} /></div>
-                </button>
-                {/* Cuatro tarjetas que cuentan una sola historia, y todas son
-                    colas de trabajo: en preparación → esperando firma → listas
-                    para entregar, más los traslados en curso. Antes eran seis
-                    (con "Emitidas este mes", puro dato, y los traslados
-                    separados en dos) y la sexta rompía la fila sola. */}
-                <button className="stat-card accent" style={accent("var(--accent-5)")} onClick={() => cambiarTab("salida")}>
-                  <div className="stat-head"><span className="stat-label">{t("traslados.cardEnProceso")}</span></div>
-                  <div className="stat-value md">
-                    <CountUp
-                      value={
-                        trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
-                        trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
-                      }
-                      format={String}
-                    />
-                  </div>
-                </button>
-              </div>
-              </div>
-            )}
-
-            {/* Las dos cajas de "Registrar traslado" vivían aquí — ya están
-                en el menú del "+". Este mismo sitio ahora es Plantillas y
-                Archivo, que eran pastillas de la fila que se quitó. Este
-                bloque no varía por plataforma: no es parte del idioma de
-                panel de iPhone, es el reemplazo directo de la fila de
-                pastillas que se quitó para todos por igual. */}
-            <div className="ios-navcards" style={{ marginTop: 14 }}>
-              <button type="button" className="ios-navcard" onClick={() => cambiarTab("plantillas")}>
-                <span className="ios-navcard-icon"><TemplateIcon /></span>
-                <span className="ios-navcard-label">{t("cartas.tab.plantillas")}</span>
-                <IosChevron />
-              </button>
-              <button type="button" className="ios-navcard" onClick={() => cambiarTab("archivo")}>
-                <span className="ios-navcard-icon"><ArchiveIcon /></span>
-                <span className="ios-navcard-label">{t("cartas.tab.archivo")}</span>
-                <IosChevron />
-              </button>
-            </div>
-
-            {enIPhone ? (
-              <div className="ios-panel" style={{ marginTop: 18 }}>
-                <div className="ios-panel-head">
-                  <h2>{t("cartas.actividadReciente")}</h2>
-                  {cartas.length > 0 && (
-                    <button type="button" className="ios-panel-action" onClick={() => cambiarTab("archivo")}>
-                      {t("cartas.verTodo")}
-                    </button>
-                  )}
-                </div>
-                {cartas.length === 0 ? (
-                  <div className="ios-panel-empty">{t("cartas.aunNoHay")}</div>
-                ) : (
-                  <div className="ios-listcard">
-                    {cartas.slice(0, 5).map((c) => (
-                      <button key={c.id} type="button" className="ios-listrow" onClick={() => abrirCarta(c)}>
-                        <span className="ios-listrow-code">{c.folio}</span>
-                        <span className="ios-listrow-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
-                        <span className={`ios-badge ${badgeClaseIOS(c.estado)}`}>{t(`cartas.estado.${c.estado}`)}</span>
-                        <IosChevron />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="card enter" style={{ marginTop: 18 }}>
-                <div className="card-head"><span className="card-title">{t("cartas.actividadReciente")}</span></div>
-                {cartas.length === 0 ? (
-                  <EmptyState
-                    titulo={t("cartas.aunNoHay")}
-                    sub={t("cartas.agregaPrimera")}
-                    icon={<IconMail size={20} strokeWidth={1.8} />}
-                  />
-                ) : (
-                  cartas.slice(0, 5).map((c) => (
-                    <div key={c.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => abrirCarta(c)}>
-                      <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600, width: 120, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.folio}</span>
-                      <span className="roster-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
-                      <span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </>
-        ) : tab === "nueva" ? (
-          <CartaEditor
-            key={editando?.id ?? `nueva-${desdeSolicitud?.id ?? 0}`}
-            church={church}
-            carta={editando}
-            members={members}
-            dirtyRef={editorDirtyRef}
-            plantillas={plantillas.filter((p) => p.activa === 1)}
-            prefill={prefillDesdeSolicitud}
-            vinculo={desdeSolicitud?.folio ?? solicitudes.find((s) => s.id === editando?.solicitud_id)?.folio ?? null}
-            onSaved={async (creada) => {
-              if (creada && desdeSolicitud) {
-                await vincularCartaSolicitud(desdeSolicitud.id, creada.id, church.id);
-                showToast(t("solicitudes.toastVinculada", { sol: desdeSolicitud.folio, carta: creada.folio }));
-              }
-              setRefrescoLocal((k) => k + 1);
-              onChanged();
-              if (creada) setEditando(creada);
-            }}
-          />
-        ) : tab === "solicitudes" ? (
-          <>
-            <div className="tx-head">
-              <span className="roster-counters">
-                <span>{t("solicitudes.pendientes")}: <b>{solicitudes.filter((s) => !["entregada", "cancelada"].includes(s.estado)).length}</b></span>
-              </span>
-              <button className="btn primary" onClick={() => setSolicitudModal({ open: true, solicitud: null })}>
-                <IconPlus size={14} /> {t("solicitudes.nuevaSolicitud")}
-              </button>
-            </div>
-            {solicitudes.length === 0 ? (
-              <EmptyState
-                titulo={t("solicitudes.aunNoHay")}
-                sub={t("solicitudes.agregaPrimera")}
-                icon={<IconMail size={20} strokeWidth={1.8} />}
-              />
-            ) : enIPhone ? (
-              <div className="ios-listcard">
-                {solicitudes.map((s) => {
-                  const cartaVinculada = cartas.find((c) => c.id === s.carta_id) ?? null;
-                  const extra: RowMenuItem[] = [];
-                  if (!s.carta_id && !["entregada", "cancelada"].includes(s.estado)) {
-                    extra.push({ label: t("solicitudes.crearCarta"), onClick: () => crearDesdeSolicitud(s) });
-                  }
-                  if (cartaVinculada) {
-                    extra.push({ label: t("solicitudes.abrirCarta", { folio: cartaVinculada.folio }), onClick: () => abrirCarta(cartaVinculada) });
-                  }
-                  return (
-                    <div
-                      className="ios-txrow ios-txrow--clickable"
-                      data-fila
-                      key={s.id}
-                      onClick={() => setSolicitudModal({ open: true, solicitud: s })}
-                    >
-                      <div className="ios-txrow-main">
-                        <div className="ios-txrow-title">{nombreMiembro(s.member_id) ?? s.solicitante_externo ?? "—"}</div>
-                        <div className="tx-secundaria-movil">
-                          {t(`cartas.tipoDoc.${s.tipo_carta}`)}
-                          {cartaVinculada ? ` · ${cartaVinculada.folio}` : ""}
-                          {" · "}{fmtFechaCorta(s.fecha_solicitud)}
-                        </div>
-                      </div>
-                      <div className="ios-txrow-trailing">
-                        <span className={`ios-badge ${badgeClaseIOS(s.estado)}`}>{t(`solicitudes.estado.${s.estado}`)}</span>
-                      </div>
-                      <RowMenu
-                        onEdit={() => setSolicitudModal({ open: true, solicitud: s })}
-                        extraItems={extra}
-                        onDelete={() => setPendingDeleteSol(s)}
-                        deleteLabel={s.estado === "nueva" && s.carta_id === null ? t("common.eliminar") : t("solicitudes.cancelar")}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="data-table roomy">
-                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
-                  <div className="th">{t("actas.colFolio")}</div>
-                  <div className="th">{t("solicitudes.colSolicitud")}</div>
-                  <div className="th">{t("solicitudes.colFechas")}</div>
-                  <div className="th">{t("solicitudes.prioridad")}</div>
-                  <div className="th">{t("membresia.colEstado")}</div>
-                  <div className="th"></div>
-                </div>
-                {solicitudes.map((s) => {
-                  const cartaVinculada = cartas.find((c) => c.id === s.carta_id) ?? null;
-                  const extra: RowMenuItem[] = [];
-                  if (!s.carta_id && !["entregada", "cancelada"].includes(s.estado)) {
-                    extra.push({ label: t("solicitudes.crearCarta"), onClick: () => crearDesdeSolicitud(s) });
-                  }
-                  if (cartaVinculada) {
-                    extra.push({ label: t("solicitudes.abrirCarta", { folio: cartaVinculada.folio }), onClick: () => abrirCarta(cartaVinculada) });
-                  }
-                  return (
-                    <div
-                      className="tr" data-fila
-                      key={s.id}
-                      style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
-                      onClick={() => setSolicitudModal({ open: true, solicitud: s })}
-                    >
-                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
-                      <div className="td" style={{ minWidth: 0 }}>
-                        <div className="p-name truncate">{nombreMiembro(s.member_id) ?? s.solicitante_externo ?? "—"}</div>
-                        <div className="p-mail truncate">
-                          {t(`cartas.tipoDoc.${s.tipo_carta}`)}
-                          {cartaVinculada ? ` · ${cartaVinculada.folio}` : ""}
-                        </div>
-                      </div>
-                      <div className="td" style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-2)" }}>
-                        <div>{fmtFechaCorta(s.fecha_solicitud)}</div>
-                        {s.fecha_requerida && (
-                          <div style={{ color: "var(--text-3)", fontSize: "calc(11.5px * var(--fs-escala))" }}>
-                            {t("solicitudes.para")} {fmtFechaCorta(s.fecha_requerida)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="td">
-                        <span className={`tag ${BADGE_PRIORIDAD[s.prioridad] ?? "otros"}`}>{t(`solicitudes.prioridadOpcion.${s.prioridad}`)}</span>
-                      </div>
-                      <div className="td">
-                        <span className={`tag ${BADGE_SOLICITUD[s.estado] ?? "otros"}`}>{t(`solicitudes.estado.${s.estado}`)}</span>
-                      </div>
-                      <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
-                        <RowMenu
-                          onEdit={() => setSolicitudModal({ open: true, solicitud: s })}
-                          extraItems={extra}
-                          onDelete={() => setPendingDeleteSol(s)}
-                          deleteLabel={s.estado === "nueva" && s.carta_id === null ? t("common.eliminar") : t("solicitudes.cancelar")}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        ) : tab === "salida" ? (
-          <>
-            <div className="tx-head">
-              <span className="roster-counters">
-                <span>{t("traslados.enProceso")}: <b>{trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length}</b></span>
-              </span>
-              <button className="btn primary" onClick={() => setTsModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarSalida")}
-              </button>
-            </div>
-            {trasladosSalida.length === 0 ? (
-              <EmptyState
-                titulo={t("traslados.aunNoHaySalida")}
-                sub={t("traslados.agregaPrimeroSalida")}
-                icon={<IconMail size={20} strokeWidth={1.8} />}
-              />
-            ) : enIPhone ? (
-              <div className="ios-listcard">
-                {trasladosSalida.map((s) => (
-                  <div
-                    className="ios-txrow ios-txrow--clickable"
-                    data-fila
-                    key={s.id}
-                    onClick={() => setTsModal({ open: true, traslado: s })}
-                  >
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{nombreMiembro(s.member_id) ?? "—"}</div>
-                      <div className="tx-secundaria-movil">
-                        {s.iglesia_destino ?? t("traslados.sinDestino")} · {fmtFechaCorta(s.fecha_solicitud)}
-                      </div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className={`ios-badge ${badgeClaseTS(s.estado)}`}>{t(`traslados.estadoTS.${s.estado}`)}</span>
-                    </div>
-                    <RowMenu
-                      onEdit={() => setTsModal({ open: true, traslado: s })}
-                      onDelete={() => setPendingDeleteTS(s)}
-                      deleteLabel={s.estado === "borrador" ? t("common.eliminar") : t("solicitudes.cancelar")}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="data-table roomy">
-                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
-                  <div className="th">{t("actas.colFolio")}</div>
-                  <div className="th">{t("traslados.colTraslado")}</div>
-                  <div className="th">{t("tx.colFecha")}</div>
-                  <div className="th">{t("traslados.colConfirmacion")}</div>
-                  <div className="th">{t("membresia.colEstado")}</div>
-                  <div className="th"></div>
-                </div>
-                {trasladosSalida.map((s) => (
-                  <div
-                    className="tr" data-fila
-                    key={s.id}
-                    style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
-                    onClick={() => setTsModal({ open: true, traslado: s })}
-                  >
-                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
-                    <div className="td" style={{ minWidth: 0 }}>
-                      <div className="p-name truncate">{nombreMiembro(s.member_id) ?? "—"}</div>
-                      <div className="p-mail truncate">{s.iglesia_destino ?? t("traslados.sinDestino")}</div>
-                    </div>
-                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(s.fecha_solicitud)}</div>
-                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
-                      {s.confirmacion_recibida === 1
-                        ? `${t("common.si")}${s.fecha_confirmacion ? ` · ${fmtFechaCorta(s.fecha_confirmacion)}` : ""}`
-                        : t("common.no")}
-                    </div>
-                    <div className="td"><span className={`tag ${BADGE_TS[s.estado] ?? "otros"}`}>{t(`traslados.estadoTS.${s.estado}`)}</span></div>
-                    <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
-                      <RowMenu
-                        onEdit={() => setTsModal({ open: true, traslado: s })}
-                        onDelete={() => setPendingDeleteTS(s)}
-                        deleteLabel={s.estado === "borrador" ? t("common.eliminar") : t("solicitudes.cancelar")}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        ) : tab === "entrada" ? (
-          <>
-            <div className="tx-head">
-              <span className="roster-counters">
-                <span>{t("traslados.enRevision")}: <b>{trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length}</b></span>
-              </span>
-              <button className="btn primary" onClick={() => setTeModal({ open: true, traslado: null })}>
-                <IconPlus size={14} /> {t("traslados.registrarEntrada")}
-              </button>
-            </div>
-            {trasladosEntrada.length === 0 ? (
-              <EmptyState
-                titulo={t("traslados.aunNoHayEntrada")}
-                sub={t("traslados.agregaPrimeroEntrada")}
-                icon={<IconMail size={20} strokeWidth={1.8} />}
-              />
-            ) : enIPhone ? (
-              <div className="ios-listcard">
-                {trasladosEntrada.map((s) => (
-                  <div
-                    className="ios-txrow ios-txrow--clickable"
-                    data-fila
-                    key={s.id}
-                    onClick={() => setTeModal({ open: true, traslado: s })}
-                  >
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{s.nombre}</div>
-                      <div className="tx-secundaria-movil">
-                        {s.iglesia_procedencia ?? "—"}
-                        {s.fecha_recepcion ? ` · ${fmtFechaCorta(s.fecha_recepcion)}` : ""}
-                      </div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className={`ios-badge ${badgeClaseTE(s.estado)}`}>{t(`traslados.estadoTE.${s.estado}`)}</span>
-                    </div>
-                    <RowMenu
-                      onEdit={() => setTeModal({ open: true, traslado: s })}
-                      onDelete={() => setPendingDeleteTE(s)}
-                      deleteLabel={s.estado === "recibida" && s.member_id === null ? t("common.eliminar") : t("cartas.archivar")}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="data-table roomy">
-                <div className="thead" style={{ gridTemplateColumns: COLS_SOL }}>
-                  <div className="th">{t("actas.colFolio")}</div>
-                  <div className="th">{t("traslados.colProceso")}</div>
-                  <div className="th">{t("traslados.fechaRecepcion")}</div>
-                  <div className="th">{t("traslados.adjunto")}</div>
-                  <div className="th">{t("membresia.colEstado")}</div>
-                  <div className="th"></div>
-                </div>
-                {trasladosEntrada.map((s) => (
-                  <div
-                    className="tr" data-fila
-                    key={s.id}
-                    style={{ gridTemplateColumns: COLS_SOL, cursor: "pointer" }}
-                    onClick={() => setTeModal({ open: true, traslado: s })}
-                  >
-                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
-                    <div className="td" style={{ minWidth: 0 }}>
-                      <div className="p-name truncate">{s.nombre}</div>
-                      <div className="p-mail truncate">{s.iglesia_procedencia ?? "—"}</div>
-                    </div>
-                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
-                      {s.fecha_recepcion ? fmtFechaCorta(s.fecha_recepcion) : "—"}
-                    </div>
-                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
-                      {s.adjunto_nombre ? <span className="truncate" title={s.adjunto_nombre}>📎 {s.adjunto_nombre}</span> : "—"}
-                    </div>
-                    <div className="td"><span className={`tag ${BADGE_TE[s.estado] ?? "otros"}`}>{t(`traslados.estadoTE.${s.estado}`)}</span></div>
-                    <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
-                      <RowMenu
-                        onEdit={() => setTeModal({ open: true, traslado: s })}
-                        onDelete={() => setPendingDeleteTE(s)}
-                        deleteLabel={s.estado === "recibida" && s.member_id === null ? t("common.eliminar") : t("cartas.archivar")}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        ) : tab === "plantillas" ? (
-          <>
-            <div className="tx-head">
-              <span className="roster-counters">
-                <span>{t("plantillas.activas")}: <b>{plantillas.filter((p) => p.activa === 1).length}</b></span>
-              </span>
-              <button className="btn primary" onClick={() => setPlantillaModal({ open: true, plantilla: null, base: null })}>
-                <IconPlus size={14} /> {t("plantillas.nuevaPlantilla")}
-              </button>
-            </div>
-            <div className="data-table roomy">
-              <div className="thead" style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px" }}>
-                <div className="th">{t("plantillas.colPlantilla")}</div>
-                <div className="th">{t("cartas.tipoCarta")}</div>
-                <div className="th">{t("membresia.colEstado")}</div>
-                <div className="th"></div>
-              </div>
-              {plantillas.map((p) => (
-                <div
-                  className="tr" data-fila
-                  key={p.id}
-                  style={{ gridTemplateColumns: "1.6fr 1fr 220px 72px", cursor: "pointer", opacity: p.activa === 1 ? 1 : 0.65 }}
-                  onClick={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
-                >
-                  <div className="td" style={{ minWidth: 0 }}>
-                    <div className="p-name truncate">{p.nombre}</div>
-                  </div>
-                  <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
-                    <div className="truncate">{t(`cartas.tipoDoc.${p.tipo}`)}</div>
-                  </div>
-                  <div className="td" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                    <span className={`tag ${p.activa === 1 ? "activo" : "baja"}`}>
-                      {p.activa === 1 ? t("plantillas.activaBadge") : t("plantillas.inactivaBadge")}
-                    </span>
-                    {p.predeterminada === 1 && <span className="tag diezmo">{t("plantillas.predeterminadaBadge")}</span>}
-                  </div>
-                  <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
-                    <RowMenu
-                      onEdit={() => setPlantillaModal({ open: true, plantilla: p, base: null })}
-                      extraItems={[
-                        { label: t("cartas.duplicar"), onClick: () => setPlantillaModal({ open: true, plantilla: null, base: p }) },
-                        { label: p.activa === 1 ? t("plantillas.desactivar") : t("plantillas.activar"), onClick: () => togglePlantillaActiva(p) },
-                        ...(p.predeterminada !== 1 ? [{ label: t("plantillas.marcarPredeterminada"), onClick: () => marcarPredeterminada(p) }] : []),
-                      ]}
-                      onDelete={() => setPendingDeletePl(p)}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            {enIPhone ? (
-              <>
-                <div className="search-input-wrap" style={{ marginBottom: 10 }}>
-                  <IconSearch size={15} strokeWidth={2} />
-                  <input
-                    className="form-input"
-                    placeholder={textoCorto(t("common.buscarCorto"), t("cartas.buscarPlaceholder"))}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </div>
-                <div className="ios-filtros">
-                  <IOSPickerChip label={t("membresia.colEstado")} options={opcFiltroEstado} value={filtroEstado} emptyValue="todas" onSelect={setFiltroEstado} />
-                  <IOSPickerChip label={t("cartas.tipoCarta")} options={opcFiltroTipo} value={filtroTipo} emptyValue="todos" onSelect={setFiltroTipo} />
-                  <IOSPickerChip label={t("cartas.filtroMiembro")} options={opcFiltroMiembro} value={filtroMiembro} emptyValue="todos" onSelect={setFiltroMiembro} />
-                  <input type="date" aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} value={desde} onChange={(e) => setDesde(e.target.value)} />
-                  <input type="date" aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} value={hasta} onChange={(e) => setHasta(e.target.value)} />
-                </div>
-              </>
-            ) : esMac() ? null : (
-              <div className="tx-head" style={{ flexWrap: "wrap", gap: 8 }}>
-                <div className="search-input-wrap" style={{ flex: 1, minWidth: 220, maxWidth: 340 }}>
-                  <IconSearch size={15} strokeWidth={2} />
-                  <input
-                    className="form-input"
-                    placeholder={textoCorto(t("common.buscarCorto"), t("cartas.buscarPlaceholder"))}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </div>
-                <select className="form-input" style={{ width: "auto" }} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} aria-label={t("membresia.colEstado")}>
-                  {opcFiltroEstado.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <select className="form-input" style={{ width: "auto" }} value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)} aria-label={t("cartas.tipoCarta")}>
-                  {opcFiltroTipo.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <select className="form-input" style={{ width: "auto", maxWidth: 180 }} value={filtroMiembro} onChange={(e) => setFiltroMiembro(e.target.value)} aria-label={t("cartas.filtroMiembro")}>
-                  {opcFiltroMiembro.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <input type="date" className="form-input" style={{ width: "auto" }} value={desde} onChange={(e) => setDesde(e.target.value)} aria-label={t("cartas.fechaDesde")} title={t("cartas.fechaDesde")} />
-                <input type="date" className="form-input" style={{ width: "auto" }} value={hasta} onChange={(e) => setHasta(e.target.value)} aria-label={t("cartas.fechaHasta")} title={t("cartas.fechaHasta")} />
-              </div>
-            )}
-
-            {visibles.length === 0 ? (
-              <EmptyState
-                titulo={cartas.length === 0 ? t("cartas.aunNoHay") : t("cartas.sinResultados")}
-                sub={cartas.length === 0 ? t("cartas.agregaPrimera") : t("cartas.sinResultadosSub")}
-                icon={<IconMail size={20} strokeWidth={1.8} />}
-              />
-            ) : enIPhone ? (
-              <div className="ios-listcard">
-                {pagina.map((c) => (
-                  <div
-                    className="ios-txrow ios-txrow--clickable"
-                    data-fila
-                    key={c.id}
-                    onClick={() => abrirCarta(c)}
-                  >
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{c.destinatario_nombre}</div>
-                      <div className="tx-secundaria-movil">
-                        {t(`cartas.tipoDoc.${c.tipo}`)}{c.asunto ? ` · ${c.asunto}` : ""} · {fmtFechaCorta(c.fecha_emision)}
-                      </div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className={`ios-badge ${badgeClaseIOS(c.estado)}`}>{t(`cartas.estado.${c.estado}`)}</span>
-                    </div>
-                    <RowMenu
-                      onEdit={() => abrirCarta(c)}
-                      extraItems={(() => {
-                        const extra: RowMenuItem[] = [
-                          { label: t("cartas.imprimirPdf"), onClick: () => imprimir(c) },
-                          { label: t("cartas.duplicar"), onClick: () => duplicarCarta(c) },
-                        ];
-                        if (!["entregada", "archivada", "cancelada"].includes(c.estado)) {
-                          extra.push({ label: t("cartas.marcarEntregadaAccion"), onClick: () => setConfirmAction({ tipo: "entregar", carta: c }) });
-                          extra.push({ label: t("cartas.cancelarAccion"), danger: true, onClick: () => setConfirmAction({ tipo: "cancelar", carta: c }) });
-                        }
-                        if (["archivada", "cancelada"].includes(c.estado)) {
-                          extra.push({ label: t("cartas.restaurar"), onClick: () => restaurarCarta(c) });
-                        }
-                        return extra;
-                      })()}
-                      onDelete={() => (c.estado === "borrador" ? setPendingDelete(c) : archivarCarta(c))}
-                      deleteLabel={c.estado === "borrador" ? t("common.eliminar") : t("cartas.archivar")}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="data-table roomy tabla-doc">
-                <div className="thead" style={{ gridTemplateColumns: COLS }}>
-                  <div className="th">{t("actas.colFolio")}</div>
-                  <div className="th">{t("cartas.colDocumento")}</div>
-                  <div className="th">{t("tx.colFecha")}</div>
-                  <div className="th">{t("membresia.colEstado")}</div>
-                  <div className="th">{t("cartas.colModificada")}</div>
-                  <div className="th"></div>
-                </div>
-                {pagina.map((c) => (
-                  <div
-                    className="tr" data-fila
-                    key={c.id}
-                    style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
-                    onClick={() => abrirCarta(c)}
-                  >
-                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{c.folio}</div>
-                    <div className="td" style={{ minWidth: 0 }}>
-                      <div className="p-name truncate">{c.destinatario_nombre}</div>
-                      <div className="p-mail truncate">{t(`cartas.tipoDoc.${c.tipo}`)}{c.asunto ? ` · ${c.asunto}` : ""}</div>
-                    </div>
-                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(c.fecha_emision)}</div>
-                    <div className="td"><span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span></div>
-                    <div className="td" style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)" }}>{c.modificado_en.slice(0, 10)}</div>
-                    <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
-                      <span className="row-actions">
-                        <span className="row-icon-btn" title={t("cartas.imprimirPdf")} onClick={() => imprimir(c)}>
-                          <IconPrinter size={13} strokeWidth={2} />
-                        </span>
-                      </span>
-                      <RowMenu
-                        onEdit={() => abrirCarta(c)}
-                        extraItems={(() => {
-                          const extra: RowMenuItem[] = [
-                            { label: t("cartas.imprimirPdf"), onClick: () => imprimir(c) },
-                            { label: t("cartas.duplicar"), onClick: () => duplicarCarta(c) },
-                          ];
-                          if (!["entregada", "archivada", "cancelada"].includes(c.estado)) {
-                            extra.push({ label: t("cartas.marcarEntregadaAccion"), onClick: () => setConfirmAction({ tipo: "entregar", carta: c }) });
-                            extra.push({ label: t("cartas.cancelarAccion"), danger: true, onClick: () => setConfirmAction({ tipo: "cancelar", carta: c }) });
-                          }
-                          if (["archivada", "cancelada"].includes(c.estado)) {
-                            extra.push({ label: t("cartas.restaurar"), onClick: () => restaurarCarta(c) });
-                          }
-                          return extra;
-                        })()}
-                        onDelete={() => (c.estado === "borrador" ? setPendingDelete(c) : archivarCarta(c))}
-                        deleteLabel={c.estado === "borrador" ? t("common.eliminar") : t("cartas.archivar")}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-          </>
-        )}
+        {contenido}
       </div>
       )}
 

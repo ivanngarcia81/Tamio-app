@@ -2836,3 +2836,247 @@ que los pintan. Quitando las tres columnas del `UPDATE` de `updateMemberFicha`,
 caen cinco comprobaciones: es exactamente el fallo que esta guarda existe para
 cazar. Y una sexta vigila que no vuelva ninguna fila gris a la ficha. Pasa de
 787 a **799**.
+
+## 39. El header, con el handoff en la mano (24 ago 2026)
+
+Iván mandó el handoff del header con dos instrucciones: cambiar el ☰ por el
+icono de menú del mockup, y **no** pintar los iconos fantasma (Aspecto y Rotar)
+que el diseño dibuja a la derecha. Antes de tocar nada se midió la barra de
+hoy en las dos orientaciones y en tres pantallas, y el resultado fue que el
+grueso ya coincidía —56 de alto, 20 de margen, radio 10, línea de 0.5, título
+17 sobre subtítulo 12— y que lo que fallaba eran seis detalles.
+
+**El botón de menú.** Era una ficha de 40×40 flotando *fuera* de la barra, con
+las tres rayas, y la barra le hacía un hueco de 56 con relleno. Ahora mide
+**38×38**, cae en **x=20** —el margen de la barra— centrado en la fila (y=9,
+que es (56−38)/2), con **relleno en reposo** al 6% y el glifo de **barra
+lateral**: el rectángulo con la columna marcada, el mismo `IconSidebar` que el
+Mac ya usa en su toolbar. En iPadOS ese botón abre una **columna** que existe,
+no un menú, y es el glifo de Notas, Archivos y Mail. La barra le reserva
+**70 = 20 + 38 + 12**, los tres números del handoff.
+
+Sigue siendo `position: fixed` y no un hijo de la barra, por lo mismo que
+`.btn-sidebar` en el Mac: `.header` lo pintan las dieciséis páginas, y meterlo
+dentro serían dieciséis copias del mismo botón. Geométricamente cae donde
+caería si fuera el primer hijo.
+
+**El token equivocado.** El ☰ salía **negro** mientras "Nuevo ingreso" salía
+verde, y los dos son "el acento": el botón usaba `--ink` y con el acento de
+fábrica ("neutro") eso vale `#0f0f0f`; el resto de la app usa `--brand`. Dos
+miembros de la misma familia y uno mal elegido. La guarda no compara contra un
+verde literal sino contra **el fondo del botón primario**, para que siga
+diciendo la verdad si algún día se cambia la marca.
+
+**Los 38 contra los 44 del sistema, y el punto ciego que destapó.** El diseño
+pide botones de 38 y `@media (pointer: coarse)` le pone **44 de mínimo** a todo
+`.btn`. En el iPad de verdad esa regla entra; en el navegador del arnés no,
+porque **el arnés nunca simuló pantalla táctil**. O sea que ninguna regla de
+`pointer: coarse` se había probado jamás — el mismo punto ciego que `env()`,
+que dio verde durante diez versiones sobre una barra con la raya pegada a los
+botones (§33). `nuevoContexto` acepta ahora `{ tactil: true }`, apagado por
+omisión para no mover medio arnés de golpe, y la guarda del header lo enciende.
+Con el `min-height` quitado a mano, la guarda canta **44 · 44**: es el fallo
+que el arnés no podía ver.
+
+Y los 38 no se pagan con la zona tocable. El handoff lo dice: *"esa fila entera
+es zona tocable"*. Un `::before` de `inset: -9px` la devuelve a los 56 de alto
+sin mover un píxel de lo que se pinta, y la guarda lo comprueba **tocando**:
+le pide al navegador qué hay en el píxel de arriba de la barra y tiene que
+contestar que el botón.
+
+**Una trampa que costó seis pantallas.** Poner `position: relative` en los
+botones de la barra —para que el `::before` cuelgue de ellos— revivió el `top`
+que "Imprimir" trae de su versión de teléfono, donde es `position: fixed`; el
+iPad lo devolvía al flujo con `static`, donde los desplazamientos se ignoran.
+El botón bajó 48px y se salió de la barra en seis pantallas. Lo cazó la guarda
+§27, la del aire bajo la raya. El arreglo es `inset: auto` junto al
+`position: relative`.
+
+**Lo demás.** Título al **600** con interletraje **−0.2** (venía en 700, que es
+peso de título de página y a 17px dentro de una barra se lee como un grito);
+**6 px** entre acciones en vez de 16; el primario a **38** con relleno
+asimétrico 12/15, etiqueta **14.5** y el "+" a **17 con trazo 2** —venía a 14
+con trazo 2.4, más chico que el resto de la barra y más gordo, que es la
+combinación que lo hacía parecer de otra familia—. El signo ya estaba: los ocho
+botones de alta llevan `IconPlus` desde siempre. Y la etiqueta se queda
+completa —«Nuevo ingreso», no «Nuevo»— por decisión de Iván: en el dibujo solo
+hay una pantalla, en la app el mismo botón crea cosas distintas en cada sitio.
+
+**Dos cosas que se quitaron por no poder demostrarlas.** El ☰ tenía dos glifos
+—el nuevo y las tres rayas de antes— con la idea de dejarle al iPhone el suyo;
+al comprobarlo, el iPhone esconde ese botón con `!important` y el Mac también,
+en todos sus anchos: **el ☰ es solo del iPad** y el segundo glifo era código
+muerto con un comentario que mentía. Y se probó `flex-wrap: nowrap` en la barra
+para que el título cediera antes que el alto; con el `min-width: 0` puesto no
+cambiaba nada, ni forzando un título larguísimo ni metiendo una acción ancha a
+mano, así que tampoco está.
+
+**El recorte del título tuvo que reescribirse.** La primera versión medía los
+títulos de verdad y daba verde con la regla puesta **y sin ella**: hoy ninguno
+de los dieciséis es lo bastante largo. Una guarda que no puede fallar no está
+guardando nada, y esta se pilló quitando el `min-width` y viendo que no se
+enteraba. Ahora inyecta un título que no cabe y comprueba las dos mitades: que
+recorta con puntos suspensivos y que no empuja la barra. Sin `min-width: 0` se
+desborda **348px**.
+
+Los iconos fantasma no se pintan, y hay guarda para que no aparezcan de buena
+fe: en la barra no puede haber ningún botón sin texto que no sea el ☰. Pasa de
+799 a **825**.
+
+## 40. Un solo botón de crear, y con nombre (24 ago 2026)
+
+Iván mandó dos fotos de "Cartas y traslados" con los dos botones circulados: un
+**"+" pelado** en la esquina de la barra y, debajo, un **botón verde con
+nombre** dentro de la lista. Los dos abrían el mismo formulario. Palabras
+suyas: *"prácticamente en todo el menú hay doble botón que hacen lo mismo; en
+el símbolo de más poner '+ nuevo' y elimina los otros botones"*.
+
+**Es la segunda vez que esta pantalla pone la misma orden en dos sitios.** La
+primera fue "Nueva carta" como pestaña del índice, que también circuló el 22
+ago. Por eso lo que se arregla no es "quitar ese botón" —eso se hace una vez y
+vuelve— sino la regla.
+
+**Lo que se midió antes de tocar nada.** Se recorrieron las doce pantallas con
+alta buscando el patrón. La duplicación estaba **solo en Cartas**, en cuatro
+secciones (Solicitudes, Traslado de salida, Traslado de entrada, Plantillas) y
+por partida doble, porque el cuerpo se pinta en dos ramas —la del Mac/teléfono
+y la del maestro-detalle del iPad—: **ocho botones**. Los `btn primary` de
+Bandeja, Mensajes y Reportes no son de alta (Aprobar, Enviar, Exportar), así
+que la generalización "en todo el menú" no se cumplía; se dice porque conviene
+que quede escrito qué se revisó.
+
+**Queda uno solo, y con nombre.** El "+" del menú se retira y en su sitio va un
+`.btn-nuevo-cabecera` normal cuyo texto **cambia con la sección**: "Nueva carta
+de recomendación", "Nueva plantilla", "Nueva solicitud", "Registrar traslado de
+salida", "Registrar traslado de entrada". En el editor no sale ninguno: ahí ya
+estás escribiendo una carta.
+
+Se eligió el botón contextual en vez de un "+ Nuevo" genérico con su menú por
+dos razones: es lo que hacen las otras quince pantallas ("Nuevo ingreso",
+"Nueva acta", "Nuevo servicio"), y un "+" sin palabra era **el único botón de
+la app que no decía qué iba a crear**. De paso el editor se abre de un toque en
+vez de dos.
+
+**La trampa que casi se cuela.** Quitar el botón de "Nueva plantilla" del
+contenido habría dejado al **iPhone sin ninguna forma de crear una plantilla**:
+ahí no hay barra de 56, y el "+" flotante abre una hoja de acciones que solo
+llevaba cuatro. Se añadió la quinta. Es exactamente el fallo que ya pasó una
+vez en esta misma pantalla —el iPad de 13" sin un solo control de alta a la
+vista— y por eso se buscó a propósito.
+
+**Tres guardas viejas se pusieron al día, ninguna se borró.** Dos abrían el
+menú del "+" para llegar a las hojas de solicitud y traslados; ahora entran por
+la sección y pulsan su botón, que es lo que hace una persona. La tercera
+comprobaba que el "+" abría el editor; ahora comprueba que lo abre de un toque.
+
+**La guarda nueva (§37) vigila la REGLA, no el botón.** Recorre las seis
+secciones de Cartas y las ocho pantallas con alta y exige tres cosas: **como
+mucho un** control de alta a la vista, que **diga qué crea** (se cuentan también
+los que no tienen texto pero llevan un "+", que es justo el caso retirado), y
+que **viva en la barra**. Devolviendo uno solo de los ocho botones, canta
+`Nueva solicitud · Nueva solicitud`. Pasa de 825 a **861**.
+
+## 41. Cartas y traslados, rehecha con su handoff (25 ago 2026)
+
+*"Rediseñar toda la página de cartas y traslado, que es la única página que no
+se diseñó bien."* Al medirla salieron **tres fallos de fondo**, y ninguno era
+de estilo. Los tres explican por qué esta pantalla se fue quedando atrás
+mientras las otras quince avanzaban.
+
+### 1. El cuerpo estaba escrito dos veces
+
+625 líneas **idénticas byte por byte**: una copia dentro de la constante
+`contenido` —la que pinta el panel del iPad— y otra copiada a mano en la rama
+del Mac. Se comprobó con un diff de las dos: cero diferencias.
+
+Esa es la causa raíz. Cada arreglo había que hacerlo dos veces y el segundo se
+olvidaba, así que la pantalla acumulaba dos edades del mismo código. De ahí
+salían los **ocho** botones de crear del 24 ago —cuatro, duplicados— y por eso
+al retirarlos hubo que tocar ocho sitios. El archivo pasa de 2199 a 1578
+líneas.
+
+### 2. El panel estaba capado a 720px
+
+`.dm` lleva `max-width: 720px` porque un texto que se LEE no debe pasar de esa
+medida: vale para la ficha de un movimiento o de un miembro. Aquí dentro hay
+cinco tablas de seis columnas.
+
+Medido en una ventana de 1600: el panel medía **944** y la tabla **720**. Los
+224 que faltaban salían todos de la única columna elástica —la del nombre, la
+que se lee— que con las columnas del handoff se quedaba en **32px**. En un
+iPad de 13" apaisado, con las columnas viejas, la columna del documento medía
+**54px**. No es que estuviera apretada: no cabía nada.
+
+El editor ya tenía su excepción (`.dm--carta`). Resulta que la necesitaba el
+panel entero.
+
+### 3. Una regla de CSS sin bloque de declaraciones
+
+```
+:root.movil .btn-nuevo-cabecera,
+:root.movil .empty-accion.duplica-crear,     ← la coma, y nada más
+
+/* comentario */
+:root.movil .header { flex-direction: column; align-items: stretch; }
+```
+
+La lista de selectores terminaba en coma y el navegador la continuaba **a
+través del comentario**, fundiendo las dos reglas en una. Dos efectos, los dos
+vividos:
+
+- El `{ display: none }` que este bloque quería aplicar **nunca existió**, así
+  que los botones de alta que debían esconderse en el teléfono se quedaron a la
+  vista. El "botón doble" que Iván circuló el 24 ago también estaba aquí, y en
+  **todas** las pantallas, no solo en Cartas.
+- `.btn-nuevo-cabecera` heredaba `flex-direction: column` y apilaba el "+"
+  **encima** de su etiqueta. Se veía en la barra de Cartas, donde el botón es
+  el único y no hay nada que disimule los dos renglones.
+
+Se cazó midiendo el botón: `dir=column` en un botón que nadie había puesto en
+columna.
+
+### Lo que sí es diseño
+
+Con el suelo arreglado, las medidas del handoff:
+
+| | Antes | Handoff |
+|---|---|---|
+| Columnas | **dos** plantillas para cinco tablas, en el `style` de cada fila | una por tabla, en CSS |
+| Fila | 75 | **58** |
+| Cabecera | 45 | **40** |
+| Tarjeta | radio 12 | radio **14** |
+| Sección elegida | teñida de **gris** (`--ink` con el acento neutro) | del acento, texto incluido |
+| Pastillas de estado | versalitas, partidas en dos líneas | 12px, en una línea |
+| Filtros del archivo | 44 de alto, **tres filas**, 200px en total | 36 de alto |
+| Pie del archivo | nada | "N de M cartas" dentro de la tarjeta |
+| "Ver todo" | solo en el iPhone | también en el escritorio |
+
+**Dos deudas con el handoff, dichas en voz alta.** El dibujo tiene **dos**
+columnas —índice de 338 y contenido— porque en él la barra lateral está
+escondida (por eso pinta el ☰). En la app, apaisado, la barra está fija:
+318 + 338 + panel = 1366, y al panel le quedan **710** donde el dibujo contaba
+con 1028. Trescientos dieciocho de diferencia. Por eso hay dos juegos de
+columnas: el del handoff tal cual cuando el ancho da (≥1500), y uno reducido
+—una columna menos, la menos útil de cada tabla— por debajo. Y por eso
+"Traslado de entrada" es la única cuya plantilla del handoff se ajusta incluso
+en el juego completo: sus seis columnas suman 716 fijos y no caben en 944.
+
+**Y una donde el handoff se contradice con lo de ayer.** El dibujo pinta el
+"+" de la barra **y** un botón verde dentro de cada lista: los dos botones que
+Iván mandó quitar el 24 ago. El handoff es una foto del repo de antes de ese
+arreglo, así que manda la instrucción, que es más nueva: queda un solo control
+de alta, con nombre, en la barra. Lo vigila §37.
+
+**La guarda (§38) mide a DOS anchos**, y el segundo no es de adorno: a 1366
+entran las columnas reducidas y quitar el `max-width` no cambia nada; a 1600
+entran las completas y es donde el cap hacía el destrozo. Se comprobó
+devolviéndolo: con el cap, seis comprobaciones caen y la columna del nombre
+canta 82, 94, 96 y 152. Devolviendo la regla rota, el botón vuelve a
+`column` y el teléfono vuelve a enseñar el botón duplicado. Pasa de 861 a
+**918**.
+
+**Lo que queda de este handoff:** el editor de la carta (`Tamio Nueva
+Carta.dc.html`) trae la barra de 50px con "Campos: N de 4", el riel de 250 con
+la miniatura del papel y el formulario en cinco bloques. El repo ya tiene la
+estructura (`.ce-split`, `.ce-barra`, `.ce-hoja`, con guarda en §18); cotejar
+sus medidas una por una es la siguiente pasada.
