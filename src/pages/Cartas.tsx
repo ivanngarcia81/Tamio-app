@@ -840,6 +840,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
             plantillas={plantillas.filter((p) => p.activa === 1)}
             prefill={prefillDesdeSolicitud}
             vinculo={desdeSolicitud?.folio ?? solicitudes.find((s) => s.id === editando?.solicitud_id)?.folio ?? null}
+            onVolver={partido ? () => cambiarTab("resumen") : undefined}
             onSaved={async (creada) => {
               if (creada && desdeSolicitud) {
                 await vincularCartaSolicitud(desdeSolicitud.id, creada.id, church.id);

@@ -10,7 +10,7 @@ import { parseFirmas, buildCartaHtml, abrirCartaParaImprimir } from "../services
 import { Seccion } from "./FichaMiembroModal";
 import ConfirmDialog from "./ConfirmDialog";
 import ActionSheet from "./ActionSheet";
-import { IconClose, IconPrinter, IconSparkles, IconWarn } from "../icons";
+import { IconChevronLeft, IconClose, IconPrinter, IconSparkles, IconWarn } from "../icons";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { iaHabilitada, redactarCarta } from "../ia";
@@ -102,9 +102,12 @@ interface Props {
   vinculo?: string | null;
   /** Plantillas activas disponibles para "Usar plantilla…". */
   plantillas?: Plantilla[];
+  /** Volver al índice de la pantalla. Solo lo pasa el iPad partido: en Mac y
+   *  en el teléfono el editor no está dentro de un panel del que salir. */
+  onVolver?: () => void;
 }
 
-export default function CartaEditor({ church, carta, members, dirtyRef, onSaved, prefill, vinculo, plantillas }: Props) {
+export default function CartaEditor({ church, carta, members, dirtyRef, onSaved, prefill, vinculo, plantillas, onVolver }: Props) {
   const { t, i18n } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -454,6 +457,16 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
      están al pie del formulario. */
   const barraPapel = papelEnVivo ? (
     <div className="ce-barra">
+      {/* "‹ Cartas y traslados", el primer elemento de la barra en el handoff.
+          El `.dm-volver` del panel solo se pinta en el modo de empuje (por
+          debajo de 1000), y apaisado no había NINGUNA forma de salir del
+          editor salvo tocar otra sección del índice — que además avisa de
+          cambios sin guardar. Aquí es una salida con nombre. */}
+      {onVolver && (
+        <button type="button" className="ce-barra-volver" onClick={onVolver}>
+          <IconChevronLeft size={15} strokeWidth={2.4} /> {t("secretaria.cartas.titulo")}
+        </button>
+      )}
       <span className="ce-barra-campos">
         {t("cartas.camposCompletos", { hechos: completos, total: requeridos.length })}
       </span>
@@ -500,6 +513,10 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
             />
             <span className="ce-hoja-lupa">{t("cartas.ampliarHoja")}</span>
           </button>
+          {/* El pie del riel, como en el handoff. No es adorno: la hoja se ve
+              a un tercio de su tamaño y sin esto parece una vista previa
+              aproximada. Es el MISMO HTML que sale por la impresora. */}
+          <span className="ce-papel-pie">{t("cartas.hojaPie")}</span>
         </div>
       )}
     <div className={enIPhone ? "carta-ios enter" : "card pad-lg enter"}>

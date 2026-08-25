@@ -3742,6 +3742,55 @@ console.log("\n== Cartas y traslados, con su handoff ==");
   chk(/\d+\s+de\s+\d+/.test(pie), `el archivo dice cuántas cartas tiene ("${pie}")`);
   await ctxC.close();
 
+  /* ---- El editor de la carta (handoff "Tamio Nueva Carta") ----
+     El mismo fallo que las tablas, en su versión más cara. `.ce-split` repartía
+     `minmax(0,1fr) 298px`: el PAPEL elástico y el FORMULARIO clavado en 298.
+     Medido, el papel salía a 332 y el formulario a 298, y dentro de esos 298 la
+     rejilla de dos columnas dejaba campos de ~50px — "Se" por "Se asigna al
+     guardar", la fecha cortada, "Lugar de emisión" en tres renglones. El
+     formulario, que es donde se trabaja, era inservible para que la miniatura
+     se viera un poco más grande.
+
+     Se mide el ANCHO DE UN CAMPO, que es lo que se usa, y no la rejilla: un
+     campo por debajo de 150 no admite una fecha ni un nombre. */
+  const ctxEd = await nuevoContexto("ipad", { tactil: true });
+  const ped = await ctxEd.newPage();
+  ped.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await ped.setViewportSize({ width: 1366, height: 1024 });
+  await ped.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await ped.waitForSelector(".header .btn.primary", { timeout: 10000 });
+  await ped.locator(".header .btn.primary").first().click();
+  await ped.waitForTimeout(1800);
+
+  const ed = await ped.evaluate(() => {
+    const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+    const sp = document.querySelector(".ce-split");
+    const papel = document.querySelector(".ce-papel");
+    const form = document.querySelector(".ce-split .card");
+    const campos = [...document.querySelectorAll(".ce-split .card .form-group")]
+      .filter((g) => rc(g).width > 0).map((g) => Math.round(rc(g).width));
+    return {
+      hay: !!sp,
+      papel: papel ? Math.round(rc(papel).width) : 0,
+      form: form ? Math.round(rc(form).width) : 0,
+      papelPrimero: papel && form ? rc(papel).left < rc(form).left : false,
+      campoMin: campos.length ? Math.min(...campos) : 0,
+      campos: campos.length,
+      volver: !!document.querySelector(".ce-barra-volver"),
+      pie: !!document.querySelector(".ce-papel-pie"),
+      barra: document.querySelector(".ce-barra") ? Math.round(rc(document.querySelector(".ce-barra")).height) : 0,
+    };
+  });
+  chk(ed.hay, "el editor abre con la hoja al lado del formulario");
+  chk(ed.papel === 250, `el riel del papel mide sus 250 (${ed.papel})`);
+  chk(ed.papelPrimero, "y va a la izquierda, como en el handoff");
+  chk(ed.form > ed.papel, `el formulario se queda con el resto (${ed.form} contra ${ed.papel})`);
+  chk(ed.campoMin >= 150, `y ningún campo baja de 150 (el más chico, ${ed.campoMin})`);
+  chk(ed.barra === 50, `la barra del editor mide 50 (${ed.barra})`);
+  chk(ed.volver, "con su \"‹ Cartas y traslados\": apaisado no había forma de salir del editor");
+  chk(ed.pie, "y la miniatura dice que es la misma hoja que sale por la impresora");
+  await ctxEd.close();
+
   /* Y la regla reparada, por su otra mitad: en el teléfono el botón de alta
      de la cabecera tiene que estar ESCONDIDO —ahí lo cubre el "+" flotante—,
      que es lo que el `display: none` perdido debía hacer y no hacía. */
@@ -3759,6 +3808,19 @@ console.log("\n== Cartas y traslados, con su handoff ==");
   chk(enFono !== "VISIBLE",
     `en el teléfono el botón de cabecera no duplica al "+" flotante (${enFono})`);
   await ctxF.close();
+}
+
+{
+  const ctxE = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxE.newPage();
+  const DIRC = process.env.CAPTURAS || "";
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".header .btn.primary", { timeout: 10000 });
+  await pg.locator(".header .btn.primary").first().click();
+  await pg.waitForTimeout(1800);
+  if (DIRC) await pg.screenshot({ path: `${DIRC}/carta-editor.png` });
+  await ctxE.close();
 }
 
 await browser.close();

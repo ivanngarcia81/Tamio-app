@@ -12730,7 +12730,51 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      del propio lienzo en el que está dibujado. Con el sidebar de 318 de esta
      app quedan ~710 para el panel, así que la hoja sale en ~390 y se lee como
      miniatura de página. Para verla a tamaño está "Vista previa". */
-  :root.ipad .ce-split { grid-template-columns: minmax(0, 1fr) 298px; }
+  /* 250 para el papel y el RESTO para el formulario, al revés de como estaba.
+     Venía con `minmax(0, 1fr) 298px`, o sea el papel elástico y el formulario
+     clavado en 298: medido el 25 ago en un iPad de 13", el papel salía a 332 y
+     el formulario a 298, y dentro de esos 298 la rejilla de dos columnas del
+     handoff dejaba campos de ~50px —"Se" por "Se asigna al guardar", la fecha
+     cortada, "Lugar de emisión" en tres renglones—. El formulario era
+     inservible para que el papel se viera un poco más grande.
+
+     El handoff lo dice al revés y tiene razón: un riel FIJO de 250 para la
+     miniatura y todo lo demás para el trabajo. La hoja se ve igual de bien
+     —es una miniatura en los dos casos— y los campos vuelven a caber. */
+  :root.ipad .ce-split { grid-template-columns: 250px minmax(0, 1fr); }
+  /* Y por debajo de 1500 la rejilla del formulario baja a UNA columna. Con el
+     riel puesto quedan ~380 de formulario, y dos columnas ahí son dos campos
+     de 183: otra vez etiquetas partidas. El mismo umbral que las tablas, y
+     por la misma razón: el dibujo cuenta con 318px que la barra lateral se
+     lleva. */
+  @media (max-width: 1499.98px) {
+    :root.ipad .ce-split .form-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* El riel del papel: fondo propio, como en el handoff, para que se lea como
+     un sitio aparte y no como una tarjeta más del formulario. */
+  :root.ipad .ce-papel { gap: 10px; }
+  :root.ipad .ce-papel-pie {
+    padding: 0 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-3);
+    text-wrap: pretty;
+  }
+  /* "‹ Cartas y traslados" en la barra del editor. Azul de sistema y sin
+     caja: es una navegación, igual que el `.dm-volver` del panel. */
+  :root.ipad .ce-barra-volver {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border: 0;
+    background: transparent;
+    padding: 6px 2px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ios-blue, #007aff);
+    cursor: pointer;
+  }
+  :root.ipad .ce-barra-volver:active { opacity: 0.4; }
   /* Las cuatro del informe en una fila. `!important` porque la regla del
      panel de detalle (~10729) lo lleva también: allí la decisión de 2×2 se
      tomó con la tipografía de escritorio, y aquí ya no es esa (ver el bloque

@@ -1886,6 +1886,7 @@ export const en: Resources = {
     cardListas: "Ready to deliver",
     seccionEstado: "Status",
     actividadReciente: "Recent activity",
+    hojaPie: "This is the same sheet the printer and the PDF produce. Tap it to see it full size.",
     pieCuenta: "{{n}} of {{total}} letters",
     verTodo: "See all",
     aunNoHay: "No letters yet",

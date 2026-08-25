@@ -1935,6 +1935,7 @@ export const es = {
     cardListas: "Listas para entregar",
     seccionEstado: "Estado",
     actividadReciente: "Actividad reciente",
+    hojaPie: "Es la misma hoja que sale por la impresora y por el PDF. Tócala para verla a tamaño completo.",
     pieCuenta: "{{n}} de {{total}} cartas",
     verTodo: "Ver todo",
     aunNoHay: "Aún no hay cartas",

@@ -3075,8 +3075,37 @@ canta 82, 94, 96 y 152. Devolviendo la regla rota, el botón vuelve a
 `column` y el teléfono vuelve a enseñar el botón duplicado. Pasa de 861 a
 **918**.
 
-**Lo que queda de este handoff:** el editor de la carta (`Tamio Nueva
-Carta.dc.html`) trae la barra de 50px con "Campos: N de 4", el riel de 250 con
-la miniatura del papel y el formulario en cinco bloques. El repo ya tiene la
-estructura (`.ce-split`, `.ce-barra`, `.ce-hoja`, con guarda en §18); cotejar
-sus medidas una por una es la siguiente pasada.
+### El editor de la carta, el mismo fallo en su versión más cara
+
+`Tamio Nueva Carta.dc.html` reparte un riel FIJO de 250 para la miniatura del
+papel y **todo lo demás** para el formulario. El repo lo tenía al revés:
+
+```
+:root.ipad .ce-split { grid-template-columns: minmax(0, 1fr) 298px; }
+                                    papel elástico ↑     ↑ formulario clavado
+```
+
+Medido en un iPad de 13": el papel salía a **332** y el formulario a **298**, y
+dentro de esos 298 la rejilla de dos columnas dejaba campos de ~50px. Se veía
+"Se" donde decía "Se asigna al guardar", la fecha cortada y "Lugar de emisión"
+en tres renglones. **El formulario, que es donde se trabaja, era inservible
+para que la miniatura se viera un poco más grande.**
+
+Invertido: riel de 250 a la izquierda, formulario con el resto, y la rejilla
+del formulario a una columna por debajo de 1500 —con el riel puesto quedan 380,
+y dos columnas ahí son dos campos de 183, otra vez etiquetas partidas—. El
+campo más chico pasa de ~50 a **324**.
+
+Con él, dos piezas del handoff que faltaban:
+
+- **"‹ Cartas y traslados" en la barra del editor.** El `.dm-volver` del panel
+  solo se pinta por debajo de 1000, así que **apaisado no había ninguna forma
+  de salir del editor** salvo tocar otra sección del índice —que además avisa
+  de cambios sin guardar—. Ahora es una salida con nombre.
+- **El pie de la miniatura**: "Es la misma hoja que sale por la impresora y por
+  el PDF." No es adorno: la hoja se ve a un tercio de tamaño y sin eso parece
+  una vista previa aproximada, cuando es exactamente el HTML que se imprime.
+
+La guarda mide el **ancho de un campo**, que es lo que se usa, y no la rejilla.
+Devolviendo el reparto viejo caen dos comprobaciones y el riel canta 332.
+Arnés en **926**.
