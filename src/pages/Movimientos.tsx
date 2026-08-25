@@ -787,28 +787,40 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
             {enIPhone ? (
               <div className="ios-panel">
                 <div className="ios-panel-head"><h2>{t("mov.seccionResumen")}</h2></div>
-                <div className="ios-panel-grid">
-                  <div className="ios-stat" style={{ cursor: "default" }}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("mov.totalDelMes")}</span></div>
-                    <span className="ios-stat-num money">
-                      <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                    </span>
+                {/* Rediseño de iOS 26: la rejilla de tarjetas KPI —la misma
+                    que se quitó de Inicio, Depósitos y Aportantes— pasa a
+                    lista agrupada. Aquí el total del mes es la primera fila y
+                    cada categoría una fila con su punto de color, su importe y
+                    el porcentaje en la secundaria; la barra de proporción se
+                    va porque el porcentaje ya lo dice con más precisión y en
+                    una fila de 44px no cabía sin apretar el resto. */}
+                <div className="ios-listcard">
+                  <div className="ios-txrow">
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{t("mov.totalDelMes")}</div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      <span className="tx-amount positive">
+                        <CountUp value={totalMes} format={fmtMoney} paso={100} />
+                      </span>
+                    </div>
                   </div>
                   {tarjetasCategoria.map((c) => {
                     const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
                     return (
-                      <div className="ios-stat" key={c.id} style={{ cursor: "default" }}>
-                        <div className="ios-stat-top">
-                          <span className="ios-stat-label">{c.nombre}</span>
-                          <span className="cat-dot" style={{ background: c.color }} aria-hidden="true" />
+                      <div className="ios-txrow" key={c.id}>
+                        <div className="ios-txrow-main">
+                          <div className="ios-txrow-title">{c.nombre}</div>
+                          <div className="tx-secundaria-movil">
+                            <span className="ios-punto" style={{ background: c.color }} aria-hidden="true" />
+                            {t("mov.pctDelTotal", { pct })}
+                          </div>
                         </div>
-                        <span className="ios-stat-num money">
-                          <CountUp value={c.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                        </span>
-                        <div className="stat-bar">
-                          <div className="stat-bar-fill" style={{ width: `${pct}%`, background: c.color }} />
+                        <div className="ios-txrow-trailing">
+                          <span className="tx-amount">
+                            <CountUp value={c.monto} format={fmtMoney} paso={100} />
+                          </span>
                         </div>
-                        <div className="stat-pct">{t("mov.pctDelTotal", { pct })}</div>
                       </div>
                     );
                   })}

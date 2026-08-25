@@ -277,16 +277,20 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        {enIPhone ? (
-          /* Rediseño de iOS 26: el teléfono tampoco pintaba `.page-title` aquí
-             —arrancaba directo por la lista—, así que la copia fija de la
-             barra (`.titulo-fijo`, App.tsx) se quedaba sin texto y al
-             desplazar la barra no decía en qué pantalla estabas. El subtítulo
-             sigue sin salir: sus dos cifras ya viven en el encabezado de cada
-             uno de los dos bloques, que además dice a cuál pertenece cada
-             una. */
-          <div className="page-title">{t("bandeja.titulo")}</div>
-        ) : (
+        {enIPhone ? null : (
+          /* En el teléfono NO se pinta `.page-title`, y a diferencia de Inicio
+             aquí sí es lo correcto: Por revisar es una sección de Tesorería,
+             así que lleva el carrusel fijo justo encima diciendo "Por
+             revisar" en su píldora. Un Large Title debajo de esa píldora se
+             lee como un eco, no como un título — se probó en una captura de
+             393px y es exactamente lo que parecía.
+             (Inicio sí lo lleva porque no pertenece a ningún área y por tanto
+             no tiene carrusel: ahí la barra fija se quedaba muda al
+             desplazar.)
+             La maqueta pone el título ENCIMA del carrusel, que resuelve las
+             dos cosas a la vez; mudar el carrusel al flujo del contenido es
+             un cambio de la cáscara —`--carrusel-h`, el `padding-top` de
+             `.main`, el arrastre a la pantalla vecina— y no entra aquí. */
           <div>
             <div className="page-title">{t("bandeja.titulo")}</div>
             <div className="page-sub">

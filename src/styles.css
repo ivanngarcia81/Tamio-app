@@ -18318,7 +18318,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   width: 7px; height: 7px;
   border-radius: 4px;
   display: inline-block;
-  vertical-align: baseline;
+  /* `baseline` dejaba el punto colgando de la línea base, o sea alineado con
+     el PIE de las letras en vez de con su centro. `middle` lo sube al eje de
+     la x, que es donde lo pone la maqueta. */
+  vertical-align: middle;
+  /* Y separado del texto: sin esto salía "●Diezmo", pegado. */
+  margin-right: 6px;
+  /* El punto se apoya en la línea base del texto, así que un pelo hacia
+     arriba lo centra ópticamente con una minúscula. */
+  position: relative;
+  top: -1px;
 }
 
 /* --- 2. La barra fija, con material de iOS 26 ------------------------------
@@ -18420,7 +18429,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: var(--ios-sombra);
 }
 :root.iphone .charts .card-head { margin: 0 0 10px; }
-:root.iphone .charts .card-title { font-size: calc(15px * var(--fs-escala)); font-weight: 600; letter-spacing: -.2px; color: var(--text); }
+:root.iphone .charts .card-title {
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 600;
+  /* `.card-title` (~1448) es la etiqueta en VERSALITAS de una tarjeta de
+     escritorio: 11px, mayúsculas y tracking abierto. En la maqueta el título
+     de la tarjeta de gráfica es un título de verdad —15/600, caja de frase—,
+     así que hay que deshacer las tres cosas, no solo el tamaño. */
+  text-transform: none;
+  letter-spacing: -.2px;
+  color: var(--text);
+}
 :root.iphone .charts .card-meta { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
 :root.iphone .charts .legend {
   margin-top: 10px;
@@ -18625,3 +18644,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Fuera del teléfono no existe: en Mac e iPad la acción vive en su cabecera. */
 .ios-nav-btn { display: none; }
 :root.iphone .ios-nav-btn { display: inline-flex; }
+
+/* Importe de gasto en el resumen de Inicio: rojo, porque ahí Ingresos y
+   Gastos son dos filas contiguas puestas para contrastarse. Fuera de ese par
+   la convención del repo se mantiene (`.tx-amount.negative` en `--text`): en
+   una lista donde TODO es un gasto, el rojo deja de informar. */
+:root.iphone .tx-amount.es-gasto { color: var(--neg); }

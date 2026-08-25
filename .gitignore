@@ -50,3 +50,4 @@ pruebas/*.png
 # Si algún día no lleva secretos y quieres compartirlo con quien trabaje en
 # Tamio, quita esta línea a propósito: es una decisión, no un descuido.
 .mcp.json
+pruebas/capturas/

@@ -729,7 +729,13 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               <div className="ios-txrow">
                 <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.gastos")}</div></div>
                 <div className="ios-txrow-trailing">
-                  <span className="tx-amount negative">
+                  {/* `es-gasto` y no `negative` a secas: `.tx-amount.negative`
+                      pinta con `--text` a propósito (en una tabla de gastos,
+                      todo en rojo es ruido y no jerarquía). Aquí sí toca rojo
+                      —lo pide la maqueta— porque estas DOS filas están juntas
+                      justamente para contrastarse: lo que entró contra lo que
+                      salió. Es el único sitio donde conviven. */}
+                  <span className="tx-amount es-gasto">
                     <CountUp value={gastos} format={fmtMoney} paso={100} />
                   </span>
                 </div>

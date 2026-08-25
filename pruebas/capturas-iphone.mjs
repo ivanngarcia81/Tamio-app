@@ -1,0 +1,229 @@
+// Capturas del rediseño de iPhone (iOS 26), sobre la app REAL.
+//
+// Mismo montaje que `arnes-ipad.mjs` —vite dev + un stub de SQL (sql.js con
+// las migraciones reales de src-tauri/src/lib.rs) detrás de `invoke`, y datos
+// sembrados con las funciones reales de `db.ts`—, pero en vez de medir,
+// fotografía. Sirve para mirar el rediseño sin un iPhone delante.
+//
+//   npm i --no-save playwright sql.js
+//   node pruebas/capturas-iphone.mjs
+//
+// Las imágenes salen en `pruebas/capturas/`, que NO entra en git.
+//
+// Por qué 393×852: es el iPhone 15/16 Pro, el mismo lienzo sobre el que está
+// dibujada la maqueta del handoff, así que las capturas y las maquetas se
+// pueden poner una al lado de la otra sin escalar ninguna.
+import { chromium } from "playwright";
+import initSqlJs from "sql.js";
+import { readFileSync, mkdirSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SALIDA = `${REPO}/pruebas/capturas`;
+const URL_BASE = "http://localhost:1420";
+mkdirSync(SALIDA, { recursive: true });
+
+// ---------- 1. Migraciones reales desde lib.rs ----------
+function extraerMigraciones() {
+  const src = readFileSync(`${REPO}/src-tauri/src/lib.rs`, "utf8");
+  const out = [];
+  const re = /version:\s*(\d+),[\s\S]*?sql:\s*r#"([\s\S]*?)"#/g;
+  let m;
+  while ((m = re.exec(src))) out.push({ version: Number(m[1]), sql: m[2] });
+  return out.sort((a, b) => a.version - b.version);
+}
+
+// ---------- 2. Base en memoria ----------
+const SQL = await initSqlJs();
+const db = new SQL.Database();
+const migs = extraerMigraciones();
+if (migs.length < 30) { console.error(`solo ${migs.length} migraciones`); process.exit(1); }
+for (const mig of migs) {
+  try { db.exec(mig.sql); }
+  catch (e) { console.error(`migración ${mig.version}: ${e.message}`); process.exit(1); }
+}
+console.log(`base lista: ${migs.length} migraciones`);
+
+const bind = (ps) => Object.fromEntries(ps.map((p, i) => [`$${i + 1}`, p === undefined ? null : p]));
+function sqlSelect(q, ps) {
+  const st = db.prepare(q);
+  try { if (ps?.length) st.bind(bind(ps)); const r = []; while (st.step()) r.push(st.getAsObject()); return r; }
+  finally { st.free(); }
+}
+function sqlExecute(q, ps) {
+  if (!ps?.length) db.exec(q);
+  else { const st = db.prepare(q); try { st.bind(bind(ps)); st.step(); } finally { st.free(); } }
+  return { rowsAffected: db.getRowsModified(), lastInsertId: sqlSelect("SELECT last_insert_rowid() AS id", [])[0]?.id ?? 0 };
+}
+
+// ---------- 3. Vite ----------
+/* Si una pasada anterior murió a medias, su `vite` se queda vivo con el 1420
+   tomado y ESTA falla con "vite no arrancó" — un error que no dice nada de lo
+   que pasó de verdad y que cuesta un rato entender. Se limpia antes de
+   arrancar. `--strictPort` está puesto a propósito: sin él vite se mudaría al
+   1421 en silencio y las capturas saldrían de un servidor que no es el que
+   creemos. */
+try { spawn("pkill", ["-f", "vite --port 1420"]).unref(); } catch { /* no había ninguno */ }
+await new Promise((r) => setTimeout(r, 1500));
+
+const vite = spawn("npx", ["vite", "--port", "1420", "--strictPort"], { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] });
+await new Promise((res, rej) => {
+  const t = setTimeout(() => rej(new Error("vite no arrancó (¿puerto 1420 ocupado?)")), 60000);
+  vite.stdout.on("data", (d) => { if (String(d).includes("Local:")) { clearTimeout(t); res(); } });
+  vite.stderr.on("data", (d) => process.stderr.write(d));
+});
+console.log("vite arriba");
+process.on("exit", () => vite.kill());
+for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { vite.kill(); process.exit(1); });
+
+// ---------- 4. Navegador ----------
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+
+/** Un contexto de iPhone. `tema` = "light" | "dark". */
+async function contextoIPhone(tema) {
+  const ctx = await browser.newContext({
+    viewport: { width: 393, height: 852 },
+    deviceScaleFactor: 3,
+    hasTouch: true,
+    isMobile: true,
+    colorScheme: tema,
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+  });
+  await ctx.exposeFunction("__sqlStub", (esSelect, q, ps) => {
+    try { return esSelect ? sqlSelect(q, ps) : sqlExecute(q, ps); }
+    catch (e) { console.error(`SQL: ${e.message}\n  ${q.slice(0, 120)}`); throw e; }
+  });
+  await ctx.addInitScript(({ tema }) => {
+    try {
+      localStorage.setItem("tesoreria-welcomed", "1");
+      localStorage.setItem("tesoreria-lang", "es");
+      localStorage.setItem("tesoreria-theme", tema);
+    } catch { /* noop */ }
+    const noop = async () => null;
+    window.__TAURI_INTERNALS__ = {
+      metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
+      transformCallback: (cb) => { const id = Math.floor(Math.random() * 1e9); window[`_cb${id}`] = cb; return id; },
+      plugins: {},
+      invoke: async (cmd, args) => {
+        if (cmd === "db_select") return window.__sqlStub(true, args.query, args.params ?? []);
+        if (cmd === "db_execute") return window.__sqlStub(false, args.query, args.params ?? []);
+        return noop();
+      },
+    };
+  }, { tema });
+  return ctx;
+}
+
+// ---------- 5. Semilla, con las funciones reales de db.ts ----------
+const ctxSemilla = await contextoIPhone("light");
+{
+  const page = await ctxSemilla.newPage();
+  page.on("pageerror", (e) => console.error("pageerror:", e.message));
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".app", { timeout: 60000 });
+  const ok = await page.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const iglesia = await db.getOrCreateChurch();
+    const id = iglesia.id;
+    const p = (x) => String(x).padStart(2, "0");
+    const iso = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
+
+    // Nombres repartidos por inicial: es lo que hace que el índice alfabético
+    // de Miembros tenga de verdad varias letras que ofrecer.
+    const nombres = [
+      "Ana Aguilar", "Abel Cortés", "Andrés López", "Beatriz Rangel",
+      "Carlos Medina", "Daniela Ruiz", "Elena Morales", "Fernando Ibarra",
+      "Gabriela Ponce", "Héctor Salas", "Irene Vargas", "Javier Ortega",
+      "Karla Domínguez", "Luis Navarro", "María Delgado", "Nadia Fuentes",
+      "Óscar Reyes", "Patricia Lara", "Raúl Estrada", "Sofía Cabrera",
+    ];
+    for (const nombre of nombres) await db.insertMember(id, { nombre, fecha_ingreso: hace(400) });
+    const miembros = await db.listMembers(id);
+
+    // Ingresos y gastos repartidos en los últimos días, para que las secciones
+    // por fecha ("Hoy", "Ayer", …) tengan más de una fila cada una.
+    const catsIngreso = ["diezmo", "ofrenda", "donacion"];
+    const catsGasto = ["servicios", "pastores", "limpieza", "administracion"];
+    let n = 0;
+    for (const dia of [0, 0, 0, 1, 1, 2, 4, 4, 6, 9, 12, 15, 18, 21, 25, 30, 36, 44]) {
+      await db.insertTx(id, iglesia.moneda, {
+        tipo: "ingreso", categoria: catsIngreso[n % catsIngreso.length],
+        concepto: n % 3 === 1 ? "Ofrenda dominical" : "Diezmo",
+        fecha: hace(dia), monto: 82000 + n * 13500, metodo_pago: n % 2 ? "transferencia" : "efectivo",
+        member_id: miembros[n % miembros.length].id,
+      });
+      n++;
+    }
+    n = 0;
+    for (const dia of [0, 1, 3, 3, 5, 8, 11, 14, 17, 20, 26, 33, 40]) {
+      await db.insertTx(id, iglesia.moneda, {
+        tipo: "gasto", categoria: catsGasto[n % catsGasto.length],
+        concepto: ["Luz y agua", "Compensación pastoral", "Aseo del templo", "Papelería"][n % 4],
+        fecha: hace(dia), monto: 31000 + n * 9000, metodo_pago: "transferencia",
+        beneficiario: ["CFE", "Pastor Elías", "Servicios Nova", "Papelería Delta"][n % 4],
+      });
+      n++;
+    }
+
+    // Depósitos repartidos en varios meses: el historial se agrupa por mes.
+    for (const [dia, cuenta] of [[2, "BBVA ····4471"], [12, "BBVA ····4471"], [26, "Banorte ····8802"],
+                                 [38, "BBVA ····4471"], [55, "Banorte ····8802"], [70, "BBVA ····4471"]]) {
+      await db.insertDeposito(id, iglesia.moneda, {
+        fecha: hace(dia), monto: 410000 + dia * 3000, cuenta_banco: cuenta,
+        referencia: `REF-${1000 + dia}`, periodo: hace(dia).slice(0, 7), notas: null,
+      });
+    }
+    return "ok";
+  });
+  console.log(ok === "ok" ? "datos sembrados" : `semilla devolvió ${ok}`);
+  await page.close();
+}
+await ctxSemilla.close();
+
+// ---------- 6. Las capturas ----------
+const PANTALLAS = [
+  { nombre: "1-inicio", ruta: "/" },
+  { nombre: "2-ingresos", ruta: "/ingresos" },
+  { nombre: "3-gastos", ruta: "/gastos" },
+  { nombre: "4-miembros", ruta: "/miembros" },
+  { nombre: "5-depositos", ruta: "/depositos" },
+  { nombre: "6-por-revisar", ruta: "/bandeja" },
+  { nombre: "7-ajustes", ruta: "/configuracion" },
+];
+
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const { nombre, ruta } of PANTALLAS) {
+    await page.goto(`${URL_BASE}/#${ruta}`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    // Las cifras suben con CountUp y las gráficas de recharts se animan 600ms:
+    // sin esperar, media captura sale con números a medio contar.
+    await page.waitForTimeout(1600);
+    const archivo = `${SALIDA}/${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+// Una tira larga de Ingresos (sin recortar a la altura de la pantalla), para
+// ver de un vistazo cómo se encadenan las secciones por fecha.
+{
+  const ctx = await contextoIPhone("light");
+  const page = await ctx.newPage();
+  await page.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".app", { timeout: 30000 });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${SALIDA}/2-ingresos-completa.png`, fullPage: true });
+  console.log("  ✓ pruebas/capturas/2-ingresos-completa.png");
+  await ctx.close();
+}
+
+await browser.close();
+vite.kill();
+console.log("\nlisto");
