@@ -163,7 +163,7 @@ en las tres fuentes:
 | esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
 | **24 ago — SUBIDA, confirmada por Iván** | **1.2.9** — Depósitos rehecha con el **handoff 3** (Pendientes como revisión previa al banco: cortes por día, tres cifras vivas, los cuatro avisos y "Marcar depositado" abriendo el formulario prellenado; Depositados con su pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y la hoja "Nuevo corte" entera), **más TODO lo del 24 de agosto** — el número había quedado libre porque la 1.2.9 se preparó y no llegó a subir en su momento, así que se lo llevó todo junto: la sincronización entera (las 16 tablas viajan, con `verificar-sync` vigilando la paridad de columnas), la **doble firma** del corte, el **folio** del movimiento (`2026-0042`, sin numerar el pasado), los **dos permisos del rol Tesorería** —de los cuatro que dibujó el handoff— con el borrado frenado por un disparador del servidor, y las cáscaras que quedaban: puestos del culto, orden del culto, pestaña Familia, "Recopilar firmas", "Compartir" un depósito y los conteos por categoría. Nada de esto se había visto en un iPad de verdad; **esta es la build con la que se ve**. Subida y confirmada el 24 de agosto por la noche |
 | **24 ago — SUBIDA, confirmada por Iván** | **1.2.10** — **el mismo .ipa con otro número.** Desde la 1.2.9 no ha cambiado ni una línea de `src/` ni de `src-tauri/`: los tres commits de por medio tocan `.gitignore` y `pruebas/arnes-ipad.mjs` —configuración y pruebas, nada que entre en el paquete—. Se compila porque la 1.2.9 ya está arriba y Apple no acepta dos veces el mismo número, no porque haya trabajo nuevo que enseñar. **Si lo que querías era revisar algo nuevo en el iPad, esta build no lo trae**: lo único que queda sin motor en toda la app es el segmentado de "Tamaño de texto" **Ojo, dos builds con este número.** El tamaño de texto entró DESPUÉS del bump, así que un .ipa compilado en `6f9ba43` y otro en `6b76b49` dicen los dos "1.2.10" y no llevan lo mismo. Se distingue en el aparato: Config → Preferencias → Presentación, y si el segmentado de "Tamaño de texto" se puede tocar, es el segundo |
-| la siguiente | **1.2.11** — **"Tamaño de texto", la última cáscara del rediseño.** Ya no queda ni un control dibujado y apagado en toda la app. No fue encender un interruptor: la tipografía no se podía mover entera —248 `font-size` colgaban de los tokens y **395 iban con píxeles a pelo**, más 136 en línea en el JSX—, y los píxeles a pelo estaban justo en las CIFRAS DE DINERO. Encenderlo antes habría agrandado las etiquetas dejando los importes chicos. Se movió todo a `--fs-escala` y luego se encendió. Con su guarda, `verificar-tipografia` |
+| **la que sube** | **1.2.11** — **la fusión: el diseño de `charming-sagan` entra en la rama del motor.** De sagan: el **header del iPad** con su handoff (el ☰ pasa a botón de 38 con el glifo de barra lateral, y de paso destapó que el arnés nunca había simulado pantalla táctil, así que ninguna regla de `pointer:coarse` se había probado), **un solo botón de crear en Cartas** —había ocho, la misma orden repetida— y **Cartas y traslados rehecha entera**. De la rama del motor: **"Tamaño de texto"**, la última cáscara del rediseño, que no fue encender un interruptor sino mover la tipografía entera a un factor (395 `font-size` iban con píxeles a pelo, incluidas las CIFRAS DE DINERO). Con eso **no queda ni un control dibujado y apagado en toda la app**. Arnés: 1018 ✓ / 0 ✗, las 44 secciones de las dos ramas |
 | cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
@@ -427,6 +427,33 @@ estaba bien hecha; lo que estaba mal era el dato de partida.
 **Y el 1.3.0 sigue reservado** para los siete puntos de `docs/plan-1-3.md`.
 Esta tanda no es ninguno de ellos: es la continuación del handoff de iPad, que
 es la serie 1.2.x.
+
+En la **1.2.11** vuelve a hacer falta la comprobación de FUSIÓN, porque esta
+versión también sale de juntar dos ramas — y esta vez a propósito y con el
+reparto acordado: `charming-sagan` llevaba el diseño y esta el motor.
+
+Del lado de sagan, en el CSS construido: `header-actions` ×5,
+`menu-hamburguesa` ×10, `cartas-filtros` ×5, `btn-nuevo-cabecera` ×2 y
+`md-cartas` ×14, más `IconSidebar` en `App.tsx`. Del lado del motor:
+`dm-folio`, `cat-conteo`, `fijar_permisos_tesoreria`,
+`tesorero_puede_eliminar` ×9, `folio_seq` ×5, `parentescos` ×14,
+"Segunda firma" y `tamio-tamano-texto`. Y `--fs-escala` ×432, que es lo que
+ahora une a las dos.
+
+> **Dos "faltas" que no lo eran, y conviene saberlo porque el método falla
+> así.** `cartas-menu-crear` salió como ausente: no era pérdida, sagan retiró
+> esa clase al dejar un solo botón de crear y en su hoja ya solo vive dentro
+> de un comentario. Y `header-acciones` no existía: la clase real es
+> `header-actions`, en inglés — el marcador estaba inventado, no el bundle.
+> Moraleja: **un marcador que "falta" se comprueba contra la rama de origen
+> antes de gritar**, porque la mitad de las veces el equivocado es el
+> marcador.
+
+Y una guarda nueva que esta fusión estrenó: **`verificar-tipografia`**
+encontró 21 tamaños de sagan fuera de la escala —7 en el CSS y 14 en el
+`Cartas.tsx` nuevo—, **ninguno en conflicto**. Los 21 habrían entrado en
+silencio y "Tamaño de texto" se habría roto justo en las dos pantallas recién
+rehechas. Se construyó el día antes, para este momento exacto.
 
 **La comprobación de la fusión: que el bundle lleve clases de LAS DOS ramas.**
 El CSS construido (`index-Cb9x1AEA.css`, 279 kB frente a los 273 de la
