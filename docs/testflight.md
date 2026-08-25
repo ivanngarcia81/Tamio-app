@@ -162,7 +162,8 @@ en las tres fuentes:
 | esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
 | esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
 | **24 ago — SUBIDA, confirmada por Iván** | **1.2.9** — Depósitos rehecha con el **handoff 3** (Pendientes como revisión previa al banco: cortes por día, tres cifras vivas, los cuatro avisos y "Marcar depositado" abriendo el formulario prellenado; Depositados con su pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y la hoja "Nuevo corte" entera), **más TODO lo del 24 de agosto** — el número había quedado libre porque la 1.2.9 se preparó y no llegó a subir en su momento, así que se lo llevó todo junto: la sincronización entera (las 16 tablas viajan, con `verificar-sync` vigilando la paridad de columnas), la **doble firma** del corte, el **folio** del movimiento (`2026-0042`, sin numerar el pasado), los **dos permisos del rol Tesorería** —de los cuatro que dibujó el handoff— con el borrado frenado por un disparador del servidor, y las cáscaras que quedaban: puestos del culto, orden del culto, pestaña Familia, "Recopilar firmas", "Compartir" un depósito y los conteos por categoría. Nada de esto se había visto en un iPad de verdad; **esta es la build con la que se ve**. Subida y confirmada el 24 de agosto por la noche |
-| **la que sube** | **1.2.10** — **el mismo .ipa con otro número.** Desde la 1.2.9 no ha cambiado ni una línea de `src/` ni de `src-tauri/`: los tres commits de por medio tocan `.gitignore` y `pruebas/arnes-ipad.mjs` —configuración y pruebas, nada que entre en el paquete—. Se compila porque la 1.2.9 ya está arriba y Apple no acepta dos veces el mismo número, no porque haya trabajo nuevo que enseñar. **Si lo que querías era revisar algo nuevo en el iPad, esta build no lo trae**: lo único que queda sin motor en toda la app es el segmentado de "Tamaño de texto" |
+| **24 ago — SUBIDA, confirmada por Iván** | **1.2.10** — **el mismo .ipa con otro número.** Desde la 1.2.9 no ha cambiado ni una línea de `src/` ni de `src-tauri/`: los tres commits de por medio tocan `.gitignore` y `pruebas/arnes-ipad.mjs` —configuración y pruebas, nada que entre en el paquete—. Se compila porque la 1.2.9 ya está arriba y Apple no acepta dos veces el mismo número, no porque haya trabajo nuevo que enseñar. **Si lo que querías era revisar algo nuevo en el iPad, esta build no lo trae**: lo único que queda sin motor en toda la app es el segmentado de "Tamaño de texto" **Ojo, dos builds con este número.** El tamaño de texto entró DESPUÉS del bump, así que un .ipa compilado en `6f9ba43` y otro en `6b76b49` dicen los dos "1.2.10" y no llevan lo mismo. Se distingue en el aparato: Config → Preferencias → Presentación, y si el segmentado de "Tamaño de texto" se puede tocar, es el segundo |
+| la siguiente | **1.2.11** — **"Tamaño de texto", la última cáscara del rediseño.** Ya no queda ni un control dibujado y apagado en toda la app. No fue encender un interruptor: la tipografía no se podía mover entera —248 `font-size` colgaban de los tokens y **395 iban con píxeles a pelo**, más 136 en línea en el JSX—, y los píxeles a pelo estaban justo en las CIFRAS DE DINERO. Encenderlo antes habría agrandado las etiquetas dejando los importes chicos. Se movió todo a `--fs-escala` y luego se encendió. Con su guarda, `verificar-tipografia` |
 | cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
@@ -402,6 +403,18 @@ no se perdió por el camino.
 > la 1.2.9 no había cambiado una sola línea de lo que se compila**, así que la
 > 1.2.10 es el mismo .ipa con otro número. Eso también hay que decirlo antes de
 > compilar, no después.
+>
+> **Y una tercera lección, la más incómoda: el número se gastó ANTES de que
+> hubiera contenido.** La 1.2.10 se preparó diciendo con todas las letras que
+> era "el mismo .ipa con otro número"… y dos horas después llegó el tamaño de
+> texto. Resultado: dos compilaciones distintas que se llaman igual, y la
+> única forma de distinguirlas es abrir Ajustes en el aparato.
+>
+> Lo que hay que hacer distinto: **el bump va AL FINAL, cuando el contenido
+> está cerrado**, no cuando alguien pide "la siguiente versión". Si no hay
+> trabajo nuevo, la respuesta no es subir el número: es decir que no hay nada
+> que enseñar. Eso se dijo —está escrito en la fila de la 1.2.10— pero se
+> subió el número igualmente, y ahí estuvo el error.
 
 **Esta vez no hay bump que auditar, y esa es la noticia.** El número se queda
 en la **1.2.9** que el repositorio ya tenía, porque esa versión nunca subió.
