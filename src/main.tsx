@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "./i18n";
+import { aplicarTamanoTexto, tamanoTexto } from "./tipografia";
 
 // Clase de plataforma para el CSS: iPadOS se reporta como "MacIntel" pero con
 // pantalla táctil, por eso el segundo chequeo. En escritorio no agrega nada.
@@ -113,6 +114,13 @@ window.addEventListener("unhandledrejection", (e) => {
     r instanceof Error ? `${r.message}\n${r.stack ?? ""}` : String(r)
   );
 });
+
+/* El tamaño de texto, ANTES de montar React y no dentro de un `useEffect`.
+   Si se aplicara al montar, la primera pintura saldría en "Normal" y daría un
+   salto de tamaño a la vista de quien justamente eligió la letra grande. Es
+   el mismo motivo por el que las clases de plataforma de arriba se ponen
+   aquí y no en App. */
+aplicarTamanoTexto(tamanoTexto());
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

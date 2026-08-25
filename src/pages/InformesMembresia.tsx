@@ -562,14 +562,14 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
       <div className="card">
         <div className="card-head"><span className="card-title">{titulo}</span></div>
         {items.length === 0 ? (
-          <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
+          <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("informes.sinDatos")}</div>
         ) : items.map((it) => (
           <div key={it.clave} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0" }}>
-            <span style={{ fontSize: 12.5, width: 130, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etiqueta(it.clave)}</span>
+            <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", width: 130, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{etiqueta(it.clave)}</span>
             <div style={{ flex: 1, height: 8, background: "var(--surface-2)", borderRadius: 4, overflow: "hidden" }}>
               <div style={{ width: `${Math.round((it.n / max) * 100)}%`, height: "100%", background: "var(--brand)", borderRadius: 4 }} />
             </div>
-            <span style={{ fontSize: 12.5, fontWeight: 700, width: 32, textAlign: "right", flex: "none", fontVariantNumeric: "tabular-nums" }}>{it.n}</span>
+            <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 700, width: 32, textAlign: "right", flex: "none", fontVariantNumeric: "tabular-nums" }}>{it.n}</span>
           </div>
         ))}
       </div>
@@ -610,14 +610,14 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               <div className="card">
                 <div className="card-head"><span className="card-title">{t("informes.nuevosPorMes")}</span></div>
                 {nuevosPorMes.length === 0 ? (
-                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
+                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("informes.sinDatos")}</div>
                 ) : (
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120, paddingTop: 8 }}>
                     {nuevosPorMes.map((x) => (
                       <div key={x.mes} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 24 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 700 }}>{x.n}</span>
+                        <span style={{ fontSize: "calc(11.5px * var(--fs-escala))", fontWeight: 700 }}>{x.n}</span>
                         <div style={{ width: "70%", maxWidth: 40, height: `${Math.round((x.n / maxNuevos) * 90)}%`, minHeight: 3, background: "var(--brand)", borderRadius: "4px 4px 0 0" }} />
-                        <span style={{ fontSize: 10.5, color: "var(--text-3)" }}>{x.mes.slice(2)}</span>
+                        <span style={{ fontSize: "calc(10.5px * var(--fs-escala))", color: "var(--text-3)" }}>{x.mes.slice(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -659,7 +659,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                   </div>
                   {movimientos.map((mv) => (
                     <div key={mv.folio} className="tr" style={{ gridTemplateColumns: "120px 130px 1.4fr 110px 130px" }}>
-                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{mv.folio}</div>
+                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{mv.folio}</div>
                       <div className="td">
                         <span className={`tag ${mv.tipo === "recibido" ? "activo" : "donacion"}`}>
                           {mv.tipo === "recibido" ? t("informes.movRecibido") : t("informes.movEnviado")}
@@ -669,8 +669,8 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                         <div className="p-name truncate">{mv.persona}</div>
                         <div className="p-mail truncate">{mv.iglesia}</div>
                       </div>
-                      <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(mv.fecha)}</div>
-                      <div className="td" style={{ fontSize: 12, color: "var(--text-2)" }}><div className="truncate">{mv.estado}</div></div>
+                      <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(mv.fecha)}</div>
+                      <div className="td" style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-2)" }}><div className="truncate">{mv.estado}</div></div>
                     </div>
                   ))}
                 </div>
@@ -715,11 +715,11 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                       <span key={i} className={`tag ${ALERTA_TAG[al.tipo] ?? "otros"}`}>{etiquetaAlerta(al)}</span>
                     ))}
                   </div>
-                  <div className="td" style={{ fontSize: 12, color: m.seguimiento_revisado_en ? "var(--text-2)" : "var(--text-3)" }}>
+                  <div className="td" style={{ fontSize: "calc(12px * var(--fs-escala))", color: m.seguimiento_revisado_en ? "var(--text-2)" : "var(--text-3)" }}>
                     {m.seguimiento_revisado_en ? m.seguimiento_revisado_en.slice(0, 10) : t("seguimiento.sinRevisar")}
                   </div>
                   <div className="td" style={{ textAlign: "center" }} onClick={(ev) => ev.stopPropagation()}>
-                    <button className="btn secondary" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => setSeguimiento(m)}>
+                    <button className="btn secondary" style={{ padding: "5px 10px", fontSize: "calc(12px * var(--fs-escala))" }} onClick={() => setSeguimiento(m)}>
                       {t("seguimiento.abrir")}
                     </button>
                   </div>
@@ -960,27 +960,27 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                       {enMac && (
                         <div className="td num-celda">{m.fecha_congregacion ? fmtFechaCorta(m.fecha_congregacion) : "—"}</div>
                       )}
-                      <div className="td num-celda" style={enMac ? undefined : { fontSize: 12, color: "var(--text-2)" }}>
+                      <div className="td num-celda" style={enMac ? undefined : { fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-2)" }}>
                         {enMac ? (
                           m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : "—"
                         ) : (
                           <>
                             <div>{m.fecha_congregacion ? fmtFechaCorta(m.fecha_congregacion) : "—"}</div>
-                            <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
+                            <div style={{ color: "var(--text-3)", fontSize: "calc(11.5px * var(--fs-escala))" }}>
                               {m.fecha_ingreso ? t("informes.miembroDesde", { fecha: fmtFechaCorta(m.fecha_ingreso) }) : t("informes.sinFechaMembresia")}
                             </div>
                           </>
                         )}
                       </div>
-                      <div className="td" style={{ fontSize: enMac ? undefined : 12, color: enMac ? undefined : "var(--text-2)", minWidth: 0 }}>
+                      <div className="td" style={{ fontSize: enMac ? undefined : "calc(12px * var(--fs-escala))", color: enMac ? undefined : "var(--text-2)", minWidth: 0 }}>
                         <div className="truncate" title={servicioTxt}>{servicioTxt || "—"}</div>
                       </div>
-                      <div className="td num-celda" style={enMac ? undefined : { fontSize: 12.5 }}>
+                      <div className="td num-celda" style={enMac ? undefined : { fontSize: "calc(12.5px * var(--fs-escala))" }}>
                         {a && a.pct !== null ? (
                           enMac ? `${a.pct}%` : (
                             <>
                               <div style={{ fontWeight: 700 }}>{a.pct}%</div>
-                              <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
+                              <div style={{ color: "var(--text-3)", fontSize: "calc(11.5px * var(--fs-escala))" }}>
                                 {a.ultimaAsistencia ? fmtFechaCorta(a.ultimaAsistencia) : t("informes.nuncaAsistio")}
                               </div>
                             </>
@@ -1067,12 +1067,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               <div className="card">
                 <div className="card-head"><span className="card-title">{t("informes.mejoresTitulo")}</span></div>
                 {mejores.length === 0 ? (
-                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinDatos")}</div>
+                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("informes.sinDatos")}</div>
                 ) : mejores.map(({ miembro: m, datos: a }) => (
                   <div key={m.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => setFicha(m)}>
                     <span className="roster-name">{m.nombre}</span>
-                    <span style={{ fontWeight: 700, fontSize: 13, flex: "none" }}>{a.pct}%</span>
-                    <span style={{ color: "var(--text-3)", fontSize: 11.5, flex: "none", width: 90, textAlign: "right" }}>
+                    <span style={{ fontWeight: 700, fontSize: "calc(13px * var(--fs-escala))", flex: "none" }}>{a.pct}%</span>
+                    <span style={{ color: "var(--text-3)", fontSize: "calc(11.5px * var(--fs-escala))", flex: "none", width: 90, textAlign: "right" }}>
                       {t("informes.deN", { asis: a.asistidos, total: a.enRoster })}
                     </span>
                   </div>
@@ -1081,12 +1081,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
               <div className="card">
                 <div className="card-head"><span className="card-title">{t("informes.sinAsistirTitulo")}</span></div>
                 {sinAsistir.length === 0 ? (
-                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: 13 }}>{t("informes.sinAsistirVacio")}</div>
+                  <div style={{ padding: "8px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("informes.sinAsistirVacio")}</div>
                 ) : sinAsistir.slice(0, 12).map(({ miembro: m, datos: a }) => (
                   <div key={m.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => setFicha(m)}>
                     <span className="roster-name">{m.nombre}</span>
                     <span className="tag baja" style={{ flex: "none" }}>{t("informes.ausenciasN", { n: a!.racha })}</span>
-                    <span style={{ color: "var(--text-3)", fontSize: 11.5, flex: "none", width: 90, textAlign: "right" }}>
+                    <span style={{ color: "var(--text-3)", fontSize: "calc(11.5px * var(--fs-escala))", flex: "none", width: 90, textAlign: "right" }}>
                       {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
                     </span>
                   </div>
@@ -1115,7 +1115,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                       {a!.racha >= umbrales.rachaServicios && (
                         <span className="ios-badge ios-badge--pending">{t("informes.ausenciasN", { n: a!.racha })}</span>
                       )}
-                      <span style={{ fontWeight: 700, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{a!.pct}%</span>
+                      <span style={{ fontWeight: 700, fontSize: "calc(16px * var(--fs-escala))", fontVariantNumeric: "tabular-nums" }}>{a!.pct}%</span>
                     </div>
                   </div>
                 ))}
@@ -1140,7 +1140,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                     <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{a!.asistidos}</div>
                     <div className="td" style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--text-2)" }}>{a!.ausentes}</div>
                     <div className="td" style={{ textAlign: "right", fontWeight: 700 }}>{a!.pct}%</div>
-                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                       {a!.ultimaAsistencia ? fmtFechaCorta(a!.ultimaAsistencia) : t("informes.nuncaAsistio")}
                     </div>
                   </div>

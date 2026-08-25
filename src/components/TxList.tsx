@@ -181,7 +181,7 @@ export default function TxList({ txs, onEdit, onChanged, puedeEliminar = true }:
                             style={{
                               display: "inline-block",
                               marginLeft: 8,
-                              fontSize: 10,
+                              fontSize: "calc(10px * var(--fs-escala))",
                               fontWeight: 700,
                               color: "var(--warn)",
                               background: "var(--warn-bg)",
@@ -202,7 +202,7 @@ export default function TxList({ txs, onEdit, onChanged, puedeEliminar = true }:
                             onClick={(e) => { e.stopPropagation(); setPreview(tx.comprobante_path!); }}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 3,
-                              marginLeft: 8, fontSize: 11, color: "var(--text-2)", cursor: "pointer",
+                              marginLeft: 8, fontSize: "calc(11px * var(--fs-escala))", color: "var(--text-2)", cursor: "pointer",
                             }}
                           >
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

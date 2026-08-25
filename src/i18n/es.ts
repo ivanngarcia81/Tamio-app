@@ -3176,7 +3176,7 @@ export const es = {
 
   presentacion: {
     titulo: "Presentación",
-    hint: "Estos tres ajustes están en el diseño y todavía no tienen efecto. Aparecerán encendidos en cuanto la app sepa aplicarlos.",
+    hint: "Vale solo para este dispositivo, como el tema: quien necesita la letra más grande es una persona, no la iglesia. Los documentos impresos no cambian de tamaño.",
     tamanoTexto: "Tamaño de texto",
     tamano: { chico: "Chico", normal: "Normal", grande: "Grande" },
     ocultarMontos: "Ocultar montos al bloquear",

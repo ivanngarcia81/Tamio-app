@@ -42,7 +42,7 @@ export default function SoundSettings() {
             alinee con las demás en vez de quedar suelta en la esquina. */}
         {!esMac() && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+            <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
               {activo ? t("sonido.activado") : t("sonido.desactivado")}
             </span>
             <button

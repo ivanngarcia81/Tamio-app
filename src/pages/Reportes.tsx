@@ -524,7 +524,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <span className="card-meta">{mesStr}</span>
       </div>
       {filasGasto.length === 0 ? (
-        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinGastosEsteMes")}</div>
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("reportes.sinGastosEsteMes")}</div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <div className="donut-wrap" style={{ flexShrink: 0 }}>
@@ -558,7 +558,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
         <span className="card-meta">{mesStr}</span>
       </div>
       {filasIngreso.length === 0 ? (
-        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("reportes.sinIngresosEsteMes")}</div>
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("reportes.sinIngresosEsteMes")}</div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <div className="donut-wrap" style={{ flexShrink: 0 }}>
@@ -597,7 +597,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
       <div className="r-section-title">{t("reportes.ingresosPeriodo")}</div>
       {filasIngreso.length === 0 && (
-        <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+        <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", padding: "8px 0" }}>
           {t("reportes.sinIngresosRegistrados")}
         </div>
       )}
@@ -618,7 +618,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
 
       <div className="r-section-title">{t("reportes.gastosPeriodo")}</div>
       {filasGasto.length === 0 && (
-        <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+        <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", padding: "8px 0" }}>
           {t("reportes.sinGastosRegistrados")}
         </div>
       )}
@@ -1222,11 +1222,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                 </button>
               </div>
               {pregRespuesta && (
-                <div className="form-subcard" style={{ marginTop: 12, whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5, padding: "12px 14px" }}>
+                <div className="form-subcard" style={{ marginTop: 12, whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: "calc(14.5px * var(--fs-escala))", padding: "12px 14px" }}>
                   {pregRespuesta}
                 </div>
               )}
-              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.72 }}>{t("reportes.ia.nota")}</div>
+              <div style={{ marginTop: 10, fontSize: "calc(12px * var(--fs-escala))", opacity: 0.72 }}>{t("reportes.ia.nota")}</div>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
                 <button className="btn secondary" onClick={() => setPregOpen(false)} disabled={pregGenerando}>{t("common.cerrar")}</button>
               </div>
@@ -1258,7 +1258,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               </div>
               <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={() => setIaResumen(null)}><IconClose /></button>
             </div>
-            <div className="ia-cuerpo" style={{ whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: 14.5 }}>
+            <div className="ia-cuerpo" style={{ whiteSpace: "pre-wrap", lineHeight: 1.65, fontSize: "calc(14.5px * var(--fs-escala))" }}>
               {iaResumen}
             </div>
             <div className="ia-acciones">

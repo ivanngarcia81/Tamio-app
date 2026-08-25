@@ -4401,6 +4401,117 @@ console.log("\n== Los dos permisos del rol Tesorería ==");
   await ctxA.close();
 }
 
+/* ---------- 45. El tamaño de texto mueve la app ENTERA ----------
+   La última cáscara del rediseño, encendida el 24 ago 2026. Lo que estuvo
+   apagado no era el control: era que la tipografía no se podía mover entera.
+   La app tenía 248 `font-size` colgando de los tokens `--fs-*` y **395 con
+   píxeles a pelo**, más 136 tamaños en línea en el JSX que ni siquiera pasan
+   por el CSS.
+
+   **Por eso esta sección mide dos cosas y no una.** Comprobar que crece una
+   etiqueta sería quedarse justo con el tercio que ya habría funcionado con un
+   multiplicador ingenuo sobre los tokens. Lo que había que arreglar —y lo que
+   se comprueba aquí— es que crezca también **la cifra de dinero**, que iba
+   con píxeles a pelo (`.md-fila-monto`, `.ios-stat-num`, `.tx-amount`). Si
+   alguien sube el tamaño porque no ve bien los importes y los importes son lo
+   único que no se mueve, el control es peor que no tenerlo.
+
+   Se miden tamaños CALCULADOS del navegador sobre la app de verdad, no la
+   hoja de estilos: es la única forma de saber que el factor llegó al píxel
+   pintado y no se quedó en una variable que nadie lee. */
+console.log("\n== El tamaño de texto mueve la app entera ==");
+{
+  const ctxT = await nuevoContexto("ipad");
+  const pg = await ctxT.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-fila", { timeout: 10000 });
+
+  /** Tamaños calculados de una ETIQUETA y de una CIFRA, más el factor vivo. */
+  const medir = () => pg.evaluate(() => {
+    const px = (sel) => {
+      const el = document.querySelector(sel);
+      return el ? parseFloat(getComputedStyle(el).fontSize) : null;
+    };
+    return {
+      etiqueta: px(".md-fila-titular"),
+      dinero: px(".md-fila-monto"),
+      factor: getComputedStyle(document.documentElement).getPropertyValue("--fs-escala").trim(),
+    };
+  });
+
+  const normal = await medir();
+  chk(normal.etiqueta > 0 && normal.dinero > 0,
+    `de partida se mide etiqueta y cifra (${normal.etiqueta}px / ${normal.dinero}px)`);
+
+  /* --- "Normal" no toca nada ---
+     Se comprueba ANTES que el crecimiento, porque es la mitad que más fácil
+     se rompe sin que nadie lo note: un refactor de 560 tamaños que deje la
+     app un punto más grande "en Normal" habría cambiado el aspecto de Tamio
+     para todo el que nunca abra este ajuste. */
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("normal");
+  });
+  const otraVezNormal = await medir();
+  chk(otraVezNormal.etiqueta === normal.etiqueta && otraVezNormal.dinero === normal.dinero,
+    `en "Normal" no se mueve un píxel (${otraVezNormal.etiqueta}px / ${otraVezNormal.dinero}px)`);
+  /* Y el factor ni siquiera se escribe: en "Normal" manda styles.css, como
+     hace el acento "neutro". Un `--fs-escala: 1` en línea daría el mismo
+     resultado hoy y pisaría el valor de la hoja el día que cambie. */
+  chk(otraVezNormal.factor === "", `y no deja factor escrito en :root ("${otraVezNormal.factor}")`);
+
+  // --- Grande ---
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("grande");
+  });
+  const grande = await medir();
+  chk(grande.etiqueta > normal.etiqueta,
+    `en "Grande" crece la etiqueta (${normal.etiqueta} → ${grande.etiqueta}px)`);
+  /* LA COMPROBACIÓN DE LA SECCIÓN. Rompiendo el arreglo —dejando
+     `.md-fila-monto` con su px a pelo— esta sale en rojo y la de arriba sigue
+     en verde, que es justo el fallo del que protege. */
+  chk(grande.dinero > normal.dinero,
+    `y crece TAMBIÉN la cifra de dinero, que era la que se quedaba (${normal.dinero} → ${grande.dinero}px)`);
+  chk(Math.abs(grande.dinero / normal.dinero - grande.etiqueta / normal.etiqueta) < 0.02,
+    `las dos crecen lo MISMO, no cada una por su cuenta (${(grande.dinero / normal.dinero).toFixed(3)} vs ${(grande.etiqueta / normal.etiqueta).toFixed(3)})`);
+
+  // --- Chico ---
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("chico");
+  });
+  const chico = await medir();
+  chk(chico.etiqueta < normal.etiqueta && chico.dinero < normal.dinero,
+    `en "Chico" encogen las dos (${chico.etiqueta}px / ${chico.dinero}px)`);
+
+  /* --- El maestro-detalle sobrevive a "Grande" ---
+     El motivo de que los saltos sean de ±12% y no de ±25%: el panel del iPad
+     necesita ancho de verdad, y una letra que crece empuja. Con la retícula
+     rota, "Grande" sería inusable justo en la pantalla donde más se usa. */
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("grande");
+  });
+  await pg.waitForTimeout(400);
+  const reticula = await pg.evaluate(() => ({
+    dosColumnas: !!document.querySelector(".md-split"),
+    desborde: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  }));
+  chk(reticula.dosColumnas, "con la letra grande el maestro-detalle sigue en dos columnas");
+  chk(!reticula.desborde, "y la página no se desborda en horizontal");
+
+  // Se deja como estaba, que esta sección va antes del cierre.
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("normal");
+  });
+  if (DIR) await pg.screenshot({ path: `${DIR}/tamano-texto-1366x1024.png` });
+  await ctxT.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

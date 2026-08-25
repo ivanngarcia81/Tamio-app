@@ -82,18 +82,42 @@
   /* Escala tipográfica del sistema — todo tamaño nuevo debe salir de aquí:
      30 título de página · 18 título de modal · 15 título de tarjeta ·
      13.5 cuerpo · 12.5 secundario · 11.5 pie/hint · 10.5 encabezado tabla */
-  --fs-page-title: 30px;
+  /* ==========================================================
+     TAMAÑO DE TEXTO (Config → Preferencias → Presentación).
+     Multiplica TODA la tipografía de la app. 1 = lo de siempre, así que
+     mientras nadie lo toque no cambia un solo píxel.
+
+     Va como factor y no como una tabla de tamaños por talla porque los
+     tamaños ya existen: son estos tokens y los 395 `font-size` sueltos que
+     hay repartidos. Lo que faltaba era un sitio donde multiplicarlos todos
+     a la vez — y ESO era lo que tenía el interruptor apagado desde el
+     rediseño: no faltaba el control, faltaba que la tipografía se pudiera
+     mover entera. Encenderlo antes habría agrandado un tercio de la app
+     (los 248 usos con token) y dejado quieto el resto, incluidas las
+     CIFRAS DE DINERO, que iban con px a pelo. O sea, justo al revés de lo
+     que quiere quien sube el tamaño porque no ve bien los importes.
+
+     Lo pone `main.tsx` al arrancar, desde la preferencia guardada. Es del
+     DISPOSITIVO, como el tema y el acento: no viaja por la sincronización.
+
+     Lo que NO escala, a propósito: las plantillas de impresión
+     (`services/print/`), que construyen su propio documento. Un informe en
+     papel no cambia de tamaño porque alguien ajuste su iPad.
+     ========================================================== */
+  --fs-escala: 1;
+
+  --fs-page-title: calc(30px * var(--fs-escala));
   /* Título de sección/portada: el paso que faltaba entre el título de modal
      (18) y el de página (30). Lo usan los encabezados del login y de la vista
      previa del reporte, que antes iban a 21-22px a mano porque no tenían
      dónde encajar. */
-  --fs-section-title: 22px;
-  --fs-modal-title: 18px;
-  --fs-card-title: 15px;
-  --fs-body: 13.5px;
-  --fs-secondary: 12.5px;
-  --fs-caption: 11.5px;
-  --fs-table-head: 10.5px;
+  --fs-section-title: calc(22px * var(--fs-escala));
+  --fs-modal-title: calc(18px * var(--fs-escala));
+  --fs-card-title: calc(15px * var(--fs-escala));
+  --fs-body: calc(13.5px * var(--fs-escala));
+  --fs-secondary: calc(12.5px * var(--fs-escala));
+  --fs-caption: calc(11.5px * var(--fs-escala));
+  --fs-table-head: calc(10.5px * var(--fs-escala));
   /* Fuera de la escala a propósito (no los "arregles"):
      · body 14px — base de las unidades relativas.
      · .form-input/.form-select/.form-textarea y .cmdk-input 16px — por debajo
@@ -166,10 +190,10 @@
   --content-max: 1560px;
   --content-pad-x: 32px;
   /* Escala de métricas y display (valores ya en uso, ahora centralizados) */
-  --fs-display: 40px;
-  --fs-stat-lg: 30px;
-  --fs-stat-md: 24px;
-  --fs-stat-sm: 22px;
+  --fs-display: calc(40px * var(--fs-escala));
+  --fs-stat-lg: calc(30px * var(--fs-escala));
+  --fs-stat-md: calc(24px * var(--fs-escala));
+  --fs-stat-sm: calc(22px * var(--fs-escala));
   --lh-tight: 1.1;
   /* Sombras del sistema */
   /* Sombra en reposo, apenas perceptible: da definición a tarjetas de
@@ -261,7 +285,7 @@ body {
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-escala));
   line-height: 1.4;
   transition: background-color .2s ease, color .2s ease;
 }
@@ -366,7 +390,7 @@ a { color: inherit; text-decoration: none; }
 .cmdk-input {
   width: 100%; border: none; outline: none; background: transparent;
   color: var(--text);
-  font: inherit; font-size: 16px;
+  font: inherit; font-size: calc(16px * var(--fs-escala));
   padding: 16px 18px;
   border-bottom: 1px solid var(--line);
 }
@@ -738,7 +762,7 @@ html.vibrancy .main { background: var(--surface); }
   box-shadow: 0 6px 20px rgba(5, 150, 105, 0.28);
 }
 .perfil-avatar-grande img { width: 100%; height: 100%; object-fit: cover; }
-.perfil-ini { font-size: 38px; font-weight: 700; letter-spacing: 0.5px; }
+.perfil-ini { font-size: calc(38px * var(--fs-escala)); font-weight: 700; letter-spacing: 0.5px; }
 .perfil-nombre { margin-top: 14px; font-size: var(--fs-card-title); font-weight: 700; color: var(--text); text-align: center; }
 .perfil-email { font-size: var(--fs-secondary); color: var(--text-3); margin-top: 2px; text-align: center; }
 .perfil-acciones { display: flex; gap: var(--space-2); margin: 18px 0 4px; flex-wrap: wrap; justify-content: center; }
@@ -1506,7 +1530,7 @@ html.vibrancy .main { background: var(--surface); }
   text-align: center;
 }
 .donut-center .val {
-  font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+  font-size: calc(20px * var(--fs-escala)); font-weight: 700; letter-spacing: -0.01em;
 }
 .donut-center .lbl {
   font-size: var(--fs-table-head); color: var(--text-3); text-transform: uppercase; letter-spacing: var(--track-caps);
@@ -1558,11 +1582,11 @@ html.vibrancy .main { background: var(--surface); }
   padding: 9px 0;
   border-top: 1px solid var(--line);
 }
-.rec-concepto { flex: 1; font-weight: 600; font-size: 13px; }
-.rec-quien { font-weight: 400; color: var(--text-3); margin-left: 8px; font-size: 12px; }
-.rec-dia { font-size: 12px; color: var(--text-3); }
-.rec-metodo { font-size: 12.5px; color: var(--text-2); }
-.rec-monto { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+.rec-concepto { flex: 1; font-weight: 600; font-size: calc(13px * var(--fs-escala)); }
+.rec-quien { font-weight: 400; color: var(--text-3); margin-left: 8px; font-size: calc(12px * var(--fs-escala)); }
+.rec-dia { font-size: calc(12px * var(--fs-escala)); color: var(--text-3); }
+.rec-metodo { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
+.rec-monto { font-weight: 700; font-size: calc(13px * var(--fs-escala)); font-variant-numeric: tabular-nums; }
 .card-fijos { margin-bottom: 18px; }
 .chip {
   padding: 6px 12px;
@@ -1613,7 +1637,7 @@ html.vibrancy .main { background: var(--surface); }
   padding-top: 4px;
 }
 .day-label .day-num {
-  font-size: 28px;
+  font-size: calc(28px * var(--fs-escala));
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -2605,7 +2629,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: grid; place-items: center;
   color: #fff;
   font-weight: 700;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
 }
 .church-card-name { font-size: var(--fs-card-title); font-weight: 700; letter-spacing: -0.01em; }
 .church-card-loc { font-size: var(--fs-secondary); color: var(--text-2); margin-top: 3px; }
@@ -2894,7 +2918,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -2961,7 +2985,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--surface);
   padding: 16px 14px;
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   color: var(--text);
   cursor: pointer;
   transition: transform 0.1s ease;
@@ -3238,7 +3262,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .settings-nav-version {
   margin: auto 0 0;
   padding: 14px 10px 4px;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   line-height: 16px;
   min-height: 16px;
   color: var(--text-3);
@@ -3333,7 +3357,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-section:last-of-type { margin-bottom: 24px; }
 
 :root.movil .ios-section-header {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
   /* El elemento es un `<h2>` y traía la negrita del navegador: la regla
      fijaba tamaño, color y sangría pero nunca reseteaba el peso. En iOS un
@@ -3357,7 +3381,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    ingreso); ahí una regla más sumaría 20 px sobre algo que ya respiraba. */
 :root.movil .ios-sheet-body > .ios-section:first-child { padding-top: 20px; }
 :root.movil .ios-section-footer {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
   color: var(--text-2);
   padding: 7px 32px 0;
@@ -3416,7 +3440,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Foto de perfil (Cuenta) en vez del glifo de siempre. */
 :root.movil .ios-icon img { width: 100%; height: 100%; object-fit: cover; }
 /* Iniciales (Cuenta, sin foto) en vez del glifo. */
-:root.movil .ios-icon-texto { font-size: 12px; font-weight: 700; }
+:root.movil .ios-icon-texto { font-size: calc(12px * var(--fs-escala)); font-weight: 700; }
 
 /* Fila de dos líneas (Cuenta: nombre + correo) — la única del patrón de
    lista que necesita subtítulo; el resto es título solo o título+valor. */
@@ -3429,7 +3453,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.movil .ios-row-textos .ios-row-label { display: block; }
 :root.movil .ios-row-sub {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3444,7 +3468,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      el que cede es el texto (con "…"), no la altura de la fila. */
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   line-height: 22px;
   color: var(--text);
@@ -3453,7 +3477,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 :root.iphone .ios-row-value {
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--text-2);
   max-width: 45%;
@@ -3473,7 +3497,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.iphone .ios-version {
   text-align: center;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
   color: var(--text-2);
   padding: 8px 16px 0;
@@ -3528,7 +3552,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ayuda-ios-pregunta {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   line-height: 22px;
   letter-spacing: -0.41px;
 }
@@ -3538,7 +3562,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ayuda-ios-item.abierto .ios-chevron { transform: rotate(90deg); }
 :root.iphone .ayuda-ios-d {
   padding: 0 16px 12px;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   line-height: 20px;
   color: var(--text-2);
 }
@@ -3588,7 +3612,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-bottom: 0;
 }
 :root.movil .ios-nav-title {
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: -0.41px;
   color: var(--text);
@@ -3608,7 +3632,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--brand, #059669);
   cursor: pointer;
@@ -3635,7 +3659,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   font-weight: 600;
   color: var(--brand, #059669);
   cursor: pointer;
@@ -3655,7 +3679,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.movil .ios-nav-status .form-hint,
 :root.movil .ios-nav-status .settings-saved-pill {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3713,7 +3737,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.movil .ios-field-label {
   flex: 0 0 auto;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   line-height: 22px;
 }
@@ -3725,7 +3749,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--text);
   text-align: right;
@@ -3737,7 +3761,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-field-value {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--text-2);
   text-align: right;
@@ -3758,7 +3782,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-section-footer--error { color: var(--ios-red); }
 :root.movil .ios-section-footer--tecnico {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   color: var(--text-3);
   user-select: text;
   word-break: break-word;
@@ -3808,7 +3832,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      oscura. */
   background: rgba(118, 118, 128, 0.12);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   font-weight: 500;
   letter-spacing: -0.24px;
   color: var(--text);
@@ -3867,7 +3891,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 16px;
   border: 0;
   background: rgba(118, 118, 128, 0.12);
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   color: var(--text);
 }
 :root[data-theme="dark"].iphone .ios-filtros input[type="date"] { background: rgba(118, 118, 128, 0.24); }
@@ -3883,7 +3907,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding-top: 11px;
   padding-bottom: 11px;
 }
-:root.movil .ios-field--stacked .ios-field-label { font-size: 13px; color: var(--text-2); }
+:root.movil .ios-field--stacked .ios-field-label { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
 :root.movil .ios-field--stacked .ios-field-input { text-align: left; }
 
 /* Un texto largo de SOLO LECTURA dentro de un grupo: la nota administrativa
@@ -3892,7 +3916,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    falta es que el texto envuelva, cosa que `.ios-field-value` no hace porque
    está pensado para un dato corto pegado a la derecha. */
 :root.movil .ios-field-nota {
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   line-height: 20px;
   color: var(--text);
   white-space: pre-wrap;
@@ -3910,7 +3934,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.movil .ios-field-error {
   flex-basis: 100%;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 16px;
   color: var(--ios-red);
   padding-top: 2px;
@@ -3920,7 +3944,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    ESA fila —"un recordatorio solo se ve aquí, no llega ningún correo"— y al
    pie de la sección quedaría a cuatro filas de distancia. */
 :root.movil .ios-field-pie {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 17px;
   color: var(--text-2);
   padding-top: 2px;
@@ -3935,7 +3959,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .dia-chip {
   min-height: 34px;
   padding: 6px 12px;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   /* Peso normal sin marcar y 600 al marcar, como el segmentado: en iOS la
      negrita ES la marca de selección, no la decoración de la pastilla. En
      escritorio van todas en 600 y el color hace el trabajo. */
@@ -3956,16 +3980,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root:not([data-theme="light"]).movil .dia-chip { background: rgba(118, 118, 128, 0.24); }
 }
 
-:root.movil .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: 17px; cursor: pointer; }
+:root.movil .ios-field--action { justify-content: center; color: var(--brand, #059669); font-size: calc(17px * var(--fs-escala)); cursor: pointer; }
 /* Acción no disponible (invitar sin correo, sincronizar mientras sincroniza):
    se apaga a gris, NO a un acento translúcido — un verde a media opacidad se
    lee como "así es su color", no como "ahora no". La fila conserva su alto. */
 :root.movil .ios-field--action:disabled { color: var(--text-3); cursor: default; }
-:root.movil .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: 17px; cursor: pointer; }
+:root.movil .ios-field--destructive { justify-content: center; color: var(--ios-red); font-size: calc(17px * var(--fs-escala)); cursor: pointer; }
 /* Fila de estado consumado, no de acción: "Miembro creado y vinculado". Verde
    de semáforo (--pos) y no de marca, por lo mismo que las insignias: es un
    éxito, no un elemento de identidad. */
-:root.movil .ios-field--pos { justify-content: center; color: var(--pos); font-size: 17px; }
+:root.movil .ios-field--pos { justify-content: center; color: var(--pos); font-size: calc(17px * var(--fs-escala)); }
 
 /* ---------------- Logo / avatar ---------------- */
 :root.movil .ios-avatar {
@@ -4046,7 +4070,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--text);
   text-align: left;
@@ -4154,7 +4178,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--ios-red);
   color: #fff;
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   font-weight: 500;
   cursor: pointer;
 }
@@ -4172,7 +4196,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: var(--surface);
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--text);
   text-align: left;
@@ -4210,7 +4234,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: var(--surface);
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--ios-red);
   cursor: pointer;
@@ -4279,7 +4303,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   font: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
@@ -4431,7 +4455,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   text-align: center;
-  font-size: 44px;
+  font-size: calc(44px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -1.4px;
   color: var(--text);
@@ -4444,7 +4468,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .nm-monto-campo::placeholder { color: var(--text-3); }
 :root.movil .nm-monto-pie {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-2);
 }
 /* La misma cabecera de importe, pero de LECTURA: la hoja "Nuevo corte" no
@@ -4452,14 +4476,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    enfocar, así que va como texto y con su etiqueta encima —que en el
    formulario no hace falta porque el teclado ya dice qué se escribe. */
 :root.movil .nm-monto--lectura { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-:root.movil .nm-monto-et { font-size: 13px; color: var(--text-2); }
+:root.movil .nm-monto-et { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
 :root.movil .nm-monto-cifra {
-  font-size: 44px;
+  font-size: calc(44px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -1.4px;
   font-variant-numeric: tabular-nums;
 }
-:root.movil .nm-monto--lectura .nm-monto-pie { margin-top: 0; color: var(--text-3); font-size: 12.5px; }
+:root.movil .nm-monto--lectura .nm-monto-pie { margin-top: 0; color: var(--text-3); font-size: calc(12.5px * var(--fs-escala)); }
 /* El aviso que informa en vez de advertir: mismo sitio y mismo cuerpo que
    `.nm-aviso`, pero sin el rojo — lo que dice no es un error del que rellena
    el formulario. */
@@ -4476,7 +4500,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   box-shadow: inset 0 0 0 1.5px var(--line);
   color: transparent;
 }
@@ -4497,7 +4521,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .nm-nota,
 :root.movil .nm-aviso {
   margin: -4px 16px 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 1.4;
 }
 :root.movil .nm-nota { color: var(--text-2); }
@@ -4522,7 +4546,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 10px;
   background: var(--surface-2);
   color: var(--text);
-  font-size: 17px; /* menos de 16 y iOS hace zoom al enfocar */
+  font-size: calc(17px * var(--fs-escala)); /* menos de 16 y iOS hace zoom al enfocar */
 }
 :root.movil .ios-buscador-campo:focus { outline: none; }
 :root.movil .ios-buscador-campo::placeholder { color: var(--text-3); }
@@ -4542,7 +4566,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-align: left;
 }
 :root.movil .ios-buscador-sub {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-2);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4585,7 +4609,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   line-height: 1.5;
   padding: 16px;
   resize: none;
@@ -4602,7 +4626,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-cuerpo-vista { padding-top: 12px; padding-bottom: 12px; }
 :root.iphone .ios-cuerpo-texto {
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   line-height: 1.5;
   color: var(--text);
   white-space: pre-wrap;
@@ -4633,13 +4657,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 8px;
   background: var(--surface-2);
   color: var(--text);
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
 }
 :root.iphone .ios-cuerpo-btn:active { opacity: 0.6; }
 :root.iphone .ios-cuerpo-insertar { margin-left: auto; min-width: 0; flex: 0 1 auto; }
 :root.iphone .ios-cuerpo-editable {
   padding: 16px;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   line-height: 1.6;
   outline: none;
 }
@@ -4650,7 +4674,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin-left: auto;
   padding: 2px 9px;
   border-radius: 999px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs-escala));
   font-weight: 600;
 }
 :root.iphone .ios-insignia.es-firmado { background: var(--pos-soft, rgba(16,185,129,.14)); color: var(--pos); }
@@ -4699,7 +4723,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: none;
   color: var(--text);
   /* 17 px: por debajo de 16, iOS hace zoom al enfocar el campo. */
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
 }
 :root.iphone .ios-buscar.es-activo .ios-buscar-campo input { flex: 1 1 auto; }
 :root.iphone .ios-buscar-campo input:focus { outline: none; }
@@ -4709,7 +4733,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   color: var(--brand);
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
 }
 :root[data-theme="dark"].iphone .ios-buscar-campo { background: rgba(118, 118, 128, 0.24); }
 
@@ -4742,7 +4766,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: none;
   color: var(--text);
   /* 13 es el suelo: por debajo, las etiquetas dejan de leerse. */
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4786,7 +4810,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .inf-control-texto { flex: 1 1 auto; min-width: 0; }
 :root.iphone .inf-control-titulo {
   display: block;
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-escala));
   font-weight: 600;
   color: var(--text);
   /* El periodo puede ser largo ("1 de marzo → 30 de junio"); antes de
@@ -4798,7 +4822,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .inf-control-sub {
   display: block;
   margin-top: 1px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-2);
 }
 
@@ -4810,7 +4834,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-stat.es-filtro .ios-stat-label { color: var(--brand); font-weight: 600; }
 :root.iphone .ios-stat-quitar {
   margin-left: auto;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 1;
   color: var(--brand);
 }
@@ -4826,14 +4850,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 10px;
   background: var(--brand-soft, rgba(16, 185, 129, 0.12));
   color: var(--brand);
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-escala));
 }
 :root.iphone .inf-filtrando button {
   flex: 0 0 auto;
   border: 0;
   background: none;
   color: var(--brand);
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-escala));
   font-weight: 600;
 }
 
@@ -4844,7 +4868,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   justify-content: space-between;
   gap: 12px;
   margin: 2px 2px 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-2);
 }
 :root.iphone .inf-resultados button {
@@ -4854,7 +4878,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   color: var(--brand);
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-escala));
 }
 /* Punto que avisa de que dentro de la hoja hay algo puesto. Sin él, un filtro
    escondido en la hoja repite el problema de la barra deslizable. */
@@ -4913,7 +4937,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .ios-panel-head h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: calc(22px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);
@@ -4924,7 +4948,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: none;
   padding: 0;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--brand, #059669);
   cursor: pointer;
@@ -4963,9 +4987,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   box-shadow: 0 0 0 1.5px var(--brand, #059669) inset;
 }
 :root.iphone .ios-stat-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-:root.iphone .ios-stat-label { font-size: 15px; font-weight: 500; line-height: 1.25; color: var(--text-2); }
+:root.iphone .ios-stat-label { font-size: calc(15px * var(--fs-escala)); font-weight: 500; line-height: 1.25; color: var(--text-2); }
 :root.iphone .ios-stat-num {
-  font-size: 34px;
+  font-size: calc(34px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -1px;
   line-height: 1;
@@ -4978,7 +5002,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    `.cat-dot` del mismo archivo se reutilizan tal cual dentro de `.ios-stat`
    — son genéricos, no piden clase de contenedor. */
 :root.iphone .ios-stat-num .stat-cur {
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   font-weight: 600;
   color: var(--text-2);
   margin-left: 4px;
@@ -4990,10 +5014,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    el lenguaje de tarjeta viejo (.stat-value.md más chico que .stat-value
    a secas) aplicado aquí. */
 :root.iphone .ios-stat-num.money {
-  font-size: 22px;
+  font-size: calc(22px * var(--fs-escala));
   letter-spacing: -0.3px;
 }
-:root.iphone .ios-stat-num.money .stat-cur { font-size: 13px; margin-left: 3px; }
+:root.iphone .ios-stat-num.money .stat-cur { font-size: calc(13px * var(--fs-escala)); margin-left: 3px; }
 
 /* Dashboard: ocho indicadores en una pantalla que YA tiene su cifra grande
    arriba (el saldo del mes). Si cada tarjeta usara los 34 px de
@@ -5001,7 +5025,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    entrada visual. A 22 px siguen siendo el dato de su tarjeta sin pelear
    con el titular. `.money` ya da ese tamaño para importes; esta es la
    variante para lo que no lleva moneda (conteos, tiempo relativo). */
-:root.iphone .ios-stat-num.sm { font-size: 22px; letter-spacing: -0.3px; }
+:root.iphone .ios-stat-num.sm { font-size: calc(22px * var(--fs-escala)); letter-spacing: -0.3px; }
 
 /* Tarjeta de indicador que además navega (Miembros activos): el chevron va
    abajo a la derecha, sin robarle la línea al número. */
@@ -5022,7 +5046,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: var(--text);
   text-align: left;
@@ -5041,7 +5065,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--line-soft);
 }
 :root.iphone .ios-listrow:active { background: var(--line); }
-:root.iphone .ios-listrow-code { flex: 0 0 auto; font-size: 15px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+:root.iphone .ios-listrow-code { flex: 0 0 auto; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); font-variant-numeric: tabular-nums; }
 :root.iphone .ios-listrow-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* El color de la insignia significa algo — nada de cian decorativo.
@@ -5049,7 +5073,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de inventar un naranja aparte solo para esto. */
 :root.iphone .ios-badge {
   flex: 0 0 auto;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: 0.2px;
   padding: 3px 8px;
@@ -5112,7 +5136,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-txrow-title {
   display: flex;
   align-items: center;
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: -0.3px;
   color: var(--text);
@@ -5121,7 +5145,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 :root.iphone .ios-txrow-trailing { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
-:root.iphone .ios-txrow .tx-amount { font-size: 16px; }
+:root.iphone .ios-txrow .tx-amount { font-size: calc(16px * var(--fs-escala)); }
 /* El clip del comprobante reutiliza `.row-icon-btn`, pero esa clase base
    está definida como `.data-table .row-icon-btn` — sin ese ancestro (esta
    fila ya no vive dentro de `.data-table`) se quedaba sin su tamaño ni su
@@ -5255,7 +5279,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.movil .ios-cal-dow span {
   text-align: center;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: 0.2px;
   color: var(--text-3);
@@ -5283,7 +5307,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.3px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -5311,7 +5335,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-cal--tira { padding: 10px 6px; }
 :root.movil .ios-cal--tira .ios-cal-dia { gap: 3px; padding-top: 0; }
 :root.movil .ios-cal-dow-celda {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: 0.2px;
   color: var(--text-3);
@@ -5328,15 +5352,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .ios-dia-cab h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: calc(20px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--text);
 }
-:root.iphone .ios-dia-cab span { font-size: 13px; color: var(--text-2); flex: 0 0 auto; }
+:root.iphone .ios-dia-cab span { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); flex: 0 0 auto; }
 
-:root.iphone .ios-panel-note { font-size: 13px; line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
-:root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: 15px; color: var(--text-2); }
+:root.iphone .ios-panel-note { font-size: calc(13px * var(--fs-escala)); line-height: 18px; color: var(--text-2); margin: 10px 0 0; }
+:root.iphone .ios-panel-empty { padding: 36px 16px; text-align: center; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); }
 
 /* ============================================================
    Mensajes en iPhone: un chat, no una tarjeta con un formulario dentro.
@@ -5454,7 +5478,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .welcome-movil-head { margin-bottom: 22px; }
 :root.iphone .welcome-movil-logo { line-height: 0; margin-bottom: 14px; }
 :root.iphone .welcome-movil-titulo {
-  font-size: 27px;
+  font-size: calc(27px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -0.6px;
   line-height: 1.15;
@@ -5462,7 +5486,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .welcome-movil-sub {
   margin-top: 7px;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   line-height: 20px;
   color: rgba(255, 255, 255, 0.6);
 }
@@ -5525,7 +5549,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--brand, #059669);
   color: var(--ink-contrast, #fff);
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: -0.41px;
   cursor: pointer;
@@ -5541,7 +5565,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   font: inherit;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   letter-spacing: -0.41px;
   color: #fff;
   cursor: pointer;
@@ -5551,7 +5575,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .welcome-cta-texto:disabled { opacity: 0.5; }
 :root.iphone .welcome-movil-nota {
   margin-top: 2px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
@@ -5949,7 +5973,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .settings-nota {
   margin: 0;
   padding: 0 6px;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   line-height: 1.45;
   color: var(--text-3);
   text-wrap: pretty;
@@ -5981,7 +6005,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   place-items: center;
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 10px;
+  font-size: calc(10px * var(--fs-escala));
   font-weight: 600;
 }
 .settings-lista-texto {
@@ -5992,13 +6016,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 1.3;
 }
 .settings-lista-nombre {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .settings-lista-sub {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -6008,7 +6032,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .settings-lista-vacio {
   padding: 16px 12px;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   text-wrap: pretty;
 }
 /* Pie de tabla editable de macOS: "+" añade y "−" quita la fila seleccionada.
@@ -6081,8 +6105,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-direction: column;
   line-height: 1.3;
 }
-.settings-accion-titulo { font-size: 13px; }
-.settings-accion-nota { font-size: 11px; color: var(--text-3); text-wrap: pretty; }
+.settings-accion-titulo { font-size: calc(13px * var(--fs-escala)); }
+.settings-accion-nota { font-size: calc(11px * var(--fs-escala)); color: var(--text-3); text-wrap: pretty; }
 /* El botón no encoge: el texto de al lado es el que cede. */
 .settings-accion > .btn { flex-shrink: 0; white-space: nowrap; }
 /* En el teléfono el botón baja: en 393 px, con un botón de "Elegir archivo de
@@ -6292,29 +6316,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   transition: box-shadow .2s ease;
 }
 :root[data-theme="dark"] .pdf-sheet { box-shadow: 0 18px 44px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.2); }
-.pdf-sheet-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-.pdf-sheet-church { font-size: 12.5px; font-weight: 600; margin-top: 8px; }
-.pdf-sheet-period { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.pdf-sheet-title { font-size: calc(15px * var(--fs-escala)); font-weight: 700; letter-spacing: -0.01em; }
+.pdf-sheet-church { font-size: calc(12.5px * var(--fs-escala)); font-weight: 600; margin-top: 8px; }
+.pdf-sheet-period { font-size: calc(11px * var(--fs-escala)); color: var(--text-3); margin-top: 3px; }
 .pdf-sheet-rule { height: 1px; background: var(--line); margin: 16px 0; }
 .pdf-sheet-eyebrow {
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--fs-escala));
   text-transform: uppercase;
   letter-spacing: var(--track-caps);
   color: var(--text-3);
   font-weight: 700;
   margin-bottom: 4px;
 }
-.pdf-sheet-name { font-size: 12px; font-weight: 600; }
-.pdf-sheet-role { font-size: 11px; color: var(--text-2); }
+.pdf-sheet-name { font-size: calc(12px * var(--fs-escala)); font-weight: 600; }
+.pdf-sheet-role { font-size: calc(11px * var(--fs-escala)); color: var(--text-2); }
 .pdf-sheet-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
 .pdf-sheet-card {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px 8px;
 }
-.pdf-sheet-card .k { font-size: 7.5px; text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--text-3); font-weight: 700; }
+.pdf-sheet-card .k { font-size: calc(7.5px * var(--fs-escala)); text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--text-3); font-weight: 700; }
 .pdf-sheet-card .v { height: 8px; width: 70%; border-radius: 3px; background: var(--surface-2); margin-top: 8px; }
-.pdf-sheet-foot { font-size: 9px; color: var(--text-3); }
+.pdf-sheet-foot { font-size: calc(9px * var(--fs-escala)); color: var(--text-3); }
 
 /* Responsive — la ventana de escritorio puede redimensionarse; estas reglas
    evitan que las grillas se rompan al angostarse (no es un layout móvil). */
@@ -7207,7 +7231,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 .msg-grupo { display: flex; flex-direction: column; gap: var(--space-3); }
 /* El separador de día: una etiqueta centrada, como en Mensajes de iOS. */
 .msg-dia { display: flex; align-items: center; justify-content: center; padding: 6px 0 0; }
-.msg-dia > span { font-size: 12px; font-weight: 600; color: var(--text-3); }
+.msg-dia > span { font-size: calc(12px * var(--fs-escala)); font-weight: 600; color: var(--text-3); }
 .msg-row { display: flex; justify-content: flex-start; }
 .msg-row.propio { justify-content: flex-end; }
 .msg-bubble {
@@ -7693,10 +7717,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    comprimido en el teléfono" en vez de nativo. -apple-system ya era la fuente
    base (línea 231): eso no hacía falta tocarlo. */
 :root.movil {
-  --fs-page-title: 34px;
-  --fs-body: 17px;
-  --fs-secondary: 13px;
-  --fs-caption: 11px;
+  --fs-page-title: calc(34px * var(--fs-escala));
+  --fs-body: calc(17px * var(--fs-escala));
+  --fs-secondary: calc(13px * var(--fs-escala));
+  --fs-caption: calc(11px * var(--fs-escala));
 }
 :root.movil .page-title { letter-spacing: -0.022em; }
 /* Etiqueta de tarjeta de resumen ("BALANCE DEL MES"): en iOS el patrón de
@@ -7706,7 +7730,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .stat-label {
   text-transform: none;
   letter-spacing: normal;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: #8a8a8e;
 }
 /* .btn hereda --fs-body (ahora 17px, pensado para texto de lectura: listas,
@@ -7714,7 +7738,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    etiquetas largas ("Nuevo registro") partían a dos líneas y el botón se
    veía como una píldora deforme. Los botones se quedan en Subhead (15px):
    más grandes que antes (13.5px) pero sin ese salto. */
-:root.movil .btn { font-size: 15px; }
+:root.movil .btn { font-size: calc(15px * var(--fs-escala)); }
 
 /* Prioridad 4 — barras y controles.
    Fondo traslúcido de la fila fija ("+"/compartir/"···"): antes esos
@@ -7794,7 +7818,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: -0.022em;
   color: var(--text);
@@ -7863,7 +7887,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      nunca llega a activarse (se recorta en seco contra el overflow:hidden
      del .td, sin puntos suspensivos). */
   display: block;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-3);
   margin-top: 2px;
   overflow: hidden;
@@ -7900,7 +7924,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .day-label .day-num,
 :root.movil .day-label .day-month,
 :root.movil .day-label .day-name {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 600;
   color: #8a8a8e;
 }
@@ -7924,11 +7948,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--line-soft);
 }
 :root.movil .tx-row > .tx-amount {
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-:root.movil .tx-amount .cur { font-size: 13px; }
+:root.movil .tx-amount .cur { font-size: calc(13px * var(--fs-escala)); }
 /* `.tag` y `.method` de la fila ya no se pintan sueltos en el teléfono: su
    texto vive dentro de `.tx-secundaria-movil` (ver el grid de 2 líneas en
    los rangos de iPad/teléfono). Las reglas que los maquillaban aquí —fondo
@@ -8017,7 +8041,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: color-mix(in srgb, var(--text) 7%, transparent);
   color: var(--text-2);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   cursor: pointer;
 }
 :root.ipad .sidebar-buscar:active { opacity: 0.4; }
@@ -8031,7 +8055,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .sidebar-buscar-kbd {
   font-family: inherit;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   color: var(--text-3);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -8129,7 +8153,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 0 12px;
     gap: 11px;
     border-radius: 10px;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     font-weight: 500;
     color: var(--text);
   }
@@ -8189,14 +8213,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .settings-hero-titulo {
     grid-area: 1 / 2;
     align-self: end;
-    font-size: 22px;
+    font-size: calc(22px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -0.4px;
   }
   :root.ipad .settings-hero-sub {
     grid-area: 2 / 2;
     align-self: start;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     color: var(--text-2);
   }
 
@@ -8234,7 +8258,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .settings-detail .ios-section:last-of-type { margin-bottom: 0; }
   :root.ipad .settings-detail .ios-section-header {
     padding: 0 16px 7px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 600;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -8242,7 +8266,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .settings-detail .ios-section-footer {
     padding: 8px 16px 0;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     line-height: 1.45;
     color: var(--text-3);
   }
@@ -8264,14 +8288,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .settings-detail .ios-field-label {
     flex: 0 0 190px;
     width: 190px;
-    font-size: 15.5px;
+    font-size: calc(15.5px * var(--fs-escala));
     letter-spacing: normal;
     line-height: 20px;
     color: var(--text-2);
   }
   :root.ipad .settings-detail .ios-field-input,
   :root.ipad .settings-detail .ios-field-value {
-    font-size: 15.5px;
+    font-size: calc(15.5px * var(--fs-escala));
     letter-spacing: normal;
     text-align: left;
     color: var(--text);
@@ -8285,7 +8309,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 7px 16px;
   }
   :root.ipad .settings-detail .ios-field--stacked .ios-field-label {
-    font-size: 15.5px;
+    font-size: calc(15.5px * var(--fs-escala));
     color: var(--text-2);
   }
   /* El separador arranca donde arranca la etiqueta, no bajo ella: con la
@@ -8310,7 +8334,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     white-space: normal;
     color: var(--text);
   }
-  :root.ipad .settings-detail .ios-field-sub { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .settings-detail .ios-field-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
   /* Dibujado y sin motor: la fila entera a media tinta. Se apaga el CONJUNTO
      y no solo el mando, para que se lea como "esto todavía no" y no como "el
      interruptor está roto". El `title` de la fila dice qué falta. */
@@ -8333,7 +8357,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 6px;
     background: transparent;
     font-family: inherit;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 500;
     color: var(--text-2);
     cursor: default;
@@ -8412,7 +8436,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .pf-tarjeta { height: 26px; border-radius: 6px; }
   :root.ipad .pf-lienzo--light .pf-tarjeta { background: #fff; }
   :root.ipad .pf-lienzo--dark .pf-tarjeta { background: #1c1c1e; }
-  :root.ipad .pf-tema-nombre { font-size: 14px; font-weight: 600; color: var(--text); }
+  :root.ipad .pf-tema-nombre { font-size: calc(14px * var(--fs-escala)); font-weight: 600; color: var(--text); }
   :root.ipad .pf-tema[aria-checked="false"] .pf-tema-nombre { font-weight: 500; color: var(--text-2); }
   :root.ipad .pf-tema:active { opacity: 0.6; }
 }
@@ -8431,7 +8455,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      apoyo) porque en Mac convive con el detalle y no es el protagonista.
      Aquí ES la pantalla — con el gris, las siete filas parecían
      deshabilitadas (cazado en la captura del mini a 744). */
-  :root.ipad .settings-nav-item { min-height: 44px; font-size: 15px; color: var(--text); font-weight: 500; }
+  :root.ipad .settings-nav-item { min-height: 44px; font-size: calc(15px * var(--fs-escala)); color: var(--text); font-weight: 500; }
   :root.ipad .settings-nav-flecha { color: var(--text-3); }
 }
 :root.movil .content,
@@ -8455,7 +8479,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   .btn.sm { min-height: 36px; }
   .icon-btn, .modal-close, .row-icon-btn { min-width: 40px; min-height: 40px; }
   .seg, .chip { min-height: 40px; display: inline-flex; align-items: center; }
-  .form-input, .form-select, .form-textarea { font-size: 16px; min-height: 44px; }
+  .form-input, .form-select, .form-textarea { font-size: calc(16px * var(--fs-escala)); min-height: 44px; }
   .form-textarea { min-height: 88px; }
   input[type="checkbox"] { width: 20px; height: 20px; }
   /* En pantallas táctiles (iPhone y iPad) NO hay hover, así que el icono
@@ -8726,7 +8750,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil:where(:not(.ipad-ancho)) .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; }
   :root.movil:where(:not(.ipad-ancho)) .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; }
   :root.movil:where(:not(.ipad-ancho)) .data-table.tabla-tx .tx-amount {
-    font-size: 17px;
+    font-size: calc(17px * var(--fs-escala));
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
   }
@@ -9009,10 +9033,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      pantalla en un teléfono. Títulos y números más contenidos, tarjetas
      con menos relleno y bloques más juntos = menos scroll. */
   :root:where(:not(.ipad-ancho)) {
-    --fs-page-title: 24px;
-    --fs-stat-lg: 24px;
-    --fs-stat-md: 20px;
-    --fs-stat-sm: 18px;
+    --fs-page-title: calc(24px * var(--fs-escala));
+    --fs-stat-lg: calc(24px * var(--fs-escala));
+    --fs-stat-md: calc(20px * var(--fs-escala));
+    --fs-stat-sm: calc(18px * var(--fs-escala));
   }
   :where(:root:not(.ipad-ancho)) .stat-card { padding: 13px 14px 12px; }
   :where(:root:not(.ipad-ancho)) .summary, :where(:root:not(.ipad-ancho)) .summary-4, :where(:root:not(.ipad-ancho)) .summary-5, :where(:root:not(.ipad-ancho)) .summary-8 { gap: var(--space-3); }
@@ -9569,12 +9593,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      cuando aterriza. `opacity: 1` anula el atado a `--progreso-titulo`
      (línea ~7600): aquí el título no viaja a ningún sitio, siempre está. */
   :root.ipad .page-title {
-    font-size: 17px;
+    font-size: calc(17px * var(--fs-escala));
     line-height: 22px;
     letter-spacing: -0.022em;
     opacity: 1;
   }
-  :root.ipad .page-sub { font-size: 12px; margin-top: 1px; }
+  :root.ipad .page-sub { font-size: calc(12px * var(--fs-escala)); margin-top: 1px; }
 
   /* Con barra propia, la fila fija de glifos sobra entera: el "+" vuelve a
      ser el botón "Nuevo ingreso" con su texto, y el título viajero no tiene
@@ -9675,7 +9699,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: transparent;
     outline: none;
     font: inherit;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     color: var(--text);
   }
   :root.ipad .md-chips {
@@ -9716,7 +9740,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: color-mix(in srgb, var(--ipad-cromo) 80%, transparent);
     -webkit-backdrop-filter: saturate(180%) blur(12px);
     backdrop-filter: saturate(180%) blur(12px);
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -9760,7 +9784,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 7px;
     text-align: center;
     text-decoration: none;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 600;
     color: var(--text-2);
   }
@@ -9810,14 +9834,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: space-between;
     gap: 12px;
     padding: 0 2px 8px;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--text-3);
   }
   :root.ipad .rep-aviso-nota {
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 400;
     letter-spacing: 0;
     text-transform: none;
@@ -9833,11 +9857,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      quedarse con la mitad de la instrucción y romper el renglón. */
   :root.ipad .md-reportes .summary-4 { gap: 12px; }
   :root.ipad .md-reportes .summary-4 .stat-card { padding: 13px 15px; gap: 4px; }
-  :root.ipad .md-reportes .summary-4 .stat-label { font-size: 11.5px; font-weight: 600; }
+  :root.ipad .md-reportes .summary-4 .stat-label { font-size: calc(11.5px * var(--fs-escala)); font-weight: 600; }
   :root.ipad .md-reportes .summary-4 .stat-value,
-  :root.ipad .md-reportes .summary-4 .stat-value.md { font-size: 19px; letter-spacing: -0.4px; }
-  :root.ipad .md-reportes .summary-4 .stat-cur { font-size: 11.5px; }
-  :root.ipad .md-reportes .summary-4 .stat-foot { font-size: 11.5px; }
+  :root.ipad .md-reportes .summary-4 .stat-value.md { font-size: calc(19px * var(--fs-escala)); letter-spacing: -0.4px; }
+  :root.ipad .md-reportes .summary-4 .stat-cur { font-size: calc(11.5px * var(--fs-escala)); }
+  :root.ipad .md-reportes .summary-4 .stat-foot { font-size: calc(11.5px * var(--fs-escala)); }
 
   /* El filete de color de arriba, que en el resto del móvil se apaga
      (`:root.movil .stat-card.accent::before`) porque allí el color lo llevan
@@ -9889,14 +9913,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 10px;
     background: var(--warn-bg);
     color: var(--warn);
-    font-size: 11px;
+    font-size: calc(11px * var(--fs-escala));
     font-weight: 700;
     white-space: nowrap;
   }
   /* En la lista de Aportantes la fila lleva el avatar de iniciales; a 38px,
      no a los 32 de las tablas — la fila de 64 lo pide y es la medida del
      diseño (y la de una celda de Contactos). */
-  :root.ipad .md-fila .mini-avatar { width: 38px; height: 38px; font-size: 13.5px; }
+  :root.ipad .md-fila .mini-avatar { width: 38px; height: 38px; font-size: calc(13.5px * var(--fs-escala)); }
 
   /* ---- Por revisar (.md-bandeja) ----
      Su lista junta dos grupos que no son lo mismo, así que las cabeceras
@@ -9911,7 +9935,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-bandeja .md-grupo-vacio + .md-grupo { margin-top: 18px; }
   :root.ipad .md-grupo-vacio {
     padding: 10px 16px 14px;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     color: var(--text-3);
   }
   /* La etiqueta "Archivado" de la fila: no hay importe que alinear a la
@@ -9930,17 +9954,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     gap: 5px;
     min-width: 0;
-    font-size: 15.5px;
+    font-size: calc(15.5px * var(--fs-escala));
     font-weight: 500;
   }
   :root.ipad .md-fila.sel .md-fila-titular { font-weight: 600; }
   :root.ipad .md-fila-rec { color: var(--text-3); display: inline-flex; flex-shrink: 0; }
-  :root.ipad .md-fila-sub { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .md-fila-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
   /* Cifras neutras y sin signo: la lista es de UN tipo (Ingresos o Gastos
      son páginas distintas), así que el signo no distingue nada — al revés
      que en el iPhone, donde la fila convive con las dos direcciones. */
   :root.ipad .md-fila-monto {
-    font-size: 16px;
+    font-size: calc(16px * var(--fs-escala));
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -9954,7 +9978,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: space-between;
     padding: 0 16px;
     border-top: 0.5px solid var(--line);
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     color: var(--text-2);
   }
   :root.ipad .md-pie-total { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
@@ -9971,8 +9995,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--bg);
   }
   :root.ipad .md-vacio { max-width: 720px; display: flex; flex-direction: column; gap: 18px; }
-  :root.ipad .md-vacio-hint h3 { margin: 0; font-size: 17px; font-weight: 600; }
-  :root.ipad .md-vacio-hint p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-2); }
+  :root.ipad .md-vacio-hint h3 { margin: 0; font-size: calc(17px * var(--fs-escala)); font-weight: 600; }
+  :root.ipad .md-vacio-hint p { margin: 4px 0 0; font-size: calc(13.5px * var(--fs-escala)); color: var(--text-2); }
   /* En el panel el resumen es una columna de ~650px: en 2×2 las tarjetas
      respiran; el auto-fit de 240px las apretaba en tres. Los dos donuts de
      Reportes se apilan por el mismo motivo. */
@@ -9994,7 +10018,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: none;
     color: var(--ink);
     font: inherit;
-    font-size: 16px;
+    font-size: calc(16px * var(--fs-escala));
     font-weight: 500;
     cursor: pointer;
   }
@@ -10004,21 +10028,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     font-weight: 600;
     color: var(--text-2);
   }
   :root.ipad .dm-monto {
     margin: 10px 0 0;
-    font-size: 40px;
+    font-size: calc(40px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -1.2px;
     font-variant-numeric: tabular-nums;
   }
   :root.ipad .dm-monto.positive { color: var(--pos); }
   :root.ipad .dm-monto.negative { color: var(--neg); }
-  :root.ipad .dm-moneda { margin-left: 8px; font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--text-3); }
-  :root.ipad .dm-sub { margin: 6px 0 0; font-size: 14.5px; color: var(--text-2); }
+  :root.ipad .dm-moneda { margin-left: 8px; font-size: calc(15px * var(--fs-escala)); font-weight: 600; letter-spacing: 0; color: var(--text-3); }
+  :root.ipad .dm-sub { margin: 6px 0 0; font-size: calc(14.5px * var(--fs-escala)); color: var(--text-2); }
   :root.ipad .dm-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   :root.ipad .dm-eliminar { color: var(--neg); }
   :root.ipad .dm-ficha {
@@ -10035,14 +10059,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 14px 16px;
   }
   :root.ipad .dm-campo + .dm-campo { border-top: 0.5px solid var(--line-soft); }
-  :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: 15px; color: var(--text-2); }
-  :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+  :root.ipad .dm-campo-etiqueta { width: 170px; flex: 0 0 170px; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); }
+  :root.ipad .dm-campo-valor { flex: 1; min-width: 0; font-size: calc(15px * var(--fs-escala)); font-weight: 500; overflow-wrap: anywhere; }
 
   /* El titular del handoff, sobre el importe. 32px y no los 40 del monto: el
      dinero sigue siendo lo primero que se lee, y el título dice de qué es. */
   :root.ipad .dm-titular {
     margin: 10px 0 0;
-    font-size: 32px;
+    font-size: calc(32px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -0.8px;
     line-height: 1.15;
@@ -10071,14 +10095,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-tarjeta--comp { display: flex; flex-direction: column; }
   :root.ipad .dm-tarjeta-titulo {
     display: block;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--text-3);
   }
   :root.ipad .dm-rastro { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
-  :root.ipad .dm-rastro-item { display: flex; gap: 11px; font-size: 14px; }
+  :root.ipad .dm-rastro-item { display: flex; gap: 11px; font-size: calc(14px * var(--fs-escala)); }
   :root.ipad .dm-rastro-punto {
     width: 7px;
     height: 7px;
@@ -10091,7 +10115,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dm-rastro-punto.aviso { background: var(--warn); }
   :root.ipad .dm-rastro-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   :root.ipad .dm-rastro-titulo { font-weight: 500; }
-  :root.ipad .dm-rastro-detalle { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .dm-rastro-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
 
   /* El comprobante que falta: recuadro punteado con la trama diagonal del
      diseño. Dice "aquí va algo que no está", que es distinto de no enseñar
@@ -10116,13 +10140,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 16px;
     text-align: center;
   }
-  :root.ipad .dm-comp-falta-texto { font-size: 13px; color: var(--text-2); }
+  :root.ipad .dm-comp-falta-texto { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
   :root.ipad .dm-comp-adjuntar {
     border: 0;
     background: none;
     padding: 0;
     font: inherit;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 600;
     color: var(--ink);
     cursor: pointer;
@@ -10151,7 +10175,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: center;
   }
   :root.ipad .dm-comp-archivo {
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 500;
     text-align: center;
     word-break: break-all;
@@ -10162,14 +10186,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: none;
     padding: 0;
     font: inherit;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 500;
     color: var(--ink);
     cursor: pointer;
   }
 
   /* ---- Conteo bajo los filtros de la lista (Aportantes) ---- */
-  :root.ipad .md-conteo { font-size: 12px; color: var(--text-3); }
+  :root.ipad .md-conteo { font-size: calc(12px * var(--fs-escala)); color: var(--text-3); }
   /* Una baja se lee más apagada que un miembro vivo: es el padrón histórico,
      no el de hoy. Lo mismo que hace el handoff con su sección de bajas. */
   :root.ipad .md-fila.es-baja .md-fila-titular { color: var(--text-2); }
@@ -10199,7 +10223,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 7px;
     background: transparent;
     font-family: inherit;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 500;
     color: var(--text-2);
     cursor: pointer;
@@ -10233,8 +10257,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: space-between;
     gap: 10px;
   }
-  :root.ipad .fm-total { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  :root.ipad .fm-tarjeta-pie { display: block; margin-top: 8px; font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .fm-total { font-size: calc(20px * var(--fs-escala)); font-weight: 700; font-variant-numeric: tabular-nums; }
+  :root.ipad .fm-tarjeta-pie { display: block; margin-top: 8px; font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
   /* Las barras del año: 64px de alto, como el diseño. `align-items:flex-end`
      y alturas en % — el contenedor tiene alto fijo, así que el porcentaje se
      resuelve sin cuentas en JS. */
@@ -10251,7 +10275,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
   /* Filas de aporte: fecha a la izquierda, categoría en medio, monto a la
      derecha. Se montan sobre `.dm-campo` para no repetir la tarjeta. */
-  :root.ipad .fm-aporte .dm-campo-etiqueta { width: 110px; flex: 0 0 110px; font-size: 13.5px; }
+  :root.ipad .fm-aporte .dm-campo-etiqueta { width: 110px; flex: 0 0 110px; font-size: calc(13.5px * var(--fs-escala)); }
   :root.ipad .fm-aporte { align-items: center; }
   /* Sin esto, "Diezmo · Efectivo" partía en dos líneas y la fila crecía a 70px:
      el valor es flexible y el monto se lleva el ancho que quiere. */
@@ -10264,7 +10288,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .fm-aporte-monto {
     margin-left: auto;
     padding-left: 12px;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -10276,7 +10300,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 14px;
     background: var(--surface);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     color: var(--text-3);
     text-align: center;
   }
@@ -10312,7 +10336,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border: 0;
     background: none;
     font: inherit;
-    font-size: 14px;
+    font-size: calc(14px * var(--fs-escala));
     font-weight: 600;
     color: var(--brand);
     cursor: pointer;
@@ -10330,7 +10354,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
 
   :root.ipad .cat-conteo {
-    font-size: 11px;
+    font-size: calc(11px * var(--fs-escala));
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     opacity: 0.65;
@@ -10343,8 +10367,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 34px 26px;
     text-align: center;
   }
-  :root.ipad .fm-vacio-titulo { font-size: 15.5px; font-weight: 600; color: var(--text); }
-  :root.ipad .fm-vacio-sub { font-size: 13px; line-height: 1.5; color: var(--text-2); max-width: 380px; margin: 0 auto; }
+  :root.ipad .fm-vacio-titulo { font-size: calc(15.5px * var(--fs-escala)); font-weight: 600; color: var(--text); }
+  :root.ipad .fm-vacio-sub { font-size: calc(13px * var(--fs-escala)); line-height: 1.5; color: var(--text-2); max-width: 380px; margin: 0 auto; }
 
   /* Una fila de la ficha que existe en el diseño y todavía no tiene columna.
      En gris claro y cursiva para que NO se lea como un dato borrado: el hueco
@@ -10360,7 +10384,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      texto Y dos a la derecha (monto y estado). */
   :root.ipad .md-depositos .md-fila { min-height: 72px; }
   :root.ipad .dep-estado {
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--fs-escala));
     font-weight: 700;
     color: var(--ink);
     white-space: nowrap;
@@ -10382,9 +10406,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     gap: 5px;
     min-width: 0;
   }
-  :root.ipad .dep-cifra-et { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+  :root.ipad .dep-cifra-et { font-size: calc(12.5px * var(--fs-escala)); font-weight: 600; color: var(--text-2); }
   :root.ipad .dep-cifra-val {
-    font-size: 24px;
+    font-size: calc(24px * var(--fs-escala));
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -10392,7 +10416,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* La cifra que espera motor: el mismo gris en cursiva de la ficha, y en
      cuerpo pequeño — no es un número, es un hueco con nombre. */
   :root.ipad .dep-cifra--sinmotor .dep-cifra-val {
-    font-size: 14px;
+    font-size: calc(14px * var(--fs-escala));
     font-weight: 400;
     font-style: italic;
     color: var(--text-3);
@@ -10439,7 +10463,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     height: 25px;
     padding: 0 11px;
     border-radius: 13px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     white-space: nowrap;
   }
@@ -10465,12 +10489,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* La línea de "Registrado por": misma familia que el subtítulo pero un
      punto más apagada, porque es procedencia y no el dato que se viene a
      leer. Vale para el panel de movimientos y para el del corte. */
-  :root.ipad .dm-registrado { margin-top: 2px; color: var(--text-3); font-size: 13px; }
+  :root.ipad .dm-registrado { margin-top: 2px; color: var(--text-3); font-size: calc(13px * var(--fs-escala)); }
   :root.ipad .dep-mov--fijo { cursor: default; }
   :root.ipad .dep-mov--fijo:hover { background: none; }
   :root.ipad .dep-mov-check.sel { background: var(--brand); color: var(--brand-contrast); box-shadow: none; }
 
-  :root.ipad .dep-cifra-pie { font-size: 12px; color: var(--text-3); }
+  :root.ipad .dep-cifra-pie { font-size: calc(12px * var(--fs-escala)); color: var(--text-3); }
 
   /* La tarjeta con cabecera del diseño: rótulo en versalitas sobre un filete,
      y las filas debajo separadas por su propia línea. Es la misma pieza que
@@ -10491,7 +10515,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     margin: 0;
     padding: 0 16px;
     border-bottom: 0.5px solid var(--line);
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -10504,12 +10528,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-height: 0;
     padding: 0;
     border-bottom: 0;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
   }
   :root.ipad .dep-carta-vacio {
     margin: 0;
     padding: 16px;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     color: var(--text-3);
     line-height: 1.45;
   }
@@ -10521,12 +10545,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-height: 50px;
     padding: 0 16px;
     background: var(--relleno-ios-suave);
-    font-size: 14px;
+    font-size: calc(14px * var(--fs-escala));
     font-weight: 600;
     color: var(--text-2);
   }
   :root.ipad .dep-carta-pie-total {
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     font-weight: 700;
     color: var(--text);
     font-variant-numeric: tabular-nums;
@@ -10553,7 +10577,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 700;
     color: #fff;
   }
@@ -10566,8 +10590,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     color: var(--text-2);
   }
   :root.ipad .dep-aviso-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-  :root.ipad .dep-aviso-titulo { font-size: 15px; font-weight: 600; }
-  :root.ipad .dep-aviso-texto { font-size: 13px; color: var(--text-2); line-height: 1.4; }
+  :root.ipad .dep-aviso-titulo { font-size: calc(15px * var(--fs-escala)); font-weight: 600; }
+  :root.ipad .dep-aviso-texto { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); line-height: 1.4; }
   :root.ipad .dep-aviso-accion {
     flex: 0 0 auto;
     height: 32px;
@@ -10577,7 +10601,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--relleno-ios);
     color: var(--text);
     font: inherit;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
@@ -10610,7 +10634,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     box-shadow: inset 0 0 0 1.5px var(--line);
     color: transparent;
   }
@@ -10631,14 +10655,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: calc(11px * var(--fs-escala));
     font-weight: 700;
   }
   :root.ipad .dep-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  :root.ipad .dep-mov-concepto { font-size: 15px; }
+  :root.ipad .dep-mov-concepto { font-size: calc(15px * var(--fs-escala)); }
   :root.ipad .dep-mov-folio { color: var(--text-3); }
-  :root.ipad .dep-mov-sub { font-size: 12.5px; color: var(--text-3); }
-  :root.ipad .dep-mov-monto { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  :root.ipad .dep-mov-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
+  :root.ipad .dep-mov-monto { font-size: calc(15px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
   /* Desmarcado, la fila se apaga entera: es lo que separa de un vistazo lo
      que va al banco de lo que se queda. */
   :root.ipad .dep-mov:not(.sel) .dep-mov-concepto,
@@ -10652,12 +10676,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-height: 48px;
     padding: 0 16px;
     border-bottom: 0.5px solid var(--line-soft);
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--fs-escala));
   }
   :root.ipad .dep-par > span:first-child { flex: 1; color: var(--text-2); }
   :root.ipad .dep-par--fuerte { border-bottom: 0; }
   :root.ipad .dep-par--fuerte > span:last-child {
-    font-size: 15.5px;
+    font-size: calc(15.5px * var(--fs-escala));
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -10679,28 +10703,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .dep-ficha-hueco-t {
     font-family: ui-monospace, Menlo, monospace;
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     color: var(--text-3);
   }
-  :root.ipad .dep-ficha-hueco-s { font-size: 13px; color: var(--text-2); }
+  :root.ipad .dep-ficha-hueco-s { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
 
   :root.ipad .dep-nota {
     margin: 0;
     padding: 0 4px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     color: var(--text-3);
     line-height: 1.5;
   }
   :root.ipad .dep-lista-pie {
     padding: 16px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     color: var(--text-3);
     line-height: 1.45;
   }
 
   /* --- Depositados: lo que el handoff 3 añade al detalle --- */
   :root.ipad .dep-det-acciones { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-  :root.ipad .dep-det-puntos { font-size: 19px; line-height: 1; letter-spacing: 1px; }
+  :root.ipad .dep-det-puntos { font-size: calc(19px * var(--fs-escala)); line-height: 1; letter-spacing: 1px; }
   :root.ipad .dep-par-valor { text-align: right; }
   /* La fila que espera dato: mismo gris en cursiva que las cifras sin motor,
      para que se lea como un hueco con nombre y no como un valor. */
@@ -10715,7 +10739,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: var(--relleno-ios);
     color: var(--text);
     font: inherit;
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--fs-escala));
     font-weight: 600;
     cursor: pointer;
   }
@@ -10736,7 +10760,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 12px 14px;
     border-bottom: 0.5px solid var(--line-soft);
   }
-  :root.ipad .al-conteo { font-size: 13.5px; font-weight: 600; }
+  :root.ipad .al-conteo { font-size: calc(13.5px * var(--fs-escala)); font-weight: 600; }
   :root.ipad .al-cabecera .chip { margin-left: auto; min-height: 30px; }
   :root.ipad .al-chips { padding: 10px 14px 0; }
   /* La fila del asunto: 70px, con el círculo de 34 del diseño. */
@@ -10751,7 +10775,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 700;
   }
   /* Lo que pide DECISIÓN, en ámbar. El resto pide arreglo o solo enterarse,
@@ -10759,7 +10783,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .al-marca.urgente {
     background: var(--warn-bg);
     color: var(--warn);
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
   }
 
   /* El panel: cabecera de la alerta y, debajo, la ficha del objeto. */
@@ -10771,13 +10795,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 12px;
     background: var(--warn-bg);
     color: var(--warn);
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     margin-bottom: 12px;
   }
   :root.ipad .al-titulo {
     margin: 0;
-    font-size: 30px;
+    font-size: calc(30px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -0.7px;
   }
@@ -10786,7 +10810,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      descuido. */
   :root.ipad .al-texto {
     margin: 8px 0 22px;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     line-height: 1.5;
     color: var(--text-2);
     max-width: 620px;
@@ -10811,7 +10835,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     flex-wrap: wrap;
   }
   :root.ipad .ac-barra-hueco { flex: 1; min-width: 0; }
-  :root.ipad .ac-barra-nota { font-size: 13px; color: var(--text-2); }
+  :root.ipad .ac-barra-nota { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
   :root.ipad .ac-barra .chip { min-height: 32px; }
   /* El botón que todavía no tiene motor: apagado, no invisible. Su `title`
      dice qué le falta. */
@@ -10839,7 +10863,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .sv-orden { padding-bottom: 16px; }
   :root.ipad .sv-roster-cab {
     padding: 14px 16px 10px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -10860,7 +10884,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .sv-puesto-rol {
     width: 104px;
     flex: 0 0 104px;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     color: var(--text-2);
   }
   :root.ipad .sv-puesto-avatar {
@@ -10873,10 +10897,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--fs-escala));
     font-weight: 700;
   }
-  :root.ipad .sv-puesto-nombre { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; }
+  :root.ipad .sv-puesto-nombre { flex: 1; min-width: 0; font-size: calc(15px * var(--fs-escala)); font-weight: 500; }
   /* "Asignar encargado": el handoff lo pinta como enlace azul y hasta la
      1.2.9 fue un botón APAGADO —no había dónde guardar la asignación—. Con la
      migración 43 la hay, así que el botón se enciende y toma el color de
@@ -10888,7 +10912,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border: 0;
     background: none;
     font: inherit;
-    font-size: 14px;
+    font-size: calc(14px * var(--fs-escala));
     font-weight: 500;
     color: var(--text-3);
     opacity: 0.75;
@@ -10920,7 +10944,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border: 0;
     background: none;
     font: inherit;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 600;
     letter-spacing: 0;
     text-transform: none;
@@ -10945,7 +10969,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .sv-paso-hora {
     width: 56px;
     flex: 0 0 56px;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: var(--text-2);
@@ -10960,14 +10984,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: none;
     padding: 0;
     font: inherit;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     font-weight: 500;
     color: var(--text);
     text-align: left;
     cursor: pointer;
   }
   :root.ipad .sv-paso-titulo:active { opacity: 0.55; }
-  :root.ipad .sv-paso-encargado { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .sv-paso-encargado { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
   :root.ipad .sv-paso-mandos { display: flex; align-items: center; gap: 2px; }
   :root.ipad .sv-paso-mandos button {
     width: 32px;
@@ -10979,7 +11003,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 8px;
     background: none;
     font: inherit;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     color: var(--brand);
     cursor: pointer;
   }
@@ -11023,7 +11047,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-height: 50px;
     flex-wrap: wrap;
   }
-  :root.ipad .ce-barra-campos { font-size: 13.5px; color: var(--text-2); }
+  :root.ipad .ce-barra-campos { font-size: calc(13.5px * var(--fs-escala)); color: var(--text-2); }
   :root.ipad .ce-barra-hueco { flex: 1; min-width: 0; }
   :root.ipad .ce-barra .chip { min-height: 32px; }
   /* La hoja: papel sobre lienzo, con la proporción de una carta. El iframe no
@@ -11053,7 +11077,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 12px;
     background: color-mix(in srgb, var(--text) 72%, transparent);
     color: var(--surface);
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--fs-escala));
     font-weight: 600;
     opacity: 0;
     transition: opacity 0.15s;
@@ -11088,7 +11112,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      acciones) y solo cambia el cuerpo. */
   :root.ipad .da-titulo {
     margin: 0;
-    font-size: 24px;
+    font-size: calc(24px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -11116,7 +11140,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
     padding: 46px 52px 40px;
     font-family: ui-serif, "New York", Georgia, serif;
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--fs-escala));
     line-height: 1.7;
   }
   :root.ipad .da-doc > * { max-width: none; }
@@ -11145,21 +11169,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-bottom: 1px solid #ccc;
     text-align: center;
   }
-  :root.ipad .da-doc-iglesia { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; }
+  :root.ipad .da-doc-iglesia { font-size: calc(18px * var(--fs-escala)); font-weight: 700; letter-spacing: 0.4px; }
   :root.ipad .da-doc-folio {
     margin-top: 2px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     color: var(--text-3);
     font-variant-numeric: tabular-nums;
   }
-  :root.ipad .da-doc-linea { margin-top: 6px; font-size: 13.5px; color: var(--text-2); }
+  :root.ipad .da-doc-linea { margin-top: 6px; font-size: calc(13.5px * var(--fs-escala)); color: var(--text-2); }
 
   :root.ipad .da-seccion + .da-seccion { margin-top: 22px; }
   :root.ipad .da-seccion-titulo {
     margin: 0 0 8px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -11187,7 +11211,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .da-numerada { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; }
   :root.ipad .da-numerada li::marker { color: var(--text-3); font-variant-numeric: tabular-nums; }
   :root.ipad .da-item-texto { overflow-wrap: anywhere; }
-  :root.ipad .da-item-pie { margin-top: 2px; font-size: 13px; color: var(--text-2); }
+  :root.ipad .da-item-pie { margin-top: 2px; font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
 
   /* Las firmas. Dos y no las tres del handoff: el acta guarda quién preside
      y quién es secretario, y nada más — una tercera raya para un "Testigo"
@@ -11201,20 +11225,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .da-firma { flex: 1 1 220px; min-width: 0; }
   :root.ipad .da-firma-raya { border-top: 1px solid var(--text-3); margin-bottom: 7px; }
-  :root.ipad .da-firma-nombre { font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
-  :root.ipad .da-firma-cargo { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .da-firma-nombre { font-size: calc(14.5px * var(--fs-escala)); font-weight: 600; overflow-wrap: anywhere; }
+  :root.ipad .da-firma-cargo { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
   /* "Firmó el 24 ago" (migración 44). Va DEBAJO del cargo y en verde, que es
      lo que distingue de un vistazo el renglón cerrado del que sigue por
      firmar. Sin firma no se pinta nada: una raya sin pie es un renglón por
      firmar, y eso ya lo decía antes. */
   :root.ipad .da-firma-fecha {
     margin-top: 3px;
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--fs-escala));
     font-weight: 600;
     color: var(--pos, var(--text-2));
   }
 
-  :root.ipad .da-aprobada { margin: 22px 0 0; font-size: 13px; color: var(--text-2); }
+  :root.ipad .da-aprobada { margin: 22px 0 0; font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
 
   /* ------------------------------------------------------------
      La pastilla de fecha de una fila (.md-dia)
@@ -11233,14 +11257,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     line-height: 1.1;
   }
   :root.ipad .md-dia-nombre {
-    font-size: 11px;
+    font-size: calc(11px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--text-3);
   }
   :root.ipad .md-dia-num {
-    font-size: 19px;
+    font-size: calc(19px * var(--fs-escala));
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
@@ -11253,7 +11277,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .ds-conteo + .ds-seccion { margin-top: 20px; }
   :root.ipad .ds-seccion-titulo {
     margin: 0 0 8px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -11273,22 +11297,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .ds-conteo-total { display: flex; flex-direction: column; }
   :root.ipad .ds-conteo-cifra {
-    font-size: 34px;
+    font-size: calc(34px * var(--fs-escala));
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
-  :root.ipad .ds-conteo-etiqueta { margin-top: 4px; font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .ds-conteo-etiqueta { margin-top: 4px; font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
   :root.ipad .ds-conteo-desglose { display: flex; gap: 22px; }
   :root.ipad .ds-conteo-desglose > div {
     display: flex;
     flex-direction: column;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     color: var(--text-2);
   }
   :root.ipad .ds-conteo-desglose > div > span {
-    font-size: 19px;
+    font-size: calc(19px * var(--fs-escala));
     font-weight: 600;
     color: var(--text);
     font-variant-numeric: tabular-nums;
@@ -11315,7 +11339,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: flex-end;
     gap: 5px;
   }
-  :root.ipad .ds-tira-cifra { font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  :root.ipad .ds-tira-cifra { font-size: calc(12.5px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
   :root.ipad .ds-tira-hueco {
     flex: 1 1 auto;
     width: 100%;
@@ -11332,7 +11356,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .ds-tira-col.es-actual .ds-tira-barra { background: var(--brand); }
   :root.ipad .ds-tira-fecha {
-    font-size: 11px;
+    font-size: calc(11px * var(--fs-escala));
     color: var(--text-3);
     white-space: nowrap;
     overflow: hidden;
@@ -11357,7 +11381,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .md-indice-grupo {
     padding: 4px 10px 8px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -11389,8 +11413,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      igual en las tres columnas maestras del rediseño. */
   :root.ipad .md-indice-item.sel { background: color-mix(in srgb, var(--ink) 10%, transparent); }
   :root.ipad .md-indice-item.sel .md-indice-nombre { font-weight: 600; }
-  :root.ipad .md-indice-nombre { font-size: 15px; }
-  :root.ipad .md-indice-sub { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .md-indice-nombre { font-size: calc(15px * var(--fs-escala)); }
+  :root.ipad .md-indice-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
 
   /* Un informe solo en el panel: la rejilla de dos columnas de `.charts` no
      tiene con quién partirse. */
@@ -11409,7 +11433,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     gap: 14px;
     max-width: 640px;
   }
-  :root.ipad .rep-documento-sub { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-2); }
+  :root.ipad .rep-documento-sub { margin: 0; font-size: calc(15px * var(--fs-escala)); line-height: 1.6; color: var(--text-2); }
 
   /* ---- Fuera la caja de debajo de las tarjetas ----
      `.dash-canvas` nació como un LIENZO: una caja gris con radio, relleno de
@@ -11456,7 +11480,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     background: none;
     color: var(--ink);
     font: inherit;
-    font-size: 14px;
+    font-size: calc(14px * var(--fs-escala));
     font-weight: 500;
     cursor: pointer;
   }
@@ -11470,7 +11494,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      poda de CSS en el mismo cambio que junta dos ramas. Si nadie
      lo cablea, este bloque se puede quitar entero. */
 :root.ipad .dm-seccion {
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
@@ -11494,13 +11518,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
   }
   :root.ipad .md-fila-fecha-dow {
-    font-size: 10.5px;
+    font-size: calc(10.5px * var(--fs-escala));
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-3);
   }
   :root.ipad .md-fila.sel .md-fila-fecha-dow { color: var(--ink); }
-  :root.ipad .md-fila-fecha-num { font-size: 20px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  :root.ipad .md-fila-fecha-num { font-size: calc(20px * var(--fs-escala)); font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
 
   /* ---- El Inicio del iPad (diseño del handoff) ----
      El saludo como h1 de 34px en el contenido (la barra queda en sus 56px),
@@ -11510,8 +11534,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* Los cuatro KPI del diseño en UNA fila (el auto-fit de la regla base los
      partía en 3 + 1); por debajo del rango de columnas, en 2×2. */
   :root.ipad .dash-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  :root.ipad .dash-hero h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.6px; }
-  :root.ipad .dash-hero p { margin: 4px 0 0; font-size: 15px; color: var(--text-2); }
+  :root.ipad .dash-hero h1 { margin: 0; font-size: calc(34px * var(--fs-escala)); font-weight: 700; letter-spacing: -0.6px; }
+  :root.ipad .dash-hero p { margin: 4px 0 0; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); }
   /* La tarjeta "Por revisar" es un Link: pierde el subrayado y hereda el
      texto para verse EXACTAMENTE como sus tres vecinas. */
   :root.ipad .stat-card--enlace { text-decoration: none; color: inherit; cursor: pointer; }
@@ -11528,14 +11552,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     justify-content: space-between;
     padding: 0 4px 8px;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: var(--text-3);
   }
   :root.ipad .dash-lista-cab a {
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 500;
     letter-spacing: 0;
     text-transform: none;
@@ -11564,23 +11588,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     font-weight: 700;
   }
   :root.ipad .dash-fila-icono.ing { background: color-mix(in srgb, var(--pos) 12%, transparent); color: var(--pos); }
   :root.ipad .dash-fila-icono.gas { background: color-mix(in srgb, var(--neg) 12%, transparent); color: var(--neg); }
   :root.ipad .dash-fila-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  :root.ipad .dash-fila-titular { font-size: 15px; font-weight: 500; }
-  :root.ipad .dash-fila-sub { font-size: 12.5px; color: var(--text-3); }
+  :root.ipad .dash-fila-titular { font-size: calc(15px * var(--fs-escala)); font-weight: 500; }
+  :root.ipad .dash-fila-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
   :root.ipad .dash-fila-monto {
-    font-size: 15.5px;
+    font-size: calc(15.5px * var(--fs-escala));
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
   :root.ipad .dash-fila-monto.pos { color: var(--pos); }
   :root.ipad .dash-fila-monto.neg { color: var(--neg); }
-  :root.ipad .dash-lista-vacia { padding: 18px 16px; font-size: 13.5px; color: var(--text-3); }
+  :root.ipad .dash-lista-vacia { padding: 18px 16px; font-size: calc(13.5px * var(--fs-escala)); color: var(--text-3); }
 
   /* El punto de color de "Esta semana". El handoff lo pinta de morado, verde,
      naranja y cian; son EXACTAMENTE --accent-3, --accent-1, --accent-5 y
@@ -11650,7 +11674,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 7px;
     background: transparent;
     font-family: inherit;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 500;
     color: var(--text-2);
     cursor: pointer;
@@ -11689,12 +11713,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     gap: 12px;
     margin-bottom: 18px;
   }
-  :root.ipad .dash-graf-titulo { font-size: 16px; font-weight: 600; }
+  :root.ipad .dash-graf-titulo { font-size: calc(16px * var(--fs-escala)); font-weight: 600; }
   :root.ipad .dash-graf-titulo--solo { display: block; margin-bottom: 14px; }
   :root.ipad .dash-graf-leyenda {
     display: flex;
     gap: 14px;
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     color: var(--text-2);
     white-space: nowrap;
   }
@@ -11705,7 +11729,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dash-punto--gasto { opacity: 0.75; }
   :root.ipad .dash-graf-vacia {
     padding: 26px 0;
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     color: var(--text-3);
     text-align: center;
   }
@@ -11726,7 +11750,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .dash-barra { width: 13px; border-radius: 4px 4px 0 0; }
   :root.ipad .dash-barra.ing { background: var(--pos); }
   :root.ipad .dash-barra.gas { background: var(--neg); opacity: 0.75; }
-  :root.ipad .dash-barra-mes { font-size: 11.5px; color: var(--text-3); }
+  :root.ipad .dash-barra-mes { font-size: calc(11.5px * var(--fs-escala)); color: var(--text-3); }
   /* El mes en curso, en negrita y con el color del texto: es el que se está
      mirando, y en el diseño es lo único que lo distingue de los otros cinco. */
   :root.ipad .dash-barra-mes.actual { font-weight: 600; color: var(--text); }
@@ -11754,14 +11778,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     justify-content: center;
   }
-  :root.ipad .dash-dona-total { font-size: 17px; font-weight: 700; }
+  :root.ipad .dash-dona-total { font-size: calc(17px * var(--fs-escala)); font-weight: 700; }
   /* El agujero del anillo son 78px y el rótulo del periodo tiene que caber
      DENTRO: con el texto largo ("3.º trimestre 2026") se salía y se leía
      encima de los tramos de color. El rótulo ya viene corto desde
      Dashboard.tsx (`periodoCorto`); esto es la red por si un idioma nuevo lo
      alarga: se recorta, no se desborda. */
   :root.ipad .dash-dona-periodo {
-    font-size: 10.5px;
+    font-size: calc(10.5px * var(--fs-escala));
     color: var(--text-3);
     max-width: 68px;
     white-space: nowrap;
@@ -11779,7 +11803,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     min-width: 0;
   }
   :root.ipad .dash-dona-leyenda b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -11839,12 +11863,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .ag-dia-cab { padding: 0 2px; }
   :root.ipad .ag-dia-titulo {
     margin: 0;
-    font-size: 20px;
+    font-size: calc(20px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -0.02em;
   }
-  :root.ipad .ag-dia-sub { margin: 3px 0 0; font-size: 13px; color: var(--text-2); }
-  :root.ipad .ag-dia-vacio { margin: 0; padding: 0 2px; font-size: 14px; color: var(--text-3); }
+  :root.ipad .ag-dia-sub { margin: 3px 0 0; font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
+  :root.ipad .ag-dia-vacio { margin: 0; padding: 0 2px; font-size: calc(14px * var(--fs-escala)); color: var(--text-3); }
 
   :root.ipad .ag-dia-lista { display: flex; flex-direction: column; gap: 8px; }
   /* Cada compromiso, una tarjeta con su hora delante: en una columna de 318
@@ -11872,15 +11896,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .ag-dia-fila.estado-cancelada .ag-dia-nombre { text-decoration: line-through; }
   :root.ipad .ag-dia-hora {
     flex: 0 0 46px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 600;
     color: var(--text-2);
     font-variant-numeric: tabular-nums;
     padding-top: 1px;
   }
   :root.ipad .ag-dia-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  :root.ipad .ag-dia-nombre { font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
-  :root.ipad .ag-dia-meta { font-size: 12.5px; color: var(--text-2); overflow-wrap: anywhere; }
+  :root.ipad .ag-dia-nombre { font-size: calc(15px * var(--fs-escala)); font-weight: 500; overflow-wrap: anywhere; }
+  :root.ipad .ag-dia-meta { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); overflow-wrap: anywhere; }
 
   /* ---- La barra de 50px, sobre las DOS columnas (handoff) ----
      Es hermana de `.md-split`, no hija: `.main:has(.md-split)` es una
@@ -11918,7 +11942,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 7px;
     background: transparent;
     font-family: inherit;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 500;
     color: var(--text-2);
     cursor: pointer;
@@ -11932,7 +11956,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .ag-seg button:active { opacity: 0.5; }
   :root.ipad .ag-barra-mes {
-    font-size: 16px;
+    font-size: calc(16px * var(--fs-escala));
     font-weight: 600;
     letter-spacing: -0.01em;
     white-space: nowrap;
@@ -11956,7 +11980,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     justify-content: center;
   }
-  :root.ipad .ag-hoy { padding: 0 12px; font-size: 13.5px; font-weight: 600; }
+  :root.ipad .ag-hoy { padding: 0 12px; font-size: calc(13.5px * var(--fs-escala)); font-weight: 600; }
   :root.ipad .ag-nav:active,
   :root.ipad .ag-hoy:active { opacity: 0.5; }
   /* Los dos selectores del Historial caben en la barra sin desbordarla. */
@@ -11993,7 +12017,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .md-agenda-cal .agenda-dow-cell {
     padding: 0;
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--fs-escala));
     font-weight: 700;
     color: var(--text-3);
   }
@@ -12027,7 +12051,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     justify-content: flex-start;
     border-radius: 0;
     background: none;
-    font-size: 13px;
+    font-size: calc(13px * var(--fs-escala));
     font-weight: 600;
     color: var(--text);
   }
@@ -12075,7 +12099,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .agenda-semana .agenda-evt {
     border-radius: 5px;
     padding: 2px 5px;
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--fs-escala));
     font-weight: 600;
   }
   /* El handoff tiñe "culto" con su acento —que allí es verde—; aquí va con
@@ -12129,7 +12153,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .md-agenda .ag-dia { padding: 0; gap: 0; }
   :root.ipad .md-agenda .ag-dia .dm-volver { margin: 12px 0 -4px 6px; }
   :root.ipad .md-agenda .ag-dia-cab { padding: 16px 18px 10px; }
-  :root.ipad .md-agenda .ag-dia-titulo { font-size: 22px; letter-spacing: -0.4px; }
+  :root.ipad .md-agenda .ag-dia-titulo { font-size: calc(22px * var(--fs-escala)); letter-spacing: -0.4px; }
   :root.ipad .md-agenda .ag-dia-lista { padding: 0 14px; gap: 10px; }
   :root.ipad .md-agenda .ag-dia-fila {
     padding: 13px 15px;
@@ -12227,11 +12251,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 16px;
     gap: 4px;
   }
-  :root.ipad .summary-4.membresia-resumen .stat-label { font-size: 12.5px; font-weight: 600; }
+  :root.ipad .summary-4.membresia-resumen .stat-label { font-size: calc(12.5px * var(--fs-escala)); font-weight: 600; }
   /* 28px es la cifra del handoff. `.stat-value.md` viene a 24 desde la regla
      de escritorio, que es la que gana si no se dice nada. */
   :root.ipad .summary-4.membresia-resumen .stat-value,
-  :root.ipad .summary-4.membresia-resumen .stat-value.md { font-size: 28px; }
+  :root.ipad .summary-4.membresia-resumen .stat-value.md { font-size: calc(28px * var(--fs-escala)); }
 
   /* ---- La barra de controles ----
      Buscador a la izquierda, segmentado a la derecha. El buscador deja de
@@ -12260,7 +12284,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     border-radius: 8px;
     background: transparent;
     color: var(--text-2);
-    font-size: 13.5px;
+    font-size: calc(13.5px * var(--fs-escala));
     font-weight: 500;
   }
   :root.ipad .membresia-segmentado .chip.active {
@@ -12278,22 +12302,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .tabla-membresia { border-radius: 14px; }
   :root.ipad .tabla-membresia .thead {
     min-height: 44px;
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     letter-spacing: 0.4px;
   }
   /* `nowrap` en la cabecera: "Fecha de alta" / "Join date" partía en dos
      líneas y estiraba la cabecera de 44 a 74px. Una cabecera de tabla es
      una etiqueta, no un párrafo — si no cabe, la columna es la que crece. */
   :root.ipad .tabla-membresia .th { padding: 10px 18px; white-space: nowrap; }
-  :root.ipad .tabla-membresia .tr { min-height: 58px; font-size: 15px; }
+  :root.ipad .tabla-membresia .tr { min-height: 58px; font-size: calc(15px * var(--fs-escala)); }
   :root.ipad .tabla-membresia .td { padding: 10px 18px; }
   :root.ipad .tabla-membresia .tr { border-bottom: 0.5px solid var(--line-soft); }
   /* Realimentación táctil: en una tabla sin puntero, el `:hover` no existe.
      Es el mismo destello que ya usan las filas del maestro-detalle. */
   :root.ipad .tabla-membresia .tr:active { background: color-mix(in srgb, var(--ink) 10%, transparent); }
-  :root.ipad .tabla-membresia .mini-avatar { width: 32px; height: 32px; font-size: 12px; }
-  :root.ipad .tabla-membresia .p-name { font-size: 15px; }
-  :root.ipad .tabla-membresia .p-mail { font-size: 12.5px; }
+  :root.ipad .tabla-membresia .mini-avatar { width: 32px; height: 32px; font-size: calc(12px * var(--fs-escala)); }
+  :root.ipad .tabla-membresia .p-name { font-size: calc(15px * var(--fs-escala)); }
+  :root.ipad .tabla-membresia .p-mail { font-size: calc(12.5px * var(--fs-escala)); }
 
   /* ---- Lo táctil que toda tabla del iPad necesita ----
      Estas dos cosas vivían en el bloque del cajón (601–1023) y con él
@@ -12334,7 +12358,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
         en `.thead` para que el `font: inherit` de esos botones herede lo
         mismo — sin tocar su `style=`— y se les devuelve la versalita. */
   :root.ipad .data-table .thead,
-  :root.ipad .data-table .th { font-size: 12.5px; letter-spacing: 0.4px; }
+  :root.ipad .data-table .th { font-size: calc(12.5px * var(--fs-escala)); letter-spacing: 0.4px; }
   :root.ipad .data-table button.th { text-transform: uppercase; }
 
   /* 4. El lápiz suelto de Informes de membresía (el único icono de fila que
@@ -12356,8 +12380,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      lo cablea, el bloque .agenda-dia-* se puede quitar entero. */
 :root.ipad .agenda-dia-cab { padding: 16px 18px 10px; }
   :root.ipad .agenda-dia-cab .dm-volver { margin: 0 0 4px -10px; }
-  :root.ipad .agenda-dia-titulo { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
-  :root.ipad .agenda-dia-sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  :root.ipad .agenda-dia-titulo { font-size: calc(22px * var(--fs-escala)); font-weight: 700; letter-spacing: -0.4px; }
+  :root.ipad .agenda-dia-sub { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); margin-top: 2px; }
   :root.ipad .agenda-dia-lista {
     flex: 1;
     min-height: 0;
@@ -12390,10 +12414,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     gap: 5px;
     min-width: 0;
-    font-size: 15px;
+    font-size: calc(15px * var(--fs-escala));
     font-weight: 600;
   }
-  :root.ipad .agenda-dia-item-sub { font-size: 12.5px; color: var(--text-2); }
+  :root.ipad .agenda-dia-item-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); }
   :root.ipad .agenda-dia-nueva { margin-top: 4px; align-self: flex-start; }
 
   /* El documento de la carta en el panel: el MISMO HTML de imprimir, en un
@@ -12421,7 +12445,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      texto tinta fija, radio corto y sombra de hoja apoyada. El título del
      panel y las acciones viven fuera, en la cabecera .dm de siempre. */
   :root.ipad .dm-doc { max-width: 760px; }
-  :root.ipad .dm-doc-titulo { margin: 4px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  :root.ipad .dm-doc-titulo { margin: 4px 0 0; font-size: calc(26px * var(--fs-escala)); font-weight: 700; letter-spacing: -0.5px; }
     /* ⚠️ SIN USAR desde la fusión del 22 ago 2026. Lo pedía el DetalleActa de la otra rama (el mío usa .da-doc),
      que no entró: ganó la otra implementación de la misma pantalla.
      Se deja aquí, y no se borra en la fusión, para no meter una
@@ -12434,7 +12458,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
     padding: 46px 52px;
     font-family: ui-serif, "New York", Georgia, serif;
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--fs-escala));
     line-height: 1.7;
   }
   :root.ipad .papel-cabecera {
@@ -12443,10 +12467,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding-bottom: 16px;
     margin-bottom: 20px;
   }
-  :root.ipad .papel-titulo { font-size: 18px; font-weight: 700; letter-spacing: 0.4px; }
-  :root.ipad .papel-sub { font-size: 13px; color: #555; margin-top: 5px; }
+  :root.ipad .papel-titulo { font-size: calc(18px * var(--fs-escala)); font-weight: 700; letter-spacing: 0.4px; }
+  :root.ipad .papel-sub { font-size: calc(13px * var(--fs-escala)); color: #555; margin-top: 5px; }
   :root.ipad .papel-rotulo {
-    font-size: 12.5px;
+    font-size: calc(12.5px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
@@ -12461,7 +12485,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .papel-datos.una-col { grid-template-columns: 1fr; }
   :root.ipad .papel-dato-k {
     flex: 0 0 118px;
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     color: #666;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     padding-top: 2px;
@@ -12471,7 +12495,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.ipad .papel-lista li { margin-bottom: 9px; }
   :root.ipad .papel-lista-meta {
     display: block;
-    font-size: 12px;
+    font-size: calc(12px * var(--fs-escala));
     color: #666;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     margin-top: 2px;
@@ -12482,7 +12506,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     margin-top: 64px;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   }
-  :root.ipad .papel-firma { flex: 1; text-align: center; font-size: 12.5px; color: #555; }
+  :root.ipad .papel-firma { flex: 1; text-align: center; font-size: calc(12.5px * var(--fs-escala)); color: #555; }
   :root.ipad .papel-firma-linea { border-top: 1px solid #999; margin-bottom: 6px; }
   :root.ipad .papel-firma-nombre { font-weight: 600; color: #333; }
 }
@@ -13089,7 +13113,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     padding: 5px 2px 0;
     text-decoration: none;
     color: var(--text-3);
-    font-size: 10px;
+    font-size: calc(10px * var(--fs-escala));
     font-weight: 500;
     letter-spacing: 0.012em;
     /* Cabe "Reporte de miembros" en un quinto de 390px solo si se corta. */
@@ -13116,7 +13140,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-width: 16px; height: 16px; padding: 0 4px;
     border-radius: 999px;
     background: var(--neg, #b91c1c); color: #fff;
-    font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+    font-size: calc(10px * var(--fs-escala)); font-weight: 700; line-height: 16px; text-align: center;
   }
 
   /* En el teléfono no hay barra superior propia (esa es cosa del iPad): la
@@ -13273,7 +13297,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     /* 19 px, no `--fs-body` (17): a 17 el nombre centrado apenas destacaba
        sobre los difuminados de al lado, y el desenfoque lucía menos de lo que
        puede. El interletrado negativo es el del diseño. */
-    font-size: 19px; letter-spacing: -0.5px; font-weight: 600;
+    font-size: calc(19px * var(--fs-escala)); letter-spacing: -0.5px; font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
     /* `--d` lo escribe CarruselSecciones.tsx en cada fotograma del gesto: 0
@@ -13309,7 +13333,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-width: 18px; padding: 0 5px;
     border-radius: 999px;
     background: var(--surface-2); color: var(--text-2);
-    font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+    font-size: calc(11px * var(--fs-escala)); font-weight: 700; line-height: 18px; text-align: center;
   }
   /* Herencia del diseño anterior (pastilla sólida de marca): blanco al 22%
      de opacidad se leía bien sobre un fondo verde sólido, pero el selector
@@ -13432,7 +13456,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(6) { grid-area: monto; }
   :root.movil .data-table.tabla-tx .tr > .td:nth-child(8) { grid-area: acciones; }
   :root.movil .data-table.tabla-tx .tx-amount {
-    font-size: 17px;
+    font-size: calc(17px * var(--fs-escala));
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
   }
@@ -13666,10 +13690,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* Densidad compacta: los tamaños "aireados" de la Mac desperdician
      pantalla en un teléfono. */
   :root {
-    --fs-page-title: 24px;
-    --fs-stat-lg: 24px;
-    --fs-stat-md: 20px;
-    --fs-stat-sm: 18px;
+    --fs-page-title: calc(24px * var(--fs-escala));
+    --fs-stat-lg: calc(24px * var(--fs-escala));
+    --fs-stat-md: calc(20px * var(--fs-escala));
+    --fs-stat-sm: calc(18px * var(--fs-escala));
   }
   .stat-card { padding: 13px 14px 12px; }
   .summary, .summary-4, .summary-5, .summary-8 { gap: var(--space-3); }
@@ -13867,11 +13891,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      pantallas que todavía no tienen toolbar, y encogerlos ahora dejaría un
      título de 13 px flotando sobre 40 px de aire. Cada una los pierde cuando
      le toque su conversión. */
-  --fs-body: 13px;
-  --fs-secondary: 11px;
-  --fs-caption: 11px;
-  --fs-table-head: 11px;
-  --fs-modal-title: 15px;
+  --fs-body: calc(13px * var(--fs-escala));
+  --fs-secondary: calc(11px * var(--fs-escala));
+  --fs-caption: calc(11px * var(--fs-escala));
+  --fs-table-head: calc(11px * var(--fs-escala));
+  --fs-modal-title: calc(15px * var(--fs-escala));
 }
 /* El 14 px heredado del `body` tampoco existe en la escala de macOS: es el
    tamaño de todo lo que no fija el suyo. 13 y line-height de 16 px, que es la
@@ -13955,7 +13979,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .church-select .church-avatar {
   width: 20px; height: 20px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: calc(10px * var(--fs-escala));
 }
 :root.mac .church-name { font-size: var(--mac-fs-body); font-weight: 500; }
 :root.mac .church-sub { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
@@ -14029,7 +14053,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.mac .sidebar-perfil:hover { background: var(--mac-hover); }
 /* Mismo avatar que la cabecera de la iglesia: 20 px. A 30 px la fila del
    perfil medía más que dos filas de navegación juntas. */
-:root.mac .perfil-avatar { width: 20px; height: 20px; font-size: 10px; }
+:root.mac .perfil-avatar { width: 20px; height: 20px; font-size: calc(10px * var(--fs-escala)); }
 :root.mac .sidebar-perfil-nombre { font-size: var(--mac-fs-body); font-weight: 400; }
 :root.mac .sidebar-perfil-email { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
 
@@ -14324,7 +14348,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  font-size: 9px;
+  font-size: calc(9px * var(--fs-escala));
   letter-spacing: normal;
   background: var(--mac-hover);
   color: var(--mac-secondary);
@@ -14601,7 +14625,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-height: 0;
   padding: 0 10px;
   border-radius: var(--mac-radius);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 500;
 }
 /* El `nowrap` que necesita este botón lo pone ya la regla general de arriba.
@@ -14643,7 +14667,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-height: 0;
   padding: 0 12px;
   border-radius: var(--mac-radius);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 500;
 }
 :root.mac .confirm-actions .btn.primary { background: var(--mac-accent); border-color: transparent; color: var(--mac-accent-text); }
@@ -14703,7 +14727,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 0 10px;
   border-radius: var(--mac-radius);
   border-width: 1px;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 600;
   letter-spacing: normal;
   text-transform: none;
@@ -14932,7 +14956,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      no es ninguna de las dos cosas — 15 px se pierde bajo un glifo de 56 y
      26 px grita en un panel de 660. Es el valor que trae la maqueta. */
   :root.mac .settings-hero-titulo {
-    font-size: 22px;
+    font-size: calc(22px * var(--fs-escala));
     font-weight: 700;
     letter-spacing: -0.2px;
     color: var(--mac-label);
@@ -15626,7 +15650,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.mac .mini-avatar {
     width: 24px;
     height: 24px;
-    font-size: 10px;
+    font-size: calc(10px * var(--fs-escala));
     font-weight: 600;
     letter-spacing: normal;
     box-shadow: none;
@@ -16125,7 +16149,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.mac .rec-concepto { font-weight: 500; }
 :root.mac .rec-dia,
-:root.mac .rec-metodo { font-size: 12px; }
+:root.mac .rec-metodo { font-size: calc(12px * var(--fs-escala)); }
 :root.mac .rec-monto { text-align: right; font-weight: 600; }
 /* El chip de categoría, igual que en la tabla: punto de color y nombre en
    caja baja, no una pastilla en versalitas. Sin esto la misma categoría se
@@ -16257,7 +16281,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-bottom: 1px solid var(--mac-separator);
 }
 :root.mac .report-preview .r-title-lg { font-size: var(--mac-fs-title); font-weight: 600; letter-spacing: normal; }
-:root.mac .report-preview .r-church { font-size: 12px; color: var(--mac-secondary); }
+:root.mac .report-preview .r-church { font-size: calc(12px * var(--fs-escala)); color: var(--mac-secondary); }
 :root.mac .report-preview .r-period { font-size: var(--mac-fs-small); color: var(--mac-tertiary); }
 /* Todo lo que va bajo la cabecera recupera el margen lateral que perdió la
    tarjeta al quedarse sin relleno. */
@@ -16352,7 +16376,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-height: 0;
   padding: 0 10px;
   border-radius: var(--mac-radius);
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   font-weight: 500;
 }
 
@@ -16659,9 +16683,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .donut-ios .donut { width: 120px; height: 120px; }
 :root.iphone .donut-ios .donut-wrap { padding: 0; align-self: center; }
-:root.iphone .donut-ios .donut-center .val { font-size: 17px; font-weight: 700; letter-spacing: -0.4px; }
+:root.iphone .donut-ios .donut-center .val { font-size: calc(17px * var(--fs-escala)); font-weight: 700; letter-spacing: -0.4px; }
 :root.iphone .donut-ios .donut-center .lbl {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   text-transform: none;
   letter-spacing: normal;
   color: var(--text-3);
@@ -16675,7 +16699,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   gap: 8px;
   min-height: 32px;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   color: var(--text);
 }
 :root.iphone .donut-ios .donut-legend-row:not(:last-child) {
@@ -16690,12 +16714,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   white-space: nowrap;
 }
 :root.iphone .donut-ios .donut-legend-row .monto {
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 :root.iphone .donut-ios .donut-legend-row .pct {
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   color: var(--text-2);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -16704,8 +16728,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Encabezado del estado financiero: iglesia y periodo. Es lo que convierte
    la pantalla en un documento presentable en una junta. */
 :root.iphone .rep-cabecera { padding: 0 2px; }
-:root.iphone .rep-iglesia { font-size: 15px; font-weight: 600; color: var(--text); }
-:root.iphone .rep-periodo { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+:root.iphone .rep-iglesia { font-size: calc(15px * var(--fs-escala)); font-weight: 600; color: var(--text); }
+:root.iphone .rep-periodo { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); margin-top: 2px; }
 
 /* Fila del estado financiero y del resumen mensual. Reutiliza `.ios-txrow`
    entera (alto, separador con sangría, dos líneas): aquí solo se le añade el
@@ -16719,7 +16743,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin-right: 8px;
 }
 :root.iphone .rep-monto {
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-escala));
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -16733,7 +16757,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .rep-total::after { display: none; }
 /* Balance y variación, uno bajo el otro y alineados a la derecha. */
 :root.iphone .rep-trailing { flex-direction: column; align-items: flex-end; gap: 2px; }
-:root.iphone .rep-var.vacia { font-size: 13px; color: var(--text-3); }
+:root.iphone .rep-var.vacia { font-size: calc(13px * var(--fs-escala)); color: var(--text-3); }
 
 /* Aire final por encima de la barra de pestañas y de la franja del gesto. */
 :root.iphone .main:has(.rep-fila) .content {
@@ -16756,7 +16780,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin: 0 16px;
   padding: 12px 14px;
 }
-:root.movil .ios-chips .chip { font-size: 14px; padding: 7px 13px; }
+:root.movil .ios-chips .chip { font-size: calc(14px * var(--fs-escala)); padding: 7px 13px; }
 /* El chip activo de la regla base es NEGRO. Acotado a este bloque: `.chip` la
    usan muchas pantallas y su regla base no se toca. */
 :root.movil .ios-chips .chip.active {
@@ -16771,10 +16795,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   height: 36px;
   border: 0;
   background: rgba(118, 118, 128, 0.12);
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-escala));
 }
 :root[data-theme="dark"].movil .ios-chips .form-input { background: rgba(118, 118, 128, 0.24); }
-:root.movil .ios-chips .btn.secondary { font-size: 15px; }
+:root.movil .ios-chips .btn.secondary { font-size: calc(15px * var(--fs-escala)); }
 
 /* La cuenta de la fila de un bloque: "3" cuando está vacío —cuántos campos
    hay dentro— y "1 de 3" en cuanto hay algo escrito. El tinte es lo que
@@ -16786,7 +16810,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 9px;
   background: rgba(118, 118, 128, 0.12);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -16810,7 +16834,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   border-radius: 10px;
   background: rgba(118, 118, 128, 0.12);
-  font-size: 16px;
+  font-size: calc(16px * var(--fs-escala));
   line-height: 1.45;
   resize: none;
 }
@@ -16828,7 +16852,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.movil .ios-conteo-cifra {
   min-width: 26px;
   text-align: right;
-  font-size: 17px;
+  font-size: calc(17px * var(--fs-escala));
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -16845,7 +16869,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: none;
   color: var(--text);
-  font-size: 20px;
+  font-size: calc(20px * var(--fs-escala));
   line-height: 1;
   cursor: pointer;
 }
@@ -16895,10 +16919,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 9px;
   background: rgba(118, 118, 128, 0.12);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
 }
 :root[data-theme="dark"].movil .ios-miembro-etiqueta { background: rgba(118, 118, 128, 0.24); }
-:root.movil .ios-check { flex: 0 0 auto; color: var(--brand); font-size: 17px; font-weight: 600; }
+:root.movil .ios-check { flex: 0 0 auto; color: var(--brand); font-size: calc(17px * var(--fs-escala)); font-weight: 600; }
 
 /* Una fila que solo lleva etiqueta y chevron: sin el valor de por medio no
    hay nada que empuje al chevron al borde derecho. */
@@ -16942,7 +16966,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 7px;
   background: transparent;
   font: inherit;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs-escala));
   color: var(--text-2);
   cursor: pointer;
 }
@@ -16959,7 +16983,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 9px;
   background: var(--neg);
   color: #fff;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -16982,7 +17006,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: transparent;
   outline: none;
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   color: var(--text);
 }
 :root.ipad .mb-controles {
@@ -17005,7 +17029,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 0 11px;
   border-radius: 8px;
   background: var(--fill, rgba(118, 118, 128, 0.12));
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -17022,7 +17046,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-conteo {
   margin-left: auto;
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   color: var(--text-3);
   white-space: nowrap;
 }
@@ -17038,7 +17062,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 28px 16px;
   text-align: center;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-escala));
 }
 :root.ipad .mb-fila {
   width: 100%;
@@ -17064,7 +17088,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   height: 36px;
   flex: 0 0 36px;
   border-radius: 18px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs-escala));
 }
 :root.ipad .mb-fila-textos {
   flex: 1;
@@ -17074,7 +17098,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   gap: 2px;
 }
 :root.ipad .mb-fila-nombre {
-  font-size: 15.5px;
+  font-size: calc(15.5px * var(--fs-escala));
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -17083,7 +17107,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-fila.sel .mb-fila-nombre { font-weight: 600; }
 :root.ipad .mb-fila-sub {
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs-escala));
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -17097,7 +17121,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex: 0 0 auto;
 }
 :root.ipad .mb-fila-pct {
-  font-size: 14px;
+  font-size: calc(14px * var(--fs-escala));
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -17112,7 +17136,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   justify-content: space-between;
   padding: 0 16px;
   border-top: 0.5px solid var(--line);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs-escala));
   color: var(--text-2);
 }
 :root.ipad .mb-pie-nav { display: flex; gap: 6px; }
@@ -17124,7 +17148,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--fill, rgba(118, 118, 128, 0.12));
   color: var(--text);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   cursor: pointer;
 }
 
@@ -17156,7 +17180,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-tarjeta.sel { outline: 2px solid var(--brand); }
 :root.ipad .mb-tarjeta-label {
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs-escala));
   font-weight: 600;
   color: var(--text-2);
   white-space: nowrap;
@@ -17164,7 +17188,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   text-overflow: ellipsis;
 }
 :root.ipad .mb-tarjeta-valor {
-  font-size: 23px;
+  font-size: calc(23px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -0.5px;
   font-variant-numeric: tabular-nums;
@@ -17184,13 +17208,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: calc(24px * var(--fs-escala));
   font-weight: 700;
 }
 :root.ipad .mb-cab-textos { flex: 1; min-width: 0; }
 :root.ipad .mb-cab-nombre {
   margin: 0;
-  font-size: 27px;
+  font-size: calc(27px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: -0.6px;
 }
@@ -17206,7 +17230,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 12px;
   background: var(--fill, rgba(118, 118, 128, 0.12));
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--fs-escala));
   font-weight: 600;
 }
 :root.ipad .mb-cab-acciones { display: flex; gap: 8px; flex: 0 0 auto; }
@@ -17230,7 +17254,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 700;
 }
 :root.ipad .mb-alerta-textos {
@@ -17240,13 +17264,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   flex-direction: column;
   gap: 1px;
 }
-:root.ipad .mb-alerta-titulo { font-size: 14.5px; font-weight: 600; color: var(--warn-text, #c2600e); }
-:root.ipad .mb-alerta-detalle { font-size: 12.5px; color: var(--warn-text, #c2600e); opacity: 0.85; }
+:root.ipad .mb-alerta-titulo { font-size: calc(14.5px * var(--fs-escala)); font-weight: 600; color: var(--warn-text, #c2600e); }
+:root.ipad .mb-alerta-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--warn-text, #c2600e); opacity: 0.85; }
 :root.ipad .mb-alerta-revisar {
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--fs-escala));
   font-weight: 600;
   color: var(--warn-text, #c2600e);
   cursor: pointer;
@@ -17278,7 +17302,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-carta-titulo {
   margin: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -17286,7 +17310,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-carta > .mb-carta-titulo { margin-bottom: 13px; }
 :root.ipad .mb-carta-cifra {
-  font-size: 20px;
+  font-size: calc(20px * var(--fs-escala));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -17316,9 +17340,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-radius: 4px 4px 0 0;
   background: var(--brand);
 }
-:root.ipad .mb-barra-mes { font-size: 10px; color: var(--text-3); }
+:root.ipad .mb-barra-mes { font-size: calc(10px * var(--fs-escala)); color: var(--text-3); }
 :root.ipad .mb-barra-n {
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   font-weight: 600;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
@@ -17333,8 +17357,8 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-top: 0.5px solid var(--line);
 }
 :root.ipad .mb-metrica { display: flex; flex-direction: column; gap: 2px; }
-:root.ipad .mb-metrica > span { font-size: 11.5px; color: var(--text-2); }
-:root.ipad .mb-metrica > strong { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.ipad .mb-metrica > span { font-size: calc(11.5px * var(--fs-escala)); color: var(--text-2); }
+:root.ipad .mb-metrica > strong { font-size: calc(15px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 :root.ipad .mb-dato {
   display: flex;
@@ -17345,13 +17369,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-carta-lisa .mb-dato:last-child,
 :root.ipad .mb-carta-lisa .mb-mini-fila:last-child { border-bottom: 0; }
-:root.ipad .mb-dato-k { width: 150px; flex: 0 0 150px; font-size: 15px; color: var(--text-2); }
-:root.ipad .mb-dato-v { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+:root.ipad .mb-dato-k { width: 150px; flex: 0 0 150px; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); }
+:root.ipad .mb-dato-v { flex: 1; min-width: 0; font-size: calc(15px * var(--fs-escala)); font-weight: 500; overflow-wrap: anywhere; }
 
-:root.ipad .mb-exp-estado { font-size: 13px; font-weight: 600; color: var(--brand); }
+:root.ipad .mb-exp-estado { font-size: calc(13px * var(--fs-escala)); font-weight: 600; color: var(--brand); }
 :root.ipad .mb-exp-estado.pendiente { color: var(--warn-text, #c2600e); }
 :root.ipad .mb-exp-lista { display: flex; flex-direction: column; gap: 9px; }
-:root.ipad .mb-exp-campo { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+:root.ipad .mb-exp-campo { display: flex; align-items: center; gap: 10px; font-size: calc(14px * var(--fs-escala)); }
 :root.ipad .mb-exp-icono {
   width: 19px;
   height: 19px;
@@ -17362,7 +17386,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: calc(11px * var(--fs-escala));
   font-weight: 700;
 }
 :root.ipad .mb-exp-icono.falta { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
@@ -17370,11 +17394,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.ipad .mb-exp-nombre.falta { color: var(--warn-text, #c2600e); }
 
 :root.ipad .mb-movs { display: flex; flex-direction: column; gap: 12px; }
-:root.ipad .mb-movs-vacio { font-size: 13px; color: var(--text-3); }
+:root.ipad .mb-movs-vacio { font-size: calc(13px * var(--fs-escala)); color: var(--text-3); }
 /* Dentro de una tarjeta lisa (que no trae relleno propio), el vacío se
    pega a los bordes; se le da el aire de una fila. */
 :root.ipad .mb-carta-lisa .mb-movs-vacio { display: block; padding: 15px 16px; }
-:root.ipad .mb-mov { display: flex; gap: 11px; font-size: 14px; }
+:root.ipad .mb-mov { display: flex; gap: 11px; font-size: calc(14px * var(--fs-escala)); }
 :root.ipad .mb-mov-punto {
   width: 7px;
   height: 7px;
@@ -17386,7 +17410,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.ipad .mb-mov-punto.reciente { background: var(--brand); }
 :root.ipad .mb-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 :root.ipad .mb-mov-titulo { font-weight: 500; }
-:root.ipad .mb-mov-detalle { font-size: 12.5px; color: var(--text-3); }
+:root.ipad .mb-mov-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
 
 /* ---- La analítica (vista Asistencia) ---- */
 :root.ipad .mb-analitica { display: flex; flex-direction: column; gap: 16px; }
@@ -17398,7 +17422,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .mb-anal-rejilla.listas { align-items: start; }
 :root.ipad .mb-anal-lado { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-:root.ipad .mb-leyenda { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+:root.ipad .mb-leyenda { display: flex; gap: 14px; font-size: calc(12px * var(--fs-escala)); color: var(--text-2); white-space: nowrap; }
 :root.ipad .mb-leyenda > span { display: flex; align-items: center; gap: 5px; }
 :root.ipad .mb-ley-cuadro {
   width: 9px;
@@ -17428,15 +17452,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   align-items: center;
   justify-content: center;
 }
-:root.ipad .mb-anillo-centro strong { font-size: 20px; font-variant-numeric: tabular-nums; }
-:root.ipad .mb-anillo-centro span { font-size: 10px; color: var(--text-3); }
+:root.ipad .mb-anillo-centro strong { font-size: calc(20px * var(--fs-escala)); font-variant-numeric: tabular-nums; }
+:root.ipad .mb-anillo-centro span { font-size: calc(10px * var(--fs-escala)); color: var(--text-3); }
 :root.ipad .mb-anillo-datos { flex: 1; min-width: 110px; display: flex; flex-direction: column; gap: 9px; }
 :root.ipad .mb-anillo-datos > span { display: flex; flex-direction: column; gap: 1px; }
-:root.ipad .mb-anillo-datos > span > span { font-size: 11.5px; color: var(--text-2); }
-:root.ipad .mb-anillo-datos > span > strong { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.ipad .mb-anillo-datos > span > span { font-size: calc(11.5px * var(--fs-escala)); color: var(--text-2); }
+:root.ipad .mb-anillo-datos > span > strong { font-size: calc(16px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
 :root.ipad .mb-tipos { display: flex; flex-direction: column; gap: 10px; }
 :root.ipad .mb-tipo { display: flex; flex-direction: column; gap: 4px; }
-:root.ipad .mb-tipo-cab { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+:root.ipad .mb-tipo-cab { display: flex; align-items: baseline; gap: 8px; font-size: calc(12.5px * var(--fs-escala)); }
 :root.ipad .mb-tipo-nombre {
   flex: 1;
   min-width: 0;
@@ -17459,7 +17483,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   justify-content: space-between;
   gap: 8px;
   padding: 0 4px 8px;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
@@ -17469,7 +17493,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--fs-escala));
   font-weight: 500;
   color: var(--brand);
   cursor: pointer;
@@ -17498,7 +17522,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs-escala));
   font-weight: 700;
 }
 :root.ipad .mb-mini-avatar.aviso { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
@@ -17506,15 +17530,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.ipad .mb-mini-nombre {
   flex: 1;
   min-width: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 :root.ipad .mb-mini-textos .mb-mini-nombre { flex: none; }
-:root.ipad .mb-mini-sub { font-size: 12px; color: var(--text-2); }
-:root.ipad .mb-mini-fila strong { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
-:root.ipad .mb-mini-fila strong.aviso { color: var(--warn-text, #c2600e); font-size: 13.5px; }
+:root.ipad .mb-mini-sub { font-size: calc(12px * var(--fs-escala)); color: var(--text-2); }
+:root.ipad .mb-mini-fila strong { font-size: calc(14px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
+:root.ipad .mb-mini-fila strong.aviso { color: var(--warn-text, #c2600e); font-size: calc(13.5px * var(--fs-escala)); }
 
 /* ============================================================
    Informes de membresía en iPad (handoff 2): índice + documento
@@ -17534,9 +17558,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    lleva título+subtítulo a la izquierda y el globo a la derecha: fila. */
 :root.ipad .inf-item { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; }
 :root.ipad .inf-item-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-:root.ipad .inf-item-titulo { font-size: 15px; }
+:root.ipad .inf-item-titulo { font-size: calc(15px * var(--fs-escala)); }
 :root.ipad .inf-item.sel .inf-item-titulo { font-weight: 600; }
-:root.ipad .inf-item-sub { font-size: 12.5px; color: var(--text-2); line-height: 1.35; white-space: normal; }
+:root.ipad .inf-item-sub { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-2); line-height: 1.35; white-space: normal; }
 :root.ipad .inf-item .mb-globo { margin-top: 2px; }
 
 /* `padding: 0`: la barrita es la barra DEL PANEL, así que va pegada a la
@@ -17558,14 +17582,14 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.ipad .inf-barrita-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 :root.ipad .inf-barrita-titulo {
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 :root.ipad .inf-barrita-sub {
-  font-size: 12px;
+  font-size: calc(12px * var(--fs-escala));
   color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -17588,7 +17612,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--fs-escala));
   font-weight: 500;
   color: var(--brand);
   cursor: pointer;
@@ -17666,7 +17690,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   justify-content: space-between;
   gap: 16px;
   padding: 7px 22px 12px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--fs-escala));
   color: var(--text-3);
 }
 .msg-atajo { white-space: nowrap; }

@@ -193,12 +193,12 @@ export function CuerpoFichaMiembro({ church, f }: { church: Church; f: FichaMiem
               : a.metodo_pago;
             return (
               <div className="tr" key={a.id} style={{ gridTemplateColumns: COLS }}>
-                <div className="td" style={{ fontSize: 12.5, fontWeight: 600 }}>{fmtFechaCorta(a.fecha)}</div>
+                <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{fmtFechaCorta(a.fecha)}</div>
                 <div className="td">
                   <span className={`tag ${cat.tagClass}`} title={catNombre(a.categoria)}>{catNombre(a.categoria)}</span>
                 </div>
-                <div className="td truncate" style={{ fontSize: 12.5 }} title={a.concepto}>{a.concepto}</div>
-                <div className="td truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{metodo}</div>
+                <div className="td truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))" }} title={a.concepto}>{a.concepto}</div>
+                <div className="td truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{metodo}</div>
                 <div className="td" style={{ textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                   {fmtMoney(a.monto)}
                 </div>

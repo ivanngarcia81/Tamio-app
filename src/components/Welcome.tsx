@@ -237,7 +237,7 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
           <div className="welcome-slide" key={slide}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
               <div className="welcome-slide-icon">{tour[slide].icon}</div>
-              <div className="card-title-lg" style={{ fontSize: 20, marginTop: 16 }}>{tour[slide].titulo}</div>
+              <div className="card-title-lg" style={{ fontSize: "calc(20px * var(--fs-escala))", marginTop: 16 }}>{tour[slide].titulo}</div>
               <div className="card-title-sub" style={{ marginTop: 8, lineHeight: 1.6, minHeight: 66 }}>
                 {tour[slide].texto}
               </div>
@@ -263,7 +263,7 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
           <div className="welcome-slide" key="form">
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: 22 }}>
               <div style={{ marginBottom: 14, lineHeight: 0 }}><IconTamio size={60} /></div>
-              <div className="card-title-lg" style={{ fontSize: 20 }}>{t("bienvenida.titulo")}</div>
+              <div className="card-title-lg" style={{ fontSize: "calc(20px * var(--fs-escala))" }}>{t("bienvenida.titulo")}</div>
               <div className="card-title-sub" style={{ marginTop: 4 }}>{t("bienvenida.sub")}</div>
             </div>
 

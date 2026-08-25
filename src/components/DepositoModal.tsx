@@ -109,7 +109,7 @@ export default function DepositoModal(props: PropsDeposito) {
                 <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--pos)" }}>
                   <IconCheck size={14} />
                 </span>
-                <span style={{ flex: 1, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ flex: 1, fontSize: "calc(13px * var(--fs-escala))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {fileNameFromPath(h.comprobantePath)}
                 </span>
                 <button type="button" className="btn ghost sm" onClick={async () => { if (h.comprobantePath) await openPath(await rutaComprobante(h.comprobantePath)); }}>

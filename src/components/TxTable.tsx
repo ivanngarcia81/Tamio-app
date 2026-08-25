@@ -204,7 +204,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = 
                 {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
               </div>
               {tx.detalle && (
-                <div className="truncate solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={tx.detalle}>
+                <div className="truncate solo-escritorio" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }} title={tx.detalle}>
                   {tx.detalle}
                 </div>
               )}
@@ -214,7 +214,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = 
           const celdaFecha = (
             <div className="td">
               <div className="tx-fecha" style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
-              <div className="solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
+              <div className="solo-escritorio" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }}>{hora}</div>
             </div>
           );
           const celdaCategoria = (
@@ -231,15 +231,15 @@ export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = 
               <div className="td">
                 {tx.member_nombre ? (
                   <div className="person" style={{ minWidth: 0 }}>
-                    <div className="mini-avatar c1" style={{ width: 26, height: 26, fontSize: 10 }}>
+                    <div className="mini-avatar c1" style={{ width: 26, height: 26, fontSize: "calc(10px * var(--fs-escala))" }}>
                       {tx.member_nombre.slice(0, 2).toUpperCase()}
                     </div>
-                    <span className="truncate" style={{ fontSize: 12.5, minWidth: 0, flex: "1 1 auto" }} title={tx.member_nombre}>
+                    <span className="truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", minWidth: 0, flex: "1 1 auto" }} title={tx.member_nombre}>
                       {tx.member_nombre}
                     </span>
                   </div>
                 ) : (
-                  <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={persona}>
+                  <span className="truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }} title={persona}>
                     {persona}
                   </span>
                 )}

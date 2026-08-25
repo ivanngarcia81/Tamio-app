@@ -482,7 +482,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
               enIPhone ? (
                 <div className="ios-panel-empty">{t("bandeja.noMovsRevisar")}</div>
               ) : (
-                <div style={{ color: "var(--text-3)", fontSize: 13, marginBottom: 20 }}>
+                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", marginBottom: 20 }}>
                   {t("bandeja.noMovsRevisar")}
                 </div>
               )
@@ -557,7 +557,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                           </div>
                           <div className="inbox-desc"><strong>{tx.concepto}</strong></div>
                           {(tx.member_nombre || tx.beneficiario || tx.detalle) && (
-                            <div style={{ marginTop: 4, fontSize: 12.5, color: "var(--text-2)" }}>
+                            <div style={{ marginTop: 4, fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                               {tx.member_nombre ?? tx.beneficiario ?? tx.detalle}
                             </div>
                           )}
@@ -592,7 +592,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
               enIPhone ? (
                 <div className="ios-panel-empty">{t("bandeja.noMiembrosArchivados")}</div>
               ) : (
-                <div style={{ color: "var(--text-3)", fontSize: 13 }}>
+                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>
                   {t("bandeja.noMiembrosArchivados")}
                 </div>
               )
@@ -643,7 +643,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                           <span className="inbox-type-tag done">{t("bandeja.archivado")}</span>
                         </div>
                         <div className="inbox-desc"><strong>{m.nombre}</strong></div>
-                        <div style={{ marginTop: 4, fontSize: 12.5, color: "var(--text-2)" }}>
+                        <div style={{ marginTop: 4, fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                           {m.email ?? m.rfc ?? t("bandeja.sinCorreoRegistrado")}
                         </div>
                       </div>

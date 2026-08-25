@@ -99,7 +99,7 @@ export default function SeguimientoModal({ church, member, alertas, onClose, onS
           )}
 
           <Seccion titulo={t("seguimiento.secContacto")}>
-            <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13.5 }}>
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: "calc(13.5px * var(--fs-escala))" }}>
               <div>
                 <div className="form-label">{t("tesorero.correo")}</div>
                 {member.email
@@ -120,7 +120,7 @@ export default function SeguimientoModal({ church, member, alertas, onClose, onS
 
           <Seccion titulo={t("seguimiento.secRevision")}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <span style={{ fontSize: "calc(13px * var(--fs-escala))", color: "var(--text-2)" }}>
                 {revisadoEn ? t("seguimiento.revisadoEl", { fecha: fmtFechaHora(revisadoEn) }) : t("seguimiento.sinRevisar")}
               </span>
               <button type="button" className="btn primary" onClick={marcarRevisado} disabled={saving}>
@@ -131,13 +131,13 @@ export default function SeguimientoModal({ church, member, alertas, onClose, onS
 
           <Seccion titulo={t("seguimiento.secNotas")}>
             {notas.length === 0 ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13, marginBottom: 10 }}>{t("seguimiento.sinNotas")}</div>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", marginBottom: 10 }}>{t("seguimiento.sinNotas")}</div>
             ) : (
               <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", maxHeight: 180, overflowY: "auto", marginBottom: 10 }}>
                 {[...notas].reverse().map((n, i) => (
                   <div key={i} style={{ padding: "8px 12px", borderBottom: i < notas.length - 1 ? "1px solid var(--line-soft)" : "none" }}>
-                    <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 2 }}>{fmtFechaHora(n.fecha)}</div>
-                    <div style={{ fontSize: 13 }}>{n.texto}</div>
+                    <div style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)", marginBottom: 2 }}>{fmtFechaHora(n.fecha)}</div>
+                    <div style={{ fontSize: "calc(13px * var(--fs-escala))" }}>{n.texto}</div>
                   </div>
                 ))}
               </div>

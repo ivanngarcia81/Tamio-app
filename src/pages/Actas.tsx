@@ -478,7 +478,7 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                 style={{ gridTemplateColumns: cols, cursor: "pointer" }}
                 onClick={() => setModal({ open: true, acta: a })}
               >
-                <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>
+                <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>
                   {a.folio}
                 </div>
                 <div className="td" style={{ minWidth: 0 }}>
@@ -490,8 +490,8 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
                   </div>
                   <div className="p-mail truncate">{t(`actas.tipo.${a.tipo}`)}</div>
                 </div>
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(a.fecha)}</div>
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(a.fecha)}</div>
+                <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                   <div className="truncate">{a.preside ?? "—"}</div>
                 </div>
                 <div className="td">

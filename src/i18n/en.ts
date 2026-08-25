@@ -3097,7 +3097,7 @@ export const en: Resources = {
 
   presentacion: {
     titulo: "Presentation",
-    hint: "These three settings are in the design and have no effect yet. They will turn on as soon as the app knows how to apply them.",
+    hint: "Applies to this device only, like the theme: the person who needs bigger type is one person, not the church. Printed documents keep their size.",
     tamanoTexto: "Text size",
     tamano: { chico: "Small", normal: "Normal", grande: "Large" },
     ocultarMontos: "Hide amounts when locked",

@@ -125,7 +125,7 @@ function celdaCondicion(t: (k: string, o?: Record<string, unknown>) => string, m
   return (
     <div style={{ minWidth: 0 }}>
       <span className={`tag ${badge.clase}`}>{t(badge.key)}</span>
-      <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>
+      <div className="truncate" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)", marginTop: 3 }}>
         {[m.fecha_baja ? fmtFechaCorta(m.fecha_baja) : null, motivoTexto].filter(Boolean).join(" · ") || "—"}
       </div>
     </div>
@@ -149,13 +149,13 @@ function CeldaAsistencia({ a, vacio, t }: {
   t: (k: string, o?: Record<string, unknown>) => string;
 }) {
   if (vacio) {
-    return <span style={{ color: "var(--text-3)", fontSize: 13 }}>{t("membresia.asistenciaSinDatos")}</span>;
+    return <span style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("membresia.asistenciaSinDatos")}</span>;
   }
   if (!a || a.pct == null) return <span style={{ color: "var(--text-3)" }}>—</span>;
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{a.pct}%</div>
-      <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>
+      <div className="truncate" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)", marginTop: 2 }}>
         {t("membresia.asistenciaDeCultos", { asistidos: a.asistidos, total: a.enRoster })}
       </div>
     </div>
@@ -964,20 +964,20 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                 {enIPad ? (
                   <div className="td">{celdaCondicion(t, m)}</div>
                 ) : (
-                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                  <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                     <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
                   </div>
                 )}
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                   {m.fecha_ingreso ? fmtFechaCorta(m.fecha_ingreso) : "—"}
                 </div>
                 {conMinisterio && (
-                  <div className="td" style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+                  <div className="td" style={{ fontSize: "calc(13.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                     <div className="truncate">{ministeriosDe(t, m.ministerios) || "—"}</div>
                   </div>
                 )}
                 {enIPad ? (
-                  <div className="td" style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+                  <div className="td" style={{ fontSize: "calc(13.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                     <CeldaAsistencia a={asistencia?.get(m.id)} vacio={sinAsistenciaQueResumir} t={t} />
                   </div>
                 ) : (

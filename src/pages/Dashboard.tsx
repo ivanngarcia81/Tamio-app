@@ -396,7 +396,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         <span className="card-meta">{mesLegible(mes)}</span>
       </div>
       {topGastos.length === 0 ? (
-        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
       ) : (
         topGastos.map((g) => (
           <div className="hbar-row" key={g.id}>
@@ -950,7 +950,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                       </div>
                     </div>
                     <div className="ios-txrow-trailing">
-                      <span style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(g.monto)}</span>
+                      <span style={{ fontWeight: 700, fontSize: "calc(15px * var(--fs-escala))", fontVariantNumeric: "tabular-nums" }}>{fmtMoney(g.monto)}</span>
                     </div>
                   </div>
                 ))}

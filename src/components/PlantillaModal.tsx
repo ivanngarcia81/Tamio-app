@@ -210,7 +210,7 @@ export default function PlantillaModal({ church, plantilla, base, onClose, onSav
                     ))}
                   </select>
                 )}
-                <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t("plantillas.variableHint")}</span>
+                <span style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }}>{t("plantillas.variableHint")}</span>
               </div>
               <div
                 ref={cuerpoRef}

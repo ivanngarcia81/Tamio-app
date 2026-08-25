@@ -257,7 +257,7 @@ export default function NewRecordModal(props: Props) {
                   title={t("recurrente.hintForm")}
                 >
                   <span style={{ color: "var(--text-2)", flexShrink: 0 }}><IconRepeat size={16} strokeWidth={2} /></span>
-                  <div style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 13 }}>
+                  <div style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: "calc(13px * var(--fs-escala))" }}>
                     {t("recurrente.pregunta", { tipo: tab === "ingreso" ? t("tx.ingreso").toLowerCase() : t("tx.gasto").toLowerCase() })}
                   </div>
                   {isEdit ? (
@@ -401,7 +401,7 @@ export default function NewRecordModal(props: Props) {
                     <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--pos)" }}>
                       <IconCheck size={14} />
                     </span>
-                    <span style={{ flex: 1, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ flex: 1, fontSize: "calc(13px * var(--fs-escala))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {fileNameFromPath(comprobantePath)}
                     </span>
                     {iaHabilitada && comprobanteEsImagen && !isEdit && (

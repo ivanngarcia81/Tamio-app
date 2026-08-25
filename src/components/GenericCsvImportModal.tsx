@@ -225,7 +225,7 @@ export default function GenericCsvImportModal<T>({
                         <div
                           className="td truncate"
                           key={j}
-                          style={{ fontSize: 12.5, textAlign: c.align ?? "left", fontWeight: c.align === "right" ? 600 : undefined }}
+                          style={{ fontSize: "calc(12.5px * var(--fs-escala))", textAlign: c.align ?? "left", fontWeight: c.align === "right" ? 600 : undefined }}
                           title={c.title?.(item)}
                         >
                           {c.render(item)}
@@ -234,7 +234,7 @@ export default function GenericCsvImportModal<T>({
                     </div>
                   ))}
                   {step.validas.length > 8 && (
-                    <div style={{ padding: "10px 18px", fontSize: 12, color: "var(--text-3)" }}>
+                    <div style={{ padding: "10px 18px", fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)" }}>
                       {t("importar.yMas", { n: step.validas.length - 8 })}
                     </div>
                   )}
@@ -242,13 +242,13 @@ export default function GenericCsvImportModal<T>({
               )}
 
               {step.validas.length === 0 && step.errores.length === 0 && (
-                <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("importar.sinFilas")}</div>
+                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("importar.sinFilas")}</div>
               )}
             </>
           )}
 
           {step.kind === "importando" && (
-            <div style={{ color: "var(--text-2)", fontSize: 13 }}>{t("importar.importando")}</div>
+            <div style={{ color: "var(--text-2)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("importar.importando")}</div>
           )}
 
           {step.kind === "listo" && (

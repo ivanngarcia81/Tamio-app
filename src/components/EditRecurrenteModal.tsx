@@ -151,7 +151,7 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
           )}
 
           {montoCambio && generados > 0 && (
-            <label className="roster-followup" style={{ fontSize: 12.5, marginTop: 4 }}>
+            <label className="roster-followup" style={{ fontSize: "calc(12.5px * var(--fs-escala))", marginTop: 4 }}>
               <input type="checkbox" checked={aplicarRetro} onChange={(e) => setAplicarRetro(e.target.checked)} />
               {t("recurrente.aplicarRetro", { count: generados, monto: fmtMoney(parseMonto(monto) ?? CERO) })}
             </label>
