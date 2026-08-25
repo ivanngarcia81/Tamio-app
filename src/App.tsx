@@ -30,7 +30,7 @@ import Cartas from "./pages/Cartas";
 import InformesMembresia from "./pages/InformesMembresia";
 import Agenda from "./pages/Agenda";
 import Bandeja from "./pages/Bandeja";
-import Mensajes from "./pages/Mensajes";
+import Registro from "./pages/Registro";
 import Configuracion from "./pages/Configuracion";
 import Ayuda from "./pages/Ayuda";
 import { migrarComprobantesExternos } from "./services/comprobantes";
@@ -39,7 +39,7 @@ import { sincronizarPausaDesdeRust } from "./services/restaurar";
 import { showToast } from "./toast";
 import type { ThemePref } from "./components/settings/AppearanceSettings";
 import { ACENTOS, type Acento } from "./components/settings/AccentSettings";
-import { borrarTodoLocal, countMensajesNoLeidos, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
+import { borrarTodoLocal, contarRegistroNuevo, countPendingTx, getOrCreateChurch, listMembers, loadCategoriasCustom, materializeMovimientosRecurrentes, repararFoliosDuplicados, setMonedaActiva, type Church, type Member, type Tx } from "./db";
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, permisosDe, puedeEliminarMovimientos, puedeVer, saveRole, type Role } from "./role";
 import { areaDeRuta, seccionesVisibles } from "./navegacion";
@@ -327,7 +327,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   useEffect(() => {
     listMembers(church.id).then((m) => setMemberCount(m.length)).catch(() => {});
     countPendingTx(church.id).then(setPendingCount).catch(() => {});
-    countMensajesNoLeidos(church.id, role).then(setUnreadCount).catch(() => {});
+    contarRegistroNuevo(church.id, role).then(setUnreadCount).catch(() => {});
   }, [church.id, refreshKey, role]);
 
   const onSaved = useCallback(() => { setRefreshKey((k) => k + 1); programarSync(); }, []);
@@ -627,7 +627,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       <Route path="/agenda" element={guard("/agenda", <Agenda church={church} refreshKey={refreshKey} onChanged={onChanged} />)} />
       <Route
         path="/inbox"
-        element={<Mensajes church={church} role={role} refreshKey={refreshKey} onChanged={onChanged} />}
+        element={<Registro church={church} role={role} refreshKey={refreshKey} />}
       />
       <Route
         path="/bandeja"

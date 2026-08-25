@@ -857,10 +857,26 @@ export async function updateTx(
  *  de movimientos excluyen deleted = 1, así que desaparece de la app. */
 export async function deleteTx(id: number, churchId: number): Promise<void> {
   const d = await getDb();
+  /* Se leen los datos ANTES de darlo de baja: después la fila sigue ahí
+     (es borrado suave) pero el registro tiene que decir QUÉ se borró, no
+     un id. Un apunte que dijera "se eliminó el movimiento 47" no sirve de
+     nada seis meses después. */
+  const antes = await d.select<{ concepto: string; monto: number; moneda: string; folio: string | null }[]>(
+    "SELECT concepto, monto, moneda, folio FROM transactions WHERE id = $1 AND church_id = $2",
+    [id, churchId],
+  );
   await d.execute(
     "UPDATE transactions SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [id, churchId]
   );
+  const t = antes[0];
+  if (t) {
+    await registrar(churchId, "movEliminado", {
+      concepto: t.concepto,
+      monto: `${fmtMoney(t.monto as Centavos)} ${t.moneda}`,
+      folio: t.folio ?? "—",
+    });
+  }
 }
 
 /** Deshace un borrado suave de movimiento (para el "Deshacer" del toast),
@@ -1333,17 +1349,27 @@ export async function insertCorte(
       [id, tx, churchId, crypto.randomUUID()]
     );
   }
+  /* El corte es el momento en que el dinero SALE DE LA CAJA. Se anota cuántos
+     movimientos lleva porque es lo que permite mirar el apunte meses después y
+     saber si aquel domingo fue normal o raro, sin abrir nada. */
+  await registrar(churchId, "corteEntregado", {
+    corte: corte.nombre.trim(), movimientos: txIds.length,
+  });
   return id;
 }
 
 /** Lo cierra contra el depósito que ya entró al banco. */
 export async function cerrarCorte(corteId: number, churchId: number, depositoId: number): Promise<void> {
   const d = await getDb();
+  const c = await d.select<{ nombre: string }[]>(
+    "SELECT nombre FROM cortes WHERE id = $1 AND church_id = $2", [corteId, churchId],
+  );
   await d.execute(
     `UPDATE cortes SET estado = 'depositado', deposito_id = $1, updated_at = datetime('now')
       WHERE id = $2 AND church_id = $3`,
     [depositoId, corteId, churchId]
   );
+  await registrar(churchId, "corteDepositado", { corte: c[0]?.nombre ?? "—" });
 }
 
 /** Lo devuelve a "abierto" y lo suelta de su depósito. */
@@ -1417,6 +1443,23 @@ export async function firmarCorte(
      WHERE id = $5 AND church_id = $6`,
     [nombre, nombre ? firma.rol : null, firma.modo, firma.conteo ?? null, corteId, churchId]
   );
+  const c = await d.select<{ nombre: string }[]>(
+    "SELECT nombre FROM cortes WHERE id = $1 AND church_id = $2", [corteId, churchId],
+  );
+  if (nombre) {
+    await registrar(churchId, "segundaFirma", {
+      corte: c[0]?.nombre ?? "—", firmante: nombre, modo: firma.modo,
+    });
+  } else if (firma.conteo != null) {
+    /* Sin nombre y CON conteo es un descuadre: alguien contó, no cuadró y lo
+       dejó anotado sin firmar. Es el apunte más valioso de los diez —dice que
+       el efectivo y lo registrado no coincidieron— y hasta hoy solo vivía en
+       una columna del corte que nadie miraba salvo abriéndolo. */
+    await registrar(churchId, "descuadre", {
+      corte: c[0]?.nombre ?? "—",
+      contado: `${fmtMoney(firma.conteo)}`,
+    });
+  }
 }
 
 /** Deshace la segunda firma: vuelve a quedar pendiente. Para el caso honesto
@@ -1969,12 +2012,13 @@ async function registrarCambioEstadoMiembro(id: number, churchId: number, de: st
   await d.execute("UPDATE members SET historial_estados = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3", [
     JSON.stringify(hist), id, churchId,
   ]);
-  try {
-    const etiqueta = (x: string) => i18n.t(`membresia.estado.${x}`, { defaultValue: x });
-    await insertMensaje(churchId, "secretaria", i18n.t("inboxAvisos.cambioEstado", {
-      nombre: rows[0]?.nombre ?? "—", de: etiqueta(de), a: etiqueta(a),
-    }));
-  } catch { /* el aviso nunca debe frenar el cambio de estado */ }
+  /* **Este aviso es el ancestro del registro entero.** Existía desde antes,
+     enterrado entre los mensajes tecleados a mano de una pantalla que fingía
+     ser un chat — y fue lo que hizo ver que la función buena ya estaba ahí,
+     solo que en el sitio equivocado. Ahora va al registro, con su clave y sus
+     piezas en vez de la frase ya compuesta, así que se lee en el idioma de
+     quien mira y no en el de quien lo provocó. */
+  await registrar(churchId, "estadoMiembro", { nombre: rows[0]?.nombre ?? "—", de, a });
 }
 
 export async function darDeBajaMember(
@@ -1990,10 +2034,14 @@ export async function darDeBajaMember(
   );
   const de = rows[0]?.activo === 1 ? rows[0].estado_membresia : "baja";
   await registrarCambioEstadoMiembro(id, churchId, de, estadoDeBaja(motivo));
+  const quien = await d.select<{ nombre: string }[]>(
+    "SELECT nombre FROM members WHERE id = $1 AND church_id = $2", [id, churchId],
+  );
   await d.execute(
     "UPDATE members SET activo = 0, fecha_baja = $1, motivo_baja = $2, updated_at = datetime('now') WHERE id = $3 AND church_id = $4",
     [fecha, motivo, id, churchId]
   );
+  await registrar(churchId, "bajaMiembro", { nombre: quien[0]?.nombre ?? "—", motivo: motivo ?? "—" });
 }
 
 export interface MembresiaStats {
@@ -2244,6 +2292,10 @@ export async function cerrarActa(id: number, churchId: number): Promise<void> {
       WHERE id = $1 AND church_id = $2`,
     [id, churchId]
   );
+  const a = await d.select<{ titulo: string; folio: string | null }[]>(
+    "SELECT titulo, folio FROM actas WHERE id = $1 AND church_id = $2", [id, churchId],
+  );
+  await registrar(churchId, "actaCerrada", { titulo: a[0]?.titulo ?? "—", folio: a[0]?.folio ?? "—" });
 }
 
 export async function updateActa(id: number, churchId: number, a: NewActa): Promise<void> {
@@ -2432,7 +2484,14 @@ export async function insertCarta(churchId: number, c: NewCarta): Promise<Carta 
     "SELECT * FROM cartas WHERE church_id = $1 AND folio = $2 ORDER BY id DESC LIMIT 1",
     [churchId, folio]
   );
-  return rows[0] ?? null;
+  const creada = rows[0] ?? null;
+  if (creada) {
+    await registrar(churchId, "cartaEmitida", {
+      folio: creada.folio,
+      destinatario: creada.destinatario_nombre || "—",
+    });
+  }
+  return creada;
 }
 
 export async function updateCarta(id: number, churchId: number, c: NewCarta, estadoAnterior: string): Promise<void> {

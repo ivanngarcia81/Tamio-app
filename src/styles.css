@@ -18212,3 +18212,58 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      maestra y con la barra en una sola mancha. */
   :root.ipad .main:has(.md-split) { background: var(--bg); }
 }
+
+/* ============================================================
+   EL REGISTRO de lo que pasa en la iglesia (migración 50).
+   Sustituye al hilo de chat de Mensajes: "las personas ya tienen WhatsApp e
+   iMessage" (Iván, 25 ago 2026).
+
+   Deliberadamente NO se parece a un chat. Nada de burbujas, nada de "mío a la
+   derecha": aquí no hay conversación, hay una lista de hechos en orden. La
+   forma es la de un extracto bancario, que es lo que de verdad es.
+   ============================================================ */
+.reg-lista { display: flex; flex-direction: column; }
+
+/* El separador de día, igual que el del hilo viejo: es lo único de aquella
+   pantalla que valía la pena conservar, porque leer un registro es sobre todo
+   ubicarse en el tiempo. */
+.reg-dia {
+  display: flex; align-items: center; gap: var(--space-3);
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: calc(11.5px * var(--fs-escala));
+  font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-3);
+}
+.reg-dia::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.reg-fila {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.reg-fila:last-child { border-bottom: none; }
+
+/* El punto de color dice de QUÉ ÁREA es el apunte sin gastar una palabra.
+   Con el registro filtrado por rol casi siempre serán del mismo color; para
+   el administrador —que lo ve todo— es lo que separa el dinero del padrón de
+   un vistazo. */
+.reg-punto { width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex: none; }
+.reg-punto--tesoreria { background: var(--accent-1, var(--brand)); }
+.reg-punto--secretaria { background: var(--accent-3, var(--text-3)); }
+.reg-punto--general { background: var(--text-3); }
+
+.reg-textos { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.reg-cuerpo { font-size: calc(13.5px * var(--fs-escala)); color: var(--text); }
+.reg-meta {
+  display: flex; gap: var(--space-2); align-items: baseline;
+  font-size: calc(11.5px * var(--fs-escala)); color: var(--text-3);
+}
+.reg-autor { font-weight: 600; }
+
+/* La nota a mano se distingue de un suceso automático con una barra a la
+   izquierda. Sin esa marca, las notas volverían a convertir esto en el tablón
+   del que veníamos: mezcladas con los hechos, parecerían hechos. */
+.reg-fila--nota { padding-left: var(--space-3); border-left: 2px solid var(--brand); }
+
+.reg-nota { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
+.reg-nota .btn { align-self: flex-start; }

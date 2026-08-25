@@ -1393,6 +1393,23 @@ export function sincronizarMensajes(churchIdLocal: number): Promise<ResultadoSyn
   return sincronizarTablaSimple(churchIdLocal, "mensajes", MENSAJE_DATA_COLS);
 }
 
+/* El REGISTRO de lo que pasa en la iglesia (migración 50). Tabla simple: no
+   enlaza con nada por uid — un apunte guarda INSTANTÁNEAS ("María", "CAR-2026-
+   0005") y no referencias, precisamente para que siga diciendo la verdad
+   cuando la fila de la que habla ya no exista. Un registro que dijera "se
+   eliminó el movimiento 47" y se quedara mudo al purgarse el 47 no serviría
+   de nada.
+
+   Lo que NO viaja: hasta dónde ha leído cada quien. Eso vive en localStorage
+   de cada aparato, que es el fallo que `mensajes` tenía al revés — su columna
+   `leido` sí viajaba, así que si la tesorera abría un mensaje se le apagaba el
+   aviso también al pastor. */
+const REGISTRO_DATA_COLS = ["tipo", "area", "datos", "cuerpo", "quien", "creado_en"] as const;
+
+export function sincronizarRegistro(churchIdLocal: number): Promise<ResultadoSync> {
+  return sincronizarTablaSimple(churchIdLocal, "registro", REGISTRO_DATA_COLS);
+}
+
 // Plantillas de cartas (P1): tabla simple. Cada equipo siembra sus iniciales,
 // así que tras bajar se deduplica por nombre (soft-delete determinista).
 const PLANTILLA_DATA_COLS = [
@@ -1700,6 +1717,9 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
     ["parentescos", await sincronizarParentescos(churchIdLocal)],
     ["agenda", await sincronizarAgenda(churchIdLocal)],
     ["mensajes", await sincronizarMensajes(churchIdLocal)],
+    /* El registro va suelto al final: no depende de nadie porque guarda
+       instantáneas y no referencias. */
+    ["registro", await sincronizarRegistro(churchIdLocal)],
     ["plantillas", await sincronizarPlantillas(churchIdLocal)],
   ];
   const fallo = pasos.find(([, r]) => !r.ok);

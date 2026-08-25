@@ -967,6 +967,8 @@ export const es = {
        número sería siempre cero y solo ocuparía sitio. */
     mensajes_one: "{{count}} mensaje en el hilo",
     mensajes_other: "{{count}} mensajes en el hilo",
+    registro_one: "{{count}} apunte",
+    registro_other: "{{count}} apuntes",
     inicio: "{{miembros}} miembros · {{movimientos}} movimientos en {{mes}}",
     reportes: "{{mes}} · {{meses}} meses de histórico",
     ayuda: "Tamio {{version}}",
@@ -1283,7 +1285,7 @@ export const es = {
     // Corta, mismo motivo: "Agenda y calendario" no cabía en el atajo.
     agendaCorto: "Agenda",
     bandeja: "Bandeja",
-    inbox: "Mensajes",
+    inbox: "Registro",
     porRevisar: "Por revisar",
     // Corta, para la ranura de la barra inferior — mismo patrón que
     // "ajustes" arriba (clave completa vs. claveCorta en navegacion.ts):
@@ -3183,6 +3185,39 @@ export const es = {
     tamano: { chico: "Chico", normal: "Normal", grande: "Grande" },
     ocultarMontos: "Ocultar montos al bloquear",
     ocultarMontosSub: "Al mandar Tamio a segundo plano, el contenido se difumina: la instantánea del selector de aplicaciones no enseña la contabilidad",
+  },
+  /** El REGISTRO de lo que pasa en la iglesia (migración 50). Sustituye al
+   *  chat de Mensajes: "las personas ya tienen WhatsApp e iMessage" (Iván, 25
+   *  ago 2026). Cada suceso guarda su CLAVE y sus piezas, no la frase armada,
+   *  así que se lee en el idioma de quien mira y no en el de quien lo
+   *  provocó — que es como `mensajes` lo hacía mal. */
+  registro: {
+    titulo: "Registro",
+    sub: "Lo que ha pasado en la iglesia",
+    vacio: "Todavía no hay nada anotado",
+    vacioSub: "Aquí van quedando los movimientos eliminados, los cortes, las cartas emitidas y las bajas del padrón. Lo escribe la app sola.",
+    nuevos_one: "{{count}} sin ver",
+    nuevos_other: "{{count}} sin ver",
+    hoy: "Hoy",
+    ayer: "Ayer",
+    porApp: "Tamio",
+    nota: "Nota",
+    escribirNota: "Escribir una nota",
+    notaPlaceholder: "Algo que la app no sabe y conviene dejar escrito…",
+    notaGuardar: "Anotar",
+    /** El texto de cada suceso. Las piezas llegan de `datos`. */
+    suceso: {
+      movEliminado: "Se eliminó el movimiento «{{concepto}}» de {{monto}} (folio {{folio}})",
+      corteEntregado: "Salió de la caja el corte «{{corte}}», con {{movimientos}} movimiento(s)",
+      corteDepositado: "El corte «{{corte}}» llegó al banco",
+      segundaFirma: "{{firmante}} dio la segunda firma del corte «{{corte}}» ({{modo}})",
+      descuadre: "El corte «{{corte}}» NO cuadró: se contaron {{contado}} y no coincide con lo registrado",
+      estadoMiembro: "{{nombre}} pasó de {{de}} a {{a}}",
+      bajaMiembro: "{{nombre}} se dio de baja del padrón ({{motivo}})",
+      cartaEmitida: "Se emitió la carta {{folio}} a {{destinatario}}",
+      actaCerrada: "Se cerró el acta «{{titulo}}» ({{folio}})",
+      nota: "{{cuerpo}}",
+    },
   },
   /** Los dos permisos del rol Tesorería (migración 49). De los cuatro que
    *  dibujó el handoff quedan dos: registrar y cerrar cortes no eran permisos

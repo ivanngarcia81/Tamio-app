@@ -237,7 +237,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       </nav>
 
       <div className="sidebar-footer">
-        <Item to="/inbox" icon={<IconMail />} label={t("nav.inbox")} badge={unreadCount} />
+        <Item to="/inbox" icon={<IconClipboardList size={18} />} label={t("nav.inbox")} badge={unreadCount} />
         {verGrupoTesoreria && !esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
         <Item to="/ayuda" icon={<IconHelp />} label={t("nav.ayuda")} />
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />

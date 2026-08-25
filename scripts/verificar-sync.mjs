@@ -67,6 +67,10 @@ const TABLAS = [
   { lista: "CATEGORIA_DATA_COLS", tabla: "categorias_custom" },
   { lista: "PUESTO_DATA_COLS", tabla: "servicio_puestos", padre: "servicios" },
   { lista: "ORDEN_DATA_COLS", tabla: "servicio_orden", padre: "servicios" },
+  /* El registro (50) no tiene padre a propósito: guarda INSTANTÁNEAS
+     ("María", "CAR-2026-0005") y no referencias, para que siga diciendo la
+     verdad cuando la fila de la que habla ya no exista. */
+  { lista: "REGISTRO_DATA_COLS", tabla: "registro" },
 ];
 
 /* Lo que NUNCA viaja como columna de datos, y por qué:

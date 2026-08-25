@@ -5124,6 +5124,145 @@ console.log("\n== Cartas y traslados, con su handoff ==");
   await ctxE.close();
 }
 
+/* ---------- 46. El registro de lo que pasa en la iglesia ----------
+   Iván, 25 ago 2026: "la página de mensajes debería ser otra función, no
+   recibir mensajes como si fuera un chat; las personas ya tienen WhatsApp e
+   iMessage". El código le daba más razón todavía: `mensajes` nunca fue un chat
+   por dentro —guardaba `de_rol` y `cuerpo`, sin destinatario ni conversación—
+   y lo único valioso ahí era un aviso AUTOMÁTICO enterrado entre texto
+   tecleado a mano.
+
+   **Lo que esta sección prueba, y por qué cada cosa:**
+
+     · Que un suceso QUEDE ESCRITO al hacer la operación, no al mirarla. Si el
+       apunte dependiera de que alguien abra una pantalla, no sería un
+       registro.
+     · Que el TESORERO NO VEA lo del padrón. Es la decisión de Iván sobre quién
+       ve qué, y la única de las tres que puede fallar en silencio: un filtro
+       mal escrito enseña de más y nadie se queja nunca de ver cosas.
+     · Que el texto se componga AL LEER desde `tipo` + `datos`. Es la
+       diferencia con `mensajes`, que guardaba la frase armada y por eso se
+       congelaba en el idioma de quien la provocó.
+     · Y que una nota a mano se distinga de un suceso automático. Sin eso, las
+       notas convertirían esto otra vez en el tablón del que veníamos. */
+console.log("\n== El registro de lo que pasa en la iglesia ==");
+{
+  const ctxRg = await nuevoContexto("ipad");
+  const pg = await ctxRg.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+
+  /* --- Un suceso se escribe al HACER la operación --- */
+  const trasBorrar = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const antes = (await db.listRegistro(ig.id, "administrador")).length;
+    const tx = await db.insertTx(ig.id, ig.moneda, {
+      tipo: "gasto", categoria: "servicios", concepto: "Gasto que se va a borrar",
+      fecha: db.hoyISO(), monto: 4200, metodo_pago: "efectivo",
+    });
+    const todas = await db.listTx(ig.id, { limit: 400 });
+    const suyo = todas.find((t) => t.concepto === "Gasto que se va a borrar");
+    await db.deleteTx(suyo.id, ig.id);
+    const reg = await db.listRegistro(ig.id, "administrador");
+    const apunte = reg.find((r) => r.tipo === "movEliminado");
+    return {
+      antes, despues: reg.length, creado: !!tx,
+      datos: apunte?.datos ?? null, area: apunte?.area ?? null,
+    };
+  });
+  chk(trasBorrar.despues > trasBorrar.antes,
+    `borrar un movimiento deja apunte (${trasBorrar.antes} → ${trasBorrar.despues})`);
+  chk(trasBorrar.area === "tesoreria", `y va al área de tesorería (${trasBorrar.area})`);
+  /* El apunte guarda QUÉ se borró, no un id. Un registro que dijera "se
+     eliminó el movimiento 47" no serviría de nada seis meses después, y menos
+     cuando esa fila ya se purgó. */
+  chk(/Gasto que se va a borrar/.test(trasBorrar.datos ?? ""),
+    "y dice QUÉ se borró, no un id");
+  chk(/folio/.test(trasBorrar.datos ?? "") && /monto/.test(trasBorrar.datos ?? ""),
+    "con su folio y su importe");
+
+  /* --- El texto se compone AL LEER, no se guarda armado ---
+     Es la diferencia con `mensajes`. Se comprueba que en `datos` viajan las
+     PIEZAS y que la frase final no está ahí dentro. */
+  chk(!/Se eliminó/.test(trasBorrar.datos ?? ""),
+    "y la FRASE no está guardada: solo sus piezas, para que siga el idioma de quien mira");
+
+  /* --- Cada quien ve lo suyo ---
+     La comprobación que puede fallar en silencio: enseñar de más no se queja
+     nadie. Se provoca un suceso de SECRETARÍA y se mira quién lo ve. */
+  const porRol = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const ms = await db.listMembers(ig.id);
+    await db.darDeBajaMember(ms[0].id, ig.id, db.hoyISO(), "traslado");
+    const ve = async (rol) => {
+      const r = await db.listRegistro(ig.id, rol);
+      return {
+        total: r.length,
+        tesoreria: r.filter((x) => x.area === "tesoreria").length,
+        secretaria: r.filter((x) => x.area === "secretaria").length,
+      };
+    };
+    return { admin: await ve("administrador"), tesorero: await ve("tesorero"), secre: await ve("secretaria") };
+  });
+  chk(porRol.admin.secretaria > 0 && porRol.admin.tesoreria > 0,
+    `el administrador lo ve todo (${porRol.admin.tesoreria} de dinero, ${porRol.admin.secretaria} del padrón)`);
+  chk(porRol.tesorero.secretaria === 0,
+    `el TESORERO no ve nada del padrón (${porRol.tesorero.secretaria})`);
+  chk(porRol.tesorero.tesoreria > 0, `pero sí lo del dinero (${porRol.tesorero.tesoreria})`);
+  chk(porRol.secre.tesoreria === 0, `y la secretaria no ve nada del dinero (${porRol.secre.tesoreria})`);
+  chk(porRol.secre.secretaria > 0, `pero sí lo del padrón (${porRol.secre.secretaria})`);
+
+  /* --- La nota a mano, y que se distinga --- */
+  const conNota = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    await db.registrarNota(ig.id, "El diezmo de marzo lo trajo el pastor en efectivo");
+    const r = await db.listRegistro(ig.id, "administrador");
+    const nota = r.find((x) => x.tipo === "nota");
+    return {
+      hayNota: !!nota, cuerpo: nota?.cuerpo ?? null, area: nota?.area ?? null,
+      // Un suceso automático NUNCA usa `cuerpo`: su texto se compone.
+      automaticosConCuerpo: r.filter((x) => x.tipo !== "nota" && x.cuerpo).length,
+    };
+  });
+  chk(conNota.hayNota, "una nota a mano queda anotada");
+  chk(/pastor en efectivo/.test(conNota.cuerpo ?? ""), "con su texto");
+  chk(conNota.area === "general", `y en el área general, que la ven los tres roles (${conNota.area})`);
+  /* La marca que las separa: si un suceso automático llenara `cuerpo`, la
+     pantalla no podría distinguir lo que escribió la app de lo que escribió
+     una persona, y esto volvería a ser un tablón. */
+  chk(conNota.automaticosConCuerpo === 0,
+    `y ningún suceso automático usa el cuerpo, que es lo que los separa (${conNota.automaticosConCuerpo})`);
+
+  /* --- Y la pantalla lo enseña --- */
+  await pg.goto(`${URL_BASE}/#/inbox`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(700);
+  const enPantalla = await pg.evaluate(() => ({
+    filas: document.querySelectorAll(".reg-fila").length,
+    notas: document.querySelectorAll(".reg-fila--nota").length,
+    dias: document.querySelectorAll(".reg-dia").length,
+    // Que NO quede rastro del chat: ni burbujas ni compositor pegado abajo.
+    burbujas: document.querySelectorAll(".msg-bubble").length,
+    texto: document.body.innerText,
+  }));
+  chk(enPantalla.filas > 0, `la pantalla enseña el registro (${enPantalla.filas} filas)`);
+  chk(enPantalla.dias > 0, `agrupado por día (${enPantalla.dias})`);
+  chk(enPantalla.notas === 1, `y la nota se marca aparte del resto (${enPantalla.notas})`);
+  chk(enPantalla.burbujas === 0, `sin rastro del chat: cero burbujas (${enPantalla.burbujas})`);
+  /* El texto compuesto de verdad, en la pantalla: si `datos` no casara con la
+     plantilla de i18n saldría la clave en crudo o un hueco. */
+  chk(/Se eliminó el movimiento/.test(enPantalla.texto),
+    "y el texto se compone con sus piezas, no sale la clave en crudo");
+  if (process.env.CAPTURAS) {
+    await pg.screenshot({ path: `${process.env.CAPTURAS}/registro-1366x1024.png` });
+  }
+  await ctxRg.close();
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);
