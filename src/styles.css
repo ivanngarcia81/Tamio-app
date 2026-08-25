@@ -18407,12 +18407,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    a los 49+16 de antes hay que sumarles los 12 que la levantan. */
 :root.iphone .content { padding-bottom: calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom)); }
 
-/* --- 4. Lo que se apaga en el teléfono ------------------------------------
-   El paginador numérico es de navegador: en iOS una lista larga se carga sola
-   al llegar al final (ver `useScrollInfinito`). Se apaga por CSS ADEMÁS de no
-   montarse en las páginas ya migradas, para que ninguna que quede por migrar
-   lo enseñe mientras tanto. */
-:root.iphone .pagination { display: none; }
+/* --- 4. El paginador NO se apaga por CSS ----------------------------------
+   Aquí había un `:root.iphone .pagination { display: none }` como red de
+   seguridad, con la idea de que ninguna pantalla por migrar enseñara un
+   control de navegador mientras tanto. Era un error y de los caros: seis
+   pantallas siguen paginando de verdad en el teléfono —Por revisar (15 por
+   página), Cartas, Actas, Servicios e Informes de membresía (25) y Membresía
+   (30)— y esconderles el paginador no las convertía en scroll infinito, las
+   dejaba SIN forma de pasar de la primera página. Con dieciséis pendientes,
+   el decimosexto no existía.
+
+   La regla se retira. Las pantallas ya migradas no montan `<Pagination>`
+   (`{!enIPhone && …}`, y en su lugar va el centinela de `useScrollInfinito`),
+   así que no hacía falta ninguna red; las que quedan conservan un paginador
+   que funciona hasta que les toque. Apagar un control sin poner el que lo
+   sustituye es peor que dejarlo feo. */
 
 /* --- 5. Tarjeta de gráfica -------------------------------------------------
    `DashboardCharts` se queda en el teléfono (la guía es explícita), pero con
