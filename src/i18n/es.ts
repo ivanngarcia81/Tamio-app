@@ -1935,6 +1935,7 @@ export const es = {
     cardListas: "Listas para entregar",
     seccionEstado: "Estado",
     actividadReciente: "Actividad reciente",
+    pieCuenta: "{{n}} de {{total}} cartas",
     verTodo: "Ver todo",
     aunNoHay: "Aún no hay cartas",
     agregaPrimera: "Crea la primera con el botón Nueva carta.",

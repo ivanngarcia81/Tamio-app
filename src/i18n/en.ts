@@ -1886,6 +1886,7 @@ export const en: Resources = {
     cardListas: "Ready to deliver",
     seccionEstado: "Status",
     actividadReciente: "Recent activity",
+    pieCuenta: "{{n}} of {{total}} letters",
     verTodo: "See all",
     aunNoHay: "No letters yet",
     agregaPrimera: "Create the first one with the New letter button.",

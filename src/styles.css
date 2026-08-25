@@ -1393,6 +1393,34 @@ html.vibrancy .main { background: var(--surface); }
   justify-content: space-between;
   margin-bottom: 10px;
 }
+/* El enlace de la derecha de la cabecera de una tarjeta ("Ver todo"). Azul de
+   sistema y sin caja: es una navegación, no una acción sobre datos, y en iOS
+   eso se pinta como texto. */
+.card-action {
+  border: 0;
+  background: transparent;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ios-blue, #007aff);
+  cursor: pointer;
+}
+.card-action:hover { text-decoration: underline; }
+
+/* El pie de una tabla: cuántas filas hay a la izquierda, la paginación a la
+   derecha, dentro de la misma tarjeta. */
+.tabla-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 16px;
+}
+.tabla-pie-cuenta { font-size: 12.5px; color: var(--text-3); }
+.tabla-pie .pagination { margin: 0; }
+
 .card-title {
   font-size: var(--fs-caption);
   letter-spacing: var(--track-caps);
@@ -7941,9 +7969,26 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    ocupan sitio de más. Solo se ocultan los que de verdad duplican al "+"
    (marcados a mano en cada página). */
 :root.movil .btn-nuevo-cabecera,
-:root.movil .empty-accion.duplica-crear,
+:root.movil .empty-accion.duplica-crear { display: none; }
 
-/* Orden visual del encabezado en iPhone/iPad: fila fija de "+"/compartir
+/* ⚠️ Ese `{ display: none }` FALTABA. La lista de selectores terminaba en coma
+   y el bloque de abajo la continuaba a través del comentario, así que el
+   navegador leía una sola regla:
+
+     :root.movil .btn-nuevo-cabecera,
+     :root.movil .empty-accion.duplica-crear,
+     :root.movil .header { flex-direction: column; align-items: stretch; }
+
+   Dos efectos, los dos vividos. Uno: los botones que este bloque quería
+   ESCONDER en el teléfono nunca se escondieron —o sea, el "botón doble" que
+   Iván circuló el 24 ago también estaba aquí, y en todas las pantallas, no
+   solo en Cartas—. Dos: `.btn-nuevo-cabecera` heredaba `flex-direction:
+   column` y apilaba el "+" ENCIMA de su etiqueta; se veía en la barra de
+   Cartas, donde el botón es el único y no hay nada que disimule los dos
+   renglones. Cazado el 25 ago midiendo el botón: `dir=column` en un botón que
+   nadie había puesto en columna.
+
+   Orden visual del encabezado en iPhone/iPad: fila fija de "+"/compartir
    arriba, título grande y subtítulo debajo — al revés que en Mac, donde
    título y acciones van lado a lado. `order` cambia el orden PINTADO sin
    tocar el DOM (el bloque de título sigue siendo el primer hijo en el
@@ -9582,6 +9627,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        Lo cazó la guarda §27, la del aire bajo la raya, en seis pantallas. */
     position: relative;
     inset: auto;
+    /* Ni encoge ni parte la etiqueta. Sin esto, en una barra con un solo botón
+       —Cartas— el botón cedía ancho al título y "＋ Nueva carta" salía en dos
+       líneas, con el signo solo arriba. */
+    flex: 0 0 auto;
+    white-space: nowrap;
+    /* La caja de línea del texto medía 1.5×14.5 ≈ 22 y con el glifo de 17 al
+       lado el contenido pasaba de los 38 por un pelo: el botón desbordaba sin
+       que se notara a simple vista, y en un botón de barra eso acaba
+       recortando la etiqueta. */
+    line-height: 1;
   }
   :root.ipad .header .btn::before {
     content: "";
@@ -10945,7 +11000,177 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      a 720px porque una ficha de campos leída a más de eso cansa; aquí no hay
      una ficha, hay dos columnas —hoja y formulario— y ese tope dejaba la hoja
      en 274px y partía la barra en dos líneas. */
+  /* El panel de Cartas no lleva un DOCUMENTO: lleva tablas.
+     `.dm` está capado a 720px porque un texto que se lee no debe pasar de esa
+     medida —vale para la ficha de un movimiento o de un miembro—, pero aquí
+     estrangulaba las cinco tablas: medido el 25 ago en una ventana de 1600, el
+     panel medía 944 y la tabla 720, y los 224 que faltaban salían todos de la
+     única columna elástica, la del nombre. Con las columnas del handoff se
+     quedaba en 32px. El editor ya tenía su excepción (`.dm--carta`); resulta
+     que la necesitaba el panel entero. */
+  :root.ipad .md-cartas .dm { max-width: none; }
   :root.ipad .md-cartas .dm--carta { max-width: none; }
+
+  /* ------------------------------------------------------------
+     Las cinco tablas de Cartas y traslados (handoff del 25 ago)
+     ------------------------------------------------------------
+     El handoff da una plantilla de columnas a cada tabla, porque cada una
+     lleva datos distintos. En el repo eran DOS para cinco: `COLS` para el
+     archivo y `COLS_SOL` reutilizada por solicitudes, salida y entrada.
+
+     Y había algo peor, que es lo que se veía en el iPad: escritas en el
+     `style` de cada fila, ninguna consulta de medios podía tocarlas. Medido
+     el 25 ago en un iPad de 13" apaisado, la columna del DOCUMENTO —la que
+     lleva el nombre, la que se lee— quedaba en **54px**. No es que estuviera
+     apretada: es que no cabía nada.
+
+     La cuenta explica por qué, y no es culpa del handoff. El dibujo tiene
+     DOS columnas —el índice de 338 y el contenido— porque en él la barra
+     lateral está escondida (por eso pinta el ☰). En la app, apaisado, la
+     barra está fija: 318 + 338 + panel = 1366, y al panel le quedan 710
+     donde el dibujo contaba con 1028. Trescientos dieciocho píxeles de
+     diferencia, todos robados a la única columna elástica.
+
+     Así que hay dos juegos de columnas:
+
+      · **Completo** — las medidas del handoff, tal cual. Es lo que se ve en
+        el Mac y en el iPad sin partir, donde el ancho da.
+      · **Del panel** — con una columna menos y las fijas más justas, para
+        que la columna del nombre nunca baje de ~240. Se cae siempre la MENOS
+        útil de cada tabla, y se dice cuál en cada regla.
+
+     La columna que se cae se esconde con `display: none` Y se le quita su
+     vía a la plantilla. Las dos cosas: esconder la celda sin tocar la
+     plantilla deja la vía vacía y descoloca todo lo que va detrás —está
+     apuntado en el bloque de `.data-table` de más arriba, y ya pasó una vez
+     en Informes de membresía. */
+  :root.ipad .tabla-cartas .thead,
+  :root.ipad .tabla-cartas .tr { grid-template-columns: 120px 1.7fr 110px 168px 104px 66px; }
+  :root.ipad .tabla-plantillas .thead,
+  :root.ipad .tabla-plantillas .tr { grid-template-columns: 1.6fr 1fr 230px 66px; }
+  :root.ipad .tabla-solicitudes .thead,
+  :root.ipad .tabla-solicitudes .tr { grid-template-columns: 122px 1.7fr 150px 118px 168px 66px; }
+  :root.ipad .tabla-salida .thead,
+  :root.ipad .tabla-salida .tr { grid-template-columns: 122px 1.7fr 110px 150px 178px 66px; }
+  /* Entrada es la única de las cinco cuya plantilla del handoff NO cabe tal
+     cual, y conviene decir por qué en vez de copiarla y que quede fea: sus
+     seis columnas suman 716 fijos, y el dibujo contaba con un contenido de
+     1028 (sin barra lateral) donde al nombre le quedaban ~230. En nuestro
+     panel de 944 le quedaban **164**. Se le quitan 50 a "Documento adjunto"
+     —un nombre de archivo que se trunca igual— y 28 a la fecha, y el nombre
+     recupera sus 242. Medido el 25 ago. */
+  :root.ipad .tabla-entrada .thead,
+  :root.ipad .tabla-entrada .tr { grid-template-columns: 122px 1.7fr 122px 150px 178px 66px; }
+
+  /* La fila del handoff mide 58 y su cabecera 40; las de la casa medían 75 y
+     45 porque `.data-table.roomy` reparte 13px arriba y abajo sobre un texto
+     de 17. Con seis columnas y diez filas, esos 17px de más por fila son
+     doscientos de scroll que no dicen nada. */
+  :root.ipad .md-cartas .data-table .thead { min-height: 40px; }
+  :root.ipad .md-cartas .data-table .thead .th { padding: 0 16px; }
+  :root.ipad .md-cartas .data-table .tr { min-height: 58px; }
+  :root.ipad .md-cartas .data-table .tr > .td { padding: 8px 16px; }
+  /* El folio es un código de trece caracteres que NO debe partirse: con el
+     relleno de 16 a cada lado, de los 124 de su columna le quedaban 92 y
+     "CAR-2026-0001" caía en dos líneas. Se le quita el relleno de la
+     derecha, que ahí no separa de nada: la columna de al lado ya trae el
+     suyo. */
+  :root.ipad .md-cartas .data-table .thead > .th:first-child,
+  :root.ipad .md-cartas .data-table .tr > .td:first-child { padding-right: 4px; white-space: nowrap; }
+  /* Los 58 del handoff no salen solos: la celda de dos líneas —nombre arriba,
+     documento abajo— traía interlineados de cuerpo de texto y empujaba la fila
+     a 65. 19 + 16 de línea más los 16 de relleno dan 51, y el `min-height`
+     manda. Es la diferencia entre ver ocho filas de un vistazo y ver siete. */
+  :root.ipad .md-cartas .data-table .p-name { font-size: 14.5px; line-height: 19px; }
+  :root.ipad .md-cartas .data-table .p-mail { font-size: 12.5px; line-height: 16px; }
+  /* Y cualquier otra celda de dos líneas —"19 ago 2026 / para el 2 sep"— con
+     el mismo interlineado apretado. Con el de cuerpo (1.5 sobre 17) la fila de
+     Solicitudes se iba a 66. */
+  :root.ipad .md-cartas .data-table .tr > .td { line-height: 1.35; }
+  /* La segunda línea de la celda de fechas de Solicitudes —"para el 2 sep
+     2026"— se partía en dos y dejaba la celda en TRES renglones y la fila en
+     64. Se recorta: es una fecha secundaria, y la principal va encima entera. */
+  :root.ipad .tabla-solicitudes .tr > .td:nth-child(3) > div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* La fila de filtros del Archivo. En el handoff son seis controles de 36 en
+     UNA fila; aquí salían a 44 de alto y 16 de texto —lo que `@media (pointer:
+     coarse)` le pone a todo `.form-input`— y se repartían en TRES filas de
+     200px en total, más altas que la tabla que filtran. La zona tocable no se
+     pierde: la devuelve el `::before`, como en el ☰ y en los botones de la
+     barra (§39). */
+  :root.ipad .cartas-filtros .form-input,
+  :root.ipad .cartas-filtros select.form-input,
+  :root.ipad .cartas-filtros input[type="date"].form-input {
+    min-height: 36px;
+    height: 36px;
+    font-size: 13.5px;
+    padding: 0 11px;
+    position: relative;
+  }
+  :root.ipad .cartas-filtros .search-input-wrap { min-height: 36px; height: 36px; }
+  :root.ipad .cartas-filtros .form-input::before {
+    content: "";
+    position: absolute;
+    inset: -4px 0;
+  }
+
+  /* Las pastillas de estado dentro de estas tablas: 12px, sin versalitas y en
+     una línea. `.tag` va en versalitas para etiquetas de una palabra
+     ("ACTIVO"); aquí los estados son frases —"Esperando firma", "Carta en
+     preparación"— y en versalitas se partían en dos líneas dentro de una fila
+     de 58, que es lo que las hacía crecer a 65. */
+  :root.ipad .md-cartas .data-table .tag {
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+    border-radius: 7px;
+    padding: 3px 9px;
+    white-space: nowrap;
+  }
+  :root.ipad .md-cartas .data-table { border-radius: 14px; }
+
+  /* Los cinco juegos "del panel". El umbral es el ancho de la VENTANA y no el
+     del panel porque una consulta de medios no sabe medir un elemento; a
+     1500 el panel llega a 844, que es donde la columna del nombre vuelve a
+     pasar de 300 con las columnas completas. */
+  @media (max-width: 1499.98px) {
+    /* Archivo: se cae "Modificada". Es la fecha del último cambio — útil
+       para ordenar, nunca para reconocer una carta. */
+    :root.ipad .tabla-cartas .thead,
+    :root.ipad .tabla-cartas .tr { grid-template-columns: 124px 1.7fr 104px 150px 56px; }
+    :root.ipad .tabla-cartas .thead > .th:nth-child(5),
+    :root.ipad .tabla-cartas .tr > .td:nth-child(5) { display: none; }
+
+    /* Solicitudes: se cae "Prioridad". Es la única de las cinco que se lee
+       igual de bien en el estado —una solicitud urgente sin atender está en
+       "nueva"— y se ve entera al abrir la fila. */
+    :root.ipad .tabla-solicitudes .thead,
+    :root.ipad .tabla-solicitudes .tr { grid-template-columns: 124px 1.7fr 110px 150px 56px; }
+    :root.ipad .tabla-solicitudes .thead > .th:nth-child(4),
+    :root.ipad .tabla-solicitudes .tr > .td:nth-child(4) { display: none; }
+
+    /* Salida: se cae "Confirmación". Es un sí/no que el estado ya cuenta
+       ("Carta entregada", "Completado"). */
+    :root.ipad .tabla-salida .thead,
+    :root.ipad .tabla-salida .tr { grid-template-columns: 124px 1.7fr 104px 156px 56px; }
+    :root.ipad .tabla-salida .thead > .th:nth-child(4),
+    :root.ipad .tabla-salida .tr > .td:nth-child(4) { display: none; }
+
+    /* Entrada: se cae "Documento adjunto". Es un nombre de archivo largo que
+       no se puede leer truncado; se abre la fila y ahí está entero. */
+    :root.ipad .tabla-entrada .thead,
+    :root.ipad .tabla-entrada .tr { grid-template-columns: 124px 1.7fr 110px 156px 56px; }
+    :root.ipad .tabla-entrada .thead > .th:nth-child(4),
+    :root.ipad .tabla-entrada .tr > .td:nth-child(4) { display: none; }
+
+    /* Plantillas cabe entera: son cuatro columnas y una es elástica. */
+    :root.ipad .tabla-plantillas .thead,
+    :root.ipad .tabla-plantillas .tr { grid-template-columns: 1.6fr 1fr 200px 56px; }
+  }
   :root.ipad .ce-split--plano { display: contents; }
   :root.ipad .ce-split {
     display: grid;
@@ -11286,9 +11511,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   }
   :root.ipad .md-indice-grupo {
     padding: 4px 10px 8px;
-    font-size: 12.5px;
+    /* 11.5 / 0.6, las medidas del handoff. Venía de 12.5 / 0.4: un rótulo de
+       grupo es la etiqueta más chica de la columna, y a 12.5 competía con los
+       nombres de 15 que van debajo. */
+    font-size: 11.5px;
     font-weight: 700;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
     color: var(--text-3);
   }
@@ -11301,7 +11529,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     min-height: 52px;
     padding: 8px 12px;
     border: 0;
-    border-radius: 10px;
+    border-radius: 11px;
     background: none;
     text-align: left;
     font: inherit;
@@ -11313,11 +11541,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      siete secciones se llaman solas. */
   :root.ipad .md-indice-item:not(:has(.md-indice-sub)) { min-height: 44px; }
   :root.ipad .md-indice-item:active { opacity: 0.5; }
-  /* Relleno tintado y no el acento sólido: el mismo `color-mix` del 10% que
-     usa `.md-fila.sel` y el índice de Ajustes, para que "lo elegido" se vea
-     igual en las tres columnas maestras del rediseño. */
-  :root.ipad .md-indice-item.sel { background: color-mix(in srgb, var(--ink) 10%, transparent); }
-  :root.ipad .md-indice-item.sel .md-indice-nombre { font-weight: 600; }
+  /* Relleno tintado y no el acento sólido: el mismo `color-mix` que usa
+     `.md-fila.sel` y el índice de Ajustes, para que "lo elegido" se vea igual
+     en las tres columnas maestras del rediseño.
+
+     `--brand` y NO `--ink`, que es lo que decía antes. Los dos son "el
+     acento", pero con el acento de fábrica ("neutro") `--ink` vale #0f0f0f: la
+     sección elegida salía teñida de GRIS y su nombre en negro, o sea igual que
+     las otras cinco con un fondo un poco más oscuro. El handoff la pinta del
+     color de la app, texto incluido. Es la misma confusión de tokens que dejó
+     el ☰ en negro (§39) y se corrige en las tres columnas a la vez, no solo en
+     Cartas: dejarlas distintas sería peor que el fallo. */
+  :root.ipad .md-indice-item.sel { background: color-mix(in srgb, var(--brand) 12%, transparent); }
+  :root.ipad .md-indice-item.sel .md-indice-nombre { font-weight: 600; color: var(--brand); }
   :root.ipad .md-indice-nombre { font-size: 15px; }
   :root.ipad .md-indice-sub { font-size: 12.5px; color: var(--text-2); }
 

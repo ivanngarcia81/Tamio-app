@@ -2975,3 +2975,108 @@ mucho un** control de alta a la vista, que **diga qué crea** (se cuentan tambi�
 los que no tienen texto pero llevan un "+", que es justo el caso retirado), y
 que **viva en la barra**. Devolviendo uno solo de los ocho botones, canta
 `Nueva solicitud · Nueva solicitud`. Pasa de 825 a **861**.
+
+## 41. Cartas y traslados, rehecha con su handoff (25 ago 2026)
+
+*"Rediseñar toda la página de cartas y traslado, que es la única página que no
+se diseñó bien."* Al medirla salieron **tres fallos de fondo**, y ninguno era
+de estilo. Los tres explican por qué esta pantalla se fue quedando atrás
+mientras las otras quince avanzaban.
+
+### 1. El cuerpo estaba escrito dos veces
+
+625 líneas **idénticas byte por byte**: una copia dentro de la constante
+`contenido` —la que pinta el panel del iPad— y otra copiada a mano en la rama
+del Mac. Se comprobó con un diff de las dos: cero diferencias.
+
+Esa es la causa raíz. Cada arreglo había que hacerlo dos veces y el segundo se
+olvidaba, así que la pantalla acumulaba dos edades del mismo código. De ahí
+salían los **ocho** botones de crear del 24 ago —cuatro, duplicados— y por eso
+al retirarlos hubo que tocar ocho sitios. El archivo pasa de 2199 a 1578
+líneas.
+
+### 2. El panel estaba capado a 720px
+
+`.dm` lleva `max-width: 720px` porque un texto que se LEE no debe pasar de esa
+medida: vale para la ficha de un movimiento o de un miembro. Aquí dentro hay
+cinco tablas de seis columnas.
+
+Medido en una ventana de 1600: el panel medía **944** y la tabla **720**. Los
+224 que faltaban salían todos de la única columna elástica —la del nombre, la
+que se lee— que con las columnas del handoff se quedaba en **32px**. En un
+iPad de 13" apaisado, con las columnas viejas, la columna del documento medía
+**54px**. No es que estuviera apretada: no cabía nada.
+
+El editor ya tenía su excepción (`.dm--carta`). Resulta que la necesitaba el
+panel entero.
+
+### 3. Una regla de CSS sin bloque de declaraciones
+
+```
+:root.movil .btn-nuevo-cabecera,
+:root.movil .empty-accion.duplica-crear,     ← la coma, y nada más
+
+/* comentario */
+:root.movil .header { flex-direction: column; align-items: stretch; }
+```
+
+La lista de selectores terminaba en coma y el navegador la continuaba **a
+través del comentario**, fundiendo las dos reglas en una. Dos efectos, los dos
+vividos:
+
+- El `{ display: none }` que este bloque quería aplicar **nunca existió**, así
+  que los botones de alta que debían esconderse en el teléfono se quedaron a la
+  vista. El "botón doble" que Iván circuló el 24 ago también estaba aquí, y en
+  **todas** las pantallas, no solo en Cartas.
+- `.btn-nuevo-cabecera` heredaba `flex-direction: column` y apilaba el "+"
+  **encima** de su etiqueta. Se veía en la barra de Cartas, donde el botón es
+  el único y no hay nada que disimule los dos renglones.
+
+Se cazó midiendo el botón: `dir=column` en un botón que nadie había puesto en
+columna.
+
+### Lo que sí es diseño
+
+Con el suelo arreglado, las medidas del handoff:
+
+| | Antes | Handoff |
+|---|---|---|
+| Columnas | **dos** plantillas para cinco tablas, en el `style` de cada fila | una por tabla, en CSS |
+| Fila | 75 | **58** |
+| Cabecera | 45 | **40** |
+| Tarjeta | radio 12 | radio **14** |
+| Sección elegida | teñida de **gris** (`--ink` con el acento neutro) | del acento, texto incluido |
+| Pastillas de estado | versalitas, partidas en dos líneas | 12px, en una línea |
+| Filtros del archivo | 44 de alto, **tres filas**, 200px en total | 36 de alto |
+| Pie del archivo | nada | "N de M cartas" dentro de la tarjeta |
+| "Ver todo" | solo en el iPhone | también en el escritorio |
+
+**Dos deudas con el handoff, dichas en voz alta.** El dibujo tiene **dos**
+columnas —índice de 338 y contenido— porque en él la barra lateral está
+escondida (por eso pinta el ☰). En la app, apaisado, la barra está fija:
+318 + 338 + panel = 1366, y al panel le quedan **710** donde el dibujo contaba
+con 1028. Trescientos dieciocho de diferencia. Por eso hay dos juegos de
+columnas: el del handoff tal cual cuando el ancho da (≥1500), y uno reducido
+—una columna menos, la menos útil de cada tabla— por debajo. Y por eso
+"Traslado de entrada" es la única cuya plantilla del handoff se ajusta incluso
+en el juego completo: sus seis columnas suman 716 fijos y no caben en 944.
+
+**Y una donde el handoff se contradice con lo de ayer.** El dibujo pinta el
+"+" de la barra **y** un botón verde dentro de cada lista: los dos botones que
+Iván mandó quitar el 24 ago. El handoff es una foto del repo de antes de ese
+arreglo, así que manda la instrucción, que es más nueva: queda un solo control
+de alta, con nombre, en la barra. Lo vigila §37.
+
+**La guarda (§38) mide a DOS anchos**, y el segundo no es de adorno: a 1366
+entran las columnas reducidas y quitar el `max-width` no cambia nada; a 1600
+entran las completas y es donde el cap hacía el destrozo. Se comprobó
+devolviéndolo: con el cap, seis comprobaciones caen y la columna del nombre
+canta 82, 94, 96 y 152. Devolviendo la regla rota, el botón vuelve a
+`column` y el teléfono vuelve a enseñar el botón duplicado. Pasa de 861 a
+**918**.
+
+**Lo que queda de este handoff:** el editor de la carta (`Tamio Nueva
+Carta.dc.html`) trae la barra de 50px con "Campos: N de 4", el riel de 250 con
+la miniatura del papel y el formulario en cinco bloques. El repo ya tiene la
+estructura (`.ce-split`, `.ce-barra`, `.ce-hoja`, con guarda en §18); cotejar
+sus medidas una por una es la siguiente pasada.

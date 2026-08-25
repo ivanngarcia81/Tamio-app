@@ -348,6 +348,41 @@ const ctxSeed = await nuevoContexto("ipad");
       entregada_a: miembros[0].nombre, fecha_entrega: hace(18),
     });
 
+    /* Solicitudes y los dos traslados. Sin ellos, las tres tablas del handoff
+       no se pintan nunca —sale el estado vacío— y no hay nada que medir: las
+       columnas de solicitudes, salida y entrada llevaban meses sin que ninguna
+       comprobación las mirara. */
+    await db.insertSolicitud(id, {
+      member_id: miembros[0].id, solicitante_externo: null, tipo_carta: "recomendacion",
+      motivo: "Ingreso al instituto bíblico", fecha_solicitud: hace(6), fecha_requerida: hace(-8),
+      medio_entrega: "impresa", responsable: "Abel Ramos", prioridad: "urgente",
+      estado: "nueva", observaciones: null,
+    });
+    await db.insertSolicitud(id, {
+      member_id: null, solicitante_externo: "Hna. Lupita Sáenz", tipo_carta: "presentacion",
+      motivo: null, fecha_solicitud: hace(11), fecha_requerida: null,
+      medio_entrega: null, responsable: null, prioridad: "normal",
+      estado: "preparacion", observaciones: null,
+    });
+    await db.insertTrasladoSalida(id, {
+      member_id: miembros[1].id, fecha_solicitud: hace(5), motivo: "Cambio de ciudad",
+      iglesia_destino: "Iglesia El Buen Pastor", pastor_receptor: "Ptr. Elías Núñez",
+      direccion: null, ciudad: "Apodaca", region: "N.L.", pais: "México",
+      telefono: null, email: null, fecha_aprobacion: null, aprobado_por: null,
+      carta_id: null, fecha_entrega: null, metodo_entrega: null,
+      confirmacion_recibida: 0, fecha_confirmacion: null, observaciones: null,
+      estado: "cartaPreparacion", member_id_destino: undefined,
+    });
+    await db.insertTrasladoEntrada(id, {
+      nombre: "Nohemí Cárdenas Ibarra", fecha_nacimiento: null, telefono: null, correo: null,
+      direccion: null, iglesia_procedencia: "Iglesia Cristo Vive", pastor_anterior: null,
+      direccion_anterior: null, fecha_emision_carta: null, fecha_recepcion: hace(4),
+      referencia_carta: null, adjunto_path: null, adjunto_nombre: "carta-nohemi.pdf",
+      adjunto_fecha: null, fecha_congregacion: null, fecha_entrevista: null,
+      entrevistador: null, decision: null, fecha_aprobacion: null, observaciones: null,
+      estado: "revision", member_id: null,
+    });
+
     // Agenda: hoy y esta semana
     await db.insertActividad(id, {
       nombre: "Culto matutino", tipo: "cultoRegular", tipo_personalizado: null,
@@ -3570,6 +3605,160 @@ console.log("\n== Un solo botón de crear, y con nombre ==");
     if (c.length === 1) chk(c[0].conNombre, `${ruta}: y dice qué crea ("${c[0].texto}")`);
   }
   await ctxC.close();
+}
+
+/* ---------- 38. Cartas y traslados, rehecha con su handoff --------------
+   Iván: "es la única página que no se diseñó bien". Al medirla salieron tres
+   cosas de fondo, y ninguna era de estilo:
+
+    1. El cuerpo entero estaba escrito DOS VECES —625 líneas idénticas byte
+       por byte, una para el iPad y otra para el Mac—, así que cada arreglo
+       había que hacerlo dos veces y el segundo se olvidaba.
+    2. El panel heredaba `max-width: 720px`, que es la medida de un DOCUMENTO
+       que se lee. Con cinco tablas dentro, los 224px que faltaban salían
+       todos de la única columna elástica: la del nombre.
+    3. Una regla de CSS se había quedado sin su bloque de declaraciones y el
+       navegador la fundía con la siguiente, dándole `flex-direction: column`
+       al botón de alta —el "+" encima de su etiqueta— y perdiendo por el
+       camino el `display: none` que escondía los botones duplicados en el
+       teléfono.
+
+   Lo que se vigila aquí es el RESULTADO de las tres, medido: que la columna
+   del nombre se pueda leer en las cinco tablas, que la fila mida lo que dice
+   el handoff, y que el botón de la barra quepa en una línea. */
+console.log("\n== Cartas y traslados, con su handoff ==");
+{
+  const ctxC = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxC.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-indice-item", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+
+  /* El índice: la sección abierta va del color de la app, no de gris.
+     El acento se compara contra el fondo del botón de alta en vez de contra
+     un verde literal, para que la guarda siga diciendo la verdad si algún
+     día se cambia la marca. */
+  const sel = await pg.evaluate(() => {
+    const cs = (e) => getComputedStyle(e);
+    const s = document.querySelector(".md-indice-item.sel");
+    const n = s ? s.querySelector(".md-indice-nombre") : null;
+    const b = document.querySelector(".header .btn.primary");
+    return {
+      relleno: s ? cs(s).backgroundColor : "ninguno",
+      nombre: n ? cs(n).color : "ninguno",
+      acento: b ? cs(b).backgroundColor : "ninguno",
+      radio: s ? cs(s).borderRadius : "-",
+    };
+  });
+  chk(sel.nombre === sel.acento,
+    `la sección abierta va del acento y no de gris (${sel.nombre} vs ${sel.acento})`);
+  chk(sel.relleno !== "rgba(0, 0, 0, 0)", `con su relleno teñido (${sel.relleno})`);
+  chk(sel.radio === "11px", `y el radio del handoff (${sel.radio})`);
+
+  /* El botón de la barra, en UNA línea. Es lo que destapó la regla rota: con
+     `flex-direction: column` el "+" se apilaba encima de la etiqueta y los
+     dos renglones se salían de un botón de 38. Se mide el alto del contenido
+     contra el del botón, que es lo que se ve. */
+  const boton = await pg.evaluate(() => {
+    const b = document.querySelector(".header .btn.primary");
+    const cs = getComputedStyle(b);
+    return { dir: cs.flexDirection, alto: Math.round(b.getBoundingClientRect().height), desborda: `${b.scrollHeight}>${b.clientHeight}` };
+  });
+  chk(boton.dir === "row", `el botón de alta pone el "+" al lado, no encima (${boton.dir})`);
+  /* Solo el alto de la caja: el `scrollHeight` de este botón vale 47 y no 38
+     a propósito —la zona tocable es un `::before` de `inset: -9px`, que
+     extiende el desbordamiento sin pintar nada—. Comprobarlo habría sido
+     acusar al arreglo de §39 de ser un fallo. */
+  chk(boton.alto === 38, `y cabe en sus 38 (${boton.alto})`);
+
+  /* Las cinco tablas. Lo que se mide es la columna que se LEE —la del nombre,
+     la única elástica— porque es la que pagaba los 224px del `max-width`:
+     con las columnas del handoff y el panel capado se quedaba en 32px.
+     El umbral de 200 no es redondo por gusto: por debajo, "Iglesia El Buen
+     Pastor" ya no cabe entero. */
+  const SECCIONES = [
+    ["Archivo", "tabla-cartas"],
+    ["Plantillas", "tabla-plantillas"],
+    ["Solicitudes", "tabla-solicitudes"],
+    ["Traslado de salida", "tabla-salida"],
+    ["Traslado de entrada", "tabla-entrada"],
+  ];
+  /* Se recorren DOS anchos, y el segundo no es de adorno.
+     A 1366 el panel mide 710 y entran las columnas reducidas; a 1600 mide 944
+     y entran las del handoff completas, que es donde el `max-width: 720px`
+     heredado hacía el destrozo: la columna del nombre bajaba a 32px. Con solo
+     el ancho chico, quitar ese cap no cambia nada y la guarda no lo notaría —
+     se comprobó devolviéndolo. */
+  for (const ancho of [1366, 1600]) {
+  await pg.setViewportSize({ width: ancho, height: 1024 });
+  await pg.waitForTimeout(300);
+  for (const [rotulo, clase] of SECCIONES) {
+    await pg.locator(".md-indice-item", { hasText: rotulo }).first().click();
+    await pg.waitForTimeout(450);
+    const m = await pg.evaluate((clase) => {
+      const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+      const t = document.querySelector(`.data-table.${clase}`);
+      if (!t) return null;
+      const th = t.querySelector(".thead");
+      const tr = t.querySelector(".tr");
+      const vivas = tr ? [...tr.children].filter((c) => cs(c).display !== "none") : [];
+      /* La columna que se lee es la segunda en cuatro de las cinco —la
+         primera es el folio—, pero en Plantillas no hay folio y el nombre es
+         la primera. Se dice aquí en vez de suponerlo: la primera versión de
+         esta guarda medía siempre la segunda y acusaba a Plantillas de tener
+         150px cuando su nombre tenía 240. */
+      const iNombre = clase === "tabla-plantillas" ? 0 : 1;
+      const nombre = vivas.length > iNombre ? Math.round(rc(vivas[iNombre]).width) : 0;
+      return {
+        cabecera: th ? Math.round(rc(th).height) : 0,
+        fila: tr ? Math.round(rc(tr).height) : 0,
+        nombre,
+        columnas: vivas.length,
+        scroll: t.scrollWidth > t.clientWidth + 1,
+      };
+    }, clase);
+    chk(m !== null, `${ancho} · ${rotulo}: la tabla se pinta`);
+    if (!m) continue;
+    chk(m.nombre >= 200, `${ancho} · ${rotulo}: la columna que se lee mide ${m.nombre}px`);
+    chk(m.cabecera === 40, `${ancho} · ${rotulo}: cabecera de 40 (${m.cabecera})`);
+    chk(m.fila <= 62, `${ancho} · ${rotulo}: filas de 58 y no de 75 (${m.fila})`);
+    chk(!m.scroll, `${ancho} · ${rotulo}: sin scroll horizontal`);
+  }
+  }
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.waitForTimeout(300);
+
+  /* El pie del archivo, dentro de la tarjeta: cuántas cartas hay. Sin él la
+     tabla terminaba en seco —`Pagination` se esconde con una sola página— y
+     no se veía cuántas contiene. */
+  await pg.locator(".md-indice-item", { hasText: "Archivo" }).first().click();
+  await pg.waitForTimeout(400);
+  const pie = await pg.evaluate(() => {
+    const p = document.querySelector(".data-table .tabla-pie");
+    return p ? p.textContent.trim() : "sin pie";
+  });
+  chk(/\d+\s+de\s+\d+/.test(pie), `el archivo dice cuántas cartas tiene ("${pie}")`);
+  await ctxC.close();
+
+  /* Y la regla reparada, por su otra mitad: en el teléfono el botón de alta
+     de la cabecera tiene que estar ESCONDIDO —ahí lo cubre el "+" flotante—,
+     que es lo que el `display: none` perdido debía hacer y no hacía. */
+  const ctxF = await nuevoContexto("iphone");
+  const pf = await ctxF.newPage();
+  pf.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pf.setViewportSize({ width: 430, height: 932 });
+  await pf.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pf.waitForTimeout(600);
+  const enFono = await pf.evaluate(() => {
+    const b = document.querySelector(".btn-nuevo-cabecera");
+    if (!b) return "no existe";
+    return getComputedStyle(b).display === "none" ? "escondido" : "VISIBLE";
+  });
+  chk(enFono !== "VISIBLE",
+    `en el teléfono el botón de cabecera no duplica al "+" flotante (${enFono})`);
+  await ctxF.close();
 }
 
 await browser.close();
