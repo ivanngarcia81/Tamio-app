@@ -192,6 +192,7 @@ const PANTALLAS = [
   { nombre: "5-depositos", ruta: "/depositos" },
   { nombre: "6-por-revisar", ruta: "/bandeja" },
   { nombre: "7-ajustes", ruta: "/configuracion" },
+  { nombre: "8-informes", ruta: "/reportes" },
 ];
 
 for (const tema of ["light", "dark"]) {
@@ -205,6 +206,30 @@ for (const tema of ["light", "dark"]) {
     // sin esperar, media captura sale con números a medio contar.
     await page.waitForTimeout(1600);
     const archivo = `${SALIDA}/${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+// Informes: el índice y DOS documentos abiertos. Hay que tocar la fila para
+// llegar: el documento no tiene URL propia (es estado de React, `informe`),
+// así que sin el clic solo se fotografiaría el índice.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const [nombre, fila] of [["estado", "Estado financiero mensual"], ["gastos", "Distribución de gastos"], ["anual", "Reporte anual"]]) {
+    /* Pasar por Inicio antes: el documento abierto NO tiene URL propia (es el
+       estado `informe` de React), así que un `goto` a la misma dirección es una
+       navegación del mismo documento y no remonta nada — la segunda vuelta se
+       quedaba dentro del informe anterior, cuyas filas de categoría también son
+       `.ios-txrow`, y el arnés esperaba una fila que ahí no existe. */
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/reportes`, { waitUntil: "networkidle" });
+    await page.getByText(fila, { exact: true }).first().click();
+    await page.waitForTimeout(1400);
+    const archivo = `${SALIDA}/9-informe-${nombre}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   }

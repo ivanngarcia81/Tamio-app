@@ -18659,3 +18659,79 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    la convención del repo se mantiene (`.tx-amount.negative` en `--text`): en
    una lista donde TODO es un gasto, el rojo deja de informar. */
 :root.iphone .tx-amount.es-gasto { color: var(--neg); }
+
+/* --- 11. Informes: índice y documento (Reportes.tsx en iPhone) -------------
+   El "volver" de la barra fija. Ocupa el hueco izquierdo que en las demás
+   pantallas está vacío, enfrente del "+"/compartir, y es la salida del
+   documento hacia el índice — el equivalente del `dm-volver` que el iPad ya
+   tiene junto a su panel. */
+:root.iphone .ios-nav-volver {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 10px;
+  height: var(--navrow-h);
+  z-index: 101;
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 0 6px;
+  border: 0; background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -.3px;
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-nav-volver:active { opacity: .4; }
+.ios-nav-volver { display: none; }
+:root.iphone .ios-nav-volver { display: inline-flex; }
+
+/* El membrete del índice: iglesia y periodo, el mismo par que ya encabeza el
+   estado financiero. Es lo que hace que el índice se lea como la portada de un
+   juego de documentos y no como otra pantalla de datos. */
+:root.iphone .content > .rep-cabecera {
+  padding: 0 4px 2px;
+  border: 0;
+}
+
+/* La portada del reporte anual: no es una pantalla de datos, es la ficha de un
+   PDF que todavía no existe, así que respira y centra su botón. */
+:root.iphone .rep-documento { padding: 8px 0 0; }
+:root.iphone .rep-documento .ios-section-header { padding-left: 4px; padding-right: 4px; }
+:root.iphone .rep-documento-sub { padding: 0 4px; }
+:root.iphone .rep-documento-sub {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 20px;
+  color: var(--text-2);
+  margin: 0 0 18px;
+}
+:root.iphone .rep-documento .btn.primary { width: 100%; justify-content: center; }
+
+/* Las cuatro cifras del índice de informes. NO son la rejilla de tarjetas KPI
+   que el rediseño retira del resto de la app: son la cabecera de una portada,
+   cuatro datos de un vistazo antes de elegir documento, y por eso van sin caja
+   —sin tarjeta, sin sombra, sin cápsula de variación—. La jerarquía la hacen
+   la etiqueta pequeña en versalitas y la cifra debajo, como en la maqueta. */
+:root.iphone .rep-cifras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 12px;
+  padding: 2px 4px 0;
+}
+:root.iphone .rep-cifra { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+:root.iphone .rep-cifra-k {
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: .2px;
+  text-transform: uppercase;
+  color: var(--text-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+:root.iphone .rep-cifra-v {
+  font-size: calc(22px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+:root.iphone .rep-cifra-v.pos { color: var(--pos); }
+:root.iphone .rep-cifra-v.neg { color: var(--neg); }

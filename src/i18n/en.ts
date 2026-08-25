@@ -467,6 +467,8 @@ export const en: Resources = {
     informeResumenSub: "The last six months, with change",
     informeAnualSub: "All twelve months on one page",
     sinResumenMensual: "No months with activity to compare yet.",
+    // Encabezado del índice de informes en iPhone (rediseño de iOS 26).
+    documentosDelMes: "This month's documents",
   },
 
   depositos: {

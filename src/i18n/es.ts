@@ -463,6 +463,8 @@ export const es = {
     informeResumenSub: "Los últimos seis meses, con variación",
     informeAnualSub: "Los doce meses en una hoja",
     sinResumenMensual: "Todavía no hay meses con movimientos que comparar.",
+    // Encabezado del índice de informes en iPhone (rediseño de iOS 26).
+    documentosDelMes: "Documentos del mes",
   },
 
   depositos: {

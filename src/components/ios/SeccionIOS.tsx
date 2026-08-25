@@ -1,6 +1,22 @@
 import type { ReactNode } from "react";
 
 /**
+ * El galón de una fila que lleva a otra pantalla.
+ *
+ * Vive aquí, con el resto del vocabulario de lista, porque ya había TRES
+ * copias idénticas de estas cinco líneas —`Dashboard.tsx`, `Cartas.tsx` y
+ * `components/ios/FormularioIOS.tsx`— y Reportes iba a ser la cuarta. Las tres
+ * viejas se quedan donde están a propósito: unificarlas es un cambio que toca
+ * tres pantallas que este trabajo no abre, y hacerlo de paso escondería el
+ * arreglo dentro de otro. Cualquiera nueva usa esta.
+ */
+export const IosChevron = () => (
+  <span className="ios-chevron" aria-hidden="true">
+    <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
+  </span>
+);
+
+/**
  * Sección de lista agrupada del teléfono: encabezado + tarjeta inset.
  *
  * El handoff pedía un `ListaIOS`/`FilaIOS` con clases propias
