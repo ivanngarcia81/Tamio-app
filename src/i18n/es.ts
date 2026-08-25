@@ -173,6 +173,10 @@ export const es = {
     ingresoMasFrecuente: "Ingreso más frecuente",
     movimientosUnidad: "movimientos",
     sinIngresosEsteMes: "Sin ingresos este mes",
+    // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
+    // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
+    resumenDelMes: "Resumen del mes",
+    detalleDelMes: "Detalle del mes",
     // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
     // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos
     // listas del pie.
@@ -390,6 +394,8 @@ export const es = {
     archivarMensaje_zero: "\"{{nombre}}\" aparece en la asistencia de servicios registrados. No se puede eliminar sin romper ese historial, así que se archivará: dejará de aparecer en la lista, pero su historial se conserva.",
     eliminarMensaje: "¿Eliminar a \"{{nombre}}\"? No tiene movimientos registrados. Esta acción no se puede deshacer.",
     archivar: "Archivar",
+    // Tira de iniciales del rediseño de iOS 26 (solo iPhone).
+    indiceAlfabetico: "Índice alfabético",
   },
 
   reportes: {

@@ -17,6 +17,9 @@ import MemberDetailModal from "../components/MemberDetailModal";
 import LoadingState from "../components/LoadingState";
 import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
+import SeccionIOS from "../components/ios/SeccionIOS";
+import { agruparPorInicial, inicialDe } from "../components/ios/agrupado";
+import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { MIEMBROS_CSV_TEMPLATE, MIEMBROS_FIELDS, validarFilaMiembro } from "../services/importMiembrosCsv";
@@ -218,13 +221,114 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   const nActivos = members.filter((m) => m.activo === 1).length;
   const nBajas = members.length - nActivos;
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
-  const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* En el teléfono la lista se ordena por NOMBRE, y no por "activos primero"
+     como la deja `listMembersRegistro`. No es un capricho del rediseño: la
+     tira de iniciales de la derecha (`.ios-indice`) solo funciona sobre una
+     lista alfabética — con los activos delante y las bajas detrás, cada letra
+     abría DOS secciones y tocar "M" no podía llevar a ninguna de las dos.
+     No se pierde el corte por estado: sigue estando el filtro de arriba
+     (Todos / Activos / Bajas) y cada fila canta el suyo en la secundaria. */
+  const ordenados = enIPhone
+    ? [...visibles].sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { sensitivity: "base" }))
+    : visibles;
+  /* Y la página CRECE en vez de moverse (scroll infinito), igual que en
+     Movimientos y Depósitos. */
+  const pagina = enIPhone
+    ? ordenados.slice(0, page * PAGE_SIZE)
+    : visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const centinela = useScrollInfinito(
+    enIPhone && page < totalPages,
+    () => setPage((p) => Math.min(p + 1, totalPages)),
+  );
+
+  /* Las iniciales de la tira salen de la lista ENTERA, no de lo ya cargado:
+     un índice que solo ofrece las letras de la primera página miente sobre lo
+     que hay debajo. Tocar una letra que aún no está cargada abre páginas hasta
+     alcanzarla (ver `irALetra`). */
+  const inicialesPresentes = useMemo(() => {
+    const vistas = new Set<string>();
+    const orden: string[] = [];
+    for (const m of ordenados) {
+      const l = inicialDe(m.nombre);
+      if (!vistas.has(l)) { vistas.add(l); orden.push(l); }
+    }
+    return orden;
+  }, [ordenados]);
+  /* La letra a la que hay que saltar en cuanto esté pintada. El salto no puede
+     hacerse en el mismo tic que el `setPage`: la sección todavía no existe en
+     el DOM. Se guarda aquí y un efecto la busca después del repintado. */
+  const [saltarA, setSaltarA] = useState<string | null>(null);
+
+  function irALetra(letra: string) {
+    const i = ordenados.findIndex((m) => inicialDe(m.nombre) === letra);
+    if (i < 0) return;
+    // Abrir tantas páginas como haga falta para que esa letra esté cargada.
+    setPage((p) => Math.max(p, Math.ceil((i + 1) / PAGE_SIZE)));
+    setSaltarA(letra);
+  }
+
+  useEffect(() => {
+    if (!saltarA) return;
+    const destino = document.getElementById(`ios-letra-${saltarA}`);
+    // `block: "start"` con el `scroll-padding-top` que `.main` ya declara: el
+    // encabezado de la letra queda justo debajo de la barra fija, no detrás.
+    destino?.scrollIntoView({ block: "start", behavior: "smooth" });
+    setSaltarA(null);
+  }, [saltarA, pagina.length]);
   // Muchas iglesias no usan etiquetas: la columna quedaba entera con guiones,
   // ocupando ancho que las demás necesitan. Se muestra solo si alguien la usa.
   const hayEtiquetas = members.some((m) => {
     try { return (JSON.parse(m.etiquetas) as string[]).length > 0; } catch { return false; }
   });
   const cols = hayEtiquetas ? MEMBER_COLS : MEMBER_COLS_SIN_ETIQUETAS;
+
+  /* La fila del teléfono, con nombre propio: desde el rediseño se pinta
+     DENTRO de una sección por letra, así que ya no puede vivir en línea en el
+     `map` de la tabla del escritorio. El contenido no cambia ni una línea.
+     `i` sigue siendo la posición en la lista, que es de donde sale el color
+     del avatar — se pasa desde fuera porque dentro de una sección el índice
+     empezaría de cero en cada letra y las tres primeras filas de cada grupo
+     saldrían del mismo color. */
+  function filaIPhone(m: Member, i: number) {
+    const stat = stats[m.id];
+    return (
+                <div
+                  className="ios-txrow ios-txrow--clickable"
+                  data-fila
+                  key={m.id}
+                  onClick={() => setDetalle(m)}
+                  onContextMenu={(e) =>
+                    abrirMenu(e, [
+                      { label: t("common.verFicha"), onClick: () => setDetalle(m) },
+                      { label: t("common.editar"), onClick: () => onEdit(m) },
+                      { label: t("common.eliminar"), danger: true, onClick: () => requestDelete(m) },
+                    ])}
+                >
+                  <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                    {initials(m.nombre)}
+                  </div>
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title" title={m.nombre}>{m.nombre}</div>
+                    <div className="tx-secundaria-movil" title={m.email ?? undefined}>
+                      {m.email ?? t("miembros.sinCorreoRegistrado")}
+                    </div>
+                  </div>
+                  <div className="ios-txrow-trailing">
+                    {stat?.totalAnio ? (
+                      <span className="tx-amount positive">
+                        {fmtMoney(stat.totalAnio)}<span className="cur">{church.moneda}</span>
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-3)", fontSize: "calc(15px * var(--fs-escala))" }}>—</span>
+                    )}
+                  </div>
+                  <RowMenu
+                    onEdit={() => onEdit(m)}
+                    onDelete={() => requestDelete(m)}
+                  />
+                </div>
+    );
+  }
 
   /* ---- Piezas que se pintan en más de un sitio ----
      El resumen sale en el layout de siempre Y en el maestro-detalle del iPad
@@ -488,27 +592,40 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
       <div className="content content-lienzo">
         {!loading && (
           enIPhone ? (
-            <div className="ios-panel">
-              <div className="ios-panel-head"><h2>{t("miembros.seccionResumen")}</h2></div>
-              <div className="ios-panel-grid">
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statTotal")}</span></div>
-                  <span className="ios-stat-num"><CountUp value={resumen.total} format={String} /></span>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statDiezmadores")}</span></div>
-                  <span className="ios-stat-num"><CountUp value={resumen.diezmadores} format={String} /></span>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statAportaronAnio")}</span></div>
-                  <span className="ios-stat-num"><CountUp value={resumen.aportaron} format={String} /></span>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("miembros.statTotalAnio")}</span></div>
-                  <span className="ios-stat-num money"><CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></span>
+            /* Rediseño de iOS 26 (GUIA §4): las cuatro tarjetas de resumen
+               pasan a las cuatro filas de una lista agrupada. Tres de las
+               cuatro son un conteo suelto —un número sin unidad ni pie—, y en
+               una tarjeta de media pantalla ese número ocupaba 40px de alto
+               para decir "148". En fila, la etiqueta y la cifra caben en el
+               mismo renglón y las cuatro se leen de un vistazo. */
+            <SeccionIOS titulo={t("miembros.seccionResumen")}>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("miembros.statTotal")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor"><CountUp value={resumen.total} format={String} /></span>
                 </div>
               </div>
-            </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("miembros.statDiezmadores")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor"><CountUp value={resumen.diezmadores} format={String} /></span>
+                </div>
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("miembros.statAportaronAnio")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor"><CountUp value={resumen.aportaron} format={String} /></span>
+                </div>
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("miembros.statTotalAnio")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="tx-amount positive">
+                    <CountUp value={resumen.totalAnio} format={fmtMoney} paso={100} />
+                  </span>
+                </div>
+              </div>
+            </SeccionIOS>
           ) : resumenEscritorio
         )}
 
@@ -526,8 +643,44 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
 
         {loading ? (
           <LoadingState />
-        ) : visibles.length === 0 ? estadoVacio : (
-          <div className={enIPhone ? "ios-listcard" : "data-table roomy tabla-miembros"}>
+        ) : visibles.length === 0 ? estadoVacio : enIPhone ? (
+          /* Rediseño de iOS 26 (GUIA §4): secciones por letra e índice
+             alfabético, como Contactos. La fila es la MISMA de antes —el
+             `filaIPhone` de abajo—; lo que cambia es que en vez de una sola
+             tarjeta de 30 filas hay una tarjeta por inicial, con su letra
+             pegajosa arriba. */
+          <>
+            {agruparPorInicial(pagina, (m) => m.nombre).map((seccion) => (
+              <section className="ios-section ios-section--indexada" key={seccion.clave}>
+                <h2 className="ios-section-header ios-section-header--letra" id={`ios-letra-${seccion.clave}`}>
+                  {seccion.etiqueta}
+                </h2>
+                <div className="ios-listcard">
+                  {seccion.items.map((m) => filaIPhone(m, ordenados.indexOf(m)))}
+                </div>
+              </section>
+            ))}
+            <div ref={centinela} aria-hidden="true" />
+            {/* La tira de iniciales. `nav` y no una lista de botones sueltos:
+                es navegación dentro de la pantalla, y el lector de pantalla
+                tiene que poder saltársela entera. */}
+            {inicialesPresentes.length > 1 && (
+              <nav className="ios-indice" aria-label={t("miembros.indiceAlfabetico")}>
+                {inicialesPresentes.map((letra) => (
+                  <button
+                    type="button"
+                    key={letra}
+                    className="ios-indice-letra"
+                    onClick={() => irALetra(letra)}
+                  >
+                    {letra}
+                  </button>
+                ))}
+              </nav>
+            )}
+          </>
+        ) : (
+          <div className="data-table roomy tabla-miembros">
             {!enIPhone && (
               <div className="thead" style={{ gridTemplateColumns: cols }}>
                 <div className="th">{t("miembros.colMiembro")}</div>
@@ -543,45 +696,6 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
               try { etiquetas = JSON.parse(m.etiquetas); } catch { /* noop */ }
               const stat = stats[m.id];
 
-              if (enIPhone) {
-                return (
-                  <div
-                    className="ios-txrow ios-txrow--clickable"
-                    data-fila
-                    key={m.id}
-                    onClick={() => setDetalle(m)}
-                    onContextMenu={(e) =>
-                      abrirMenu(e, [
-                        { label: t("common.verFicha"), onClick: () => setDetalle(m) },
-                        { label: t("common.editar"), onClick: () => onEdit(m) },
-                        { label: t("common.eliminar"), danger: true, onClick: () => requestDelete(m) },
-                      ])}
-                  >
-                    <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-                      {initials(m.nombre)}
-                    </div>
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title" title={m.nombre}>{m.nombre}</div>
-                      <div className="tx-secundaria-movil" title={m.email ?? undefined}>
-                        {m.email ?? t("miembros.sinCorreoRegistrado")}
-                      </div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      {stat?.totalAnio ? (
-                        <span className="tx-amount positive">
-                          {fmtMoney(stat.totalAnio)}<span className="cur">{church.moneda}</span>
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--text-3)", fontSize: "calc(15px * var(--fs-escala))" }}>—</span>
-                      )}
-                    </div>
-                    <RowMenu
-                      onEdit={() => onEdit(m)}
-                      onDelete={() => requestDelete(m)}
-                    />
-                  </div>
-                );
-              }
 
               return (
                 <div
@@ -651,7 +765,9 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
             })}
           </div>
         )}
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {/* En el teléfono el paginador lo sustituye el centinela de scroll
+            infinito que va dentro de la rama de secciones, arriba. */}
+        {!enIPhone && <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
       </div>
       )}
 

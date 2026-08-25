@@ -18168,3 +18168,460 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      maestra y con la barra en una sola mancha. */
   :root.ipad .main:has(.md-split) { background: var(--bg); }
 }
+
+/* ============================================================================
+   REDISEÑO DE iPHONE — iOS 26 (Liquid Glass)
+   Handoff «Tamio app rediseño iOS nativo», agosto de 2026:
+   maquetas en `Tamio iPhone iOS26.dc.html`, guía en `rediseno-iphone/GUIA.md`.
+
+   Va al FINAL del archivo a propósito: todo lo de aquí es un ajuste sobre
+   reglas de iPhone que ya existen más arriba (`.ios-group`, `.ios-listcard`,
+   `.barra-inferior`…), y con la misma especificidad gana la última. Así el
+   rediseño se lee de un tirón en vez de quedar desperdigado en catorce sitios,
+   y se puede quitar entero borrando este bloque.
+
+   TRES DECISIONES DE FONDO, porque la guía del handoff propone cosas que el
+   repo ya tenía resueltas de otra manera y copiarlas habría dejado dos
+   sistemas haciendo lo mismo:
+
+   1. La guía pide componentes `ListaIOS`/`FilaIOS` con clases nuevas
+      (`.ios-lista`, `.ios-grupo`, `.ios-fila`). El repo YA tiene ese patrón
+      —`.ios-section` / `.ios-section-header` / `.ios-group` / `.ios-row`—
+      montado en Ajustes, Ayuda y Cuenta, y `.ios-lista` además ya significa
+      otra cosa (el índice de Configuracion.tsx). Aquí se re-tematiza el
+      vocabulario que ya existe; no se añade uno paralelo.
+   2. La guía pide un `NavGrandeIOS` que escuche el scroll con `useState`. El
+      repo ya mueve el Large Title a la barra fija con `--progreso-titulo`
+      (App.tsx ~245), escrito desde el evento de scroll sin pasar por React —
+      que es justamente lo que evita el re-render por frame que la propuesta
+      del handoff tendría. Se conserva el del repo; lo único que cambia es el
+      MATERIAL de la barra, aquí abajo.
+   3. La guía pide un `useSwipeFila` de veinte líneas. El repo tiene
+      `useFilaDeslizable` con zona muerta, una sola fila abierta a la vez,
+      umbral doble de abrir/cerrar y borrado al deslizar del todo. El nuevo
+      sería un retroceso; se usa el que hay.
+
+   Todo va prefijado con `:root.iphone`: ni Mac ni iPad ven una sola de estas
+   reglas, tal como pide la guía.
+   ============================================================================ */
+
+:root.iphone {
+  /* Radio de las tarjetas inset. iOS 26 lo sube de 10 a 18 — es el cambio de
+     medida más visible del rediseño y por eso vive en un token: lo leen la
+     lista agrupada, la tarjeta de gráfica y la tarjeta de lista. */
+  --ios-radio: 18px;
+  /* Alto mínimo de fila táctil. 44 es el mínimo de Apple, no una sugerencia. */
+  --ios-fila: 44px;
+  /* Material Liquid Glass de las barras (nav bar y tab bar). No usa
+     `--surface` con color-mix como `.app::after`: ese material es para una
+     franja pegada al borde de la pantalla, y estas dos barras FLOTAN sobre el
+     contenido, así que necesitan ser más transparentes para que se note que
+     hay algo debajo. */
+  --ios-glass: rgba(255, 255, 255, .72);
+  --ios-glass-linea: rgba(0, 0, 0, .07);
+  /* Separador entre filas de un grupo. `--line` (#ececea) es el separador de
+     escritorio: sobre el blanco de una tarjeta inset casi no se ve. Este es el
+     `separator` del sistema, que está pensado exactamente para eso. */
+  --ios-sep: rgba(60, 60, 67, .18);
+  /* Sombra de tarjeta inset: un pelo, solo para despegarla del gris de fondo.
+     En oscuro se apaga (sobre negro una sombra no separa nada). */
+  --ios-sombra: 0 1px 2px rgba(0, 0, 0, .04);
+}
+/* El mismo par de reglas que ya usan `.ios-picker-chip` y los `input[type=date]`
+   del teléfono más arriba: `data-theme` puede valer "auto" durante el primer
+   pintado (el script de arranque de index.html guarda la PREFERENCIA, no el
+   tema resuelto, y React solo la traduce al montarse), así que el atributo
+   solo no basta y hace falta la consulta de sistema como respaldo. */
+:root.iphone[data-theme="dark"] {
+  --ios-glass: rgba(28, 28, 30, .72);
+  --ios-glass-linea: rgba(255, 255, 255, .12);
+  --ios-sep: rgba(84, 84, 88, .65);
+  --ios-sombra: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) {
+    --ios-glass: rgba(28, 28, 30, .72);
+    --ios-glass-linea: rgba(255, 255, 255, .12);
+    --ios-sep: rgba(84, 84, 88, .65);
+    --ios-sombra: none;
+  }
+}
+
+/* --- 1. Lista agrupada inset -----------------------------------------------
+   La pieza central del rediseño: lo que hoy es una rejilla de tarjetas KPI o
+   una tabla pasa a ser una lista agrupada. Las clases ya existen (Ajustes,
+   Ayuda, Cuenta); aquí solo cambian de medida y de material. */
+
+/* Radio 18 en las dos cajas agrupadoras del teléfono: la de Ajustes
+   (`.ios-group`) y la de las pantallas de datos (`.ios-listcard`). Iban a 10 y
+   16 y se veían como dos familias distintas de tarjeta en la misma app. */
+:root.iphone .ios-group,
+:root.iphone .ios-listcard {
+  border-radius: var(--ios-radio);
+  box-shadow: var(--ios-sombra);
+}
+
+/* Encabezado de grupo: mayúsculas, 13/600, tracking .4 — el `header` de la
+   lista inset de iOS 26. La sangría es de 20px (16 del inset del grupo + 4) y
+   NO de 32: el rediseño saca el encabezado hacia afuera del texto de las
+   filas en vez de alinearlo con él, que es lo que hace la maqueta en las
+   catorce pantallas donde aparece, Ajustes incluido. */
+:root.iphone .ios-section-header {
+  font-weight: 600;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 0 20px 7px;
+}
+:root.iphone .ios-section-footer { padding: 7px 20px 0; }
+
+/* `.ios-panel-head h2` era el título de 22px en negrita de las pantallas de
+   datos (Depósitos → "Historial", Miembros → "Resumen"). En la maqueta esos
+   títulos son el MISMO encabezado de grupo que en Ajustes: no hay dos
+   jerarquías de sección en el teléfono, hay una. Se iguala aquí en vez de
+   tocar las nueve páginas que lo montan. */
+:root.iphone .ios-panel-head {
+  align-items: baseline;
+  margin: 0 0 7px;
+  padding: 0 4px;
+}
+:root.iphone .ios-panel-head h2 {
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 18px;
+  font-weight: 600;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+/* La acción de la derecha ("Ver todo") baja de 17 a 15: al lado de un
+   encabezado de 13 en mayúsculas, a 17 era el elemento más grande de la fila
+   y se leía como el título. */
+:root.iphone .ios-panel-action { font-size: calc(15px * var(--fs-escala)); font-weight: 500; }
+
+/* Separador de las filas de datos: el mismo `separator` del sistema que las
+   filas de Ajustes, y a ancho COMPLETO. La sangría de 57px de `.ios-row`
+   arranca donde empieza el texto porque ahí hay un tile de 29px delante; en
+   una fila de datos sin tile, esa sangría dejaba un escalón sin motivo. */
+:root.iphone .ios-row:not(:last-child)::after,
+:root.iphone .ios-txrow:not(:last-child)::after,
+:root.iphone .ios-listrow:not(:last-child)::after { background: var(--ios-sep); }
+:root.iphone .ios-listcard .ios-txrow:not(:last-child)::after,
+:root.iphone .ios-listcard .ios-listrow:not(:last-child)::after { left: 16px; }
+
+/* Fila: 44px mínimo y cuerpo de 17 con el tracking de iOS. */
+:root.iphone .ios-row { min-height: var(--ios-fila); }
+
+/* Punto de categoría: en el teléfono la etiqueta de color deja de ser un chip
+   `.tag` (patrón de tabla web, y a 393px roba la mitad del ancho al concepto)
+   y pasa a ser un punto de 7px delante del subtítulo, como en Recordatorios. */
+:root.iphone .ios-punto {
+  flex: 0 0 auto;
+  width: 7px; height: 7px;
+  border-radius: 4px;
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+/* --- 2. La barra fija, con material de iOS 26 ------------------------------
+   El mecanismo NO cambia (ver decisión 2 arriba): sigue siendo `.app::after`
+   ganando opacidad cuando `--progreso-titulo` llega a 1. Lo que cambia es de
+   qué está hecha: 72% + blur 30 + saturate 180 en vez de 88% + blur 20. La
+   maqueta deja ver el contenido a través de la barra; con 88% no se veía. */
+:root.iphone .app::after {
+  background: var(--ios-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+  border-bottom: .5px solid var(--ios-glass-linea);
+}
+
+/* El "+" y el de compartir, de glifo suelto a cápsula de vidrio. Es el cambio
+   que la guía pide en su punto 1 ("nunca `.btn primary`"): en la maqueta esos
+   dos botones se leen SIEMPRE, también sobre una lista blanca, porque llevan
+   su propio material — antes, sin barra detrás (la barra nace transparente),
+   un glifo verde sobre una tarjeta blanca casi desaparecía. */
+:root.iphone .btn-crear,
+:root.iphone .btn-compartir-cabecera.btn-compartir-cabecera,
+:root.iphone .btn-header-menu-icono {
+  width: 34px; height: 34px;
+  margin-top: calc((var(--navrow-h) - 34px) / 2);
+  border: .5px solid var(--ios-glass-linea);
+  border-radius: 17px;
+  background: var(--ios-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--brand, #059669);
+}
+/* 14px del borde y 8px entre cápsulas, las medidas de la maqueta. Los offsets
+   de más arriba (16 / 68) estaban calculados para glifos de 44px de ancho sin
+   fondo; con cápsulas de 34 dejaban un hueco de 18px entre las dos. */
+:root.iphone .btn-crear { right: 14px !important; }
+:root.iphone .btn-compartir-cabecera { right: 56px !important; }
+:root.iphone .btn-header-menu-icono { right: 14px !important; }
+/* Con la barra ya opaca detrás, la cápsula sobra: dos vidrios superpuestos se
+   ven como un parche más claro sobre la barra. Se disuelve al mismo tiempo que
+   la barra aparece, con la misma señal (`.main.scrolled`) que ya usa `::after`. */
+:root.iphone .app:has(.main.scrolled) .btn-crear,
+:root.iphone .app:has(.main.scrolled) .btn-compartir-cabecera.btn-compartir-cabecera,
+:root.iphone .app:has(.main.scrolled) .btn-header-menu-icono {
+  border-color: transparent;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* --- 3. Tab bar flotante ---------------------------------------------------
+   De franja pegada al borde inferior a píldora flotante con margen: el cambio
+   de forma de iOS 26. El alto real sigue siendo `--tabbar-h` (49px, la medida
+   de UIKit); lo que se añade es el margen de 14px a los lados y los 12px que
+   la levantan del home indicator. */
+:root.iphone .barra-inferior {
+  left: 14px; right: 14px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  padding-bottom: 0;
+  padding-inline: 4px;
+  border: .5px solid var(--ios-glass-linea);
+  border-top: .5px solid var(--ios-glass-linea);
+  border-radius: calc((var(--tabbar-h) + 9px) / 2);
+  background: var(--ios-glass);
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, .35);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+}
+/* La píldora mide 58px de alto (49 de la tab bar + 9 de aire): las ranuras
+   crecen con ella para que el objetivo táctil siga siendo toda la altura. */
+:root.iphone .barra-item { min-height: calc(var(--tabbar-h) + 9px); padding: 4px 2px 0; }
+:root.iphone .barra-label { font-weight: 600; letter-spacing: -.1px; }
+/* La insignia llevaba un borde del color de la barra para recortarse contra
+   ella; sobre vidrio ese borde tiene que ser del vidrio, no de `--surface`. */
+:root.iphone .barra-badge { border: 1.5px solid var(--ios-glass); top: 2px; }
+
+/* Y el contenido tiene que respirar por debajo de una barra que ahora FLOTA:
+   a los 49+16 de antes hay que sumarles los 12 que la levantan. */
+:root.iphone .content { padding-bottom: calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom)); }
+
+/* --- 4. Lo que se apaga en el teléfono ------------------------------------
+   El paginador numérico es de navegador: en iOS una lista larga se carga sola
+   al llegar al final (ver `useScrollInfinito`). Se apaga por CSS ADEMÁS de no
+   montarse en las páginas ya migradas, para que ninguna que quede por migrar
+   lo enseñe mientras tanto. */
+:root.iphone .pagination { display: none; }
+
+/* --- 5. Tarjeta de gráfica -------------------------------------------------
+   `DashboardCharts` se queda en el teléfono (la guía es explícita), pero con
+   el cromo de una tarjeta de Salud o Bolsa: mismo radio y misma sombra que la
+   lista agrupada de al lado, sin borde, y con la leyenda separada por el mismo
+   `separator`. Recharts sigue dibujando igual; lo que cambia son las medidas
+   —maxBarSize, radio de barra, tickCount y alto— y esas viven en el TSX. */
+:root.iphone .charts { gap: 12px; }
+:root.iphone .charts .card {
+  border: none;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  padding: 12px 16px 10px;
+  box-shadow: var(--ios-sombra);
+}
+:root.iphone .charts .card-head { margin: 0 0 10px; }
+:root.iphone .charts .card-title { font-size: calc(15px * var(--fs-escala)); font-weight: 600; letter-spacing: -.2px; color: var(--text); }
+:root.iphone .charts .card-meta { font-size: calc(13px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .charts .legend {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: .5px solid var(--ios-sep);
+  font-size: calc(13px * var(--fs-escala));
+  color: var(--text-2);
+}
+
+/* --- 6. Cifra grande bajo el título ---------------------------------------
+   Reemplaza a la primera tarjeta KPI de la rejilla. En la maqueta el dato que
+   define la pantalla no es una tarjeta más entre ocho: es una cifra suelta
+   pegada al Large Title, como el saldo de Cartera o el total de Salud.
+   Vive dentro de `.content`, que ya pone su propio padding horizontal; los
+   20px de aquí son los que alinean la cifra con el título grande. */
+:root.iphone .ios-hero { padding: 14px 4px 0; }
+:root.iphone .ios-hero-cifra {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+:root.iphone .ios-hero-num {
+  font-size: calc(40px * var(--fs-escala));
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -1.4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+:root.iphone .ios-hero-moneda { font-size: calc(15px * var(--fs-escala)); font-weight: 600; color: var(--text-2); }
+:root.iphone .ios-hero-pie {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--text-2);
+}
+/* El `Delta` de porcentaje ya viene en cápsula tintada (`.delta.good/.bad`,
+   ~1296): al lado de una cifra de 40px solo le faltaba tamaño — a
+   `--fs-caption` (11px) se leía como una nota al pie. */
+:root.iphone .ios-hero-pie .delta {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 600;
+}
+
+/* --- 7. Índice alfabético (Miembros) --------------------------------------
+   La tira de iniciales pegada al borde derecho. Solo se pintan las letras que
+   de verdad tienen a alguien detrás (`new Set` sobre los nombres cargados):
+   una A–Z completa con veinte letras muertas es una tira decorativa, y al
+   tocar una letra vacía no pasaría nada. */
+:root.iphone .ios-indice {
+  position: fixed;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5px;
+  padding: 4px 3px;
+  margin: 0;
+  border: 0;
+  background: none;
+  /* El dedo arrastra por la tira: sin esto, el navegador interpreta el
+     arrastre vertical como scroll de la página y la letra no cambia. */
+  touch-action: none;
+}
+:root.iphone .ios-indice-letra {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  font: inherit;
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--brand, #059669);
+  cursor: pointer;
+}
+/* Encabezado de letra: pegajoso, como en Contactos — al desplazar, la letra
+   de la sección en curso se queda arriba hasta que la empuja la siguiente. */
+:root.iphone .ios-section--indexada .ios-section-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  background: var(--bg);
+}
+
+/* --- 8. Acciones deslizables en las listas de datos -----------------------
+   El gesto y el panel ya existen (`useFilaDeslizable` + `.fila-acciones`, que
+   RowMenu monta en un portal). Lo único que faltaba era que `.ios-txrow`
+   —transparente por diseño, para heredar el blanco de `.ios-listcard`— tuviera
+   fondo PROPIO mientras se desliza: sin él se veía el panel rojo a través de
+   la fila que lo tapa. Es el mismo arreglo que la línea ~4197 ya hizo para
+   `.ios-row` dentro de `.ios-swipe`. */
+:root.iphone .ios-swipe .ios-txrow,
+:root.iphone .ios-swipe .ios-listrow { background: var(--surface); }
+
+/* --- 9. La retícula de 16px ------------------------------------------------
+   La maqueta apoya TODO en un inset de 16px: la tarjeta agrupada, la de la
+   gráfica y la cifra grande. `.content` iba a 14 (~9099) y las tarjetas
+   quedaban 2px fuera de esa columna. Se iguala aquí, en el teléfono y solo en
+   el teléfono, y así ninguna pantalla necesita margen propio para caer en
+   su sitio. */
+:root.iphone .content { padding-left: 16px; padding-right: 16px; }
+
+/* Dentro de `.content` el inset ya lo pone él, así que el encabezado solo
+   necesita los 4px que lo sacan del texto de las filas. En Ajustes la sección
+   cuelga de `.ios-form`, que no tiene padding, y ahí siguen valiendo los 20
+   de la regla general de arriba. */
+:root.iphone .content .ios-section-header { padding-left: 4px; padding-right: 4px; }
+:root.iphone .content .ios-section-footer { padding-left: 4px; padding-right: 4px; }
+
+/* 35px entre secciones es el aire de una hoja de Ajustes, donde cada grupo es
+   un tema distinto. En una lista de datos las secciones son el MISMO tema
+   partido por fecha, y a 35px se leían como pantallas separadas: la maqueta
+   las deja en 22.
+
+   Y son 6, no 22, porque `.content` (y `.dash-canvas` dentro de él) son flex
+   en columna con `gap: var(--space-4)` = 16px: ese hueco ya está puesto entre
+   hermanos, y un margen de 22 encima habría dado 38. 16 + 6 = los 22 de la
+   maqueta. */
+:root.iphone .content .ios-section { margin-bottom: 6px; }
+:root.iphone .content .ios-section:last-of-type { margin-bottom: 0; }
+
+/* Valor secundario a la derecha de una fila de datos ("148", "hace 2 h"): el
+   equivalente de `.ios-row-value` de Ajustes para las filas de `.ios-txrow`,
+   que no lo tenían porque hasta ahora su lado derecho era siempre un importe.
+   Tabular a propósito: en una columna de cifras, las cifras se alinean. */
+:root.iphone .ios-fila-valor {
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.41px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* La cifra grande hereda el signo por color, como el `.amount` de la cabecera
+   de escritorio, y no por un "+"/"−" delante: en un saldo el signo ya lo trae
+   el propio número cuando es negativo. */
+:root.iphone .ios-hero-num.pos { color: var(--pos); }
+:root.iphone .ios-hero-num.neg { color: var(--neg); }
+
+/* Encabezado de LETRA (Miembros): más peso y sin mayúsculas forzadas ni
+   tracking — es una inicial, no un rótulo de sección, y a 13px con .4px de
+   separación una "A" suelta se leía como una errata. Es el mismo tamaño y
+   peso que usa Contactos. */
+:root.iphone .ios-section-header--letra {
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -.2px;
+  text-transform: none;
+  color: var(--text);
+}
+
+/* --- 10. Botón de texto de la nav bar -------------------------------------
+   La cápsula de vidrio del handoff para las acciones de pantalla que no son
+   el "+" ("Aprobar todo" en Por revisar). Comparte material y ranura con el
+   "+"/compartir de arriba —position:fixed en la misma fila, mismo z-index—
+   porque las tres son la MISMA barra; lo que cambia es que esta lleva texto,
+   así que crece a lo ancho en vez de ser un círculo de 34.
+
+   Nunca `.btn primary`: un botón rectangular de color relleno en la cabecera
+   es el tic de web app que el rediseño viene a quitar (GUIA §1). */
+:root.iphone .ios-nav-btn {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  right: 14px;
+  margin-top: calc((var(--navrow-h) - 34px) / 2);
+  z-index: 101;
+  display: inline-flex; align-items: center; gap: 5px;
+  min-width: 34px; height: 34px;
+  padding: 0 13px;
+  border: .5px solid var(--ios-glass-linea);
+  border-radius: 17px;
+  background: var(--ios-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--brand, #059669);
+  font: inherit;
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -.2px;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--dur) ease;
+}
+:root.iphone .ios-nav-btn:active { opacity: .5; }
+/* Igual que el "+": con la barra ya opaca detrás, el vidrio propio sobra. */
+:root.iphone .app:has(.main.scrolled) .ios-nav-btn {
+  border-color: transparent;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* Fuera del teléfono no existe: en Mac e iPad la acción vive en su cabecera. */
+.ios-nav-btn { display: none; }
+:root.iphone .ios-nav-btn { display: inline-flex; }

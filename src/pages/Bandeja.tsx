@@ -277,7 +277,16 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        {!enIPhone && (
+        {enIPhone ? (
+          /* Rediseño de iOS 26: el teléfono tampoco pintaba `.page-title` aquí
+             —arrancaba directo por la lista—, así que la copia fija de la
+             barra (`.titulo-fijo`, App.tsx) se quedaba sin texto y al
+             desplazar la barra no decía en qué pantalla estabas. El subtítulo
+             sigue sin salir: sus dos cifras ya viven en el encabezado de cada
+             uno de los dos bloques, que además dice a cuál pertenece cada
+             una. */
+          <div className="page-title">{t("bandeja.titulo")}</div>
+        ) : (
           <div>
             <div className="page-title">{t("bandeja.titulo")}</div>
             <div className="page-sub">
@@ -287,6 +296,20 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
             </div>
           </div>
         )}
+        {/* "Aprobar todo" en la barra fija, la esquina donde iOS pone la
+            acción de la pantalla. Hasta ahora esta acción SOLO existía en el
+            maestro-detalle del iPad (`al-cabecera`, más abajo): en el teléfono
+            había que aprobar de una en una. Sale únicamente cuando hay algo
+            que aprobar, como el chip del iPad. */}
+        {enIPhone && conteos.get("pendiente") ? (
+          <button
+            type="button"
+            className="ios-nav-btn"
+            onClick={() => void handleAprobarTodo()}
+          >
+            {t("bandeja.aprobarTodo")}
+          </button>
+        ) : null}
       </div>
 
       {/* ---- Maestro-detalle (iPad) ----

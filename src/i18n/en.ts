@@ -179,6 +179,10 @@ export const en: Resources = {
     ingresoMasFrecuente: "Most frequent income",
     movimientosUnidad: "transactions",
     sinIngresosEsteMes: "No income this month",
+    // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
+    // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
+    resumenDelMes: "This month",
+    detalleDelMes: "Details",
     // El Inicio del iPad (diseño del handoff).
     corteHoy: "the monthly close is today",
     corteDias_one: "the monthly close is tomorrow",
@@ -394,6 +398,8 @@ export const en: Resources = {
     archivarMensaje_zero: "\"{{nombre}}\" appears in the attendance of recorded services. Deleting would break that history, so they will be archived instead: they disappear from the list, but their history is kept.",
     eliminarMensaje: "Delete \"{{nombre}}\"? They have no recorded transactions. This action cannot be undone.",
     archivar: "Archive",
+    // Tira de iniciales del rediseño de iOS 26 (solo iPhone).
+    indiceAlfabetico: "Alphabetical index",
   },
 
   reportes: {

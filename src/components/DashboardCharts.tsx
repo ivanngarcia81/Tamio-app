@@ -106,19 +106,37 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
   const gradId = `bal-grad-${useId().replace(/:/g, "")}`;
   const enIPhone = esIPhone();
   const enMac = esMac();
-  // 180 en Mac y en teléfono; 210 se queda para el iPad.
+  // 104 en el teléfono, 180 en Mac, 210 en el iPad.
   //
   // En Mac una gráfica de panel va entre 160 y 200: a 210, con las dos
   // gráficas más las cuatro tarjetas KPI, se perdía la mitad inferior de una
-  // ventana de 900×600. En el teléfono el motivo es otro —la gráfica se come
-  // la pantalla antes de llegar a las cifras— pero la medida coincide.
-  const alto = enIPhone || enMac ? 180 : 210;
+  // ventana de 900×600.
+  //
+  // Los 104 del teléfono son del rediseño de iOS 26 (handoff, GUIA §4): ahí
+  // la gráfica deja de ser el objeto principal de la pantalla y pasa a ser
+  // una tarjeta como las de Salud o Bolsa —un vistazo, no un panel—, del
+  // mismo alto que las tres filas de la lista agrupada que tiene encima. A
+  // 180 se comía la pantalla antes de llegar a los movimientos recientes.
+  const alto = enIPhone ? 104 : enMac ? 180 : 210;
   // Barras de macOS: radio 2 y 10 px de ancho máximo. Las de 18 con radio 4
   // son de dashboard web; a esa anchura, además, cuatro semanas de dos series
-  // llenaban el panel de bloques.
-  const radioBarra: [number, number, number, number] = enMac ? [2, 2, 0, 0] : [4, 4, 0, 0];
-  const anchoBarra = enMac ? 10 : 18;
-  // En el teléfono no hay hover: sin esto el tooltip era inalcanzable.
+  // llenaban el panel de bloques. En el teléfono, 11 con radio 3: es lo que
+  // deja las cuatro semanas de dos series legibles en 393px sin que las
+  // barras se toquen.
+  const radioBarra: [number, number, number, number] = enIPhone ? [3, 3, 0, 0] : enMac ? [2, 2, 0, 0] : [4, 4, 0, 0];
+  const anchoBarra = enIPhone ? 11 : enMac ? 10 : 18;
+  // Tres marcas de eje en el teléfono (0 / mitad / tope) en vez de cuatro: a
+  // 104px de alto, cuatro dejaban 26px entre marca y marca y las etiquetas se
+  // tocaban entre sí.
+  const marcasEjeY = enIPhone ? 3 : 4;
+  // En el teléfono no hay hover, así que el tooltip se abre al TOCAR.
+  //
+  // La guía del handoff pedía quitarlo del teléfono ("en táctil no hay
+  // hover"). No se quitó: el repo ya había resuelto justo ese problema con
+  // `trigger="click"`, y sin tooltip la única forma de saber cuánto fue una
+  // semana concreta sería irse a Reportes. Una maqueta nunca dibuja un
+  // tooltip —es transitorio—, así que su ausencia ahí no es una decisión de
+  // diseño en contra, es que no había nada que dibujar.
   const disparoTooltip = enIPhone ? "click" : "hover";
 
   const SinDatos = () => (
@@ -140,10 +158,10 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
           <>
             <div style={{ height: alto }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weekly} barGap={4} barCategoryGap="28%" margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+                <BarChart data={weekly} barGap={4} barCategoryGap="28%" margin={{ top: enIPhone ? 4 : 8, right: 4, left: 4, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--line-soft)" />
                   <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} />
-                  <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={4} width={38} tickFormatter={tickCompacto} />
+                  <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={marcasEjeY} width={enIPhone ? 30 : 38} tickFormatter={tickCompacto} />
                   <Tooltip content={<TooltipCard moneda={moneda} />} cursor={{ fill: "var(--surface-2)" }} trigger={disparoTooltip} />
                   <Bar dataKey="ingresos" name={t("charts.ingresos")} fill="var(--accent-1)" fillOpacity={0.9} radius={radioBarra} maxBarSize={anchoBarra} animationDuration={600} animationEasing="ease-out" />
                   <Bar dataKey="gastos" name={t("charts.gastos")} fill="var(--accent-2)" fillOpacity={0.9} radius={radioBarra} maxBarSize={anchoBarra} animationDuration={600} animationEasing="ease-out" />
@@ -168,7 +186,7 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
         {hayTendenciaBalance(balanceSeries) ? (
           <div style={{ height: alto }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={balanceSeries} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+              <AreaChart data={balanceSeries} margin={{ top: enIPhone ? 4 : 8, right: 4, left: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--chart-balance)" stopOpacity={0.25} />
@@ -177,7 +195,7 @@ export default function DashboardCharts({ weekly, balanceSeries, moneda }: Props
                 </defs>
                 <CartesianGrid vertical={false} stroke="var(--line-soft)" />
                 <XAxis dataKey="label" tick={axisTick} axisLine={false} tickLine={false} minTickGap={40} />
-                <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={4} width={38} tickFormatter={tickCompacto} />
+                <YAxis tick={axisTick} axisLine={false} tickLine={false} tickCount={marcasEjeY} width={enIPhone ? 30 : 38} tickFormatter={tickCompacto} />
                 <Tooltip content={<TooltipCard moneda={moneda} />} trigger={disparoTooltip} />
                 <Area
                   type="monotone"

@@ -18,6 +18,7 @@ import ComprobantePreview from "../components/ComprobantePreview";
 import ConfirmDialog from "../components/ConfirmDialog";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
+import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import { useBarraEstado } from "../components/BarraEstado";
 import EditRecurrenteModal from "../components/EditRecurrenteModal";
 import { showToast } from "../toast";
@@ -288,7 +289,19 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
   const catsVisibles = categorias.filter((c) => conteo(c.id) > 0 || filtroCat === c.id);
 
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
-  const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* En el teléfono la "página" no se mueve: CRECE. Es el mismo corte del mismo
+     array —ni una consulta nueva— pero abierto por arriba, que es lo que
+     convierte el paginador en scroll infinito (rediseño de iOS 26, GUIA §4:
+     "Quitar `<Pagination>` y cargar con IntersectionObserver al final").
+     En Mac y iPad el paginador se queda: con ratón y teclado, saltar a la
+     página 7 de un tirón sigue siendo mejor que desplazarse seis. */
+  const pagina = enIPhone
+    ? visibles.slice(0, page * PAGE_SIZE)
+    : visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const centinela = useScrollInfinito(
+    enIPhone && page < totalPages,
+    () => setPage((p) => Math.min(p + 1, totalPages)),
+  );
 
   const [printing, setPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
@@ -968,7 +981,9 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
             {visibles.length === 0 ? estadoVacio : (
               <>
                 <TxTable tipo={tipo} txs={pagina} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
-                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                {enIPhone
+                  ? <div ref={centinela} aria-hidden="true" />
+                  : <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
               </>
             )}
           </>

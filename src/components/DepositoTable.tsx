@@ -13,11 +13,17 @@ interface Props {
   depositos: Deposito[];
   onEdit: (dep: Deposito) => void;
   onChanged: () => void;
+  /** Sin la tarjeta `.ios-listcard` propia, porque quien llama ya la pone.
+   *  Desde el rediseño de iOS 26, Depósitos parte el historial en una sección
+   *  por mes y cada sección aporta su propia tarjeta: con la de aquí dentro
+   *  salían dos cajas anidadas, la de fuera con 18px de radio y la de dentro
+   *  otros 18 pegados a ellos. Solo lo usa el teléfono. */
+  sinCaja?: boolean;
 }
 
 const COLS = "100px 1fr 140px 1fr 150px 72px";
 
-export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
+export default function DepositoTable({ depositos, onEdit, onChanged, sinCaja }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Deposito | null>(null);
   const { abrirMenu, menu } = useContextMenu();
@@ -51,52 +57,52 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
      entrada del propio menú. Las notas no caben en dos líneas y se quedan
      solo en Mac: son el campo más largo y el menos consultado. */
   if (esIPhone()) {
+    const filas = depositos.map((dep) => {
+      // El período solo se canta cuando NO coincide con el mes de la
+      // fecha; si no, un depósito parecería no contar en ningún lado.
+      // Va ANTES de la referencia, no después: la línea se recorta a
+      // unos 150 px y puesto al final no llegaba a verse nunca —
+      // justo en las filas donde es lo único que hay que leer.
+      const secundaria = [
+        fmtFechaCorta(dep.fecha),
+        dep.periodo !== dep.fecha.slice(0, 7)
+          ? t("depositos.correspondeA", { periodo: mesLegible(dep.periodo) })
+          : null,
+        dep.referencia,
+      ].filter(Boolean).join(" · ");
+      return (
+        <div
+          className="ios-txrow" data-fila
+          key={dep.id}
+          onContextMenu={(e) =>
+            abrirMenu(e, [
+              { label: t("common.editar"), onClick: () => onEdit(dep) },
+              { label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(dep) },
+            ])}
+        >
+          <div className="ios-txrow-main">
+            <div className="ios-txrow-title" title={dep.cuenta_banco}>
+              <span className="truncate">{dep.cuenta_banco}</span>
+            </div>
+            <div className="tx-secundaria-movil" title={secundaria}>{secundaria}</div>
+          </div>
+          <div className="ios-txrow-trailing">
+            <span className="tx-amount negative">
+              {fmtMoney(dep.monto)}<span className="cur">{dep.moneda}</span>
+            </span>
+          </div>
+          <RowMenu
+            onEdit={() => onEdit(dep)}
+            onDelete={() => setPendingDelete(dep)}
+            onBorrarDirecto={() => void borrarConDeshacer(dep)}
+          />
+        </div>
+      );
+    });
+
     return (
       <>
-        <div className="ios-listcard">
-          {depositos.map((dep) => {
-            // El período solo se canta cuando NO coincide con el mes de la
-            // fecha; si no, un depósito parecería no contar en ningún lado.
-            // Va ANTES de la referencia, no después: la línea se recorta a
-            // unos 150 px y puesto al final no llegaba a verse nunca —
-            // justo en las filas donde es lo único que hay que leer.
-            const secundaria = [
-              fmtFechaCorta(dep.fecha),
-              dep.periodo !== dep.fecha.slice(0, 7)
-                ? t("depositos.correspondeA", { periodo: mesLegible(dep.periodo) })
-                : null,
-              dep.referencia,
-            ].filter(Boolean).join(" · ");
-            return (
-              <div
-                className="ios-txrow" data-fila
-                key={dep.id}
-                onContextMenu={(e) =>
-                  abrirMenu(e, [
-                    { label: t("common.editar"), onClick: () => onEdit(dep) },
-                    { label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(dep) },
-                  ])}
-              >
-                <div className="ios-txrow-main">
-                  <div className="ios-txrow-title" title={dep.cuenta_banco}>
-                    <span className="truncate">{dep.cuenta_banco}</span>
-                  </div>
-                  <div className="tx-secundaria-movil" title={secundaria}>{secundaria}</div>
-                </div>
-                <div className="ios-txrow-trailing">
-                  <span className="tx-amount negative">
-                    {fmtMoney(dep.monto)}<span className="cur">{dep.moneda}</span>
-                  </span>
-                </div>
-                <RowMenu
-                  onEdit={() => onEdit(dep)}
-                  onDelete={() => setPendingDelete(dep)}
-                  onBorrarDirecto={() => void borrarConDeshacer(dep)}
-                />
-              </div>
-            );
-          })}
-        </div>
+        {sinCaja ? filas : <div className="ios-listcard">{filas}</div>}
 
         {menu}
 
