@@ -276,6 +276,24 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// El editor de la carta, abierto desde el "+". Es el caso que más importa
+// comprobar: es la pantalla más larga de Cartas y la que peor se sentiría si
+// no tuviera salida.
+{
+  const ctx = await contextoIPhone("light");
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error("pageerror (editor):", e.message));
+  await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".btn-crear", { timeout: 30000 });
+  await page.locator(".btn-crear").click();
+  await page.waitForTimeout(600);
+  await page.getByText("Nueva carta de recomendación", { exact: true }).first().click();
+  await page.waitForTimeout(1400);
+  await page.screenshot({ path: `${SALIDA}/12-cartas-editor-light.png` });
+  console.log("  ✓ pruebas/capturas/12-cartas-editor-light.png");
+  await ctx.close();
+}
+
 // Una tira larga de Ingresos (sin recortar a la altura de la pantalla), para
 // ver de un vistazo cómo se encadenan las secciones por fecha.
 {
