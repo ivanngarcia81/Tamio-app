@@ -1961,13 +1961,16 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
      siguen esperando son "Tamaño de texto" y "Barra lateral siempre visible".
      La comprobación no se borra, se ajusta: lo que vigila —que lo dibujado
      sin motor esté apagado y explicado— sigue valiendo para las dos. */
-  /* **Bajó otra vez el 24 ago**: "Barra lateral siempre visible" se QUITÓ —no
-     se cableó—, porque fijar la barra en vertical se come 318px y deja el
-     contenido por debajo de los 700 que el maestro-detalle necesita; y porque
-     Notas, Archivos y Correo hacen lo que Tamio ya hace. Queda una sola fila
-     apagada: "Tamaño de texto". */
-  chk(pres.filas === 1, `Presentación: la única que sigue sin motor, apagada (${pres.filas})`);
-  chk(pres.conTitulo === pres.filas, "con su explicación");
+  /* **Y bajó a CERO el 24 ago por la noche.** "Barra lateral siempre visible"
+     se QUITÓ —no se cableó—, porque fijar la barra en vertical se come 318px
+     y deja el contenido por debajo de los 700 que el maestro-detalle
+     necesita. Y "Tamaño de texto", la última que quedaba, recibió motor
+     (`tipografia.ts`): con eso esta zona **deja de tener cáscaras**.
+
+     La comprobación cambia de signo, como pasó con los permisos: antes exigía
+     UNA fila apagada, ahora exige NINGUNA. Y sigue sirviendo, porque es la
+     que vigila que no vuelva a colarse un control muerto aquí. */
+  chk(pres.filas === 0, `Presentación: ni una fila sin motor (${pres.filas})`);
   /* Y la que se quitó no puede volver por la puerta de atrás. */
   const sinFijo = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
@@ -1975,9 +1978,18 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
       .some((l) => /siempre visible|always show/i.test(l.textContent ?? ""));
   });
   chk(sinFijo, "y \"Barra lateral siempre visible\" ya no está");
-  chk(pres.mandosVivos === 0, `y ningún mando vivo dentro (${pres.mandosVivos})`);
-  chk(pres.opacidad < 0.7, `la fila entera a media tinta (${pres.opacidad})`);
-  chk(pres.seg === 3, `el segmentado de tamaño de texto (${pres.seg})`);
+  /* Las dos de la fila apagada —"ningún mando vivo dentro" y "a media tinta"—
+     se van con ella: medían la CÁSCARA, y ya no hay ninguna. Lo que las
+     sustituye es lo contrario, que es lo que ahora hay que vigilar: que el
+     segmentado siga siendo de tres y esté VIVO. El flujo entero —que mueve
+     de verdad la app, incluidas las cifras— va en la sección 45. */
+  chk(pres.seg === 3, `el segmentado de tamaño de texto sigue siendo de tres (${pres.seg})`);
+  const segVivo = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".pf-seg button")];
+    return { total: b.length, apagados: b.filter((x) => x.disabled).length };
+  });
+  chk(segVivo.total > 0 && segVivo.apagados === 0,
+    `y sus botones están vivos, no apagados (${segVivo.apagados}/${segVivo.total} apagados)`);
   /* Y la que SÍ tiene motor está viva y se puede tocar. */
   const om = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
@@ -4457,10 +4469,18 @@ console.log("\n== El tamaño de texto mueve la app entera ==");
   const otraVezNormal = await medir();
   chk(otraVezNormal.etiqueta === normal.etiqueta && otraVezNormal.dinero === normal.dinero,
     `en "Normal" no se mueve un píxel (${otraVezNormal.etiqueta}px / ${otraVezNormal.dinero}px)`);
-  /* Y el factor ni siquiera se escribe: en "Normal" manda styles.css, como
-     hace el acento "neutro". Un `--fs-escala: 1` en línea daría el mismo
-     resultado hoy y pisaría el valor de la hoja el día que cambie. */
-  chk(otraVezNormal.factor === "", `y no deja factor escrito en :root ("${otraVezNormal.factor}")`);
+  /* Y el factor no se escribe EN LÍNEA: en "Normal" manda styles.css, como
+     hace el acento "neutro". Un `--fs-escala: 1` inline daría el mismo
+     resultado hoy y pisaría el valor de la hoja el día que cambie.
+
+     Se mira `style.getPropertyValue` y NO `getComputedStyle`, y esto lo
+     enseñó la propia prueba al salir en rojo: el calculado devuelve "1"
+     igualmente, porque es el valor que `:root` trae de la hoja. Medía la
+     cascada entera cuando lo que se quiere saber es si el atributo `style`
+     del elemento quedó limpio. La prueba estaba mal, no el código. */
+  const inline = await pg.evaluate(() =>
+    document.documentElement.style.getPropertyValue("--fs-escala"));
+  chk(inline === "", `y en "Normal" no deja nada escrito en línea ("${inline}")`);
 
   // --- Grande ---
   await pg.evaluate(async () => {
@@ -4508,7 +4528,9 @@ console.log("\n== El tamaño de texto mueve la app entera ==");
     const m = await import("/src/tipografia.ts");
     m.setTamanoTexto("normal");
   });
-  if (DIR) await pg.screenshot({ path: `${DIR}/tamano-texto-1366x1024.png` });
+  if (process.env.CAPTURAS) {
+    await pg.screenshot({ path: `${process.env.CAPTURAS}/tamano-texto-1366x1024.png` });
+  }
   await ctxT.close();
 }
 
