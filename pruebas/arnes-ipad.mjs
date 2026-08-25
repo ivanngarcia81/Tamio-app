@@ -4430,7 +4430,13 @@ console.log("\n== Los dos permisos del rol Tesorería ==");
 
    Se miden tamaños CALCULADOS del navegador sobre la app de verdad, no la
    hoja de estilos: es la única forma de saber que el factor llegó al píxel
-   pintado y no se quedó en una variable que nadie lee. */
+   pintado y no se quedó en una variable que nadie lee.
+
+   **Medido el 24 ago 2026 en la tanda entera (899 ✓ / 0 ✗):** etiqueta
+   15.5 → 17.36px y cifra 16 → 17.92px en "Grande", las dos por 1.120
+   exacto. Que los dos factores coincidan es la prueba de que la escala llegó
+   por igual a los `font-size` con token y a los que iban con píxeles a pelo,
+   que eran mundos separados hasta esa mañana. */
 console.log("\n== El tamaño de texto mueve la app entera ==");
 {
   const ctxT = await nuevoContexto("ipad");
