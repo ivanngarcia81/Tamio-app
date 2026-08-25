@@ -3825,6 +3825,139 @@ export async function insertMensaje(churchId: number, deRol: string, cuerpo: str
   );
 }
 
+// ---------- El registro de lo que pasa en la iglesia (migración 50) ----------
+
+/**
+ * Qué se registra. La clave viaja a la base; el TEXTO lo compone i18n al leer
+ * (`registro.suceso.<tipo>`), así que un registro escrito en español se lee en
+ * inglés si quien mira tiene la app en inglés. `mensajes` guardaba la frase ya
+ * armada y por eso se quedaba congelada en un idioma.
+ *
+ * El `area` decide quién lo ve, y va aquí —no en cada sitio que registra—
+ * para que la respuesta a "¿quién ve esto?" esté en un solo lugar.
+ */
+export const SUCESOS = {
+  // --- Tesorería ---
+  /** Un movimiento se dio de baja. El de más valor de todos: es el único que
+   *  hace desaparecer dinero de las cuentas, y ahora deja rastro. */
+  movEliminado: "tesoreria",
+  corteEntregado: "tesoreria",
+  corteDepositado: "tesoreria",
+  segundaFirma: "tesoreria",
+  descuadre: "tesoreria",
+  // --- Secretaría ---
+  estadoMiembro: "secretaria",
+  bajaMiembro: "secretaria",
+  cartaEmitida: "secretaria",
+  actaCerrada: "secretaria",
+  // --- De la casa ---
+  /** Lo escribe una persona. Es el único que usa `cuerpo`. */
+  nota: "general",
+} as const;
+
+export type TipoSuceso = keyof typeof SUCESOS;
+
+export interface Suceso {
+  id: number;
+  church_id: number;
+  tipo: string;
+  area: string;
+  /** JSON con las piezas del texto. `{}` en las notas. */
+  datos: string;
+  /** Solo notas a mano; NULL en lo automático. */
+  cuerpo: string | null;
+  quien: string | null;
+  creado_en: string;
+}
+
+/**
+ * Anota un suceso. Lo llaman las funciones que hacen la cosa, no la interfaz.
+ *
+ * **Nunca lanza.** Un registro que falla no puede impedir que se borre un
+ * movimiento o se cierre un corte: la operación es lo importante y el apunte
+ * es su sombra. Es el mismo trato que ya tenía el aviso de cambio de estado.
+ */
+export async function registrar(
+  churchId: number,
+  tipo: TipoSuceso,
+  datos: Record<string, string | number> = {},
+): Promise<void> {
+  try {
+    const d = await getDb();
+    const q = quienRegistra();
+    await d.execute(
+      `INSERT INTO registro (church_id, tipo, area, datos, quien, uid, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, datetime('now'))`,
+      [churchId, tipo, SUCESOS[tipo], JSON.stringify(datos), q?.nombre ?? null, crypto.randomUUID()],
+    );
+  } catch { /* el registro nunca frena la operación */ }
+}
+
+/** La nota que escribe una persona. Esta SÍ puede fallar hacia arriba: quien
+ *  la escribe está esperando a que se guarde y merece saber si no se guardó. */
+export async function registrarNota(churchId: number, cuerpo: string): Promise<void> {
+  const d = await getDb();
+  const q = quienRegistra();
+  await d.execute(
+    `INSERT INTO registro (church_id, tipo, area, datos, cuerpo, quien, uid, updated_at)
+     VALUES ($1, 'nota', 'general', '{}', $2, $3, $4, datetime('now'))`,
+    [churchId, cuerpo.trim(), q?.nombre ?? null, crypto.randomUUID()],
+  );
+}
+
+/** Las áreas que ve cada rol. El administrador lo ve todo; los otros dos, lo
+ *  suyo más lo general — que es donde caen las notas, y esas son de todos. */
+export function areasDelRol(rol: string): string[] {
+  if (rol === "administrador") return ["tesoreria", "secretaria", "general"];
+  if (rol === "tesorero") return ["tesoreria", "general"];
+  return ["secretaria", "general"];
+}
+
+/** El registro que le toca a este rol, lo más nuevo primero. */
+export async function listRegistro(churchId: number, rol: string, limit = 300): Promise<Suceso[]> {
+  const d = await getDb();
+  const areas = areasDelRol(rol);
+  const huecos = areas.map((_, i) => `$${i + 2}`).join(", ");
+  return d.select<Suceso[]>(
+    `SELECT * FROM registro
+      WHERE church_id = $1 AND deleted = 0 AND area IN (${huecos})
+      ORDER BY id DESC LIMIT ${limit}`,
+    [churchId, ...areas],
+  );
+}
+
+/** Cuántos sucesos hay desde la última vez que este dispositivo miró.
+ *
+ *  Se guarda en localStorage y NO en la base, a propósito: "hasta dónde he
+ *  leído" es de cada persona en su aparato, no de la iglesia. Es justo lo que
+ *  `mensajes` hacía mal —una sola bandera `leido` para todos, así que si la
+ *  tesorera abría un mensaje se le apagaba el aviso también al pastor—. */
+const CLAVE_VISTO = "tamio-registro-visto";
+
+export async function contarRegistroNuevo(churchId: number, rol: string): Promise<number> {
+  const d = await getDb();
+  let desde = 0;
+  try { desde = Number(localStorage.getItem(CLAVE_VISTO) ?? 0) || 0; } catch { /* noop */ }
+  const areas = areasDelRol(rol);
+  const huecos = areas.map((_, i) => `$${i + 3}`).join(", ");
+  const filas = await d.select<{ n: number }[]>(
+    `SELECT count(*) AS n FROM registro
+      WHERE church_id = $1 AND deleted = 0 AND id > $2 AND area IN (${huecos})`,
+    [churchId, desde, ...areas],
+  );
+  return filas[0]?.n ?? 0;
+}
+
+/** "Ya lo vi todo": guarda el último id como marca de este dispositivo. */
+export async function marcarRegistroVisto(churchId: number): Promise<void> {
+  const d = await getDb();
+  const filas = await d.select<{ m: number | null }[]>(
+    "SELECT MAX(id) AS m FROM registro WHERE church_id = $1 AND deleted = 0",
+    [churchId],
+  );
+  try { localStorage.setItem(CLAVE_VISTO, String(filas[0]?.m ?? 0)); } catch { /* noop */ }
+}
+
 /** Marca como leídos los mensajes que recibió `paraRol` (los que NO envió él).
  *  Devuelve cuántos marcó (0 si no había ninguno sin leer) para que la UI evite
  *  refrescos innecesarios. */

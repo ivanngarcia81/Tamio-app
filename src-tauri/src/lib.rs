@@ -1156,6 +1156,60 @@ fn migraciones() -> Vec<motordb::Migracion> {
             ALTER TABLE churches ADD COLUMN tesorero_ve_padron      INTEGER NOT NULL DEFAULT 0;
             ALTER TABLE churches ADD COLUMN tesorero_puede_eliminar INTEGER NOT NULL DEFAULT 1;
         "#,
+    }, motordb::Migracion {
+        version: 50,
+        description: "el registro de lo que pasa en la iglesia",
+        sql: r#"
+            -- Iván, 25 ago 2026: "la página de mensajes debería ser otra
+            -- función, no recibir mensajes como si fuera un chat; las personas
+            -- ya tienen WhatsApp e iMessage". Tiene razón, y el código le da
+            -- más razón todavía: `mensajes` nunca fue un chat por dentro
+            -- —guarda `de_rol` y `cuerpo`, sin destinatario ni conversación—,
+            -- y lo único valioso que había ahí era un aviso AUTOMÁTICO (el
+            -- cambio de estado de un miembro) enterrado entre texto tecleado.
+            --
+            -- Eso —lo que solo Tamio sabe que pasó— pasa a ser la función
+            -- entera. No confundir con la BANDEJA: aquella dice qué te FALTA
+            -- POR HACER; esta, qué HA PASADO.
+            --
+            -- Tres decisiones de la tabla:
+            --
+            -- 1) `tipo` + `datos` en JSON, y NO el texto ya compuesto. Es como
+            --    `mensajes` lo hacía, y por eso su aviso se congelaba en el
+            --    idioma en que se escribió. Guardando la clave y sus piezas,
+            --    el texto lo arma i18n al leer y sigue el idioma de quien
+            --    mira. De regalo, `verificar-traducciones` puede vigilarlo.
+            --
+            -- 2) `area` decide QUIÉN lo ve: el tesorero lo del dinero, la
+            --    secretaria lo del padrón, el administrador todo (decisión de
+            --    Iván). Va en columna y no se deduce del `tipo` para que
+            --    añadir un suceso no obligue a tocar una tabla de
+            --    quién-ve-qué en otro archivo.
+            --
+            -- 3) `cuerpo` es SOLO para las notas a mano. Un suceso automático
+            --    lo deja en NULL porque su texto se compone. Así la pantalla
+            --    distingue de un vistazo lo que escribió la app de lo que
+            --    escribió una persona — que es justo lo que hacía falta para
+            --    que las dos cosas convivan sin volver a ser un tablón.
+            --
+            -- `mensajes` NO se toca. Deja de enseñarse, pero sus filas siguen
+            -- ahí: borrarlas sería irreversible y viaja por la sincronización.
+            CREATE TABLE IF NOT EXISTS registro (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id  INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                tipo       TEXT NOT NULL,
+                area       TEXT NOT NULL,
+                datos      TEXT NOT NULL DEFAULT '{}',
+                cuerpo     TEXT,
+                quien      TEXT,
+                creado_en  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+                uid        TEXT,
+                updated_at TEXT,
+                deleted    INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_registro_church ON registro(church_id, id);
+            CREATE INDEX IF NOT EXISTS idx_registro_area ON registro(church_id, area);
+        "#,
     }]
 }
 
