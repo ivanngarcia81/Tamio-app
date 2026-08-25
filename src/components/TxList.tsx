@@ -55,9 +55,11 @@ interface Props {
   txs: Tx[];
   onEdit: (tx: Tx) => void;
   onChanged: () => void;
+  /** Permiso de la iglesia (migración 49): sin él no se ofrece Eliminar. */
+  puedeEliminar?: boolean;
 }
 
-export default function TxList({ txs, onEdit, onChanged }: Props) {
+export default function TxList({ txs, onEdit, onChanged, puedeEliminar = true }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -70,7 +72,9 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
     if (tx.comprobante_path) {
       items.push({ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) });
     }
-    items.push({ label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(tx) });
+    if (puedeEliminar) {
+      items.push({ label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(tx) });
+    }
     return items;
   }
 
@@ -177,7 +181,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                             style={{
                               display: "inline-block",
                               marginLeft: 8,
-                              fontSize: 10,
+                              fontSize: "calc(10px * var(--fs-escala))",
                               fontWeight: 700,
                               color: "var(--warn)",
                               background: "var(--warn-bg)",
@@ -198,7 +202,7 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                             onClick={(e) => { e.stopPropagation(); setPreview(tx.comprobante_path!); }}
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 3,
-                              marginLeft: 8, fontSize: 11, color: "var(--text-2)", cursor: "pointer",
+                              marginLeft: 8, fontSize: "calc(11px * var(--fs-escala))", color: "var(--text-2)", cursor: "pointer",
                             }}
                           >
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -222,9 +226,9 @@ export default function TxList({ txs, onEdit, onChanged }: Props) {
                         <span className="cur">{tx.moneda}</span>
                       </span>
                       <RowMenu
-                        onBorrarDirecto={() => void borrarConDeshacer(tx)}
+                        onBorrarDirecto={puedeEliminar ? () => void borrarConDeshacer(tx) : undefined}
                         onEdit={() => onEdit(tx)}
-                        onDelete={() => setPendingDelete(tx)}
+                        onDelete={puedeEliminar ? () => setPendingDelete(tx) : undefined}
                         extraItems={tx.comprobante_path
                           ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
                           : undefined}

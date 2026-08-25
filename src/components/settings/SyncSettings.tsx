@@ -60,7 +60,7 @@ export default function SyncSettings() {
         {(snap.estado === "offline" || snap.estado === "error") && snap.error && (
           <div
             className="form-hint"
-            style={{ marginTop: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12, color: "var(--text-3)", userSelect: "text", wordBreak: "break-word" }}
+            style={{ marginTop: 8, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)", userSelect: "text", wordBreak: "break-word" }}
           >
             {snap.error}
           </div>

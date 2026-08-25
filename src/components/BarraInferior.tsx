@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 import { areaDeRuta, barraDeRol, type Area, type Contador } from "../navegacion";
-import type { Role } from "../role";
+import type { Permisos, Role } from "../role";
 import {
   AgendaIcon,
   DepositIcon,
@@ -17,6 +17,9 @@ import {
 
 interface Props {
   role: Role;
+  /** Los permisos del rol (migración 49): con `vePadron` encendido, el
+   *  tesorero gana una ranura que lleva a Membresía. */
+  permisos: Permisos;
   memberCount: number;
   pendingCount: number;
   unreadCount: number;
@@ -62,11 +65,11 @@ const ICONOS_AREA: Record<Area["id"], ReactNode> = {
  * lleva y esta barra no.
  */
 export default function BarraInferior({
-  role, memberCount, pendingCount, unreadCount,
+  role, permisos, memberCount, pendingCount, unreadCount,
 }: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const ranuras = barraDeRol(role);
+  const ranuras = barraDeRol(role, permisos);
 
   const numero = (c?: Contador): number => {
     if (c === "miembros") return memberCount;

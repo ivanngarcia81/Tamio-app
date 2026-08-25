@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  categoriaInfo, currentMonth, fmtFecha, fmtFechaCorta, fmtMoney, listArchivedMembers,
-  listMovimientosRecurrentes, listPendingTx, listTx, markTxRejected, markTxReviewed,
-  restoreMember, type Church, type Member, type MovimientoRecurrente, type Tx,
+  categoriaInfo, cortesSinSegundaFirma, currentMonth, fmtFecha, fmtFechaCorta, fmtMoney,
+  listArchivedMembers, listMovimientosRecurrentes, listPendingTx, listTx, markTxRejected,
+  markTxReviewed, restoreMember,
+  type Church, type Corte, type Member, type MovimientoRecurrente, type Tx,
 } from "../db";
 import {
   calcularAlertas, conteoPorTipo, UMBRAL_COMPROBANTE,
@@ -44,6 +45,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   const angosto = partido && !anchoColumnas;
   const [pendientes, setPendientes] = useState<Tx[]>([]);
   const [archivados, setArchivados] = useState<Member[]>([]);
+  const [cortesSinFirma, setCortesSinFirma] = useState<Corte[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagPendientes, setPagPendientes] = useState(1);
   const [pagArchivados, setPagArchivados] = useState(1);
@@ -65,13 +67,19 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
          bandeja, es una auditoría. */
       listTx(church.id, { limit: 200 }),
       listMovimientosRecurrentes(church.id),
+      /* Los cortes que pidieron segunda firma y siguen sin ella (migración
+         47). Sin techo de fecha, y a propósito: una firma que falta no
+         caduca — el resto de las reglas miran lo reciente porque hablan de
+         movimientos, y esto habla de un trámite abierto. */
+      cortesSinSegundaFirma(church.id),
     ])
-      .then(([nuevosPendientes, nuevosArchivados, nuevosRecientes, nuevosRec]) => {
+      .then(([nuevosPendientes, nuevosArchivados, nuevosRecientes, nuevosRec, nuevosCortes]) => {
         if (cancelado) return;
         setPendientes(nuevosPendientes);
         setArchivados(nuevosArchivados);
         setRecientes(nuevosRecientes);
         setRecurrentes(nuevosRec);
+        setCortesSinFirma(nuevosCortes);
       })
       .catch(console.error)
       .finally(() => { if (!cancelado) setLoading(false); });
@@ -97,13 +105,22 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
      aquí solo se le dan las cuatro listas y se pinta lo que devuelve. La
      bandeja deja de ser "pendientes + archivados" y pasa a ser la lista de
      cosas que alguien tiene que mirar, que es lo que el diseño pide. */
+  /* Los dos controles de tesorería (migración 45) salen de la iglesia, no de
+     la constante: quien los apague en Ajustes deja de ver esas alertas aquí,
+     que es justo lo que el interruptor promete. */
+  const umbralIglesia = church.umbral_comprobante ?? UMBRAL_COMPROBANTE;
   const alertas: Alerta[] = useMemo(() => calcularAlertas({
     pendientes,
     recientes,
     archivados,
     recurrentes,
     hoyMes: currentMonth(),
-  }), [pendientes, recientes, archivados, recurrentes]);
+    cortesSinFirma,
+    umbralComprobante: umbralIglesia,
+    avisarSinComprobante: church.avisar_sin_comprobante !== 0,
+    avisarDuplicados: church.avisar_duplicados !== 0,
+  }), [pendientes, recientes, archivados, recurrentes, cortesSinFirma, umbralIglesia,
+       church.avisar_sin_comprobante, church.avisar_duplicados]);
   const conteos = useMemo(() => conteoPorTipo(alertas), [alertas]);
   const visiblesAl = filtroTipo ? alertas.filter((a) => a.tipo === filtroTipo) : alertas;
 
@@ -151,6 +168,16 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
         </button>
       );
     }
+    if (a.tipo === "firmaPendiente" && a.corte) {
+      /* Como el recurrente vencido: aquí no hay nada que firmar, la hoja vive
+         en el corte. El botón lleva ahí en vez de fingir una acción local —y
+         de paso, quien firma ve el corte entero antes de decidir. */
+      return (
+        <a className="btn primary" href="#/depositos">
+          {t("bandeja.irAlCorte")}
+        </a>
+      );
+    }
     if (a.tipo === "recurrenteVencido") {
       /* Aquí no hay movimiento sobre el que actuar: lo que falta es
          generarlo, y eso vive en la pantalla de Ingresos/Gastos con su
@@ -184,6 +211,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
       return [a.recurrente.concepto, t("bandeja.mesesSinGenerar", { count: a.meses?.length ?? 0 })]
         .filter(Boolean).join(" · ");
     }
+    if (a.corte) return [a.corte.nombre, fmtFechaCorta(a.corte.fecha)].filter(Boolean).join(" · ");
     return "";
   }
 
@@ -371,7 +399,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                     const cab = (
                       <PanelAlerta
                         alerta={a}
-                        umbral={UMBRAL_COMPROBANTE}
+                        umbral={umbralIglesia}
                         moneda={church.moneda}
                         acciones={accionesDe(a)}
                       />
@@ -454,7 +482,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
               enIPhone ? (
                 <div className="ios-panel-empty">{t("bandeja.noMovsRevisar")}</div>
               ) : (
-                <div style={{ color: "var(--text-3)", fontSize: 13, marginBottom: 20 }}>
+                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", marginBottom: 20 }}>
                   {t("bandeja.noMovsRevisar")}
                 </div>
               )
@@ -529,7 +557,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                           </div>
                           <div className="inbox-desc"><strong>{tx.concepto}</strong></div>
                           {(tx.member_nombre || tx.beneficiario || tx.detalle) && (
-                            <div style={{ marginTop: 4, fontSize: 12.5, color: "var(--text-2)" }}>
+                            <div style={{ marginTop: 4, fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                               {tx.member_nombre ?? tx.beneficiario ?? tx.detalle}
                             </div>
                           )}
@@ -564,7 +592,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
               enIPhone ? (
                 <div className="ios-panel-empty">{t("bandeja.noMiembrosArchivados")}</div>
               ) : (
-                <div style={{ color: "var(--text-3)", fontSize: 13 }}>
+                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>
                   {t("bandeja.noMiembrosArchivados")}
                 </div>
               )
@@ -615,7 +643,7 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                           <span className="inbox-type-tag done">{t("bandeja.archivado")}</span>
                         </div>
                         <div className="inbox-desc"><strong>{m.nombre}</strong></div>
-                        <div style={{ marginTop: 4, fontSize: 12.5, color: "var(--text-2)" }}>
+                        <div style={{ marginTop: 4, fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                           {m.email ?? m.rfc ?? t("bandeja.sinCorreoRegistrado")}
                         </div>
                       </div>

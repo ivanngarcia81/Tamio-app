@@ -64,10 +64,22 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
 
 - **Nada de cáscara.** El segmentado Mes/Trimestre/Año, las dos gráficas, los
   cuatro KPI y "Esta semana" salen de datos reales.
-- **`Folio 1042` bajo cada movimiento** — el handoff lo pone; `transactions`
-  no tiene columna `folio` (las cartas sí). **NO se pintó**, y no como cáscara
-  sino porque un folio inventado se lee como un dato de contabilidad. Pide
-  migración + numerador. **Pendiente de tu decisión.**
+- ~~**`Folio 1042` bajo cada movimiento**~~ → **cableado el 24 ago 2026**
+  (migración 48), y era lo último del handoff sin pintar. Decidido con Iván:
+  **`2026-0042`** —la forma de los demás folios de la app, sin prefijo— y **el
+  pasado NO se numera**.
+
+  Lo segundo es la decisión que más se nota: numerar hacia atrás obligaría a
+  inventar un orden dentro de cada día, y ese orden inventado se leería como el
+  que tuvieron. Los movimientos anteriores se quedan sin folio y la pantalla no
+  pinta la fila cuando falta, en vez de enseñar un hueco que parezca un folio
+  perdido.
+
+  De paso salió una cáscara que nadie había apuntado: en Depósitos → Pendientes
+  cada movimiento llevaba un número al lado, con la clase `dep-mov-folio`, y no
+  era un folio — era `m.id`, el número de fila de esa base. El mismo ingreso
+  era el 47 en un iPad y el 91 en otro. **Un folio de mentira, y a la vista.**
+  Ya lleva el de verdad.
 
 ## Ingresos y Gastos (§15)
 
@@ -100,8 +112,29 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
     `updateMemberFicha`, que corre en los dos modos. La guarda del arnés (§35)
     comprueba exactamente eso: abre un miembro que YA existe, escribe los tres
     por la interfaz, guarda, **recarga** y los busca.
-- **Pestaña "Familia"** — **construida vacía y con su explicación**. `members`
-  no tiene relaciones ni columna de familia. Pide tabla de parentescos.
+- ~~**Pestaña "Familia"**~~ → **cableada el 24 ago 2026** (migración 46, tabla
+  `parentescos`). Se añade a alguien del padrón y se dice qué es de esta
+  persona; la relación sale en **las dos fichas**.
+
+  Dos decisiones que quedan escritas, porque las dos se podrían haber tomado
+  al revés y habría costado caro:
+
+  - **Una fila por relación, no dos.** La fila dice "`pariente_id` es el
+    `tipo` de `member_id`", y la ficha del otro la lee al revés con el
+    inverso. Guardar las dos direcciones habría duplicado cada escritura y,
+    con ella, la posibilidad de que se separen: corriges una y la otra sigue
+    contando otra historia. La guarda del arnés (§40) comprueba exactamente
+    esto — mira la relación desde las dos fichas y desde la segunda exige el
+    tipo INVERTIDO.
+  - **El catálogo es neutro** —"Padre o madre", "Hijo o hija"— y no por
+    corrección: `members` no guarda sexo, así que "hija" sería un dato que
+    inventa la interfaz. De regalo, cada inverso queda único: el inverso de
+    "hijo" es "padre" y punto.
+
+  Elegir va en dos pasos —primero la persona, después el parentesco— porque
+  el padrón son cuatrocientos nombres y el catálogo son diez opciones;
+  juntarlos en una hoja obligaría a elegir el parentesco primero, que es al
+  revés de como se piensa ("Ana… es mi hermana").
 
 ## Reportes (§17)
 
@@ -144,14 +177,36 @@ apagado**, con lo que le falta a cada uno:
 
 | Cáscara | Dónde | Cómo quedó | Qué le falta |
 |---|---|---|---|
-| **"Compartir"** | Depositados, cabecera del detalle | `btn secondary` apagado + `title` | una hoja de compartir; la app no tiene ninguna |
+| ~~**"Compartir"**~~ | Depositados, cabecera del detalle | **cableado el 24 ago** — saca el comprobante en PDF y lo entrega por la hoja del sistema | nada: lo que faltaba no era la hoja, era el documento |
 | ~~**"Reabrir el corte"**~~ | Depositados, menú de "⋯" | **cableado el 24 ago** — devuelve el corte a "entregado". Sigue apagado en un depósito sin corte, donde no hay nada que reabrir | — |
 | ~~**"Registró"**~~ | Depositados, Datos del depósito | **cableado el 24 ago** (migración 39) — sale con quien tenía la sesión abierta. En un depósito anterior a esa migración la fila no se pinta, en vez de repetir que no se sabe | — |
 | ~~**"Conciliación"**~~ | Depositados, columna derecha | **cableada el 24 ago** — compara lo contado contra lo registrado y canta la diferencia. Cuadrar no demuestra que el banco lo recibió, y el texto no lo dice | casar contra el banco, si algún día se importa el estado de cuenta |
 | ~~**Hoja "Nuevo corte"** entera~~ | Pendientes | **cableada el 24 ago** — "Crear" guarda el corte y engancha sus movimientos | — |
 | ~~**"Responsable"**~~ | dentro de esa hoja | **cableado el 24 ago** — se elige de `usuarios` o se escribe, y se propone el del corte anterior | — |
 | **"Adjuntar foto de la ficha"** | dentro de esa hoja | sigue apagado, con una razón más precisa | **ninguna**: la ficha la da el banco, así que en el corte todavía no hay ninguna. Se adjunta un paso después, al registrar el depósito, donde el campo lleva funcionando desde siempre |
-| **"Pedir doble firma"** | dentro de esa hoja | apagado por **decisión**, no por hueco | Iván eligió *constancia* (se anota a quién se le entregó) y no *acuse* (que el que recibe confirme). Si algún día quiere lo segundo, esto es lo que se enciende |
+| ~~**"Pedir doble firma"**~~ | dentro de esa hoja | **cableado el 24 ago por la tarde** (migración 47) | Ver el recuadro del final: no se encendió el *acuse*, se descubrió que la segunda firma era otra cosa — un doble conteo |
+
+> ✅ **"Compartir", cableado el 24 de agosto de 2026** — y con una corrección
+> que vale la pena dejar escrita, porque el diagnóstico de la tabla de arriba
+> estaba mal. Decía que faltaba "una hoja de compartir; la app no tiene
+> ninguna". **La tenía desde siempre**: `openForPrint` → `entregarArchivo`
+> (`services/entrega.ts`) usa la Web Share API en el iPad y el diálogo de
+> guardar en el Mac, y por ahí salen todos los reportes desde que existen. Lo
+> que faltaba de verdad era el **documento**, y por eso el botón se encendió
+> sin una dependencia nueva: `services/print/printDeposito.ts`.
+>
+> El comprobante lleva los datos del depósito, el desglose efectivo/cheques y
+> la lista de movimientos **del corte** que lo cerró, y firma a quien registró
+> y a quien llevó el dinero al banco — el par que un comprobante de depósito
+> necesita enfrentar, y el hueco que los cortes vinieron a cubrir. Un depósito
+> registrado sin corte no tiene desglose, y el PDF **lo dice** en vez de
+> imprimir un cero. Si lo contado y lo registrado no cuadran, la diferencia va
+> escrita en el papel: la copia que se archiva es el peor sitio para
+> esconderla.
+>
+> Y en un iPad "Compartir" **abre primero el visor** de la app; la hoja nativa
+> sale de su botón. No es un rodeo: iOS no tiene Vista Previa, y es lo que
+> hace cada PDF de Tamio desde el primer día.
 
 **Lo que NO se pintó, y por qué** *(escrito antes de la migración 38: los
 nombres de corte ya existen desde que existe la tabla; lo que sigue valiendo
@@ -178,24 +233,72 @@ fecha, no.
   La raya discontinua se queda cuando no hay nombre, pero ya no significa
   "sin motor" sino "todavía nadie ha firmado aquí" — que es lo que siempre
   debió significar, y sigue sirviendo para firmar a mano.
-- **"Recopilar firmas"** — **construido y DESHABILITADO**, con su `title`. No
-  hay flujo de recolección de firmas. Cuando lo haya, se le quita el
-  `disabled` y ya está en su sitio.
+- ~~**"Recopilar firmas"**~~ → **cableado el 24 ago 2026** (migración 44,
+  `actas.firmas`). Se le quitó el `disabled` y ya estaba en su sitio, que era
+  justo lo que decía esta línea.
+
+  Tres decisiones que quedan escritas:
+
+  - **Recoge una CONSTANCIA, no una firma digital.** Se anota que fulano
+    firmó el papel y en qué fecha. Es la misma elección que Iván hizo en los
+    cortes, y por el mismo motivo: un acta de asamblea se firma con bolígrafo
+    delante de la mesa, y pedirle a los tres firmantes que entren en la app a
+    confirmarlo convierte un trámite de un minuto en uno de tres días. La
+    hoja lo dice con todas las letras en su primer renglón.
+  - **Es JSON y no tres columnas de fecha**, porque las cartas resuelven
+    exactamente esto con `cartas.firmas` desde hace versiones. Dos formas de
+    guardar lo mismo en la misma app acaban comportándose distinto.
+  - **El nombre NO entra en el JSON**: sigue en `preside`, `secretario` y
+    `testigo`. Copiarlo dejaría dos versiones que se separan a la primera
+    corrección de una letra.
+
+  El botón se sigue pudiendo apagar, pero por un motivo verdadero: un acta
+  que no dice quién preside, quién redacta ni quién es testigo no tiene
+  firmas que recoger. Con firmas recogidas, deja de invitar y lleva la
+  cuenta ("Firmas: 1 de 3"). La fecha sale bajo el cargo en la ficha **y en
+  el PDF**: un acta que se manda por correo tiene que poder enseñar que está
+  firmada sin abrir la app.
 - **"Cerrar acta"** — real desde el primer día (`estado = 'aprobada'` +
   `fecha_aprobacion`).
 
 ## Servicios (§21)
 
-- **Roster por puestos: cuatro de seis son plantilla.** Predicación y
-  Dirección salen de `servicios.predica` y `.dirige`; Alabanza, Ujieres,
-  Ofrenda y Sonido dicen **"Sin asignar"**. El mapeo vive en la constante
-  `PUESTOS` con `campo: null`: cuando exista el roster, se cambia esa tabla y
-  el resto de la tarjeta ni se entera. Pide estructura nueva (catálogo de
-  puestos + asignación por servicio).
-- **Tarjeta "Orden del culto"** — **construida como plantilla** con su
-  explicación. `servicios` no guarda el minuto a minuto.
-- **"Asignar encargado"** (el enlace azul del puesto vacío) — **NO se
-  construyó.** Ver el recuadro del final.
+- ~~**Roster por puestos: cuatro de seis son plantilla**~~ → **cableado el 24
+  ago 2026** (migración 43, tabla `servicio_puestos`). Alabanza, Ujieres,
+  Ofrenda y Sonido se asignan uno por uno desde la ficha del culto, con la
+  hoja del buscador —la misma que elige aportante en Nuevo ingreso—, que
+  además deja **escribir un nombre que no está en el padrón**: quien ayuda en
+  sonido un domingo no tiene por qué estar dado de alta, y obligarle a estarlo
+  convertía un apunte de treinta segundos en un trámite.
+
+  Lo que **no** cambió, y no es un descuido: **Predicación y Dirección siguen
+  en sus columnas** (`servicios.predica` y `.dirige`). Se escriben en el
+  formulario del culto desde la primera versión y salen impresas en los
+  informes; moverlas a la tabla nueva habría obligado a migrar datos reales
+  para no ganar nada. La constante `PUESTOS` —que ahora vive en `db.ts`, con
+  los demás catálogos— sigue siendo la que reparte: `campo` dice de dónde sale
+  cada renglón, y el que lee la ficha no tiene por qué notar que son dos
+  sitios.
+
+  El catálogo **no** se convirtió en tabla. Son los seis puestos del diseño;
+  una iglesia que necesite otro (multimedia, transmisión) pide una línea en la
+  constante y su clave en los dos idiomas, no una pantalla de mantenimiento
+  que nadie abre dos veces.
+- ~~**Tarjeta "Orden del culto"**~~ → **cableada el 24 ago 2026** (migración
+  43, tabla `servicio_orden`). Cada paso lleva momento, hora y encargado, y se
+  sube, se baja y se quita desde la propia tarjeta.
+
+  **La hora es opcional a propósito**, y de ahí sale la única decisión de
+  diseño que hubo aquí: un culto real tiene pasos con hora ("10:00,
+  Bienvenida") y pasos que van cuando toca ("Ofrenda, después de la
+  predicación"). Por eso el orden lo manda `posicion` y **no** `hora` — con
+  `ORDER BY hora`, los pasos sin hora se irían todos al principio, que es
+  justo el fallo con el que se probó la guarda de la sección 36 del arnés.
+- ~~**"Asignar encargado"**~~ → **encendido el 24 ago 2026**. Sigue siendo un
+  BOTÓN y no el enlace azul del handoff, por lo de siempre: lleva a una hoja,
+  no a una dirección. Con alguien ya puesto dice **"Cambiar"**, en el mismo
+  sitio — asignar y reasignar son el mismo gesto, y partirlo en dos controles
+  habría llenado un renglón de 58px para no decir nada nuevo.
 - **"Tomar asistencia"** — real; ya existía sin botón que lo dijera.
 
 ## Cartas (§22)
@@ -212,11 +315,17 @@ fecha, no.
 
 - **Nada de cáscara**, y a propósito: lo que el handoff dibuja de más aquí son
   **interruptores**, no adornos. Ver el recuadro del final.
-- **"N movimientos" por categoría** — el conteo se puede calcular
-  (`conteoCategoriaIngreso`/`Gasto` ya existen); no se pintó por no meter una
-  consulta nueva en la pantalla de Ajustes. Es trabajo pequeño si lo quieres.
-- **Asa de arrastre para reordenar categorías** — pide una columna de orden en
-  la tabla de categorías. No se pintó.
+- ~~**"N movimientos" por categoría**~~ → **pintado el 24 ago 2026**. Una sola
+  consulta agrupada (`conteoPorCategoria`) y no una por fila, que serían veinte
+  para pintar una lista. La clave es la MISMA que guarda
+  `transactions.categoria` —el id del catálogo, o `customCatRef(uid)` para las
+  propias—, que es justo lo que la guarda del arnés (§41) vigila: si se
+  buscara por la clave equivocada, todos los conteos saldrían en cero sin que
+  nada fallara.
+- **Asa de arrastre para reordenar categorías** — sigue sin pintarse, y ahora
+  se sabe por qué: en el iPad las categorías son **pastillas que fluyen en
+  varias líneas**, y ahí "arriba/abajo" no significa nada. No es solo la
+  columna de orden: pide rehacer la pantalla con la lista del diseño.
 - **Cabecera de logo de "Iglesia"** (tile de 64 con iniciales + nombre a 22px
   + "Cambiar logo · Eliminar") — no se construyó porque el héroe de zona ya
   ocupa ese sitio con el mismo tamaño. Es presentación, no motor.
@@ -238,52 +347,120 @@ con la forma que menos daño hace y que ya estaba probada en Actas:
 | Control | Dónde | Cómo quedó |
 |---|---|---|
 | ~~**Marcar depositado**~~ | ~~Depósitos, acciones del corte~~ | **cableado el 24 ago** — abre el formulario con el corte puesto |
-| **Asignar encargado** ×4 | Servicios, puestos sin motor | botón apagado, uno por puesto |
+| ~~**Asignar encargado** ×4~~ | ~~Servicios, puestos sin motor~~ | **cableados el 24 ago** (migración 43) — los cuatro abren la hoja que asigna el puesto |
 | **Tamaño de texto** | Config → Preferencias → Presentación | segmentado apagado, "Normal" marcado |
 | ~~**Barra lateral siempre visible**~~ | ídem | **RETIRADO el 24 ago** — no se cableó: se quitó. Ver abajo |
 | ~~**Ocultar montos al bloquear**~~ | ídem | **cableado el 24 ago** — tapa el contenido en segundo plano (`src/privacidad.ts`) |
-| **4 permisos del rol Tesorería** | Config → Acceso y áreas | cuatro interruptores apagados |
-| **Avisar de gastos sin comprobante desde $X** | Config → Iglesia → Controles de tesorería | interruptor apagado, **encendido** |
-| **Avisar de posibles duplicados** | ídem | interruptor apagado, **encendido** |
-| **Doble firma en el corte** | ídem | interruptor apagado |
-| **Cierre de mes** | ídem | fila de valor apagada ("Mes natural") |
+| ~~**4 permisos del rol Tesorería**~~ | ~~Config → Acceso y áreas~~ | **cableados el 24 ago** (migración 49) — y quedaron DOS. Ver abajo |
+| ~~**Avisar de gastos sin comprobante desde $X**~~ | Config → Iglesia → Controles de tesorería | **cableado el 24 ago** (migración 45) — se enciende, se apaga y el importe se escribe |
+| ~~**Avisar de posibles duplicados**~~ | ídem | **cableado el 24 ago** — interruptor vivo |
+| ~~**Doble firma en el corte**~~ | ídem | **cableado el 24 ago** (migración 47) — dejó de ser una decisión al aclararse qué era |
+| **Cierre de mes** | ídem | fila de valor: la app cierra por mes natural, y no es un ajuste |
 
 Tres detalles de la ejecución que no son obvios:
 
 - **"Asignar encargado" es un BOTÓN, no el enlace azul del handoff.** Un
   enlace deshabilitado no existe en ninguna interfaz —o lleva a un sitio o no
-  es un enlace—, así que el hueco usa la misma pieza que todo lo demás.
+  es un enlace—, así que el hueco usa la misma pieza que todo lo demás. Con
+  motor (24 ago) **sigue siendo un botón**, por la otra mitad del mismo
+  argumento: lleva a una hoja, no a una dirección.
 - **Se apaga la FILA entera, no solo el mando** (`.ios-field--apagado`, media
   tinta). Un interruptor gris dentro de una fila normal se lee como "está
   roto"; la fila entera a media tinta se lee como "esto todavía no".
-- **Los cuatro permisos enseñan el estado que YA se cumple** con el rol de
-  tesorería (dos sí, dos no), no un estado inventado. Mientras espera motor,
-  la fila dice algo verdadero.
-- **Solo iPad.** Son del handoff de iPad; el teléfono no los pidió y no se le
-  meten controles muertos.
-- **Dos de los cuatro últimos van ENCENDIDOS**, y no por descuido. "Avisar de
-  gastos sin comprobante" y "Avisar de posibles duplicados" describen algo que
-  la app **ya hace**: `UMBRAL_COMPROBANTE` vale de verdad y Por revisar señala
-  los gastos que lo pasan, y la regla `duplicado` de `alertas.ts` está viva.
-  Apagarlos sería mentir en la otra dirección. Lo que no se puede es cambiar
-  la cifra ni desactivar el aviso — y eso lo dice el pie del grupo. El importe
-  sale de la constante interpolada, no de un `$1,000` copiado del prototipo:
-  si el umbral cambia, la fila cambia con él.
+- **Los cuatro permisos enseñaban el estado que YA se cumplía** con el rol de
+  tesorería (dos sí, dos no), no un estado inventado. Mientras esperaban
+  motor, la fila decía algo verdadero. **Cableados el 24 de agosto de 2026**
+  (migración 49) — y al cablearlos quedaron dos, que es la historia de más
+  abajo.
+- **Eran solo iPad.** Al encenderlos dejaron de serlo, y por un motivo que no
+  es de diseño sino de uso: quien pone un permiso es el administrador, que
+  probablemente trabaja en un Mac. Un permiso que solo se pudiera poner desde
+  un iPad no lo tendría nunca una iglesia sin iPad.
+- **Dos de los cuatro últimos iban ENCENDIDOS**, y no por descuido: "Avisar de
+  gastos sin comprobante" y "Avisar de posibles duplicados" describían algo
+  que la app **ya hacía**, así que apagarlos habría sido mentir en la otra
+  dirección. Lo que no se podía era cambiarlos. **Cableados el 24 de agosto de
+  2026** (migración 45: `avisar_sin_comprobante`, `umbral_comprobante`,
+  `avisar_duplicados`), y ahora apagar uno apaga de verdad su alerta en Por
+  revisar — la sección 39 del arnés lo comprueba moviéndolos y contando lo que
+  sale.
+
+  Dos detalles de esa migración:
+
+  - **Son tres columnas y no dos.** La de más es la que evita una mentira: sin
+    `avisar_sin_comprobante`, apagar el aviso habría que representarlo con un
+    umbral imposible (0, o −1), y un umbral que en realidad significa "no
+    avises" es la clase de dato que se malinterpreta seis meses después.
+  - **`umbral_comprobante` en NULL significa "el de la constante", no cero.**
+    Una iglesia que nunca tocó el ajuste sigue con el comportamiento de
+    siempre, y si la constante cambia, cambia con ella. Solo deja de seguirla
+    quien elige un número. El pie del grupo dice cuál es esa cifra.
+
+  Y el importe **salió de la etiqueta**: tiene campo propio, porque ahora se
+  escribe. De paso arregló el recorte que la guarda vigilaba —"Avisar de
+  gastos sin comprobante desde $1,000.00 USD" no cabía en la columna de 190—,
+  esta vez quitando la causa en vez del síntoma.
 - **"Cierre de mes" no es un interruptor**, es una fila de valor: la app
   cierra por **mes natural** (el porqué está en `services/inicio/periodo.ts`)
   y "último domingo" del prototipo no es un ajuste, es otra forma de contar.
   Se enseña lo que hace hoy.
 
 Lo que hace falta detrás de cada uno: los dos primeros, la pieza de
-`deposito_movimientos` y el roster por puestos (ya listados arriba). Los
-cuatro de Configuración son **funciones nuevas**, no columnas: escalar el
-tipo de letra, fijar la barra lateral en vertical, difuminar cifras al pasar
-a segundo plano, y permisos por acción en vez de por rol.
+`deposito_movimientos` y el roster por puestos (ya listados arriba). De los
+cuatro de Configuración quedan **uno**: escalar el tipo de letra. Los otros
+tres —fijar la barra lateral, difuminar cifras en segundo plano y los
+permisos— se resolvieron: el primero retirándolo, los otros dos con motor.
+
+### Cuatro interruptores que al encenderse resultaron ser dos
+
+**24 de agosto de 2026, migración 49.** Al ir a construir los cuatro permisos
+salió que dos de ellos no eran permisos:
+
+| Interruptor | Qué resultó ser |
+|---|---|
+| Registrar ingresos y gastos | **la definición del rol.** Un tesorero que no registra no es un tesorero con un permiso menos |
+| Cerrar cortes y depósitos | ídem |
+| Ver el padrón completo | permiso de verdad, y **DA**: le abre Membresía, que hoy tiene cerrada |
+| Eliminar movimientos | permiso de verdad, y **QUITA**: hoy sí puede |
+
+Apagar los dos primeros habría dejado a la tesorera dentro de Tesorería sin
+poder hacer nada. Eso no es quitarle un permiso: es otro rol —uno de solo
+lectura— y se resuelve creando el rol, no apagando un interruptor. Se
+quitaron de la lista con esa explicación en el pie.
+
+Los dos que quedaron llevan además una **advertencia sobre hasta dónde llega
+cada uno**, porque no llegan igual de lejos:
+
+- **El del borrado es un control de verdad.** Esconder el botón no impide
+  nada: el aparato puede escribir la fila igual. Quien lo impide es el
+  disparador `frenar_borrado_tesorero` de Supabase, que deshace la baja y
+  devuelve el movimiento vivo. Y **no lanza excepción a propósito** — una
+  excepción tumbaría el lote entero y con él la sincronización de
+  `transactions`, en un caso muy real: un movimiento borrado ANTES de que el
+  permiso se apagara y aún sin subir. Que el movimiento reaparezca ES el
+  aviso.
+- **El del padrón NO es una barrera de datos, y no puede serlo.** Los miembros
+  ya se sincronizan enteros a todos los aparatos de la iglesia, porque el
+  tesorero los necesita en Aportantes. El permiso abre una PANTALLA. Hacerlo
+  barrera real significaría no bajarle los miembros, y entonces Aportantes
+  dejaría de funcionar. Está dicho así en el código y en el pie del ajuste.
+
+Y una tercera decisión, la que hace que esto sea un permiso y no una
+preferencia: **la verdad vive en Supabase**, en `iglesias`, y baja a los
+aparatos como el plan. Las dos columnas locales de `churches` son un espejo
+para que la interfaz sepa qué esconder sin señal, y `updateChurch` **no las
+toca** — si un día se colaran en el formulario de la iglesia, el permiso se
+quitaría desde Ajustes, sin conexión y sin ser administrador. El arnés (§44)
+lo comprueba guardando la iglesia y mirando que los permisos no se muevan.
+
+**Sin login no se enseñan.** Ahí el rol se elige en un desplegable de esa
+misma zona, así que un permiso se quitaría cambiando el desplegable. Un
+candado que cualquiera abre es peor que ningún candado.
 
 > ⚠️ **Esto sube la apuesta de revisar este archivo antes de mandar a
 > REVISIÓN del App Store.** Un control apagado con explicación es defendible
 > ante la guideline 2.1; seis controles apagados en una pantalla de Ajustes,
-> menos. Antes de enviar a revisión: o tienen motor, o se ocultan detrás de
+> menos. (A 24 de agosto de 2026 queda **uno**: "Tamaño de texto".) Antes de enviar a revisión: o tienen motor, o se ocultan detrás de
 > una bandera. A TestFlight no le afecta.
 >
 > El arnés tiene una guarda para esto (**sección 22**): comprueba que siguen
@@ -348,15 +525,74 @@ No cambia el tamaño de la pieza 1 de la lista de abajo; la afina:
   `deposito_movimientos`;
 - el campo **responsable** eligiendo de `usuarios` o escribiendo.
 
-Lo que la opción "acuse" habría añadido —y que NO se hace— es el estado de
-confirmación por parte de quien recibe, y con él "Pedir doble firma", que
-sigue apagado.
+Lo que la opción "acuse" habría añadido —y que sigue sin hacerse— es el estado
+de confirmación por parte de quien RECIBE el dinero.
+
+> ⚠️ **Y "Pedir doble firma" se encendió igual, el 24 de agosto por la tarde**,
+> sin que esa decisión cambiara. Resulta que las dos cosas no eran la misma:
+> el acuse lo daría quien recibe, y la segunda firma la da **la asistente de
+> tesorería**, que vuelve a CONTAR el dinero antes de que salga. Está en el
+> recuadro del final de este archivo.
 
 ### Lo que esto descarta
 
 En la conversación llegué a decir que, si la iglesia deposita el mismo día sin
 paso intermedio, la hoja "Nuevo corte" sobraba y lo barato era quitarla.
 **No sobra.** Así trabajan, y es de lo más útil que le falta a la app.
+
+## El control que salió de la lista cambiando de significado (24 ago 2026)
+
+**"Pedir doble firma"** es el único de todo este archivo que no se encendió
+llenando un hueco, sino **entendiendo mejor la pregunta**. Merece quedar
+escrito porque el error estuvo en el diseño, no en el código.
+
+Estuvo apagado dos veces por motivos distintos: primero por falta de columna, y
+después un día entero por decisión —*constancia, no acuse*—. Lo que cambió no
+fue la decisión: fue descubrir que se había contestado a otra pregunta. Al
+describirlo con sus palabras, Iván no hablaba de que el que recibe el dinero
+acuse recibo:
+
+> *"La tesorera cuenta el dinero y verifica que todo esté bien, entonces tiene
+> a una segunda persona que verifica y cuenta con el dinero y confirma que todo
+> está bien, y esa persona es la segunda firma."*
+
+Eso no es un acuse: es un **doble conteo**. Y no lo da quien recibe el dinero
+sino la **asistente de tesorería** — *"la persona que cuando la tesorera falta,
+esa persona toma el cargo por ese día"*. Son tres papeles distintos en la misma
+hoja, y hasta entonces el diseño confundía dos:
+
+| Papel | Quién | Qué hace |
+|---|---|---|
+| **Registra** | la tesorera | cuenta y arma el corte (`registrado_por`) |
+| **Verifica** | la asistente | vuelve a contar y firma (migración 47) |
+| **Recibe** | el pastor, u otro | se lleva el dinero al banco (`responsable`) |
+
+De ahí salieron las decisiones que están en el código:
+
+- **El total NO se enseña en la hoja de firmar.** Si se viera, contar dos veces
+  sería copiar un número de la línea de arriba y el control se caería sin que
+  nada fallara. Es la primera comprobación de la §42 del arnés, probada al
+  revés enseñando el total.
+- **Un descuadre no deja firmar, pero SÍ guarda la cifra.** Es la mitad que más
+  se cae de estas implementaciones: si el descuadre borrara el número, contar
+  dos veces no habría servido de nada.
+- **`segunda_firma_modo` distingue "contó el dinero" de "revisó el registro".**
+  Cuando la firma llega días después —desde Por revisar, con el dinero ya en el
+  banco— solo cabe lo segundo, y el comprobante lo dice con esas palabras.
+  Guardar los dos bajo la misma etiqueta convertiría el papel en algo que dice
+  más de lo que sabe.
+- **Quien firma no puede ser quien registró**, así que el domingo que la
+  asistente sustituye a la tesorera, la app propone a la tesorera para que
+  firme a la vuelta. Se resuelve solo, sin configurar nada.
+- **No bloquea.** Un corte sin segunda firma se crea y se deposita igual; lo
+  que hace es notarse — en el panel del corte, en Por revisar (que gana su
+  octava regla) y en el comprobante.
+
+Y su límite, dicho también en la propia hoja para que nadie lo descubra tarde:
+es ciego al **teclear**, no a mirar. Quien arma el corte vio el total un
+momento antes en su pantalla. Contra un error honesto —que es de lo que protege
+contar dos veces— funciona; contra dos personas puestas de acuerdo, no. Ninguna
+app lo hace, y fingir lo contrario sería peor que no tenerlo.
 
 ## Lo primero que se RETIRA en vez de cablearse (24 ago 2026)
 
@@ -422,9 +658,8 @@ comprobación falla sola.
 
 ## Lo que sigue sin pintarse
 
-- **`Folio 1042`** en Inicio y en el panel de Movimientos. No es un control:
-  es un **dato de contabilidad**, y uno inventado se lee como verdadero. Pide
-  columna y numerador.
+- ~~**`Folio 1042`**~~ → **hecho el 24 ago 2026** (migración 48). Con esto la
+  lista de "lo que sigue sin pintarse" se queda vacía.
 - ~~**"Registrado por"** y **el chip "Sin depositar"**~~ → **los dos cableados
   el 24 ago 2026** (migraciones 38 y 39).
 - ~~**La sincronización de "Registrado por"**~~ → **cerrada el 24 ago 2026.**
@@ -462,5 +697,10 @@ comprobación falla sola.
 3. ~~**`actas.testigo`**~~ — **hecho el 24 de agosto de 2026** (migración 41).
 4. ~~**Tres columnas personales en `members`**~~ — **hecho el 24 de agosto de
    2026** (migración 42). Eran dos columnas, no tres: `direccion` ya estaba.
-5. **Roster por puestos y orden del culto** — la más grande de las cinco;
-   estructura nueva, no columnas.
+5. ~~**Roster por puestos y orden del culto**~~ — **hecho el 24 de agosto de
+   2026** (migración 43: `servicio_puestos` + `servicio_orden`). Era la más
+   grande de las cinco, y la lista se termina aquí. Dos avisos para quien
+   venga detrás: el catálogo de puestos NO se hizo tabla (son los seis del
+   diseño, viven en la constante `PUESTOS` de `db.ts`), y Predicación y
+   Dirección se quedaron en sus columnas de siempre porque salen impresas en
+   los informes desde la primera versión.

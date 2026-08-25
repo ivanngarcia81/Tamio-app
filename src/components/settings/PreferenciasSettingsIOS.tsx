@@ -20,6 +20,7 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { setTamanoTexto, tamanoTexto, TAMANOS, type TamanoTexto } from "../../tipografia";
 import type { ThemePref } from "./AppearanceSettings";
 import { ACENTOS, MUESTRA, type Acento } from "./AccentSettings";
 import type { LangPref } from "../../i18n";
@@ -134,6 +135,15 @@ export default function PreferenciasSettingsIOS({
   const [ocultarMontos, setOcultarMontosEstado] = useState(ocultarMontosActivado());
   const { t } = useTranslation();
   const [sonidoOn, setSonidoOn] = useState(sonidoActivado());
+  const [tamano, setTamano] = useState<TamanoTexto>(tamanoTexto);
+
+  /* Se aplica al instante, sin botón de guardar: es una preferencia de
+     apariencia y el resultado se ve en la propia pantalla mientras se elige,
+     igual que el tema y el acento. */
+  function elegirTamano(v: TamanoTexto) {
+    setTamano(v);
+    setTamanoTexto(v);
+  }
   const [juego, setJuego] = useState<JuegoSonido>(juegoSonido);
 
   function alternarSonido(v: boolean) {
@@ -204,28 +214,41 @@ export default function PreferenciasSettingsIOS({
         <SwitchField label={t("sonido.sub")} checked={sonidoOn} onChange={alternarSonido} />
       </Section>
 
-      {/* "Presentación": los tres controles que el handoff de iPad dibuja y
-          que la app no tiene. Se pintan por decisión de Iván (23 ago) —"si el
-          botón no tiene función, que se construya, y luego se le pone
-          motor"— pero APAGADOS y con su explicación, que es el trato que ya
-          tenían "Recopilar firmas" en Actas y el renglón del testigo.
+      {/* "Presentación": los tres controles que el handoff de iPad dibujó y
+          la app no tenía. Se pintaron apagados por decisión de Iván (23 ago)
+          —"si el botón no tiene función, que se construya, y luego se le pone
+          motor"—, y a 24 de agosto de 2026 **los tres están resueltos**:
 
-          Solo iPad: son del handoff de iPad, y el teléfono no los pidió.
-          Quedan apuntados en `docs/cascaras-1-2.md`, que es lo que se revisa
-          antes de mandar una versión a REVISIÓN del App Store. */}
+            · "Ocultar montos al bloquear" — con motor (`privacidad.ts`).
+            · "Barra lateral siempre visible" — RETIRADO, no cableado: fijar
+              la barra en vertical se come 318px y deja el contenido por
+              debajo de los 700 que el maestro-detalle necesita.
+            · "Tamaño de texto" — con motor (`tipografia.ts`). Fue el último,
+              y el que más tardó, porque no faltaba el control sino que la
+              tipografía se pudiera mover entera.
+
+          Con eso esta zona deja de tener cáscaras. Solo iPad: son del handoff
+          de iPad, y el teléfono no los pidió. */}
       {esIPad() && (
         <Section header={t("presentacion.titulo")} footer={t("presentacion.hint")}>
-          <div className="ios-field ios-field--apagado" title={t("presentacion.hint")}>
+          {/* **Encendido el 24 ago 2026.** Era la última cáscara de la app, y
+              lo que la tenía apagada no era este control: era que la
+              tipografía no se podía mover entera. 395 `font-size` iban con
+              píxeles a pelo —incluidas las cifras de dinero— contra 248 que
+              salían de los tokens, así que encenderlo antes habría agrandado
+              las etiquetas y dejado los importes chicos. Primero se movió
+              todo a `--fs-escala` (ver `tipografia.ts`), y entonces esto. */}
+          <div className="ios-field">
             <span className="ios-field-label">{t("presentacion.tamanoTexto")}</span>
-            <span className="pf-seg" role="radiogroup" aria-label={t("presentacion.tamanoTexto")} aria-disabled="true">
-              {(["chico", "normal", "grande"] as const).map((k) => (
+            <span className="pf-seg" role="radiogroup" aria-label={t("presentacion.tamanoTexto")}>
+              {TAMANOS.map((k) => (
                 <button
                   key={k}
                   type="button"
                   role="radio"
-                  aria-checked={k === "normal"}
-                  className={k === "normal" ? "activo" : ""}
-                  disabled
+                  aria-checked={k === tamano}
+                  className={k === tamano ? "activo" : ""}
+                  onClick={() => elegirTamano(k)}
                 >
                   {t(`presentacion.tamano.${k}`)}
                 </button>

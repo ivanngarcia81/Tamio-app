@@ -33,6 +33,7 @@ import LanguageSettings from "../components/settings/LanguageSettings";
 import SoundSettings from "../components/settings/SoundSettings";
 import PreferenciasSettingsIOS from "../components/settings/PreferenciasSettingsIOS";
 import RoleSettings from "../components/settings/RoleSettings";
+import PermisosSettings from "../components/settings/PermisosSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import ComprobantesPendientes from "../components/settings/ComprobantesPendientes";
 import RestoreSettings from "../components/settings/RestoreSettings";
@@ -282,8 +283,16 @@ export default function Configuracion({
     // 0 se muestra vacío: el caso común (arrancar de cero) no obliga a nadie
     // a entender qué es un "saldo de apertura".
     saldoInicial: church.saldo_inicial ? aTextoTecleado(church.saldo_inicial) : "",
+    /* Controles de tesorería (v45). El umbral vacío significa "el de la
+       constante", igual que el saldo vacío significa cero: es la diferencia
+       entre no haber tocado el ajuste y haber elegido un número. */
+    avisarSinComprobante: church.avisar_sin_comprobante !== 0,
+    umbralComprobante: church.umbral_comprobante != null ? aTextoTecleado(church.umbral_comprobante) : "",
+    avisarDuplicados: church.avisar_duplicados !== 0,
+    pedirDobleFirma: church.pedir_doble_firma === 1,
   });
   const [saldoError, setSaldoError] = useState<string | null>(null);
+  const [umbralError, setUmbralError] = useState<string | null>(null);
   const [treasurerForm, setTreasurerForm] = useState<TreasurerFormValues>({
     nombre: church.tesorero_nombre ?? "",
     cargo: church.tesorero_cargo ?? "Tesorero",
@@ -377,8 +386,16 @@ export default function Configuracion({
       const saldoTexto = f.churchForm.saldoInicial.trim();
       const saldoNum = saldoTexto === "" ? CERO : deTextoTecleado(saldoTexto);
       const saldoErr = saldoNum !== null ? null : t("validacion.saldoInvalido");
-      if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); }
-      if (nombreErr || saldoErr) return { patch: {}, valido: false };
+      /* El umbral del comprobante, con el MISMO parser que el saldo: es un
+         importe tecleado por una persona y la coma decimal de media Europa
+         tiene que valer aquí igual que allí. Vacío = null = la constante. */
+      const umbralTexto = f.churchForm.umbralComprobante.trim();
+      const umbralNum = umbralTexto === "" ? null : deTextoTecleado(umbralTexto);
+      const umbralErr = umbralTexto === "" || umbralNum !== null
+        ? null
+        : t("controlesTesoreria.umbralInvalido");
+      if (montadoRef.current) { setChurchError(nombreErr); setSaldoError(saldoErr); setUmbralError(umbralErr); }
+      if (nombreErr || saldoErr || umbralErr) return { patch: {}, valido: false };
       return {
         valido: true,
         patch: {
@@ -390,6 +407,10 @@ export default function Configuracion({
           ein: f.churchForm.ein.trim() || null,
           moneda: f.churchForm.moneda,
           saldo_inicial: saldoNum ?? CERO,
+          avisar_sin_comprobante: f.churchForm.avisarSinComprobante ? 1 : 0,
+          umbral_comprobante: umbralNum,
+          avisar_duplicados: f.churchForm.avisarDuplicados ? 1 : 0,
+          pedir_doble_firma: f.churchForm.pedirDobleFirma ? 1 : 0,
         },
       };
     }
@@ -791,6 +812,7 @@ export default function Configuracion({
                 onChange={(patch) => { setChurchForm((v) => ({ ...v, ...patch })); programarGuardado("iglesia"); }}
                 error={churchError}
                 saldoError={saldoError}
+                umbralError={umbralError}
                 logoPath={logoPath}
                 onLogoPathChange={cambiarLogo}
                 showCurrency={verTesoreria}
@@ -849,6 +871,14 @@ export default function Configuracion({
                   sin login, quien usa la app en su propia instalación. */}
               {(esAdmin || !authActivo) && <PlanSettings church={church} onSaved={onChurchUpdated} />}
               {!authActivo && <RoleSettings value={role} onChange={onRoleChange} />}
+              {/* Los dos permisos del rol Tesorería (49). Esta sí tiene cara de
+                  escritorio, y las de las migraciones 45 y 47 no, porque no es
+                  un aviso: es un permiso, y quien lo pone es el administrador
+                  —que muy probablemente trabaja en un Mac—. Sin esta tarjeta,
+                  una iglesia sin iPad no podría usarlos nunca.
+                  Mismas dos condiciones que en la lista de iOS: sin login el
+                  rol se elige en un desplegable de esta misma zona. */}
+              {esAdmin && authActivo && <PermisosSettings church={church} onChurchUpdated={onChurchUpdated} />}
               {/* El directorio de usuarios hoy no controla el acceso (el login
                   está desactivado en la 1.0): una tarjeta que no hace nada no
                   merece sitio. Vuelve sola cuando el login regrese en la 1.1. */}

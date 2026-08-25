@@ -80,6 +80,11 @@ interface Props {
   onMarcarDepositado: () => void;
   /** Solo para un corte entregado: devolver su dinero a la caja. */
   onDeshacer?: () => void;
+  /** Abrir la hoja de la segunda firma (migración 47). Solo en un corte
+   *  entregado: mientras el dinero sigue en la caja no hay corte que firmar. */
+  onSegundaFirma?: () => void;
+  /** Deshacer una segunda firma dada por error. */
+  onQuitarFirma?: () => void;
 }
 
 /** Suma de los movimientos marcados que cumplen el filtro. */
@@ -92,7 +97,7 @@ const esCheque = (t: Tx) => t.metodo_pago === "cheque";
 export default function PendientesDeposito({
   church, dia, entregado, sel, onToggle, porRevisar, efectivoEnCaja, depSinCorte, cuenta,
   fechaRegistro, periodo, tituloLista, onVolver, onIrPorRevisar, onNuevoCorte, onMarcarDepositado,
-  onDeshacer,
+  onDeshacer, onSegundaFirma, onQuitarFirma,
 }: Props) {
   const { t } = useTranslation();
   const movs = dia.movs;
@@ -258,7 +263,11 @@ export default function PendientesDeposito({
                     <span className="dep-mov-textos">
                       <span className="dep-mov-concepto">
                         {m.concepto}
-                        <span className="dep-mov-folio"> · {m.id}</span>
+                        {/* El folio DE VERDAD (migración 48). Aquí había
+                            `m.id`, el número de fila de esta base: el mismo
+                            ingreso era el 47 en un iPad y el 91 en otro. Era
+                            un folio de mentira, y encima a la vista. */}
+                        {m.folio && <span className="dep-mov-folio"> · {m.folio}</span>}
                       </span>
                       <span className="dep-mov-sub truncate">
                         {[m.member_nombre, m.detalle, m.fecha.slice(11, 16)].filter(Boolean).join(" · ")}
@@ -318,6 +327,69 @@ export default function PendientesDeposito({
               )}
             </div>
           </section>
+
+          {/* La segunda firma (migración 47). Solo en un corte ENTREGADO:
+              mientras el dinero sigue en la caja no hay nada que firmar, y
+              adelantar el control a ese momento lo convertiría en un trámite
+              de más. */}
+          {entregado && (
+            <section className="dep-carta">
+              <h2 className="dep-carta-cab">{t("dobleFirma.filaComprobante")}</h2>
+              {entregado.segunda_firma ? (
+                <>
+                  <div className="dep-par dep-par--fuerte">
+                    <span>{t(`rol.${entregado.segunda_firma_rol}`, {
+                      defaultValue: entregado.segunda_firma_rol ?? t("dobleFirma.firmante"),
+                    })}</span>
+                    <span>
+                      {entregado.segunda_firma_modo === "conteo"
+                        ? t("dobleFirma.firmadoConteo", {
+                            nombre: entregado.segunda_firma,
+                            monto: fmtMoney((entregado.segunda_conteo ?? 0) as Centavos),
+                            fecha: fmtFechaCorta((entregado.segunda_firma_en ?? "").slice(0, 10)),
+                          })
+                        : t("dobleFirma.firmadoRevision", {
+                            nombre: entregado.segunda_firma,
+                            fecha: fmtFechaCorta((entregado.segunda_firma_en ?? "").slice(0, 10)),
+                          })}
+                    </span>
+                  </div>
+                  {onQuitarFirma && (
+                    <div className="dep-carta-accion">
+                      <button type="button" className="btn secondary dm-eliminar" onClick={onQuitarFirma}>
+                        {t("dobleFirma.quitar")}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Contó y NO cuadró: la cifra queda escrita aunque no haya
+                      firma. Tirar ese número sería tirar justo el dato por el
+                      que se cuenta dos veces. */}
+                  {entregado.segunda_conteo != null
+                    ? aviso("warn", "!", t("dobleFirma.noCuadra"),
+                        t("dobleFirma.descuadreAviso", {
+                          monto: `${fmtMoney(entregado.segunda_conteo as Centavos)} ${church.moneda}`,
+                          registrado: `${fmtMoney(total)} ${church.moneda}`,
+                        }))
+                    : aviso(
+                        entregado.doble_firma_pedida === 1 ? "warn" : "info",
+                        entregado.doble_firma_pedida === 1 ? "!" : "i",
+                        t("dobleFirma.pendiente"),
+                        t("dobleFirma.pendienteSub"),
+                      )}
+                  {onSegundaFirma && (
+                    <div className="dep-carta-accion">
+                      <button type="button" className="btn secondary" onClick={onSegundaFirma}>
+                        {t("dobleFirma.titulo")}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          )}
 
           <section className="dep-carta dep-carta--acolchada">
             <h2 className="dep-carta-cab dep-carta-cab--suelta">{t("depositos.ficha")}</h2>

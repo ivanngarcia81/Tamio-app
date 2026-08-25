@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, countTxByCategoria, customCatRef, deleteCategoriaCustom, getCategoriasGasto,
-  getCategoriasIngreso, insertCategoriaCustom, updateCategoriaCustom, type CategoriaUI, type Church,
+  catNombre, conteoPorCategoria, countTxByCategoria, customCatRef, deleteCategoriaCustom,
+  getCategoriasGasto, getCategoriasIngreso, insertCategoriaCustom, updateCategoriaCustom,
+  type CategoriaUI, type Church,
 } from "../../db";
 import ConfirmDialog from "../ConfirmDialog";
 import { showToast } from "../../toast";
@@ -121,6 +122,25 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
   const [pendingDelete, setPendingDelete] = useState<{ uid: string; nombre: string } | null>(null);
   // Contador local para re-render tras editar la caché de categorías.
   const [, setBump] = useState(0);
+
+  /* "N movimientos" por categoría (handoff de iPad). Una sola consulta
+     agrupada, no una por fila: son veinte categorías. Se recarga con
+     `bump` porque crear o borrar una cambia la lista, no los conteos —pero
+     un movimiento reclasificado desde otra pantalla sí, y la de Ajustes se
+     abre bastante después. */
+  const [conteos, setConteos] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let cancelado = false;
+    conteoPorCategoria(church.id)
+      .then((c) => { if (!cancelado) setConteos(c); })
+      .catch(console.error);
+    return () => { cancelado = true; };
+  }, [church.id]);
+
+  /** El conteo de una categoría, con la MISMA clave que guarda
+   *  `transactions.categoria`: el id del catálogo o la referencia de la
+   *  personalizada. */
+  const conteoDe = (c: CategoriaUI) => conteos[c.custom && c.uid ? customCatRef(c.uid) : c.id] ?? 0;
 
   // --- Tabla editable (solo Mac). En iPad se conserva la lista de pastillas:
   // renombrar con doble clic y elegir color de una paleta minúscula son
@@ -416,6 +436,7 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
                   >
                     <span style={{ width: 8, height: 8, borderRadius: 99, background: c.color, flexShrink: 0 }} />
                     {c.nombre}
+                    <span className="cat-conteo">{t("categorias.nMovimientos", { count: conteoDe(c) })}</span>
                     <span
                       style={{ cursor: "pointer", display: "inline-flex", opacity: 0.7 }}
                       title={t("common.eliminar")}
@@ -427,8 +448,13 @@ export default function CategoriesSettings({ church, onChanged }: Props) {
                     </span>
                   </span>
                 ) : (
-                  <span key={c.id} className={`tag ${c.tagClass}`} style={{ opacity: 0.75 }}>
+                  <span
+                    key={c.id}
+                    className={`tag ${c.tagClass}`}
+                    style={{ opacity: 0.75, display: "inline-flex", alignItems: "center", gap: 5 }}
+                  >
                     {catNombre(c.id)}
+                    <span className="cat-conteo">{t("categorias.nMovimientos", { count: conteoDe(c) })}</span>
                   </span>
                 )
               )}

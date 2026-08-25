@@ -36,6 +36,12 @@ create table if not exists public.actas (
 create index if not exists idx_actas_church_updated
   on public.actas (church_id, updated_at);
 
+-- El tercer firmante (migración local 41) y las firmas recogidas (44). Las dos
+-- se añaden aparte porque llegaron después de la tabla; en una base nueva el
+-- `create table` de arriba ya las trae.
+alter table public.actas add column if not exists testigo text;
+alter table public.actas add column if not exists firmas  text not null default '[]';
+
 alter table public.actas enable row level security;
 
 drop policy if exists "actas_select" on public.actas;

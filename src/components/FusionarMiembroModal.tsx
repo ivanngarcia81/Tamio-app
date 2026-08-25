@@ -77,7 +77,7 @@ export default function FusionarMiembroModal({ churchId, origen, members, onClos
 
         <div className="modal-body">
           {resumen && (
-            <div className="form-subcard" style={{ marginBottom: 12, fontSize: 13 }}>
+            <div className="form-subcard" style={{ marginBottom: 12, fontSize: "calc(13px * var(--fs-escala))" }}>
               {t("fusion.resumen", {
                 movimientos: resumen.movimientos,
                 asistencias: resumen.asistencias,

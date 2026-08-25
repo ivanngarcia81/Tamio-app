@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { esIPhone } from "../movil";
 import { areaDeRuta, seccionesVisibles, type Contador } from "../navegacion";
-import type { Role } from "../role";
+import type { Permisos, Role } from "../role";
 
 interface Props {
   role: Role;
+  /** Los permisos del rol (migración 49). */
+  permisos: Permisos;
   memberCount: number;
   pendingCount: number;
   unreadCount: number;
@@ -31,7 +33,7 @@ interface Props {
  * Fuera de las áreas —Inicio, Mensajes, Ayuda, Ajustes— no se pinta nada. Esas
  * pantallas no tienen hermanas, y una tira con un solo elemento es ruido.
  */
-export default function CarruselSecciones({ role, memberCount, pendingCount, unreadCount, onVecina }: Props) {
+export default function CarruselSecciones({ role, permisos, memberCount, pendingCount, unreadCount, onVecina }: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -53,7 +55,7 @@ export default function CarruselSecciones({ role, memberCount, pendingCount, unr
   avisar.current = onVecina;
 
   const area = areaDeRuta(pathname);
-  const secciones = area ? seccionesVisibles(area, role) : [];
+  const secciones = area ? seccionesVisibles(area, role, permisos) : [];
 
   // Hacia qué lado va el viaje, para que la página entre desde ahí (lo pinta
   // el CSS leyendo `data-dir-nav`). Sin esto la página aparecería de golpe

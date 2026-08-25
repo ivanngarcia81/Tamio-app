@@ -1,4 +1,4 @@
-import { fmtFechaCorta, type Acta, type Church } from "../../db";
+import { fmtFechaCorta, parseFirmasActa, type Acta, type Church } from "../../db";
 import i18n from "../../i18n";
 import { parseAcuerdos, parseMociones } from "../../components/ActaModal";
 import { ReportDocBuilder, type PdfColumn } from "./pdfGenerator";
@@ -124,15 +124,33 @@ export async function printActaPdf(church: Church, acta: Acta): Promise<void> {
      cambiaría el PDF de todas las actas ya firmadas: dos columnas anchas
      pasarían a tres estrechas de golpe. Un documento contable no cambia de
      forma retroactivamente. Quien quiera el renglón, escribe el nombre. */
+  /* Quién ha firmado y cuándo (migración 44). El PDF lo dice bajo el cargo:
+     un acta que se manda por correo tiene que poder enseñar que ya está
+     firmada sin abrir la app. El rol sin firma no cambia — sigue siendo el
+     renglón que se firma a mano. */
+  const firmada = (rol: string): string | null => {
+    const f = parseFirmasActa(acta.firmas).find((x) => x.rol === rol && x.firmado);
+    if (!f) return null;
+    return f.fecha ? t("actas.firmoEl", { fecha: fmtFechaCorta(f.fecha) }) : t("cartas.firmado");
+  };
+  const conFirma = (rol: string, base: string) => {
+    const nota = firmada(rol);
+    return nota ? `${base} · ${nota}` : base;
+  };
+
   doc.signatureBlock([
-    { nombre: acta.secretario, rol: t("actas.rolSecretario"), firmaDataUrl: null },
+    {
+      nombre: acta.secretario,
+      rol: conFirma("secretario", t("actas.rolSecretario")),
+      firmaDataUrl: null,
+    },
     {
       nombre: acta.preside ?? church.pastor_nombre,
-      rol: acta.preside ? t("actas.rolPreside") : church.pastor_cargo ?? i18n.t("rol.pastor"),
+      rol: conFirma("preside", acta.preside ? t("actas.rolPreside") : church.pastor_cargo ?? i18n.t("rol.pastor")),
       firmaDataUrl: !acta.preside || acta.preside === church.pastor_nombre ? pastorFirmaDataUrl : null,
     },
     ...(acta.testigo
-      ? [{ nombre: acta.testigo, rol: t("actas.testigo"), firmaDataUrl: null }]
+      ? [{ nombre: acta.testigo, rol: conFirma("testigo", t("actas.testigo")), firmaDataUrl: null }]
       : []),
   ]);
 

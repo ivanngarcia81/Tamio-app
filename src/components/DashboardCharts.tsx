@@ -29,7 +29,7 @@ interface Props {
 /* El color del eje sale de un token para que Mac pueda usar su propio gris
    (--mac-tertiary) sin tocar el teléfono. 11 px en las dos plataformas: la
    gráfica es el dato, no el texto. */
-const axisTick = { fontSize: 11, fill: "var(--chart-axis)" };
+const axisTick = { fontSize: "calc(11px * var(--fs-escala))", fill: "var(--chart-axis)" };
 
 /** Etiqueta corta para el eje Y: "13k", "1.4M". Los importes vienen en
  *  centavos, así que primero se pasan a la unidad de la moneda. Sin eje Y
@@ -87,7 +87,7 @@ function TooltipCard({ active, payload, label, moneda }: any) {
         borderRadius: 10,
         padding: "8px 12px",
         boxShadow: "0 8px 24px rgba(0,0,0,.12)",
-        fontSize: 12.5,
+        fontSize: "calc(12.5px * var(--fs-escala))",
       }}
     >
       <div style={{ color: "var(--text-2)", marginBottom: 4, fontWeight: 600 }}>{label}</div>

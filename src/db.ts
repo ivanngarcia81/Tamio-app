@@ -59,6 +59,23 @@ export interface Church {
    *  movimiento registrado en Tamio. Se suma al acumulado de movimientos para
    *  el "saldo anterior" del estado financiero. 0 = arrancó de cero. */
   saldo_inicial: Centavos;
+  /** Controles de tesorería (migración v45). Los dos avisos de Por revisar,
+   *  ahora ajustables desde Configuración → Iglesia.
+   *  `umbral_comprobante` en NULL = el de `UMBRAL_COMPROBANTE`, no cero. */
+  avisar_sin_comprobante: number;
+  umbral_comprobante: Centavos | null;
+  avisar_duplicados: number;
+  /** Si los cortes nacen pidiendo la segunda firma (migración 47). Es el valor
+   *  por omisión de `cortes.doble_firma_pedida`, no una orden. */
+  pedir_doble_firma: number;
+  /** Los dos permisos del rol Tesorería (migración 49). **Espejo de la nube,
+   *  no la verdad**: se escriben solo bajando desde `iglesias`, igual que el
+   *  plan. Aquí están para que la interfaz sepa qué esconder sin señal.
+   *
+   *  `tesorero_ve_padron` ABRE Membresía al tesorero (0 = lo de hoy);
+   *  `tesorero_puede_eliminar` le QUITA el borrado (1 = lo de hoy). */
+  tesorero_ve_padron: number;
+  tesorero_puede_eliminar: number;
 }
 
 export interface Member {
@@ -306,6 +323,11 @@ export interface Tx {
    *  a la migración 39 y en modo local, donde no hay sesión. */
   registrado_por?: string | null;
   registrado_rol?: string | null;
+  /** Folio "2026-0042" (migración 48). Null en los movimientos anteriores a
+   *  esa migración: el pasado no se numeró, y la pantalla no pinta la fila
+   *  cuando falta en vez de inventar uno. */
+  folio?: string | null;
+  folio_seq?: number | null;
 }
 
 // ---------- Catálogos ----------
@@ -454,6 +476,31 @@ export async function deleteCategoriaCustom(uid: string, churchId: number): Prom
   await loadCategoriasCustom(churchId);
 }
 
+/**
+ * Cuántos movimientos usa CADA categoría, en una sola consulta.
+ *
+ * `countTxByCategoria` responde por una y se llama antes de borrar; esto
+ * responde por todas y es lo que la pantalla de Categorías necesita para
+ * poner "12 movimientos" junto a cada una. Con la de una sola serían
+ * veinte consultas para pintar una lista.
+ *
+ * La clave es la MISMA que guarda `transactions.categoria`: el id del
+ * catálogo ("diezmo") o la referencia de una personalizada
+ * (`customCatRef`). Así el llamador busca con lo que ya tiene en la mano.
+ */
+export async function conteoPorCategoria(churchId: number): Promise<Record<string, number>> {
+  const d = await getDb();
+  const filas = await d.select<{ categoria: string; n: number }[]>(
+    `SELECT categoria, count(*) AS n FROM transactions
+      WHERE church_id = $1 AND deleted = 0 AND categoria IS NOT NULL AND categoria != ''
+      GROUP BY categoria`,
+    [churchId]
+  );
+  const out: Record<string, number> = {};
+  for (const f of filas) out[f.categoria] = f.n;
+  return out;
+}
+
 /** Cuántos movimientos usan una categoría (para impedir borrar las en uso). */
 export async function countTxByCategoria(churchId: number, categoriaId: string): Promise<number> {
   const d = await getDb();
@@ -553,6 +600,10 @@ export interface ChurchUpdate {
   secretaria_nombre?: string | null;
   secretaria_cargo?: string | null;
   saldo_inicial?: Centavos;
+  avisar_sin_comprobante?: number;
+  umbral_comprobante?: Centavos | null;
+  avisar_duplicados?: number;
+  pedir_doble_firma?: number;
 }
 
 export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church> {
@@ -567,8 +618,16 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        direccion = $16, region = $17, telefono = $18, email = $19,
        pie_institucional = $20, secretaria_nombre = $21, secretaria_cargo = $22,
        saldo_inicial = COALESCE($23, saldo_inicial),
-       ein = $24, estado_provincia = $25, codigo_postal = $26
-     WHERE id = $27`,
+       ein = $24, estado_provincia = $25, codigo_postal = $26,
+       -- Los tres controles de tesorería (v45) van con el mismo COALESCE que
+       -- el saldo: quien no los manda —la bienvenida, el alta de iglesia— no
+       -- puede reiniciarlos sin querer. El umbral NO puede usar COALESCE para
+       -- volver a NULL, así que lleva su propia bandera en $28.
+       avisar_sin_comprobante = COALESCE($27, avisar_sin_comprobante),
+       umbral_comprobante = CASE WHEN $28 = 1 THEN $29 ELSE umbral_comprobante END,
+       avisar_duplicados = COALESCE($30, avisar_duplicados),
+       pedir_doble_firma = COALESCE($31, pedir_doble_firma)
+     WHERE id = $32`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
       c.tesorero_nombre ?? null, c.tesorero_cargo ?? null, c.tesorero_email ?? null,
@@ -581,6 +640,14 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       // cuando el llamador (p. ej. la bienvenida) no incluye el campo.
       c.saldo_inicial ?? null,
       c.ein ?? null, c.estado_provincia ?? null, c.codigo_postal ?? null,
+      c.avisar_sin_comprobante ?? null,
+      // $28: "el llamador SÍ trae umbral" (aunque sea null, que significa
+      // "vuelve a la constante"). Sin esta bandera no habría forma de
+      // distinguir "no lo mandes" de "ponlo en NULL".
+      "umbral_comprobante" in c ? 1 : 0,
+      c.umbral_comprobante ?? null,
+      c.avisar_duplicados ?? null,
+      c.pedir_doble_firma ?? null,
       id,
     ]
   );
@@ -629,15 +696,98 @@ export interface NewTx {
   recurrente_id?: number | null;
 }
 
+/**
+ * El siguiente folio de movimiento del año: `2026-0042`.
+ *
+ * Es `nextCartaSeq` con otro prefijo, y hereda sus dos lecciones —las dos
+ * costaron un bug de verdad en las cartas:
+ *
+ *  1. **El año sale del FOLIO ya emitido, no de `fecha`.** Un folio no cambia
+ *     nunca; la fecha de un movimiento sí se corrige. Filtrando por fecha,
+ *     mover un movimiento a otro año lo sacaba del filtro y el siguiente
+ *     número de ese año se repetía.
+ *  2. **Se comprueba la colisión directa** y se avanza hasta el primer libre:
+ *     con la sincronización encendida pueden haber bajado movimientos de otro
+ *     aparato que ya ocuparon ese número.
+ *
+ * Los huecos son aceptados a propósito: se numera con MAX+1 y no con COUNT,
+ * para que borrar un movimiento no haga que el siguiente repita número. Un
+ * libro contable prefiere un hueco a un folio repetido.
+ *
+ * **Cuál de las dos cosas sostiene qué**, medido rompiéndolas por separado:
+ * quien impide los duplicados es el BUCLE, no el MAX+1 —con COUNT y el bucle
+ * intacto siguen sin repetirse—. El MAX+1 sirve para lo otro: que la serie no
+ * RETROCEDA a un número que se purgó y que puede estar escrito en un recibo.
+ * Las dos hacen falta, pero no para lo mismo.
+ */
+async function nextFolioMovimiento(churchId: number, fecha: string): Promise<{ seq: number; folio: string }> {
+  const d = await getDb();
+  const anio = fecha.slice(0, 4);
+  const rows = await d.select<{ m: number | null }[]>(
+    "SELECT MAX(folio_seq) AS m FROM transactions WHERE church_id = $1 AND folio LIKE $2 || '-%'",
+    [churchId, anio]
+  );
+  let seq = (rows[0]?.m ?? 0) + 1;
+  for (;;) {
+    const folio = `${anio}-${String(seq).padStart(4, "0")}`;
+    const dup = await d.select<{ n: number }[]>(
+      "SELECT count(*) AS n FROM transactions WHERE church_id = $1 AND folio = $2",
+      [churchId, folio]
+    );
+    if ((dup[0]?.n ?? 0) === 0) return { seq, folio };
+    seq++;
+  }
+}
+
+/**
+ * Repara folios de movimiento duplicados: conserva el de la fila más antigua
+ * (menor id) y renumera las demás con el siguiente libre de su año.
+ *
+ * Los duplicados nacen cuando dos aparatos registran sin conexión —cada uno
+ * calculó el mismo MAX+1— y la sincronización los junta. Con las cartas era
+ * raro (veinte al año); con los movimientos es lo normal, así que esto corre
+ * al terminar de bajar transacciones. Devuelve cuántos se renumeraron.
+ *
+ * Renumera el MÁS NUEVO, no el más viejo, y eso importa: el folio de un
+ * movimiento ya puede estar escrito en un recibo de papel, y el que lleva más
+ * tiempo emitido es el que más probablemente lo esté.
+ */
+export async function repararFoliosMovimiento(churchId: number): Promise<number> {
+  const d = await getDb();
+  const dups = await d.select<{ id: number; folio: string }[]>(
+    `SELECT t.id, t.folio FROM transactions t
+      WHERE t.church_id = $1 AND t.folio IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM transactions o
+           WHERE o.church_id = t.church_id AND o.folio = t.folio AND o.id < t.id
+        )
+      ORDER BY t.id`,
+    [churchId]
+  );
+  for (const x of dups) {
+    const anio = x.folio.slice(0, 4);
+    const { seq, folio } = await nextFolioMovimiento(churchId, `${anio}-01-01`);
+    await d.execute(
+      "UPDATE transactions SET folio = $1, folio_seq = $2, updated_at = datetime('now') WHERE id = $3",
+      [folio, seq, x.id]
+    );
+  }
+  return dups.length;
+}
+
 export async function insertTx(churchId: number, moneda: string, tx: NewTx): Promise<void> {
   const d = await getDb();
+  /* El folio se emite al REGISTRAR, con el año de la fecha del movimiento —no
+     con el de hoy—: un ingreso de diciembre capturado en enero pertenece al
+     libro de diciembre, y su folio tiene que decirlo. */
+  const { seq, folio } = await nextFolioMovimiento(churchId, tx.fecha);
   await d.execute(
     `INSERT INTO transactions
       (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
        member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
-       registrado_por, registrado_rol,
+       registrado_por, registrado_rol, folio, folio_seq,
        uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,datetime('now'))`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,datetime('now'))`,
     [
       churchId,
       tx.tipo,
@@ -659,6 +809,8 @@ export async function insertTx(churchId: number, moneda: string, tx: NewTx): Pro
       tx.recurrente_id ?? null,
       quienRegistra()?.nombre ?? null,
       quienRegistra()?.rol ?? null,
+      folio,
+      seq,
       crypto.randomUUID(),
     ]
   );
@@ -1094,6 +1246,18 @@ export interface Corte {
   created_at?: string | null;
   registrado_por?: string | null;
   registrado_rol?: string | null;
+  /* ---- Doble firma (migración 47) ----
+     La segunda persona vuelve a contar el dinero —o revisa el registro cuando
+     ya no está— y firma. `pedida` es la marca de ESTE corte; su valor por
+     omisión lo pone la política de la iglesia, y la hoja puede cambiarlo. */
+  doble_firma_pedida?: number;
+  segunda_firma?: string | null;
+  segunda_firma_rol?: string | null;
+  segunda_firma_en?: string | null;
+  /** "conteo" (contó el dinero) | "revision" (revisó el registro). */
+  segunda_firma_modo?: string | null;
+  /** Lo que contó, en centavos. Se guarda AUNQUE no cuadre y no haya firma. */
+  segunda_conteo?: Centavos | null;
 }
 
 export interface NewCorte {
@@ -1102,6 +1266,8 @@ export interface NewCorte {
   cuenta_banco?: string | null;
   responsable?: string | null;
   notas?: string | null;
+  /** Si este corte nace pidiendo la segunda firma. */
+  dobleFirma?: boolean;
 }
 
 /** Los cortes de la iglesia, del más reciente al más viejo. */
@@ -1142,8 +1308,8 @@ export async function insertCorte(
   const d = await getDb();
   await d.execute(
     `INSERT INTO cortes (church_id, fecha, nombre, cuenta_banco, responsable, notas,
-                         registrado_por, registrado_rol, uid, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,datetime('now'))`,
+                         registrado_por, registrado_rol, doble_firma_pedida, uid, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,datetime('now'))`,
     [
       churchId,
       corte.fecha,
@@ -1153,6 +1319,7 @@ export async function insertCorte(
       corte.notas?.trim() || null,
       quienRegistra()?.nombre ?? null,
       quienRegistra()?.rol ?? null,
+      corte.dobleFirma ? 1 : 0,
       crypto.randomUUID(),
     ]
   );
@@ -1210,6 +1377,100 @@ export async function deleteCorte(corteId: number, churchId: number): Promise<vo
     "UPDATE cortes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
     [corteId, churchId]
   );
+}
+
+/**
+ * La segunda firma de un corte (migración 47).
+ *
+ * Dos modos, y la diferencia no es cosmética:
+ *
+ *  - **`conteo`** — volvió a contar el dinero. Trae SU cifra, que la pantalla
+ *    le pidió sin enseñarle el total. Compara el efectivo físico contra lo
+ *    registrado, que es el único control que hace eso en toda la app.
+ *  - **`revision`** — revisó el registro. Es lo único que cabe cuando la firma
+ *    llega días después y el dinero ya está en el banco: puede decir que lo
+ *    apuntado es coherente consigo mismo, no que el dinero estuviera.
+ *
+ * **Cuando lo contado no cuadra, la cifra se guarda y la firma NO se da.** Es
+ * la mitad del control que más se cae de las implementaciones: si un descuadre
+ * borrara el número, contar dos veces no habría servido de nada. Se llama con
+ * `nombre: null` y el conteo puesto.
+ */
+export async function firmarCorte(
+  corteId: number,
+  churchId: number,
+  firma: {
+    nombre: string | null;
+    rol: string | null;
+    modo: "conteo" | "revision";
+    conteo?: Centavos | null;
+  }
+): Promise<void> {
+  const d = await getDb();
+  const nombre = firma.nombre?.trim() || null;
+  await d.execute(
+    `UPDATE cortes SET
+       segunda_firma = $1, segunda_firma_rol = $2, segunda_firma_modo = $3,
+       segunda_conteo = $4,
+       segunda_firma_en = CASE WHEN $1 IS NULL THEN NULL ELSE datetime('now') END,
+       updated_at = datetime('now')
+     WHERE id = $5 AND church_id = $6`,
+    [nombre, nombre ? firma.rol : null, firma.modo, firma.conteo ?? null, corteId, churchId]
+  );
+}
+
+/** Deshace la segunda firma: vuelve a quedar pendiente. Para el caso honesto
+ *  de haberla dado por error, o de haber contado mal. */
+export async function quitarFirmaCorte(corteId: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE cortes SET segunda_firma = NULL, segunda_firma_rol = NULL,
+            segunda_firma_en = NULL, segunda_firma_modo = NULL, segunda_conteo = NULL,
+            updated_at = datetime('now')
+      WHERE id = $1 AND church_id = $2`,
+    [corteId, churchId]
+  );
+}
+
+/**
+ * Los cortes que PIDIERON segunda firma y siguen sin ella. Es lo que Por
+ * revisar lista como su octava regla.
+ *
+ * Solo los que la pidieron: un corte que nació sin la marca no está incompleto
+ * —esa iglesia no usa doble firma, o ese domingo no hacía falta— y anunciarlo
+ * como pendiente sería convertir una opción en un reproche.
+ */
+export async function cortesSinSegundaFirma(churchId: number): Promise<Corte[]> {
+  const d = await getDb();
+  return d.select<Corte[]>(
+    `SELECT * FROM cortes
+      WHERE church_id = $1 AND deleted = 0
+        AND doble_firma_pedida = 1 AND segunda_firma IS NULL
+      ORDER BY fecha DESC, id DESC`,
+    [churchId]
+  );
+}
+
+/**
+ * Quién puede dar la segunda firma de este corte, propuesto.
+ *
+ * La regla es una: **quien firma no puede ser quien registró.** Con la
+ * tesorera y su asistente —que es quien la sustituye cuando falta— eso se
+ * resuelve solo: se propone al otro miembro del par. El domingo que la
+ * asistente cubrió, la app propone a la tesorera para que firme a la vuelta.
+ *
+ * Devuelve la lista del directorio SIN quien registró. Que sea una propuesta y
+ * no una imposición es a propósito: una iglesia pequeña puede tener a una sola
+ * persona en tesorería, y entonces firma el pastor.
+ */
+export async function candidatosSegundaFirma(
+  churchId: number,
+  registradoPor: string | null | undefined
+): Promise<Usuario[]> {
+  const usuarios = await listUsuarios(churchId);
+  const quien = registradoPor?.trim().toLowerCase();
+  if (!quien) return usuarios;
+  return usuarios.filter((u) => u.nombre.trim().toLowerCase() !== quien);
 }
 
 /** Los movimientos de un corte, con el nombre del aportante si lo tiene. */
@@ -1534,6 +1795,9 @@ export async function lastActivityAt(churchId: number): Promise<string | null> {
 
 export const ROLES_USUARIO = [
   { id: "tesorero", nombre: "Tesorero" },
+  /* La que cubre a la tesorera cuando falta, y la que da la segunda firma del
+     corte (migración 47). Va justo detrás porque es el mismo trabajo. */
+  { id: "asistente", nombre: "Asistente de tesorería" },
   { id: "pastor", nombre: "Pastor" },
   { id: "secretario", nombre: "Secretario" },
   { id: "auditor", nombre: "Auditor" },
@@ -1829,7 +2093,62 @@ export interface Acta {
   estado: string;
   confidencial: number;
   fecha_aprobacion: string | null;
+  /** JSON de `ActaFirma[]` (migración 44). Quién ha firmado y cuándo; los
+   *  NOMBRES no están aquí, siguen en preside/secretario/testigo. */
+  firmas: string;
   creado_en: string;
+}
+
+/**
+ * Una firma recogida del acta. Mismo molde que `CartaFirma`, a propósito:
+ * las cartas resuelven esto desde hace versiones y dos formas distintas de
+ * guardar lo mismo se acaban comportando distinto.
+ *
+ * No lleva `nombre`: el del firmante vive en la columna que le toca
+ * (`preside`, `secretario`, `testigo`). Copiarlo aquí dejaría dos versiones
+ * que se separan a la primera corrección de una letra.
+ */
+export interface ActaFirma {
+  /** preside | secretario | testigo */
+  rol: string;
+  firmado: boolean;
+  /** Día en que firmó, "YYYY-MM-DD". Null mientras no haya firmado. */
+  fecha: string | null;
+}
+
+/** Los tres renglones de firma de un acta, en el orden en que se imprimen. */
+export const ROLES_FIRMA_ACTA = ["preside", "secretario", "testigo"] as const;
+
+/** Lee el JSON de firmas sin romperse con una fila vieja o corrupta. */
+export function parseFirmasActa(json: string | null | undefined): ActaFirma[] {
+  if (!json) return [];
+  try {
+    const v = JSON.parse(json);
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((x) => x && typeof x.rol === "string")
+      .map((x) => ({ rol: String(x.rol), firmado: !!x.firmado, fecha: x.fecha ?? null }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Guarda las firmas recogidas. Va aparte de `updateActa` por lo mismo que
+ * `cerrarActa`: recoger una firma es UN gesto sobre un documento ya escrito,
+ * no una edición del acta. Reescribir las veinte columnas para marcar una
+ * casilla es la manera de perder algo por el camino.
+ */
+export async function guardarFirmasActa(
+  id: number,
+  churchId: number,
+  firmas: ActaFirma[]
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE actas SET firmas = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
+    [JSON.stringify(firmas), id, churchId]
+  );
 }
 
 export interface NewActa {
@@ -3066,12 +3385,21 @@ export async function updateServicio(id: number, churchId: number, s: NewServici
   await replaceAsistencia(churchId, id, s.asistencia);
 }
 
-/** Borrado SUAVE del servicio y de su roster (ambos se propagan en la
- *  sincronización como lápidas). */
+/** Borrado SUAVE del servicio y de todo lo que cuelga de él —el roster de
+ *  asistencia, los puestos y el orden del culto—; los cuatro se propagan en
+ *  la sincronización como lápidas. */
 export async function deleteServicio(id: number, churchId: number): Promise<void> {
   const d = await getDb();
   await d.execute(
     "UPDATE servicio_asistencia SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
+    [id]
+  );
+  await d.execute(
+    "UPDATE servicio_puestos SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
+    [id]
+  );
+  await d.execute(
+    "UPDATE servicio_orden SET deleted = 1, updated_at = datetime('now') WHERE servicio_id = $1 AND deleted = 0",
     [id]
   );
   await d.execute(
@@ -3098,6 +3426,317 @@ export async function getServicioAsistencia(servicioId: number): Promise<Asisten
     seguimiento: r.seguimiento === 1,
     nombre_snapshot: r.nombre_snapshot,
   }));
+}
+
+// ---------- Roster por puestos y orden del culto (migración 43) ----------
+
+/**
+ * Los seis puestos del handoff, y de dónde sale cada uno.
+ *
+ * `campo` distingue los dos que el servicio guarda en una columna suya de los
+ * cuatro que viven en `servicio_puestos`. No es una inconsistencia que quedó
+ * ahí: quién predica y quién dirige se escriben en el formulario del culto
+ * desde la primera versión y salen impresos en los informes; moverlos a la
+ * tabla nueva habría obligado a migrar datos reales para no ganar nada.
+ *
+ * El catálogo es una CONSTANTE, no una tabla. Son los seis puestos del
+ * diseño; una iglesia que necesite otro (multimedia, transmisión) pide una
+ * línea aquí y su clave en los dos idiomas, no una pantalla de mantenimiento
+ * que nadie va a abrir dos veces.
+ */
+export const PUESTOS = [
+  { clave: "predicacion", campo: "predica" },
+  { clave: "direccion", campo: "dirige" },
+  { clave: "alabanza", campo: null },
+  { clave: "ujieres", campo: null },
+  { clave: "ofrenda", campo: null },
+  { clave: "sonido", campo: null },
+] as const satisfies readonly { clave: string; campo: "predica" | "dirige" | null }[];
+
+/** Las claves de los puestos que se guardan en `servicio_puestos`. */
+export const PUESTOS_CON_TABLA = PUESTOS.filter((p) => p.campo === null).map((p) => p.clave);
+
+export interface PuestoAsignado {
+  puesto: string;
+  nombre: string;
+  member_id: number | null;
+}
+
+/** Quién cubre cada puesto de un servicio. Solo los cuatro de tabla: los
+ *  otros dos los tiene el propio `Servicio` en sus columnas. */
+export async function listPuestosServicio(servicioId: number): Promise<PuestoAsignado[]> {
+  const d = await getDb();
+  return d.select<PuestoAsignado[]>(
+    `SELECT puesto, nombre, member_id FROM servicio_puestos
+      WHERE servicio_id = $1 AND deleted = 0 ORDER BY puesto`,
+    [servicioId]
+  );
+}
+
+/**
+ * Asigna (o reasigna) un puesto. `member_id` es null cuando el nombre se
+ * escribió a mano: quien ayuda en sonido un domingo puede no estar en el
+ * padrón, y obligarle a estarlo para poder anotarlo convertiría un apunte de
+ * treinta segundos en un alta de miembro.
+ *
+ * Reasignar REUSA la fila (y con ella su `uid`), no borra y crea otra: el uid
+ * es lo que identifica la asignación entre aparatos, y cambiarlo cada vez que
+ * alguien corrige un nombre convierte una corrección en un duplicado.
+ */
+export async function asignarPuesto(
+  churchId: number,
+  servicioId: number,
+  puesto: string,
+  nombre: string,
+  memberId: number | null
+): Promise<void> {
+  const d = await getDb();
+  const limpio = nombre.trim();
+  if (!limpio) return quitarPuesto(servicioId, puesto);
+  // Se busca incluso entre las borradas: si el puesto se soltó y se vuelve a
+  // asignar, esa fila revive con su uid en vez de dejar una lápida y un alta.
+  const previas = await d.select<{ id: number }[]>(
+    "SELECT id FROM servicio_puestos WHERE servicio_id = $1 AND puesto = $2 ORDER BY deleted, id LIMIT 1",
+    [servicioId, puesto]
+  );
+  const previa = previas[0]?.id;
+  if (previa != null) {
+    await d.execute(
+      `UPDATE servicio_puestos
+          SET nombre = $1, member_id = $2, deleted = 0, church_id = $3, updated_at = datetime('now')
+        WHERE id = $4`,
+      [limpio, memberId, churchId, previa]
+    );
+    return;
+  }
+  await d.execute(
+    `INSERT INTO servicio_puestos (church_id, servicio_id, puesto, nombre, member_id, uid, updated_at, deleted)
+     VALUES ($1,$2,$3,$4,$5,$6,datetime('now'),0)`,
+    [churchId, servicioId, puesto, limpio, memberId, crypto.randomUUID()]
+  );
+}
+
+/** Suelta el puesto: vuelve a "Sin asignar". Borrado en BLANDO, para que
+ *  soltarlo viaje a los demás aparatos igual que asignarlo. */
+export async function quitarPuesto(servicioId: number, puesto: string): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE servicio_puestos SET deleted = 1, updated_at = datetime('now')
+      WHERE servicio_id = $1 AND puesto = $2 AND deleted = 0`,
+    [servicioId, puesto]
+  );
+}
+
+export interface PasoOrden {
+  id: number;
+  posicion: number;
+  hora: string | null;
+  titulo: string;
+  encargado: string | null;
+}
+
+/** El orden del culto, de principio a fin. Ordena por `posicion` y no por
+ *  `hora`: hay pasos sin hora, y ordenarlos por una hora vacía los mandaría
+ *  todos al principio. */
+export async function listOrdenCulto(servicioId: number): Promise<PasoOrden[]> {
+  const d = await getDb();
+  return d.select<PasoOrden[]>(
+    `SELECT id, posicion, hora, titulo, encargado FROM servicio_orden
+      WHERE servicio_id = $1 AND deleted = 0 ORDER BY posicion, id`,
+    [servicioId]
+  );
+}
+
+/** Añade un paso al final. Devuelve su id. */
+export async function insertPasoOrden(
+  churchId: number,
+  servicioId: number,
+  paso: { hora: string | null; titulo: string; encargado: string | null }
+): Promise<number | null> {
+  const d = await getDb();
+  const filas = await d.select<{ siguiente: number | null }[]>(
+    "SELECT MAX(posicion) + 1 AS siguiente FROM servicio_orden WHERE servicio_id = $1 AND deleted = 0",
+    [servicioId]
+  );
+  const posicion = filas[0]?.siguiente ?? 0;
+  const res = await d.execute(
+    `INSERT INTO servicio_orden (church_id, servicio_id, posicion, hora, titulo, encargado, uid, updated_at, deleted)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,datetime('now'),0)`,
+    [churchId, servicioId, posicion, paso.hora?.trim() || null, paso.titulo.trim(),
+     paso.encargado?.trim() || null, crypto.randomUUID()]
+  );
+  return res.lastInsertId ?? null;
+}
+
+export async function updatePasoOrden(
+  id: number,
+  churchId: number,
+  paso: { hora: string | null; titulo: string; encargado: string | null }
+): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    `UPDATE servicio_orden SET hora = $1, titulo = $2, encargado = $3, updated_at = datetime('now')
+      WHERE id = $4 AND church_id = $5`,
+    [paso.hora?.trim() || null, paso.titulo.trim(), paso.encargado?.trim() || null, id, churchId]
+  );
+}
+
+export async function deletePasoOrden(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE servicio_orden SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
+}
+
+/** Mueve un paso una posición arriba o abajo intercambiándolo con su vecino.
+ *  Sin arrastre: en un iPad, dos flechas en una lista de seis renglones se
+ *  aciertan siempre y un arrastre a veces. */
+export async function moverPasoOrden(
+  servicioId: number,
+  churchId: number,
+  id: number,
+  direccion: -1 | 1
+): Promise<void> {
+  const pasos = await listOrdenCulto(servicioId);
+  const i = pasos.findIndex((p) => p.id === id);
+  const j = i + direccion;
+  if (i < 0 || j < 0 || j >= pasos.length) return;
+  const d = await getDb();
+  // Se reescriben las posiciones de los DOS con el índice de la lista, no con
+  // el valor guardado: filas viejas pueden compartir posición (todas a 0 si
+  // algo falló a medias) y un intercambio de valores iguales no movería nada.
+  await d.execute(
+    "UPDATE servicio_orden SET posicion = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
+    [j, pasos[i].id, churchId]
+  );
+  await d.execute(
+    "UPDATE servicio_orden SET posicion = $1, updated_at = datetime('now') WHERE id = $2 AND church_id = $3",
+    [i, pasos[j].id, churchId]
+  );
+}
+
+/** Candidatos para cubrir un puesto: el padrón activo, con su cargo o su
+ *  ministerio como segunda línea para distinguir dos nombres iguales. */
+export async function listCandidatosPuesto(
+  churchId: number
+): Promise<{ id: number; nombre: string; cargos: string; ministerios: string }[]> {
+  const d = await getDb();
+  return d.select<{ id: number; nombre: string; cargos: string; ministerios: string }[]>(
+    `SELECT id, nombre, cargos, ministerios FROM members
+      WHERE church_id = $1 AND activo = 1 AND estado_membresia != 'visitante' AND deleted = 0
+      ORDER BY nombre`,
+    [churchId]
+  );
+}
+
+// ---------- Parentescos: la pestaña Familia (migración 46) ----------
+
+/**
+ * El catálogo de parentescos, y su inverso.
+ *
+ * **Los términos son neutros** —"Padre o madre", "Hijo o hija"— y no por
+ * corrección: `members` no guarda sexo, así que "hija" sería un dato que
+ * inventa la interfaz. De regalo, cada inverso queda ÚNICO: el inverso de
+ * "hijo" es "padre" y punto. Con términos con sexo habría que adivinar cuál
+ * de los dos poner, y adivinar es justo lo que esta app no hace.
+ */
+export const INVERSO_PARENTESCO: Record<string, string> = {
+  conyuge: "conyuge",
+  padre: "hijo",
+  hijo: "padre",
+  hermano: "hermano",
+  abuelo: "nieto",
+  nieto: "abuelo",
+  tio: "sobrino",
+  sobrino: "tio",
+  primo: "primo",
+  otro: "otro",
+};
+
+/** Las claves del catálogo, en el orden en que se ofrecen. */
+export const TIPOS_PARENTESCO = [
+  "conyuge", "padre", "hijo", "hermano", "abuelo", "nieto", "tio", "sobrino", "primo", "otro",
+] as const;
+
+export interface Pariente {
+  /** Id de la fila de `parentescos`, para poder soltarla. */
+  id: number;
+  member_id: number;
+  nombre: string;
+  /** Clave del catálogo, YA vista desde la ficha que pregunta. */
+  tipo: string;
+  /** true si la fila estaba guardada al revés y se leyó con el inverso. */
+  invertida: boolean;
+}
+
+/**
+ * La familia de un miembro: las relaciones donde aparece, mire por donde se
+ * mire. Las guardadas al revés se devuelven con el tipo INVERTIDO, que es lo
+ * que permite guardar una sola fila por relación.
+ */
+export async function listParientes(memberId: number, churchId: number): Promise<Pariente[]> {
+  const d = await getDb();
+  const filas = await d.select<{ id: number; otro_id: number; nombre: string; tipo: string; invertida: number }[]>(
+    `SELECT p.id, p.pariente_id AS otro_id, m.nombre, p.tipo, 0 AS invertida
+       FROM parentescos p
+       JOIN members m ON m.id = p.pariente_id
+      WHERE p.member_id = $1 AND p.church_id = $2 AND p.deleted = 0 AND m.deleted = 0
+      UNION ALL
+     SELECT p.id, p.member_id AS otro_id, m.nombre, p.tipo, 1 AS invertida
+       FROM parentescos p
+       JOIN members m ON m.id = p.member_id
+      WHERE p.pariente_id = $1 AND p.church_id = $2 AND p.deleted = 0 AND m.deleted = 0
+      ORDER BY nombre`,
+    [memberId, churchId]
+  );
+  return filas.map((f) => ({
+    id: f.id,
+    member_id: f.otro_id,
+    nombre: f.nombre,
+    tipo: f.invertida === 1 ? (INVERSO_PARENTESCO[f.tipo] ?? "otro") : f.tipo,
+    invertida: f.invertida === 1,
+  }));
+}
+
+/**
+ * Guarda "X es el `tipo` de Y". Devuelve `false` si esas dos personas ya
+ * están relacionadas —da igual en qué dirección esté guardada la fila—, para
+ * que la pantalla lo diga en vez de tropezar con el índice único.
+ *
+ * Nadie es pariente de sí mismo, y eso se corta aquí: una relación reflexiva
+ * saldría dos veces en la propia lista y el inverso no significaría nada.
+ */
+export async function insertParentesco(
+  churchId: number,
+  memberId: number,
+  parienteId: number,
+  tipo: string
+): Promise<boolean> {
+  if (memberId === parienteId) return false;
+  const d = await getDb();
+  const previas = await d.select<{ n: number }[]>(
+    `SELECT count(*) AS n FROM parentescos
+      WHERE church_id = $1 AND deleted = 0
+        AND ((member_id = $2 AND pariente_id = $3) OR (member_id = $3 AND pariente_id = $2))`,
+    [churchId, memberId, parienteId]
+  );
+  if ((previas[0]?.n ?? 0) > 0) return false;
+  await d.execute(
+    `INSERT INTO parentescos (church_id, member_id, pariente_id, tipo, uid, updated_at, deleted)
+     VALUES ($1,$2,$3,$4,$5,datetime('now'),0)`,
+    [churchId, memberId, parienteId, tipo, crypto.randomUUID()]
+  );
+  return true;
+}
+
+/** Suelta una relación. Borrado en BLANDO, para que viaje entre aparatos. */
+export async function deleteParentesco(id: number, churchId: number): Promise<void> {
+  const d = await getDb();
+  await d.execute(
+    "UPDATE parentescos SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
+    [id, churchId]
+  );
 }
 
 /** Miembros que entran al roster de un servicio NUEVO: solo estado Activo
@@ -3683,16 +4322,21 @@ async function materializarDef(
     def.mes_inicio, def.ultimo_mes_generado, currentMonth(), skipMes
   );
   for (const mes of meses) {
+    /* Un movimiento generado por una serie es un movimiento como los demás y
+       lleva su folio. Se emite dentro del bucle porque cada mes es una fila y
+       cada fila necesita el siguiente número, no el mismo repetido. */
+    const fecha = fechaEnMes(mes, def.dia);
+    const { seq, folio } = await nextFolioMovimiento(def.church_id, fecha);
     await d.execute(
       `INSERT INTO transactions
         (church_id, tipo, categoria, subcategoria, concepto, detalle, fecha, monto, moneda, metodo_pago,
          member_id, beneficiario, beneficiario_rfc, emitir_constancia, notas, estado, comprobante_path, recurrente_id,
-         uid, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13,$14,datetime('now'))`,
+         folio, folio_seq, uid, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NULL,$11,$12,0,NULL,'aprobado',NULL,$13,$14,$15,$16,datetime('now'))`,
       [
         def.church_id, def.tipo, def.categoria, def.subcategoria, def.concepto, def.detalle,
-        fechaEnMes(mes, def.dia), def.monto, moneda, def.metodo_pago,
-        def.beneficiario, def.beneficiario_rfc, def.id, crypto.randomUUID(),
+        fecha, def.monto, moneda, def.metodo_pago,
+        def.beneficiario, def.beneficiario_rfc, def.id, folio, seq, crypto.randomUUID(),
       ]
     );
   }
@@ -3981,8 +4625,14 @@ export function mesLegible(yyyyMm: string): string {
 // ---------- Borrado masivo (Ajustes → solo administrador) ----------
 
 /** Datos transaccionales de la iglesia, en orden seguro para borrar. Todas
- *  tienen columna church_id (servicio_asistencia se limpia por servicio). */
+ *  tienen columna church_id (servicio_asistencia se limpia por servicio).
+ *
+ *  Las HIJAS van primero, y en el borrado duro de `borrarTodoLocal` eso es lo
+ *  que evita chocar con una clave foránea: `corte_movimientos` apunta a
+ *  `transactions`, `cortes` a `depositos_bancarios`, y los dos de servicio a
+ *  `servicios` y a `members`. */
 const TABLAS_DATOS = [
+  "corte_movimientos", "cortes", "servicio_puestos", "servicio_orden", "parentescos",
   "transactions", "depositos_bancarios", "members", "actas", "cartas",
   "solicitudes", "traslados_salida", "traslados_entrada", "servicios",
   "agenda", "mensajes", "gastos_recurrentes",

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listMembers, type Church, type Member } from "../db";
 import type { Role } from "../role";
-import { puedeVer } from "../role";
+import { permisosDe, puedeVer } from "../role";
 import { rutaPermitidaPorPlan, puedeCrearMiembros } from "../plan";
 import { authHabilitado } from "../supabase";
 import { ejecutarSync } from "../syncManager";
@@ -71,7 +71,7 @@ export default function CmdPalette({ church, role, onClose, onNavigate, onNuevo,
 
     // Navegación (respeta rol y plan; el guard de rutas es la red de seguridad).
     for (const n of NAV) {
-      if (!puedeVer(role, n.ruta) || !rutaPermitidaPorPlan(church.plan, n.ruta)) continue;
+      if (!puedeVer(role, n.ruta, permisosDe(church)) || !rutaPermitidaPorPlan(church.plan, n.ruta)) continue;
       const label = t(n.clave);
       if (q && !plano(label).includes(q)) continue;
       out.push({ id: `nav${n.ruta}`, seccion: "nav", label, run: () => onNavigate(n.ruta) });

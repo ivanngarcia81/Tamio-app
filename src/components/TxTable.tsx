@@ -15,6 +15,11 @@ interface Props {
   txs: Tx[];
   onEdit: (tx: Tx) => void;
   onChanged: () => void;
+  /** Permiso de la iglesia (migración 49). Cuando está apagado, Eliminar no
+   *  se ofrece —ni en el menú, ni en el deslizamiento, ni con clic derecho—.
+   *  `RowMenu` ya sabía vivir sin borrado (Informes de membresía), así que
+   *  basta con no darle las dos funciones. */
+  puedeEliminar?: boolean;
 }
 
 /* Ingresos y Gastos son páginas gemelas y comparten reparto: el concepto ocupa
@@ -51,7 +56,7 @@ const COLS_GASTO = COLS_INGRESO;
    vuelva a cerrarse a cero. */
 const COLS_MAC = "104px minmax(160px, 1fr) 124px 148px 126px 128px 86px 76px";
 
-export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
+export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = true }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -65,7 +70,9 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
     if (tx.comprobante_path) {
       items.push({ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) });
     }
-    items.push({ label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(tx) });
+    if (puedeEliminar) {
+      items.push({ label: t("common.eliminar"), danger: true, onClick: () => setPendingDelete(tx) });
+    }
     return items;
   }
 
@@ -168,8 +175,8 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 </div>
                 <RowMenu
                   onEdit={() => onEdit(tx)}
-                  onDelete={() => setPendingDelete(tx)}
-                  onBorrarDirecto={() => void borrarConDeshacer(tx)}
+                  onDelete={puedeEliminar ? () => setPendingDelete(tx) : undefined}
+                  onBorrarDirecto={puedeEliminar ? () => void borrarConDeshacer(tx) : undefined}
                   extraItems={tx.comprobante_path
                     ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
                     : undefined}
@@ -197,7 +204,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 {tx.estado === "pendiente" && <span className="tx-punto-pendiente" title={t("tx.pendiente")} />}
               </div>
               {tx.detalle && (
-                <div className="truncate solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={tx.detalle}>
+                <div className="truncate solo-escritorio" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }} title={tx.detalle}>
                   {tx.detalle}
                 </div>
               )}
@@ -207,7 +214,7 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
           const celdaFecha = (
             <div className="td">
               <div className="tx-fecha" style={{ fontWeight: 600 }}>{fmtFechaCorta(tx.fecha)}</div>
-              <div className="solo-escritorio" style={{ fontSize: 11.5, color: "var(--text-3)" }}>{hora}</div>
+              <div className="solo-escritorio" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }}>{hora}</div>
             </div>
           );
           const celdaCategoria = (
@@ -224,15 +231,15 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
               <div className="td">
                 {tx.member_nombre ? (
                   <div className="person" style={{ minWidth: 0 }}>
-                    <div className="mini-avatar c1" style={{ width: 26, height: 26, fontSize: 10 }}>
+                    <div className="mini-avatar c1" style={{ width: 26, height: 26, fontSize: "calc(10px * var(--fs-escala))" }}>
                       {tx.member_nombre.slice(0, 2).toUpperCase()}
                     </div>
-                    <span className="truncate" style={{ fontSize: 12.5, minWidth: 0, flex: "1 1 auto" }} title={tx.member_nombre}>
+                    <span className="truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", minWidth: 0, flex: "1 1 auto" }} title={tx.member_nombre}>
                       {tx.member_nombre}
                     </span>
                   </div>
                 ) : (
-                  <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={persona}>
+                  <span className="truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }} title={persona}>
                     {persona}
                   </span>
                 )}
@@ -280,8 +287,8 @@ export default function TxTable({ tipo, txs, onEdit, onChanged }: Props) {
                 </span>
                 <RowMenu
                   onEdit={() => onEdit(tx)}
-                  onDelete={() => setPendingDelete(tx)}
-                  onBorrarDirecto={() => void borrarConDeshacer(tx)}
+                  onDelete={puedeEliminar ? () => setPendingDelete(tx) : undefined}
+                  onBorrarDirecto={puedeEliminar ? () => void borrarConDeshacer(tx) : undefined}
                   extraItems={tx.comprobante_path
                     ? [{ label: t("tx.verComprobante"), onClick: () => setPreview(tx.comprobante_path!) }]
                     : undefined}

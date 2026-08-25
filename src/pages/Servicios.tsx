@@ -282,6 +282,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                       <DetalleServicio
                         servicio={det}
                         historial={servicios}
+                        churchId={church.id}
                         tituloLista={t("secretaria.servicios.titulo")}
                         onVolver={() => setSelId(null)}
                         onEditar={(s) => setModal({ open: true, servicio: s })}
@@ -367,7 +368,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                   </div>
                 </div>
                 <div className="ios-txrow-trailing">
-                  <span style={{ fontWeight: 700, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ fontWeight: 700, fontSize: "calc(16px * var(--fs-escala))", fontVariantNumeric: "tabular-nums" }}>
                     {totalPresentes(s) || "—"}
                   </span>
                 </div>
@@ -394,14 +395,14 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                 style={{ gridTemplateColumns: COLS, cursor: "pointer" }}
                 onClick={() => setModal({ open: true, servicio: s })}
               >
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(s.fecha)}</div>
+                <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(s.fecha)}</div>
                 <div className="td" style={{ minWidth: 0 }}>
                   <div className="p-name truncate">{t(`servicios.tipo.${s.tipo}`)}</div>
                   <div className="p-mail truncate" title={s.titulo_mensaje ?? undefined}>
                     {s.titulo_mensaje ?? "—"}
                   </div>
                 </div>
-                <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                   <div className="truncate">{s.predica ?? "—"}</div>
                 </div>
                 <div className="td" style={{ textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>

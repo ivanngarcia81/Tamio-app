@@ -33,6 +33,8 @@ interface Props {
   onChange: (patch: Partial<ChurchFormValues>) => void;
   error?: string | null;
   saldoError?: string | null;
+  /** Aviso del umbral de comprobante, cuando lo escrito no es un importe. */
+  umbralError?: string | null;
   logoPath: string | null;
   onLogoPathChange: (path: string | null) => void;
   showCurrency?: boolean;
@@ -48,7 +50,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
 }
 
 export default function ChurchSettingsIOS({
-  value, onChange, error, saldoError, logoPath, onLogoPathChange, showCurrency = true,
+  value, onChange, error, saldoError, umbralError, logoPath, onLogoPathChange, showCurrency = true,
 }: Props) {
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -156,25 +158,20 @@ export default function ChurchSettingsIOS({
       )}
 
       {/* ---- Controles de tesorería (handoff 1) ----
-          Los cuatro que el handoff 1 dibujaba aquí y que §4 de
-          `docs/ipad-rediseno.md` descartó por inventados. Se pintan por
-          decisión de Iván (23 ago), con el trato de la casa: APAGADOS y con
-          su explicación.
+          Los cuatro que el handoff 1 dibujaba aquí. Empezaron pintados y
+          apagados con su explicación (23 ago); con la migración 45 el grupo
+          se parte en dos mitades que ya no se parecen:
 
-          Pero NO los cuatro por igual: **dos describen algo que la app ya
-          hace** y salen encendidos diciendo la verdad, y dos son sitio
-          reservado. Es el mismo criterio que los permisos del rol — una fila
-          apagada puede estar esperando motor sin tener que mentir mientras
-          espera.
-
-            · Comprobante — `UMBRAL_COMPROBANTE` existe y vale de verdad; Por
-              revisar señala los gastos que lo pasan. Lo que no se puede es
-              cambiar la cifra ni apagarlo.
-            · Duplicados  — la regla `duplicado` de `alertas.ts` está viva.
-            · Doble firma — no existe nada.
-            · Cierre de mes — la app cierra por mes natural (ver
-              `services/inicio/periodo.ts`, y ahí está el porqué); "último
-              domingo" no es una opción, es otra forma de contar.
+            · **Los dos avisos, con motor.** El del comprobante y el de
+              duplicados describían algo que la app YA hacía —`alertas.ts`— y
+              lo único que faltaba era poder cambiarlo. Ahora se encienden, se
+              apagan y el umbral se escribe, y lo que se cambia llega a Por
+              revisar de verdad.
+            · **Los otros dos NO son deuda, son decisiones**, y por eso se
+              quedan apagados diciendo qué se decidió: la doble firma es la
+              opción que Iván no eligió (constancia, no acuse), y el mes se
+              cierra por calendario — "último domingo" no es un ajuste, es
+              otra forma de contar (`services/inicio/periodo.ts`).
 
           Solo iPad, y solo con tesorería a la vista. */}
       {esIPad() && showCurrency && (
@@ -182,39 +179,64 @@ export default function ChurchSettingsIOS({
           header={t("controlesTesoreria.titulo")}
           footer={t("controlesTesoreria.hint")}
         >
+          {/* Los dos primeros, con motor desde la migración 45. Iban
+              encendidos y apagados como mando —describían algo que la app ya
+              hacía y no se podía cambiar—; ahora se cambian, y lo que se
+              cambia LLEGA a Por revisar (`services/bandeja/alertas.ts`). */}
           <SwitchField
-            label={t("controlesTesoreria.comprobante", {
-              monto: `${fmtMoney(UMBRAL_COMPROBANTE)} ${value.moneda}`,
-            })}
+            label={t("controlesTesoreria.comprobante")}
             sub={t("controlesTesoreria.comprobanteSub")}
-            checked
-            onChange={() => {}}
-            disabled
-            title={t("controlesTesoreria.hint")}
+            checked={value.avisarSinComprobante}
+            onChange={(v) => onChange({ avisarSinComprobante: v })}
           />
+          {/* El importe solo se pide cuando el aviso está encendido: un umbral
+              para un aviso apagado es un campo que no significa nada. Vacío
+              vuelve a la constante, y el pie lo dice con su cifra en vez de
+              dejarlo a la adivinanza. */}
+          {value.avisarSinComprobante && (
+            <TextField
+              label={t("controlesTesoreria.comprobanteDesde")}
+              value={value.umbralComprobante}
+              onChange={(v) => onChange({ umbralComprobante: v })}
+              placeholder={fmtMoney(UMBRAL_COMPROBANTE)}
+              inputMode="decimal"
+              error={umbralError}
+            />
+          )}
           <SwitchField
             label={t("controlesTesoreria.duplicados")}
             sub={t("controlesTesoreria.duplicadosSub")}
-            checked
-            onChange={() => {}}
-            disabled
-            title={t("controlesTesoreria.hint")}
+            checked={value.avisarDuplicados}
+            onChange={(v) => onChange({ avisarDuplicados: v })}
           />
+          {/* Los dos de abajo NO son ajustes pendientes, son decisiones:
+              · Doble firma — Iván eligió constancia (se anota a quién se le
+                entregó el corte) y no acuse (que el que recibe confirme). El
+                interruptor se queda apagado enseñando la opción que no se
+                tomó, no un hueco.
+              · Cierre de mes — la app cierra por mes natural (ver
+                `services/inicio/periodo.ts`, y ahí está el porqué); "último
+                domingo" no es una opción, es otra forma de contar. */}
+          {/* **Encendido desde la migración 47.** Es la POLÍTICA: los cortes
+              nacen pidiendo la segunda firma o no. La hoja del corte puede
+              cambiarlo suelto — el handoff dibuja un control en cada sitio y
+              ahora los dos significan algo. */}
           <SwitchField
             label={t("controlesTesoreria.dobleFirma")}
             sub={t("controlesTesoreria.dobleFirmaSub")}
-            checked={false}
-            onChange={() => {}}
-            disabled
-            title={t("controlesTesoreria.hint")}
+            checked={value.pedirDobleFirma}
+            onChange={(v) => onChange({ pedirDobleFirma: v })}
           />
-          <div className="ios-field ios-field--apagado" title={t("controlesTesoreria.hint")}>
+          <div className="ios-field ios-field--apagado" title={t("controlesTesoreria.cierreMesSub")}>
             <span className="ios-field-textos">
               <span className="ios-field-label">{t("controlesTesoreria.cierreMes")}</span>
               <span className="ios-field-sub">{t("controlesTesoreria.cierreMesSub")}</span>
             </span>
             <span className="ios-field-value">{t("controlesTesoreria.cierreMesValor")}</span>
           </div>
+          <p className="ios-section-footer ios-pie-suelto">
+            {t("controlesTesoreria.comprobanteDesdePie", { monto: `${fmtMoney(UMBRAL_COMPROBANTE)} ${value.moneda}` })}
+          </p>
         </Section>
       )}
 

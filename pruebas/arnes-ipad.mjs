@@ -1336,11 +1336,13 @@ console.log("\n== Actas del iPad (handoff) ==");
   chk(m.barra, "el acta lleva su barra de trámite");
   chk(!!m.estado, `con el estado del documento (${m.estado})`);
   chk(m.botones.length >= 1, `y sus acciones (${m.botones.map((b) => b.texto).join(" · ")})`);
-  /* "Recopilar firmas" tiene que estar APAGADO: se dibuja porque el diseño lo
-     pide y no tiene motor. Un botón que promete y no cumple es peor que uno
-     apagado que explica. */
+  /* **Al revés desde el 24 ago 2026** (migración 44): "Recopilar firmas" tiene
+     motor, así que en un acta CON firmantes tiene que estar VIVO. Solo se
+     apaga cuando el acta no dice quién preside, quién redacta ni quién es
+     testigo — y entonces no es falta de columna, es que no hay a quién
+     recogerle la firma. El flujo entero va en la sección 38. */
   const firmas = m.botones.find((b) => /firmas|signatures/i.test(b.texto));
-  chk(firmas?.apagado === true, `"Recopilar firmas" está apagado hasta tener motor (${firmas?.apagado})`);
+  chk(firmas?.apagado === false, `"Recopilar firmas" está vivo: tiene motor (${firmas?.apagado})`);
   chk(m.firmas === 3, `el documento lleva las tres rayas de firma (${m.firmas})`);
   /* **Cambió de sentido el 24 ago 2026.** La raya discontinua era la marca de
      "sin motor"; ahora el testigo SÍ se guarda (migración 41) y esa raya
@@ -1928,11 +1930,21 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
      el formulario con el total del corte— y lo comprueba la sección 28. Lo
      que queda sin motor aquí es "Compartir", que necesita una hoja de
      compartir que la app no tiene. */
+  /* **"Compartir" salió de esta lista el 24 ago 2026.** El botón se apagaba
+     diciendo que la app no tenía hoja de compartir; la tenía —`openForPrint`
+     entrega por la hoja nativa desde que existen los reportes—, lo que
+     faltaba era el DOCUMENTO, y ahora está (`printDeposito.ts`). Aquí queda
+     la vuelta del guante: que no vuelva a apagarse. */
   await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
   await pg.click(".md-depositos .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".dep-det-acciones button[disabled]", "Compartir");
+  const comp = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".dep-det-acciones button")]
+      .find((x) => /Compartir|Share/i.test(x.textContent ?? ""));
+    return b ? { off: b.disabled } : null;
+  });
+  chk(!!comp && !comp.off, `Compartir: dibujado y VIVO, ya tiene documento (${comp?.off})`);
   /* Y "Reabrir el corte", dentro del menú de "⋯": el mismo trato, apagado y
      con su explicación, en vez de esconder la opción y que el menú mienta. */
   await pg.click(".dep-det-acciones .ios-bar-button");
@@ -1941,19 +1953,40 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   await pg.keyboard.press("Escape");
   await pg.waitForTimeout(200);
 
+  /* **Servicios salió de esta lista el 24 ago 2026.** "Asignar encargado" era
+     la cáscara de la pantalla: cuatro botones apagados, uno por cada puesto
+     que la tabla no sabía guardar. La migración 43 les dio `servicio_puestos`
+     y ahora los cuatro están VIVOS —lo comprueba la sección 36—. Lo que se
+     queda aquí es la vuelta del guante: que ninguno haya quedado apagado por
+     el camino. Si alguien vuelve a poner un `disabled` sin quitarle el motor,
+     esto sale en rojo. */
   await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
   await pg.click(".md-servicios .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".sv-puesto-asignar", "Asignar encargado");
-  const cuantos = await pg.locator(".sv-puesto-asignar").count();
-  chk(cuantos === 4, `y uno por cada puesto que la tabla no sabe (${cuantos})`);
+  const puestos = await pg.evaluate(() => {
+    const bs = [...document.querySelectorAll(".sv-puesto-asignar")];
+    return { total: bs.length, apagados: bs.filter((b) => b.disabled).length };
+  });
+  chk(puestos.total === 4, `Asignar encargado: uno por cada puesto de tabla (${puestos.total})`);
+  chk(puestos.apagados === 0, `y NINGUNO apagado: ya tienen motor (${puestos.apagados})`);
 
+  /* **"Recopilar firmas" salió de esta lista el 24 ago 2026** (migración 44).
+     Sigue pudiendo apagarse, pero por un motivo distinto y verdadero: un acta
+     sin ningún firmante con nombre no tiene firmas que recoger. Lo que aquí
+     se comprueba es que en un acta CON firmantes está vivo; el flujo entero
+     va en la sección 38. */
   await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
   await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
   await pg.click(".md-actas .md-fila");
   await pg.waitForTimeout(400);
-  await apagado(".ac-barra .chip[disabled]", "Recopilar firmas");
+  const firmasBtn = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".ac-barra .chip")]
+      .find((x) => /firma|Sign/i.test(x.textContent ?? ""));
+    return b ? { off: b.disabled, texto: b.textContent.trim() } : null;
+  });
+  chk(!!firmasBtn && !firmasBtn.off,
+    `Recopilar firmas: dibujado y VIVO (${firmasBtn?.texto})`);
 
   /* Configuración: los tres de Presentación y los cuatro de permisos. */
   await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
@@ -1982,13 +2015,16 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
      siguen esperando son "Tamaño de texto" y "Barra lateral siempre visible".
      La comprobación no se borra, se ajusta: lo que vigila —que lo dibujado
      sin motor esté apagado y explicado— sigue valiendo para las dos. */
-  /* **Bajó otra vez el 24 ago**: "Barra lateral siempre visible" se QUITÓ —no
-     se cableó—, porque fijar la barra en vertical se come 318px y deja el
-     contenido por debajo de los 700 que el maestro-detalle necesita; y porque
-     Notas, Archivos y Correo hacen lo que Tamio ya hace. Queda una sola fila
-     apagada: "Tamaño de texto". */
-  chk(pres.filas === 1, `Presentación: la única que sigue sin motor, apagada (${pres.filas})`);
-  chk(pres.conTitulo === pres.filas, "con su explicación");
+  /* **Y bajó a CERO el 24 ago por la noche.** "Barra lateral siempre visible"
+     se QUITÓ —no se cableó—, porque fijar la barra en vertical se come 318px
+     y deja el contenido por debajo de los 700 que el maestro-detalle
+     necesita. Y "Tamaño de texto", la última que quedaba, recibió motor
+     (`tipografia.ts`): con eso esta zona **deja de tener cáscaras**.
+
+     La comprobación cambia de signo, como pasó con los permisos: antes exigía
+     UNA fila apagada, ahora exige NINGUNA. Y sigue sirviendo, porque es la
+     que vigila que no vuelva a colarse un control muerto aquí. */
+  chk(pres.filas === 0, `Presentación: ni una fila sin motor (${pres.filas})`);
   /* Y la que se quitó no puede volver por la puerta de atrás. */
   const sinFijo = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
@@ -1996,9 +2032,18 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
       .some((l) => /siempre visible|always show/i.test(l.textContent ?? ""));
   });
   chk(sinFijo, "y \"Barra lateral siempre visible\" ya no está");
-  chk(pres.mandosVivos === 0, `y ningún mando vivo dentro (${pres.mandosVivos})`);
-  chk(pres.opacidad < 0.7, `la fila entera a media tinta (${pres.opacidad})`);
-  chk(pres.seg === 3, `el segmentado de tamaño de texto (${pres.seg})`);
+  /* Las dos de la fila apagada —"ningún mando vivo dentro" y "a media tinta"—
+     se van con ella: medían la CÁSCARA, y ya no hay ninguna. Lo que las
+     sustituye es lo contrario, que es lo que ahora hay que vigilar: que el
+     segmentado siga siendo de tres y esté VIVO. El flujo entero —que mueve
+     de verdad la app, incluidas las cifras— va en la sección 45. */
+  chk(pres.seg === 3, `el segmentado de tamaño de texto sigue siendo de tres (${pres.seg})`);
+  const segVivo = await pg.evaluate(() => {
+    const b = [...document.querySelectorAll(".pf-seg button")];
+    return { total: b.length, apagados: b.filter((x) => x.disabled).length };
+  });
+  chk(segVivo.total > 0 && segVivo.apagados === 0,
+    `y sus botones están vivos, no apagados (${segVivo.apagados}/${segVivo.total} apagados)`);
   /* Y la que SÍ tiene motor está viva y se puede tocar. */
   const om = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
@@ -2013,39 +2058,49 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   chk(!!om && !om.apagada, `"Ocultar montos" ya no está apagada (${om?.apagada})`);
   if (DIR) await pg.screenshot({ path: `${DIR}/config-presentacion-1366x1024.png` });
 
-  /* Los cuatro del handoff 1 en "Iglesia". Dos de ellos van ENCENDIDOS a
-     propósito: describen algo que la app ya hace (el aviso de comprobante
-     sobre `UMBRAL_COMPROBANTE` y el de duplicados), así que apagarlos sería
-     mentir en la otra dirección. Lo que no se puede es cambiarlos. */
+  /* **Los cuatro de "Iglesia" se partieron en dos el 24 ago 2026** (migración
+     45). Los DOS AVISOS —comprobante y duplicados— tienen motor: se
+     encienden, se apagan y el umbral se escribe, y lo que se cambia llega a
+     Por revisar. Los otros dos siguen apagados, y no por deuda sino por
+     decisión: la doble firma es la opción que no se eligió (constancia, no
+     acuse) y el mes se cierra por calendario.
+
+     Lo que esta comprobación vigila cambió con ellos: antes exigía cuatro
+     filas apagadas y "ninguna pulsable"; ahora exige DOS apagadas y que las
+     otras dos sí se puedan tocar. El flujo entero va en la sección 39. */
   await irA(/Iglesia|Church/i);
   const igl = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
-    const filas = [...z.querySelectorAll(".ios-field--apagado")];
+    const apagadas = [...z.querySelectorAll(".ios-field--apagado")];
+    const interruptores = [...z.querySelectorAll('[role="switch"]')];
     return {
-      filas: filas.length,
-      vivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
-      encendidos: filas.filter((f) => f.querySelector('[role="switch"][aria-checked="true"]')).length,
-      apagados: filas.filter((f) => f.querySelector('[role="switch"][aria-checked="false"]')).length,
-      // El importe sale de la constante, no de un literal "$1,000" copiado
-      // del prototipo: si el umbral cambia, la fila cambia con él.
-      conMonto: filas.some((f) => /\d/.test(f.querySelector(".ios-field-label")?.textContent || "")),
-      subs: filas.filter((f) => f.querySelector(".ios-field-sub")).length,
-      opacidad: filas[0] ? Number(getComputedStyle(filas[0]).opacity) : 1,
+      apagadas: apagadas.length,
+      // Los dos avisos: interruptores vivos, no adornos.
+      vivos: interruptores.filter((b) => !b.disabled).length,
+      subs: [...z.querySelectorAll(".ios-field-sub")].length,
+      opacidad: apagadas[0] ? Number(getComputedStyle(apagadas[0]).opacity) : 1,
+      // El importe ya NO va en la etiqueta: tiene su propio campo, porque
+      // ahora se escribe. En el pie sigue saliendo el valor de siempre.
+      pie: [...z.querySelectorAll(".ios-section-footer")].some((p) => /\d/.test(p.textContent ?? "")),
     };
   });
-  chk(igl.filas === 4, `Controles de tesorería trae sus cuatro filas (${igl.filas})`);
-  chk(igl.vivos === 0, "ninguna pulsable");
-  chk(igl.encendidos === 2, `dos encendidas, las que describen algo real (${igl.encendidos})`);
-  chk(igl.apagados === 1, `una apagada, la que no existe (${igl.apagados})`);
-  chk(igl.conMonto, "el umbral sale de la constante, no de un literal");
-  chk(igl.subs === 4, `las cuatro explican qué pasa hoy (${igl.subs})`);
-  chk(igl.opacidad < 0.7, `y van a media tinta como las demás (${igl.opacidad})`);
-  /* Y que la etiqueta larga QUEPA: con la columna fija de 190 de las demás
-     filas, "Avisar de gastos sin comprobante desde $1,000.00 USD" salía
-     cortado en la primera palabra. */
+  /* **Bajó de dos a una el 24 ago por la tarde**: "Doble firma en el corte"
+     dejó de ser una decisión y pasó a ser una función (migración 47). Queda
+     UNA fila apagada, y no espera motor: "Cierre de mes" no es un interruptor
+     sino una fila de valor — la app cierra por mes natural y "último domingo"
+     no es un ajuste, es otra forma de contar. */
+  chk(igl.apagadas === 1, `Controles de tesorería: solo queda apagado el cierre de mes (${igl.apagadas})`);
+  chk(igl.vivos === 3, `y los tres interruptores están vivos (${igl.vivos})`);
+  chk(igl.subs >= 4, `las filas siguen explicando qué hacen (${igl.subs})`);
+  chk(igl.opacidad < 0.7, `las apagadas van a media tinta (${igl.opacidad})`);
+  chk(igl.pie, "y el pie dice cuál es el umbral de siempre, con su cifra");
+  /* Y que ninguna etiqueta se recorte: con la columna fija de 190 de las
+     demás filas, "Avisar de gastos sin comprobante desde $1,000.00 USD"
+     salía cortado en la primera palabra. Fue justo lo que llevó a sacar el
+     importe de la etiqueta y darle campo propio. */
   const recorte = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
-    const ls = [...z.querySelectorAll(".ios-field--apagado .ios-field-label")];
+    const ls = [...z.querySelectorAll(".ios-field-label")];
     return ls.filter((l) => l.scrollWidth > l.clientWidth + 1).length;
   });
   chk(recorte === 0, `ninguna etiqueta recortada (${recorte})`);
@@ -2054,17 +2109,36 @@ console.log("\n== Lo dibujado sin motor va apagado ==");
   await pg.waitForTimeout(300);
   if (DIR) await pg.screenshot({ path: `${DIR}/config-tesoreria-1366x1024.png` });
 
+  /* **Los cuatro permisos salieron de esta lista el 24 ago 2026** (migración
+     49), y no bajando a dos como los de arriba: **desaparecieron de esta
+     pantalla**. Dos de los cuatro no eran permisos sino la definición del rol
+     —un tesorero que no registra no es un tesorero con un permiso menos— y los
+     otros dos, ya con motor, **solo se enseñan con login**: sin él el rol se
+     elige en un desplegable de ESTA MISMA zona, así que el permiso se quitaría
+     cambiando el desplegable. Este arnés corre sin Supabase, o sea sin login,
+     y por eso aquí no tiene que quedar ninguno.
+
+     La comprobación no se borra: cambia de signo. Antes exigía cuatro filas
+     apagadas; ahora exige CERO filas apagadas en la zona —lo que también
+     vigila que no vuelva a colarse una cáscara aquí— y que el selector de rol
+     —"Vista de este dispositivo", que es la razón de esconderlos— siga en su
+     sitio. El flujo entero de los dos permisos va en la sección 44. */
   await irA(/Acceso|Access/i);
   const perm = await pg.evaluate(() => {
     const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
-    const filas = [...z.querySelectorAll(".ios-field--apagado")];
     return {
-      filas: filas.length,
-      vivos: filas.filter((f) => [...f.querySelectorAll("button")].some((b) => !b.disabled)).length,
+      apagadas: z.querySelectorAll(".ios-field--apagado").length,
+      hayGrupoPermisos: [...z.querySelectorAll(".ios-section-header")]
+        .some((h) => /Permisos del rol|role permissions/i.test(h.textContent ?? "")),
+      /* El selector de rol se llama "Vista de este dispositivo" —no "Rol"—,
+         y ese nombre es de por sí el argumento: es una VISTA que se elige en
+         el aparato, no una identidad que dé permisos. */
+      hayVista: /Vista de este dispositivo|view/i.test(z.textContent ?? ""),
     };
   });
-  chk(perm.filas === 4, `los cuatro permisos del rol (${perm.filas})`);
-  chk(perm.vivos === 0, "ninguno pulsable");
+  chk(perm.apagadas === 0, `Acceso y áreas: ni una fila apagada (${perm.apagadas})`);
+  chk(perm.hayGrupoPermisos === false, "y sin login el grupo de permisos no se enseña");
+  chk(perm.hayVista, "mientras \"Vista de este dispositivo\" —la razón de esconderlos— sigue ahí");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-permisos-1366x1024.png` });
   await ctxSm.close();
 }
@@ -3291,6 +3365,1233 @@ console.log("\n== Los tres datos personales del miembro ==");
   chk(!exp.some((e) => /Direcci/i.test(e)),
     `y el expediente sigue con sus cuatro requisitos, sin la dirección (${exp.length} renglones)`);
   await ctxD.close();
+}
+
+/* ---------- 36. El roster por puestos y el orden del culto ----------
+   Los dos huecos grandes que quedaban del handoff, cableados con la
+   migración 43. Lo que se comprueba no es que los botones existan —eso ya lo
+   hacía la sección 22— sino que lo que se asigna LLEGA A LA BASE: se escribe
+   por la interfaz, se recarga la página de verdad y se busca allí. Un estado
+   de React que recuerda lo que acabas de teclear no prueba nada.
+
+   La guarda se probó al revés antes de darla por buena: con `asignarPuesto`
+   devolviendo sin escribir, las tres comprobaciones de después de recargar
+   salen en rojo. */
+console.log("\n== El roster por puestos y el orden del culto ==");
+{
+  const ctxR = await nuevoContexto("ipad");
+  const pg = await ctxR.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
+  await pg.locator(".md-servicios .md-fila").first().click();
+  await pg.waitForTimeout(500);
+
+  /* Los seis renglones del handoff, en su orden. Predicación y Dirección
+     salen de las columnas del servicio y NO llevan botón: se escriben en el
+     formulario del culto, que es de donde salen impresas. */
+  const filas = await pg.evaluate(() => [...document.querySelectorAll(".sv-roster .sv-puesto")]
+    .map((f) => ({
+      rol: f.querySelector(".sv-puesto-rol")?.textContent.trim(),
+      boton: !!f.querySelector(".sv-puesto-asignar"),
+    })));
+  const roles = filas.map((f) => f.rol);
+  chk(roles.slice(0, 6).join("·") === "Predicación·Dirección·Alabanza·Ujieres·Ofrenda·Sonido",
+    `los seis puestos, en el orden del handoff (${roles.slice(0, 6).join(" · ")})`);
+  chk(filas.filter((f) => f.boton).length === 4,
+    "y solo los cuatro de tabla llevan botón: los otros dos se escriben en el formulario");
+
+  // --- Asignar Alabanza eligiendo a alguien del padrón ---
+  await pg.locator(".sv-puesto", { hasText: "Alabanza" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  const hoja = await pg.evaluate(() => {
+    const h = document.querySelector(".ios-sheet");
+    return h ? { titulo: h.getAttribute("aria-label"), opciones: h.querySelectorAll(".ios-buscador-fila").length } : null;
+  });
+  chk(!!hoja && /Alabanza/.test(hoja.titulo ?? ""),
+    `la hoja se abre diciendo qué puesto se asigna (${hoja?.titulo})`);
+  await pg.locator(".ios-sheet").getByText("Ana Martínez").first().click();
+  await pg.waitForTimeout(600);
+  const puesto = await pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".sv-puesto")]
+      .find((x) => /Alabanza/.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""));
+    return {
+      nombre: f?.querySelector(".sv-puesto-nombre")?.textContent.trim(),
+      iniciales: f?.querySelector(".sv-puesto-avatar")?.textContent.trim(),
+      boton: f?.querySelector(".sv-puesto-asignar")?.textContent.trim(),
+    };
+  });
+  chk(puesto.nombre === "Ana Martínez", `queda puesta en el renglón (${puesto.nombre})`);
+  chk(puesto.iniciales === "AM", `con su círculo de iniciales (${puesto.iniciales})`);
+  chk(puesto.boton === "Cambiar", `y el botón pasa a "Cambiar" (${puesto.boton})`);
+
+  // --- Y a alguien que NO está en el padrón, escribiendo el nombre ---
+  await pg.locator(".sv-puesto", { hasText: "Sonido" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet input").first().fill("Beto el del sonido");
+  await pg.waitForTimeout(300);
+  await pg.locator(".ios-sheet").getByText(/Anotar a/).first().click();
+  await pg.waitForTimeout(600);
+
+  // --- Un paso del orden del culto ---
+  const vacio = await pg.locator(".sv-orden .fm-vacio-titulo").count();
+  chk(vacio === 1, "el orden del culto arranca vacío, con su invitación y no con un cartel de 'falta motor'");
+  await pg.locator(".sv-orden-anadir").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet.nm-hoja input").first().fill("Bienvenida");
+  await pg.locator('.ios-sheet.nm-hoja input[type="time"]').fill("10:00");
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(700);
+  await pg.locator(".sv-orden-anadir").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet.nm-hoja input").first().fill("Ofrenda");
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(700);
+
+  const pasos = await pg.evaluate(() => [...document.querySelectorAll(".sv-paso")].map((x) => ({
+    hora: x.querySelector(".sv-paso-hora")?.textContent.trim(),
+    titulo: x.querySelector(".sv-paso-titulo")?.textContent.trim(),
+    sinHora: !!x.querySelector(".sv-paso-hora--sin"),
+  })));
+  chk(pasos.length === 2, `los dos pasos entran en la lista (${pasos.length})`);
+  chk(pasos[0]?.hora === "10:00" && pasos[0]?.titulo === "Bienvenida",
+    `el primero con su hora (${pasos[0]?.hora} · ${pasos[0]?.titulo})`);
+  /* Un paso SIN hora no se cuela al principio ni desaparece: manda la
+     posición, no el reloj. Es justo lo que rompería ordenar por `hora`. */
+  chk(pasos[1]?.sinHora && pasos[1]?.titulo === "Ofrenda",
+    `y el segundo sin hora se queda en su sitio (${pasos[1]?.titulo})`);
+
+  // Subir el segundo: el orden lo manda la posición, y tiene que aguantar.
+  await pg.locator(".sv-paso").nth(1).locator("button", { hasText: "↑" }).click();
+  await pg.waitForTimeout(600);
+
+  /* Recargar de verdad: lo que se comprueba es que todo llegó a la base. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(300);
+  await pg.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-servicios .md-fila", { timeout: 10000 });
+  await pg.locator(".md-servicios .md-fila").first().click();
+  await pg.waitForTimeout(600);
+
+  const tras = await pg.evaluate(() => {
+    const fila = (re) => [...document.querySelectorAll(".sv-puesto")]
+      .find((x) => re.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""));
+    const rol = (re) => fila(re)?.querySelector(".sv-puesto-nombre")?.textContent.trim();
+    return {
+      alabanza: rol(/Alabanza/),
+      sonido: rol(/Sonido/),
+      // Un puesto sin cubrir no lleva nombre NI "Sin asignar": lo dice su
+      // propio botón, "Asignar encargado". Repetirlo al lado sería decir dos
+      // veces lo mismo en un renglón de 58px.
+      ujieres: fila(/Ujieres/)?.querySelector(".sv-puesto-asignar")?.textContent.trim(),
+      ujieresNombre: rol(/Ujieres/) ?? null,
+      pasos: [...document.querySelectorAll(".sv-paso-titulo")].map((x) => x.textContent.trim()),
+    };
+  });
+  chk(tras.alabanza === "Ana Martínez", `tras recargar, Alabanza sigue asignada (${tras.alabanza})`);
+  chk(tras.sonido === "Beto el del sonido",
+    `y el nombre escrito a mano también (${tras.sonido})`);
+  chk(tras.ujieres === "Asignar encargado" && tras.ujieresNombre === null,
+    `los que nadie tocó siguen ofreciendo asignarlos (${tras.ujieres})`);
+  chk(tras.pasos.join(" · ") === "Ofrenda · Bienvenida",
+    `y el orden del culto conserva el que se le dio (${tras.pasos.join(" · ")})`);
+
+  // --- Soltar un puesto: vuelve a "Sin asignar", no se queda pegado ---
+  await pg.locator(".sv-puesto", { hasText: "Alabanza" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet .ios-buscador-grupo").first().locator(".ios-field--link").click();
+  await pg.waitForTimeout(700);
+  const suelto = await pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".sv-puesto")]
+      .find((x) => /Alabanza/.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""));
+    return {
+      nombre: f?.querySelector(".sv-puesto-nombre")?.textContent.trim() ?? null,
+      boton: f?.querySelector(".sv-puesto-asignar")?.textContent.trim(),
+    };
+  });
+  chk(suelto.nombre === null && suelto.boton === "Asignar encargado",
+    `soltarlo vacía el renglón y el botón vuelve a ofrecerlo (${suelto.boton})`);
+
+  /* Y se puede volver a asignar: el índice único es PARCIAL, solo sobre las
+     filas vivas. Con un índice completo, la lápida del puesto soltado
+     bloquearía la reasignación y esto fallaría con un error de la base — que
+     fue exactamente la lección de la migración 40. */
+  await pg.locator(".sv-puesto", { hasText: "Alabanza" }).locator(".sv-puesto-asignar").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet").getByText("Juan Pérez").first().click();
+  await pg.waitForTimeout(700);
+  const rey = await pg.evaluate(() => [...document.querySelectorAll(".sv-puesto")]
+    .find((x) => /Alabanza/.test(x.querySelector(".sv-puesto-rol")?.textContent ?? ""))
+    ?.querySelector(".sv-puesto-nombre")?.textContent.trim());
+  chk(rey === "Juan Pérez", `y se puede reasignar sin chocar con la lápida (${rey})`);
+
+  // --- Quitar un paso ---
+  await pg.locator(".sv-paso").first().locator(".sv-paso-borrar").click();
+  await pg.waitForTimeout(700);
+  const quedan = await pg.locator(".sv-paso").count();
+  chk(quedan === 1, `quitar un paso deja el otro (${quedan})`);
+  if (process.env.CAPTURAS) {
+    await pg.screenshot({ path: `${process.env.CAPTURAS}/servicios-roster-1366x1024.png` });
+  }
+  await ctxR.close();
+}
+
+/* ---------- 37. "Compartir" un depósito entrega un PDF de verdad ----------
+   El botón estuvo apagado dos días con la explicación de que la app no tenía
+   hoja de compartir. La tenía desde siempre (`openForPrint` → `entregarArchivo`
+   → Web Share API); lo que faltaba era el documento. Esto comprueba las dos
+   mitades a la vez: que el botón está vivo y que lo que sale por la hoja es un
+   PDF con nombre de comprobante y peso de PDF de verdad.
+
+   La hoja nativa no existe en un Chromium de escritorio, así que se suplanta
+   `navigator.share` ANTES de cargar la página y se mira qué se le pasa. Es la
+   única forma de ver el archivo sin un iPad delante.
+
+   Probada al revés: quitando el `onClick` del botón, la espera del `share`
+   agota su tiempo y las tres salen en rojo. */
+console.log("\n== Compartir un depósito entrega un PDF ==");
+{
+  const ctxC = await nuevoContexto("ipad");
+  const pg = await ctxC.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.addInitScript(() => {
+    window.__compartido = null;
+    /* Con `navigator.share = …` a secas NO basta, y costó un rato: este
+       Chromium YA trae `share` en el prototipo, así que la asignación se
+       pierde en silencio (script clásico, sin modo estricto) y lo que se
+       llama es el nativo, que en un navegador sin escritorio no hace nada.
+       `defineProperty` sobre la instancia sí lo tapa. */
+    const propiedad = (nombre, valor) =>
+      Object.defineProperty(navigator, nombre, { value: valor, configurable: true, writable: true });
+    propiedad("canShare", () => true);
+    propiedad("share", async (data) => {
+      const f = data.files?.[0];
+      window.__compartido = f
+        ? { nombre: f.name, tipo: f.type, bytes: f.size }
+        : { nombre: null, tipo: null, bytes: 0 };
+    });
+  });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos .md-fila", { timeout: 10000 });
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".dep-det-acciones button", { hasText: /Compartir|Share/ }).click();
+
+  /* En un iPad, "Compartir" un PDF **abre primero el visor de la app** y la
+     hoja nativa sale de su propio botón: iOS no tiene Vista Previa, así que
+     `entregarArchivo` enseña el documento antes de repartirlo. Es lo que hace
+     cada reporte desde siempre, y este comprobante no iba a ser la excepción.
+     La guarda sigue ese camino entero en vez de fingir que hay un atajo. */
+  /* **Se espera la SEÑAL, no un plazo** (arreglado el 24 ago 2026 tras verlo
+     fallar). Antes esto era un `waitForSelector` de 15 s a secas, y con el
+     servidor de desarrollo FRÍO no llegaba: la primera vez que se pide un PDF,
+     vite tiene que transformar `pdfjs-dist` entero, y eso se come el plazo. La
+     misma tanda pasaba en verde a la segunda sin tocar una línea de la app —
+     que es la firma de un fallo de tiempo, no de código.
+
+     La señal de verdad la da el propio botón: mientras genera se queda
+     `disabled` diciendo "Preparando…". Cuando sale de ahí, el trabajo terminó
+     —con visor o sin él—, y entonces la comprobación mide lo que quiere medir
+     en vez de medir la velocidad del portátil. Se espera cualquiera de las dos
+     cosas, la que llegue antes, porque el orden entre reactivar el botón y
+     pintar el visor no está garantizado.
+
+     **Comprobado el 24 ago 2026 borrando `node_modules/.vite`** —la condición
+     exacta del fallo— y corriendo la tanda entera: 892 ✓ / 0 ✗, con las seis
+     de esta sección en verde. Lo que eso prueba y lo que no, dicho con
+     precisión: prueba que la versión arreglada aguanta el arranque en frío.
+     NO prueba que la vieja falle en esta máquina — el rojo lo vio Iván en la
+     suya, y un fallo de tiempo depende del equipo, así que reproducirlo aquí
+     no estaba garantizado. Y una pasada verde no demuestra que no pueda haber
+     otra causa distinta algún día; demuestra que ESTA se atacó donde estaba. */
+  await pg.waitForFunction(() => {
+    const b = [...document.querySelectorAll(".dep-det-acciones button")]
+      .find((x) => /Compartir|Share|Preparando|Preparing/i.test(x.textContent ?? ""));
+    return !!document.querySelector(".visor-pdf-overlay") || (!!b && !b.disabled);
+  }, null, { timeout: 60000 }).catch(() => { /* lo dicen las comprobaciones de abajo */ });
+  // Y un respiro corto para que React pinte el visor si el botón se soltó antes.
+  await pg.waitForSelector(".visor-pdf-overlay", { timeout: 10000 })
+    .catch(() => { /* idem */ });
+  const visor = await pg.evaluate(() => {
+    const v = document.querySelector(".visor-pdf-overlay");
+    return v ? { nombre: v.querySelector(".visor-pdf-nombre")?.textContent?.trim() } : null;
+  });
+  chk(!!visor, "el comprobante se abre en el visor de la app, como cualquier otro PDF");
+  chk(/^comprobante-|^deposito-/.test(visor?.nombre ?? ""),
+    `con nombre de comprobante de depósito (${visor?.nombre})`);
+  chk(/\.pdf$/.test(visor?.nombre ?? ""), `y extensión .pdf (${visor?.nombre})`);
+
+  /* Y de ahí, la hoja nativa. Con `.catch()`, como los demás clics de riesgo
+     del archivo (líneas 518, 754…): si el visor no llegó a abrirse, este clic
+     lanzaba y **reventaba el proceso entero**. Eso ya pasó: un fallo de tiempo
+     aquí se llevó por delante las CATORCE secciones siguientes, que ni
+     llegaron a correr. Un fallo tiene que costar sus tres comprobaciones, no
+     media tanda. */
+  await pg.locator(".visor-pdf-barra .btn.primary").click({ timeout: 10000 })
+    .catch(() => { /* lo dicen las comprobaciones de abajo */ });
+  await pg.waitForFunction(() => window.__compartido !== null, null, { timeout: 15000 })
+    .catch(() => { /* idem */ });
+  const salida = await pg.evaluate(() => window.__compartido);
+  chk(!!salida, "y su botón entrega el archivo a la hoja del sistema");
+  chk(salida?.tipo === "application/pdf", `con su tipo MIME (${salida?.tipo})`);
+  /* Un PDF con membrete, tabla y bloque de firmas no baja de unos pocos KB.
+     El umbral es flojo a propósito: lo que caza es el archivo vacío. */
+  chk((salida?.bytes ?? 0) > 1500, `y peso de documento, no de archivo vacío (${salida?.bytes} bytes)`);
+  await ctxC.close();
+}
+
+/* ---------- 38. Recopilar las firmas del acta ----------
+   El botón llevaba desde el handoff 1 apagado: el acta sabía QUIÉNES firman
+   pero no si habían firmado. Con la migración 44 (`actas.firmas`) recoge la
+   constancia —firmó y en qué fecha—, y eso es lo que se comprueba aquí de
+   punta a punta: se marca por la interfaz, se RECARGA y se busca en la ficha.
+
+   Probada al revés: con `guardarFirmasActa` devolviendo sin escribir, las
+   dos comprobaciones de después de recargar salen en rojo. */
+console.log("\n== Recopilar las firmas del acta ==");
+{
+  const ctxF = await nuevoContexto("ipad");
+  const pg = await ctxF.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.locator(".md-actas .md-fila").first().click();
+  await pg.waitForTimeout(500);
+
+  /* Antes de firmar: los renglones existen y ninguno lleva pie de fecha. */
+  const antes = await pg.evaluate(() => ({
+    renglones: document.querySelectorAll(".da-firmas .da-firma").length,
+    fechas: document.querySelectorAll(".da-firma-fecha").length,
+  }));
+  chk(antes.renglones >= 2, `el acta trae sus renglones de firma (${antes.renglones})`);
+  chk(antes.fechas === 0, `y ninguno dice todavía que se firmó (${antes.fechas})`);
+
+  await pg.locator(".ac-barra .chip", { hasText: /firma|Sign/i }).first().click();
+  await pg.waitForTimeout(500);
+  const hoja = await pg.evaluate(() => {
+    const h = document.querySelector(".ios-sheet.nm-hoja");
+    return h ? {
+      secciones: h.querySelectorAll(".ios-section").length,
+      insignias: h.querySelectorAll(".ios-insignia").length,
+      // La hoja dice con todas las letras que esto NO es una firma digital.
+      aviso: (h.querySelector(".nm-aviso")?.textContent ?? "").length,
+    } : null;
+  });
+  chk(!!hoja && hoja.secciones >= 2,
+    `la hoja lista un firmante por renglón con nombre (${hoja?.secciones})`);
+  chk((hoja?.aviso ?? 0) > 40, "y explica que recoge una constancia, no una firma digital");
+
+  // Marcar la primera como firmada y confirmar con "Listo".
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action").first().click();
+  await pg.waitForTimeout(300);
+  const conFecha = await pg.locator('.ios-sheet.nm-hoja input[type="date"]').count();
+  chk(conFecha === 1, `al marcarla aparece su fecha, ya propuesta (${conFecha})`);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(800);
+
+  /* Recargar de verdad: lo que se comprueba es que llegó a `actas.firmas`. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(300);
+  await pg.goto(`${URL_BASE}/#/actas`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-actas .md-fila", { timeout: 10000 });
+  await pg.locator(".md-actas .md-fila").first().click();
+  await pg.waitForTimeout(600);
+
+  const tras = await pg.evaluate(() => ({
+    fechas: [...document.querySelectorAll(".da-firma-fecha")].map((x) => x.textContent.trim()),
+    boton: [...document.querySelectorAll(".ac-barra .chip")]
+      .find((x) => /firma|Sign|1 de|1 of/i.test(x.textContent ?? ""))?.textContent.trim(),
+  }));
+  chk(tras.fechas.length === 1, `tras recargar, un renglón dice que se firmó (${tras.fechas.length})`);
+  chk(/Firmó el|Signed on/.test(tras.fechas[0] ?? ""),
+    `con su fecha bajo el cargo (${tras.fechas[0]})`);
+  /* Y el botón deja de invitar a recoger para decir cuántas van: la barra
+     del acta enseña el avance sin abrir nada. */
+  chk(/\d+ de \d+|\d+ of \d+/.test(tras.boton ?? ""),
+    `y el botón lleva la cuenta (${tras.boton})`);
+  await ctxF.close();
+}
+
+/* ---------- 39. Los dos avisos de tesorería, ajustables de verdad ----------
+   La trampa de un interruptor con motor es que se mueva y no cambie nada.
+   Esto no comprueba que el interruptor se pinte —eso ya lo hace la sección
+   22— sino que apagarlo APAGA la alerta en Por revisar, que es lo único que
+   el control promete.
+
+   Probada al revés: dejando `calcularAlertas` sin mirar `avisarDuplicados`,
+   la comprobación de después de apagarlo sale en rojo. */
+console.log("\n== Los dos avisos de tesorería cambian lo que sale en Por revisar ==");
+{
+  const ctxT = await nuevoContexto("ipad");
+  const pg = await ctxT.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /** Cuántas alertas de ese tipo enseña Por revisar ahora mismo. */
+  const cuantas = async (tipo) => {
+    await pg.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".md-bandeja", { timeout: 10000 });
+    await pg.waitForTimeout(500);
+    return pg.evaluate((t) => {
+      const chip = [...document.querySelectorAll(".al-chips .chip")]
+        .find((c) => new RegExp(t, "i").test(c.textContent ?? ""));
+      if (!chip) return 0;
+      const n = (chip.textContent ?? "").match(/\d+/);
+      return n ? Number(n[0]) : 0;
+    }, tipo);
+  };
+
+  const dupAntes = await cuantas("duplicad");
+  const compAntes = await cuantas("comprobante|receipt");
+  chk(dupAntes > 0, `los datos de prueba traen duplicados que avisar (${dupAntes})`);
+  chk(compAntes > 0, `y gastos sin comprobante por encima del umbral (${compAntes})`);
+
+  /** Ir a Configuración → Iglesia y devolver el grupo de tesorería. */
+  const irAIglesia = async () => {
+    await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".settings-nav-item", { timeout: 10000 });
+    const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+    const i = zonas.findIndex((z) => /Iglesia|Church/i.test(z));
+    await pg.locator(".settings-nav-item").nth(i).click();
+    await pg.waitForTimeout(500);
+  };
+
+  // --- Apagar el aviso de duplicados ---
+  await irAIglesia();
+  await pg.locator(".ios-field", { hasText: /duplicad/i }).locator('[role="switch"]').click();
+  // El guardado es automático y con retardo: hay que dejarlo escribir.
+  await pg.waitForTimeout(1800);
+  const dupDespues = await cuantas("duplicad");
+  chk(dupDespues === 0, `apagarlo quita las alertas de duplicado (${dupAntes} → ${dupDespues})`);
+
+  /* --- Subir el umbral por encima del gasto más caro de la siembra ---
+     El campo solo existe con el aviso encendido, que es lo que hace que un
+     umbral no pueda quedarse describiendo un aviso apagado. */
+  await irAIglesia();
+  const hayCampo = await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).count();
+  chk(hayCampo === 1, `el umbral tiene campo propio mientras el aviso está encendido (${hayCampo})`);
+  await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).locator("input").fill("99999");
+  await pg.waitForTimeout(1800);
+  const compDespues = await cuantas("comprobante|receipt");
+  chk(compDespues === 0,
+    `subir el umbral a 99.999 deja de señalar los gastos de siempre (${compAntes} → ${compDespues})`);
+
+  /* Y al revés: bajarlo los devuelve. Un ajuste que solo sabe apagar cosas
+     no es un ajuste, es un interruptor de un solo sentido. */
+  await irAIglesia();
+  await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).locator("input").fill("1");
+  await pg.waitForTimeout(1800);
+  const compVuelta = await cuantas("comprobante|receipt");
+  chk(compVuelta > 0, `y bajarlo a 1 los devuelve (${compVuelta})`);
+
+  // Con el aviso apagado, el campo del umbral desaparece: no describe nada.
+  await irAIglesia();
+  await pg.locator(".ios-field", { hasText: /comprobante|receipt/i }).first().locator('[role="switch"]').click();
+  await pg.waitForTimeout(800);
+  const sinCampo = await pg.locator(".ios-field", { hasText: /^Desde|^Over/ }).count();
+  chk(sinCampo === 0, `apagado el aviso, su umbral deja de pedirse (${sinCampo})`);
+  await ctxT.close();
+}
+
+/* ---------- 40. La pestaña Familia ----------
+   Llevaba desde el handoff construida y vacía, con su explicación. Con la
+   migración 46 (`parentescos`) se llena, y lo que aquí se comprueba es lo que
+   hace especial a esta tabla: **una sola fila por relación**, leída al revés
+   desde la otra ficha. Si alguien la cambiara por dos filas, o se olvidara de
+   invertir el tipo, esto lo caza.
+
+   Probada al revés dos veces: sin invertir el tipo, la ficha del hijo dice
+   "Hijo o hija" de su padre y sale en rojo; y quitando la comprobación de
+   pareja repetida, el aviso de "ya están relacionadas" no aparece. */
+console.log("\n== La pestaña Familia ==");
+{
+  const ctxFa = await nuevoContexto("ipad");
+  const pg = await ctxFa.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /** Abre la ficha de Aportantes de esa persona y su pestaña Familia. */
+  const abrirFamilia = async (nombre) => {
+    await pg.goto(`${URL_BASE}/#/miembros`, { waitUntil: "networkidle" });
+    await pg.waitForSelector(".md-miembros .md-fila", { timeout: 10000 });
+    await pg.locator(".md-miembros .md-fila", { hasText: nombre }).first().click();
+    await pg.waitForTimeout(500);
+    await pg.locator(".fm-tabs button, .fm-seg button", { hasText: /Familia|Family/ }).first().click();
+    await pg.waitForTimeout(500);
+  };
+
+  await abrirFamilia("Ana Martínez");
+  const vacia = await pg.evaluate(() => ({
+    vacio: !!document.querySelector(".fm-vacio--pendiente"),
+    anadir: !!document.querySelector(".fm-anadir"),
+  }));
+  chk(vacia.vacio, "sin parientes, la pestaña sigue explicando qué es");
+  chk(vacia.anadir, "y ofrece añadir uno, que es lo que le faltaba");
+
+  // --- Ana es madre de Juan ---
+  await pg.locator(".fm-anadir").click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet").getByText("Juan Pérez").first().click();
+  await pg.waitForTimeout(500);
+  const opciones = await pg.locator(".action-sheet .action-sheet-opcion").count();
+  chk(opciones >= 10, `el catálogo de parentescos se ofrece entero (${opciones})`);
+  await pg.locator(".action-sheet").getByText(/^Hijo o hija$/).first().click();
+  await pg.waitForTimeout(800);
+
+  const enAna = await pg.evaluate(() => [...document.querySelectorAll(".fm-pariente")].map((f) => ({
+    tipo: f.querySelector(".dm-campo-etiqueta")?.textContent.trim(),
+    nombre: f.querySelector(".dm-campo-valor")?.textContent.trim(),
+  })));
+  chk(enAna.length === 1 && enAna[0].nombre === "Juan Pérez",
+    `queda en la ficha de Ana (${enAna[0]?.nombre})`);
+  chk(enAna[0]?.tipo === "Hijo o hija", `con el parentesco que se eligió (${enAna[0]?.tipo})`);
+
+  /* --- Y AL REVÉS, que es lo que prueba la fila única --- */
+  await abrirFamilia("Juan Pérez");
+  const enJuan = await pg.evaluate(() => [...document.querySelectorAll(".fm-pariente")].map((f) => ({
+    tipo: f.querySelector(".dm-campo-etiqueta")?.textContent.trim(),
+    nombre: f.querySelector(".dm-campo-valor")?.textContent.trim(),
+  })));
+  chk(enJuan.length === 1 && enJuan[0].nombre === "Ana Martínez",
+    `y sale también en la de Juan, sin haberla escrito dos veces (${enJuan[0]?.nombre})`);
+  chk(enJuan[0]?.tipo === "Padre o madre",
+    `leída con el tipo INVERTIDO, que es lo que la hace verdad (${enJuan[0]?.tipo})`);
+
+  /* Ana ya no puede volver a aparecer en la hoja: relacionarlas dos veces
+     sería la misma relación contada dos veces. */
+  await pg.locator(".fm-anadir").click();
+  await pg.waitForTimeout(400);
+  const ofrecidos = await pg.evaluate(() =>
+    [...document.querySelectorAll(".ios-sheet .ios-buscador-fila")].map((b) => b.textContent.trim()));
+  chk(!ofrecidos.some((x) => /Ana Mart/.test(x)),
+    `quien ya es pariente deja de ofrecerse (${ofrecidos.length} en la lista)`);
+  chk(!ofrecidos.some((x) => /Juan P/.test(x)), "y uno mismo tampoco: nadie es pariente de sí mismo");
+  await pg.keyboard.press("Escape");
+  await pg.waitForTimeout(300);
+
+  // --- Soltarla la quita de las DOS fichas ---
+  await pg.locator(".fm-pariente-quitar").first().click();
+  await pg.waitForTimeout(800);
+  const trasQuitar = await pg.locator(".fm-pariente").count();
+  chk(trasQuitar === 0, `soltarla la quita de la ficha de Juan (${trasQuitar})`);
+  await abrirFamilia("Ana Martínez");
+  const enAnaTras = await pg.locator(".fm-pariente").count();
+  chk(enAnaTras === 0, `y de la de Ana, porque era la misma fila (${enAnaTras})`);
+  await ctxFa.close();
+}
+
+/* ---------- 41. "N movimientos" por categoría ----------
+   La entrada más pequeña de la lista del balance: "Nada nuevo, es pintarlo".
+   Lo que puede salir mal no es la consulta sino la CLAVE — `transactions`
+   guarda el id del catálogo para las de sistema y `customCatRef(uid)` para
+   las personalizadas—, así que esto comprueba que los números no son todos
+   cero, que es lo que pasaría si se buscara por la clave equivocada. */
+console.log("\n== N movimientos por categoría ==");
+{
+  const ctxN = await nuevoContexto("ipad");
+  const pg = await ctxN.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".settings-nav-item", { timeout: 10000 });
+  const zonas = await pg.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+  const i = zonas.findIndex((z) => /Categor/i.test(z));
+  await pg.locator(".settings-nav-item").nth(i).click();
+  await pg.waitForTimeout(700);
+
+  const conteos = await pg.evaluate(() =>
+    [...document.querySelectorAll(".cat-conteo")].map((c) => c.textContent.trim()));
+  chk(conteos.length > 0, `cada categoría lleva su conteo (${conteos.length})`);
+  chk(conteos.every((c) => /^\d+ /.test(c)),
+    `y todos son un número con su palabra, no una clave sin traducir (${conteos[0]})`);
+  /* El que importa: la siembra registra diezmos y gastos de servicios, así
+     que al menos uno tiene que pasar de cero. Todos a cero es exactamente el
+     síntoma de buscar por la clave equivocada. */
+  const algunoConDatos = conteos.some((c) => !/^0 /.test(c));
+  chk(algunoConDatos, `y alguno cuenta de verdad (${conteos.filter((c) => !/^0 /.test(c)).join(" · ")})`);
+  await ctxN.close();
+}
+
+/* ---------- 42. La doble firma del corte ----------
+   El interruptor "Pedir doble firma" estuvo apagado dos veces y por motivos
+   distintos: primero por falta de columna, y después un día entero por
+   decisión. La conversación del 24 de agosto la cambió al aclarar qué es la
+   segunda firma en esta iglesia — no que el que recibe acuse, sino que otra
+   persona vuelva a CONTAR el dinero antes de que salga.
+
+   Lo que se comprueba aquí es lo único que hace que esto valga algo:
+
+     · que el total del corte **NO se enseña** en la hoja de firmar. Si se
+       viera, "contar dos veces" sería copiar un número de la línea de arriba,
+       y todo el control se caería sin que nada fallara;
+     · que una cifra equivocada NO deja firmar, y aun así **se guarda** — es la
+       mitad que más se cae de las implementaciones: si el descuadre borrara el
+       número, contar dos veces no habría servido de nada;
+     · que la cifra correcta sí firma, y que la firma **llega a la base**
+       (se recarga de verdad y se busca allí);
+     · y que un corte sin firmar aparece en Por revisar.
+
+   Probada al revés cuatro veces: enseñando el total en la hoja, dejando
+   firmar con la cifra mal, sin guardar el descuadre, y con `firmarCorte`
+   devolviendo sin escribir. */
+console.log("\n== La doble firma del corte ==");
+{
+  const ctxDF = await nuevoContexto("ipad");
+  const pg = await ctxDF.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+
+  /* Un usuario en el directorio para poder firmar: el buscador de la hoja se
+     nutre de `usuarios`, y la siembra no crea ninguno. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const ya = await db.listUsuarios(ig.id);
+    if (!ya.some((u) => u.rol === "asistente")) {
+      await db.insertUsuario(ig.id, { nombre: "Rosa Elena Vega", rol: "asistente" });
+    }
+  });
+
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-depositos", { timeout: 10000 });
+  await pg.locator(".md-seg-tipo button", { hasText: "Pendientes" }).click();
+  await pg.waitForTimeout(700);
+
+  // --- Entregar un corte PIDIENDO la segunda firma ---
+  await pg.locator(".dep-carta-accion .btn.primary", { hasText: /Entregar/ }).first().click();
+  await pg.waitForTimeout(600);
+  const interruptor = await pg.evaluate(() => {
+    const f = [...document.querySelectorAll(".ios-sheet .ios-field")]
+      .find((x) => /Doble firma|Two signatures/i.test(x.textContent ?? ""));
+    const sw = f?.querySelector('[role="switch"]');
+    return f ? { apagada: f.classList.contains("ios-field--apagado"), viva: sw && !sw.disabled } : null;
+  });
+  chk(!!interruptor && !interruptor.apagada && !!interruptor.viva,
+    `"Pedir doble firma" está VIVO en la hoja del corte (apagada=${interruptor?.apagada})`);
+  /* El total del corte SÍ se ve aquí: quien lo arma tiene que verlo. Lo que
+     no puede verse es en la hoja de firmar, que es lo de más abajo. */
+  const totalCorte = await pg.evaluate(() =>
+    document.querySelector(".nm-monto-cifra")?.textContent.trim());
+  chk(!!totalCorte, `el corte tiene su total (${totalCorte})`);
+
+  await pg.locator(".ios-sheet .ios-field", { hasText: /Doble firma|Two signatures/i })
+    .locator('[role="switch"]').click();
+  await pg.waitForTimeout(300);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(1200);
+
+  /* Crear el corte cierra el panel y vuelve a la lista —el dinero cambió de
+     sitio, así que la vista de antes ya no describe nada—. El corte entregado
+     es ahora una fila propia: se abre para firmarlo. */
+  await pg.locator(".md-depositos .md-fila").first().click();
+  await pg.waitForTimeout(700);
+
+  // --- La tarjeta de la segunda firma aparece, y pide firma ---
+  const tarjeta = await pg.evaluate(() => {
+    const c = [...document.querySelectorAll(".dep-carta")]
+      .find((x) => /Segunda firma|Second signature/i.test(x.querySelector(".dep-carta-cab")?.textContent ?? ""));
+    return c ? { texto: c.textContent, boton: !!c.querySelector(".btn") } : null;
+  });
+  chk(!!tarjeta, "el corte entregado enseña su tarjeta de segunda firma");
+  chk(!!tarjeta?.boton, "con el botón para darla");
+
+  // --- Abrir la hoja: el total NO puede estar a la vista ---
+  await pg.locator(".dep-carta", { hasText: /Segunda firma|Second signature/i })
+    .locator(".btn").click();
+  await pg.waitForTimeout(600);
+  const cifras = (totalCorte ?? "").replace(/[^0-9]/g, "");
+  const hoja = await pg.evaluate(() => {
+    const h = document.querySelector(".ios-sheet.nm-hoja");
+    return h ? { texto: h.textContent ?? "" } : null;
+  });
+  chk(!!hoja, "la hoja de firmar se abre");
+  chk(!!hoja && !hoja.texto.replace(/[^0-9]/g, "").includes(cifras),
+    "y el total del corte NO aparece en ninguna parte de ella");
+
+  // --- Elegir quién firma ---
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--link", { hasText: /Firma|Signed by/ }).first().click();
+  await pg.waitForTimeout(400);
+  await pg.locator(".ios-sheet").getByText("Rosa Elena Vega").first().click();
+  await pg.waitForTimeout(500);
+
+  // --- Una cifra equivocada: no cuadra y NO deja firmar ---
+  await pg.locator('.ios-sheet.nm-hoja input[inputmode="decimal"]').fill("1");
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action", { hasText: /Comprobar|Check/ }).click();
+  await pg.waitForTimeout(500);
+  const mal = await pg.evaluate(() => ({
+    aviso: document.querySelector(".ios-sheet .dep-aviso-titulo")?.textContent.trim(),
+    firmarApagado: document.querySelector(".ios-sheet.nm-hoja .ios-nav-action")?.disabled,
+    hayDescuadre: !!document.querySelector(".ios-sheet .ios-field--destructive"),
+  }));
+  chk(/No cuadra|does not add up/i.test(mal.aviso ?? ""), `una cifra mal dice que no cuadra (${mal.aviso})`);
+  chk(mal.firmarApagado === true, `y "Firmar" sigue apagado (${mal.firmarApagado})`);
+  chk(mal.hayDescuadre, "pero se ofrece dejar constancia del descuadre");
+
+  // --- La cifra correcta: cuadra y firma ---
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action", { hasText: /Contar otra vez|Count again/ }).click();
+  await pg.waitForTimeout(300);
+  await pg.locator('.ios-sheet.nm-hoja input[inputmode="decimal"]').fill(totalCorte.replace(/[^0-9.,]/g, ""));
+  await pg.locator(".ios-sheet.nm-hoja .ios-field--action", { hasText: /Comprobar|Check/ }).click();
+  await pg.waitForTimeout(500);
+  const bien = await pg.evaluate(() => ({
+    aviso: document.querySelector(".ios-sheet .dep-aviso-titulo")?.textContent.trim(),
+    firmarApagado: document.querySelector(".ios-sheet.nm-hoja .ios-nav-action")?.disabled,
+  }));
+  chk(/Cuadra|adds up/i.test(bien.aviso ?? ""), `la cifra buena cuadra (${bien.aviso})`);
+  chk(bien.firmarApagado === false, `y ahora sí se puede firmar (${bien.firmarApagado})`);
+  await pg.locator(".ios-sheet.nm-hoja .ios-nav-action").click();
+  await pg.waitForTimeout(1000);
+
+  /* Recargar de verdad: lo que se comprueba es que llegó a `cortes`. */
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(300);
+  const enBase = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const cortes = await db.listCortes(ig.id);
+    const c = cortes.find((x) => x.segunda_firma);
+    return c ? {
+      firma: c.segunda_firma, rol: c.segunda_firma_rol,
+      modo: c.segunda_firma_modo, conteo: c.segunda_conteo,
+      pedida: c.doble_firma_pedida, cuando: c.segunda_firma_en,
+    } : null;
+  });
+  chk(enBase?.firma === "Rosa Elena Vega", `la firma llegó a la base (${enBase?.firma})`);
+  chk(enBase?.rol === "asistente", `con su rol del directorio (${enBase?.rol})`);
+  chk(enBase?.modo === "conteo", `y marcada como CONTEO, no como revisión (${enBase?.modo})`);
+  chk((enBase?.conteo ?? 0) > 0, `con la cifra que contó guardada (${enBase?.conteo})`);
+  chk(enBase?.pedida === 1, `y el corte quedó marcado como que la pedía (${enBase?.pedida})`);
+  chk(!!enBase?.cuando, `con la hora de la firma (${enBase?.cuando})`);
+
+  /* Y la regla de Por revisar: un corte que pidió firma y no la tiene sale
+     en la bandeja. Se comprueba con uno nuevo, porque el de arriba ya firmó. */
+  const antes = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    return (await db.cortesSinSegundaFirma(ig.id)).length;
+  });
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    await db.insertCorte(ig.id, {
+      fecha: "2026-08-20", nombre: "Corte de prueba sin firmar", dobleFirma: true,
+    }, []);
+  });
+  await pg.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-bandeja", { timeout: 10000 });
+  await pg.waitForTimeout(700);
+  const enBandeja = await pg.evaluate(() =>
+    [...document.querySelectorAll(".md-bandeja .al-fila .md-fila-titular")]
+      .map((x) => x.textContent.trim())
+      .filter((x) => /segunda firma|second signature/i.test(x)).length);
+  chk(enBandeja > antes, `el corte sin firmar sale en Por revisar (${antes} → ${enBandeja})`);
+  await ctxDF.close();
+}
+
+/* ---------- 43. El folio del movimiento ----------
+   "Folio 1042" es lo último que quedaba del handoff sin pintar, y llevaba ahí
+   desde el primer día por una razón buena: un folio inventado se lee como un
+   dato de contabilidad. Con la migración 48 es real, y tiene la forma del
+   resto de la app: `2026-0042`.
+
+   Lo que se comprueba es lo que hace que un folio sirva de algo:
+
+     · que NO se repita —es lo único imperdonable en un libro contable—;
+     · que se pueda buscar, que es para lo que existe ("revisa el 0042");
+     · que el pasado siga SIN numerar, porque numerarlo hacia atrás obligaría
+       a inventar un orden dentro de cada día;
+     · y que los huecos no rompan la serie: borrar un movimiento no puede hacer
+       que el siguiente repita número.
+
+   **Qué prueba esto y qué no**, porque al probarlo al revés salió que dos de
+   las tres capas no son las que sostienen la garantía:
+
+     · Cambiar MAX+1 por COUNT —el fallo clásico— NO pone nada en rojo, y no
+       es que la prueba sea mala: el BUCLE DE COLISIÓN avanza hasta el primer
+       número libre y arregla el resultado aunque el cálculo esté mal. Quien
+       impide los duplicados es el bucle. MAX+1 sirve para otra cosa: que la
+       serie no retroceda a un número purgado que quizá está en un recibo.
+     · El primer intento de "hueco" tampoco probaba nada, porque `deleteTx` es
+       un borrado SUAVE: la fila sigue ahí y COUNT no baja. Ahora se purga de
+       verdad, como hace la compactación.
+     · Lo que SÍ sale en rojo al romperlo es la reparación de duplicados, que
+       es el fallo real de un correlativo con sincronización — y por eso es la
+       comprobación más larga de esta sección. */
+console.log("\n== El folio del movimiento ==");
+{
+  const ctxF = await nuevoContexto("ipad");
+  const pg = await ctxF.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+
+  /* La siembra creó sus movimientos ANTES de que la migración 48 existiera en
+     esa base, así que no tienen folio — igual que los de una iglesia real que
+     actualiza. Eso es justo lo que hay que comprobar. */
+  const antes = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    return { total: txs.length, conFolio: txs.filter((t) => t.folio).length };
+  });
+  chk(antes.total > 0, `hay movimientos sembrados (${antes.total})`);
+
+  // --- Registrar tres y mirar sus folios ---
+  const nuevos = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const hechos = [];
+    for (let i = 0; i < 3; i++) {
+      await db.insertTx(ig.id, ig.moneda, {
+        tipo: "ingreso", categoria: "ofrenda", concepto: `Folio de prueba ${i}`,
+        fecha: "2026-03-1" + i, monto: 1000 + i, metodo_pago: "efectivo",
+      });
+    }
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    for (const t of txs) if (/^Folio de prueba/.test(t.concepto)) hechos.push(t.folio);
+    return hechos.sort();
+  });
+  chk(nuevos.length === 3, `se registran tres movimientos (${nuevos.length})`);
+  chk(nuevos.every((f) => /^2026-\d{4}$/.test(f ?? "")),
+    `y los tres llevan folio con la forma AAAA-NNNN (${nuevos.join(", ")})`);
+  chk(new Set(nuevos).size === 3, `sin repetirse (${nuevos.join(", ")})`);
+  /* El año sale de la FECHA del movimiento, no de hoy: un ingreso de 2026
+     capturado en otro año pertenece al libro de 2026 y su folio lo dice. */
+  chk(nuevos.every((f) => f.startsWith("2026-")),
+    "y el año es el de la fecha del movimiento, no el de hoy");
+
+  /* --- El pasado sigue sin numerar ---
+     La siembra usa `insertTx`, así que sus movimientos YA nacen con folio y no
+     sirven para probar esto. Hay que fabricar la fila como la tiene una
+     iglesia que actualiza: registrada antes de la migración 48, con `folio` en
+     NULL. Lo que se comprueba es que nadie se la numera por detrás y que la
+     pantalla no le inventa una. */
+  const despues = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "gasto", categoria: "servicios", concepto: "Movimiento de antes del folio",
+      fecha: "2025-06-01", monto: 7700, metodo_pago: "efectivo",
+    });
+    let txs = await db.listTx(ig.id, { limit: 400 });
+    const viejo = txs.find((t) => t.concepto === "Movimiento de antes del folio");
+    // Se le quita el folio a mano: así queda igual que una fila anterior a la
+    // migración, que es lo que hay en la base de una iglesia real.
+    const d = await db.getDb();
+    await d.execute("UPDATE transactions SET folio = NULL, folio_seq = NULL WHERE id = $1", [viejo.id]);
+    // Y se registra otro DESPUÉS, para ver que la serie no lo cuenta.
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Folio despues del viejo",
+      fecha: "2026-04-01", monto: 2200, metodo_pago: "efectivo",
+    });
+    txs = await db.listTx(ig.id, { limit: 400 });
+    return {
+      sinFolio: txs.find((t) => t.concepto === "Movimiento de antes del folio")?.folio ?? null,
+      siguiente: txs.find((t) => t.concepto === "Folio despues del viejo")?.folio ?? null,
+    };
+  });
+  chk(despues.sinFolio === null,
+    `un movimiento anterior a la migración se queda SIN folio, nadie lo numera por detrás (${despues.sinFolio})`);
+  chk(/^2026-\d{4}$/.test(despues.siguiente ?? ""),
+    `y el siguiente se emite igual, sin tropezar con él (${despues.siguiente})`);
+
+  /* --- Los huecos no rompen la serie ---
+     La fila se PURGA de verdad (`DELETE`), no se borra en blando: el borrado
+     suave deja la fila en su sitio y entonces hasta un COUNT mal hecho acierta.
+     Purgada —que es lo que hace la compactación— el hueco es real, y numerar
+     con COUNT reutilizaría el número del muerto. */
+  const trasHueco = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    const ultimo = txs.filter((t) => /^Folio de prueba/.test(t.concepto))
+      .sort((a, b) => (a.folio < b.folio ? 1 : -1))[0];
+    const folioBorrado = ultimo.folio;
+    const d = await db.getDb();
+    await d.execute("DELETE FROM transactions WHERE id = $1", [ultimo.id]);
+    /* Fechado HOY, no en marzo: la lista de Ingresos filtra por mes y un
+       movimiento de otro mes no saldría por mucho que la búsqueda funcione.
+       Los de arriba sí van en marzo, que es lo que prueba que el año del folio
+       sale de la fecha del movimiento y no de hoy. */
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "ingreso", categoria: "ofrenda", concepto: "Folio tras el hueco",
+      fecha: db.hoyISO(), monto: 5000, metodo_pago: "efectivo",
+    });
+    const otra = await db.listTx(ig.id, { limit: 400 });
+    const nuevo = otra.find((t) => t.concepto === "Folio tras el hueco");
+    return { folioBorrado, folioNuevo: nuevo?.folio };
+  });
+  chk(trasHueco.folioNuevo !== trasHueco.folioBorrado,
+    `borrar uno no hace que el siguiente repita su número (${trasHueco.folioBorrado} → ${trasHueco.folioNuevo})`);
+
+  // --- Se puede buscar por folio, que es para lo que existe ---
+  const cuatro = (trasHueco.folioNuevo ?? "").slice(-4);
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-ingresos, .md-movimientos, .md-filas", { timeout: 10000 });
+  await pg.waitForTimeout(500);
+  await pg.locator(".md-buscar input").first().fill(cuatro);
+  await pg.waitForTimeout(600);
+  const encontrados = await pg.evaluate(() =>
+    [...document.querySelectorAll(".md-fila .md-fila-titular")].map((x) => x.textContent.trim()));
+  chk(encontrados.some((x) => /Folio tras el hueco/.test(x)),
+    `tecleando las cuatro cifras del folio se encuentra el movimiento (${cuatro} → ${encontrados.length} fila(s))`);
+
+  /* --- Dos aparatos, el mismo folio ---
+     El fallo de verdad de un numerador correlativo con sincronización: dos
+     iPads sin conexión calculan el mismo MAX+1 y al juntarse hay dos
+     movimientos con el mismo folio. Se fabrica esa situación y se comprueba
+     que `repararFoliosMovimiento` la deshace — conservando el del MÁS ANTIGUO,
+     porque ese número ya puede estar escrito en un recibo de papel. */
+  const reparado = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    const txs = await db.listTx(ig.id, { limit: 400 });
+    const dos = txs.filter((t) => t.folio).sort((a, b) => a.id - b.id).slice(-2);
+    const repetido = dos[0].folio;
+    // El segundo se queda con el folio del primero: el choque exacto.
+    await d.execute(
+      "UPDATE transactions SET folio = $1, folio_seq = $2 WHERE id = $3",
+      [repetido, dos[0].folio_seq, dos[1].id],
+    );
+    const antesDeReparar = (await db.listTx(ig.id, { limit: 400 }))
+      .filter((t) => t.folio === repetido).length;
+    const cuantos = await db.repararFoliosMovimiento(ig.id);
+    const despuesDeReparar = await db.listTx(ig.id, { limit: 400 });
+    return {
+      antesDeReparar,
+      cuantos,
+      viejo: despuesDeReparar.find((t) => t.id === dos[0].id)?.folio,
+      nuevo: despuesDeReparar.find((t) => t.id === dos[1].id)?.folio,
+      repetido,
+      repetidosQueQuedan: despuesDeReparar.filter((t) => t.folio === repetido).length,
+    };
+  });
+  chk(reparado.antesDeReparar === 2, `se fabrica el choque de dos aparatos (${reparado.antesDeReparar} con el mismo folio)`);
+  chk(reparado.cuantos === 1, `la reparación renumera uno solo (${reparado.cuantos})`);
+  chk(reparado.viejo === reparado.repetido,
+    `el MÁS ANTIGUO conserva su folio, que puede estar en un recibo (${reparado.viejo})`);
+  chk(reparado.nuevo !== reparado.repetido && /^2026-\d{4}$/.test(reparado.nuevo ?? ""),
+    `y el otro recibe uno libre (${reparado.repetido} → ${reparado.nuevo})`);
+  chk(reparado.repetidosQueQuedan === 1, `no queda ningún folio repetido (${reparado.repetidosQueQuedan})`);
+
+  // --- Y en el panel sale con su rótulo ---
+  await pg.locator(".md-fila", { hasText: "Folio tras el hueco" }).first().click();
+  await pg.waitForTimeout(600);
+  const enPanel = await pg.evaluate(() =>
+    document.querySelector(".dm-folio")?.textContent.trim());
+  chk(/^Folio 2026-\d{4}$/.test(enPanel ?? ""), `el panel lo enseña con su rótulo (${enPanel})`);
+  await ctxF.close();
+}
+
+/* ---------- 44. Los dos permisos del rol Tesorería ----------
+   El grupo "Permisos del rol Tesorería" del rediseño llevaba CUATRO
+   interruptores apagados y sin motor. Con la migración 49 quedan dos y
+   funcionan, porque los otros dos nunca fueron permisos: registrar ingresos y
+   cerrar cortes SON el rol de tesorería, y apagarlos no le habría quitado un
+   permiso a nadie —habría dejado a la tesorera dentro de Tesorería sin poder
+   hacer nada, que es otro rol y no un permiso—.
+
+   Los dos que quedan tiran para lados opuestos y por eso se prueban distinto:
+   ver el padrón ABRE una pantalla que hoy está cerrada; eliminar movimientos
+   CIERRA algo que hoy está abierto.
+
+   **Qué sostiene qué**, que es lo que hay que decir en voz alta:
+
+     · Lo de aquí es la INTERFAZ. Que el botón Eliminar desaparezca no impide
+       borrar: el aparato podría escribir la fila igual. Quien lo impide de
+       verdad es el disparador `frenar_borrado_tesorero` de Supabase, que
+       deshace la baja y devuelve el movimiento vivo — y eso vive en el
+       servidor, así que este arnés NO puede probarlo. Lo que sí prueba es que
+       la interfaz no ofrece un botón que el servidor va a rechazar.
+     · El del padrón NO es una barrera de datos y no puede serlo: los miembros
+       ya se sincronizan enteros a todos los aparatos porque el tesorero los
+       necesita en Aportantes. Abre una PANTALLA. Por eso se comprueba con
+       especial cuidado que abra UNA y no el área entera: un permiso que de
+       regalo abriera Actas y Cartas sería un cambio de rol disfrazado.
+     · El espejo local NO es la verdad. La comprobación de `updateChurch` es la
+       que impide el fallo más fácil de cometer aquí: que un día alguien meta
+       estas dos columnas en el formulario de la iglesia y el permiso se
+       convierta en una preferencia que se quita sin conexión. */
+console.log("\n== Los dos permisos del rol Tesorería ==");
+{
+  const ctxP = await nuevoContexto("ipad");
+  // El rol se fija ANTES de montar: `initialRole()` lee localStorage al nacer.
+  await ctxP.addInitScript(() => {
+    try { localStorage.setItem("tamio-rol", "tesorero"); } catch { /* noop */ }
+  });
+  const pg = await ctxP.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".sidebar, .app", { timeout: 30000 });
+
+  // --- Las dos puertas, en su lógica pura ---
+  const puertas = await pg.evaluate(async () => {
+    const r = await import("/src/role.ts");
+    return {
+      tesoreroSinPermiso: r.puedeEliminarMovimientos("tesorero", { tesorero_puede_eliminar: 0 }),
+      tesoreroConPermiso: r.puedeEliminarMovimientos("tesorero", { tesorero_puede_eliminar: 1 }),
+      adminAunqueEsteApagado: r.puedeEliminarMovimientos("administrador", { tesorero_puede_eliminar: 0 }),
+      porOmisionPuede: r.puedeEliminarMovimientos("tesorero", {}),
+      padronCerrado: r.puedeVer("tesorero", "/membresia"),
+      padronAbierto: r.puedeVer("tesorero", "/membresia", { vePadron: true }),
+      actasFuera: r.puedeVer("tesorero", "/actas", { vePadron: true }),
+      cartasFuera: r.puedeVer("tesorero", "/cartas", { vePadron: true }),
+      serviciosFuera: r.puedeVer("tesorero", "/servicios", { vePadron: true }),
+      secretariaIgual: r.puedeVer("secretaria", "/ingresos", { vePadron: true }),
+    };
+  });
+  chk(puertas.tesoreroSinPermiso === false, "con el permiso apagado, el tesorero no puede eliminar");
+  chk(puertas.tesoreroConPermiso === true, "encendido, sí");
+  /* El límite es del ROL Tesorería: el administrador es quien lo pone, y
+     quitárselo a sí mismo lo dejaría sin poder deshacerlo. */
+  chk(puertas.adminAunqueEsteApagado === true, "y al administrador no le afecta: es quien pone el límite");
+  /* Por omisión SÍ puede, que es lo que la app ha hecho siempre. Una
+     migración no le retira en silencio a nadie algo que venía usando. */
+  chk(puertas.porOmisionPuede === true, "sin columna —una base vieja— se conserva lo de hoy: sí puede");
+  chk(puertas.padronCerrado === false, "sin permiso, Membresía sigue cerrada al tesorero");
+  chk(puertas.padronAbierto === true, "con permiso, se le abre");
+  chk(puertas.actasFuera === false && puertas.cartasFuera === false && puertas.serviciosFuera === false,
+    "y solo esa pantalla: Actas, Cartas y Servicios siguen fuera");
+  chk(puertas.secretariaIgual === false, "el permiso no toca a la secretaria: Ingresos le sigue cerrado");
+
+  /* --- El espejo no lo escribe el aparato ---
+     `updateChurch` es lo que guarda el formulario de la iglesia. Si un día
+     estas dos columnas se colaran ahí, el permiso dejaría de ser un permiso:
+     se quitaría desde Ajustes, sin conexión y sin ser administrador. */
+  const espejo = await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    await d.execute(
+      "UPDATE churches SET tesorero_puede_eliminar = 0, tesorero_ve_padron = 1 WHERE id = $1",
+      [ig.id],
+    );
+    const tras = await db.updateChurch(ig.id, { nombre: ig.nombre, moneda: ig.moneda });
+    return { puedeEliminar: tras.tesorero_puede_eliminar, vePadron: tras.tesorero_ve_padron };
+  });
+  chk(espejo.puedeEliminar === 0 && espejo.vePadron === 1,
+    `guardar la iglesia desde Ajustes NO toca los permisos (eliminar=${espejo.puedeEliminar}, padrón=${espejo.vePadron})`);
+
+  /* --- Y la interfaz obedece ---
+     Con el permiso apagado (lo dejó así el bloque de arriba) el panel de
+     detalle no puede pintar Eliminar. Se prueba en las dos direcciones para
+     que no pase por buena una pantalla que simplemente no cargó. */
+  /* RECARGA, no `goto` con otro hash: la iglesia se lee al ARRANCAR y vive en
+     el estado de React. Cambiar la columna por debajo y navegar dentro de la
+     misma sesión dejaba el permiso viejo en memoria — que es exactamente el
+     fallo que esta prueba encontró y que se arregló en `App.tsx`, releyendo la
+     iglesia cuando termina una sincronización. Aquí no hay sincronización que
+     esperar, así que se recarga. */
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.reload({ waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-fila", { timeout: 10000 });
+  await pg.locator(".md-fila").first().click();
+  await pg.waitForTimeout(500);
+  const sinBoton = await pg.evaluate(() => ({
+    hayPanel: !!document.querySelector(".dm"),
+    hayEliminar: !!document.querySelector(".dm-eliminar"),
+    hayEditar: !!document.querySelector(".dm .btn.primary"),
+  }));
+  chk(sinBoton.hayPanel && sinBoton.hayEditar, "el panel de detalle abre y conserva Editar");
+  chk(sinBoton.hayEliminar === false, "y sin el permiso NO pinta Eliminar");
+
+  // El mismo botón, con el permiso encendido: si no vuelve, lo de arriba
+  // estaba pasando por otro motivo.
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    await d.execute("UPDATE churches SET tesorero_puede_eliminar = 1 WHERE id = $1", [ig.id]);
+  });
+  await pg.reload({ waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-fila", { timeout: 10000 });
+  await pg.locator(".md-fila").first().click();
+  await pg.waitForTimeout(500);
+  const conBoton = await pg.evaluate(() => !!document.querySelector(".dm-eliminar"));
+  chk(conBoton === true, "y encendido vuelve a aparecer");
+
+  // Se deja como estaba para no ensuciar lo que venga detrás.
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const d = await db.getDb();
+    await d.execute("UPDATE churches SET tesorero_ve_padron = 0 WHERE id = $1", [ig.id]);
+  });
+  await ctxP.close();
+
+  /* --- Sin login, el grupo de permisos no se enseña ---
+     Es la decisión de Iván y tiene motivo: sin login el rol se elige en un
+     desplegable de ESTA MISMA zona, así que un permiso ahí se quitaría
+     cambiando el desplegable. Enseñar un candado que cualquiera abre es peor
+     que no enseñarlo.
+
+     **Va en su propio contexto, con el rol de ADMINISTRADOR**, y eso es lo que
+     hace que la comprobación valga. La condición real es `esAdmin &&
+     authActivo`: mirándolo como tesorero el grupo faltaría por las DOS
+     razones, y la prueba pasaría igual aunque la mitad del login no
+     existiera. Como administrador solo queda una razón en pie, que es la que
+     se quiere probar.
+
+     Se comprueba además que la zona SÍ está: sin eso, esto pasaría también si
+     Ajustes no hubiera cargado. La otra mitad —que CON login sí aparece— no la
+     puede probar este arnés, que corre sin Supabase. */
+  const ctxA = await nuevoContexto("ipad");
+  await ctxA.addInitScript(() => {
+    try { localStorage.setItem("tamio-rol", "administrador"); } catch { /* noop */ }
+  });
+  const pgA = await ctxA.newPage();
+  pgA.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pgA.setViewportSize({ width: 1366, height: 1024 });
+  await pgA.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+  await pgA.waitForSelector(".settings-nav-item", { timeout: 10000 });
+  const zonasP = await pgA.$$eval(".settings-nav-item", (ns) => ns.map((n) => n.textContent.trim()));
+  const iAcceso = zonasP.findIndex((z) => /Acceso/i.test(z));
+  chk(iAcceso >= 0, `la zona "Acceso y áreas" existe (${zonasP.length} zonas)`);
+  await pgA.locator(".settings-nav-item").nth(iAcceso).click();
+  await pgA.waitForTimeout(700);
+  const enAcceso = await pgA.evaluate(() => document.body.innerText);
+  /* El desplegable de rol es la prueba de que la zona cargó Y de que el
+     argumento es cierto: está ahí, en la misma pantalla, y cualquiera lo
+     cambia. */
+  chk(/Acceso y áreas/.test(enAcceso), "y su contenido cargó");
+  chk(/Permisos del rol/.test(enAcceso) === false,
+    "siendo ADMINISTRADOR y sin login, el grupo de permisos no se enseña");
+  await ctxA.close();
+}
+
+/* ---------- 45. El tamaño de texto mueve la app ENTERA ----------
+   La última cáscara del rediseño, encendida el 24 ago 2026. Lo que estuvo
+   apagado no era el control: era que la tipografía no se podía mover entera.
+   La app tenía 248 `font-size` colgando de los tokens `--fs-*` y **395 con
+   píxeles a pelo**, más 136 tamaños en línea en el JSX que ni siquiera pasan
+   por el CSS.
+
+   **Por eso esta sección mide dos cosas y no una.** Comprobar que crece una
+   etiqueta sería quedarse justo con el tercio que ya habría funcionado con un
+   multiplicador ingenuo sobre los tokens. Lo que había que arreglar —y lo que
+   se comprueba aquí— es que crezca también **la cifra de dinero**, que iba
+   con píxeles a pelo (`.md-fila-monto`, `.ios-stat-num`, `.tx-amount`). Si
+   alguien sube el tamaño porque no ve bien los importes y los importes son lo
+   único que no se mueve, el control es peor que no tenerlo.
+
+   Se miden tamaños CALCULADOS del navegador sobre la app de verdad, no la
+   hoja de estilos: es la única forma de saber que el factor llegó al píxel
+   pintado y no se quedó en una variable que nadie lee.
+
+   **Medido el 24 ago 2026 en la tanda entera (899 ✓ / 0 ✗):** etiqueta
+   15.5 → 17.36px y cifra 16 → 17.92px en "Grande", las dos por 1.120
+   exacto. Que los dos factores coincidan es la prueba de que la escala llegó
+   por igual a los `font-size` con token y a los que iban con píxeles a pelo,
+   que eran mundos separados hasta esa mañana. */
+console.log("\n== El tamaño de texto mueve la app entera ==");
+{
+  const ctxT = await nuevoContexto("ipad");
+  const pg = await ctxT.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1366, height: 1024 });
+  await pg.goto(`${URL_BASE}/#/ingresos`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".md-fila", { timeout: 10000 });
+
+  /** Tamaños calculados de una ETIQUETA y de una CIFRA, más el factor vivo. */
+  const medir = () => pg.evaluate(() => {
+    const px = (sel) => {
+      const el = document.querySelector(sel);
+      return el ? parseFloat(getComputedStyle(el).fontSize) : null;
+    };
+    return {
+      etiqueta: px(".md-fila-titular"),
+      dinero: px(".md-fila-monto"),
+      factor: getComputedStyle(document.documentElement).getPropertyValue("--fs-escala").trim(),
+    };
+  });
+
+  const normal = await medir();
+  chk(normal.etiqueta > 0 && normal.dinero > 0,
+    `de partida se mide etiqueta y cifra (${normal.etiqueta}px / ${normal.dinero}px)`);
+
+  /* --- "Normal" no toca nada ---
+     Se comprueba ANTES que el crecimiento, porque es la mitad que más fácil
+     se rompe sin que nadie lo note: un refactor de 560 tamaños que deje la
+     app un punto más grande "en Normal" habría cambiado el aspecto de Tamio
+     para todo el que nunca abra este ajuste. */
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("normal");
+  });
+  const otraVezNormal = await medir();
+  chk(otraVezNormal.etiqueta === normal.etiqueta && otraVezNormal.dinero === normal.dinero,
+    `en "Normal" no se mueve un píxel (${otraVezNormal.etiqueta}px / ${otraVezNormal.dinero}px)`);
+  /* Y el factor no se escribe EN LÍNEA: en "Normal" manda styles.css, como
+     hace el acento "neutro". Un `--fs-escala: 1` inline daría el mismo
+     resultado hoy y pisaría el valor de la hoja el día que cambie.
+
+     Se mira `style.getPropertyValue` y NO `getComputedStyle`, y esto lo
+     enseñó la propia prueba al salir en rojo: el calculado devuelve "1"
+     igualmente, porque es el valor que `:root` trae de la hoja. Medía la
+     cascada entera cuando lo que se quiere saber es si el atributo `style`
+     del elemento quedó limpio. La prueba estaba mal, no el código. */
+  const inline = await pg.evaluate(() =>
+    document.documentElement.style.getPropertyValue("--fs-escala"));
+  chk(inline === "", `y en "Normal" no deja nada escrito en línea ("${inline}")`);
+
+  // --- Grande ---
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("grande");
+  });
+  const grande = await medir();
+  chk(grande.etiqueta > normal.etiqueta,
+    `en "Grande" crece la etiqueta (${normal.etiqueta} → ${grande.etiqueta}px)`);
+  /* LA COMPROBACIÓN DE LA SECCIÓN. Rompiendo el arreglo —dejando
+     `.md-fila-monto` con su px a pelo— esta sale en rojo y la de arriba sigue
+     en verde, que es justo el fallo del que protege. */
+  chk(grande.dinero > normal.dinero,
+    `y crece TAMBIÉN la cifra de dinero, que era la que se quedaba (${normal.dinero} → ${grande.dinero}px)`);
+  chk(Math.abs(grande.dinero / normal.dinero - grande.etiqueta / normal.etiqueta) < 0.02,
+    `las dos crecen lo MISMO, no cada una por su cuenta (${(grande.dinero / normal.dinero).toFixed(3)} vs ${(grande.etiqueta / normal.etiqueta).toFixed(3)})`);
+
+  // --- Chico ---
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("chico");
+  });
+  const chico = await medir();
+  chk(chico.etiqueta < normal.etiqueta && chico.dinero < normal.dinero,
+    `en "Chico" encogen las dos (${chico.etiqueta}px / ${chico.dinero}px)`);
+
+  /* --- El maestro-detalle sobrevive a "Grande" ---
+     El motivo de que los saltos sean de ±12% y no de ±25%: el panel del iPad
+     necesita ancho de verdad, y una letra que crece empuja. Con la retícula
+     rota, "Grande" sería inusable justo en la pantalla donde más se usa. */
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("grande");
+  });
+  await pg.waitForTimeout(400);
+  const reticula = await pg.evaluate(() => ({
+    dosColumnas: !!document.querySelector(".md-split"),
+    desborde: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  }));
+  chk(reticula.dosColumnas, "con la letra grande el maestro-detalle sigue en dos columnas");
+  chk(!reticula.desborde, "y la página no se desborda en horizontal");
+
+  // Se deja como estaba, que esta sección va antes del cierre.
+  await pg.evaluate(async () => {
+    const m = await import("/src/tipografia.ts");
+    m.setTamanoTexto("normal");
+  });
+  if (process.env.CAPTURAS) {
+    await pg.screenshot({ path: `${process.env.CAPTURAS}/tamano-texto-1366x1024.png` });
+  }
+  await ctxT.close();
 }
 
 /* ---------- 36. El header, con las medidas del handoff ----------------

@@ -126,6 +126,28 @@ Info.plist a mano NO basta: al compilar vuelve el número viejo.
 > `Cargo.toml` (1.0.8, que no se había movido desde la 1.0.8 de verdad).
 > Con las tres fuentes de acuerdo esto deja de poder pasar.
 
+> ⚠️ **Y ha vuelto a pasar, al revés, en la 1.2.11 (24 ago 2026).** Esta vez
+> se movieron las tres fuentes y se dejaron los DOS generados clavados en
+> 1.2.9 — llevaban así desde la 1.2.9, o sea que las 1.2.10 y 1.2.11 los
+> ignoraron. El razonamiento equivocado fue este: "son generados, Tauri los
+> reescribe, así que da igual lo que digan". Y es verdad a medias.
+>
+> **Lo que NO da igual: si el valor guardado no coincide, la reescritura
+> ENSUCIA el árbol.** Iván fue a compilar la 1.2.11 y `verificar-rama` abortó
+> con `M src-tauri/gen/apple/tesoreria_iOS/Info.plist` — el rastro de su build
+> de la 1.2.10. Y aborta en CADA build mientras no coincidan, porque cada
+> compilación deja el mismo archivo modificado.
+>
+> Con los cinco en el mismo número, la reescritura de Tauri no cambia nada y
+> el árbol queda limpio. Así que el bump son **cinco sitios más los dos
+> lockfiles**, y los cinco se comprueban después:
+>
+> ```sh
+> grep -rn "1\.2\.11" package.json src-tauri/tauri.conf.json \
+>   src-tauri/Cargo.toml src-tauri/gen/apple/project.yml \
+>   src-tauri/gen/apple/tesoreria_iOS/Info.plist
+> ```
+
 ## El número de compilación NO se controla desde el repo
 
 `CFBundleVersion` (el número de compilación) **lo pisa Tauri en cada
@@ -161,8 +183,10 @@ en las tres fuentes:
 | esta | **1.2.6** — el cromo, terminado: la barra de vistas de la Agenda, el índice de zonas de Ajustes, la barrita de Informes y las dos superficies translúcidas que mezclaban el gris equivocado. Las cinco pedían el cromo con `--sidebar-bg`, que en el iPad cuelga del lienzo. Con guarda **sobre el archivo**, no sobre la pantalla: ninguna regla de `:root.ipad` puede volver a nombrar ese token. Y dos del chip del mes: deja de salirse 38px del panel (`.ios-bar-button` medía 44×44 fijos) y su menú deja de abrirse recortado detrás del panel (`MenuAnchor` pasa a colgar de `<body>` en `fixed`, como los otros menús de la casa) |
 | esta | **1.2.7** — la tanda salida de revisar la 1.2.6 en el iPad: el chip del mes deja de salirse del panel y su menú de abrirse recortado detrás de él, el día de hoy pasa del negro al acento de la app, se va el "Nueva actividad" repetido, y Configuración se monta como pantalla partida en vez de como un rectángulo flotando. Más el `tsconfig` que sobrevive a las carpetas que macOS duplica |
 | esta | **1.2.8** — dos de revisar la 1.2.7 en el iPad. **Editar un miembro** deja de abrir el modal de escritorio encima del maestro-detalle y pasa a la hoja de iOS —la misma que ya usaba el alta—, con el expediente y una pantalla de solo lectura para la asistencia, el historial y los documentos, que es lo único que el panel de detrás no enseña. Y **la raya de la barra deja de ir pegada a los botones**: el inset de la barra de estado se comía los 56px de la barra, así que ahora se le SUMA. En las dieciséis pantallas de golpe |
-| esta | **1.2.9** — Depósitos rehecha con el **handoff 3**: "Pendientes" deja de ser un cartel y pasa a ser la revisión previa al banco (cortes por día, tres cifras vivas, los cuatro avisos, y "Marcar depositado" abriendo el formulario ya prellenado, que tacha la primera cáscara del registro); "Depositados" gana la pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y se construye la hoja "Nuevo corte" entera. Más los dos textos que no respiraban en el iPad: "Elige un día" pegado al filo y la fila de filtros de Informes con los chips a 29px |
-| la siguiente | 1.3.0 |
+| **24 ago — SUBIDA, confirmada por Iván** | **1.2.9** — Depósitos rehecha con el **handoff 3** (Pendientes como revisión previa al banco: cortes por día, tres cifras vivas, los cuatro avisos y "Marcar depositado" abriendo el formulario prellenado; Depositados con su pastilla, el menú de "⋯", "Datos del depósito" y "Conciliación"; y la hoja "Nuevo corte" entera), **más TODO lo del 24 de agosto** — el número había quedado libre porque la 1.2.9 se preparó y no llegó a subir en su momento, así que se lo llevó todo junto: la sincronización entera (las 16 tablas viajan, con `verificar-sync` vigilando la paridad de columnas), la **doble firma** del corte, el **folio** del movimiento (`2026-0042`, sin numerar el pasado), los **dos permisos del rol Tesorería** —de los cuatro que dibujó el handoff— con el borrado frenado por un disparador del servidor, y las cáscaras que quedaban: puestos del culto, orden del culto, pestaña Familia, "Recopilar firmas", "Compartir" un depósito y los conteos por categoría. Nada de esto se había visto en un iPad de verdad; **esta es la build con la que se ve**. Subida y confirmada el 24 de agosto por la noche |
+| **24 ago — SUBIDA, confirmada por Iván** | **1.2.10** — **el mismo .ipa con otro número.** Desde la 1.2.9 no ha cambiado ni una línea de `src/` ni de `src-tauri/`: los tres commits de por medio tocan `.gitignore` y `pruebas/arnes-ipad.mjs` —configuración y pruebas, nada que entre en el paquete—. Se compila porque la 1.2.9 ya está arriba y Apple no acepta dos veces el mismo número, no porque haya trabajo nuevo que enseñar. **Si lo que querías era revisar algo nuevo en el iPad, esta build no lo trae**: lo único que queda sin motor en toda la app es el segmentado de "Tamaño de texto" **Ojo, dos builds con este número.** El tamaño de texto entró DESPUÉS del bump, así que un .ipa compilado en `6f9ba43` y otro en `6b76b49` dicen los dos "1.2.10" y no llevan lo mismo. Se distingue en el aparato: Config → Preferencias → Presentación, y si el segmentado de "Tamaño de texto" se puede tocar, es el segundo |
+| **la que sube** | **1.2.11** — **la fusión: el diseño de `charming-sagan` entra en la rama del motor.** De sagan: el **header del iPad** con su handoff (el ☰ pasa a botón de 38 con el glifo de barra lateral, y de paso destapó que el arnés nunca había simulado pantalla táctil, así que ninguna regla de `pointer:coarse` se había probado), **un solo botón de crear en Cartas** —había ocho, la misma orden repetida— y **Cartas y traslados rehecha entera**. De la rama del motor: **"Tamaño de texto"**, la última cáscara del rediseño, que no fue encender un interruptor sino mover la tipografía entera a un factor (395 `font-size` iban con píxeles a pelo, incluidas las CIFRAS DE DINERO). Con eso **no queda ni un control dibujado y apagado en toda la app**. Arnés: 1018 ✓ / 0 ✗, las 44 secciones de las dos ramas |
+| cuando toque el plan de `docs/plan-1-3.md` | 1.3.0 |
 
 > **La 1.2.1 y la 1.2.2 no se subieron según se hicieron.** Iván pidió
 > acumular arreglos y subir una sola vez para revisar de corrido, así que
@@ -309,9 +333,18 @@ SALTAR_VERIFICAR_RAMA=1 npm run ios:appstore
 npm run verificar-csp
 npm run verificar-hooks
 npm run verificar-traducciones
+npm run verificar-tipografia
 npm run verificar-navegacion
 npm run verificar-centavos
 ```
+
+`verificar-tipografia` se añadió el 24 de agosto de 2026 con "Tamaño de
+texto", y **está pensada para una fusión que todavía no ha ocurrido**: la
+rama de diseño `charming-sagan` se escribió ANTES de que existiera
+`--fs-escala`, así que sus reglas nuevas traen `font-size` con píxeles a
+pelo. Eso se fusiona sin un solo conflicto, compila sin avisos y se ve
+perfecto en "Normal" — y se rompe solo en el aparato de quien eligió la
+letra grande, que es justo quien menos va a saber explicarlo.
 
 `verificar-hooks` se añadió después de que la 1.1.3 saliera con un `useState`
 por debajo de la puerta de autenticación de `App.tsx`: React aborta con el
@@ -352,6 +385,97 @@ deja de comprobar lo que se acaba de escribir.
 En la 1.2.0, las mismas comprobaciones y una más, porque esta versión salió
 de una fusión y una fusión puede compilar perfectamente y aun así haber
 perdido la mitad de una pantalla.
+
+En la **1.2.9** —la que sube de verdad, con todo el trabajo del 24 de agosto
+dentro— las mismas y con la lista de clases alargada otra vez, que
+es la parte que se olvida: buscar `:root.ipad` y `md-split` habría salido en
+verde con TODO el trabajo de esta tanda fuera del bundle, porque esas clases
+llevan ahí desde la 1.1.6. Así que se buscó, en el bundle construido con
+`VITE_CANAL=appstore`, una marca por cada pieza nueva —`dm-folio` (el folio en
+el panel), `cat-conteo` (los conteos por categoría), y en el JS
+"Permisos del rol Tesorería", `fijar_permisos_tesoreria`,
+`tesorero_puede_eliminar` ×9, `tesorero_ve_padron` ×9, "Segunda firma",
+"Recopilar firmas", `servicio_puestos` ×9 y `parentescos` ×14—. Las once
+salieron, y `ipad-ancho` ×201 con ellas, que es la prueba de que el rediseño
+no se perdió por el camino.
+
+> ⚠️ **El 24 de agosto por la noche este documento MINTIÓ, y merece quedar
+> escrito.** Al preparar la build de revisión de esa tanda, la tabla de arriba
+> daba por subidas la 1.1.9 y toda la serie 1.2 hasta la 1.2.9, así que se
+> subió el número a **1.2.10**. Iván lo corrigió: en App Store Connect lo más
+> alto es la **1.2.8**, y la 1.2.9 se preparó pero nunca llegó a subir. El
+> bump se deshizo entero.
+>
+> **La regla que falló ya estaba escrita aquí**, en la nota de la 1.2.1: *"el
+> número solo avanza cuando algo sube DE VERDAD a App Store Connect"*. Lo que
+> falta no es la regla, es la PRUEBA: cada fila de la tabla se escribió al
+> **preparar** la build, no al confirmarla, y "preparada" y "subida" se ven
+> exactamente igual desde dentro del repositorio. Ningún `verificar-*` puede
+> cazarlo — el dato vive en App Store Connect, fuera del repo.
+>
+> Por eso la última fila ya no dice "esta" sino **"la que sube"**, y ese
+> marbete solo se mueve cuando Iván confirma que subió. **Antes de tocar el
+> número, pregúntale cuál es el más alto que ve en TestFlight.** No lo deduzcas
+> de esta tabla.
+>
+> **Y funcionó a la primera.** Ese mismo día, un par de horas después, Iván
+> pidió "la siguiente versión". En vez de deducirla se le preguntó, y confirmó
+> que la 1.2.9 sí había subido — así que la 1.2.10 es legítima. De paso salió
+> el dato que la pregunta no buscaba y que resultó ser el importante: **desde
+> la 1.2.9 no había cambiado una sola línea de lo que se compila**, así que la
+> 1.2.10 es el mismo .ipa con otro número. Eso también hay que decirlo antes de
+> compilar, no después.
+>
+> **Y una tercera lección, la más incómoda: el número se gastó ANTES de que
+> hubiera contenido.** La 1.2.10 se preparó diciendo con todas las letras que
+> era "el mismo .ipa con otro número"… y dos horas después llegó el tamaño de
+> texto. Resultado: dos compilaciones distintas que se llaman igual, y la
+> única forma de distinguirlas es abrir Ajustes en el aparato.
+>
+> Lo que hay que hacer distinto: **el bump va AL FINAL, cuando el contenido
+> está cerrado**, no cuando alguien pide "la siguiente versión". Si no hay
+> trabajo nuevo, la respuesta no es subir el número: es decir que no hay nada
+> que enseñar. Eso se dijo —está escrito en la fila de la 1.2.10— pero se
+> subió el número igualmente, y ahí estuvo el error.
+
+**Esta vez no hay bump que auditar, y esa es la noticia.** El número se queda
+en la **1.2.9** que el repositorio ya tenía, porque esa versión nunca subió.
+El bump a 1.2.10 llegó a hacerse —auditado y todo: `version = "1.2.9"` salía
+**una sola vez** en `Cargo.lock`, la línea 3852 bajo `name = "tesoreria"`, y
+**dos** en `package-lock.json`, las dos de Tamio, sin colisión y sin ningún
+paquete en `1.2.9x`— y se deshizo entero al saber que sobraba. La auditoría
+estaba bien hecha; lo que estaba mal era el dato de partida.
+
+**Y el 1.3.0 sigue reservado** para los siete puntos de `docs/plan-1-3.md`.
+Esta tanda no es ninguno de ellos: es la continuación del handoff de iPad, que
+es la serie 1.2.x.
+
+En la **1.2.11** vuelve a hacer falta la comprobación de FUSIÓN, porque esta
+versión también sale de juntar dos ramas — y esta vez a propósito y con el
+reparto acordado: `charming-sagan` llevaba el diseño y esta el motor.
+
+Del lado de sagan, en el CSS construido: `header-actions` ×5,
+`menu-hamburguesa` ×10, `cartas-filtros` ×5, `btn-nuevo-cabecera` ×2 y
+`md-cartas` ×14, más `IconSidebar` en `App.tsx`. Del lado del motor:
+`dm-folio`, `cat-conteo`, `fijar_permisos_tesoreria`,
+`tesorero_puede_eliminar` ×9, `folio_seq` ×5, `parentescos` ×14,
+"Segunda firma" y `tamio-tamano-texto`. Y `--fs-escala` ×432, que es lo que
+ahora une a las dos.
+
+> **Dos "faltas" que no lo eran, y conviene saberlo porque el método falla
+> así.** `cartas-menu-crear` salió como ausente: no era pérdida, sagan retiró
+> esa clase al dejar un solo botón de crear y en su hoja ya solo vive dentro
+> de un comentario. Y `header-acciones` no existía: la clase real es
+> `header-actions`, en inglés — el marcador estaba inventado, no el bundle.
+> Moraleja: **un marcador que "falta" se comprueba contra la rama de origen
+> antes de gritar**, porque la mitad de las veces el equivocado es el
+> marcador.
+
+Y una guarda nueva que esta fusión estrenó: **`verificar-tipografia`**
+encontró 21 tamaños de sagan fuera de la escala —7 en el CSS y 14 en el
+`Cartas.tsx` nuevo—, **ninguno en conflicto**. Los 21 habrían entrado en
+silencio y "Tamaño de texto" se habría roto justo en las dos pantallas recién
+rehechas. Se construyó el día antes, para este momento exacto.
 
 **La comprobación de la fusión: que el bundle lleve clases de LAS DOS ramas.**
 El CSS construido (`index-Cb9x1AEA.css`, 279 kB frente a los 273 de la

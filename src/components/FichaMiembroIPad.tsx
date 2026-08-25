@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, categoriaInfo, currentYear, fmtFechaCorta, fmtMoney, listAsistenciaLigera,
-  metodoNombre, METODOS_PAGO, type AsistenciaLigera, type Church, type Member, type Tx,
+  catNombre, categoriaInfo, currentYear, deleteParentesco, fmtFechaCorta, fmtMoney,
+  insertParentesco, listAsistenciaLigera, listMembers, listParientes, metodoNombre,
+  METODOS_PAGO, TIPOS_PARENTESCO,
+  type AsistenciaLigera, type Church, type Member, type Pariente, type Tx,
 } from "../db";
+import { IOSBuscadorSheet } from "./ios/IOSBuscadorSheet";
+import ActionSheet from "./ActionSheet";
+import { showToast } from "../toast";
+import { playSound } from "../sound";
+import { IconPlus, IconTrash } from "../icons";
 import type { Centavos } from "../dinero";
 
 /**
@@ -19,10 +26,11 @@ import type { Centavos } from "../dinero";
  *   · **Aportes** — `listMemberAportes`, la tabla del año. Real; es la que ya
  *     enseñaba el modal de Mac, traída aquí dentro.
  *   · **Asistencia** — `listAsistenciaLigera`. Real.
- *   · **Familia** — **no hay datos**. `members` no guarda parentesco: no hay
- *     tabla de relaciones ni columna de familia. La pestaña se construye igual
- *     y dice qué le falta, en vez de desaparecer: una sección sin datos
- *     todavía no es lo mismo que una que no aplica.
+ *   · **Familia** — real desde la migración 46 (`parentescos`). Llevaba desde
+ *     el primer día construida y vacía con su explicación; lo que le faltaba
+ *     era la tabla. Se añaden parientes del padrón eligiendo la persona y el
+ *     parentesco, y la relación aparece **en las dos fichas** aunque solo se
+ *     guarde una fila: la del otro se lee con el tipo invertido.
  *
  * Los tres campos del diseño —nacimiento, dirección y estado civil— nacieron
  * aquí **sin motor**, por decisión de Iván (23 ago): primero la plantilla, el
@@ -82,6 +90,53 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
   const { t, i18n } = useTranslation();
   const [pestana, setPestana] = useState<PestanaFicha>("datos");
   const [asis, setAsis] = useState<AsistenciaLigera[]>([]);
+
+  /* ---- Familia (migración 46) ---- */
+  const [parientes, setParientes] = useState<Pariente[]>([]);
+  const [padron, setPadron] = useState<Member[]>([]);
+  /** Persona elegida a la que todavía le falta decir QUÉ es. */
+  const [eligiendo, setEligiendo] = useState(false);
+  const [candidato, setCandidato] = useState<Member | null>(null);
+
+  const recargarFamilia = useCallback(
+    () => listParientes(member.id, church.id).then(setParientes).catch(console.error),
+    [member.id, church.id],
+  );
+
+  /* Como la asistencia: la familia y el padrón solo se piden al abrir su
+     pestaña. Una ficha que se abre para ver un aporte no paga por ellos. */
+  useEffect(() => {
+    if (pestana !== "familia") return;
+    void recargarFamilia();
+    listMembers(church.id).then(setPadron).catch(console.error);
+  }, [pestana, church.id, recargarFamilia]);
+
+  async function anadirPariente(parienteId: number, tipo: string) {
+    try {
+      const ok = await insertParentesco(church.id, member.id, parienteId, tipo);
+      if (!ok) {
+        /* Ya estaban relacionados, o alguien se eligió a sí mismo. Se dice;
+           el índice único lo habría impedido igual, pero con un error de SQL
+           en la consola en vez de una frase. */
+        showToast(t("detalleMiembro.familiaYaEsta"));
+        return;
+      }
+      playSound("guardado");
+      await recargarFamilia();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+  }
+
+  async function soltarPariente(p: Pariente) {
+    try {
+      await deleteParentesco(p.id, church.id);
+      playSound("eliminar");
+      await recargarFamilia();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+  }
 
   /* La asistencia solo se pide cuando se abre su pestaña: es una consulta que
      recorre TODOS los servicios de la iglesia y filtra después, y en una ficha
@@ -221,13 +276,35 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
           )}
 
           {pestana === "familia" && (
-            /* La pestaña que el handoff pide y la base no puede llenar. Se
-               construye igual, con su explicación: quien la abre tiene que
-               saber que no está vacía por error. */
-            <div className="fm-vacio fm-vacio--pendiente">
-              <span className="fm-vacio-titulo">{t("detalleMiembro.familiaTitulo")}</span>
-              <span className="fm-vacio-sub">{t("detalleMiembro.familiaSub")}</span>
-            </div>
+            <>
+              {parientes.length === 0 ? (
+                <div className="fm-vacio fm-vacio--pendiente">
+                  <span className="fm-vacio-titulo">{t("detalleMiembro.familiaTitulo")}</span>
+                  <span className="fm-vacio-sub">{t("detalleMiembro.familiaSub")}</span>
+                </div>
+              ) : (
+                <div className="dm-ficha">
+                  {parientes.map((p) => (
+                    <div className="dm-campo fm-pariente" key={p.id + (p.invertida ? "i" : "d")}>
+                      <span className="dm-campo-etiqueta">{t(`parentesco.${p.tipo}`)}</span>
+                      <span className="dm-campo-valor truncate">{p.nombre}</span>
+                      <button
+                        type="button"
+                        className="fm-pariente-quitar"
+                        aria-label={t("detalleMiembro.familiaQuitar")}
+                        title={t("detalleMiembro.familiaQuitar")}
+                        onClick={() => void soltarPariente(p)}
+                      >
+                        <IconTrash size={13} strokeWidth={2} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button type="button" className="fm-anadir" onClick={() => setEligiendo(true)}>
+                <IconPlus size={13} strokeWidth={2.4} /> {t("detalleMiembro.familiaAnadir")}
+              </button>
+            </>
           )}
 
           {pestana === "asistencia" && (
@@ -312,6 +389,45 @@ export default function FichaMiembroIPad({ church, member, aportes, total, year,
           )}
         </div>
       </div>
+
+      {/* Elegir la persona: la misma hoja de buscador que asigna un puesto en
+          Servicios o el aportante en Nuevo ingreso. Aquí NO se ofrece texto
+          libre —un pariente es alguien del padrón, no un nombre suelto— y el
+          propio miembro se saca de la lista: nadie es pariente de sí mismo. */}
+      {eligiendo && (
+        <IOSBuscadorSheet
+          title={t("detalleMiembro.familiaElegir")}
+          placeholder={t("detalleMiembro.familiaBuscar")}
+          opciones={padron
+            .filter((m) => m.id !== member.id && !parientes.some((p) => p.member_id === m.id))
+            .map((m) => ({ id: String(m.id), titulo: m.nombre, sub: m.telefono }))}
+          seleccionado={null}
+          onElegir={(op) => {
+            setEligiendo(false);
+            setCandidato(padron.find((m) => String(m.id) === op.id) ?? null);
+          }}
+          onCancel={() => setEligiendo(false)}
+        />
+      )}
+
+      {/* Y qué es esa persona. Va en DOS pasos y no en uno: la lista de
+          parentescos son diez opciones y el padrón son cuatrocientos nombres;
+          meterlos en la misma hoja obligaría a elegir el parentesco primero,
+          que es al revés de como se piensa ("Ana… es mi hermana"). */}
+      {candidato && (
+        <ActionSheet
+          title={t("detalleMiembro.familiaQueEs", { nombre: candidato.nombre })}
+          options={TIPOS_PARENTESCO.map((tipo) => ({
+            label: t(`parentesco.${tipo}`),
+            onClick: () => {
+              const id = candidato.id;
+              setCandidato(null);
+              void anadirPariente(id, tipo);
+            },
+          }))}
+          onCancel={() => setCandidato(null)}
+        />
+      )}
     </>
   );
 }

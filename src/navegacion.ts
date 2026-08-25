@@ -11,7 +11,7 @@
 // Aquí solo vive la ESTRUCTURA. Los permisos siguen en `role.ts`
 // (`puedeVer`), que es su sitio, y este módulo los consulta.
 
-import { puedeVer, type Role } from "./role";
+import { puedeVer, SIN_PERMISOS, type Permisos, type Role } from "./role";
 
 /** De qué contador cuelga la insignia de un destino. Se guarda el nombre y no
  *  el número: la lista es estática y los contadores cambian, así que quien
@@ -77,8 +77,8 @@ export const AJUSTES: Destino = { ruta: "/configuracion", clave: "nav.configurac
 
 /** Las secciones de un área que este rol puede ver. Vacío = el área entera se
  *  le oculta. */
-export function seccionesVisibles(area: Area, rol: Role): Destino[] {
-  return area.secciones.filter((s) => puedeVer(rol, s.ruta));
+export function seccionesVisibles(area: Area, rol: Role, permisos: Permisos = SIN_PERMISOS): Destino[] {
+  return area.secciones.filter((s) => puedeVer(rol, s.ruta, permisos));
 }
 
 /** Las áreas con al menos una sección visible para este rol, **la más suya
@@ -90,10 +90,10 @@ export function seccionesVisibles(area: Area, rol: Role): Destino[] {
  *  ranura —delante de Secretaría, que es su trabajo— para llevarla a un único
  *  informe. Ordenando por cuántas secciones tiene cada quien, el área de uno
  *  va siempre delante de la que solo se asoma. */
-export function areasVisibles(rol: Role): Area[] {
+export function areasVisibles(rol: Role, permisos: Permisos = SIN_PERMISOS): Area[] {
   return AREAS
-    .filter((a) => seccionesVisibles(a, rol).length > 0)
-    .sort((a, b) => seccionesVisibles(b, rol).length - seccionesVisibles(a, rol).length);
+    .filter((a) => seccionesVisibles(a, rol, permisos).length > 0)
+    .sort((a, b) => seccionesVisibles(b, rol, permisos).length - seccionesVisibles(a, rol, permisos).length);
 }
 
 /** ¿A qué área pertenece esta ruta? `null` para Inicio, Mensajes, Ayuda y
@@ -139,8 +139,8 @@ export interface RanuraBarra {
  * La Bandeja no vale para todos: la secretaria **no puede verla**
  * (`role.ts`), así que su tercera ranura es Mensajes.
  */
-export function barraDeRol(rol: Role): RanuraBarra[] {
-  const areas = areasVisibles(rol);
+export function barraDeRol(rol: Role, permisos: Permisos = SIN_PERMISOS): RanuraBarra[] {
+  const areas = areasVisibles(rol, permisos);
 
   // La tercera ranura es la del medio a propósito: es el hueco que libera el
   // botón de crear al salirse de la barra, y el centro es lo que la mano
@@ -161,9 +161,9 @@ export function barraDeRol(rol: Role): RanuraBarra[] {
   // con el del área, porque poner "Tesorería" en una pestaña que solo lleva a
   // un informe promete un sitio entero que no existe.
   const comoArea = (a: Area): RanuraBarra => {
-    const suyas = seccionesVisibles(a, rol);
+    const suyas = seccionesVisibles(a, rol, permisos);
     if (suyas.length === 1) return { destino: suyas[0]!, atajo: true };
-    return { destino: { ruta: primeraSeccion(a, rol), clave: a.clave } };
+    return { destino: { ruta: primeraSeccion(a, rol, permisos), clave: a.clave } };
   };
 
   if (areas.length >= 2) {
@@ -195,7 +195,7 @@ export function barraDeRol(rol: Role): RanuraBarra[] {
 
 /** A dónde lleva tocar el nombre de un área: a su primera sección visible. Un
  *  área no es una pantalla, así que tiene que aterrizar en algún sitio. */
-export function primeraSeccion(area: Area, rol: Role): string {
-  return seccionesVisibles(area, rol)[0]?.ruta ?? "/";
+export function primeraSeccion(area: Area, rol: Role, permisos: Permisos = SIN_PERMISOS): string {
+  return seccionesVisibles(area, rol, permisos)[0]?.ruta ?? "/";
 }
 

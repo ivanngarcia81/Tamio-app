@@ -145,7 +145,7 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
                   en el iPhone por redundante, y aquí ya nunca lo es. */}
               {dep.periodo !== dep.fecha.slice(0, 7) && (
                 <div
-                  style={{ fontSize: 11.5, color: "var(--accent-4)", fontWeight: 600 }}
+                  style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--accent-4)", fontWeight: 600 }}
                   title={t("depositos.correspondeATitulo")}
                 >
                   {t("depositos.correspondeA", { periodo: mesLegible(dep.periodo) })}
@@ -156,17 +156,17 @@ export default function DepositoTable({ depositos, onEdit, onChanged }: Props) {
               <div className="truncate" style={{ fontWeight: 600 }} title={dep.cuenta_banco}>{dep.cuenta_banco}</div>
             </div>
             <div className="td">
-              <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={dep.referencia ?? undefined}>
+              <span className="truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }} title={dep.referencia ?? undefined}>
                 {dep.referencia ?? "—"}
               </span>
             </div>
             <div className="td">
-              <span className="truncate" style={{ fontSize: 12.5, color: "var(--text-2)" }} title={dep.notas ?? undefined}>
+              <span className="truncate" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }} title={dep.notas ?? undefined}>
                 {dep.notas ?? "—"}
               </span>
             </div>
             <div className="td" style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-              {fmtMoney(dep.monto)}<span className="cur" style={{ color: "var(--text-3)", fontWeight: 600, fontSize: 11, marginLeft: 3 }}>{dep.moneda}</span>
+              {fmtMoney(dep.monto)}<span className="cur" style={{ color: "var(--text-3)", fontWeight: 600, fontSize: "calc(11px * var(--fs-escala))", marginLeft: 3 }}>{dep.moneda}</span>
             </div>
             <div className="td td-acciones">
               <span className="row-actions">

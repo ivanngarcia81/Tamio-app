@@ -178,9 +178,9 @@ export default function ServicioModal(props: PropsServicio) {
 
           <Seccion titulo={t("servicios.secAsistencia")}>
             {rosterLoading ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>{t("common.preparando")}</div>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", padding: "8px 0" }}>{t("common.preparando")}</div>
             ) : roster.size === 0 && !servicio ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13, padding: "8px 0" }}>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", padding: "8px 0" }}>
                 {t("servicios.sinMiembrosActivos")}
               </div>
             ) : (
@@ -225,14 +225,14 @@ export default function ServicioModal(props: PropsServicio) {
                 </div>
 
                 {roster.size === 0 && servicio ? (
-                  <div style={{ color: "var(--text-3)", fontSize: 13, padding: "4px 0 8px" }}>
+                  <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", padding: "4px 0 8px" }}>
                     {t("servicios.servicioSinRoster")}{" "}
                     <button type="button" className="btn secondary" onClick={cargarActivos} style={{ marginLeft: 8 }}>
                       {t("servicios.cargarActivos")}
                     </button>
                   </div>
                 ) : visibles.length === 0 ? (
-                  <div style={{ color: "var(--text-3)", fontSize: 13, padding: "4px 0 8px" }}>
+                  <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", padding: "4px 0 8px" }}>
                     {t("servicios.rosterSinResultados")}
                   </div>
                 ) : (
@@ -244,7 +244,7 @@ export default function ServicioModal(props: PropsServicio) {
                       <RosterRow key={id} id={id} estado={e} conMotivo={anotarAusencias} onToggle={toggle} onRazon={setRazon} onRazonOtra={setRazonOtra} onSeguimiento={setSeguimiento} />
                     ))}
                     {presentesVisibles.length === 0 && (
-                      <div style={{ padding: "8px 12px", fontSize: 12.5, color: "var(--text-3)" }}>{t("servicios.nadieMarcado")}</div>
+                      <div style={{ padding: "8px 12px", fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-3)" }}>{t("servicios.nadieMarcado")}</div>
                     )}
                     <div className="roster-section-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                       <span>{t("servicios.ausentesLabel")} ({ausentesVisibles.length})</span>
@@ -324,7 +324,7 @@ export default function ServicioModal(props: PropsServicio) {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <label className="roster-followup" style={{ fontSize: 12.5 }}>
+                  <label className="roster-followup" style={{ fontSize: "calc(12.5px * var(--fs-escala))" }}>
                     <input type="checkbox" checked={v.primera_visita} onChange={(e) => setVisitante(i, { primera_visita: e.target.checked })} />
                     {t("servicios.visitantePrimeraVisita")}
                   </label>

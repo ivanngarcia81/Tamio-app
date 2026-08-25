@@ -22,6 +22,15 @@ export interface ChurchFormValues {
   moneda: string;
   /** Saldo de apertura como texto de formulario; se valida y parsea al guardar. */
   saldoInicial: string;
+  /** Controles de tesorería (migración 45). Solo se editan en el iPad —son
+   *  del handoff de iPad— pero viven en el formulario común porque el que
+   *  guarda es el mismo. `umbralComprobante` es texto de formulario, como el
+   *  saldo: vacío significa "el de la constante". */
+  avisarSinComprobante: boolean;
+  umbralComprobante: string;
+  avisarDuplicados: boolean;
+  /** Si los cortes nacen pidiendo la segunda firma (migración 47). */
+  pedirDobleFirma: boolean;
 }
 
 interface Props {

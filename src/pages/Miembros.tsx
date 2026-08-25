@@ -572,7 +572,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                           {fmtMoney(stat.totalAnio)}<span className="cur">{church.moneda}</span>
                         </span>
                       ) : (
-                        <span style={{ color: "var(--text-3)", fontSize: 15 }}>—</span>
+                        <span style={{ color: "var(--text-3)", fontSize: "calc(15px * var(--fs-escala))" }}>—</span>
                       )}
                     </div>
                     <RowMenu
@@ -611,7 +611,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                     <div className="td">
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {etiquetas.length === 0 && (
-                          <span style={{ color: "var(--text-3)", fontSize: 12 }}>—</span>
+                          <span style={{ color: "var(--text-3)", fontSize: "calc(12px * var(--fs-escala))" }}>—</span>
                         )}
                         {etiquetas.map((et) => (
                           <span key={et} className={`tag ${TAG_CLASS[et] ?? "otros"}`} title={TAG_CLASS[et] ? t(`etiqueta.${et}`) : et}>
@@ -621,17 +621,17 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                       </div>
                     </div>
                   )}
-                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                  <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                     {stat?.ultimoAporte ? fmtFechaCorta(stat.ultimoAporte) : "—"}
                   </div>
                   <div className="td" style={{ textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                     {stat?.totalAnio ? `${fmtMoney(stat.totalAnio)} ${church.moneda}` : "—"}
                   </div>
-                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                  <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                     <div className="truncate">{m.telefono ?? t("common.sinTelefono")}</div>
                     {/* El valor presente salía pelado ("57876") mientras el
                         ausente sí se explicaba: justo al revés de lo útil. */}
-                    <div className="truncate" style={{ fontSize: 11.5, color: "var(--text-3)" }} title={m.rfc ?? undefined}>
+                    <div className="truncate" style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }} title={m.rfc ?? undefined}>
                       {m.rfc ? `${t("campo.rfc")}: ${m.rfc}` : t("miembros.sinRfc")}
                     </div>
                   </div>

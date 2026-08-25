@@ -527,9 +527,9 @@ export default function FichaMiembroModal(props: PropsFicha) {
           {!crear && (<>
           <Seccion titulo={t("ficha.secAsistencia")}>
             {!asistencia ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("common.preparando")}</div>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("common.preparando")}</div>
             ) : asistencia.enRoster === 0 ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("ficha.sinAsistencias")}</div>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("ficha.sinAsistencias")}</div>
             ) : (
               <>
                 <div className="ficha-stats">
@@ -557,7 +557,7 @@ export default function FichaMiembroModal(props: PropsFicha) {
                 <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", maxHeight: 170, overflowY: "auto" }}>
                   {asistencia.historial.slice(0, 12).map((h, i) => (
                     <div key={i} className="roster-row" style={{ cursor: "default" }}>
-                      <span style={{ fontSize: 12.5, color: "var(--text-2)", width: 90, flex: "none", fontVariantNumeric: "tabular-nums" }}>
+                      <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)", width: 90, flex: "none", fontVariantNumeric: "tabular-nums" }}>
                         {fmtFechaCorta(h.fecha)}
                       </span>
                       <span className="roster-name" style={{ cursor: "default", fontWeight: 500 }}>
@@ -588,7 +588,7 @@ export default function FichaMiembroModal(props: PropsFicha) {
                 ["activo", "inactivo", "visitante", "enProceso", "trasladado", "retirado", "fallecido", "baja"].includes(k)
                   ? t(`membresia.estado.${k}`) : k;
               return (
-                <div style={{ fontSize: 13 }}>
+                <div style={{ fontSize: "calc(13px * var(--fs-escala))" }}>
                   <div style={{ color: "var(--text-3)", marginBottom: cambios.length || notasAdmin.length ? 12 : 0 }}>
                     {t("ficha.registradoEl", { fecha: member!.created_at ? member!.created_at.slice(0, 10) : "—" })}
                   </div>
@@ -597,7 +597,7 @@ export default function FichaMiembroModal(props: PropsFicha) {
                       <div className="form-label" style={{ marginBottom: 6 }}>{t("ficha.cambiosEstado")}</div>
                       {cambios.slice().reverse().map((c, i) => (
                         <div key={i} className="roster-row" style={{ cursor: "default" }}>
-                          <span style={{ fontSize: 12, color: "var(--text-3)", width: 90, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.fecha.slice(0, 10)}</span>
+                          <span style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)", width: 90, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.fecha.slice(0, 10)}</span>
                           <span className="roster-name" style={{ cursor: "default" }}>
                             {c.de ? `${nombreEstado(c.de)} → ${nombreEstado(c.a)}` : nombreEstado(c.a)}
                           </span>
@@ -610,7 +610,7 @@ export default function FichaMiembroModal(props: PropsFicha) {
                       <div className="form-label" style={{ marginBottom: 6 }}>{t("ficha.notasAdmin")}</div>
                       {notasAdmin.slice().reverse().map((n, i) => (
                         <div key={i} style={{ padding: "6px 0", borderBottom: i < notasAdmin.length - 1 ? "1px solid var(--line-soft)" : "none" }}>
-                          <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{n.fecha.slice(0, 16).replace("T", " ")}</div>
+                          <div style={{ fontSize: "calc(11.5px * var(--fs-escala))", color: "var(--text-3)" }}>{n.fecha.slice(0, 16).replace("T", " ")}</div>
                           <div>{n.texto}</div>
                         </div>
                       ))}
@@ -623,20 +623,20 @@ export default function FichaMiembroModal(props: PropsFicha) {
 
           <Seccion titulo={t("ficha.secDocumentos")}>
             {!docs ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("common.preparando")}</div>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("common.preparando")}</div>
             ) : docs.length === 0 ? (
-              <div style={{ color: "var(--text-3)", fontSize: 13 }}>{t("ficha.sinDocumentos")}</div>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("ficha.sinDocumentos")}</div>
             ) : (
               <div style={{ border: "1px solid var(--line)", borderRadius: "var(--radius-sm)", maxHeight: 170, overflowY: "auto" }}>
                 {docs.slice(0, 12).map((d, i) => (
                   <div key={i} className="roster-row" style={{ cursor: "default" }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, width: 130, flex: "none", fontVariantNumeric: "tabular-nums" }}>
+                    <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600, width: 130, flex: "none", fontVariantNumeric: "tabular-nums" }}>
                       {d.folio}
                     </span>
                     <span className="roster-name" style={{ cursor: "default", fontWeight: 500 }}>
                       {t(`ficha.docClase.${d.clase}`)}
                     </span>
-                    <span style={{ fontSize: 12, color: "var(--text-3)", flex: "none" }}>{fmtFechaCorta(d.fecha)}</span>
+                    <span style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)", flex: "none" }}>{fmtFechaCorta(d.fecha)}</span>
                     <span className="tag administracion">
                       {t(
                         d.clase === "carta"

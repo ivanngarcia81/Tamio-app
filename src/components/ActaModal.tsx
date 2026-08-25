@@ -153,7 +153,7 @@ export default function ActaModal(props: PropsActa) {
                   <button
                     type="button"
                     className="btn ia"
-                    style={{ padding: "4px 10px", fontSize: 12 }}
+                    style={{ padding: "4px 10px", fontSize: "calc(12px * var(--fs-escala))" }}
                     onClick={() => { setIaError(null); setIaAbierta(true); }}
                   >
                     <IconSparkles size={13} /> {t("actas.ia.boton")}
@@ -285,7 +285,7 @@ export default function ActaModal(props: PropsActa) {
                 </div>
               )}
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-3)" }}>{t("actas.notaFirmas")}</div>
+            <div style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)" }}>{t("actas.notaFirmas")}</div>
           </Seccion>
 
           {error && <div className="field-error">{error}</div>}

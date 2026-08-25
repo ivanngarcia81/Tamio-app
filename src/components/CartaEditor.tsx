@@ -893,7 +893,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
               <input className="form-input" value={f.cargo} onChange={(e) => setFirma(f.rol, { cargo: e.target.value })} />
             </div>
             <div className="form-group">
-              <label className="roster-followup" style={{ fontSize: 12.5, paddingBottom: 10 }}>
+              <label className="roster-followup" style={{ fontSize: "calc(12.5px * var(--fs-escala))", paddingBottom: 10 }}>
                 <input type="checkbox" checked={f.firmado} onChange={(e) => setFirma(f.rol, { firmado: e.target.checked })} />
                 {t("cartas.firmado")}
               </label>
@@ -999,7 +999,7 @@ export default function CartaEditor({ church, carta, members, dirtyRef, onSaved,
                   <IconWarn size={14} /> <span>{t("cartas.ia.reemplazar")}</span>
                 </div>
               )}
-              <div style={{ marginTop: 10, fontSize: 12, opacity: 0.72 }}>{t("cartas.ia.nota")}</div>
+              <div style={{ marginTop: 10, fontSize: "calc(12px * var(--fs-escala))", opacity: 0.72 }}>{t("cartas.ia.nota")}</div>
               {iaError && <div className="field-error" style={{ marginTop: 10 }}>{iaError}</div>}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
                 <button className="btn secondary" onClick={() => setIaAbierta(false)} disabled={iaGenerando}>{t("cartas.ia.cancelar")}</button>

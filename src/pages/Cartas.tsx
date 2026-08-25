@@ -821,7 +821,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 ) : (
                   cartas.slice(0, 5).map((c) => (
                     <div key={c.id} className="roster-row" style={{ cursor: "pointer" }} onClick={() => abrirCarta(c)}>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, width: 120, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.folio}</span>
+                      <span style={{ fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600, width: 120, flex: "none", fontVariantNumeric: "tabular-nums" }}>{c.folio}</span>
                       <span className="roster-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
                       <span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span>
                     </div>
@@ -929,7 +929,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                       style={{ cursor: "pointer" }}
                       onClick={() => setSolicitudModal({ open: true, solicitud: s })}
                     >
-                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{s.folio}</div>
+                      <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
                       <div className="td" style={{ minWidth: 0 }}>
                         <div className="p-name truncate">{nombreMiembro(s.member_id) ?? s.solicitante_externo ?? "—"}</div>
                         <div className="p-mail truncate">
@@ -937,10 +937,10 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                           {cartaVinculada ? ` · ${cartaVinculada.folio}` : ""}
                         </div>
                       </div>
-                      <div className="td" style={{ fontSize: 12, color: "var(--text-2)" }}>
+                      <div className="td" style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-2)" }}>
                         <div>{fmtFechaCorta(s.fecha_solicitud)}</div>
                         {s.fecha_requerida && (
-                          <div style={{ color: "var(--text-3)", fontSize: 11.5 }}>
+                          <div style={{ color: "var(--text-3)", fontSize: "calc(11.5px * var(--fs-escala))" }}>
                             {t("solicitudes.para")} {fmtFechaCorta(s.fecha_requerida)}
                           </div>
                         )}
@@ -1021,13 +1021,13 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     style={{ cursor: "pointer" }}
                     onClick={() => setTsModal({ open: true, traslado: s })}
                   >
-                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{s.folio}</div>
+                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
                     <div className="td" style={{ minWidth: 0 }}>
                       <div className="p-name truncate">{nombreMiembro(s.member_id) ?? "—"}</div>
                       <div className="p-mail truncate">{s.iglesia_destino ?? t("traslados.sinDestino")}</div>
                     </div>
-                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(s.fecha_solicitud)}</div>
-                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(s.fecha_solicitud)}</div>
+                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                       {s.confirmacion_recibida === 1
                         ? `${t("common.si")}${s.fecha_confirmacion ? ` · ${fmtFechaCorta(s.fecha_confirmacion)}` : ""}`
                         : t("common.no")}
@@ -1102,15 +1102,15 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     style={{ cursor: "pointer" }}
                     onClick={() => setTeModal({ open: true, traslado: s })}
                   >
-                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{s.folio}</div>
+                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{s.folio}</div>
                     <div className="td" style={{ minWidth: 0 }}>
                       <div className="p-name truncate">{s.nombre}</div>
                       <div className="p-mail truncate">{s.iglesia_procedencia ?? "—"}</div>
                     </div>
-                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                       {s.fecha_recepcion ? fmtFechaCorta(s.fecha_recepcion) : "—"}
                     </div>
-                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                       {s.adjunto_nombre ? <span className="truncate" title={s.adjunto_nombre}>📎 {s.adjunto_nombre}</span> : "—"}
                     </div>
                     <div className="td"><span className={`tag ${BADGE_TE[s.estado] ?? "otros"}`}>{t(`traslados.estadoTE.${s.estado}`)}</span></div>
@@ -1150,7 +1150,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                   <div className="td" style={{ minWidth: 0 }}>
                     <div className="p-name truncate">{p.nombre}</div>
                   </div>
-                  <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>
+                  <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>
                     <div className="truncate">{t(`cartas.tipoDoc.${p.tipo}`)}</div>
                   </div>
                   <div className="td" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -1283,14 +1283,14 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                     style={{ cursor: "pointer" }}
                     onClick={() => abrirCarta(c)}
                   >
-                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: 12.5, fontWeight: 600 }}>{c.folio}</div>
+                    <div className="td" style={{ fontVariantNumeric: "tabular-nums", fontSize: "calc(12.5px * var(--fs-escala))", fontWeight: 600 }}>{c.folio}</div>
                     <div className="td" style={{ minWidth: 0 }}>
                       <div className="p-name truncate">{c.destinatario_nombre}</div>
                       <div className="p-mail truncate">{t(`cartas.tipoDoc.${c.tipo}`)}{c.asunto ? ` · ${c.asunto}` : ""}</div>
                     </div>
-                    <div className="td" style={{ fontSize: 12.5, color: "var(--text-2)" }}>{fmtFechaCorta(c.fecha_emision)}</div>
+                    <div className="td" style={{ fontSize: "calc(12.5px * var(--fs-escala))", color: "var(--text-2)" }}>{fmtFechaCorta(c.fecha_emision)}</div>
                     <div className="td"><span className={`tag ${BADGE_ESTADO[c.estado] ?? "otros"}`}>{t(`cartas.estado.${c.estado}`)}</span></div>
-                    <div className="td" style={{ fontSize: 12, color: "var(--text-3)" }}>{c.modificado_en.slice(0, 10)}</div>
+                    <div className="td" style={{ fontSize: "calc(12px * var(--fs-escala))", color: "var(--text-3)" }}>{c.modificado_en.slice(0, 10)}</div>
                     <div className="td td-acciones" onClick={(e) => e.stopPropagation()}>
                       <span className="row-actions">
                         <span className="row-icon-btn" title={t("cartas.imprimirPdf")} onClick={() => imprimir(c)}>

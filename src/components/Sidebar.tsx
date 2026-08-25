@@ -4,7 +4,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { rutaEnDatos } from "../services/archivos";
 import { useTranslation } from "react-i18next";
 import type { Church } from "../db";
-import type { Role } from "../role";
+import { permisosDe, type Role } from "../role";
 import { incluyeTesoreria, incluyeSecretaria } from "../plan";
 import { iniciales } from "../services/avatar";
 import SyncIndicator from "./SyncIndicator";
@@ -109,6 +109,11 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
   // módulo, donde oculta el área no contratada.
   const verGrupoTesoreria = incluyeTesoreria(church.plan);
   const verGrupoSecretaria = incluyeSecretaria(church.plan);
+  /** Permiso de la iglesia (migración 49): al tesorero se le abre Membresía,
+   *  el padrón de Secretaría. Solo esa pantalla — el resto del área sigue
+   *  fuera, porque un permiso que abriera Actas y Cartas ya no sería un
+   *  permiso sino otro rol. */
+  const tesoreroVePadron = esTesorero && permisosDe(church).vePadron;
   const initials = church.nombre
     .split(" ")
     .filter((w) => w.length > 2)
@@ -219,14 +224,14 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
           </Grupo>
         )}
 
-        {verGrupoSecretaria && !esTesorero && (
+        {verGrupoSecretaria && (!esTesorero || tesoreroVePadron) && (
           <Grupo abierto={open.secretaria} etiqueta={t("nav.grupoSecretaria")} onToggle={() => toggle("secretaria")}>
             <Item to="/membresia" icon={<IconIdBadge size={18} />} label={t("nav.membresia")} />
-            <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />
-            <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />
-            <Item to="/cartas" icon={<IconMail />} label={t("nav.cartas")} />
-            <Item to="/reporte-miembros" icon={<IconClipboardList />} label={t("nav.reporteMiembros")} />
-            <Item to="/agenda" icon={<IconCalendar />} label={t("nav.agenda")} />
+            {!esTesorero && <Item to="/actas" icon={<IconFileText size={18} />} label={t("nav.actas")} />}
+            {!esTesorero && <Item to="/servicios" icon={<IconBookOpen />} label={t("nav.servicios")} />}
+            {!esTesorero && <Item to="/cartas" icon={<IconMail />} label={t("nav.cartas")} />}
+            {!esTesorero && <Item to="/reporte-miembros" icon={<IconClipboardList />} label={t("nav.reporteMiembros")} />}
+            {!esTesorero && <Item to="/agenda" icon={<IconCalendar />} label={t("nav.agenda")} />}
           </Grupo>
         )}
       </nav>

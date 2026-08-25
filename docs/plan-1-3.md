@@ -5,7 +5,14 @@ _Abierto el 22 de agosto de 2026, al preparar la 1.2 para TestFlight._
 Esto **no se escribió hoy**. Son los siete puntos que el reparto del 4 de
 agosto apartó de la 1.1 (`docs/plan-1-1.md` → *Alcance*), y que aquel plan
 dejó dicho que se moverían a un archivo propio en cuanto la 1.1 cerrara.
-La 1.1 cerró: la 1.1.9 está en TestFlight.
+La 1.1 cerró.
+
+> **Corregido el 24 de agosto de 2026, por la noche.** Esta línea decía "la
+> 1.1.9 está en TestFlight" y **no era verdad**: Iván comprobó en App Store
+> Connect que lo más alto subido es la **1.2.8**. La 1.1.9 se preparó y nunca
+> llegó a subir, igual que la 1.2.9. Lo que cerró la 1.1 fue el trabajo, no
+> una subida. Ver el recuadro de `docs/testflight.md` sobre por qué el
+> repositorio no distingue "preparada" de "subida".
 
 **Iban a la 1.2 y ahora van a la 1.3.** La 1.2 se usó para otra cosa —el
 rediseño de iPad, que se hizo entero entre el 21 y el 22 de agosto y no

@@ -34,16 +34,19 @@ import { useTranslation } from "react-i18next";
 import { openPath } from "@tauri-apps/plugin-opener";
 import {
   corteDeDeposito, fmtFechaCorta, fmtMoney, mesLegible, metodoAbr, movimientosDeDeposito,
-  reabrirCorte, type Corte, type Deposito, type Tx,
+  reabrirCorte, type Church, type Corte, type Deposito, type Tx,
 } from "../db";
 import { restar, sumar, type Centavos } from "../dinero";
 import { rutaComprobante } from "../services/comprobantes";
+import { printDepositoPdf } from "../services/print/printDeposito";
 import { showToast } from "../toast";
 import { MenuAnchor, type MenuItem } from "./MenuAnchor";
 import { IconCheck, IconChevronLeft, IconClip, IconEdit, IconShare, IconTrash } from "../icons";
 
 interface Props {
   dep: Deposito;
+  /** La iglesia, para el membrete del comprobante en PDF. */
+  church: Church;
   /** Título de la lista de la que se vino: es el texto del botón de volver,
    *  como hace Mail con el buzón. Solo se pinta en el modo de empuje. */
   tituloLista: string;
@@ -57,10 +60,25 @@ interface Props {
 }
 
 export default function DetalleDeposito({
-  dep, tituloLista, onVolver, onEditar, onEliminar, onVerComprobante, onCambiado,
+  dep, church, tituloLista, onVolver, onEditar, onEliminar, onVerComprobante, onCambiado,
 }: Props) {
   const { t } = useTranslation();
   const [menu, setMenu] = useState(false);
+  const [compartiendo, setCompartiendo] = useState(false);
+
+  /** "Compartir": el comprobante en PDF por la hoja del sistema. Cancelar la
+   *  hoja no es un error y no dice nada — `entregarArchivo` ya distingue el
+   *  AbortError de un fallo de verdad. */
+  async function compartir() {
+    setCompartiendo(true);
+    try {
+      await printDepositoPdf(church, dep);
+    } catch (e) {
+      showToast(t("common.noSePudoImprimir", { error: String(e) }));
+    } finally {
+      setCompartiendo(false);
+    }
+  }
   /* El corte que cerró este depósito, si lo hubo. De él salen el desglose,
      la lista de movimientos y la conciliación: las tres cosas que hasta la
      1.2.9 eran plantillas con su explicación. Un depósito registrado con
@@ -153,10 +171,18 @@ export default function DetalleDeposito({
           </p>
         </div>
         <div className="dep-det-acciones">
-          {/* Sin hoja de compartir en la app, el botón se pinta y se apaga con
-              su explicación. Cuando exista, solo se le quita el `disabled`. */}
-          <button type="button" className="btn secondary" disabled title={t("depositos.compartirAyuda")}>
-            <IconShare size={14} strokeWidth={2} /> {t("depositos.compartir")}
+          {/* Encendido: saca el comprobante en PDF y lo entrega por la hoja
+              nativa del iPad —Archivos, AirDrop, Mail, Imprimir—. Lo que
+              faltaba no era la hoja (la app la usa en cada reporte desde
+              siempre), era el DOCUMENTO; está en `printDeposito.ts`. */}
+          <button
+            type="button"
+            className="btn secondary"
+            disabled={compartiendo}
+            onClick={() => void compartir()}
+          >
+            <IconShare size={14} strokeWidth={2} />
+            {compartiendo ? t("common.preparando") : t("depositos.compartir")}
           </button>
           <MenuAnchor
             open={menu}

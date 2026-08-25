@@ -61,6 +61,9 @@ export default function NuevoCorteIOS({
   const { t } = useTranslation();
   const titulo = t("depositos.nuevoCorte");
   const [nombreCorte, setNombreCorte] = useState(nombre);
+  /* La política de la iglesia es el valor por OMISIÓN, no una orden: este
+     corte puede pedirla o no aunque la iglesia diga otra cosa. */
+  const [dobleFirma, setDobleFirma] = useState(church.pedir_doble_firma === 1);
   const [responsable, setResponsable] = useState(responsablePrevio);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [guardando, setGuardando] = useState(false);
@@ -93,6 +96,7 @@ export default function NuevoCorteIOS({
           nombre: nombreCorte.trim(),
           cuenta_banco: cuenta || null,
           responsable: responsable.trim() || null,
+          dobleFirma,
         },
         marcados.map((m) => m.id),
       );
@@ -224,17 +228,22 @@ export default function NuevoCorteIOS({
                 disabled
                 title={t("depositos.fichaLaDaElBanco")}
               />
-              {/* Apagado por DECISIÓN, no por hueco: Iván eligió constancia
-                  —se anota a quién se le entregó— y no acuse —que el que
-                  recibe confirme—. Si algún día quiere lo segundo, esto es
-                  donde se enciende. */}
+              {/* **Encendido desde la migración 47.** Estuvo apagado dos
+                  veces y por motivos distintos: primero por falta de columna,
+                  y después un día entero por decisión —constancia y no
+                  acuse—. La conversación del 24 de agosto cambió esa
+                  decisión al aclarar qué es la segunda firma en esta iglesia:
+                  no que el que recibe confirme, sino que otra persona vuelva
+                  a CONTAR el dinero antes de que salga.
+
+                  Nace con lo que diga la política de la iglesia, y aquí se
+                  cambia para este corte suelto. El handoff dibuja un control
+                  en cada sitio y ahora los dos significan algo. */}
               <SwitchField
                 label={t("controlesTesoreria.dobleFirma")}
-                sub={t("depositos.dobleFirmaDecision")}
-                checked={false}
-                onChange={() => { }}
-                disabled
-                title={t("depositos.dobleFirmaDecision")}
+                sub={t("depositos.dobleFirmaSub")}
+                checked={dobleFirma}
+                onChange={setDobleFirma}
               />
             </Section>
 

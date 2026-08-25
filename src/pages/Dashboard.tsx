@@ -33,6 +33,9 @@ interface Props {
   onEditTx: (tx: Tx) => void;
   onChanged: () => void;
   onNew: () => void;
+  /** Permiso de la iglesia (migración 49): sin él la lista de movimientos
+   *  recientes no ofrece Eliminar. */
+  puedeEliminar?: boolean;
 }
 
 const IosChevron = () => (
@@ -85,7 +88,7 @@ function toCumulativeBalance(dias: DailyPoint[]) {
   });
 }
 
-export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew }: Props) {
+export default function Dashboard({ church, refreshKey, memberCount, onEditTx, onChanged, onNew, puedeEliminar = true }: Props) {
   const { t, i18n } = useTranslation();
   // Igual que en Miembros.tsx: el carrusel/la barra ya sitúan la pantalla, y
   // en el teléfono manda el idioma de panel. Mac no cambia.
@@ -393,7 +396,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         <span className="card-meta">{mesLegible(mes)}</span>
       </div>
       {topGastos.length === 0 ? (
-        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 13 }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
+        <div style={{ padding: "20px 0", color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>{t("dashboard.sinGastosEsteMesPunto")}</div>
       ) : (
         topGastos.map((g) => (
           <div className="hbar-row" key={g.id}>
@@ -947,7 +950,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                       </div>
                     </div>
                     <div className="ios-txrow-trailing">
-                      <span style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{fmtMoney(g.monto)}</span>
+                      <span style={{ fontWeight: 700, fontSize: "calc(15px * var(--fs-escala))", fontVariantNumeric: "tabular-nums" }}>{fmtMoney(g.monto)}</span>
                     </div>
                   </div>
                 ))}
@@ -981,7 +984,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             duplicaCrear
           />
         ) : (
-          <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} />
+          <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
         )}
           </>
         )}

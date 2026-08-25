@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  cerrarCorte, countDepositos, countPendingTx, currentMonth, currentYear, deleteCorte,
-  depositosSinCorte, efectivoDisponibleHasta, fmtFechaCorta, fmtMoney, hoyISO, listCortes,
-  insertCorte, listDepositos, listTx, mesLegible, monthDepositos, movimientosDeCorte, txEnCorte,
-  type Church, type Corte, type Deposito, type Tx,
+  candidatosSegundaFirma, cerrarCorte, countDepositos, countPendingTx, currentMonth, currentYear,
+  deleteCorte, depositosSinCorte, efectivoDisponibleHasta, firmarCorte, fmtFechaCorta, fmtMoney,
+  hoyISO, listCortes, insertCorte, listDepositos, listTx, mesLegible, monthDepositos,
+  movimientosDeCorte, quitarFirmaCorte, txEnCorte,
+  type Church, type Corte, type Deposito, type Tx, type Usuario,
 } from "../db";
+import SegundaFirmaIOS from "../components/SegundaFirmaIOS";
 import { EmptyState } from "../components/TxList";
 import DepositoTable from "../components/DepositoTable";
 import DepositoModal from "../components/DepositoModal";
@@ -96,6 +98,58 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
    *  normal: se lleva al banco lo que hay, y se desmarca la excepción. */
   const [marcados, setMarcados] = useState<Set<number>>(new Set());
   const [hojaCorte, setHojaCorte] = useState(false);
+  /* ---- La segunda firma del corte (migración 47) ----
+     El corte que se está firmando y quiénes pueden hacerlo. Los candidatos se
+     piden al abrir la hoja y no antes: son una consulta al directorio que la
+     pantalla no necesita hasta ese momento. */
+  const [firmando, setFirmando] = useState<Corte | null>(null);
+  const [candidatos, setCandidatos] = useState<Usuario[]>([]);
+
+  async function abrirSegundaFirma(corte: Corte) {
+    try {
+      setCandidatos(await candidatosSegundaFirma(church.id, corte.registrado_por));
+    } catch (e) {
+      console.error(e);
+      setCandidatos([]);
+    }
+    setFirmando(corte);
+  }
+
+  async function guardarFirma(
+    corte: Corte,
+    v: { nombre: string; rol: string | null; modo: "conteo" | "revision"; conteo: Centavos | null },
+  ) {
+    try {
+      await firmarCorte(corte.id, church.id, v);
+      playSound("guardado");
+      showToast(t("dobleFirma.toastFirmado", { nombre: v.nombre }));
+      onChanged();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+    setFirmando(null);
+  }
+
+  /** Contó y no cuadró: la cifra se guarda y la firma NO se da. */
+  async function guardarDescuadre(corte: Corte, conteo: Centavos) {
+    try {
+      await firmarCorte(corte.id, church.id, { nombre: null, rol: null, modo: "conteo", conteo });
+      showToast(t("dobleFirma.toastDescuadre"));
+      onChanged();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+    setFirmando(null);
+  }
+
+  async function quitarFirma(corte: Corte) {
+    try {
+      await quitarFirmaCorte(corte.id, church.id);
+      onChanged();
+    } catch (e) {
+      showToast(t("common.noSePudoGuardar", { error: String(e) }));
+    }
+  }
   const [prefill, setPrefill] = useState<{ monto: Centavos; cuenta: string; fecha: string; periodo: string } | null>(null);
   /**
    * Qué corte hay que cerrar cuando se guarde el depósito que se está
@@ -653,6 +707,10 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                           onNuevoCorte={() => setHojaCorte(true)}
                           onMarcarDepositado={marcarDepositado}
                           onDeshacer={() => void deshacerCorte(corteAbierto)}
+                          onSegundaFirma={() => void abrirSegundaFirma(corteAbierto)}
+                          onQuitarFirma={corteAbierto.segunda_firma
+                            ? () => void quitarFirma(corteAbierto)
+                            : undefined}
                         />
                       );
                     }
@@ -692,6 +750,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
                     return (
                       <DetalleDeposito
                         dep={det}
+                        church={church}
                         tituloLista={t("depositos.titulo")}
                         onVolver={() => setSelId(null)}
                         onEditar={abrirEditar}
@@ -820,6 +879,26 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           responsablePrevio={responsablePrevio}
           onClose={() => setHojaCorte(false)}
           onCreado={() => { setSelPend(null); setRecargaCortes((n) => n + 1); }}
+        />
+      )}
+
+      {/* La segunda firma. El total que tiene que adivinar sale de los
+          movimientos del corte, no de una cifra tecleada: es lo mismo que la
+          pantalla suma, así que no puede descuadrarse consigo misma.
+
+          `soloRevision` cuando el corte ya está depositado: el dinero está en
+          el banco y contar deja de ser posible. Decirlo es más honesto que
+          ofrecer un conteo que nadie puede hacer. */}
+      {firmando && (
+        <SegundaFirmaIOS
+          corte={firmando}
+          total={sumar(...movsCorte.map((m) => m.monto))}
+          moneda={church.moneda}
+          candidatos={candidatos}
+          soloRevision={firmando.estado === "depositado"}
+          onFirmar={(v) => void guardarFirma(firmando, v)}
+          onDescuadre={(conteo) => void guardarDescuadre(firmando, conteo)}
+          onClose={() => setFirmando(null)}
         />
       )}
 

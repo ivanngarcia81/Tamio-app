@@ -886,6 +886,276 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- el catálogo no puede prever todos los casos de una iglesia.
             ALTER TABLE members ADD COLUMN estado_civil TEXT;
         "#,
+    }, motordb::Migracion {
+        version: 43,
+        description: "roster por puestos y orden del culto",
+        sql: r#"
+            -- Los dos huecos grandes que quedaban de Servicios, y son el
+            -- mismo hueco visto de dos maneras: QUIÉN hace cada cosa en el
+            -- culto y CUÁNDO se hace.
+            --
+            -- Hasta aquí un servicio guardaba `predica` y `dirige` —dos
+            -- columnas sueltas— y una lista JSON de `participaciones` sin
+            -- forma. El handoff dibuja seis puestos; dos existían y cuatro
+            -- decían "Sin asignar" con un botón apagado al lado. El catálogo
+            -- de puestos NO es una tabla: vive en la constante `PUESTOS` de
+            -- `src/db.ts`, con los otros catálogos, porque son los seis del
+            -- diseño y
+            -- una iglesia no los inventa cada domingo. Lo que sí cambia cada
+            -- domingo —quién los cubre— es lo que se guarda aquí.
+            --
+            -- `nombre` es una INSTANTÁNEA, como `cortes.responsable` y como
+            -- `registrado_por`: quien toca el teclado el domingo puede no
+            -- estar en el padrón (un visitante que ayuda en sonido), y el
+            -- histórico tiene que seguir diciendo quién fue aunque esa
+            -- persona se dé de baja. `member_id` se guarda ADEMÁS cuando sale
+            -- del padrón, para poder contar después cuántas veces sirvió
+            -- alguien sin depender de cómo se escribió su nombre.
+            --
+            -- El índice único es PARCIAL —solo sobre las filas vivas—, la
+            -- lección de la migración 40: con el borrado en blando, un puesto
+            -- soltado seguiría ocupando su sitio y no se podría reasignar.
+            CREATE TABLE IF NOT EXISTS servicio_puestos (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                servicio_id INTEGER NOT NULL REFERENCES servicios(id) ON DELETE CASCADE,
+                puesto      TEXT NOT NULL,   -- clave del catálogo: alabanza|ujieres|ofrenda|sonido
+                nombre      TEXT NOT NULL,
+                member_id   INTEGER REFERENCES members(id) ON DELETE SET NULL,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                uid         TEXT,
+                updated_at  TEXT,
+                deleted     INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_servicio_puestos_vivo
+                ON servicio_puestos(servicio_id, puesto) WHERE deleted = 0;
+            CREATE INDEX IF NOT EXISTS idx_servicio_puestos_sync
+                ON servicio_puestos(church_id, updated_at);
+
+            -- El minuto a minuto. `posicion` manda sobre `hora`, y no al
+            -- revés: un culto puede tener pasos sin hora ("Ofrenda", después
+            -- de la predicación, cuando toque) y ordenarlos por una hora que
+            -- no existe los mandaría todos al principio. La hora es un dato
+            -- que se enseña; el orden es la posición.
+            CREATE TABLE IF NOT EXISTS servicio_orden (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                servicio_id INTEGER NOT NULL REFERENCES servicios(id) ON DELETE CASCADE,
+                posicion    INTEGER NOT NULL DEFAULT 0,
+                hora        TEXT,            -- "HH:MM", suelta a propósito
+                titulo      TEXT NOT NULL,
+                encargado   TEXT,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                uid         TEXT,
+                updated_at  TEXT,
+                deleted     INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_servicio_orden_servicio
+                ON servicio_orden(servicio_id, posicion);
+            CREATE INDEX IF NOT EXISTS idx_servicio_orden_sync
+                ON servicio_orden(church_id, updated_at);
+        "#,
+    }, motordb::Migracion {
+        version: 44,
+        description: "firmas del acta: quién ha firmado y cuándo",
+        sql: r#"
+            -- "Recopilar firmas". El acta sabía QUIÉNES firman —preside,
+            -- secretario y, desde la 41, testigo— pero no si habían firmado
+            -- ni cuándo, así que el botón salía apagado y un acta aprobada no
+            -- se distinguía de una que sigue dando vueltas sin firmar.
+            --
+            -- Es JSON y no tres columnas de fecha, y la razón no es la pereza:
+            -- las cartas resuelven exactamente esto con `cartas.firmas` desde
+            -- hace versiones (ver `CartaFirma`), y dos formas distintas de
+            -- guardar lo mismo en la misma app se acaban comportando
+            -- distinto. El arreglo lleva {rol, firmado, fecha} por firmante.
+            --
+            -- El NOMBRE no entra en el JSON: sigue en `preside`, `secretario`
+            -- y `testigo`. Duplicarlo dejaría dos copias que se separan a la
+            -- primera corrección de un nombre mal escrito.
+            ALTER TABLE actas ADD COLUMN firmas TEXT NOT NULL DEFAULT '[]';
+        "#,
+    }, motordb::Migracion {
+        version: 45,
+        description: "controles de tesorería: los dos avisos, ahora ajustables",
+        sql: r#"
+            -- Los dos primeros "Controles de tesorería" del handoff. Iban
+            -- dibujados y ENCENDIDOS —y apagados como mando— porque describían
+            -- algo que la app ya hacía de verdad: el aviso de gasto sin
+            -- comprobante sobre `UMBRAL_COMPROBANTE` y la regla `duplicado` de
+            -- `alertas.ts`. Lo que no se podía era cambiarlos. Estas tres
+            -- columnas es lo que faltaba.
+            --
+            -- **Tres columnas y no dos**, y la de más es la que evita una
+            -- mentira: sin `avisar_sin_comprobante`, apagar el aviso habría
+            -- que representarlo con un umbral imposible (0, o -1), y un
+            -- umbral que en realidad significa "no avises" es la clase de
+            -- dato que se malinterpreta al leerlo seis meses después.
+            --
+            -- `umbral_comprobante` en NULL significa "el de la constante", no
+            -- cero: una iglesia que nunca tocó el ajuste sigue con el
+            -- comportamiento de siempre, y si algún día la constante cambia,
+            -- cambia con ella. Solo deja de seguirla quien elige un número.
+            ALTER TABLE churches ADD COLUMN avisar_sin_comprobante INTEGER NOT NULL DEFAULT 1;
+            ALTER TABLE churches ADD COLUMN umbral_comprobante INTEGER;
+            ALTER TABLE churches ADD COLUMN avisar_duplicados INTEGER NOT NULL DEFAULT 1;
+        "#,
+    }, motordb::Migracion {
+        version: 46,
+        description: "parentescos: la pestaña Familia de la ficha del miembro",
+        sql: r#"
+            -- La pestaña "Familia" del handoff llevaba desde el primer día
+            -- construida y vacía, con su explicación: `members` no guardaba
+            -- relaciones. Esta es la tabla que le faltaba.
+            --
+            -- **Una fila por relación, no dos.** La fila dice "`pariente_id`
+            -- es el `tipo` de `member_id`" y la ficha del OTRO la lee al revés
+            -- con el inverso del tipo (ver `INVERSO_PARENTESCO` en db.ts).
+            -- Guardar las dos direcciones habría duplicado cada escritura y,
+            -- con ella, la posibilidad de que se separen: corriges una y la
+            -- otra se queda contando otra historia.
+            --
+            -- **El catálogo es NEUTRO** —"Padre o madre", "Hijo o hija",
+            -- "Hermano o hermana"— y no por corrección: `members` no guarda
+            -- sexo, así que "hija" sería un dato inventado por la interfaz.
+            -- Además hace que cada inverso sea único: el inverso de "hijo" es
+            -- "padre" y punto, sin tener que adivinar de quién.
+            --
+            -- El índice único es PARCIAL y sobre el PAR, en las dos
+            -- direcciones no: dos personas se relacionan una vez, pero la
+            -- comprobación de "ya está al revés" la hace `insertParentesco`,
+            -- que es donde se puede dar un mensaje en vez de un error de SQL.
+            CREATE TABLE IF NOT EXISTS parentescos (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                church_id   INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
+                member_id   INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                pariente_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+                tipo        TEXT NOT NULL,
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                uid         TEXT,
+                updated_at  TEXT,
+                deleted     INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_parentescos_par_vivo
+                ON parentescos(member_id, pariente_id) WHERE deleted = 0;
+            CREATE INDEX IF NOT EXISTS idx_parentescos_pariente
+                ON parentescos(pariente_id);
+            CREATE INDEX IF NOT EXISTS idx_parentescos_sync
+                ON parentescos(church_id, updated_at);
+        "#,
+    }, motordb::Migracion {
+        version: 47,
+        description: "doble firma del corte: la segunda persona que cuenta",
+        sql: r#"
+            -- "Pedir doble firma", el interruptor que el handoff 1 dibujó y que
+            -- llevaba desde entonces apagado. Primero por falta de columna;
+            -- después, un día, por decisión —Iván eligió constancia y no
+            -- acuse—. Esta migración llega de una conversación que cambió esa
+            -- decisión, y el porqué está en docs/cascaras-1-2.md.
+            --
+            -- Qué es la segunda firma en esta iglesia, con sus palabras: la
+            -- tesorera cuenta el dinero y hay una segunda persona —la
+            -- asistente, la que la sustituye cuando falta— que lo vuelve a
+            -- contar y confirma que todo está bien.
+            --
+            -- **`segunda_firma_modo` es la columna que hace honesto el
+            -- documento.** Contar el dinero y revisar el registro son dos
+            -- controles distintos: el primero compara el efectivo físico
+            -- contra lo apuntado; el segundo solo puede decir que lo apuntado
+            -- es coherente consigo mismo. Cuando la firma llega días después
+            -- —desde la bandeja, con el dinero ya en el banco— solo cabe el
+            -- segundo. Guardar los dos bajo la misma etiqueta convertiría el
+            -- comprobante en un papel que dice más de lo que sabe.
+            --
+            -- **`segunda_conteo` se guarda AUNQUE no haya firma.** Si lo
+            -- contado no cuadra con el total, la cifra queda escrita y la
+            -- firma no se da: perder ese número sería perder justo el dato por
+            -- el que se cuenta dos veces.
+            --
+            -- Todas nullables y aditivas: ningún corte existente cambia, y un
+            -- corte sin segunda firma sigue siendo válido. El control avisa,
+            -- no bloquea — decisión de Iván.
+            ALTER TABLE cortes ADD COLUMN doble_firma_pedida INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE cortes ADD COLUMN segunda_firma      TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_firma_rol  TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_firma_en   TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_firma_modo TEXT;
+            ALTER TABLE cortes ADD COLUMN segunda_conteo     INTEGER;
+
+            -- La política de la iglesia: si los cortes nacen pidiendo la
+            -- segunda firma. Es el valor POR OMISIÓN de la marca de arriba, no
+            -- una orden: la hoja del corte puede cambiarlo suelto — el handoff
+            -- dibuja un control en cada sitio y los dos significan algo.
+            --
+            -- Local a propósito, como los otros tres controles de tesorería:
+            -- `churches` no viaja por columnas sino como configuración de la
+            -- instalación. Lo que SÍ viaja es la marca de cada corte, que es
+            -- la que decide si a ese corte le falta una firma.
+            ALTER TABLE churches ADD COLUMN pedir_doble_firma INTEGER NOT NULL DEFAULT 0;
+        "#,
+    }, motordb::Migracion {
+        version: 48,
+        description: "folio del movimiento: 2026-0042",
+        sql: r#"
+            -- El folio que el handoff dibuja bajo cada movimiento ("Folio
+            -- 1042") y que se dejó sin pintar desde el primer día, porque un
+            -- número inventado se lee como un dato de contabilidad. Decidido
+            -- con Iván el 24 ago 2026, con la forma de los demás folios de la
+            -- app pero sin prefijo: `2026-0042`.
+            --
+            -- Sirve para lo que sirve un folio: poder decir "revisa el 0042"
+            -- por teléfono, escribirlo en el recibo de papel y que un auditor
+            -- señale una línea sin ambigüedad.
+            --
+            -- **Nullable, y el pasado NO se numera.** Decisión suya. Numerar
+            -- hacia atrás obligaría a inventar un orden dentro de cada día, y
+            -- ese orden inventado se leería como el que tuvieron. Los
+            -- movimientos de antes de hoy se quedan sin folio y la serie
+            -- arranca aquí; la pantalla no pinta la fila cuando falta.
+            --
+            -- `folio_seq` guarda el correlativo suelto para hacer MAX+1 sin
+            -- parsear el texto, igual que `numero_seq` en cartas.
+            --
+            -- SIN índice único, y no por descuido: dos aparatos sin conexión
+            -- calculan el mismo número y la sincronización los junta. Es el
+            -- mismo caso que el "bug del CAR duplicado" de las cartas, que se
+            -- resuelve reparando después (`repararFoliosMovimiento`) y no
+            -- impidiendo la escritura — un único aquí convertiría la
+            -- reparación en un error de subida que corta la sincronización de
+            -- todas las tablas.
+            ALTER TABLE transactions ADD COLUMN folio     TEXT;
+            ALTER TABLE transactions ADD COLUMN folio_seq INTEGER;
+            CREATE INDEX IF NOT EXISTS idx_tx_folio ON transactions(church_id, folio);
+        "#,
+    }, motordb::Migracion {
+        version: 49,
+        description: "los dos permisos del rol Tesorería",
+        sql: r#"
+            -- Los cuatro interruptores que el rediseño de iPad dibujó en
+            -- "Permisos del rol Tesorería" se quedan en DOS, porque los otros
+            -- dos nunca fueron permisos: registrar ingresos y cerrar cortes
+            -- SON el rol. Apagarlos no le quita un permiso a la tesorera; la
+            -- deja dentro de Tesorería sin poder hacer nada, que es otro rol
+            -- —uno de solo lectura— y no un permiso suyo.
+            --
+            -- Viven en la IGLESIA y no en la persona (Iván, 24 ago 2026): una
+            -- regla que el administrador enciende una vez y que vale para
+            -- quien ocupe el puesto, hoy y el año que viene.
+            --
+            -- **Estas dos columnas son un ESPEJO, no la verdad.** La verdad
+            -- vive en `iglesias` de Supabase y baja con el plan, por el mismo
+            -- camino y por el mismo motivo: un permiso que el aparato pudiera
+            -- cambiar no sería un permiso, sería una preferencia. Aquí se
+            -- guardan para que la interfaz sepa qué esconder sin señal.
+            --
+            -- Los valores por omisión son EXACTAMENTE lo de hoy. Ver el
+            -- padrón: 0, porque el tesorero no entra a Membresía. Poder
+            -- eliminar: 1, porque hoy sí puede. Una migración no le retira en
+            -- silencio a nadie algo que ya venía usando; que se lo quite el
+            -- administrador, a propósito y sabiendo que lo hace.
+            ALTER TABLE churches ADD COLUMN tesorero_ve_padron      INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE churches ADD COLUMN tesorero_puede_eliminar INTEGER NOT NULL DEFAULT 1;
+        "#,
     }]
 }
 
