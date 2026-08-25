@@ -18735,3 +18735,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .rep-cifra-v.pos { color: var(--pos); }
 :root.iphone .rep-cifra-v.neg { color: var(--neg); }
+
+/* --- 12. El "+" no se ofrece dentro de un editor abierto ------------------
+   El "+" de la barra es contextual por RUTA (`hayCrearAqui` en App.tsx), y una
+   ruta no sabe si la pantalla tiene un documento abierto encima. En Cartas eso
+   dejaba el "+" —"crear una carta nueva"— arriba a la derecha mientras estabas
+   escribiendo una: una salida en falso justo donde más se pierde trabajo, y a
+   14px del botón de volver.
+
+   Se resuelve aquí y no levantando estado a App.tsx a propósito: el shell no
+   tiene por qué aprender el `tab` interno de una página, y `.carta-ios` —el
+   cuerpo del editor, que solo existe en el teléfono y en un solo sitio— ya
+   dice todo lo que hace falta saber. Es el mismo recurso que `.app:has(.main
+   .scrolled)` usa más arriba para el material de la barra.
+
+   El botón de volver SÍ se queda: la salida no se esconde, se esconde la
+   entrada a otra cosa. Y volver con cambios sin guardar pasa por el diálogo de
+   descartar (`editorDirtyRef` → `pendingTab` en Cartas.tsx), así que no hay
+   forma de perder lo escrito por tocarlo. */
+:root.iphone .app:has(.carta-ios) .btn-crear { display: none; }
