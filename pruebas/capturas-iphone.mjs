@@ -176,6 +176,28 @@ const ctxSemilla = await contextoIPhone("light");
         referencia: `REF-${1000 + dia}`, periodo: hace(dia).slice(0, 7), notas: null,
       });
     }
+    // Cartas repartidas por estado, para que el Archivo y las colas del
+    // Resumen tengan algo que enseñar y se vea la insignia de cada estado.
+    const tiposCarta = ["traslado", "recomendacion", "certificacion", "constanciaActivo", "buenaConducta"];
+    const estados = ["borrador", "preparacion", "firma", "aprobada", "lista", "entregada"];
+    for (let i = 0; i < 9; i++) {
+      const m = miembros[i % miembros.length];
+      await db.insertCarta(id, {
+        tipo: tiposCarta[i % tiposCarta.length],
+        fecha_emision: hace(i * 4),
+        lugar_emision: iglesia.ciudad || null,
+        destinatario_tipo: i % 2 ? "iglesia" : "miembro",
+        member_id: m.id,
+        destinatario_nombre: i % 2 ? "Iglesia Monte Sion, Monterrey" : m.nombre,
+        destinatario_direccion: null,
+        asunto: null, saludo: null,
+        cuerpo_html: "<p>Por medio de la presente hacemos constar…</p>",
+        despedida: null, firmas: [], observaciones: null,
+        estado: estados[i % estados.length],
+        entregada_a: null, fecha_entrega: null,
+      });
+    }
+
     return "ok";
   });
   console.log(ok === "ok" ? "datos sembrados" : `semilla devolvió ${ok}`);
@@ -193,6 +215,7 @@ const PANTALLAS = [
   { nombre: "6-por-revisar", ruta: "/bandeja" },
   { nombre: "7-ajustes", ruta: "/configuracion" },
   { nombre: "8-informes", ruta: "/reportes" },
+  { nombre: "10-cartas-indice", ruta: "/cartas" },
 ];
 
 for (const tema of ["light", "dark"]) {
@@ -230,6 +253,23 @@ for (const tema of ["light", "dark"]) {
     await page.getByText(fila, { exact: true }).first().click();
     await page.waitForTimeout(1400);
     const archivo = `${SALIDA}/9-informe-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+// Cartas: dos destinos del índice, para comprobar que se entra Y se sale.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const [nombre, fila] of [["resumen", "Resumen"], ["archivo", "Archivo"], ["solicitudes", "Solicitudes"]]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+    await page.getByText(fila, { exact: true }).first().click();
+    await page.waitForTimeout(1200);
+    const archivo = `${SALIDA}/11-cartas-${nombre}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   }

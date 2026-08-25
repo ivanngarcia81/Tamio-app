@@ -26,6 +26,7 @@ import TrasladoSalidaModal from "../components/TrasladoSalidaModal";
 import TrasladoEntradaModal from "../components/TrasladoEntradaModal";
 import PlantillaModal from "../components/PlantillaModal";
 import LoadingState from "../components/LoadingState";
+import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
 import Pagination from "../components/Pagination";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -83,13 +84,12 @@ const ArchiveIcon = () => (
     <path d="M2 4h20v4H2zM9 13h6" />
   </svg>
 );
-const IosChevron = () => (
-  <span className="ios-chevron" aria-hidden="true">
-    <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
-  </span>
-);
-
-type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
+/* "indice" es SOLO del teléfono, y por eso no está en `SECCIONES_CARTAS`: no
+   es un destino de la lista, es la lista. En el iPad el índice es una columna
+   fija que siempre se ve, así que ahí nunca hace falta "estar" en él; en 390 px
+   no cabe una columna, así que el índice pasa a ser una pantalla más y necesita
+   su propio valor. */
+type Tab = "indice" | "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
 
 /** Las secciones del índice del iPad, agrupadas como el handoff agrupa su
  *  columna: los documentos por un lado y los traslados por otro. Son LUGARES
@@ -237,7 +237,13 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
   const [desdeSolicitud, setDesdeSolicitud] = useState<Solicitud | null>(null);
   const [filtroMiembro, setFiltroMiembro] = useState<string>("todos");
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>("resumen");
+  /* El teléfono arranca en el índice y el resto en el resumen. Hasta ahora
+     todos arrancaban en "resumen" y en el teléfono eso era el final del camino:
+     se entraba a una sección desde las tarjetas y no había forma de volver ni de
+     saltar a otra sin salir de la pantalla — el mismo problema que el comentario
+     de la rama `partido` (más abajo) dice haber resuelto, pero que solo se
+     resolvió para el iPad. */
+  const [tab, setTab] = useState<Tab>(esIPhone() ? "indice" : "resumen");
 
   /* ---- Maestro-detalle del iPad: los dos umbrales de siempre. ---- */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
@@ -546,6 +552,24 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     listas: cartas.filter((c) => ["aprobada", "lista"].includes(c.estado)).length,
   }), [cartas]);
 
+  /** Cuántos hay detrás de cada destino del índice, para la derecha de su fila.
+   *
+   *  Es lo que convierte el índice en algo que se puede leer de un vistazo en
+   *  vez de en seis nombres: dice dónde hay trabajo. Cuenta lo VIVO, no el
+   *  total —solicitudes sin entregar ni cancelar, traslados sin cerrar—, con
+   *  los mismos filtros que ya usan el resumen y el pie de cada sección, para
+   *  que el número del índice y el de dentro nunca discrepen.
+   *
+   *  `null` en Resumen: no es una cola, es una vista de las otras. */
+  function contadorDeSeccion(id: Tab): number | null {
+    if (id === "archivo") return cartas.length;
+    if (id === "plantillas") return plantillas.length;
+    if (id === "solicitudes") return solicitudes.filter((x) => !["entregada", "cancelada"].includes(x.estado)).length;
+    if (id === "salida") return trasladosSalida.filter((x) => !["completado", "cancelado"].includes(x.estado)).length;
+    if (id === "entrada") return trasladosEntrada.filter((x) => !["completado", "archivado", "noAceptado"].includes(x.estado)).length;
+    return null;
+  }
+
   const q = query.trim().toLowerCase();
   const visibles = cartas
     .filter((c) => (filtroEstado === "todas" ? true : c.estado === filtroEstado))
@@ -686,6 +710,36 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     <>
         {loading ? (
           <LoadingState />
+        ) : tab === "indice" ? (
+          /* El índice del teléfono: los MISMOS seis destinos y los mismos dos
+             grupos que la columna del iPad (`SECCIONES_CARTAS`), que hasta ahora
+             solo se pintaban dentro de `{partido ? …}`. No es una lista nueva:
+             es la de siempre, montada como pantalla porque en 390 px no hay
+             columna donde ponerla. */
+          <>
+            {SECCIONES_CARTAS.map((g) => (
+              <SeccionIOS key={g.grupo} titulo={t(g.grupo)}>
+                {g.items.map((id) => (
+                  <button
+                    type="button"
+                    key={id}
+                    className="ios-txrow ios-txrow--clickable"
+                    onClick={() => cambiarTab(id)}
+                  >
+                    <div className="ios-txrow-main">
+                      <div className="ios-txrow-title">{t(`cartas.tab.${id}`)}</div>
+                    </div>
+                    <div className="ios-txrow-trailing">
+                      {contadorDeSeccion(id) !== null && (
+                        <span className="ios-fila-valor">{contadorDeSeccion(id)}</span>
+                      )}
+                      <IosChevron />
+                    </div>
+                  </button>
+                ))}
+              </SeccionIOS>
+            ))}
+          </>
         ) : tab === "resumen" ? (
           <>
             {enIPhone ? (
@@ -1338,6 +1392,21 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
 
   return (
     <>
+      {/* La salida del teléfono. Va FUERA del `.header`, que en iPhone no se
+          pinta —esta pantalla nunca tuvo cabecera ahí—, y por eso vive suelta:
+          el botón es `position: fixed` sobre la barra que el teléfono ya usa
+          para el "+", así que no necesita contenedor.
+
+          En el índice no se pinta (no hay de dónde volver) y en cualquier
+          sección sí, con el nombre de la pantalla. Es el mismo `dm-volver` que
+          el iPad tiene junto a su panel; sin él se entraba a una sección desde
+          las tarjetas del resumen y solo se salía abandonando la pantalla por
+          la barra de pestañas. */}
+      {enIPhone && tab !== "indice" && (
+        <button type="button" className="ios-nav-volver" onClick={() => cambiarTab("indice")}>
+          <IconChevronLeft size={17} strokeWidth={2.4} /> {t("secretaria.cartas.titulo")}
+        </button>
+      )}
       {!enIPhone && (
         <div className="header" data-tauri-drag-region={esMac() || undefined}>
           <div>
