@@ -38,7 +38,7 @@ Tamio se pueda comprar, y nada más.
 Los seis de la derecha se quedan documentados aquí hasta que la 1.1 cierre;
 entonces se mueven a un `docs/plan-1-2.md` propio.
 
-> **Movidos el 22 ago 2026, y no a la 1.2 sino a `docs/plan-1-3.md`.** La 1.1
+> **Movidos el 22 ago 2026, y no a la 1.2 sino a `docs/plan-1-4.md`.** La 1.1
 > cerró —el trabajo, no una subida: esto decía "la 1.1.9 está en TestFlight" y
 > **era falso**, corregido el 24 ago; ver `docs/testflight.md`— así que tocaba
 > mudarlos. El número que
@@ -120,12 +120,12 @@ el repositorio demuestra que esté corriendo.~~ La guía paso a paso está en
 ### 7. Integridad de los documentos oficiales — *el 3.8*
 ### 8. Avisos de Agenda también en Inicio
 
-Los cinco, en **`docs/plan-1-3.md`**, con su razonamiento entero: cómo se
+Los cinco, en **`docs/plan-1-4.md`**, con su razonamiento entero: cómo se
 separa lo histórico de la asistencia (la columna `modelo_asistencia`, y por
 qué no vale la fecha), la regla de oro del panel de Secretaría, y el orden de
 las tres piezas de la integridad.
 
-_(Movido a `docs/plan-1-3.md` el 22 ago 2026, cuando la 1.1 cerró con la 1.1.9 en TestFlight.)_
+_(Movido a `docs/plan-1-4.md` el 22 ago 2026, cuando la 1.1 cerró con la 1.1.9 en TestFlight.)_
 
 ### 9. Apagar el buscador de actualizaciones en los builds de App Store — ✅ HECHO (11 ago 2026)
 
@@ -192,13 +192,13 @@ de la fila.*
 
 ### 10. Higiene: que los errores dejen rastro
 
-Los dos, en **`docs/plan-1-3.md`**. Del 12 salieron el Presupuesto y el cierre
+Los dos, en **`docs/plan-1-4.md`**. Del 12 salieron el Presupuesto y el cierre
 mensual —lo mejor de aquellas capturas y lo único que no es cáscara—, la
 Bandeja ensanchada, Ajustes con índice y el catálogo de informes; la
 conciliación, los fondos designados y el ciclo de vida de la entrada se
 quedaron en la 2.0, y siguen siendo una sola función y no tres.
 
-_(Movido a `docs/plan-1-3.md` el 22 ago 2026, cuando la 1.1 cerró con la 1.1.9 en TestFlight.)_
+_(Movido a `docs/plan-1-4.md` el 22 ago 2026, cuando la 1.1 cerró con la 1.1.9 en TestFlight.)_
 
 ---
 
@@ -266,9 +266,9 @@ Secretaría (punto 6): es una tarde, no un proyecto.
 Las cinco escalas comparadas, lo que de verdad diverge y lo que es histórico,
 y las cuatro decisiones del 4 ago (las transiciones primero, `cancelada` en el
 acta, `historial_estados` en el acta, y NO fundir `aprobada` con `lista`):
-**`docs/plan-1-3.md` → *Apéndice***, junto al punto 7, que es su ejecución.
+**`docs/plan-1-4.md` → *Apéndice***, junto al punto 7, que es su ejecución.
 
-_(Movido a `docs/plan-1-3.md` el 22 ago 2026, cuando la 1.1 cerró con la 1.1.9 en TestFlight.)_
+_(Movido a `docs/plan-1-4.md` el 22 ago 2026, cuando la 1.1 cerró con la 1.1.9 en TestFlight.)_
 
 ---
 
@@ -543,3 +543,13 @@ no constaba en ninguna parte.
    Lemon Squeezy. Un **500** ahí significa que falta `LEMON_WEBHOOK_SECRET` en
    Supabase (`pago-webhook/index.ts:134`), y ese caso es el feo: al comprador se
    le cobra y a la iglesia no se le activa el plan.
+
+---
+
+> **Nota de ruta, 26 de agosto de 2026.** Los enlaces de arriba apuntan a
+> `docs/plan-1-4.md`, y antes decían `docs/plan-1-3.md`. No es que la mudanza
+> del 22 de agosto no ocurriera —ocurrió, y a la 1.3—: es que esos siete
+> puntos volvieron a correr un puesto el 26, cuando Iván decidió que la 1.3.0
+> fuera la versión del rediseño para TestFlight. Se cambió el destino del
+> enlace y no el relato, para que un enlace roto no obligue a nadie a
+> adivinar.
