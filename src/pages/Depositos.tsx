@@ -15,6 +15,9 @@ import DepositoModal from "../components/DepositoModal";
 import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import Pagination from "../components/Pagination";
+import SeccionIOS from "../components/ios/SeccionIOS";
+import { agruparPorMes } from "../components/ios/agrupado";
+import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import { IconBank, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
 import { CERO, sumar, type Centavos } from "../dinero";
@@ -348,6 +351,15 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
   const totalAnio = sumar(
     ...depositos.filter((d) => d.periodo.startsWith(anio)).map((d) => d.monto),
   );
+  /* Scroll infinito en vez de paginador, como en Movimientos: la rebanada es
+     la misma del mismo array, pero abierta por arriba (`0 → page*PAGE_SIZE`).
+     Ver `useScrollInfinito` para por qué no se re-observa en cada render. */
+  const totalPaginas = Math.max(1, Math.ceil(depositos.length / PAGE_SIZE));
+  const centinela = useScrollInfinito(
+    enIPhone && page < totalPaginas,
+    () => setPage((p) => Math.min(p + 1, totalPaginas)),
+  );
+
   const ultimo = depositos.reduce<Deposito | null>(
     (mejor, d) => (mejor === null || d.fecha > mejor.fecha ? d : mejor),
     null,
@@ -778,53 +790,59 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
       ) : (
       <div className="content content-lienzo">
         {enIPhone ? (
-          /* Sin la franja de color de `.stat-card accent` ni el icono en
-             recuadro: en una tarjeta de la mitad del ancho compiten con la
-             cifra, que es lo único que se viene a leer. Las tres siguen
-             llevando su pie —cuántos y de qué mes, qué año, cuándo y a qué
-             cuenta fue el último— porque sin él la cifra no dice de qué
-             período habla. Tres tarjetas en dos columnas dejan un hueco en
-             la última fila; es lo que ya hace Servicios, que también tiene
-             tres. */
-          <div className="ios-panel">
-            <div className="ios-panel-head"><h2>{t("depositos.seccionResumen")}</h2></div>
-            <div className="ios-panel-grid">
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("depositos.depositosDelMes")}</span></div>
-                <span className="ios-stat-num money">
-                  <CountUp value={totalMes} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                </span>
-                <div className="stat-pct">{t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}</div>
+          /* Rediseño de iOS 26 (GUIA §4): las tres tarjetas de resumen pasan
+             a ser las tres filas de una lista agrupada. En dos columnas la
+             tercera dejaba un hueco, y las cifras competían entre sí por ser
+             la principal; en lista se leen de un vistazo, en orden, y cada una
+             conserva su pie —cuántos y de qué mes, qué año, cuándo y a qué
+             cuenta fue el último—, que es lo que dice de qué período habla. */
+          <SeccionIOS titulo={t("depositos.seccionResumen")}>
+            <div className="ios-txrow">
+              <div className="ios-txrow-main">
+                <div className="ios-txrow-title">{t("depositos.depositosDelMes")}</div>
+                <div className="tx-secundaria-movil">{t("depositos.conteo", { count: conteoMes, mes: mesLegible(mes) })}</div>
               </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("depositos.totalAnio")}</span></div>
-                <span className="ios-stat-num money">
-                  <CountUp value={totalAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+              <div className="ios-txrow-trailing">
+                <span className="tx-amount">
+                  <CountUp value={totalMes} format={fmtMoney} paso={100} />
                 </span>
-                <div className="stat-pct">{anio}</div>
               </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("depositos.ultimoDeposito")}</span></div>
-                <span className="ios-stat-num money">
-                  {ultimo
-                    ? <><CountUp value={ultimo.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span></>
-                    : <span style={{ color: "var(--text-3)" }}>—</span>}
+            </div>
+            <div className="ios-txrow">
+              <div className="ios-txrow-main">
+                <div className="ios-txrow-title">{t("depositos.totalAnio")}</div>
+                <div className="tx-secundaria-movil">{anio}</div>
+              </div>
+              <div className="ios-txrow-trailing">
+                <span className="tx-amount">
+                  <CountUp value={totalAnio} format={fmtMoney} paso={100} />
                 </span>
-                <div className="stat-pct">
+              </div>
+            </div>
+            <div className="ios-txrow">
+              <div className="ios-txrow-main">
+                <div className="ios-txrow-title">{t("depositos.ultimoDeposito")}</div>
+                <div className="tx-secundaria-movil">
                   {ultimo
                     ? `${fmtFechaCorta(ultimo.fecha)} · ${ultimo.cuenta_banco}`
                     : t("depositos.sinDepositos")}
                 </div>
               </div>
+              <div className="ios-txrow-trailing">
+                {ultimo
+                  ? <span className="tx-amount"><CountUp value={ultimo.monto} format={fmtMoney} paso={100} /></span>
+                  : <span className="ios-fila-valor">—</span>}
+              </div>
             </div>
-          </div>
+          </SeccionIOS>
         ) : (
           resumenEscritorio
         )}
 
-        {enIPhone ? (
-          <div className="ios-panel-head"><h2>{t("depositos.historial")}</h2></div>
-        ) : (
+        {/* En el teléfono el "Historial" ya no es un título suelto sobre una
+            tabla: cada MES es su propia sección, con su encabezado, tal como
+            pide la guía. El título de la pantalla lo da el Large Title. */}
+        {enIPhone ? null : (
           <div className="tx-head">
             <div className="tx-title">{t("depositos.historial")}</div>
           </div>
@@ -834,6 +852,15 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           <LoadingState />
         ) : depositos.length === 0 ? (
           estadoVacio
+        ) : enIPhone ? (
+          <>
+            {agruparPorMes(depositos.slice(0, page * PAGE_SIZE), (d) => d.fecha).map((seccion) => (
+              <SeccionIOS key={seccion.clave} titulo={seccion.etiqueta}>
+                <DepositoTable depositos={seccion.items} onEdit={abrirEditar} onChanged={onChanged} sinCaja />
+              </SeccionIOS>
+            ))}
+            <div ref={centinela} aria-hidden="true" />
+          </>
         ) : (
           <>
             <DepositoTable
@@ -843,7 +870,7 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
             />
             <Pagination
               page={page}
-              totalPages={Math.max(1, Math.ceil(depositos.length / PAGE_SIZE))}
+              totalPages={totalPaginas}
               onPageChange={setPage}
             />
           </>

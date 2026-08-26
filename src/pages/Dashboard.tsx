@@ -20,6 +20,7 @@ import TxList, { EmptyState } from "../components/TxList";
 import Delta from "../components/Delta";
 import CountUp from "../components/CountUp";
 import DashboardCharts from "../components/DashboardCharts";
+import SeccionIOS from "../components/ios/SeccionIOS";
 import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
@@ -619,6 +620,15 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                 números distintos compitieran por ser "el" número. */}
             <div className="page-sub">{t("dashboard.resumenDe", { mes: periodoLargo })}</div>
           </div>
+        ) : enIPhone ? (
+          /* Rediseño de iOS 26: en el teléfono la cabecera es SOLO el Large
+             Title, y la cifra baja al contenido (`.ios-hero`, justo debajo)
+             como en Cartera o Salud. Antes el `.header` del teléfono no
+             pintaba `.page-title` —empezaba directo por el saldo—, así que
+             `.titulo-fijo` (la copia que se queda arriba al desplazar, ver
+             App.tsx) se quedaba SIN texto que copiar: Inicio era la única
+             pantalla de la app cuya barra no decía dónde estabas. */
+          <div className="page-title">{t("nav.inicio")}</div>
         ) : (
         <div>
           {enMac && <div className="page-title">{t("nav.inicio")}</div>}
@@ -630,11 +640,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             </div>
             <div className="currency">{church.moneda}</div>
           </div>
-          <div className="balance-sub">
-            {enIPhone
-              ? t("dashboard.saldoDelMes", { mes: mesLegible(mes) })
-              : t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}
-          </div>
+          <div className="balance-sub">{t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}</div>
         </div>
         )}
         <div className="header-actions">
@@ -682,94 +688,133 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             periodoLegible={periodoCorto}
             moneda={church.moneda}
           />
-        ) : graficas}
+        ) : enIPhone ? null : graficas}
 
         {enIPad ? null : enIPhone ? (
-          /* Los ocho indicadores en dos columnas. En Mac siguen siendo las
-             dos filas de tarjetas de siempre; aquí la tarjeta consolidada
-             "Balance del mes" se abre en sus tres cifras (saldo, ingresos,
-             gastos) porque en dos columnas ya no hace falta apretarlas en
-             una sola tarjeta con barra y desglose. */
-          <div className="ios-panel">
-            <div className="ios-panel-grid">
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.balanceDelMesLabel")}</span></div>
-                <span className="ios-stat-num money">
-                  <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
+          /* Rediseño de iOS 26. Los ocho indicadores estaban en una rejilla de
+             2×4 tarjetas: es el patrón de un dashboard de escritorio metido en
+             393px, y con ocho cifras del mismo tamaño ninguna era LA cifra.
+             Ahora el saldo del mes es una cifra suelta bajo el título —el
+             dato por el que se abre la pantalla— y los otros siete bajan a dos
+             listas agrupadas. No se pierde ni uno: cambia el orden de lectura,
+             no el contenido.
+
+             La cifra vive AQUÍ y no en el `.header` (donde estaba en el
+             teléfono hasta ahora) porque en iOS un Large Title no comparte
+             barra con un dato: se desplaza con el contenido, y al llegar
+             arriba lo que queda es el título, no el saldo. */
+          <>
+            <div className="ios-hero">
+              <div className="ios-hero-cifra">
+                <span className={`ios-hero-num ${balance >= 0 ? "pos" : "neg"}`}>
+                  <CountUp value={balance} format={fmtMoney} paso={100} />
                 </span>
-                {pctChange(balance, balanceAnt) !== null && <Delta pct={pctChange(balance, balanceAnt)} />}
+                <span className="ios-hero-moneda">{church.moneda}</span>
               </div>
-
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("charts.ingresos")}</span></div>
-                <span className="ios-stat-num money">
-                  <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                </span>
-                <Delta pct={pctChange(ingresos, ingresosAnt)} />
-              </div>
-
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("charts.gastos")}</span></div>
-                <span className="ios-stat-num money">
-                  <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                </span>
-                <Delta pct={pctChange(gastos, gastosAnt)} invert />
-              </div>
-
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.balanceDelAnio")}</span></div>
-                <span className="ios-stat-num money">
-                  <CountUp value={balanceAnio} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                </span>
-              </div>
-
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.mayorGasto")}</span></div>
-                {categoriaTopGasto ? (
-                  <>
-                    <span className="ios-stat-num money">
-                      <CountUp value={categoriaTopGasto.monto} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                    </span>
-                    <div className="ios-panel-note" style={{ margin: 0 }}>
-                      {categoriaTopGasto.info.nombre} · {t("dashboard.pctDelGasto", { pct: categoriaTopGasto.pct })}
-                    </div>
-                  </>
-                ) : (
-                  <div className="ios-panel-note" style={{ margin: 0 }}>{t("dashboard.sinGastosEsteMes")}</div>
-                )}
-              </div>
-
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.ingresoMasFrecuente")}</span></div>
-                {ingresoMasFrecuente ? (
-                  <>
-                    <span className="ios-stat-num sm">
-                      {ingresoMasFrecuente.cnt}<span className="stat-cur">{t("dashboard.movimientosUnidad")}</span>
-                    </span>
-                    <div className="ios-panel-note" style={{ margin: 0 }}>{ingresoMasFrecuente.info.nombre}</div>
-                  </>
-                ) : (
-                  <div className="ios-panel-note" style={{ margin: 0 }}>{t("dashboard.sinIngresosEsteMes")}</div>
-                )}
-              </div>
-
-              {/* Ya era un enlace a Miembros; en el teléfono la tarjeta
-                  entera es el objetivo táctil, con su chevron. */}
-              <Link to="/miembros" className="ios-stat ios-stat--link">
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.miembrosActivos")}</span></div>
-                <span className="ios-stat-num sm">{memberCount}</span>
-                <IosChevron />
-              </Link>
-
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.ultimaActualizacion")}</span></div>
-                <span className="ios-stat-num sm">{fmtRelativo(ultimaActividad)}</span>
-                <div className="ios-panel-note" style={{ margin: 0 }}>
-                  {ultimaActividad ? fmtFechaCorta(ultimaActividad) : t("dashboard.sinMovimientosRegistrados")}
-                </div>
+              <div className="ios-hero-pie">
+                <span>{t("dashboard.saldoDelMes", { mes: mesLegible(mes) })}</span>
+                <Delta pct={pctChange(balance, balanceAnt)} />
               </div>
             </div>
-          </div>
+
+            <SeccionIOS titulo={t("dashboard.resumenDelMes")}>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.ingresos")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="tx-amount positive">
+                    <CountUp value={ingresos} format={fmtMoney} paso={100} />
+                  </span>
+                </div>
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.gastos")}</div></div>
+                <div className="ios-txrow-trailing">
+                  {/* `es-gasto` y no `negative` a secas: `.tx-amount.negative`
+                      pinta con `--text` a propósito (en una tabla de gastos,
+                      todo en rojo es ruido y no jerarquía). Aquí sí toca rojo
+                      —lo pide la maqueta— porque estas DOS filas están juntas
+                      justamente para contrastarse: lo que entró contra lo que
+                      salió. Es el único sitio donde conviven. */}
+                  <span className="tx-amount es-gasto">
+                    <CountUp value={gastos} format={fmtMoney} paso={100} />
+                  </span>
+                </div>
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.balanceDelAnio")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className={`tx-amount ${balanceAnio >= 0 ? "positive" : "negative"}`}>
+                    <CountUp value={balanceAnio} format={fmtMoney} paso={100} />
+                  </span>
+                </div>
+              </div>
+              {/* Ya era un enlace a Miembros; la fila entera sigue siéndolo,
+                  ahora con el galón a la derecha en vez de una tarjeta. */}
+              <Link to="/miembros" className="ios-txrow ios-txrow--clickable">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.miembrosActivos")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor">{memberCount}</span>
+                  <IosChevron />
+                </div>
+              </Link>
+            </SeccionIOS>
+
+            {/* Los tres indicadores que no son una cifra de dinero a secas:
+                cada uno es un dato con su explicación, o sea exactamente una
+                fila de dos líneas. En la rejilla vivían apretados en una
+                tarjeta de media pantalla con la nota debajo cortada. */}
+            <SeccionIOS titulo={t("dashboard.detalleDelMes")}>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title">{t("dashboard.mayorGasto")}</div>
+                  <div className="tx-secundaria-movil">
+                    {categoriaTopGasto
+                      ? `${categoriaTopGasto.info.nombre} · ${t("dashboard.pctDelGasto", { pct: categoriaTopGasto.pct })}`
+                      : t("dashboard.sinGastosEsteMes")}
+                  </div>
+                </div>
+                {categoriaTopGasto && (
+                  <div className="ios-txrow-trailing">
+                    <span className="tx-amount negative">
+                      <CountUp value={categoriaTopGasto.monto} format={fmtMoney} paso={100} />
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title">{t("dashboard.ingresoMasFrecuente")}</div>
+                  <div className="tx-secundaria-movil">
+                    {ingresoMasFrecuente ? ingresoMasFrecuente.info.nombre : t("dashboard.sinIngresosEsteMes")}
+                  </div>
+                </div>
+                {ingresoMasFrecuente && (
+                  <div className="ios-txrow-trailing">
+                    <span className="ios-fila-valor">
+                      {ingresoMasFrecuente.cnt} {t("dashboard.movimientosUnidad")}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title">{t("dashboard.ultimaActualizacion")}</div>
+                  <div className="tx-secundaria-movil">
+                    {ultimaActividad ? fmtFechaCorta(ultimaActividad) : t("dashboard.sinMovimientosRegistrados")}
+                  </div>
+                </div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor">{fmtRelativo(ultimaActividad)}</span>
+                </div>
+              </div>
+            </SeccionIOS>
+
+            {/* Las gráficas van DESPUÉS de la cifra y del resumen, no antes:
+                en la maqueta lo primero que se lee al abrir Inicio es cuánto
+                hay, y la tendencia viene a continuación a explicarlo. En Mac
+                y iPad siguen arriba (ver el ternario del lienzo). */}
+            {graficas}
+          </>
         ) : (
           <>
         <div className="summary-4 enter">

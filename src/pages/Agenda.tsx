@@ -27,6 +27,7 @@ import CountUp from "../components/CountUp";
 import { IOSPickerChip } from "../components/ios/IOSPickerField";
 import IOSSegmented from "../components/ios/IOSSegmented";
 import CalendarioIOS from "../components/ios/CalendarioIOS";
+import IOSFormSheet from "../components/ios/IOSFormSheet";
 import IOSRangoFechas from "../components/ios/IOSRangoFechas";
 import type { IOSPickerOption } from "../components/ios/IOSPickerSheet";
 
@@ -317,6 +318,15 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   // ---- Filtros ----
   const hayFiltros = useMemo(
     () => Object.values(filtros).some((v) => v !== "") || soloImportantes,
+    [filtros, soloImportantes]
+  );
+  /* La hoja de filtros del teléfono, y cuántos hay puestos para su insignia.
+     La BÚSQUEDA no cuenta: se queda fuera de la hoja, en su campo, porque se
+     escribe y se ve el efecto al momento — meterla dentro obligaría a abrir
+     una hoja para teclear tres letras. */
+  const [hojaFiltros, setHojaFiltros] = useState(false);
+  const nFiltros = useMemo(
+    () => Object.entries(filtros).filter(([k, v]) => k !== "q" && v !== "").length + (soloImportantes ? 1 : 0),
     [filtros, soloImportantes]
   );
   function limpiarFiltros() {
@@ -777,27 +787,33 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
   const calendario = (
     <>
         {!soloCalendario && (enIPhone ? (
-          <div className="ios-panel">
-            <div className="ios-panel-head"><h2>{t("agenda.seccionResumen")}</h2></div>
-            <div className="ios-panel-grid">
-              <button type="button" className="ios-stat" onClick={irASemanaDeHoy}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statHoy")}</span></div>
-                <span className="ios-stat-num"><CountUp value={stats.deHoy} format={String} /></span>
-              </button>
-              <button type="button" className="ios-stat" onClick={irASemanaDeHoy}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statSemana")}</span></div>
-                <span className="ios-stat-num"><CountUp value={stats.deSemana} format={String} /></span>
-              </button>
-              <button type="button" className="ios-stat" onClick={irALista}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statProximas")}</span></div>
-                <span className="ios-stat-num"><CountUp value={stats.proximas} format={String} /></span>
-              </button>
-              <button type="button" className="ios-stat" onClick={irALista}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("agenda.statPorConfirmar")}</span></div>
-                <span className="ios-stat-num"><CountUp value={stats.porConfirmar} format={String} /></span>
-              </button>
-            </div>
+          /* Rediseño de iOS 26. Las cuatro cifras eran una rejilla de tarjetas
+             KPI de media pantalla cada una: ~500px antes del calendario, y en
+             Mes y Semana el calendario es la pantalla. Pasan a la forma
+             compacta del índice de Informes —etiqueta pequeña y cifra debajo,
+             sin caja— y solo salen en Lista, que es donde la maqueta las pone
+             y la única vista donde el "cuántas hay" es el dato de entrada.
+             Siguen siendo tocables: llevan a la semana de hoy o a la lista. */
+          vista !== "lista" ? null : (
+          <div className="rep-cifras">
+            <button type="button" className="rep-cifra es-boton" onClick={irASemanaDeHoy}>
+              <span className="rep-cifra-k">{t("agenda.statHoy")}</span>
+              <span className="rep-cifra-v"><CountUp value={stats.deHoy} format={String} /></span>
+            </button>
+            <button type="button" className="rep-cifra es-boton" onClick={irASemanaDeHoy}>
+              <span className="rep-cifra-k">{t("agenda.statSemana")}</span>
+              <span className="rep-cifra-v"><CountUp value={stats.deSemana} format={String} /></span>
+            </button>
+            <button type="button" className="rep-cifra es-boton" onClick={irALista}>
+              <span className="rep-cifra-k">{t("agenda.statProximas")}</span>
+              <span className="rep-cifra-v"><CountUp value={stats.proximas} format={String} /></span>
+            </button>
+            <button type="button" className="rep-cifra es-boton" onClick={irALista}>
+              <span className="rep-cifra-k">{t("agenda.statPorConfirmar")}</span>
+              <span className="rep-cifra-v"><CountUp value={stats.porConfirmar} format={String} /></span>
+            </button>
           </div>
+          )
         ) : (
           <div className="dash-canvas">
           <div className="summary-4 enter" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
@@ -840,37 +856,64 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
           /* En iPhone la búsqueda se queda a lo ancho y los filtros bajan a
              una fila propia que se DESLIZA: con seis, envolver dejaba la
              pantalla en escalera. */
+          /* Rediseño de iOS 26 (GUIA §4, fila 9: "los filtros a una hoja").
+             Buscador y SEIS filtros vivían encima del calendario: medido en la
+             captura, ~700px de mandos antes de ver el primer día del mes, y la
+             fila de pastillas se salía por el borde derecho sin decirlo.
+
+             No se ESCONDEN en Mes/Semana aunque ahí no se vean: el calendario
+             pinta su punto desde `porFecha`, que sale de `filtradas`, así que
+             un filtro puesto cambia lo que el mes enseña. Un control que sigue
+             actuando no puede desaparecer — sube a una hoja y su botón dice
+             cuántos hay puestos. */
           <>
-            <div className="search-input-wrap" style={{ marginBottom: 10 }}>
-              <IconSearch size={15} strokeWidth={2} />
-              <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
-            </div>
-            <div className="ios-filtros">
-              <IOSPickerChip label={t("agenda.filtrarTipo")} options={opcTipo} value={filtros.tipo}
-                onSelect={(v) => setFiltros((f) => ({ ...f, tipo: v }))} />
-              <IOSPickerChip label={t("agenda.filtrarEstado")} options={opcEstado} value={filtros.estado}
-                onSelect={(v) => setFiltros((f) => ({ ...f, estado: v }))} />
-              {ministeriosPresentes.length > 0 && (
-                <IOSPickerChip label={t("agenda.filtrarMinisterio")} options={opcMinisterio} value={filtros.ministerio}
-                  onSelect={(v) => setFiltros((f) => ({ ...f, ministerio: v }))} />
-              )}
-              {responsablesPresentes.length > 0 && (
-                <IOSPickerChip label={t("agenda.filtrarResponsable")} options={opcResponsable} value={filtros.responsable}
-                  onSelect={(v) => setFiltros((f) => ({ ...f, responsable: v }))} />
-              )}
-              {/* Un solo chip para las dos fechas. Sueltas se pintaban
-                  idénticas y sin etiqueta —dos pastillas que decían la misma
-                  fecha— y no había forma de saber cuál era el principio. */}
-              <IOSRangoFechas
-                desde={filtros.desde}
-                hasta={filtros.hasta}
-                onCambiar={({ desde, hasta }) => setFiltros((f) => ({ ...f, desde, hasta }))}
-              />
-              <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
-                ★ {t("agenda.soloImportantes")}
+            <div className="agenda-mandos-ios">
+              <div className="search-input-wrap" style={{ flex: "1 1 auto", marginBottom: 0 }}>
+                <IconSearch size={15} strokeWidth={2} />
+                <input className="form-input" placeholder={textoCorto(t("common.buscarCorto"), t("agenda.buscarPlaceholder"))} value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} />
+              </div>
+              <button
+                type="button"
+                className={`chip${hayFiltros || soloImportantes ? " active" : ""}`}
+                onClick={() => setHojaFiltros(true)}
+              >
+                {t("agenda.filtros")}
+                {nFiltros > 0 && <span className="count">{nFiltros}</span>}
               </button>
-              {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
             </div>
+
+            {hojaFiltros && (
+              <IOSFormSheet
+                title={t("agenda.filtros")}
+                onCancel={() => setHojaFiltros(false)}
+                onSave={() => setHojaFiltros(false)}
+                canSave
+              >
+                <div className="ios-filtros ios-filtros--hoja">
+                  <IOSPickerChip label={t("agenda.filtrarTipo")} options={opcTipo} value={filtros.tipo}
+                    onSelect={(v) => setFiltros((f) => ({ ...f, tipo: v }))} />
+                  <IOSPickerChip label={t("agenda.filtrarEstado")} options={opcEstado} value={filtros.estado}
+                    onSelect={(v) => setFiltros((f) => ({ ...f, estado: v }))} />
+                  {ministeriosPresentes.length > 0 && (
+                    <IOSPickerChip label={t("agenda.filtrarMinisterio")} options={opcMinisterio} value={filtros.ministerio}
+                      onSelect={(v) => setFiltros((f) => ({ ...f, ministerio: v }))} />
+                  )}
+                  {responsablesPresentes.length > 0 && (
+                    <IOSPickerChip label={t("agenda.filtrarResponsable")} options={opcResponsable} value={filtros.responsable}
+                      onSelect={(v) => setFiltros((f) => ({ ...f, responsable: v }))} />
+                  )}
+                  <IOSRangoFechas
+                    desde={filtros.desde}
+                    hasta={filtros.hasta}
+                    onCambiar={({ desde, hasta }) => setFiltros((f) => ({ ...f, desde, hasta }))}
+                  />
+                  <button className={`chip ${soloImportantes ? "active" : ""}`} aria-pressed={soloImportantes} onClick={() => setSoloImportantes((v) => !v)}>
+                    ★ {t("agenda.soloImportantes")}
+                  </button>
+                  {hayFiltros && <button className="btn ghost sm" onClick={limpiarFiltros}>{t("agenda.limpiarFiltros")}</button>}
+                </div>
+              </IOSFormSheet>
+            )}
           </>
         ) : enMac ? null : (
           <div className="agenda-filtros">

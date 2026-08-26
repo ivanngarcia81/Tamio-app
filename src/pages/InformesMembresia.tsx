@@ -25,6 +25,7 @@ import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../components/mac/MacFiltros";
 import Pagination from "../components/Pagination";
+import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import RowMenu from "../components/RowMenu";
 import { showToast } from "../toast";
 import { IconChevronLeft, IconCheck, IconEdit, IconMiembros, IconMore, IconPrinter, IconSearch, IconWarn } from "../icons";
@@ -32,6 +33,7 @@ import { ShareIcon } from "../components/icons/IOSIcons";
 import Portal from "../components/Portal";
 import { useEscapeClose } from "../hooks/useEscapeClose";
 import { ActionField, FilaNativa, IosChevron, Section, SwitchField } from "../components/ios/FormularioIOS";
+import SeccionIOS from "../components/ios/SeccionIOS";
 import { IOSPickerField } from "../components/ios/IOSPickerField";
 import HeaderMenu from "../components/HeaderMenu";
 import CountUp from "../components/CountUp";
@@ -51,7 +53,10 @@ const COLS_MAC = "minmax(0,1.3fr) 88px 104px 104px minmax(0,1.1fr) 78px 104px 52
 const PAGE_SIZE = 25;
 
 type PeriodoTipo = "mes" | "trimestre" | "anio" | "rango" | "todo";
-type Vista = "miembros" | "asistencia" | "seguimiento" | "general";
+/* "indice" es SOLO del teléfono. En el iPad el índice es la columna maestra,
+   siempre visible, así que ahí nunca hay que "estar" en él; en 390px no cabe
+   una columna, así que pasa a ser la pantalla de inicio de los cuatro. */
+type Vista = "indice" | "miembros" | "asistencia" | "seguimiento" | "general";
 
 const ALERTA_TAG: Record<string, string> = {
   rachaServicios: "pastores",
@@ -243,7 +248,7 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   const [orden, setOrden] = useState<{ campo: OrdenCampo; dir: 1 | -1 }>({ campo: "nombre", dir: 1 });
   const [page, setPage] = useState(1);
   const [ficha, setFicha] = useState<Member | null>(null);
-  const [vista, setVista] = useState<Vista>("miembros");
+  const [vista, setVista] = useState<Vista>(esIPhone() ? "indice" : "miembros");
   /* Hojas del teléfono: la de vista+periodo y la de los filtros que quedan.
      En Mac no existen — ahí manda `MacFiltros`, que no se toca. */
   const [hojaControl, setHojaControl] = useState(false);
@@ -359,7 +364,15 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
   }, [miembros, asistencia, query, tarjeta, filtroEstado, filtroMinisterio, filtroCargo, filtroInstrumento, soloRacha, soloIncompletos, orden, periodo, umbrales, idsRecibidos, idsTrasladados]);
 
   const totalPages = Math.max(1, Math.ceil(filas.length / PAGE_SIZE));
-  const pagina = filas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* Igual que en las otras listas largas del teléfono: la página crece en vez
+     de moverse, y el paginador se queda para Mac e iPad. */
+  const centinela = useScrollInfinito(
+    enIPhone && page < totalPages,
+    () => setPage((p) => Math.min(p + 1, totalPages)),
+  );
+  const pagina = enIPhone
+    ? filas.slice(0, page * PAGE_SIZE)
+    : filas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   /** Cuántos de los cuatro filtros "finos" están puestos. Solo alimenta el
    *  punto junto a "Más filtros": sin él, un filtro dentro de la hoja no se
@@ -733,25 +746,26 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             {enIPhone ? (
               <div className="ios-panel">
                 <div className="ios-panel-head"><h2>{t("informes.seccionResumen")}</h2></div>
-                <div className="ios-panel-grid">
+                <div className="ios-listcard">
                   {tarjetas.map((c) => (
+                    /* Rediseño de iOS 26: las ocho pasan de rejilla de tarjetas
+                       a lista agrupada. Siguen filtrando igual —la fila entera
+                       alterna y la ✕ dice que un segundo toque la quita—; lo que
+                       cambia es que ocho tarjetas de media pantalla eran ~900px
+                       de resumen antes de la primera fila del registro. */
                     <button
                       key={c.id}
                       type="button"
-                      className={`ios-stat${tarjeta === c.id ? " es-filtro" : ""}`}
+                      className={`ios-txrow ios-txrow--clickable${tarjeta === c.id ? " es-filtro" : ""}`}
                       title={c.id === "frecuentes" ? t("informes.cardFrecuentesRegla", { n: umbrales.rachaServicios }) : undefined}
                       aria-pressed={tarjeta === c.id}
                       onClick={() => setTarjeta((cur) => (cur === c.id ? "todos" : c.id))}
                     >
-                      <div className="ios-stat-top">
-                        <span className="ios-stat-label">{c.label}</span>
-                        {/* La ✕ no es un botón aparte: la tarjeta entera ya
-                            alterna, y anidar un botón dentro de otro no es
-                            HTML válido. Es la señal de que un segundo toque
-                            la quita. */}
-                        {tarjeta === c.id && <span className="ios-stat-quitar" aria-hidden="true">✕</span>}
+                      <div className="ios-txrow-main"><div className="ios-txrow-title">{c.label}</div></div>
+                      <div className="ios-txrow-trailing">
+                        <span className="ios-fila-valor"><CountUp value={c.valor} format={String} /></span>
+                        {tarjeta === c.id && <span className="ios-quitar-filtro" aria-hidden="true">✕</span>}
                       </div>
-                      <span className="ios-stat-num"><CountUp value={c.valor} format={String} /></span>
                     </button>
                   ))}
                 </div>
@@ -1002,7 +1016,9 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
                 })}
               </div>
             )}
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            {enIPhone
+              ? <div ref={centinela} aria-hidden="true" />
+              : <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
           </>
         ) : servicios.length === 0 ? (
           <EmptyState titulo={t("informes.asistVacioTitulo")} sub={t("informes.asistVacioSub")} icon={<IconMiembros size={20} strokeWidth={1.8} />} />
@@ -1154,6 +1170,12 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
 
   return (
     <>
+      {/* La salida del teléfono: del informe abierto al índice. */}
+      {enIPhone && vista !== "indice" && (
+        <button type="button" className="ios-nav-volver" onClick={() => { setVista("indice"); setTarjeta("todos"); }}>
+          <IconChevronLeft size={17} strokeWidth={2.4} /> {t("informes.titulo")}
+        </button>
+      )}
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
@@ -1306,7 +1328,60 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
             primer dato, y la de filtros —que se deslizaba— escondía lo puesto
             fuera del borde: un filtro en el cuarto chip dejaba la lista
             incompleta sin que nada lo dijera. */}
-        {enIPhone && (
+        {/* El índice de los cuatro informes. `vista` ya tenía sus cuatro valores
+            y el teléfono ya podía cambiarlos por la hoja de control; lo que no
+            había era una PANTALLA que los presentara, con el subtítulo real de
+            cada uno (`idxGeneral`/`idxMiembros`/`idxAsistencia`/`idxSeguimiento`)
+            y lo que hay detrás. Es el índice que el iPad tiene como columna. */}
+        {enIPhone && vista === "indice" && (
+          <>
+            <div className="rep-cabecera">
+              <div className="rep-iglesia">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+              <div className="rep-periodo">{periodoTexto}</div>
+            </div>
+            <SeccionIOS titulo={t("informes.grupoInformes")}>
+              {/* Los subtítulos van con sus parámetros, como en el índice del
+                  iPad: `idxMiembros` lleva {{count}} e `idxAsistencia` {{n}} y
+                  {{pct}}. Sin ellos la fila enseñaba las llaves crudas — se vio
+                  en la captura. Y sin servicios con lista, asistencia usa su
+                  propia cadena de vacío en vez de decir "0 servicios · 0%". */}
+              {([
+                { id: "general", sub: t("informes.idxGeneral"), valor: null },
+                { id: "miembros", sub: t("informes.idxMiembros", { count: miembros.length }), valor: miembros.length },
+                {
+                  id: "asistencia",
+                  sub: asistGeneral.totalServicios > 0
+                    ? t("informes.idxAsistencia", { n: asistGeneral.totalServicios, pct: asistGeneral.pctGeneral ?? 0 })
+                    : t("informes.idxAsistenciaVacia"),
+                  valor: null,
+                },
+                { id: "seguimiento", sub: t("informes.idxSeguimiento"), valor: gruposSeguimiento.length || null },
+              ] as { id: Vista; sub: string; valor: number | null }[]).map((inf) => (
+                <button
+                  type="button"
+                  key={inf.id}
+                  className="ios-txrow ios-txrow--clickable"
+                  onClick={() => setVista(inf.id)}
+                >
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{t(`informes.vista.${inf.id}`)}</div>
+                    <div className="tx-secundaria-movil">{inf.sub}</div>
+                  </div>
+                  <div className="ios-txrow-trailing">
+                    {inf.valor != null && (
+                      inf.id === "seguimiento"
+                        ? <span className="ios-insignia es-pendiente">{inf.valor}</span>
+                        : <span className="ios-fila-valor">{inf.valor}</span>
+                    )}
+                    <IosChevron />
+                  </div>
+                </button>
+              ))}
+            </SeccionIOS>
+          </>
+        )}
+
+        {enIPhone && vista !== "indice" && (
           <>
             <button type="button" className="inf-control" onClick={() => setHojaControl(true)}>
               <span className="inf-control-texto">
@@ -1394,7 +1469,11 @@ export default function InformesMembresia({ church, refreshKey, onEdit, onChange
         </div>
         )}
 
-        {cuerpoVista}
+        {/* En el índice no se pinta el cuerpo de ningún informe: el índice ES
+            la pantalla. Sin esta guarda el informe activo se colaba debajo de
+            la lista —se vio en la captura, con "RESUMEN" y sus tarjetas de
+            asistencia asomando bajo los cuatro destinos—. */}
+        {(!enIPhone || vista !== "indice") && cuerpoVista}
       </div>
       )}
 

@@ -277,7 +277,20 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
   return (
     <>
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
-        {!enIPhone && (
+        {enIPhone ? null : (
+          /* En el teléfono NO se pinta `.page-title`, y a diferencia de Inicio
+             aquí sí es lo correcto: Por revisar es una sección de Tesorería,
+             así que lleva el carrusel fijo justo encima diciendo "Por
+             revisar" en su píldora. Un Large Title debajo de esa píldora se
+             lee como un eco, no como un título — se probó en una captura de
+             393px y es exactamente lo que parecía.
+             (Inicio sí lo lleva porque no pertenece a ningún área y por tanto
+             no tiene carrusel: ahí la barra fija se quedaba muda al
+             desplazar.)
+             La maqueta pone el título ENCIMA del carrusel, que resuelve las
+             dos cosas a la vez; mudar el carrusel al flujo del contenido es
+             un cambio de la cáscara —`--carrusel-h`, el `padding-top` de
+             `.main`, el arrastre a la pantalla vecina— y no entra aquí. */
           <div>
             <div className="page-title">{t("bandeja.titulo")}</div>
             <div className="page-sub">
@@ -287,6 +300,20 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
             </div>
           </div>
         )}
+        {/* "Aprobar todo" en la barra fija, la esquina donde iOS pone la
+            acción de la pantalla. Hasta ahora esta acción SOLO existía en el
+            maestro-detalle del iPad (`al-cabecera`, más abajo): en el teléfono
+            había que aprobar de una en una. Sale únicamente cuando hay algo
+            que aprobar, como el chip del iPad. */}
+        {enIPhone && conteos.get("pendiente") ? (
+          <button
+            type="button"
+            className="ios-nav-btn"
+            onClick={() => void handleAprobarTodo()}
+          >
+            {t("bandeja.aprobarTodo")}
+          </button>
+        ) : null}
       </div>
 
       {/* ---- Maestro-detalle (iPad) ----

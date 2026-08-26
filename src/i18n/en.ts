@@ -179,6 +179,10 @@ export const en: Resources = {
     ingresoMasFrecuente: "Most frequent income",
     movimientosUnidad: "transactions",
     sinIngresosEsteMes: "No income this month",
+    // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
+    // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
+    resumenDelMes: "This month",
+    detalleDelMes: "Details",
     // El Inicio del iPad (diseño del handoff).
     corteHoy: "the monthly close is today",
     corteDias_one: "the monthly close is tomorrow",
@@ -394,6 +398,8 @@ export const en: Resources = {
     archivarMensaje_zero: "\"{{nombre}}\" appears in the attendance of recorded services. Deleting would break that history, so they will be archived instead: they disappear from the list, but their history is kept.",
     eliminarMensaje: "Delete \"{{nombre}}\"? They have no recorded transactions. This action cannot be undone.",
     archivar: "Archive",
+    // Tira de iniciales del rediseño de iOS 26 (solo iPhone).
+    indiceAlfabetico: "Alphabetical index",
   },
 
   reportes: {
@@ -461,6 +467,8 @@ export const en: Resources = {
     informeResumenSub: "The last six months, with change",
     informeAnualSub: "All twelve months on one page",
     sinResumenMensual: "No months with activity to compare yet.",
+    // Encabezado del índice de informes en iPhone (rediseño de iOS 26).
+    documentosDelMes: "This month's documents",
   },
 
   depositos: {
@@ -1453,6 +1461,10 @@ export const en: Resources = {
     trasladoOfertaMensaje: "{{nombre}} has been removed from the roll. Create the outgoing transfer as well? It will be filed under Letters and transfers, can issue its letter, and will count in reports.",
     trasladoOfertaCrear: "Create transfer",
     toastReactivado: "Member reactivated",
+    // Resumen del teléfono y sus tres destinos (rediseño de iOS 26).
+    enElPadron: "{{count}} on the roll",
+    elPadronEn: "The roll in {{anio}}",
+    seguimientoVacio: "Nobody needs follow-up right now.",
   },
 
   ficha: {
@@ -2737,6 +2749,8 @@ export const en: Resources = {
       fechaLimite: "Deadline",
       otra: "Other activity",
     },
+    // Botón que abre la hoja de filtros del teléfono (rediseño de iOS 26).
+    filtros: "Filters",
   },
 
   rol: {

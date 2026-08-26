@@ -173,6 +173,10 @@ export const es = {
     ingresoMasFrecuente: "Ingreso más frecuente",
     movimientosUnidad: "movimientos",
     sinIngresosEsteMes: "Sin ingresos este mes",
+    // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
+    // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
+    resumenDelMes: "Resumen del mes",
+    detalleDelMes: "Detalle del mes",
     // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
     // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos
     // listas del pie.
@@ -390,6 +394,8 @@ export const es = {
     archivarMensaje_zero: "\"{{nombre}}\" aparece en la asistencia de servicios registrados. No se puede eliminar sin romper ese historial, así que se archivará: dejará de aparecer en la lista, pero su historial se conserva.",
     eliminarMensaje: "¿Eliminar a \"{{nombre}}\"? No tiene movimientos registrados. Esta acción no se puede deshacer.",
     archivar: "Archivar",
+    // Tira de iniciales del rediseño de iOS 26 (solo iPhone).
+    indiceAlfabetico: "Índice alfabético",
   },
 
   reportes: {
@@ -457,6 +463,8 @@ export const es = {
     informeResumenSub: "Los últimos seis meses, con variación",
     informeAnualSub: "Los doce meses en una hoja",
     sinResumenMensual: "Todavía no hay meses con movimientos que comparar.",
+    // Encabezado del índice de informes en iPhone (rediseño de iOS 26).
+    documentosDelMes: "Documentos del mes",
   },
 
   depositos: {
@@ -1482,6 +1490,10 @@ export const es = {
     trasladoOfertaMensaje: "La baja de {{nombre}} quedó registrada. ¿Crear también el traslado de salida? Así queda en el archivo de Cartas y traslados, puede emitir su carta y cuenta en los informes.",
     trasladoOfertaCrear: "Crear traslado",
     toastReactivado: "Miembro reactivado",
+    // Resumen del teléfono y sus tres destinos (rediseño de iOS 26).
+    enElPadron: "{{count}} en el padrón",
+    elPadronEn: "El padrón en {{anio}}",
+    seguimientoVacio: "Nadie necesita seguimiento ahora mismo.",
   },
 
   ficha: {
@@ -2801,6 +2813,8 @@ export const es = {
       fechaLimite: "Fecha límite",
       otra: "Otra actividad",
     },
+    // Botón que abre la hoja de filtros del teléfono (rediseño de iOS 26).
+    filtros: "Filtros",
   },
 
   rol: {

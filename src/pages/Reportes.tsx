@@ -22,6 +22,7 @@ import { CSV_TEMPLATE, MOVIMIENTOS_FIELDS, validarFilaMovimiento } from "../serv
 import { IconChevronDown, IconChevronLeft, IconChevronRight, IconClose, IconFileText, IconMonitor, IconMore, IconPrinter, IconSparkles, IconUpload } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
 import HeaderMenu from "../components/HeaderMenu";
+import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
 import Asamblea from "../components/Asamblea";
 import { iaHabilitada, preguntarDatos, resumirReporte } from "../ia";
 import { showToast } from "../toast";
@@ -447,6 +448,34 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
     }
   }
 
+  /* ---------- COSTURA PARA EL MOTOR ----------
+     La maqueta pone Compartir y PDF en la barra de CADA documento, con esta
+     razón escrita en el handoff: "lo que se comparte es el documento abierto y
+     no «Informes»".
+
+     Hoy el repo no puede cumplirlo. `handleExport` y `handlePrint` no reciben
+     qué informe está abierto: los dos llaman `buildReportData()`, que arma el
+     reporte MENSUAL entero. Y en `services/print/` no hay un constructor por
+     documento — solo el mensual (`export.ts`) y el anual (`printAnnual.ts`).
+     O sea que en el iPad, con "Distribución de gastos" abierta, "Vista previa
+     PDF" ya devuelve el reporte completo; el teléfono heredaría lo mismo.
+
+     Esto NO se arregla aquí: el motor va en otro sitio. Lo que se hace es dejar
+     la firma correcta —las dos funciones ya reciben el informe— y que hoy
+     ignoren el parámetro y llamen a lo que existe. Cuando aparezcan los
+     constructores por documento, el cambio es el cuerpo de estas dos
+     funciones y ni una línea del JSX.
+
+     `informe === null` es el índice: ahí compartir el reporte mensual entero
+     es exactamente lo correcto, y ese caso ya funciona bien hoy. */
+  async function compartirInforme(_id: InformeId | null) {
+    await handleExport("pdf");
+  }
+
+  async function imprimirInforme(_id: InformeId | null) {
+    await handlePrint();
+  }
+
   async function handlePrint() {
     setExportError(null);
     setExporting("print");
@@ -747,6 +776,210 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
    *  DOCUMENTO —el reporte anual sale en PDF, no en pantalla— así que su
    *  panel dice qué lleva y ofrece generarlo, en vez de fingir una vista
    *  previa de doce meses que la app no dibuja. */
+  /* ---------- Los cinco informes del teléfono ----------
+     Hasta ahora el iPhone apilaba los cinco en un solo lienzo sin fin y el
+     reporte anual ni siquiera estaba: vivía escondido en el "···". El iPad ya
+     lo tenía resuelto con un índice de documentos y un panel (la rama
+     `partido`, más abajo), pero ese índice vive DENTRO de su condicional, así
+     que en 390 px no había forma de abrir un informe.
+
+     Aquí cada bloque sale con nombre para poder montarse de uno en uno según
+     `informe`, que es el MISMO estado que ya usaba el iPad. Ni un nodo cambia
+     respecto de lo que se apilaba antes: cambia quién los enseña y cuándo. */
+
+  /** Las cuatro cifras del mes. Dejan de ser el arranque del lienzo y pasan a
+   *  ser la cabecera del ÍNDICE: son el resumen que decide qué documento abrir. */
+  const cifrasIPhone = (
+    <div className="rep-cifras">
+      <div className="rep-cifra">
+        <span className="rep-cifra-k">{t("dashboard.ingresosDelMes")}</span>
+        <span className="rep-cifra-v pos"><CountUp value={ingresos} format={fmtMoney} paso={100} /></span>
+      </div>
+      <div className="rep-cifra">
+        <span className="rep-cifra-k">{t("dashboard.gastosDelMes")}</span>
+        <span className="rep-cifra-v neg"><CountUp value={gastos} format={fmtMoney} paso={100} /></span>
+      </div>
+      <div className="rep-cifra">
+        <span className="rep-cifra-k">{t("reportes.balanceNeto")}</span>
+        <span className="rep-cifra-v"><CountUp value={balance} format={fmtMoney} paso={100} /></span>
+      </div>
+      <div className="rep-cifra">
+        <span className="rep-cifra-k">{mesLegible(mesAnterior)}</span>
+        <span className="rep-cifra-v">{fmtMoney(restar(totalesAnt?.ingresos ?? CERO, totalesAnt?.gastos ?? CERO))}</span>
+      </div>
+    </div>
+  );
+
+  /** Estado financiero: categorías de ingreso y de gasto con su porcentaje, y
+   *  los cuatro totales del pie. Es el documento más largo de los cinco. */
+  const estadoIPhone = (
+    <>
+          {/* Estado financiero. Las cuatro columnas de escritorio (color,
+              nombre, monto, porcentaje) no caben en 390 px sin cortar el
+              nombre, así que cada fila pasa a dos líneas dentro de una
+              tarjeta de lista. El encabezado con iglesia y periodo se
+              queda: es lo que convierte esto en un documento y no en una
+              pantalla más. */}
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("reportes.estadoFinanciero")}</h2></div>
+            <div className="rep-cabecera">
+              <div className="rep-iglesia">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+              <div className="rep-periodo">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
+            </div>
+          </div>
+
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("reportes.ingresosPeriodo")}</h2></div>
+            {filasIngreso.length === 0 ? (
+              <div className="ios-panel-empty">{t("reportes.sinIngresosRegistrados")}</div>
+            ) : (
+              <div className="ios-listcard">
+                {filasIngreso.map((c) => (
+                  <FilaFinancieraIOS
+                    key={c.id}
+                    nombre={catNombre(c.id)}
+                    color={c.color}
+                    monto={fmtMoney(c.total)}
+                    pct={pctTexto(c.total, ingresos, 1)}
+                  />
+                ))}
+                <div className="ios-txrow rep-fila rep-total">
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{t("reportes.totalIngresos")}</div>
+                  </div>
+                  <div className="ios-txrow-trailing">
+                    <span className="rep-monto pos">{fmtMoney(ingresos)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="ios-panel">
+            <div className="ios-panel-head"><h2>{t("reportes.gastosPeriodo")}</h2></div>
+            {filasGasto.length === 0 ? (
+              <div className="ios-panel-empty">{t("reportes.sinGastosRegistrados")}</div>
+            ) : (
+              <div className="ios-listcard">
+                {filasGasto.map((c) => (
+                  <FilaFinancieraIOS
+                    key={c.id}
+                    nombre={catNombre(c.id)}
+                    color={c.color}
+                    monto={fmtMoney(c.total)}
+                    pct={pctTexto(c.total, gastos, 1)}
+                  />
+                ))}
+                <div className="ios-txrow rep-fila rep-total">
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{t("reportes.totalGastos")}</div>
+                  </div>
+                  <div className="ios-txrow-trailing">
+                    <span className="rep-monto neg">{fmtMoney(gastos)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Los cuatro totales del pie, en la misma cuadrícula de dos
+              columnas que el resumen de arriba. La nota de depósitos se
+              queda: es información contable, no adorno. */}
+          <div className="ios-panel">
+            <div className="ios-panel-grid">
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalIngresos")}</span></div>
+                <span className="ios-stat-num money pos">{fmtMoney(ingresos)}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalGastos")}</span></div>
+                <span className="ios-stat-num money neg">{fmtMoney(gastos)}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.balanceNeto")}</span></div>
+                <span className="ios-stat-num money">{fmtMoney(balance)}</span>
+              </div>
+              <div className="ios-stat" style={{ cursor: "default" }}>
+                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.depositosBancarios")}</span></div>
+                <span className="ios-stat-num money">{fmtMoney(depositosMes)}</span>
+              </div>
+            </div>
+            {depositosMes > 0 && (
+              <p className="ios-panel-note">{t("reportes.depositosNota")}</p>
+            )}
+          </div>
+    </>
+  );
+
+  /** Los dos donuts, cada uno su propio documento. Se parten aquí porque en el
+   *  índice son dos filas distintas —"de dónde salió" y "en qué se fue"— y
+   *  juntarlos en una pantalla sería volver al lienzo sin fin en pequeño. */
+  /* Los dos donuts van SEPARADOS y no en un bloque, porque en el índice son dos
+     filas distintas —"de dónde salió" y "en qué se fue"— y son dos documentos.
+     Juntarlos en una pantalla sería volver al lienzo sin fin en pequeño; de
+     hecho la primera versión de esto los devolvía juntos y al abrir
+     "Distribución de gastos" salían los dos, uno debajo del otro. */
+  const donutGastosIPhone = (
+    <DonutIOS
+      titulo={t("reportes.distGastos")}
+      filas={filasGasto}
+      total={gastos}
+      moneda={church.moneda}
+      vacio={t("reportes.sinGastosEsteMes")}
+      delayMs={0}
+      nombreOtras={nombreOtras}
+    />
+  );
+
+  const donutIngresosIPhone = (
+    <DonutIOS
+      titulo={t("reportes.distIngresos")}
+      filas={filasIngreso}
+      total={ingresos}
+      moneda={church.moneda}
+      vacio={t("reportes.sinIngresosEsteMes")}
+      delayMs={0}
+      nombreOtras={nombreOtras}
+    />
+  );
+
+  /** Qué documento del teléfono corresponde a cada informe del índice.
+   *
+   *  No duplica `panelInforme` (el del iPad, justo debajo): son los MISMOS
+   *  cinco informes pero con los nodos del teléfono, que ya existían y solo
+   *  estaban apilados. El iPad reparte `bloqueResumen`/`bloqueEstado`/las dos
+   *  tarjetas de recharts; el iPhone reparte sus equivalentes de lista y
+   *  `DonutIOS`. Unificarlos habría obligado a que uno de los dos renunciara a
+   *  su forma, que es justo lo que el rediseño no quiere. */
+  function documentoIPhone(id: InformeId) {
+    if (id === "estado") return estadoIPhone;
+    if (id === "ingresos") return donutIngresosIPhone;
+    if (id === "gastos") return donutGastosIPhone;
+    if (id === "historial") {
+      return bloqueHistorial || (
+        <div className="ios-panel-empty">{t("reportes.sinHistorial")}</div>
+      );
+    }
+    /* El anual no tiene pantalla: es un PDF. Así que su "documento" es la
+       portada que dice qué lleva y el botón que lo genera — el mismo
+       `handleAnnual` que hasta ahora vivía escondido en el "···". */
+    return (
+      <div className="rep-documento">
+        {/* El encabezado hace de título del documento. En el teléfono estas
+            pantallas no llevan Large Title —el carrusel fijo ya dice
+            "Reportes" y un título debajo se leería como un eco, igual que en
+            Por revisar—, y los otros cuatro documentos se titulan solos: el
+            estado y los dos donuts traen su propio encabezado de sección y el
+            resumen mensual el suyo. Este era el único que salía sin nada. */}
+        <h2 className="ios-section-header">{t("anual.boton")}</h2>
+        <p className="rep-documento-sub">{t("reportes.infAnualDetalle", { anio: mes.slice(0, 4) })}</p>
+        <button className="btn primary" onClick={handleAnnual} disabled={exporting !== null}>
+          <IconFileText size={14} /> {exporting === "anual" ? t("common.generando") : t("anual.boton")}
+        </button>
+      </div>
+    );
+  }
+
   function panelInforme(id: InformeId) {
     if (id === "estado") {
       return (
@@ -831,11 +1064,21 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             </button>
           )}
         </div>
+        {/* Con un documento abierto, la barra del teléfono es la del DOCUMENTO:
+            volver al índice a la izquierda y sus dos salidas a la derecha. Es
+            la misma `rep-barra` que el iPad pone junto al informe, con la
+            diferencia de que en 390 px no hay sitio para una segunda fila, así
+            que ocupa la barra fija que ya existe. */}
+        {enIPhone && informe !== null && (
+          <button type="button" className="ios-nav-volver" onClick={() => setInforme(null)}>
+            <IconChevronLeft size={17} strokeWidth={2.4} /> {t("reportes.titulo")}
+          </button>
+        )}
         <div className="header-actions solo-movil">
           <button
             type="button"
             className="btn-compartir-cabecera"
-            onClick={() => handleExport("pdf")}
+            onClick={() => compartirInforme(informe)}
             disabled={exporting !== null}
             aria-label={t("reportes.titulo") + " — " + t("common.imprimir")}
           >
@@ -865,13 +1108,30 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
                      dos formas de ver lo mismo, y tocarlo sacaba una hoja de
                      compartir. En Mac ya estaba en el menú de "Más". */
                   { label: exporting === "anual" ? t("common.generando") : t("anual.boton"), icon: <IconFileText size={13} />, disabled: exporting !== null, onClick: handleAnnual },
-                  { label: exporting === "print" ? t("common.preparando") : t("common.imprimir"), icon: <IconPrinter size={14} />, disabled: exporting !== null, onClick: handlePrint },
+                  { label: exporting === "print" ? t("common.preparando") : t("common.imprimir"), icon: <IconPrinter size={14} />, disabled: exporting !== null, onClick: () => void imprimirInforme(informe) },
                 ],
               },
             ]}
           />
         </div>
+        {/* El mes. En el teléfono era un paso a paso: para ver marzo desde
+            agosto había que tocar cinco veces. El iPad ya tenía el selector que
+            SALTA (`MenuAnchor` con `mesesMenu`, los doce meses hacia atrás) en
+            la barra de su informe; aquí es el mismo, y el paso a paso se queda
+            para el iPad angosto y el Mac, que tienen sitio para los dos.
+
+            El mes se elige UNA vez y los cinco documentos lo heredan: es el
+            mismo `mes` de siempre, no uno por informe. */}
         <div className="periodo-selector solo-movil">
+          {enIPhone ? (
+            <MenuAnchor
+              open={menuMes}
+              onOpenChange={setMenuMes}
+              ariaLabel={t("mov.elegirMes")}
+              button={<span className="chip chip-mes">{mesStr}<IconChevronDown size={12} strokeWidth={2.2} /></span>}
+              items={mesesMenu.map((m) => ({ label: mesLegible(m), onPress: () => setMes(m) }))}
+            />
+          ) : (
           <div className="month-nav">
             <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
               <IconChevronLeft size={16} />
@@ -885,6 +1145,7 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
               <IconChevronRight size={16} />
             </span>
           </div>
+          )}
         </div>
       </div>
       {exportError && (
@@ -986,66 +1247,47 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
       ) : (
       <div className="content content-lienzo">
         {loading ? <LoadingState /> : <>
-        {enIPhone ? (
+        {/* ---------- El teléfono: índice o documento ----------
+            Rediseño de iOS 26 (maqueta `Tamio iPhone Informes.dc.html`). Antes
+            esta rama apilaba los cinco informes en un lienzo sin fin de más de
+            tres pantallas de alto, y el reporte anual no estaba: solo se
+            alcanzaba por el "···". Ahora es lo mismo que ya hacía el iPad —un
+            índice y un documento— con el MISMO estado `informe`, que hasta hoy
+            solo leía la rama `partido`. */}
+        {enIPhone && (informe === null ? (
           <>
-            {/* Las cuatro cifras del mes, en dos columnas y SIN la franja de
-                color de arriba: en el teléfono el color lo lleva el punto de
-                la leyenda y el signo del balance, no un filete decorativo. */}
-            <div className="ios-panel">
-              <div className="ios-panel-head"><h2>{t("reportes.seccionResumen")}</h2></div>
-              <div className="ios-panel-grid">
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.ingresosDelMes")}</span></div>
-                  <span className="ios-stat-num money">
-                    <CountUp value={ingresos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                  </span>
-                  <div className="stat-pct"><Delta pct={pctChange(ingresos, totalesAnt?.ingresos ?? 0)} /> {t("dashboard.vsMesAnterior")}</div>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("dashboard.gastosDelMes")}</span></div>
-                  <span className="ios-stat-num money">
-                    <CountUp value={gastos} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                  </span>
-                  <div className="stat-pct"><Delta pct={pctChange(gastos, totalesAnt?.gastos ?? 0)} invert /> {t("dashboard.vsMesAnterior")}</div>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.balanceNeto")}</span></div>
-                  <span className={`ios-stat-num money${balance >= 0 ? " pos" : " neg"}`}>
-                    <CountUp value={balance} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                  </span>
-                  <div className="stat-pct"><Delta pct={pctChange(balance, balanceAnt)} /> {t("dashboard.vsMesAnterior")}</div>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.mesAnterior")}</span></div>
-                  <span className="ios-stat-num money">
-                    <CountUp value={balanceAnt} format={fmtMoney} paso={100} /><span className="stat-cur">{church.moneda}</span>
-                  </span>
-                  <div className="stat-pct">{mesLegible(mesAnterior)}</div>
-                </div>
-              </div>
+            {/* El membrete convierte el índice en la portada de un juego de
+                documentos, no en una pantalla de datos más. Es el mismo par
+                iglesia + periodo que ya encabeza el estado financiero. */}
+            <div className="rep-cabecera">
+              <div className="rep-iglesia">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+              <div className="rep-periodo">{t("reportes.periodo", { mes: mesStr })}</div>
             </div>
 
-            {/* Uno debajo del otro, cada uno a todo el ancho. */}
-            <DonutIOS
-              titulo={t("reportes.distGastos")}
-              filas={filasGasto}
-              total={gastos}
-              moneda={church.moneda}
-              vacio={t("reportes.sinGastosEsteMes")}
-              delayMs={0}
-              nombreOtras={nombreOtras}
-            />
-            <DonutIOS
-              titulo={t("reportes.distIngresos")}
-              filas={filasIngreso}
-              total={ingresos}
-              moneda={church.moneda}
-              vacio={t("reportes.sinIngresosEsteMes")}
-              delayMs={150}
-              nombreOtras={nombreOtras}
-            />
+            {cifrasIPhone}
+
+            <SeccionIOS titulo={t("reportes.documentosDelMes")}>
+              {INFORMES.map((inf) => (
+                <button
+                  type="button"
+                  key={inf.id}
+                  className="ios-txrow ios-txrow--clickable"
+                  onClick={() => setInforme(inf.id)}
+                >
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{t(inf.titulo)}</div>
+                    <div className="tx-secundaria-movil">{t(inf.sub)}</div>
+                  </div>
+                  <div className="ios-txrow-trailing"><IosChevron /></div>
+                </button>
+              ))}
+            </SeccionIOS>
           </>
         ) : (
+          documentoIPhone(informe)
+        ))}
+
+        {enIPhone ? null : (
         <>
         <div className="dash-canvas">
         {bloqueResumen}
@@ -1056,112 +1298,11 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
           {tarjetaIngresos}
         </div>
         </div>
+        {bloqueEstado}
+        {bloqueHistorial}
         </>
         )}
 
-        {enIPhone ? (
-          <>
-            {/* Estado financiero. Las cuatro columnas de escritorio (color,
-                nombre, monto, porcentaje) no caben en 390 px sin cortar el
-                nombre, así que cada fila pasa a dos líneas dentro de una
-                tarjeta de lista. El encabezado con iglesia y periodo se
-                queda: es lo que convierte esto en un documento y no en una
-                pantalla más. */}
-            <div className="ios-panel">
-              <div className="ios-panel-head"><h2>{t("reportes.estadoFinanciero")}</h2></div>
-              <div className="rep-cabecera">
-                <div className="rep-iglesia">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
-                <div className="rep-periodo">{t("reportes.periodo", { mes: mesLegible(mes) })}</div>
-              </div>
-            </div>
-
-            <div className="ios-panel">
-              <div className="ios-panel-head"><h2>{t("reportes.ingresosPeriodo")}</h2></div>
-              {filasIngreso.length === 0 ? (
-                <div className="ios-panel-empty">{t("reportes.sinIngresosRegistrados")}</div>
-              ) : (
-                <div className="ios-listcard">
-                  {filasIngreso.map((c) => (
-                    <FilaFinancieraIOS
-                      key={c.id}
-                      nombre={catNombre(c.id)}
-                      color={c.color}
-                      monto={fmtMoney(c.total)}
-                      pct={pctTexto(c.total, ingresos, 1)}
-                    />
-                  ))}
-                  <div className="ios-txrow rep-fila rep-total">
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{t("reportes.totalIngresos")}</div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className="rep-monto pos">{fmtMoney(ingresos)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="ios-panel">
-              <div className="ios-panel-head"><h2>{t("reportes.gastosPeriodo")}</h2></div>
-              {filasGasto.length === 0 ? (
-                <div className="ios-panel-empty">{t("reportes.sinGastosRegistrados")}</div>
-              ) : (
-                <div className="ios-listcard">
-                  {filasGasto.map((c) => (
-                    <FilaFinancieraIOS
-                      key={c.id}
-                      nombre={catNombre(c.id)}
-                      color={c.color}
-                      monto={fmtMoney(c.total)}
-                      pct={pctTexto(c.total, gastos, 1)}
-                    />
-                  ))}
-                  <div className="ios-txrow rep-fila rep-total">
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{t("reportes.totalGastos")}</div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className="rep-monto neg">{fmtMoney(gastos)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Los cuatro totales del pie, en la misma cuadrícula de dos
-                columnas que el resumen de arriba. La nota de depósitos se
-                queda: es información contable, no adorno. */}
-            <div className="ios-panel">
-              <div className="ios-panel-grid">
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalIngresos")}</span></div>
-                  <span className="ios-stat-num money pos">{fmtMoney(ingresos)}</span>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalGastos")}</span></div>
-                  <span className="ios-stat-num money neg">{fmtMoney(gastos)}</span>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.balanceNeto")}</span></div>
-                  <span className="ios-stat-num money">{fmtMoney(balance)}</span>
-                </div>
-                <div className="ios-stat" style={{ cursor: "default" }}>
-                  <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.depositosBancarios")}</span></div>
-                  <span className="ios-stat-num money">{fmtMoney(depositosMes)}</span>
-                </div>
-              </div>
-              {depositosMes > 0 && (
-                <p className="ios-panel-note">{t("reportes.depositosNota")}</p>
-              )}
-            </div>
-          </>
-        ) : (
-          bloqueEstado
-
-        )}
-
-        {bloqueHistorial}
         </>}
       </div>
       )}
