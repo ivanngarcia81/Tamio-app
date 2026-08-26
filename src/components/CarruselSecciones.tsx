@@ -11,7 +11,7 @@ interface Props {
   permisos: Permisos;
   memberCount: number;
   pendingCount: number;
-  unreadCount: number;
+  sinVerCount: number;
   /** Qué sección se está asomando por el lado mientras se arrastra, o null.
    *  Se llama SOLO cuando cambia —no en cada fotograma—, porque del otro lado
    *  hay un `setState` que redibuja el shell. */
@@ -33,7 +33,7 @@ interface Props {
  * Fuera de las áreas —Inicio, Mensajes, Ayuda, Ajustes— no se pinta nada. Esas
  * pantallas no tienen hermanas, y una tira con un solo elemento es ruido.
  */
-export default function CarruselSecciones({ role, permisos, memberCount, pendingCount, unreadCount, onVecina }: Props) {
+export default function CarruselSecciones({ role, permisos, memberCount, pendingCount, sinVerCount, onVecina }: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -287,7 +287,7 @@ export default function CarruselSecciones({ role, permisos, memberCount, pending
   const numero = (c?: Contador): number => {
     if (c === "miembros") return memberCount;
     if (c === "pendientes") return pendingCount;
-    if (c === "noLeidos") return unreadCount;
+    if (c === "sinVer") return sinVerCount;
     return 0;
   };
 

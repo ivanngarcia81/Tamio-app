@@ -439,12 +439,14 @@ const ctxSeed = await nuevoContexto("ipad");
       invitado: null, contacto: null, estado: "completada", es_fecha_importante: false,
     });
 
-    // Mensajes: el hilo compartido de las tres áreas. Tres mensajes de dos
-    // roles distintos para que se vean las burbujas de los dos lados; el
-    // separador de día sale solo (todos caen hoy).
-    await db.insertMensaje(id, "tesoreria", "El corte del domingo ya está capturado, falta el comprobante del banco.");
-    await db.insertMensaje(id, "secretaria", "Perfecto. Subo el acta de la administrativa esta tarde.");
-    await db.insertMensaje(id, "tesoreria", "Va. Y ojo con el traslado de Javier: la carta sigue sin firma.");
+    /* Dos notas a mano en el registro. Aquí había tres `insertMensaje` —el
+       hilo de burbujas del chat— hasta que `mensajes` se retiró el 26 de
+       agosto de 2026. Se siembran notas y no sucesos porque los sucesos los
+       escribe la app sola al operar, y sembrarlos a mano probaría el sembrado
+       en vez del motor. Lo que hace falta sembrar es lo único que el motor NO
+       genera: lo que teclea una persona. */
+    await db.registrarNota(id, "El comprobante del banco del domingo llega el martes; lo subo yo.");
+    await db.registrarNota(id, "Ojo con el traslado de Javier: la carta sigue sin firma.");
 
     return "ok";
   });
@@ -777,13 +779,13 @@ console.log("\n== El gris del cromo ==");
   }
 }
 
-/* ---------- 8. La pantalla once: Informes de membresía (y Mensajes) ----------
+/* ---------- 8. La pantalla once: Informes de membresía (y el Registro) ------
    Ninguna de las dos está en el handoff — y §12 de docs/ipad-rediseno.md ya
    contó lo que pasa con lo que no está en la maqueta: no se revisa. Aquí se
    miden las dos cosas que SÍ puede decir un arnés sin diseño de referencia:
    que nada se desborde en horizontal, y que ningún mando quede recortado
    por la barra. Con captura, para poder VER la página. */
-console.log("\n== Informes de membresía y Mensajes (fuera del handoff) ==");
+console.log("\n== Informes de membresía y Registro (fuera del handoff) ==");
 {
   const ctxInf = await nuevoContexto("ipad");
   const pg = await ctxInf.newPage();
@@ -5265,7 +5267,13 @@ console.log("\n== El registro de lo que pasa en la iglesia ==");
   }));
   chk(enPantalla.filas > 0, `la pantalla enseña el registro (${enPantalla.filas} filas)`);
   chk(enPantalla.dias > 0, `agrupado por día (${enPantalla.dias})`);
-  chk(enPantalla.notas === 1, `y la nota se marca aparte del resto (${enPantalla.notas})`);
+  /* Se comprueba la SEPARACIÓN, no un número. Decía `notas === 1` y se rompió
+     el 26 de agosto al sembrar dos notas más — un fallo de la prueba, no del
+     código: lo que importa es que algunas filas lleven la marca y otras no,
+     porque eso es lo que impide que el registro vuelva a ser un tablón. Un
+     conteo exacto solo mide cuántas cosas sembró el arnés. */
+  chk(enPantalla.notas > 0 && enPantalla.notas < enPantalla.filas,
+    `y las notas se marcan aparte del resto (${enPantalla.notas} de ${enPantalla.filas})`);
   chk(enPantalla.burbujas === 0, `sin rastro del chat: cero burbujas (${enPantalla.burbujas})`);
   /* El texto compuesto de verdad, en la pantalla: si `datos` no casara con la
      plantilla de i18n saldría la clave en crudo o un hueco. */

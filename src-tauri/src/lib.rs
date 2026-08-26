@@ -1194,6 +1194,9 @@ fn migraciones() -> Vec<motordb::Migracion> {
             --
             -- `mensajes` NO se toca. Deja de enseñarse, pero sus filas siguen
             -- ahí: borrarlas sería irreversible y viaja por la sincronización.
+            -- [Anotado el 26 ago 2026: Iván lo confirmó y la tabla se suelta en
+            --  la migración 51. Este párrafo se queda como estaba porque decía
+            --  la verdad el día que se escribió.]
             CREATE TABLE IF NOT EXISTS registro (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 church_id  INTEGER NOT NULL REFERENCES churches(id) ON DELETE CASCADE,
@@ -1209,6 +1212,38 @@ fn migraciones() -> Vec<motordb::Migracion> {
             );
             CREATE INDEX IF NOT EXISTS idx_registro_church ON registro(church_id, id);
             CREATE INDEX IF NOT EXISTS idx_registro_area ON registro(church_id, area);
+        "#,
+    }, motordb::Migracion {
+        version: 51,
+        description: "se suelta la tabla mensajes",
+        sql: r#"
+            -- El cierre del reemplazo que empezó la migración 50. Aquella dejó
+            -- de ENSEÑAR `mensajes` y conservó sus filas a propósito, porque
+            -- borrar con sincronización de por medio no tiene vuelta atrás y
+            -- esa decisión no era mía. Iván la tomó el 26 de agosto de 2026:
+            -- "cerrar el reemplazo de Mensajes y borrar".
+            --
+            -- Se mira antes de tirar. En la nube había SIETE filas, todas de
+            -- una sola iglesia y todas de prueba: tres ya borradas en blando y
+            -- cuatro vivas que decían "Notice from Secretariat: Maria's
+            -- membership status changed…" — es decir, el aviso automático que
+            -- el registro ahora hace mejor, y congelado en inglés, que era
+            -- justamente el defecto que motivó guardar `tipo` + `datos` en vez
+            -- del texto ya compuesto. No se pierde nada que alguien escribiera.
+            --
+            -- Por qué DROP y no dejar la tabla vacía: mientras exista, es una
+            -- tabla sin pantalla, sin funciones en `db.ts` y sin paso en
+            -- `sync.ts`. Eso no es "por si acaso", es una trampa para quien
+            -- venga en seis meses y no sepa si está viva.
+            --
+            -- El orden importa y va al revés que el de añadir. Para añadir,
+            -- primero la columna remota y después el sync local. Para retirar,
+            -- primero se quita el sync local (este mismo commit) y sólo cuando
+            -- todos los aparatos lleven esta versión se suelta la tabla remota
+            -- de Supabase — si se soltara antes, un iPad con la 1.2.11 todavía
+            -- instalada pediría una tabla que ya no existe. Por eso allá las
+            -- filas se marcan borradas y la tabla se queda, vacía, un tiempo.
+            DROP TABLE IF EXISTS mensajes;
         "#,
     }]
 }

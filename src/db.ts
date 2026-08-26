@@ -3856,34 +3856,6 @@ export async function insertVisitanteComoMiembro(
   return rows[0]?.id ?? null;
 }
 
-// ---------- Mensajes internos (tesorería ↔ secretaría) ----------
-
-export interface Mensaje {
-  id: number;
-  church_id: number;
-  /** Rol que envió el mensaje: "tesorero" | "secretaria". */
-  de_rol: string;
-  cuerpo: string;
-  leido: number;
-  creado_en: string;
-}
-
-export async function listMensajes(churchId: number): Promise<Mensaje[]> {
-  const d = await getDb();
-  return d.select<Mensaje[]>(
-    "SELECT * FROM mensajes WHERE church_id = $1 AND deleted = 0 ORDER BY id ASC",
-    [churchId]
-  );
-}
-
-export async function insertMensaje(churchId: number, deRol: string, cuerpo: string): Promise<void> {
-  const d = await getDb();
-  await d.execute(
-    "INSERT INTO mensajes (church_id, de_rol, cuerpo, uid, updated_at) VALUES ($1, $2, $3, $4, datetime('now'))",
-    [churchId, deRol, cuerpo.trim(), crypto.randomUUID()]
-  );
-}
-
 // ---------- El registro de lo que pasa en la iglesia (migración 50) ----------
 
 /**
@@ -4015,36 +3987,6 @@ export async function marcarRegistroVisto(churchId: number): Promise<void> {
     [churchId],
   );
   try { localStorage.setItem(CLAVE_VISTO, String(filas[0]?.m ?? 0)); } catch { /* noop */ }
-}
-
-/** Marca como leídos los mensajes que recibió `paraRol` (los que NO envió él).
- *  Devuelve cuántos marcó (0 si no había ninguno sin leer) para que la UI evite
- *  refrescos innecesarios. */
-export async function marcarMensajesLeidos(churchId: number, paraRol: string): Promise<number> {
-  const d = await getDb();
-  const res = await d.execute(
-    "UPDATE mensajes SET leido = 1, updated_at = datetime('now') WHERE church_id = $1 AND de_rol <> $2 AND leido = 0",
-    [churchId, paraRol]
-  );
-  return res.rowsAffected ?? 0;
-}
-
-/** Borrado SUAVE (deleted = 1) para que se propague en la sincronización. */
-export async function deleteMensaje(id: number, churchId: number): Promise<void> {
-  const d = await getDb();
-  await d.execute(
-    "UPDATE mensajes SET deleted = 1, updated_at = datetime('now') WHERE id = $1 AND church_id = $2",
-    [id, churchId]
-  );
-}
-
-export async function countMensajesNoLeidos(churchId: number, paraRol: string): Promise<number> {
-  const d = await getDb();
-  const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM mensajes WHERE church_id = $1 AND de_rol <> $2 AND leido = 0 AND deleted = 0",
-    [churchId, paraRol]
-  );
-  return rows[0]?.n ?? 0;
 }
 
 // ---------- Agenda y calendarios ----------
@@ -4827,8 +4769,16 @@ const TABLAS_DATOS = [
   "corte_movimientos", "cortes", "servicio_puestos", "servicio_orden", "parentescos",
   "transactions", "depositos_bancarios", "members", "actas", "cartas",
   "solicitudes", "traslados_salida", "traslados_entrada", "servicios",
-  "agenda", "mensajes", "gastos_recurrentes",
+  "agenda", "registro", "gastos_recurrentes",
 ] as const;
+
+/* `registro` entró aquí el 26 de agosto de 2026, y no de adorno: la tabla
+   nació con la migración 50 y se quedó FUERA de esta lista, así que "borrar
+   los datos de la iglesia" dejaba intacto el registro de lo que había pasado
+   en ella —justo lo que alguien que borra sus datos espera que se vaya—. En
+   su sitio salió `mensajes`, que ya no existe. Quien añada una tabla de datos
+   de aquí en adelante: si lleva `church_id` y guarda hechos, va en esta lista,
+   y `npm run verificar-borrado` lo comprueba contra el esquema de verdad. */
 
 /** Opción A: borra todos los REGISTROS de la iglesia (movimientos, miembros,
  *  cartas, actas, servicios, etc.) pero CONSERVA la configuración: la fila de

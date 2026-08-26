@@ -19,7 +19,7 @@ interface Props {
   church: Church;
   memberCount: number;
   pendingCount: number;
-  unreadCount: number;
+  sinVerCount: number;
   role: Role;
   /** Con login activo se muestra el perfil de la sesión y el botón de salir. */
   authActivo?: boolean;
@@ -95,7 +95,7 @@ function Grupo({ abierto, etiqueta, onToggle, children }: {
   );
 }
 
-export default function Sidebar({ church, memberCount, pendingCount, unreadCount, role, authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir, onBuscar }: Props) {
+export default function Sidebar({ church, memberCount, pendingCount, sinVerCount, role, authActivo, sesionEmail, sesionNombre, sesionFoto, onEditarPerfil, onSalir, onBuscar }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -237,7 +237,7 @@ export default function Sidebar({ church, memberCount, pendingCount, unreadCount
       </nav>
 
       <div className="sidebar-footer">
-        <Item to="/inbox" icon={<IconClipboardList size={18} />} label={t("nav.inbox")} badge={unreadCount} />
+        <Item to="/inbox" icon={<IconClipboardList size={18} />} label={t("nav.inbox")} badge={sinVerCount} />
         {verGrupoTesoreria && !esSecretaria && <Item to="/bandeja" icon={<IconBandeja />} label={t("nav.porRevisar")} badge={pendingCount} />}
         <Item to="/ayuda" icon={<IconHelp />} label={t("nav.ayuda")} />
         <Item to="/configuracion" icon={<IconConfig />} label={t("nav.configuracion")} />

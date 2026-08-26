@@ -62,7 +62,6 @@ const TABLAS = [
   { lista: "TRASLADO_SALIDA_DATA_COLS", tabla: "traslados_salida", padre: "members" },
   { lista: "TRASLADO_ENTRADA_DATA_COLS", tabla: "traslados_entrada", padre: "members" },
   { lista: "AGENDA_DATA_COLS", tabla: "agenda" },
-  { lista: "MENSAJE_DATA_COLS", tabla: "mensajes" },
   { lista: "PLANTILLA_DATA_COLS", tabla: "plantillas" },
   { lista: "CATEGORIA_DATA_COLS", tabla: "categorias_custom" },
   { lista: "PUESTO_DATA_COLS", tabla: "servicio_puestos", padre: "servicios" },

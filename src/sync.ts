@@ -1386,13 +1386,6 @@ export function sincronizarAgenda(churchIdLocal: number): Promise<ResultadoSync>
   return sincronizarTablaConMiembro(churchIdLocal, "agenda", AGENDA_DATA_COLS, "responsable_member_id");
 }
 
-// Mensajes (MSG1): buzón interno entre roles, tabla simple.
-const MENSAJE_DATA_COLS = ["de_rol", "cuerpo", "leido", "creado_en"] as const;
-
-export function sincronizarMensajes(churchIdLocal: number): Promise<ResultadoSync> {
-  return sincronizarTablaSimple(churchIdLocal, "mensajes", MENSAJE_DATA_COLS);
-}
-
 /* El REGISTRO de lo que pasa en la iglesia (migración 50). Tabla simple: no
    enlaza con nada por uid — un apunte guarda INSTANTÁNEAS ("María", "CAR-2026-
    0005") y no referencias, precisamente para que siga diciendo la verdad
@@ -1402,8 +1395,9 @@ export function sincronizarMensajes(churchIdLocal: number): Promise<ResultadoSyn
 
    Lo que NO viaja: hasta dónde ha leído cada quien. Eso vive en localStorage
    de cada aparato, que es el fallo que `mensajes` tenía al revés — su columna
-   `leido` sí viajaba, así que si la tesorera abría un mensaje se le apagaba el
-   aviso también al pastor. */
+   `leido` SÍ viajaba, así que si la tesorera abría un mensaje se le apagaba el
+   aviso también al pastor. `mensajes` ya no existe (se retiró el 26 de agosto
+   de 2026), pero el error que enseñó sí, y por eso queda escrito. */
 const REGISTRO_DATA_COLS = ["tipo", "area", "datos", "cuerpo", "quien", "creado_en"] as const;
 
 export function sincronizarRegistro(churchIdLocal: number): Promise<ResultadoSync> {
@@ -1716,7 +1710,6 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
     ["servicio_orden", await sincronizarOrdenCulto(churchIdLocal)],
     ["parentescos", await sincronizarParentescos(churchIdLocal)],
     ["agenda", await sincronizarAgenda(churchIdLocal)],
-    ["mensajes", await sincronizarMensajes(churchIdLocal)],
     /* El registro va suelto al final: no depende de nadie porque guarda
        instantáneas y no referencias. */
     ["registro", await sincronizarRegistro(churchIdLocal)],

@@ -1363,22 +1363,6 @@ export const es = {
     confirmarFabrica: "Se borrará TODO, incluida la configuración, y la app volverá a cero. Esta acción no se puede deshacer.",
   },
 
-  mensajes: {
-    visibilidad: "Lo ven las tres áreas: tesorería, secretaría y administración.",
-    atajoEnviar: "⌘ ↩ para enviar",
-    titulo: "Mensajes",
-    sub: "Comunicación entre tesorería y secretaría",
-    vacioTitulo: "No hay mensajes todavía",
-    vacioSub: "Escribe el primer mensaje para avisar de un error o coordinar algo.",
-    placeholder: "Escribe un mensaje…",
-    enviar: "Enviar",
-    enviado: "Mensaje enviado",
-    eliminar: "Eliminar mensaje",
-    eliminado: "Mensaje eliminado",
-    eliminarTitulo: "Eliminar mensaje",
-    eliminarMensaje: "¿Seguro que deseas eliminar este mensaje? No se puede deshacer.",
-  },
-
   membresia: {
     statActivos: "Miembros activos",
     statAltas: "Altas {{anio}}",

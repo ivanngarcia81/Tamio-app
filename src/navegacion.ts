@@ -16,7 +16,7 @@ import { puedeVer, SIN_PERMISOS, type Permisos, type Role } from "./role";
 /** De qué contador cuelga la insignia de un destino. Se guarda el nombre y no
  *  el número: la lista es estática y los contadores cambian, así que quien
  *  pinta el menú resuelve el número en el momento. */
-export type Contador = "miembros" | "pendientes" | "noLeidos";
+export type Contador = "miembros" | "pendientes" | "sinVer";
 
 export interface Destino {
   /** Ruta de React Router. Es también la identidad del destino. */
@@ -71,7 +71,7 @@ export const AREAS: Area[] = [
 
 /** Destinos que no son de ningún área: los ve todo el mundo. */
 export const INICIO: Destino = { ruta: "/", clave: "nav.inicio" };
-export const MENSAJES: Destino = { ruta: "/inbox", clave: "nav.inbox", contador: "noLeidos" };
+export const REGISTRO: Destino = { ruta: "/inbox", clave: "nav.inbox", contador: "sinVer" };
 export const AYUDA: Destino = { ruta: "/ayuda", clave: "nav.ayuda" };
 export const AJUSTES: Destino = { ruta: "/configuracion", clave: "nav.configuracion", claveCorta: "nav.ajustes" };
 
@@ -96,7 +96,7 @@ export function areasVisibles(rol: Role, permisos: Permisos = SIN_PERMISOS): Are
     .sort((a, b) => seccionesVisibles(b, rol, permisos).length - seccionesVisibles(a, rol, permisos).length);
 }
 
-/** ¿A qué área pertenece esta ruta? `null` para Inicio, Mensajes, Ayuda y
+/** ¿A qué área pertenece esta ruta? `null` para Inicio, Registro, Ayuda y
  *  Ajustes, que no están dentro de ninguna. */
 export function areaDeRuta(ruta: string): Area | null {
   return AREAS.find((a) => a.secciones.some((s) => s.ruta === ruta)) ?? null;
@@ -137,7 +137,7 @@ export interface RanuraBarra {
  * atajos de su semana.
  *
  * La Bandeja no vale para todos: la secretaria **no puede verla**
- * (`role.ts`), así que su tercera ranura es Mensajes.
+ * (`role.ts`), así que su tercera ranura es el Registro.
  */
 export function barraDeRol(rol: Role, permisos: Permisos = SIN_PERMISOS): RanuraBarra[] {
   const areas = areasVisibles(rol, permisos);
@@ -145,8 +145,8 @@ export function barraDeRol(rol: Role, permisos: Permisos = SIN_PERMISOS): Ranura
   // La tercera ranura es la del medio a propósito: es el hueco que libera el
   // botón de crear al salirse de la barra, y el centro es lo que la mano
   // alcanza sin recolocar el teléfono. Ahí va lo que esa persona mira todos
-  // los días: el tesorero, lo que le falta por revisar; la secretaria, sus
-  // mensajes, porque la Bandeja no la puede ver (`role.ts`).
+  // los días: el tesorero, lo que le falta por revisar; la secretaria, el
+  // registro de la iglesia, porque la Bandeja no la puede ver (`role.ts`).
   const central: RanuraBarra = puedeVer(rol, "/bandeja")
     ? {
         destino: {
@@ -154,7 +154,7 @@ export function barraDeRol(rol: Role, permisos: Permisos = SIN_PERMISOS): Ranura
         },
         atajo: true,
       }
-    : { destino: MENSAJES, atajo: true };
+    : { destino: REGISTRO, atajo: true };
 
   // Un área con UNA sola sección visible no es un área para esa persona: es
   // una pantalla prestada. Se etiqueta con su propio nombre —"Reportes"— y no

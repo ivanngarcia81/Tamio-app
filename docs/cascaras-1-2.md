@@ -51,6 +51,33 @@ falta para dárselo. Cuando se cablea, se tacha con la fecha.
   destinatario, es un hilo único por iglesia. Si algún día se quiere
   mensajería dirigida, es columna nueva y no un cambio de texto.
 
+> 🪦 **Esta pantalla ya no existe.** Iván, 25 ago 2026: *"la página donde dice
+> mensajes debería ser otra función, no de recibir mensajes como si fuera un
+> chat; ya las personas tienen WhatsApp e iMessage"*. En su sitio está **el
+> registro de lo que pasa en la iglesia** (migración 50). Lo de arriba se
+> queda tal cual porque describía bien lo que había.
+>
+> **La retirada fue en dos tiempos, y el segundo hizo falta.** El 25 de agosto
+> se dejó de ENSEÑAR `mensajes` y sus filas se conservaron: borrar con
+> sincronización de por medio no tiene vuelta atrás, y esa decisión no era del
+> que escribe código. El 26 Iván la tomó —*"cerrar el reemplazo de Mensajes y
+> borrar"*— y entonces se fue de verdad: la pantalla, las seis funciones de
+> `db.ts`, el paso de `sync.ts`, las claves de i18n, la tabla local
+> (migración 51) y las filas de la nube. La tabla REMOTA se queda vacía hasta
+> que todos los aparatos pasen de la 1.2.11; el porqué está en
+> `supabase/retiro-msg1-mensajes.sql`.
+>
+> **Y salió algo que no se buscaba.** Al ir a quitar `mensajes` de
+> `TABLAS_DATOS` se vio que `registro` **nunca entró** en esa lista: la tabla
+> nació el 25 y el borrado de datos de la iglesia la dejaba entera. Nadie lo
+> habría notado hasta ir a mirar. No es un despiste aislado — es lo que pasa
+> siempre que se añade una tabla, porque la lista del borrado vive a mil
+> líneas de la migración y no la ve nadie. De ahí salió
+> `npm run verificar-borrado`, que corre las migraciones de verdad sobre un
+> sqlite en memoria y compara el esquema resultante con la lista. Probado
+> rompiéndolo tres veces: quitando `registro` de la lista, dejando un nombre
+> fantasma, y añadiendo una tabla nueva sin apuntarla.
+
 ---
 
 > ⚠️ **Este archivo se quedó parado nueve pantallas.** Se abrió el 22 de

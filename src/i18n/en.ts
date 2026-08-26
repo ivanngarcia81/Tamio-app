@@ -1334,22 +1334,6 @@ export const en: Resources = {
     confirmarFabrica: "This will delete EVERYTHING, including the configuration, and reset the app to zero. This action cannot be undone.",
   },
 
-  mensajes: {
-    visibilidad: "All three areas see this: treasury, secretariat and administration.",
-    atajoEnviar: "⌘ ↩ to send",
-    titulo: "Inbox",
-    sub: "Communication between treasury and secretariat",
-    vacioTitulo: "No messages yet",
-    vacioSub: "Write the first message to report an error or coordinate something.",
-    placeholder: "Type a message…",
-    enviar: "Send",
-    enviado: "Message sent",
-    eliminar: "Delete message",
-    eliminado: "Message deleted",
-    eliminarTitulo: "Delete message",
-    eliminarMensaje: "Delete this message? This cannot be undone.",
-  },
-
   membresia: {
     statActivos: "Active members",
     statAltas: "Additions {{anio}}",

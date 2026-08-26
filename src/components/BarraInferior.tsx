@@ -22,7 +22,7 @@ interface Props {
   permisos: Permisos;
   memberCount: number;
   pendingCount: number;
-  unreadCount: number;
+  sinVerCount: number;
 }
 
 /** Icono por ruta, para las ranuras que apuntan a una pantalla concreta
@@ -65,7 +65,7 @@ const ICONOS_AREA: Record<Area["id"], ReactNode> = {
  * lleva y esta barra no.
  */
 export default function BarraInferior({
-  role, permisos, memberCount, pendingCount, unreadCount,
+  role, permisos, memberCount, pendingCount, sinVerCount,
 }: Props) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
@@ -74,7 +74,7 @@ export default function BarraInferior({
   const numero = (c?: Contador): number => {
     if (c === "miembros") return memberCount;
     if (c === "pendientes") return pendingCount;
-    if (c === "noLeidos") return unreadCount;
+    if (c === "sinVer") return sinVerCount;
     return 0;
   };
 

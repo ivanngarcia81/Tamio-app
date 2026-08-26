@@ -169,7 +169,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [sinVerCount, setUnreadCount] = useState(0);
 
   // Con login activo el rol viene del servidor; sin login, del selector manual.
   const { estado: authEstado, salir, guardarPerfil, borrarCuenta } = useSupabaseAuth();
@@ -740,7 +740,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       >
         <IconSidebar />
       </button>
-      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} unreadCount={unreadCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} onBuscar={() => setCmdOpen(true)} />
+      <Sidebar church={church} memberCount={memberCount} pendingCount={pendingCount} sinVerCount={sinVerCount} role={role} authActivo={authHabilitado} sesionEmail={authEstado.email} sesionNombre={authEstado.nombre} sesionFoto={authEstado.foto} onEditarPerfil={() => setPerfilAbierto(true)} onSalir={salir} onBuscar={() => setCmdOpen(true)} />
       {/* Bug de teléfono: el carrusel vivía DENTRO de <main> (el área con
           scroll) y se posicionaba con position:sticky para no desplazarse —
           pero seguía siendo contenido desplazable, así que al entrar a la
@@ -753,7 +753,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         permisos={permisos}
         memberCount={memberCount}
         pendingCount={pendingCount}
-        unreadCount={unreadCount}
+        sinVerCount={sinVerCount}
         onVecina={(ruta) => setVecina(
           ruta && mainRef.current ? { ruta, top: techoDeLaPagina(mainRef.current) } : null,
         )}
@@ -791,7 +791,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
         permisos={permisos}
         memberCount={memberCount}
         pendingCount={pendingCount}
-        unreadCount={unreadCount}
+        sinVerCount={sinVerCount}
       />
       {hayCrearAqui(location.pathname) && <BotonCrear onCrear={crearAqui} />}
 
