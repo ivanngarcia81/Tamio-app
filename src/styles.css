@@ -18754,3 +18754,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    descartar (`editorDirtyRef` → `pendingTab` en Cartas.tsx), así que no hay
    forma de perder lo escrito por tocarlo. */
 :root.iphone .app:has(.carta-ios) .btn-crear { display: none; }
+
+/* Fila de resumen que además FILTRA (Membresía: las ocho tarjetas de
+   `resumenMembresia`). Necesita decir dos cosas que una fila normal no dice:
+   que se puede tocar y que ahora mismo está recortando la lista de abajo.
+   Elegida, se tiñe y saca la ✕ que la suelta — el mismo trato que `.ios-stat
+   .es-filtro` le daba a la tarjeta en Informes de membresía, que es de donde
+   viene el patrón. */
+:root.iphone .ios-txrow.es-filtro { background: color-mix(in srgb, var(--brand) 10%, var(--surface)); }
+:root.iphone .ios-txrow.es-filtro .ios-txrow-title { color: var(--brand); font-weight: 600; }
+:root.iphone .ios-quitar-filtro {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1;
+  color: var(--brand);
+}

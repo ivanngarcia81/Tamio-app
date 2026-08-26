@@ -245,6 +245,7 @@ const PANTALLAS = [
   { nombre: "10-cartas-indice", ruta: "/cartas" },
   { nombre: "13-reporte-miembros", ruta: "/reporte-miembros" },
   { nombre: "14-servicios", ruta: "/servicios" },
+  { nombre: "15-membresia", ruta: "/membresia" },
 ];
 
 for (const tema of ["light", "dark"]) {
