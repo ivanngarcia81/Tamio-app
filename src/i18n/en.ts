@@ -2762,6 +2762,8 @@ export const en: Resources = {
       fechaLimite: "Deadline",
       otra: "Other activity",
     },
+    // Botón que abre la hoja de filtros del teléfono (rediseño de iOS 26).
+    filtros: "Filters",
   },
 
   rol: {

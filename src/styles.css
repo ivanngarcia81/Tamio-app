@@ -19015,3 +19015,44 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    a la izquierda en vez de estirarse. */
 :root.iphone .mb-barras { justify-content: flex-start; }
 :root.iphone .mb-barra-col { flex: 1 1 0; max-width: 46px; }
+
+/* --- 14. Agenda: mandos del teléfono --------------------------------------
+   Buscador y botón de filtros en una sola fila. Los seis filtros se fueron a
+   una hoja (`IOSFormSheet`): en la fila que tenían se salían por el borde
+   derecho sin avisar, y encima del calendario sumaban ~700px de mandos antes
+   del primer día del mes.
+
+   NO se esconden en Mes y Semana aunque ahí no se vean los chips: el punto de
+   cada día sale de `porFecha`, que a su vez sale de `filtradas`, así que un
+   filtro puesto cambia lo que el mes enseña. Por eso el botón vive en las
+   cuatro vistas y lleva la cuenta de los que hay puestos. */
+:root.iphone .agenda-mandos-ios {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+:root.iphone .agenda-mandos-ios .chip { flex: 0 0 auto; }
+
+/* Dentro de la hoja los filtros dejan de deslizarse y se reparten en varias
+   filas: ahí sobra el alto y lo que faltaba era verlos todos a la vez. */
+:root.iphone .ios-filtros--hoja {
+  flex-wrap: wrap;
+  overflow: visible;
+  margin: 0;
+  padding: 16px;
+}
+
+/* La cifra compacta, cuando además es un botón (Agenda: llevan a la semana de
+   hoy o a la lista). Hereda todo de `.rep-cifra`; solo hay que deshacer lo que
+   el navegador le pone por ser `<button>`. */
+:root.iphone .rep-cifra.es-boton {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .rep-cifra.es-boton:active { opacity: .5; }

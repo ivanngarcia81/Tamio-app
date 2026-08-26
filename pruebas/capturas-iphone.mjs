@@ -130,6 +130,7 @@ const ctxSemilla = await contextoIPhone("light");
     const p = (x) => String(x).padStart(2, "0");
     const iso = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
     const hace = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d); };
+    const en = (n) => hace(-n);
 
     // Nombres repartidos por inicial: es lo que hace que el índice alfabético
     // de Miembros tenga de verdad varias letras que ofrecer.
@@ -225,6 +226,31 @@ const ctxSemilla = await contextoIPhone("light");
       });
     }
 
+    // Actividades repartidas: hoy, esta semana y pasadas, para que las cuatro
+    // vistas de Agenda (mes, semana, lista, historial) tengan qué enseñar.
+    // Claves REALES de `agenda.tipos` (es.ts). "ensayo" y "visita" no existen y
+    // la fila enseñaba la clave cruda —"agenda.tipos.vi…"—, el mismo tropiezo
+    // que con los tipos de servicio: `t()` devuelve la clave si no la encuentra.
+    const tiposAct = ["cultoRegular", "reunionAdministrativa", "escuelaBiblica", "vigilia"];
+    for (const [dia, nombre, estado] of [
+      [0, "Culto de oración", "programada"], [0, "Ensayo de alabanza", "programada"],
+      [1, "Reunión de diáconos", "programada"], [3, "Visita a hospital", "programada"],
+      [6, "Culto especial de aniversario", "programada"], [12, "Escuela dominical", "programada"],
+      [-4, "Junta administrativa", "completada"], [-11, "Vigilia de oración", "completada"],
+      [-18, "Retiro de jóvenes", "cancelada"],
+    ]) {
+      const n = Number(dia);
+      await db.insertActividad(id, {
+        nombre: String(nombre),
+        tipo: tiposAct[Math.abs(n) % tiposAct.length], tipo_personalizado: null,
+        fecha: n >= 0 ? en(n) : hace(-n),
+        hora_inicio: "19:00", hora_fin: null, dia_completo: false,
+        lugar: "Templo", descripcion: null, responsable_member_id: null,
+        responsable_persona: null, responsable_ministerio: null,
+        invitado: null, contacto: null, estado: String(estado), es_fecha_importante: n === 6,
+      });
+    }
+
     return "ok";
   });
   console.log(ok === "ok" ? "datos sembrados" : `semilla devolvió ${ok}`);
@@ -246,6 +272,7 @@ const PANTALLAS = [
   { nombre: "13-reporte-miembros", ruta: "/reporte-miembros" },
   { nombre: "14-servicios", ruta: "/servicios" },
   { nombre: "15-membresia", ruta: "/membresia" },
+  { nombre: "17-agenda", ruta: "/agenda" },
 ];
 
 for (const tema of ["light", "dark"]) {
@@ -317,6 +344,23 @@ for (const tema of ["light", "dark"]) {
     await page.getByText(fila, { exact: true }).first().click();
     await page.waitForTimeout(1400);
     const archivo = `${SALIDA}/16-membresia-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+// Agenda: las cuatro vistas del segmentado.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const vista of ["Semana", "Lista", "Historial"]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/agenda`, { waitUntil: "networkidle" });
+    await page.getByRole("tab", { name: vista, exact: true }).first().click();
+    await page.waitForTimeout(1200);
+    const archivo = `${SALIDA}/18-agenda-${vista.toLowerCase()}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   }

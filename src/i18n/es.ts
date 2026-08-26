@@ -2826,6 +2826,8 @@ export const es = {
       fechaLimite: "Fecha límite",
       otra: "Otra actividad",
     },
+    // Botón que abre la hoja de filtros del teléfono (rediseño de iOS 26).
+    filtros: "Filtros",
   },
 
   rol: {
