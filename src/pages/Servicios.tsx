@@ -12,6 +12,8 @@ import ServicioModal from "../components/ServicioModal";
 import LoadingState from "../components/LoadingState";
 import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
+import SeccionIOS from "../components/ios/SeccionIOS";
+import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
 import { IconBookOpen, IconMiembros, IconPlus, IconSearch } from "../icons";
@@ -127,7 +129,17 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
       t(`servicios.tipo.${s.tipo}`).toLowerCase().includes(q)
   );
   const totalPages = Math.max(1, Math.ceil(visibles.length / PAGE_SIZE));
-  const pagina = visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* En el teléfono la página CRECE en vez de moverse: es el mismo corte del
+     mismo array, abierto por arriba, que es lo que convierte el paginador en
+     scroll infinito. En Mac e iPad el paginador se queda — con ratón y teclado,
+     saltar a la página 7 sigue siendo mejor que desplazarse seis. */
+  const pagina = enIPhone
+    ? visibles.slice(0, page * PAGE_SIZE)
+    : visibles.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const centinela = useScrollInfinito(
+    enIPhone && page < totalPages,
+    () => setPage((p) => Math.min(p + 1, totalPages)),
+  );
 
   const sel = selId == null ? null : servicios.find((s) => s.id === selId) ?? null;
   const ultimoSel = useRef<Servicio | null>(null);
@@ -308,23 +320,34 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
       ) : (
       <div className="content content-lienzo">
         {enIPhone ? (
-          <div className="ios-panel">
-            <div className="ios-panel-head"><h2>{t("servicios.seccionResumen")}</h2></div>
-            <div className="ios-panel-grid">
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("servicios.statServiciosMes")}</span></div>
-                <span className="ios-stat-num"><CountUp value={statsMes.servicios} format={String} /></span>
-              </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("servicios.statAsistenciaPromedio")}</span></div>
-                <span className="ios-stat-num">{statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}</span>
-              </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("servicios.statVisitantesMes")}</span></div>
-                <span className="ios-stat-num"><CountUp value={statsMes.visitantes} format={String} /></span>
+          /* Rediseño de iOS 26 (GUIA §4, fila 14): las tres tarjetas de
+             resumen pasan a las tres filas de una lista agrupada. Las tres son
+             un conteo suelto —un número sin unidad ni pie—, y en una tarjeta de
+             media pantalla ese número ocupaba 40px de alto para decir "9".
+             Además eran tres en una rejilla de dos columnas, así que la tercera
+             dejaba un hueco. En fila se leen las tres de un vistazo. */
+          <SeccionIOS titulo={t("servicios.seccionResumen")}>
+            <div className="ios-txrow">
+              <div className="ios-txrow-main"><div className="ios-txrow-title">{t("servicios.statServiciosMes")}</div></div>
+              <div className="ios-txrow-trailing">
+                <span className="ios-fila-valor"><CountUp value={statsMes.servicios} format={String} /></span>
               </div>
             </div>
-          </div>
+            <div className="ios-txrow">
+              <div className="ios-txrow-main"><div className="ios-txrow-title">{t("servicios.statAsistenciaPromedio")}</div></div>
+              <div className="ios-txrow-trailing">
+                <span className="ios-fila-valor">
+                  {statsMes.promedio ? <CountUp value={statsMes.promedio} format={String} /> : "—"}
+                </span>
+              </div>
+            </div>
+            <div className="ios-txrow">
+              <div className="ios-txrow-main"><div className="ios-txrow-title">{t("servicios.statVisitantesMes")}</div></div>
+              <div className="ios-txrow-trailing">
+                <span className="ios-fila-valor"><CountUp value={statsMes.visitantes} format={String} /></span>
+              </div>
+            </div>
+          </SeccionIOS>
         ) : (
           <div className="dash-canvas">
             {resumenEscritorio}
@@ -336,7 +359,14 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             el rótulo parecían contradecirse: "Servicios este mes: 0" encima
             de una tabla con cultos de meses anteriores. */}
         <div className="tx-head">
-          <span className="card-title">{t("servicios.historialCompleto")}</span>
+          {/* `.card-title` es la etiqueta en versalitas de 11px de una tarjeta de
+              escritorio. En el teléfono este rótulo es el encabezado de la
+              sección que abre —el mismo 13/600 en mayúsculas que el resto de la
+              app desde el rediseño—, así que usa la clase de encabezado y no la
+              de etiqueta. */}
+          {enIPhone
+            ? <h2 className="ios-section-header">{t("servicios.historialCompleto")}</h2>
+            : <span className="card-title">{t("servicios.historialCompleto")}</span>}
           <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
             <IconSearch size={15} strokeWidth={2} />
             <input
@@ -418,7 +448,9 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             ))}
           </div>
         )}
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {enIPhone
+          ? <div ref={centinela} aria-hidden="true" />
+          : <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
       </div>
       )}
 

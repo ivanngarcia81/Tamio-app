@@ -198,6 +198,33 @@ const ctxSemilla = await contextoIPhone("light");
       });
     }
 
+    // Servicios con asistencia, para que la lista y las tres cifras del mes
+    // tengan algo que enseñar.
+    // Las claves REALES de `servicios.tipo` (es.ts ~1934). Con nombres
+    // inventados la fila salía enseñando la clave cruda —"servicios.tipo.
+    // cultoDominical"— porque `t()` devuelve la clave cuando no la encuentra.
+    const tiposServicio = ["dominical", "estudio", "oracion", "dominical"];
+    const predicadores = ["Pastor Iván García", "Diác. Abel Cortés", "Beatriz Mena", "Pastor Iván García"];
+    for (let i = 0; i < 8; i++) {
+      const presentes = miembros.slice(0, 18 - i).map((m) => ({
+        member_id: m.id, presente: i % 4 !== 2 || m.id % 2 === 0,
+        razon: null, razon_otra: null, seguimiento: false,
+        // `nombre_snapshot` es NOT NULL: el roster se congela con el nombre que
+        // el miembro tenía ese día, para que renombrarlo después no reescriba
+        // la asistencia de un servicio ya cerrado.
+        nombre_snapshot: m.nombre,
+      }));
+      await db.insertServicio(id, {
+        fecha: hace(i * 3 + 1),
+        tipo: tiposServicio[i % tiposServicio.length],
+        dirige: null, predica: predicadores[i % predicadores.length],
+        titulo_mensaje: null, texto_biblico: null, resumen_mensaje: null,
+        participaciones: [], tema_escuela: null, maestro_escuela: null,
+        asistencia: presentes, visitantes: [],
+        ninos: 4 + (i % 3), jovenes: 6, adultos: 20, eventos: null,
+      });
+    }
+
     return "ok";
   });
   console.log(ok === "ok" ? "datos sembrados" : `semilla devolvió ${ok}`);
@@ -217,6 +244,7 @@ const PANTALLAS = [
   { nombre: "8-informes", ruta: "/reportes" },
   { nombre: "10-cartas-indice", ruta: "/cartas" },
   { nombre: "13-reporte-miembros", ruta: "/reporte-miembros" },
+  { nombre: "14-servicios", ruta: "/servicios" },
 ];
 
 for (const tema of ["light", "dark"]) {
