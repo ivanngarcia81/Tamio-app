@@ -306,6 +306,23 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// Membresía: el resumen y sus tres destinos.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const [nombre, fila] of [["padron", "Miembros"], ["asistencia", "Asistencia"], ["seguimiento", "Seguimiento"]]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+    await page.getByText(fila, { exact: true }).first().click();
+    await page.waitForTimeout(1400);
+    const archivo = `${SALIDA}/16-membresia-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
 // El editor de la carta, abierto desde el "+". Es el caso que más importa
 // comprobar: es la pantalla más larga de Cartas y la que peor se sentiría si
 // no tuviera salida.

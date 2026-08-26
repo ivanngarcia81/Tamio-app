@@ -27,7 +27,7 @@ import FusionarMiembroModal from "../components/FusionarMiembroModal";
 import LoadingState from "../components/LoadingState";
 import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
-import SeccionIOS from "../components/ios/SeccionIOS";
+import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
 import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -224,10 +224,14 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   const [anio, setAnio] = useState(currentYear());
 
   /* ---- Estado del maestro-detalle (handoff 2, solo iPad partido) ---- */
-  type VistaMb = "miembros" | "asistencia" | "seguimiento";
+  /* "resumen" es SOLO del teléfono. En el iPad el resumen no es un sitio: sus
+     ocho tarjetas viven permanentemente encima del panel, así que nunca hay que
+     "estar" en él. En 390px no caben tarjetas y padrón a la vez, así que el
+     resumen pasa a ser la pantalla de inicio y las otras tres, sus destinos. */
+  type VistaMb = "resumen" | "miembros" | "asistencia" | "seguimiento";
   const anchoPartido = useMediaQuery("(min-width: 700px)");
   const partido = enIPad && anchoPartido;
-  const [vistaMb, setVistaMb] = useState<VistaMb>("miembros");
+  const [vistaMb, setVistaMb] = useState<VistaMb>(esIPhone() ? "resumen" : "miembros");
   /* El detalle es un ID que se re-busca, no una copia congelada. */
   const [selId, setSelId] = useState<number | null>(null);
   const [tarjeta, setTarjeta] = useState<string>("todos");
@@ -347,8 +351,8 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   }, [asistencia, umbrales, periodoObj, t]);
 
   const conAlertas = useMemo(
-    () => (partido ? members.filter((m) => alertasDe(m).length > 0) : []),
-    [partido, members, alertasDe]
+    () => (partido || enIPhone ? members.filter((m) => alertasDe(m).length > 0) : []),
+    [partido, enIPhone, members, alertasDe]
   );
 
   const resumen = useMemo(
@@ -440,7 +444,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
 
   /* ---- Analítica de la vista Asistencia (todo de asisFilas/servicios) ---- */
   const anal = useMemo(() => {
-    if (!partido || vistaMb !== "asistencia") return null;
+    if ((!partido && !enIPhone) || vistaMb !== "asistencia") return null;
     const res = resumenAsistencia(serviciosLig, asisFilas);
     const porMes = new Map<string, { pres: number; roster: number }>();
     const porServicio = new Map<number, number>();
@@ -485,8 +489,123 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
     if (el) el.scrollBy({ top: dir * el.clientHeight * 0.9, behavior: "smooth" });
   }
 
+  /* El bloque de analítica de asistencia, con nombre. Es el MISMO que el iPad
+     pinta en su panel; sale a una constante porque desde el rediseño el
+     teléfono también tiene una pantalla de Asistencia, y duplicar noventa
+     líneas de barras y promedios era garantizar que las dos se separaran. */
+  const analiticaAsistencia = anal && (
+                <div className="mb-analitica">
+                  <div className="mb-anal-rejilla">
+                    <section className="mb-carta">
+                      <div className="mb-carta-cab">
+                        <h3 className="mb-carta-titulo">{t("membresia.analPorServicio")}</h3>
+                        <span className="mb-leyenda">
+                          <span><i className="mb-ley-cuadro lleno" />{t("membresia.presentes")}</span>
+                          <span><i className="mb-ley-cuadro" />{t("membresia.enRoster")}</span>
+                        </span>
+                      </div>
+                      {anal.barras.length === 0 ? (
+                        <p className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</p>
+                      ) : (
+                        <div className="mb-barras alta">
+                          {anal.barras.map((b) => (
+                            <span key={b.mes} className="mb-barra-col">
+                              <span className="mb-barra-n">{b.n}</span>
+                              <span className="mb-barra-hueco"><span className="mb-barra" style={{ height: `${b.h}%` }} /></span>
+                              <span className="mb-barra-mes">{b.mes}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                    <div className="mb-anal-lado">
+                      <section className="mb-carta">
+                        <h3 className="mb-carta-titulo">{t("membresia.analPromedio")}</h3>
+                        <div className="mb-anillo-fila">
+                          <span
+                            className="mb-anillo"
+                            style={{ background: `conic-gradient(var(--brand) 0 ${anal.res.pctGeneral ?? 0}%, var(--line) ${anal.res.pctGeneral ?? 0}% 100%)` }}
+                          >
+                            <span className="mb-anillo-centro">
+                              <strong>{anal.res.pctGeneral != null ? `${anal.res.pctGeneral}%` : "—"}</strong>
+                              <span>{t("membresia.delRoster")}</span>
+                            </span>
+                          </span>
+                          <span className="mb-anillo-datos">
+                            <span><span>{t("membresia.analServicios")}</span><strong>{anal.res.totalServicios}</strong></span>
+                            <span><span>{t("membresia.analPromPresentes")}</span><strong>{anal.res.promedioPorServicio}</strong></span>
+                            <span><span>{t("membresia.analMejor")}</span><strong>{anal.mejor ? `${anal.mejor.n} · ${fmtFechaCorta(anal.mejor.fecha)}` : "—"}</strong></span>
+                          </span>
+                        </div>
+                      </section>
+                      <section className="mb-carta">
+                        <h3 className="mb-carta-titulo">{t("membresia.analPorTipo")}</h3>
+                        <div className="mb-tipos">
+                          {anal.tipos.length === 0 && <span className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</span>}
+                          {anal.tipos.map((tp) => (
+                            <span key={tp.tipo} className="mb-tipo">
+                              <span className="mb-tipo-cab">
+                                <span className="mb-tipo-nombre">{t(`servicios.tipo.${tp.tipo}`, { defaultValue: tp.tipo })}</span>
+                                <strong>{t("membresia.enPromedio", { n: tp.prom })}</strong>
+                              </span>
+                              <span className="mb-tipo-pista"><span className="mb-tipo-barra" style={{ width: `${Math.round((tp.prom / anal.maxProm) * 100)}%` }} /></span>
+                            </span>
+                          ))}
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                  <div className="mb-anal-rejilla listas">
+                    <div>
+                      <div className="mb-lista-rotulo">{t("membresia.analConstantes")}</div>
+                      <div className="mb-carta mb-carta-lisa">
+                        {anal.mejores.length === 0 && <span className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</span>}
+                        {anal.mejores.map(({ m, a }) => (
+                          <span key={m.id} className="mb-mini-fila">
+                            <span className="mb-mini-avatar">{initials(m.nombre)}</span>
+                            <span className="mb-mini-nombre">{m.nombre}</span>
+                            <strong>{a.pct}%</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-lista-rotulo">
+                        {t("membresia.analAusentes")}
+                        <button type="button" className="mb-ver-seg" onClick={() => setVistaMb("seguimiento")}>{t("membresia.verSeguimiento")}</button>
+                      </div>
+                      <div className="mb-carta mb-carta-lisa">
+                        {anal.ausentes.length === 0 && <span className="mb-movs-vacio">{t("membresia.sinAusentes")}</span>}
+                        {anal.ausentes.map(({ m, a }) => (
+                          <button key={m.id} type="button" className="mb-mini-fila boton" onClick={() => { setVistaMb("miembros"); setSelId(m.id); }}>
+                            <span className="mb-mini-avatar aviso">{initials(m.nombre)}</span>
+                            <span className="mb-mini-textos">
+                              <span className="mb-mini-nombre">{m.nombre}</span>
+                              <span className="mb-mini-sub">{a.ultimaAsistencia ? t("membresia.ultimaVisitaEl", { fecha: fmtFechaCorta(a.ultimaAsistencia) }) : t("membresia.sinVisitas")}</span>
+                            </span>
+                            <strong className="aviso">{t("membresia.rachaServicios", { count: a.racha })}</strong>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+  );
+
   return (
     <>
+      {/* La salida del teléfono, en la barra fija. Solo cuando hay de dónde
+          volver: en el resumen no se pinta. Es el mismo `dm-volver` que el iPad
+          tiene junto a su panel. */}
+      {enIPhone && vistaMb !== "resumen" && (
+        <button
+          type="button"
+          className="ios-nav-volver"
+          onClick={() => { setVistaMb("resumen"); setTarjeta("todos"); }}
+        >
+          <IconChevronLeft size={17} strokeWidth={2.4} /> {t("secretaria.membresia.titulo")}
+        </button>
+      )}
       <div className="header" data-tauri-drag-region={esMac() || undefined}>
         {!enIPhone && (
           <div>
@@ -644,102 +763,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                 </div>
 
                 {vistaMb === "asistencia" && anal ? (
-                  <div className="mb-analitica">
-                    <div className="mb-anal-rejilla">
-                      <section className="mb-carta">
-                        <div className="mb-carta-cab">
-                          <h3 className="mb-carta-titulo">{t("membresia.analPorServicio")}</h3>
-                          <span className="mb-leyenda">
-                            <span><i className="mb-ley-cuadro lleno" />{t("membresia.presentes")}</span>
-                            <span><i className="mb-ley-cuadro" />{t("membresia.enRoster")}</span>
-                          </span>
-                        </div>
-                        {anal.barras.length === 0 ? (
-                          <p className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</p>
-                        ) : (
-                          <div className="mb-barras alta">
-                            {anal.barras.map((b) => (
-                              <span key={b.mes} className="mb-barra-col">
-                                <span className="mb-barra-n">{b.n}</span>
-                                <span className="mb-barra-hueco"><span className="mb-barra" style={{ height: `${b.h}%` }} /></span>
-                                <span className="mb-barra-mes">{b.mes}</span>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </section>
-                      <div className="mb-anal-lado">
-                        <section className="mb-carta">
-                          <h3 className="mb-carta-titulo">{t("membresia.analPromedio")}</h3>
-                          <div className="mb-anillo-fila">
-                            <span
-                              className="mb-anillo"
-                              style={{ background: `conic-gradient(var(--brand) 0 ${anal.res.pctGeneral ?? 0}%, var(--line) ${anal.res.pctGeneral ?? 0}% 100%)` }}
-                            >
-                              <span className="mb-anillo-centro">
-                                <strong>{anal.res.pctGeneral != null ? `${anal.res.pctGeneral}%` : "—"}</strong>
-                                <span>{t("membresia.delRoster")}</span>
-                              </span>
-                            </span>
-                            <span className="mb-anillo-datos">
-                              <span><span>{t("membresia.analServicios")}</span><strong>{anal.res.totalServicios}</strong></span>
-                              <span><span>{t("membresia.analPromPresentes")}</span><strong>{anal.res.promedioPorServicio}</strong></span>
-                              <span><span>{t("membresia.analMejor")}</span><strong>{anal.mejor ? `${anal.mejor.n} · ${fmtFechaCorta(anal.mejor.fecha)}` : "—"}</strong></span>
-                            </span>
-                          </div>
-                        </section>
-                        <section className="mb-carta">
-                          <h3 className="mb-carta-titulo">{t("membresia.analPorTipo")}</h3>
-                          <div className="mb-tipos">
-                            {anal.tipos.length === 0 && <span className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</span>}
-                            {anal.tipos.map((tp) => (
-                              <span key={tp.tipo} className="mb-tipo">
-                                <span className="mb-tipo-cab">
-                                  <span className="mb-tipo-nombre">{t(`servicios.tipo.${tp.tipo}`, { defaultValue: tp.tipo })}</span>
-                                  <strong>{t("membresia.enPromedio", { n: tp.prom })}</strong>
-                                </span>
-                                <span className="mb-tipo-pista"><span className="mb-tipo-barra" style={{ width: `${Math.round((tp.prom / anal.maxProm) * 100)}%` }} /></span>
-                              </span>
-                            ))}
-                          </div>
-                        </section>
-                      </div>
-                    </div>
-                    <div className="mb-anal-rejilla listas">
-                      <div>
-                        <div className="mb-lista-rotulo">{t("membresia.analConstantes")}</div>
-                        <div className="mb-carta mb-carta-lisa">
-                          {anal.mejores.length === 0 && <span className="mb-movs-vacio">{t("membresia.asistenciaSinDatos")}</span>}
-                          {anal.mejores.map(({ m, a }) => (
-                            <span key={m.id} className="mb-mini-fila">
-                              <span className="mb-mini-avatar">{initials(m.nombre)}</span>
-                              <span className="mb-mini-nombre">{m.nombre}</span>
-                              <strong>{a.pct}%</strong>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-lista-rotulo">
-                          {t("membresia.analAusentes")}
-                          <button type="button" className="mb-ver-seg" onClick={() => setVistaMb("seguimiento")}>{t("membresia.verSeguimiento")}</button>
-                        </div>
-                        <div className="mb-carta mb-carta-lisa">
-                          {anal.ausentes.length === 0 && <span className="mb-movs-vacio">{t("membresia.sinAusentes")}</span>}
-                          {anal.ausentes.map(({ m, a }) => (
-                            <button key={m.id} type="button" className="mb-mini-fila boton" onClick={() => { setVistaMb("miembros"); setSelId(m.id); }}>
-                              <span className="mb-mini-avatar aviso">{initials(m.nombre)}</span>
-                              <span className="mb-mini-textos">
-                                <span className="mb-mini-nombre">{m.nombre}</span>
-                                <span className="mb-mini-sub">{a.ultimaAsistencia ? t("membresia.ultimaVisitaEl", { fecha: fmtFechaCorta(a.ultimaAsistencia) }) : t("membresia.sinVisitas")}</span>
-                              </span>
-                              <strong className="aviso">{t("membresia.rachaServicios", { count: a.racha })}</strong>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  analiticaAsistencia
                 ) : selMiembro ? (
                   <DetalleMembresia
                     member={selMiembro}
@@ -776,27 +800,62 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
              una filtra la lista de abajo y vuelve a tocarla la suelta. "Total"
              es la que quita el filtro, así que se marca sola cuando no hay
              ninguno puesto. */
-          <SeccionIOS titulo={t("membresia.seccionResumen")}>
-            {tarjetas.map((c) => {
-              const activa = tarjeta === c.id && c.id !== "todos";
-              return (
+          vistaMb !== "resumen" ? null : (
+          <>
+            {/* El membrete, igual que en el índice de Informes: convierte la
+                pantalla en la portada de un juego de vistas y no en otra
+                pantalla de datos. */}
+            <div className="rep-cabecera">
+              <div className="rep-iglesia">{church.nombre}{church.ciudad ? ` · ${church.ciudad}` : ""}</div>
+              <div className="rep-periodo">{t("membresia.enElPadron", { count: members.length })}</div>
+            </div>
+
+            <SeccionIOS titulo={t("membresia.elPadronEn", { anio })}>
+              {tarjetas.map((c) => (
+                /* Tocar una tarjeta ENTRA al padrón ya filtrado por su
+                   predicado, que es lo que pide el handoff. Antes filtraba en
+                   sitio, con la lista debajo; ahora el padrón es otra pantalla,
+                   así que la tarjeta es un destino con su filtro puesto. */
                 <button
                   type="button"
                   key={c.id}
-                  className={`ios-txrow ios-txrow--clickable${activa ? " es-filtro" : ""}`}
-                  aria-pressed={activa}
-                  onClick={() => setTarjeta(tarjeta === c.id ? "todos" : c.id)}
+                  className="ios-txrow ios-txrow--clickable"
+                  onClick={() => { setTarjeta(c.id); setVistaMb("miembros"); }}
                 >
                   <span className="ios-punto" style={{ background: c.color }} aria-hidden="true" />
                   <div className="ios-txrow-main"><div className="ios-txrow-title">{c.label}</div></div>
                   <div className="ios-txrow-trailing">
                     <span className="ios-fila-valor">{c.valor}</span>
-                    {activa && <span className="ios-quitar-filtro" aria-hidden="true">✕</span>}
+                    <IosChevron />
                   </div>
                 </button>
-              );
-            })}
-          </SeccionIOS>
+              ))}
+            </SeccionIOS>
+
+            {/* Los tres destinos. `vistaMb` ya existía con estos tres valores
+                exactos —los usa el selector del panel del iPad—; lo único nuevo
+                es que en el teléfono son pantallas y no pestañas. */}
+            <SeccionIOS>
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => { setTarjeta("todos"); setVistaMb("miembros"); }}>
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("membresia.vista.miembros")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor">{members.length}</span><IosChevron />
+                </div>
+              </button>
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => setVistaMb("asistencia")}>
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("membresia.vista.asistencia")}</div></div>
+                <div className="ios-txrow-trailing"><IosChevron /></div>
+              </button>
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => setVistaMb("seguimiento")}>
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("membresia.vista.seguimiento")}</div></div>
+                <div className="ios-txrow-trailing">
+                  {conAlertas.length > 0 && <span className="ios-insignia es-pendiente">{conAlertas.length}</span>}
+                  <IosChevron />
+                </div>
+              </button>
+            </SeccionIOS>
+          </>
+          )
         ) : (
           <div className="dash-canvas">
           <div className="summary-4 enter membresia-resumen">
@@ -832,6 +891,10 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           </div>
         )}
 
+        {/* De aquí abajo es el PADRÓN, que en el teléfono ya no es la pantalla
+            sino uno de los tres destinos del resumen. En Mac e iPad no cambia
+            nada: ahí `vistaMb` arranca en "miembros" y nunca vale "resumen". */}
+        {(!enIPhone || vistaMb === "miembros") && (<>
         {enIPhone ? (
           /* Campo arriba y categorías DEBAJO, a todo el ancho — la barra de
              alcance de Mail. Al lado del campo, el chip activo se pintaba en
@@ -1052,6 +1115,41 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
         {enIPhone
           ? <div ref={centinela} aria-hidden="true" />
           : <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
+        </>)}
+
+        {/* Asistencia: el MISMO bloque de analítica que el iPad pinta en su
+            panel, sin una copia. Lo que cambia es el ancho, y eso lo resuelve
+            el CSS aplanando su rejilla a una columna. */}
+        {enIPhone && vistaMb === "asistencia" && (
+          anal ? analiticaAsistencia : <div className="ios-panel-empty">{t("membresia.asistenciaSinDatos")}</div>
+        )}
+
+        {/* Seguimiento: los miembros con alguna alerta, cada uno con la suya y
+            el botón que abre `SeguimientoModal` — el mismo que ya usaba el
+            iPad, sin tocarlo. */}
+        {enIPhone && vistaMb === "seguimiento" && (
+          conAlertas.length === 0 ? (
+            <div className="ios-panel-empty">{t("membresia.seguimientoVacio")}</div>
+          ) : (
+            <SeccionIOS titulo={t("membresia.vista.seguimiento")}>
+              {conAlertas.map((m) => (
+                <button
+                  type="button"
+                  key={m.id}
+                  className="ios-txrow ios-txrow--clickable"
+                  onClick={() => setSegDe(m)}
+                >
+                  <div className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]}`}>{initials(m.nombre)}</div>
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title">{m.nombre}</div>
+                    <div className="tx-secundaria-movil">{alertasDe(m).join(" · ")}</div>
+                  </div>
+                  <div className="ios-txrow-trailing"><IosChevron /></div>
+                </button>
+              ))}
+            </SeccionIOS>
+          )
+        )}
       </div>
       )}
 

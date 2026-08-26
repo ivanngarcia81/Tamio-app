@@ -1504,6 +1504,10 @@ export const es = {
     trasladoOfertaMensaje: "La baja de {{nombre}} quedó registrada. ¿Crear también el traslado de salida? Así queda en el archivo de Cartas y traslados, puede emitir su carta y cuenta en los informes.",
     trasladoOfertaCrear: "Crear traslado",
     toastReactivado: "Miembro reactivado",
+    // Resumen del teléfono y sus tres destinos (rediseño de iOS 26).
+    enElPadron: "{{count}} en el padrón",
+    elPadronEn: "El padrón en {{anio}}",
+    seguimientoVacio: "Nadie necesita seguimiento ahora mismo.",
   },
 
   ficha: {

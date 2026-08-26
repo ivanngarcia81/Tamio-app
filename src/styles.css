@@ -18768,3 +18768,250 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   line-height: 1;
   color: var(--brand);
 }
+
+/* La analítica de asistencia de Membresía es la MISMA que el iPad pinta en su
+   panel: en el teléfono no se duplica, se aplana. Su rejilla está pensada para
+   los ~600px del panel; a 393 sus dos columnas dejaban las barras en 80px y los
+   nombres en dos letras. */
+:root.iphone .mb-anal-rejilla { grid-template-columns: 1fr; gap: 14px; }
+:root.iphone .mb-anal-rejilla.listas { grid-template-columns: 1fr; }
+:root.iphone .mb-carta {
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+  border: none;
+}
+
+
+/* --- 13. Asistencia de Membresía en el teléfono ---------------------------
+   El bloque de analítica es el MISMO nodo que el iPad pinta en su panel (ver
+   `analiticaAsistencia` en Membresia.tsx): no se duplicó el JSX. Pero TODAS
+   sus reglas estaban bajo `:root.ipad`, así que en el teléfono salía sin una
+   sola de ellas —los rótulos pegados a las cifras, "PresentesEn roster",
+   "102Ago"—. Lo vi en una captura; el compilador no puede verlo.
+
+   Aquí van sus copias para iPhone, generadas de las de iPad y no escritas a
+   mano, para que sean las mismas medidas. Lo único que cambia después es la
+   rejilla, que se aplana a una columna (más abajo): a 393px sus dos columnas
+   dejaban las barras en 80px. */
+:root.iphone .mb-carta {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  min-width: 0;
+}
+:root.iphone .mb-carta-lisa { padding: 4px 0; }
+:root.iphone .mb-carta-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+:root.iphone .mb-carta-titulo {
+  margin: 0;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+:root.iphone .mb-carta > .mb-carta-titulo { margin-bottom: 13px; }
+:root.iphone .mb-carta-cifra {
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .mb-barras { display: flex; align-items: flex-end; gap: 7px; }
+:root.iphone .mb-barra-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+:root.iphone .mb-barra-hueco {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 4px 4px 0 0;
+  background: rgba(118, 118, 128, 0.08);
+  overflow: hidden;
+}
+:root.iphone .mb-barras.alta .mb-barra-hueco { height: 120px; border-radius: 5px 5px 0 0; }
+:root.iphone .mb-barra {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--brand);
+}
+:root.iphone .mb-barra-mes { font-size: calc(10px * var(--fs-escala)); color: var(--text-3); }
+:root.iphone .mb-barra-n {
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .mb-dato {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  border-bottom: 0.5px solid var(--line);
+}
+:root.iphone .mb-carta-lisa .mb-dato:last-child,
+:root.iphone .mb-carta-lisa .mb-mini-fila:last-child { border-bottom: 0; }
+:root.iphone .mb-movs-vacio { font-size: calc(13px * var(--fs-escala)); color: var(--text-3); }
+:root.iphone .mb-carta-lisa .mb-movs-vacio { display: block; padding: 15px 16px; }
+:root.iphone .mb-analitica { display: flex; flex-direction: column; gap: 16px; }
+:root.iphone .mb-anal-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+:root.iphone .mb-anal-rejilla.listas { align-items: start; }
+:root.iphone .mb-anal-lado { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+:root.iphone .mb-leyenda { display: flex; gap: 14px; font-size: calc(12px * var(--fs-escala)); color: var(--text-2); white-space: nowrap; }
+:root.iphone .mb-leyenda > span { display: flex; align-items: center; gap: 5px; }
+:root.iphone .mb-ley-cuadro {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  display: inline-block;
+}
+:root.iphone .mb-ley-cuadro.lleno { background: var(--brand); }
+:root.iphone .mb-anillo-fila { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+:root.iphone .mb-anillo {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 96px;
+  border-radius: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+:root.iphone .mb-anillo-centro {
+  width: 68px;
+  height: 68px;
+  border-radius: 34px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+:root.iphone .mb-anillo-centro strong { font-size: calc(20px * var(--fs-escala)); font-variant-numeric: tabular-nums; }
+:root.iphone .mb-anillo-centro span { font-size: calc(10px * var(--fs-escala)); color: var(--text-3); }
+:root.iphone .mb-anillo-datos { flex: 1; min-width: 110px; display: flex; flex-direction: column; gap: 9px; }
+:root.iphone .mb-anillo-datos > span { display: flex; flex-direction: column; gap: 1px; }
+:root.iphone .mb-anillo-datos > span > span { font-size: calc(11.5px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .mb-anillo-datos > span > strong { font-size: calc(16px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.iphone .mb-tipos { display: flex; flex-direction: column; gap: 10px; }
+:root.iphone .mb-tipo { display: flex; flex-direction: column; gap: 4px; }
+:root.iphone .mb-tipo-cab { display: flex; align-items: baseline; gap: 8px; font-size: calc(12.5px * var(--fs-escala)); }
+:root.iphone .mb-tipo-nombre {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.iphone .mb-tipo-cab strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.iphone .mb-tipo-pista {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  overflow: hidden;
+}
+:root.iphone .mb-tipo-barra { display: block; height: 8px; border-radius: 4px; background: var(--brand); }
+:root.iphone .mb-lista-rotulo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 8px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+:root.iphone .mb-ver-seg {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 500;
+  color: var(--brand);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+:root.iphone .mb-mini-fila {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 16px;
+  border-bottom: 0.5px solid var(--line);
+  font: inherit;
+  text-align: left;
+}
+:root.iphone .mb-mini-fila.boton { border-left: 0; border-right: 0; border-top: 0; background: transparent; cursor: pointer; }
+:root.iphone .mb-mini-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 15px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(11.5px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-mini-avatar.aviso { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
+:root.iphone .mb-mini-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.iphone .mb-mini-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(15px * var(--fs-escala));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root.iphone .mb-mini-textos .mb-mini-nombre { flex: none; }
+:root.iphone .mb-mini-sub { font-size: calc(12px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .mb-mini-fila strong { font-size: calc(14px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; flex: none; }
+:root.iphone .mb-mini-fila strong.aviso { color: var(--warn-text, #c2600e); font-size: calc(13.5px * var(--fs-escala)); }
+
+/* Y el aplanado, DESPUÉS de las copias para que gane: la rejilla de dos
+   columnas del panel del iPad pasa a una sola en el teléfono. */
+:root.iphone .mb-anal-rejilla,
+:root.iphone .mb-anal-rejilla.listas { grid-template-columns: 1fr; gap: 14px; }
+:root.iphone .mb-analitica { display: flex; flex-direction: column; gap: 14px; }
+/* La tarjeta, con el material del rediseño en vez del borde de escritorio. */
+:root.iphone .mb-carta {
+  border: none;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+}
+
+/* Una columna de mes no puede ensancharse sin límite. `.mb-barra-col` es
+   `flex: 1` porque en el iPad siempre hay ocho o doce meses repartiéndose el
+   ancho; con UN mes registrado —lo normal al empezar el año, o en una iglesia
+   que acaba de instalar la app— esa única columna se comía los 361px de la
+   tarjeta y la barra salía como un muro verde de pared a pared.
+   Con el tope, una barra sigue pareciendo una barra y las columnas se agrupan
+   a la izquierda en vez de estirarse. */
+:root.iphone .mb-barras { justify-content: flex-start; }
+:root.iphone .mb-barra-col { flex: 1 1 0; max-width: 46px; }

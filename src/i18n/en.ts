@@ -1475,6 +1475,10 @@ export const en: Resources = {
     trasladoOfertaMensaje: "{{nombre}} has been removed from the roll. Create the outgoing transfer as well? It will be filed under Letters and transfers, can issue its letter, and will count in reports.",
     trasladoOfertaCrear: "Create transfer",
     toastReactivado: "Member reactivated",
+    // Resumen del teléfono y sus tres destinos (rediseño de iOS 26).
+    enElPadron: "{{count}} on the roll",
+    elPadronEn: "The roll in {{anio}}",
+    seguimientoVacio: "Nobody needs follow-up right now.",
   },
 
   ficha: {
