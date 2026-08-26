@@ -1641,7 +1641,17 @@ html.vibrancy .main { background: var(--surface); }
   font-weight: 700;
   color: var(--text-2);
 }
-.chip.active .count { background: rgba(255,255,255,0.2); color: #fff; }
+/* El contador dentro de un chip activo. Decía `rgba(255,255,255,.2)` y
+   `color: #fff`, o sea "blanco sobre el acento", y en oscuro el acento de
+   fábrica ES casi blanco (#f5f5f5): el número quedaba a 1.09:1 —invisible— en
+   Ingresos, Gastos y Por revisar. Es el mismo par de tokens que dejó el ☰
+   negro y el botón "Guardar borrador" en blanco sobre blanco. Ahora el velo y
+   el número salen del contraste del propio chip, así que valen en los dos
+   temas y con cualquier acento. */
+.chip.active .count {
+  background: color-mix(in srgb, var(--ink-contrast) 18%, transparent);
+  color: var(--ink-contrast);
+}
 
 .tx-list {
   background: var(--surface);
@@ -4419,6 +4429,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
     align-items: center;
     justify-content: center;
   }
+  /* Los márgenes de una hoja del iPad son los del iPhone, y en 600px de ancho
+     se quedan cortos: la tarjeta a 16 del filo y el texto de los pies a 32,
+     que en un teléfono de 390 son un 8% y aquí un 5%. Iván circuló el 25 ago
+     el pie de "Quién firma" —"las letras muy pegadas del borde, necesita
+     margen"— y tenía razón aunque geométricamente el pie esté alineado con la
+     etiqueta de su tarjeta: lo que falla es la proporción, no la alineación.
+     Se sube a 24 la tarjeta y a 40 los rótulos, que es su alineación de
+     siempre (margen de la tarjeta + 16 de su relleno). Solo en las hojas del
+     iPad; el teléfono no se toca. */
+  :root.ipad .ios-sheet .ios-group { margin: 0 24px; }
+  :root.ipad .ios-sheet .ios-section-header { padding-left: 40px; padding-right: 40px; }
+  :root.ipad .ios-sheet .ios-section-footer { padding-left: 40px; padding-right: 40px; }
   :root.ipad .ios-sheet {
     width: 600px;
     /* 92vw es el suelo para el iPad mini en vertical (744px), donde 600 fijos
@@ -4518,6 +4540,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Fila de lista que se marca: el cuadrito a la izquierda y la fila entera
    como objetivo. Es la misma pieza que `.dep-mov` en el panel, para que
    marcar en la hoja y marcar en el panel se vean igual. */
+/* Una fila con dos líneas —título arriba, explicación debajo—. Estas dos
+   clases SOLO existían bajo `:root.ipad .settings-detail`, así que en
+   cualquier otra hoja los dos `<span>` caían en línea y se leían pegados:
+   "Conté el dineroCon los billetes y los cheques delante". Lo fotografió Iván
+   el 25 ago en la hoja de Segunda firma. Es una regla base que faltaba, no un
+   arreglo de esa hoja: la usan también el corte y los ajustes. */
+:root.movil .ios-field-textos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+:root.movil .ios-field-sub {
+  font-size: calc(12.5px * var(--fs-escala));
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
 :root.movil .ios-field--marcar { cursor: pointer; }
 :root.movil .ios-field--marcar:active { opacity: 0.6; }
 :root.movil .ios-field--marcar .dep-mov-check {
@@ -4536,6 +4577,33 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--brand);
   color: var(--brand-contrast);
   box-shadow: none;
+}
+
+/* ⚠️ El `input[type=date]` de un FORMULARIO (no de una fila de lista) se sale
+   de su caja en iOS y solo en iOS. WKWebView le da al control nativo un ancho
+   propio, mayor que el de sus hermanos, y `width: 100%` no lo sujeta: Iván lo
+   fotografió el 25 ago en "Fecha de emisión" del editor de la carta, con el
+   campo asomando por el filo derecho de la tarjeta mientras los de arriba y
+   abajo quedaban dentro.
+
+   No se puede reproducir en el arnés: el Chromium de escritorio pinta ese
+   input como una caja normal y ahí nunca desborda —medido a 820, 1024 y 1210,
+   siempre dentro—. Es hermano de `env()` y de `pointer: coarse`: un
+   comportamiento que solo existe en el aparato.
+
+   `-webkit-appearance: none` le quita al control su tamaño propio sin quitarle
+   la rueda —seguir tocándolo abre el selector de iOS igual— y con `min-width:
+   0` deja de imponer su ancho mínimo a la rejilla. */
+:root.movil input[type="date"].form-input,
+:root.movil input[type="month"].form-input,
+:root.movil input[type="time"].form-input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
 }
 
 /* Fecha, hora y mes: el control del sistema, alineado a la derecha como el
@@ -7864,7 +7932,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    principal. Mismo verde que ya usan el "+" y el ícono de compartir. */
 :root.movil .btn.primary {
   background: var(--brand, #059669);
-  color: #fff;
+  /* Su propio contraste y no un `#fff` a mano. En oscuro `--brand` con el
+     acento verde vale #34d399 —un verde CLARO— y blanco encima daba 1.92:1.
+     `--brand-contrast` es #052e22 ahí, que se lee. El respaldo sigue siendo
+     blanco porque el respaldo de `--brand` es el verde oscuro de fábrica. */
+  color: var(--brand-contrast, #fff);
 }
 /* …pero el destructivo NO. La regla de arriba tiene más peso que
    `.btn.primary.danger` (cuatro clases contra tres), así que en el móvil el
@@ -10015,13 +10087,22 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   /* El chip del mes no necesita el mínimo táctil de 44 de alto: ya lo da
      `.chip`, y en una fila de filtros 44 rompe el renglón. */
   :root.ipad .md-chips .ios-bar-button { min-width: 0; min-height: 0; }
+  /* ⚠️ Este par de colores fue INVISIBLE en modo oscuro hasta el 25 ago.
+     Decía `background: var(--ink); color: #fff`, y en oscuro `--ink` con el
+     acento de fábrica vale **#f5f5f5**: blanco sobre blanco. Iván lo fotografió
+     en "Guardar borrador" del editor de la carta, un botón sin una letra
+     visible. Es la TERCERA vez que el mismo par de tokens muerde —antes el ☰
+     (§39) y la sección elegida del índice (§41)— y todas se resumen igual:
+     `--ink` es el acento y su contraste es `--ink-contrast`, nunca un `#fff`
+     escrito a mano. Aquí se usa `--brand`, que es el que ya usa `.btn.primary`
+     en lo táctil, con SU contraste. */
   :root.ipad .chip.chip-mes {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: var(--ink);
+    background: var(--brand, #059669);
     border-color: transparent;
-    color: #fff;
+    color: var(--brand-contrast, #fff);
     font-weight: 600;
   }
   /* El chip de estado: ámbar cuando filtra, para que se distinga de los de

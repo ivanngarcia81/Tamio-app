@@ -104,6 +104,11 @@ const browser = await chromium.launch(
 /**
  * @param plataforma  "ipad" | "iphone"
  * @param opciones.tactil  Emular pantalla táctil, o sea `pointer: coarse`.
+ * @param opciones.tema    "dark" para arrancar en modo oscuro. Por omisión
+ *   claro. Hasta el 25 ago el arnés NUNCA miró el modo oscuro, y ahí vivían
+ *   los tres fallos del par `--ink`/`#fff`: en oscuro `--ink` con el acento de
+ *   fábrica vale #f5f5f5, así que "blanco sobre el acento" es blanco sobre
+ *   blanco. El último se fotografió en un botón sin una letra visible.
  *
  * Lo táctil va apagado por omisión y NO por descuido: encenderlo en todas las
  * secciones cambiaría las medidas de medio arnés de golpe (`@media (pointer:
@@ -133,7 +138,7 @@ async function nuevoContexto(plataforma, opciones = {}) {
       throw e;
     }
   });
-  await ctx.addInitScript(({ plataforma }) => {
+  await ctx.addInitScript(({ plataforma, tema }) => {
     // iPadOS se disfraza de Mac con pantalla táctil; main.tsx clasifica así.
     if (plataforma === "ipad") {
       Object.defineProperty(navigator, "platform", { get: () => "MacIntel" });
@@ -144,6 +149,10 @@ async function nuevoContexto(plataforma, opciones = {}) {
     try {
       localStorage.setItem("tesoreria-welcomed", "1");
       localStorage.setItem("tesoreria-lang", "es");
+      // Tema: claro salvo que la sección pida oscuro. Se fija a mano porque
+      // por omisión la app sigue al sistema, y el Chromium del arnés puede
+      // arrancar en cualquiera de los dos.
+      localStorage.setItem("tesoreria-theme", tema);
     } catch { /* noop */ }
     const noop = async () => null;
     window.__TAURI_INTERNALS__ = {
@@ -156,7 +165,7 @@ async function nuevoContexto(plataforma, opciones = {}) {
         return noop();
       },
     };
-  }, { plataforma });
+  }, { plataforma, tema: opciones.tema === "dark" ? "dark" : "light" });
   return ctx;
 }
 
@@ -740,16 +749,21 @@ await ctx.close();
    declara fondo, así que lo hereda. Lo cazó Iván en el iPad. */
 console.log("\n== El gris del cromo ==");
 {
-  const ctxC = await nuevoContexto("ipad");
-  const pg = await ctxC.newPage();
-  await pg.setViewportSize({ width: 1366, height: 1024 });
   const ESPERADO = {
     light: { cromo: "rgb(247, 247, 249)", lienzo: "rgb(242, 242, 247)" },
     dark: { cromo: "rgb(19, 19, 21)", lienzo: "rgb(0, 0, 0)" },
   };
+  /* Un contexto por tema, con la PREFERENCIA de la app, no con
+     `emulateMedia`. Así lo hacía antes y funcionaba porque el arnés no fijaba
+     tema y la app seguía al sistema; desde que `nuevoContexto` lo fija —para
+     poder mirar el modo oscuro a propósito (§40)— emular el medio ya no
+     cambia nada, y esta guarda cayó en las tres comprobaciones de oscuro.
+     Probar la preferencia es además lo que un usuario toca de verdad. */
   for (const tema of ["light", "dark"]) {
     const e = ESPERADO[tema];
-    await pg.emulateMedia({ colorScheme: tema });
+    const ctxC = await nuevoContexto("ipad", { tema });
+    const pg = await ctxC.newPage();
+    await pg.setViewportSize({ width: 1366, height: 1024 });
     await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
     await pg.waitForTimeout(500);
     const c = await pg.evaluate(() => {
@@ -759,8 +773,8 @@ console.log("\n== El gris del cromo ==");
     chk(c.barra === e.cromo, `${tema}: barra = ${c.barra} (cromo ${e.cromo})`);
     chk(c.lista === e.cromo, `${tema}: lista = ${c.lista} (cromo ${e.cromo})`);
     chk(c.panel === e.lienzo, `${tema}: panel = ${c.panel} (lienzo ${e.lienzo})`);
+    await ctxC.close();
   }
-  await ctxC.close();
 }
 
 /* ---------- 8. La pantalla once: Informes de membresía (y Mensajes) ----------
@@ -5248,6 +5262,234 @@ console.log("\n== De todo panel se puede salir ==");
     chk(s.ok, `${et} · editor de la carta: hay salida (lista=${s.lista}, volver=${s.volver})`);
   }
   await ctxV.close();
+}
+
+/* ---------- 40. Ningún texto invisible, en los dos temas ---------------
+   Iván fotografió el 25 ago un botón blanco sin una letra dentro: "Guardar
+   borrador", en el editor de la carta, en modo OSCURO. El CSS decía
+   `background: var(--ink); color: #fff`, y en oscuro `--ink` con el acento de
+   fábrica vale **#f5f5f5**. Blanco sobre blanco.
+
+   Es la TERCERA vez que el mismo par de tokens muerde —antes dejó el ☰ negro
+   (§39) y la sección elegida del índice de gris (§41)— y por eso la guarda no
+   persigue ese botón: mide el CONTRASTE de todo texto visible, en claro y en
+   oscuro, que es la única forma de cazar los que quedan y los que vengan.
+
+   El umbral es 2:1, muy por debajo de lo que pide accesibilidad (4.5). No es
+   dejadez: esto no vigila el gusto sino lo ILEGIBLE. Los rótulos de sección
+   del sidebar rondan 2.4 sobre su gris y son una decisión de diseño
+   deliberada; 1.0 es un fallo. Con 4.5 esto se habría llenado de avisos
+   discutibles y el aviso de verdad se habría perdido entre ellos. Se probó
+   con 2.5 y ya empezaba a pasar.
+
+   Y el arnés nunca había mirado el modo oscuro. Ese es el punto ciego que
+   esto cierra, y es hermano de los otros dos que ya salieron: `env()` (§33) y
+   `pointer: coarse` (§39). */
+console.log("\n== Ningún texto invisible, en los dos temas ==");
+{
+  const RUTAS = ["", "ingresos", "gastos", "miembros", "reportes", "depositos", "membresia",
+                 "actas", "servicios", "cartas", "reporte-miembros", "agenda", "inbox",
+                 "bandeja", "configuracion"];
+  for (const tema of ["light", "dark"]) {
+    const ctxC = await nuevoContexto("ipad", { tactil: true, tema });
+    const pg = await ctxC.newPage();
+    pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+    await pg.setViewportSize({ width: 1366, height: 1024 });
+    const malos = [];
+    for (const ruta of RUTAS) {
+      await pg.goto(`${URL_BASE}/#/${ruta}`, { waitUntil: "networkidle" });
+      await pg.waitForSelector(".header, .content", { timeout: 10000 });
+      await pg.waitForTimeout(450);
+      const encontrados = await pg.evaluate(() => {
+        /* Luminancia relativa y razón de contraste de la WCAG. Se escribe
+           aquí y no se importa: el arnés no tiene dependencias a propósito. */
+        const canal = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const lum = ([r, g, b]) => 0.2126 * canal(r / 255) + 0.7152 * canal(g / 255) + 0.0722 * canal(b / 255);
+        const rgb = (s) => {
+          const m = s.match(/[\d.]+/g);
+          return m ? [Number(m[0]), Number(m[1]), Number(m[2]), m[3] === undefined ? 1 : Number(m[3])] : null;
+        };
+        /* El fondo EFECTIVO: se sube por los ancestros hasta encontrar uno
+           opaco, porque `transparent` no pinta nada y comparar contra él
+           daría cualquier cosa. */
+        const fondoDe = (el) => {
+          let e = el;
+          while (e && e !== document.documentElement) {
+            const cs = getComputedStyle(e);
+            /* Con imagen o degradado detrás no se puede juzgar: el color de
+               fondo puede ser transparente y aun así haber algo pintado. Se
+               devuelve null y el elemento se salta, que es más honesto que
+               inventar un fondo. Lo destapó el avatar de la iglesia: su
+               inicial blanca salía "1.07:1 sobre el gris del sidebar" cuando
+               en realidad va sobre su propio disco de color. */
+            if (cs.backgroundImage && cs.backgroundImage !== "none") return null;
+            const c = rgb(cs.backgroundColor);
+            if (c && c[3] > 0.75) return c;
+            e = e.parentElement;
+          }
+          const c = rgb(getComputedStyle(document.body).backgroundColor);
+          return c && c[3] > 0.75 ? c : [255, 255, 255, 1];
+        };
+        const out = [];
+        for (const el of document.querySelectorAll("body *")) {
+          // Solo lo que pinta texto PROPIO: nodos de texto directos.
+          const texto = [...el.childNodes]
+            .filter((n) => n.nodeType === 3 && n.textContent.trim())
+            .map((n) => n.textContent.trim()).join(" ");
+          if (!texto) continue;
+          const cs = getComputedStyle(el);
+          if (cs.visibility === "hidden" || cs.display === "none") continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 4 || r.height < 4) continue;
+          if (Number(cs.opacity) < 0.35) continue;   // atenuado a propósito
+          const fg = rgb(cs.color);
+          if (!fg || fg[3] < 0.5) continue;
+          const bg = fondoDe(el);
+          if (!bg) continue;
+          const l1 = lum(fg), l2 = lum(bg);
+          const razon = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+          if (razon < 2.0) {
+            out.push({
+              texto: texto.slice(0, 28),
+              clase: (el.className || el.tagName).toString().split(" ").slice(0, 2).join("."),
+              razon: Math.round(razon * 100) / 100,
+              fg: cs.color, bg: `rgb(${bg[0]}, ${bg[1]}, ${bg[2]})`,
+            });
+          }
+        }
+        return out;
+      });
+      for (const e of encontrados) malos.push({ ruta: ruta || "inicio", ...e });
+    }
+    chk(malos.length === 0,
+      `${tema}: ningún texto por debajo de 2:1 (${malos.length === 0 ? "ninguno" : malos.slice(0, 4).map((m) => `${m.ruta}·${m.clase}·"${m.texto}" ${m.razon}:1 ${m.fg} sobre ${m.bg}`).join(" | ")})`);
+    await ctxC.close();
+  }
+}
+
+/* ---------- 41. Los márgenes y las dos líneas de una hoja --------------
+   Las otras dos de la foto del 25 ago, las dos en la hoja de Segunda firma:
+
+    · el pie de "Quién firma" con las letras pegadas al filo, y
+    · "Conté el dineroCon los billetes y los cheques delante" — el título y su
+      explicación corridos, sin un espacio.
+
+   La segunda no era de esa hoja: `.ios-field-textos` y `.ios-field-sub` SOLO
+   existían bajo `:root.ipad .settings-detail`, así que en cualquier otra hoja
+   los dos `<span>` caían en línea. Faltaba la regla base, y por eso se
+   comprueba en la hoja de "Nuevo corte", que es otra distinta: si la
+   comprobación se hiciera donde se vio el fallo, un arreglo local la dejaría
+   verde y las demás rotas. */
+console.log("\n== Márgenes y dos líneas de una hoja ==");
+{
+  const ctxM = await nuevoContexto("ipad", { tactil: true });
+  const pg = await ctxM.newPage();
+  pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pg.setViewportSize({ width: 1024, height: 1366 });
+
+  // --- Los márgenes, en la hoja de la ficha del miembro ---
+  await pg.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await pg.waitForSelector(".mb-fila", { timeout: 10000 });
+  await pg.locator(".mb-fila").first().click();
+  await pg.waitForTimeout(500);
+  await pg.locator(".mb-cab-acciones .btn.primary").click();
+  await pg.waitForTimeout(800);
+  const m = await pg.evaluate(() => {
+    const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+    const hoja = document.querySelector(".ios-sheet.nm-hoja");
+    if (!hoja) return null;
+    const grupo = hoja.querySelector(".ios-group");
+    const cab = hoja.querySelector(".ios-section-header");
+    const label = hoja.querySelector(".ios-field-label");
+    return {
+      hoja: Math.round(rc(hoja).width),
+      grupo: grupo ? Math.round(rc(grupo).left - rc(hoja).left) : null,
+      cabPad: cab ? Math.round(parseFloat(cs(cab).paddingLeft)) : null,
+      label: label ? Math.round(rc(label).left - rc(hoja).left) : null,
+    };
+  });
+  chk(m !== null, "la hoja de la ficha se abre");
+  if (m) {
+    chk(m.grupo === 24, `la tarjeta va a 24 del filo, no a 16 (${m.grupo})`);
+    /* Y el rótulo alineado con el texto de la tarjeta, que es lo que hace que
+       no se lea "pegado": 24 de la tarjeta + 16 de su relleno. */
+    chk(m.cabPad === 40, `y los rótulos a 40, alineados con la tarjeta (${m.cabPad})`);
+    chk(m.label === 40, `misma sangría que el texto de dentro (${m.label})`);
+  }
+  await pg.keyboard.press("Escape");
+  await pg.waitForTimeout(400);
+
+  // --- Las dos líneas de una fila, en la hoja de "Nuevo corte" ---
+  await pg.goto(`${URL_BASE}/#/depositos`, { waitUntil: "networkidle" });
+  await pg.waitForTimeout(800);
+  /* Se siembra un ingreso en efectivo de hoy para que Pendientes tenga un día
+     con dinero en caja: cuando esta sección corre, la guarda del ciclo del
+     corte (más arriba) ya se llevó los que había. Sembrar lo que necesito es
+     más honesto que depender del orden de las secciones. */
+  await pg.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    const hoy = new Date();
+    const p = (x) => String(x).padStart(2, "0");
+    await db.insertTx(ig.id, ig.moneda, {
+      tipo: "ingreso", categoria: "ofrenda",
+      concepto: "Ofrenda",
+      fecha: `${hoy.getFullYear()}-${p(hoy.getMonth() + 1)}-${p(hoy.getDate())}`,
+      monto: 15000, metodo_pago: "efectivo",
+    });
+  });
+  await pg.reload({ waitUntil: "networkidle" });
+  await pg.waitForTimeout(900);
+  // Depósitos puede abrir en "Depositados"; la tarjeta del día vive en Pendientes.
+  try { await pg.locator(".md-seg-tipo button", { hasText: "Pendientes" }).first().click({ timeout: 3000 }); } catch { /* ya estaba */ }
+  await pg.waitForTimeout(700);
+  /* Y hay que elegir ESE día. Al entrar, Depósitos abre solo el corte más
+     reciente ya entregado, y sobre un corte entregado el botón primario no es
+     "Entregar el corte" sino "Marcar depositado" —que abre el formulario del
+     depósito, otra hoja distinta sin filas de dos líneas—. */
+  try {
+    await pg.locator(".md-grupo", { hasText: "Todavía en la caja" })
+      .first().locator("xpath=following-sibling::div[contains(@class,'md-fila')][1]")
+      .click({ timeout: 5000 });
+  } catch { /* no había cortes entregados: el día ya estaba elegido */ }
+  await pg.waitForTimeout(600);
+  let abrio = false;
+  try {
+    await pg.locator(".dep-carta-accion .btn.primary", { hasText: "Entregar el corte" })
+      .first().click({ timeout: 5000 });
+    abrio = true;
+  } catch { abrio = false; }
+  chk(abrio, "se abre la hoja de Nuevo corte, que es donde hay filas de dos líneas");
+  if (abrio) {
+    await pg.waitForTimeout(900);
+    const f = await pg.evaluate(() => {
+      const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+      // La ÚLTIMA hoja: puede haber más de una apilada, y la de arriba es la
+      // que se está mirando.
+      const hoja = [...document.querySelectorAll(".ios-sheet")].pop();
+      const t = hoja ? hoja.querySelector(".ios-field-textos") : null;
+      if (!t) return { diag: hoja ? `hoja sin .ios-field-textos; tiene ${hoja.querySelectorAll(".ios-field").length} filas y las cabeceras: ${[...hoja.querySelectorAll(".ios-section-header")].map((x)=>x.textContent.trim()).join("|")}` : "sin hoja" };
+      const label = t.querySelector(".ios-field-label");
+      const sub = t.querySelector(".ios-field-sub");
+      if (!label || !sub) return { diag: `textos sin par: label=${!!label} sub=${!!sub}` };
+      /* No se mide DÓNDE cae la explicación: en esta hoja el rótulo lleva
+         `.truncate`, que ya lo hace bloque, así que cae debajo con regla y sin
+         ella —una comprobación de posición aquí no podría ponerse en rojo—. Se
+         comprueba lo que de verdad faltaba: que la regla base exista fuera de
+         `.settings-detail`, o sea la columna y el gris. */
+      return {
+        dir: cs(t).flexDirection,
+        subColor: cs(sub).color,
+        textoColor: cs(label).color,
+      };
+    });
+    chk(f !== null && !f.diag, `la fila trae su título y su explicación (${f && f.diag ? f.diag : "ok"})`);
+    if (f && !f.diag) {
+      chk(f.dir === "column", `las dos líneas se apilan (${f.dir})`);
+      chk(f.subColor !== f.textoColor, `y en gris secundario, no del color del título (${f.subColor})`);
+    }
+  }
+  await ctxM.close();
 }
 
 await browser.close();

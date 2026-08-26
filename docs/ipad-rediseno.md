@@ -3153,3 +3153,98 @@ merecen quedar escritas porque son la misma clase de error:
 Quitando el `display` de `.inf-volver`, la guarda canta
 `vertical · Informes de membresía: hay salida (lista=false, volver=ninguno)`.
 Arnés en **1076**.
+## 43. Cuatro círculos en modo oscuro (25 ago 2026)
+
+Dos fotos del iPad, esta vez **en oscuro**, con cuatro cosas rodeadas:
+
+> *"En las dos fotos, en una donde dice segunda firma el círculo de arriba
+> tiene las letras muy pegadas del borde, necesita margen, y el círculo de
+> abajo tiene palabras pegadas. La otra foto: la fecha se sale del borde y el
+> botón blanco no se le ve la letra."*
+
+Tres se arreglaron con la medida delante; la cuarta se arregló a ciegas y aquí
+queda dicho por qué.
+
+### El botón blanco sin letra — y dos más de la misma familia
+
+`.chip.chip-mes` decía `background: var(--ink); color: #fff`. **`--ink` es el
+acento**, no la tinta del texto, y con el acento "neutro" de fábrica vale
+`#0f0f0f` en claro… y `#f5f5f5` en oscuro. Blanco sobre `rgb(245,245,245)`:
+**1.09:1**. El botón no estaba blanco por un color mal elegido, estaba blanco
+porque el color venía escrito a mano en vez de salir del par del token.
+
+Se cambió a `var(--brand)` con `var(--brand-contrast)`, que es lo que ya usa
+todo lo táctil.
+
+Y como el fallo era de patrón y no de sitio, se construyó una guarda general
+—**§40 del arnés**, un barrido de contraste sobre 15 rutas **en los dos
+temas**— y encontró otros dos exactamente iguales:
+
+| Dónde | Escrito | En oscuro | Ahora |
+|---|---|---|---|
+| `.chip.chip-mes` (iPad) | `--ink` + `#fff` | 1.09:1 | `--brand` / `--brand-contrast` |
+| `.btn.primary` (móvil) | `--brand` + `#fff` | 1.92:1 (`--brand` es `#34d399`, verde claro) | `--brand-contrast` (`#052e22`) |
+| `.chip.active .count` | `--ink` + `#fff` | 1.09:1 | `--ink-contrast`, y el velo con `color-mix` |
+
+El destructivo hubo que sacarlo aparte: `:root.movil .btn.primary` pesa más
+que `.btn.primary.danger` (cuatro clases contra tres), así que "Eliminar" de
+todos los diálogos salía del verde de marca. Ahora es rojo de iOS.
+
+**Esta es la tercera vez que el arnés tenía un punto ciego de la misma
+clase**: `env()` vale 0 en Chromium (§33), `pointer: coarse` no se simulaba
+(§39), y **el modo oscuro no se miraba nunca**. `nuevoContexto` ahora acepta
+`{ tema }` y fija `tesoreria-theme` antes de cargar.
+
+### Las palabras pegadas
+
+*"Conté el dineroCon los billetes y los cheques delante"* — el título y su
+explicación corridos, sin un espacio. `.ios-field-textos` y `.ios-field-sub`
+**solo existían bajo `:root.ipad .settings-detail`**, así que en cualquier otra
+hoja los dos `<span>` caían en línea. No faltaba un arreglo en Segunda firma:
+faltaba la regla base. Se puso bajo `:root.movil`, y la usan también el corte
+y los ajustes.
+
+### Las letras pegadas al filo
+
+Medido en la hoja de 600px: la tarjeta iba a 16 del filo y los rótulos a 32.
+Alineados entre sí —no estaba roto— pero proporcionalmente flacos para una
+hoja de iPad. Subidos a **24 la tarjeta y 40 los rótulos**, que es donde cae
+el texto de dentro (24 + 16 de relleno).
+
+### La fecha que se sale — **sin verificar desde aquí**
+
+`input[type=date]` en un formulario se sale de su caja **en iOS y solo en
+iOS**: WKWebView le da al control nativo un ancho propio, mayor que el de sus
+hermanos, y `width: 100%` no lo sujeta. En el Chromium del arnés ese input es
+una caja normal y **nunca desborda** —medido a 820, 1024 y 1210, siempre
+dentro—. Es hermano de `env()` y de `pointer: coarse`.
+
+El arreglo (`-webkit-appearance: none` + `min-width: 0`, que le quitan el
+tamaño propio sin quitarle la rueda) está puesto, pero **no hay guarda que lo
+sostenga y solo el aparato puede decir si funcionó**. Va en la próxima
+TestFlight para mirarlo ahí.
+
+### La guarda §41, y dos comprobaciones que no podían fallar
+
+Los márgenes se comprueban en la ficha del miembro; las dos líneas, en la hoja
+de **"Nuevo corte"** —otra distinta de donde se vio el fallo—, a propósito: si
+se comprobara donde se fotografió, un arreglo local la dejaría verde y las
+demás rotas.
+
+Dos cosas costaron más de lo que parecía:
+
+1. **Se estaba abriendo la hoja equivocada.** Depósitos, al entrar, selecciona
+   solo el corte más reciente ya entregado, y sobre un corte entregado el botón
+   primario no es "Entregar el corte" sino "Marcar depositado" —que abre el
+   formulario del depósito, una hoja sin filas de dos líneas—. Hay que elegir
+   primero un día del grupo "Todavía en la caja".
+2. **La comprobación de "la explicación va debajo" no podía ponerse en rojo.**
+   En esa hoja el rótulo lleva `.truncate`, que ya lo hace bloque: cae debajo
+   con la regla y sin ella. Se probó con un concepto corto por si el problema
+   era el ancho — misma sangría, 0 en los dos casos. **Se quitó** en vez de
+   dejarla verde de mentira; lo que de verdad faltaba —la columna y el gris—
+   sí se mide y sí falla.
+
+Quitando la regla base, el arnés canta `las dos líneas se apilan (row)` y `en
+gris secundario (rgb(15, 15, 15))`. Devolviendo `color: #fff` a `.chip-mes`,
+canta los cuatro textos a 1.09:1 en oscuro y ninguno en claro.
