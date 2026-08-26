@@ -13744,11 +13744,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        la tira se desvanece en vez de cortarse en seco — el relleno de los
        lados (abajo) ya deja hueco de sitio, esto es solo la lectura visual. */
     /* El degradado del diseño de referencia: mucho más largo que los 28 px
-       que había (26 % del ancho) y con un escalón intermedio al 25 % de
-       opacidad. Junto con el desenfoque de abajo es lo que da la sensación
-       de rueda con profundidad en vez de fila recortada. */
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.25) 6%, #000 26%, #000 74%, rgba(0, 0, 0, 0.25) 94%, transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.25) 6%, #000 26%, #000 74%, rgba(0, 0, 0, 0.25) 94%, transparent 100%);
+       que había y con un escalón intermedio al 25 % de opacidad. Junto con el
+       desenfoque de abajo es lo que da la sensación de rueda con profundidad
+       en vez de fila recortada.
+
+       La meseta opaca va de 14 % a 86 % (55 px … 338 px en un teléfono de
+       393), no de 26 % a 74 % (102 … 291) como antes. La píldora del centro
+       llega a medir 229 px con nombres como "Certificates & transfers", o sea
+       de 82 a 311: con la meseta vieja el propio nombre ACTIVO ya entraba en
+       la rampa por su cola, y a la vecina de la derecha le quedaban 70 px de
+       pantalla que nacían YA a media opacidad, antes de que el desenfoque la
+       tocara siquiera — dos apagados encima del mismo trozo de texto. Sigue
+       habiendo 55 px de rampa a cada lado, que es de sobra para que la tira se
+       disuelva en los bordes en vez de cortarse en seco. */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.25) 4%, #000 14%, #000 86%, rgba(0, 0, 0, 0.25) 96%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, rgba(0, 0, 0, 0.25) 4%, #000 14%, #000 86%, rgba(0, 0, 0, 0.25) 96%, transparent 100%);
   }
   .carrusel-pista::-webkit-scrollbar { display: none; }
   /* Relleno a cada lado: sin esto, la primera y la última sección no pueden
@@ -13786,8 +13796,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
        saltos de una pestaña; con un contenedor de scroll el nombre cruza el
        centro poco a poco y ese salto se vería como un parpadeo. */
     --d: 0;
-    filter: blur(calc(var(--d) * 7px));
-    opacity: calc(1 - var(--d) * 0.8);
+    /* 5 px y 0,62 —no 7 y 0,8— para que la vecina NUNCA se borre del todo.
+       Con el suelo viejo, una vecina en d=1 quedaba en opacidad 0,20 con 7 px
+       de desenfoque: sobre el gris del contenido eso no es un nombre medio
+       apagado, es nada. Y "nada asomando por el lado" es exactamente lo que
+       hace pensar que no hay más secciones que buscar. Ahora el suelo es 0,38
+       con 5 px: se lee como un fantasma gris —que es el papel de la vecina—
+       pero se lee. Lo que sí desaparece de verdad en los extremos es la
+       máscara de arriba, que es donde debe pasar: en el borde de la tira. */
+    filter: blur(calc(var(--d) * 5px));
+    opacity: calc(1 - var(--d) * 0.62);
     transform: scale(calc(1 - var(--d) * 0.05));
     will-change: filter, opacity, transform;
     transition: background-color var(--dur) ease, color var(--dur) ease;

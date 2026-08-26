@@ -134,23 +134,39 @@ export default function CarruselSecciones({ role, permisos, memberCount, pending
     function pintar() {
       pendiente = 0;
       const caja = el!.getBoundingClientRect();
-      /* La misma fórmula del diseño: `d` NO es la distancia al centro —eso
-         emborronaría al vecino de al lado, que en el diseño se lee nítido—,
-         sino cuánto ASOMA el nombre más allá de la banda franca de los
-         bordes. Un nombre que cabe entero en pantalla no se difumina nada;
-         solo se emborrona lo que se está escapando por los lados, que es
-         donde la máscara ya lo está desvaneciendo. */
-      const bordeSeguro = 22;
-      const rampa = 96;
-      const izq = caja.left + bordeSeguro;
-      const der = caja.right - bordeSeguro;
+      const centro = caja.left + caja.width / 2;
+      /* `d` sale de la distancia del BORDE MÁS CERCANO del nombre al centro
+         de la tira: 0 mientras el nombre pisa el centro (es el que está bajo
+         la píldora), y sube conforme su borde se aleja de ella.
+
+         Antes se calculaba con cuánto se SALÍA el nombre por el borde lejano
+         de la tira. Medido en el teléfono, eso ataba el desenfoque al LARGO
+         del nombre en vez de a su distancia, y borraba justo las vecinas que
+         más falta hacen: en /reporte-miembros, "Certificates & transfers"
+         (218 px de ancho) y "Agenda & calendar" tenían 80 px cada una dentro
+         de la pantalla, pegadas a la píldora, y aun así salían a d=1 —
+         opacidad 0,2 y 7 px de desenfoque, o sea invisibles. Con un nombre
+         corto al lado ("Service log", 121 px) la misma posición daba d=0,41 y
+         se leía perfectamente. Resultado: en unas secciones se asomaban las
+         dos vecinas, en otras una, en otras ninguna — y una tira sin nada
+         asomando no parece una tira, parece un título suelto.
+
+         Midiendo desde el centro, la misma posición da el mismo desenfoque
+         lleve el nombre once letras o veinticuatro. La banda franca deja
+         nítido lo que está bajo la píldora; la rampa está calibrada para que
+         la vecina inmediata caiga entre 0,3 y 0,7 —que es el rango en el que
+         ya se leían bien las de Actas— y la segunda vecina, que arranca a más
+         de 190 px del centro, siga saturando en 1. */
+      const franca = 34;
+      const rampa = 132;
       for (const nodo of items.current.values()) {
         const r = nodo.getBoundingClientRect();
-        const asoma = Math.max(0, r.right - der, izq - r.left);
-        const d = Math.min(1, asoma / rampa);
+        // 0 si el nombre cruza el centro; si no, cuánto le falta para llegar.
+        const cerca = Math.max(0, r.left - centro, centro - r.right);
+        const d = Math.min(1, Math.max(0, (cerca - franca) / rampa));
         nodo.style.setProperty("--d", d.toFixed(3));
       }
-      publicarDesvio(caja.left + caja.width / 2);
+      publicarDesvio(centro);
     }
 
     /* La página acompaña al carrusel: mientras el dedo arrastra la tira, el
