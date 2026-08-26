@@ -350,6 +350,23 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// Informes de membresía: el índice y dos informes.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const [nombre, fila] of [["general", "Información general"], ["registro", "Registro de miembros"], ["seguimiento", "Seguimiento"]]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/reporte-miembros`, { waitUntil: "networkidle" });
+    await page.getByText(fila, { exact: true }).first().click();
+    await page.waitForTimeout(1300);
+    const archivo = `${SALIDA}/19-infmem-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
 // Agenda: las cuatro vistas del segmentado.
 for (const tema of ["light", "dark"]) {
   const ctx = await contextoIPhone(tema);
