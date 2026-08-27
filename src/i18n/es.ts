@@ -164,6 +164,14 @@ export const es = {
     gastosDelMes: "Gastos del mes",
     balanceDelMesLabel: "Balance del mes",
     saldoDelMes: "Saldo de {{mes}}",
+    // La tarjeta de cifras del teléfono (rediseño v2): el balance del periodo
+    // que manda el segmentado, y el saldo en caja, que va aparte porque no es
+    // del periodo — es de hoy.
+    balanceDelPeriodo: "Balance de {{periodo}}",
+    // La etiqueta de cada barra cuando el periodo es el mes: "S1", "S2"…
+    // Tres caracteres, que es lo que cabe bajo una barra de 14 px.
+    semanaN: "S{{n}}",
+    enCaja: "En caja",
     balanceDelAnio: "Balance del año",
     vsMesAnterior: "vs. mes anterior",
     anioResumen: "{{anio}} · Ingresos {{ingresos}} · Gastos {{gastos}}",
@@ -175,8 +183,24 @@ export const es = {
     sinIngresosEsteMes: "Sin ingresos este mes",
     // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
     // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
-    resumenDelMes: "Resumen del mes",
-    detalleDelMes: "Detalle del mes",
+    // `detalleDelMes` se retiró con la maqueta H2: el grupo dejó de ser
+    // «del mes» cuando el segmentado bajó al teléfono, y ahora es una
+    // pantalla propia cuyo título sigue al periodo.
+    // Tres, y no uno con la preposición interpolada, por lo mismo que
+    // `vsAnterior_*`: en español "de agosto" y "del 3.er trimestre" no se
+    // resuelven con la misma plantilla, y un "Detalle de 3.er trimestre" es
+    // exactamente el tipo de frase que delata que la escribió una máquina.
+    detalleDe_mes: "Detalle de {{periodo}}",
+    detalleDe_trimestre: "Detalle del {{periodo}}",
+    detalleDe_anio: "Detalle de {{periodo}}",
+    // El subtítulo de esa pantalla: cuánto hay detrás de las cifras.
+    subDetalle: "{{movimientos}} movimientos · {{categorias}} categorías",
+    // El pie del grupo. Es la frase que explica el balance sin una gráfica:
+    // «Limpieza es el 31 % del gasto de Agosto 2026.»
+    mayorGastoPie_mes: "{{categoria}} es el {{pct}} % del gasto de {{periodo}}.",
+    mayorGastoPie_trimestre: "{{categoria}} es el {{pct}} % del gasto del {{periodo}}.",
+    mayorGastoPie_anio: "{{categoria}} es el {{pct}} % del gasto de {{periodo}}.",
+    gastoPorCategoria: "Gasto por categoría",
     // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
     // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos
     // listas del pie.
@@ -267,6 +291,12 @@ export const es = {
     nuevoGasto: "Nuevo gasto",
     noHayRegistros: "No hay registros para imprimir.",
     totalDelMes: "Total del mes",
+    // El rótulo y el conteo de la cifra grande del periodo (rediseño v2):
+    // «Ingresos de agosto» sobre «$10,125.00», y «41 registros» a su derecha.
+    ingresosDe: "Ingresos de {{mes}}",
+    gastosDe: "Gastos de {{mes}}",
+    nRegistros_one: "{{count}} registro",
+    nRegistros_other: "{{count}} registros",
     seccionResumen: "Resumen",
     pctDelTotal: "{{pct}}% del total",
     todosIngresos: "Todos los ingresos",
@@ -333,6 +363,12 @@ export const es = {
     eligeAsuntoSub: "Toca un movimiento pendiente o un miembro archivado para verlo aquí y resolverlo.",
     todoAlDia: "Todo al día",
     titulo: "Por revisar",
+    // Los dos grupos de la bandeja del teléfono (rediseño v2). El pie de cada
+    // uno es el del handoff, palabra por palabra.
+    grupoDecision: "Pide una decisión",
+    grupoArreglo: "Pide un arreglo",
+    pieDecision: "Un movimiento puede salir dos veces: son dos cosas distintas que revisar.",
+    pieArreglo: "Las siete se calculan con lo que ya hay en la base: ninguna necesita una tabla nueva.",
     sinPendientes: "No tienes pendientes",
     porRevisar_one: "{{count}} movimiento por revisar",
     porRevisar_other: "{{count}} movimientos por revisar",
@@ -620,6 +656,11 @@ export const es = {
     movsDelCorte_one: "{{count}} movimiento",
     movsDelCorte_other: "{{count}} movimientos",
     cortesPie: "Efectivo estimado en caja: {{monto}}",
+    // La cifra grande de Depósitos en el teléfono (rediseño v2): el dato que
+    // de verdad se consulta, con la regla del repo escrita en el pie —la app
+    // no sabe qué billete fue al banco, sabe qué corte se hizo—.
+    enCajaRotulo: "Efectivo en caja por depositar",
+    enCajaPie: "Lo cobrado en efectivo o cheque que no está en ningún corte. La app no sabe qué billete fue al banco: sabe qué corte se hizo.",
     eligeCorte: "Elige un corte",
     eligeCorteSub: "Sus movimientos, el desglose y lo que falta por revisar salen aquí al tocar uno de la lista.",
     /* ---- La hoja "Nuevo corte" ---- */
@@ -1271,6 +1312,9 @@ export const es = {
     inicio: "Inicio",
     grupoTesoreria: "Tesorería",
     grupoSecretaria: "Secretaría",
+    // El nombre del área en la cabecera del teléfono es un botón que salta
+    // a la otra área; esto es lo que anuncia el lector de pantalla.
+    irA: "Ir a {{area}}",
     ingresos: "Ingresos",
     gastos: "Gastos",
     miembros: "Aportantes",
@@ -1468,6 +1512,11 @@ export const es = {
     },
     sinResultados: "Sin resultados",
     sinResultadosSub: "Prueba otro término o cambia el filtro de estado.",
+    // Las tres acciones de la hoja de tres alturas (tercer enfoque). Ninguna
+    // abre algo nuevo: llevan al seguimiento, a la ficha y a la baja de siempre.
+    anotarVisita: "Anotar una visita",
+    completarExpediente: "Completar el expediente",
+    verFichaCompleta: "Ver la ficha completa",
     darDeBaja: "Dar de baja",
     reactivar: "Reactivar",
     bajaTitulo: "Dar de baja a {{nombre}}",
@@ -1516,6 +1565,9 @@ export const es = {
     },
     secMembresia: "Información de membresía",
     secEspiritual: "Información espiritual",
+    // Los tres pasos del teléfono (maqueta N3).
+    pasos: "Pasos de la ficha",
+    paso: { datos: "Datos", membresia: "Membresía", servicio: "Servicio" },
     secServicio: "Servicio y habilidades",
     /* Encabezados del alta en iPhone: ahí las secciones se leen como
        preguntas cortas, no como títulos de expediente. Los campos de dentro
@@ -1963,6 +2015,21 @@ export const es = {
     camposCompletos: "Campos: {{hechos}} de {{total}} completos",
     grupoTraslados: "Traslados",
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
+    // Los cinco del segmentado del teléfono. Cortos porque en 361 px cinco
+    // botones no admiten "Traslado de salida", y "Cartas" en vez de "Resumen"
+    // porque ahí la pestaña ES la lista de cartas, no un resumen de nada.
+    tabCorto: { resumen: "Cartas", solicitudes: "Solicitudes", traslados: "Traslados", plantillas: "Plantillas", archivo: "Archivo" },
+    // Cabeceras y pies de cada pestaña, del handoff.
+    cabCartas: "Emitidas en {{anio}}",
+    cabSolicitudes: "Solicitudes recibidas",
+    cabTraslados: "Movimientos del año",
+    cabPlantillas: "Plantillas de secretaría",
+    cabArchivo: "Años anteriores",
+    pieCartas: "Una carta entregada ya no se edita: se cancela y se emite otra, para que el folio siga contando lo que pasó.",
+    pieSolicitudes: "Atender una solicitud crea la carta y las deja vinculadas por folio.",
+    pieTraslados: "De salida (TS) y de entrada (TE). Solo los completados cuentan en los informes del periodo.",
+    piePlantillas: "Cada tipo de carta usa una plantilla. Editarla no cambia las que ya se emitieron.",
+    pieArchivo: "Lo emitido en periodos cerrados: se consulta y se imprime, pero ya no se edita.",
     eligeCarta: "Elige una carta",
     eligeCartaSub: "Toca una fila de la lista para leerla aquí tal como va a imprimirse.",
     nuevaCarta: "Nueva carta",
@@ -2221,6 +2288,7 @@ export const es = {
     colProceso: "Persona y procedencia",
     colConfirmacion: "Confirmación",
     sinDestino: "Sin iglesia de destino",
+    sinProcedencia: "Sin iglesia de procedencia",
     secMiembro: "Miembro que se traslada",
     secDestino: "Iglesia de destino",
     secProceso: "Proceso",
@@ -2670,6 +2738,11 @@ export const es = {
     accRegistrarServicio: "Registrar en bitácora",
     toastEstado: "Estado actualizado",
     recurrenteBadge: "Se repite",
+    acciones: "Acciones",
+    // El pie del grupo de datos en el detalle del teléfono. Explica una
+    // ausencia, que es lo que un pie de grupo hace mejor: la ficha no está
+    // incompleta, es que lo vacío no se pinta.
+    detallePie: "Los campos vacíos no se pintan: invitado, contacto y descripción aparecen solo si tienen algo.",
     // Repetición / recurrencia
     secRepeticion: "Repetición",
     repeticion: "Se repite",
@@ -2979,6 +3052,20 @@ export const es = {
     proximasTitulo: "Próximas actividades",
     verAgenda: "Ver agenda",
     sinProximas: "No hay actividades próximas.",
+    // El total del padrón junto a los activos: un «6» solo no dice nada;
+    // «6 de 9» sí.
+    // Los rótulos del pie de la tarjeta. Son los del escritorio recortados:
+    // en tres columnas de ~110 px, «Expedientes incompletos» se parte en dos
+    // renglones y descuadra las tres cifras que van debajo.
+    cortoAltas: "Altas {{anio}}",
+    cortoIncompletos: "Expedientes",
+    cortoProximas: "Próximas",
+    deTotal: " de {{total}}",
+    nAltas: "{{n}} altas",
+    nSinLlenar: "{{n}} sin llenar",
+    // El pie de la tarjeta, que explica las dos cifras que no se explican
+    // solas: por qué hay meses en cero y qué cuenta «próximas».
+    pieTarjeta: "Las barras son las altas por mes; los meses en cero se dejan a la vista. Las próximas son las ocurrencias de los siguientes 60 días sin las canceladas.",
     accesosTitulo: "Accesos rápidos",
   },
 

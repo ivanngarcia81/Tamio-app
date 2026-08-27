@@ -785,26 +785,35 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         ) : (
           <>
             {enIPhone ? (
+              <>
+                {/* Rediseño v2: el total del periodo sale de la tarjeta y se
+                    convierte en la CIFRA de la pantalla, sobre el gris del
+                    fondo. Es la instrucción del handoff —«el total del periodo
+                    como cifra grande sobre la lista, no como tarjeta»— y la
+                    maqueta la mide: rótulo de 13 gris, importe de 32/700 con
+                    cifras tabulares, y el conteo a la derecha alineado por su
+                    línea base. Un total metido en una fila de lista pesa lo
+                    mismo que la categoría de debajo; sacado, manda. */}
+                <div className="ios-cifra-periodo">
+                  <div className="ios-cifra-bloque">
+                    <span className="ios-cifra-rotulo">
+                      {t(esIngreso ? "mov.ingresosDe" : "mov.gastosDe", { mes: mesLegible(mes) })}
+                    </span>
+                    <span className="ios-cifra-num">
+                      <CountUp value={totalMes} format={fmtMoney} paso={100} />
+                    </span>
+                  </div>
+                  <span className="ios-cifra-conteo">{t("mov.nRegistros", { count: txs.length })}</span>
+                </div>
               <div className="ios-panel">
                 <div className="ios-panel-head"><h2>{t("mov.seccionResumen")}</h2></div>
-                {/* Rediseño de iOS 26: la rejilla de tarjetas KPI —la misma
-                    que se quitó de Inicio, Depósitos y Aportantes— pasa a
-                    lista agrupada. Aquí el total del mes es la primera fila y
-                    cada categoría una fila con su punto de color, su importe y
-                    el porcentaje en la secundaria; la barra de proporción se
-                    va porque el porcentaje ya lo dice con más precisión y en
-                    una fila de 44px no cabía sin apretar el resto. */}
+                {/* Las categorías se quedan —el handoff mueve el TOTAL, no el
+                    desglose— pero ya sin la fila «Total del mes» delante, que
+                    ahora vive arriba. Cada categoría es una fila con su punto
+                    de color, su importe y el porcentaje en la secundaria; la
+                    barra de proporción se fue porque el porcentaje lo dice con
+                    más precisión y en una fila de 44px no cabía. */}
                 <div className="ios-listcard">
-                  <div className="ios-txrow">
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{t("mov.totalDelMes")}</div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className="tx-amount positive">
-                        <CountUp value={totalMes} format={fmtMoney} paso={100} />
-                      </span>
-                    </div>
-                  </div>
                   {tarjetasCategoria.map((c) => {
                     const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
                     return (
@@ -826,6 +835,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   })}
                 </div>
               </div>
+              </>
             ) : resumenEscritorio}
 
             {tarjetaRecurrentes}
@@ -992,7 +1002,20 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
             {visibles.length === 0 ? estadoVacio : (
               <>
-                <TxTable tipo={tipo} txs={pagina} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
+                <TxTable
+                  tipo={tipo}
+                  txs={pagina}
+                  onEdit={onEditTx}
+                  /* Maqueta T4. En el teléfono, tocar un movimiento lo ABRE.
+                     Hasta ahora no hacía nada: la única forma de mirar un
+                     gasto era deslizar la fila y darle a «Editar», o sea
+                     entrar al formulario para leer. Y la pantalla que hace
+                     falta ya existía —`DetalleMovimiento`, la columna del
+                     iPad—, encerrada tras `partido`. */
+                  onAbrir={enIPhone ? (tx) => setSelId(tx.id) : undefined}
+                  onChanged={onChanged}
+                  puedeEliminar={puedeEliminar}
+                />
                 {enIPhone
                   ? <div ref={centinela} aria-hidden="true" />
                   : <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
@@ -1001,6 +1024,40 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           </>
         )}
       </div>
+      )}
+
+      {/* El movimiento abierto, como PANTALLA (maqueta T4). Es el mismo panel
+          que el iPad pinta en su columna derecha: mismo importe grande, misma
+          ficha, mismo comprobante, mismas acciones. Lo único que cambia es el
+          envoltorio —aquí ocupa el teléfono entero, con su banda y su
+          «volver»— y eso lo pone el CSS, no un segundo componente que
+          enseñaría lo mismo con otro código. */}
+      {enIPhone && sel && (
+        <div className="pantalla-ios" role="dialog" aria-modal="true" aria-label={sel.concepto}>
+          {/* El «volver» va en la banda, no en el cuerpo. `DetalleMovimiento`
+              trae el suyo —`.dm-volver`, para el modo de empuje del iPad—,
+              pero ese se desplaza con el contenido; aquí tiene que quedarse
+              arriba. El del panel se apaga por CSS en esta pantalla. */}
+          <div className="pi-banda pi-banda--nav">
+            <div className="pi-nav">
+              <button type="button" className="pi-volver" onClick={() => setSelId(null)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {titulo}
+              </button>
+            </div>
+          </div>
+          <div className="pi-cuerpo pi-cuerpo--dm">
+            <DetalleMovimiento
+              tx={sel}
+              tituloLista={titulo}
+              onVolver={() => setSelId(null)}
+              onEditar={onEditTx}
+              onEliminar={puedeEliminar ? setPendingDeleteSel : undefined}
+              onVerComprobante={setPreviewSel}
+              onVerFicha={(mid) => navigate("/miembros", { state: { verMiembro: mid } })}
+              onCompartir={compartirMovimiento}
+            />
+          </div>
+        </div>
       )}
 
       {pendingDeleteRec && (

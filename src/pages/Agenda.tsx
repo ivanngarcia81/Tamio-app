@@ -16,6 +16,7 @@ import { useBarraEstado } from "../components/BarraEstado";
 import ConfirmDialog from "../components/ConfirmDialog";
 import ActividadModal, { type ConflictoAgenda } from "../components/ActividadModal";
 import ActividadDetalle from "../components/ActividadDetalle";
+import ActividadDetalleIOS from "../components/ActividadDetalleIOS";
 import AlcanceDialog, { type Alcance } from "../components/AlcanceDialog";
 import LoadingState from "../components/LoadingState";
 import { MacBuscador, MacFiltros, MacSegmentado, type CampoFiltro } from "../components/mac/MacFiltros";
@@ -1270,8 +1271,14 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
         />
       )}
 
-      {detalle && (
-        <ActividadDetalle
+      {detalle && (() => {
+        /* La misma actividad, la misma mecánica, dos envoltorios: en el
+           teléfono el detalle es una PANTALLA (maqueta A5) y en Mac/iPad
+           sigue siendo el modal de siempre. Las ocho props son idénticas a
+           propósito — lo que cambia es la forma, no lo que hace. */
+        const Detalle = esIPhone() ? ActividadDetalleIOS : ActividadDetalle;
+        return (
+        <Detalle
           actividad={detalle}
           responsableNombre={nombreResponsable(detalle)}
           esRecurrente={detalle._esOcurrencia}
@@ -1295,7 +1302,8 @@ export default function Agenda({ church, refreshKey, onChanged }: Props) {
             });
           }}
         />
-      )}
+        );
+      })()}
 
       {pendingDelete && (
         <ConfirmDialog

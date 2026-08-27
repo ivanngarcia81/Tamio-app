@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useBarraEstado } from "../components/BarraEstado";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  catNombre, categoriaInfo, countPendingTx, currentMonth, currentYear, dailyTotals, efectivoDisponibleHasta,
+  catNombre, categoriaInfo, colorCategoria, countPendingTx, currentMonth, currentYear, dailyTotals, efectivoDisponibleHasta, mesCorto,
   getCategoriasGasto, getCategoriasIngreso,
   fmtFecha, fmtFechaCorta, fmtMoney, fmtRelativo, hoyISO, lastActivityAt, listActividades, listTx, mesLegible,
   metodoNombre, monthDepositos, monthTotals, monthlySummary, pctChange, prevMonth, yearTotals,
@@ -22,9 +22,9 @@ import CountUp from "../components/CountUp";
 import DashboardCharts from "../components/DashboardCharts";
 import SeccionIOS from "../components/ios/SeccionIOS";
 import { printDashboard } from "../services/print/printDashboard";
-import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
+import { IconArrowDown, IconArrowUp, IconChevronLeft, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
-import { CERO, restar, type Centavos } from "../dinero";
+import { CERO, restar, sumar, type Centavos } from "../dinero";
 import { esIPad, esIPhone, esMac } from "../movil";
 
 interface Props {
@@ -117,14 +117,19 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     lastActivityAt(church.id).then(setUltimaActividad).catch(console.error);
   }, [church.id, refreshKey, mes, mesAnterior]);
 
-  /* Lo que solo pide el Inicio del iPad: el conteo de la bandeja (la misma
-     consulta del badge del sidebar) y lo de la próxima semana de la Agenda
-     — las mismas ocurrencias reales de `expandirTodas`, no una copia. */
+  /* El conteo de la bandeja (la misma consulta del badge del sidebar) y lo de
+     la próxima semana de la Agenda —las mismas ocurrencias reales de
+     `expandirTodas`, no una copia—.
+
+     El conteo lo piden los DOS: el iPad para su tarjeta y el teléfono para la
+     fila «Por revisar» de la maqueta H1. La semana sigue siendo del iPad, que
+     es el único que tiene sitio para una lista más. */
   const [pendientes, setPendientes] = useState(0);
   const [semana, setSemana] = useState<OcurrenciaVista[]>([]);
   useEffect(() => {
-    if (!enIPad) return;
+    if (!enIPad && !enIPhone) return;
     countPendingTx(church.id).then(setPendientes).catch(console.error);
+    if (!enIPad) return;
     listActividades(church.id)
       .then((acts) => {
         const desde = hoyISO();
@@ -140,7 +145,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
         setSemana(ocurrencias.slice(0, 4));
       })
       .catch(console.error);
-    // `enIPad` es constante durante la sesión (clase puesta antes de montar).
+    // `enIPad`/`enIPhone` son constantes durante la sesión (clase puesta antes
+    // de montar), así que no entran en las dependencias.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [church.id, refreshKey]);
 
@@ -158,6 +164,12 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
      forma de equivocarse, y sobre un SQLite local doce SELECT agrupados por
      un índice no se notan. */
   const [periodo, setPeriodo] = useState<Periodo>("mes");
+  /* «Detalle del periodo» (maqueta H2) es una pantalla del teléfono, pero no
+     una RUTA: no tiene sitio propio en el carrusel ni en la barra, y entrar
+     por URL a un detalle sin periodo no significaría nada. Es estado, igual
+     que el documento abierto de Reportes — y por eso «vuelve a H1, cambia a
+     Año y entra otra vez» sale gratis: el periodo no se va a ninguna parte. */
+  const [detalle, setDetalle] = useState(false);
   const [totPer, setTotPer] = useState<MonthTotals | null>(null);
   const [totPerAnt, setTotPerAnt] = useState<MonthTotals | null>(null);
   const [saldoCaja, setSaldoCaja] = useState<Centavos | null>(null);
@@ -165,7 +177,12 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const [histMeses, setHistMeses] = useState<MonthSummary[]>([]);
 
   useEffect(() => {
-    if (!enIPad) return;
+    /* También en el teléfono desde que el segmentado bajó a él. Sin esto,
+       `totPer` no se cargaba nunca en el iPhone y las cifras de la tarjeta
+       caían al `?? totales` del mes: el mando se movía y los números no. Se
+       veía trabajando —el botón cambiaba de sitio— y decía siempre lo mismo,
+       que es peor que no tenerlo. */
+    if (!enIPad && !enIPhone) return;
     const dentro = mesesDePeriodo(periodo, mes);
     const antes = mesesDePeriodoAnterior(periodo, mes);
     Promise.all(dentro.map((m) => monthTotals(church.id, m)))
@@ -183,7 +200,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     // 24 meses de histórico para poder recortar la ventana de 6 del diseño
     // aunque haya huecos sin movimiento por medio.
     monthlySummary(church.id, 24).then(setHistMeses).catch(console.error);
-    // `enIPad` es constante durante la sesión (clase puesta antes de montar).
+    // `enIPad`/`enIPhone` son constantes durante la sesión (la clase se pone
+    // antes de montar), así que no entran en las dependencias.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [church.id, church.saldo_inicial, refreshKey, mes, periodo]);
 
@@ -210,6 +228,57 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const ingresosPer = totPer?.ingresos ?? totales?.ingresos ?? CERO;
   const gastosPer = totPer?.gastos ?? totales?.gastos ?? CERO;
   const gastosPerAnt = totPerAnt?.gastos ?? CERO;
+  /* El balance del periodo elegido. `balance` a secas es siempre el del
+     MES; con el segmentado ya en el teléfono hacía falta el que sigue al
+     mando. */
+  const balancePer = restar(ingresosPer, gastosPer);
+
+  /* Las barras de la tarjeta (maqueta H1). Una pareja por tramo del periodo:
+     lo que entró y lo que salió. El balance de arriba dice cómo TERMINÓ; esto
+     dice cómo llegó ahí — si fue parejo o si una semana se comió el mes.
+
+     Los tramos cambian con el segmentado, que es lo que pide el handoff
+     («cambia el periodo: las barras pasan de semanas a meses»), y cada uno
+     sale de la serie que ya se consulta, sin una consulta nueva:
+
+     · Mes       → semanas, de `dias` (`dailyTotals`, 30 días). Inicio siempre
+                   mira el mes en curso —`mes` es `currentMonth()` y no hay
+                   selector—, así que 30 días lo cubren; los días que caen en
+                   el mes anterior se descartan, o la primera barra mezclaría
+                   dos meses.
+     · Trimestre → meses del trimestre, de `histMeses` (`monthlySummary`).
+     · Año       → los doce meses, de la misma serie. Los meses sin movimiento
+                   se dejan a la vista, en cero: un hueco dice tanto como una
+                   barra, y saltárselos haría que "julio" y "septiembre"
+                   parecieran consecutivos. */
+  const barrasPeriodo = useMemo(() => {
+    if (periodo === "mes") {
+      const delMes = dias.filter((d) => d.fecha.slice(0, 7) === mes);
+      const semanas = new Map<number, { ingresos: Centavos; gastos: Centavos }>();
+      for (const d of delMes) {
+        const semana = Math.floor((Number(d.fecha.slice(8, 10)) - 1) / 7);
+        const acc = semanas.get(semana) ?? { ingresos: CERO, gastos: CERO };
+        semanas.set(semana, { ingresos: sumar(acc.ingresos, d.ingresos), gastos: sumar(acc.gastos, d.gastos) });
+      }
+      return [...semanas.entries()]
+        .sort((a2, b2) => a2[0] - b2[0])
+        .map(([n, v]) => ({ etiqueta: t("dashboard.semanaN", { n: n + 1 }), ...v }));
+    }
+    const porMes = new Map(histMeses.map((m) => [m.mes, m]));
+    return mesesDePeriodo(periodo, mes).map((m) => {
+      const v = porMes.get(m);
+      return {
+        etiqueta: mesCorto(m),
+        ingresos: v?.ingresos ?? CERO,
+        gastos: v?.gastos ?? CERO,
+      };
+    });
+  }, [periodo, mes, dias, histMeses, t]);
+
+  /* El alto de cada barra es relativo al tramo MÁS ALTO del periodo, no al
+     total: lo que se compara es un mes contra otro, y con el total de
+     referencia todas las barras saldrían enanas en un año bueno. */
+  const topeBarra = Math.max(1, ...barrasPeriodo.flatMap((b) => [b.ingresos, b.gastos]));
   const registrosIngresoPer = useMemo(
     () => Object.values(totPer?.conteoCategoriaIngreso ?? {}).reduce((a, b) => a + b, 0),
     [totPer]
@@ -300,13 +369,75 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     const entries = Object.entries(totales?.porCategoriaGasto ?? {})
       .map(([id, monto]) => {
         const cat = getCategoriasGasto().find((c) => c.id === id);
-        return { id, nombre: cat ? catNombre(cat.id) : id, color: cat?.color ?? "#64748b", monto };
+        /* `colorCategoria` y no `cat.color`: las categorías del catálogo NO
+           llevan campo `color` —solo las personalizadas—, así que `cat?.color
+           ?? "#64748b"` daba el mismo gris pizarra a TODAS. El desglose de
+           gastos llevaba tiempo pintando once barras del mismo color y
+           llamándose «distribución por categoría». El color de verdad vive en
+           el token `--cat-<id>`, que es lo que lee `colorCategoria`. */
+        return { id, nombre: cat ? catNombre(cat.id) : id, color: colorCategoria("gasto", id), monto };
       })
       .sort((a, b) => b.monto - a.monto)
       .slice(0, 5);
     const max = entries[0]?.monto ?? 0;
     return entries.map((e) => ({ ...e, barPct: max > 0 ? Math.round((e.monto / max) * 100) : 0 }));
   }, [totales]);
+
+  /* ---- Lo que la pantalla «Detalle del periodo» (maqueta H2) necesita ----
+
+     Las tres cifras de arriba —`categoriaTopGasto`, `ingresoMasFrecuente`,
+     `topGastos`— salen de `totales`, que es SIEMPRE el mes. Eso estaba bien
+     mientras el segmentado era del iPad y el teléfono enseñaba un grupo que
+     se llamaba «Detalle del mes»; ahora el grupo se llama «Detalle de
+     {{periodo}}» y tiene que seguir al mando, o al tocar «Año» diría el
+     mayor gasto de agosto bajo un título que dice 2026.
+
+     No se reemplazan las de arriba: Mac imprime con las del mes y el iPad
+     tiene su propia dona. Estas son las mismas cuentas sobre `totPer`, con
+     la caída a `totales` mientras el periodo carga —igual que `ingresosPer`—
+     para que la pantalla no parpadee a cero al entrar. */
+  const totalesPer = totPer ?? totales;
+
+  const mayorGastoPer = useMemo(() => {
+    const entries = Object.entries(totalesPer?.porCategoriaGasto ?? {});
+    if (entries.length === 0) return null;
+    entries.sort((a2, b2) => b2[1] - a2[1]);
+    const [id, monto] = entries[0];
+    const total = totalesPer?.gastos ?? CERO;
+    return { info: categoriaInfo("gasto", id), monto, pct: total > 0 ? Math.round((monto / total) * 100) : 0 };
+  }, [totalesPer]);
+
+  const ingresoFrecuentePer = useMemo(() => {
+    const entries = Object.entries(totalesPer?.conteoCategoriaIngreso ?? {});
+    if (entries.length === 0) return null;
+    entries.sort((a2, b2) => b2[1] - a2[1]);
+    const [id, cnt] = entries[0];
+    return { info: categoriaInfo("ingreso", id), cnt };
+  }, [totalesPer]);
+
+  /* TRES categorías, no cinco: «en 390 px una lista de doce barras deja de
+     leerse antes de la sexta». Las demás siguen en Gastos, a un toque. */
+  const topGastosPer = useMemo(() => {
+    const entries = Object.entries(totalesPer?.porCategoriaGasto ?? {})
+      .map(([id, monto]) => {
+        const cat = getCategoriasGasto().find((c) => c.id === id);
+        return { id, nombre: cat ? catNombre(cat.id) : id, color: colorCategoria("gasto", id), monto };
+      })
+      .sort((a2, b2) => b2.monto - a2.monto);
+    const max = entries[0]?.monto ?? 0;
+    return {
+      cuantas: entries.length,
+      filas: entries.slice(0, 3).map((e) => ({ ...e, barPct: max > 0 ? Math.round((e.monto / max) * 100) : 0 })),
+    };
+  }, [totalesPer]);
+
+  /* El subtítulo de H2: cuánto hay detrás de las cifras. Los conteos ya
+     vienen en `totPer`; no hace falta contar `txs`, que además está topado a
+     30 y diría 30 siempre. */
+  const movimientosPer = useMemo(() => {
+    const suma = (r?: Record<string, number>) => Object.values(r ?? {}).reduce((a2, b2) => a2 + b2, 0);
+    return suma(totalesPer?.conteoCategoriaIngreso) + suma(totalesPer?.conteoCategoriaGasto);
+  }, [totalesPer]);
 
   const weekly = useMemo(() => toWeeklyBuckets(dias), [dias]);
   const balanceSeries = useMemo(() => toCumulativeBalance(dias), [dias]);
@@ -628,7 +759,47 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
              `.titulo-fijo` (la copia que se queda arriba al desplazar, ver
              App.tsx) se quedaba SIN texto que copiar: Inicio era la única
              pantalla de la app cuya barra no decía dónde estabas. */
-          <div className="page-title">{t("nav.inicio")}</div>
+          /* Con el detalle abierto la cabecera es la de ESA pantalla: volver a
+             Inicio, su título grande y, debajo, cuánto hay detrás de las
+             cifras. Es la misma mecánica que el documento abierto de Reportes
+             —una pantalla que ocupa la barra fija sin ser una ruta—. */
+          detalle ? (
+            <div>
+              <button type="button" className="ios-nav-volver" onClick={() => setDetalle(false)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {t("nav.inicio")}
+              </button>
+              <div className="page-title">{t(`dashboard.detalleDe_${periodo}`, { periodo: periodoMedio })}</div>
+              <div className="page-sub">
+                {t("dashboard.subDetalle", { movimientos: movimientosPer, categorias: topGastosPer.cuantas })}
+              </div>
+            </div>
+          ) : (
+            /* «El saludo con el corte de mes es el título grande — la única
+                pantalla donde el título cambia según la hora.»
+
+                El saludo ya estaba escrito y calculado (`saludo`,
+                `diasParaCorte`): se pintaba en `heroIPad`, tras un
+                `enIPad &&`. En el teléfono la cabecera decía «Inicio», que es
+                el nombre de la pestaña y no lo que esta pantalla tiene que
+                decir al abrirse.
+
+                El subtítulo es el de la maqueta —la iglesia y el corte—, no el
+                del iPad —el día de la semana y el corte—: en el teléfono no
+                hay membrete en ninguna otra parte, y el día ya está en la
+                lista de movimientos de más abajo.
+
+                `data-titulo-fijo` es para la copia compacta que se queda
+                arriba al desplazar: ahí sí manda «Inicio». Un saludo no dice
+                dónde estás. */
+            <>
+              <div className="page-title" data-titulo-fijo={t("nav.inicio")}>{saludo}</div>
+              <div className="page-sub">
+                {church.nombre} · {diasParaCorte === 0
+                  ? t("dashboard.corteHoy")
+                  : t("dashboard.corteDias", { count: diasParaCorte })}
+              </div>
+            </>
+          )
         ) : (
         <div>
           {enMac && <div className="page-title">{t("nav.inicio")}</div>}
@@ -643,7 +814,18 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="balance-sub">{t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}</div>
         </div>
         )}
-        <div className="header-actions">
+        {/* En el detalle, la barra es SOLO el volver — que es lo que dibuja la
+            maqueta H2, con el hueco derecho vacío. Y no es solo fidelidad: el
+            botón de compartir de esta barra imprime el estado financiero del
+            INICIO, así que desde el detalle ofrecería compartir otra cosa
+            distinta de la que se está mirando. El «+» se va con él: crear un
+            movimiento desde una pantalla de solo lectura obliga a volver para
+            ver el efecto, y para eso ya está la rueda de abajo.
+
+            Se oculta con CSS y no desmontando el bloque, porque en Mac y en
+            iPad `detalle` nunca es cierto y estas dos acciones son las de
+            siempre. */}
+        <div className={`header-actions${enIPhone && detalle ? " es-oculta" : ""}`}>
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
             <span className="solo-escritorio"><IconPrinter size={14} /></span>
             <span className="solo-movil"><ShareIcon size={22} /></span>
@@ -666,6 +848,106 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           lo que separa las tarjetas es su borde de 1 px; el gris solo se
           justifica aquí, donde se juntan dos gráficas y cuatro KPI. */}
       <div className="content content-inicio">
+        {enIPhone && detalle ? (
+          /* ---- H2 · Detalle del periodo ----
+
+             «La segunda lista del rediseño ("Detalle del mes") como pantalla
+             propia, con el periodo que traes de la portada.»
+
+             Ocupa el contenido entero y no se mezcla con la portada: entrar
+             aquí es cambiar de pantalla, no desplegar una sección. Por eso la
+             lista de movimientos recientes y el desglose de gastos de más
+             abajo tampoco se pintan — el desglose, de hecho, es lo que baja a
+             esta pantalla recortado a tres.
+
+             Las filas son de UNA línea, como en la maqueta: el porcentaje que
+             antes iba de subtítulo («Limpieza · 31 % del gasto del mes») pasa
+             al pie del grupo, donde cabe la frase entera y no compite con la
+             cifra de la derecha. */
+          <>
+            <SeccionIOS
+              compacta
+              /* «Una sola fila puede explicar el balance, y por eso vive aquí
+                  y no en una gráfica.» */
+              pie={mayorGastoPer
+                ? t(`dashboard.mayorGastoPie_${periodo}`, {
+                    categoria: mayorGastoPer.info.nombre,
+                    pct: mayorGastoPer.pct,
+                    periodo: periodoMedio,
+                  })
+                : undefined}
+            >
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.mayorGasto")}</div></div>
+                <div className="ios-txrow-trailing">
+                  {mayorGastoPer
+                    ? <span className="tx-amount negative">{fmtMoney(mayorGastoPer.monto)}</span>
+                    : <span className="ios-fila-valor">{t("dashboard.sinGastosEsteMes")}</span>}
+                </div>
+              </div>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.ingresoMasFrecuente")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor">
+                    {ingresoFrecuentePer
+                      ? `${ingresoFrecuentePer.info.nombre} · ${ingresoFrecuentePer.cnt}`
+                      : t("dashboard.sinIngresosEsteMes")}
+                  </span>
+                </div>
+              </div>
+              {/* La fila que la portada dejó de tener. Sigue siendo un enlace
+                  a Miembros, como lo era allí. */}
+              <Link to="/miembros" className="ios-txrow ios-txrow--clickable">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.miembrosActivos")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor">{memberCount}</span>
+                  <IosChevron />
+                </div>
+              </Link>
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t(`dashboard.vsAnterior_${periodo}`)}</div></div>
+                <div className="ios-txrow-trailing"><Delta pct={pctChange(balancePer, balanceAnt)} /></div>
+              </div>
+              {/* Esta no está en la maqueta, y se queda: era una de las filas
+                  del grupo que esta pantalla sustituye, y quitarla sería
+                  perder un dato por el camino de un rediseño. Si sobra, sobra
+                  a propósito y no por descuido. */}
+              <div className="ios-txrow">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.ultimaActualizacion")}</div></div>
+                <div className="ios-txrow-trailing">
+                  <span className="ios-fila-valor">
+                    {ultimaActividad ? fmtRelativo(ultimaActividad) : t("dashboard.sinMovimientosRegistrados")}
+                  </span>
+                </div>
+              </div>
+            </SeccionIOS>
+
+            <SeccionIOS
+              titulo={t("dashboard.gastoPorCategoria")}
+              accion={topGastosPer.cuantas > topGastosPer.filas.length
+                ? <Link to="/gastos" className="ios-panel-action">{t("common.verTodo")}</Link>
+                : undefined}
+            >
+              {topGastosPer.filas.length === 0 ? (
+                <div className="ios-panel-empty">{t("dashboard.sinGastosEsteMesPunto")}</div>
+              ) : topGastosPer.filas.map((g) => (
+                <div className="ios-txrow" key={g.id}>
+                  <div className="ios-txrow-main">
+                    <div className="ios-txrow-title"><span className="truncate">{g.nombre}</span></div>
+                    {/* Barra fina y sin porcentaje: el monto ya está a la
+                        derecha, y dos formas de decir lo mismo en la misma
+                        fila hacen que ninguna se lea. */}
+                    <div className="dp-barra" aria-hidden="true">
+                      <i style={{ width: `${g.barPct}%`, background: g.color }} />
+                    </div>
+                  </div>
+                  <div className="ios-txrow-trailing"><span className="ios-fila-valor">{fmtMoney(g.monto)}</span></div>
+                </div>
+              ))}
+            </SeccionIOS>
+          </>
+        ) : (
+          <>
         {/* El saludo del diseño de iPad: h1 de 34px EN el contenido, con la
             fecha y cuánto falta para el corte de mes. En Mac y iPhone no
             existe — ahí la cabecera ya dice lo suyo. */}
@@ -704,116 +986,135 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
              barra con un dato: se desplaza con el contenido, y al llegar
              arriba lo que queda es el título, no el saldo. */
           <>
-            <div className="ios-hero">
-              <div className="ios-hero-cifra">
-                <span className={`ios-hero-num ${balance >= 0 ? "pos" : "neg"}`}>
-                  <CountUp value={balance} format={fmtMoney} paso={100} />
+            {/* Rediseño v2 (maqueta H1): el segmentado del periodo deja de ser
+                del iPad. Vivía tras `enIPad` desde el handoff anterior, pero
+                el estado, las consultas y los tres rótulos ya estaban escritos
+                para los tres periodos; lo único que faltaba era el mando. Es
+                el mismo defecto que la bandeja: función encerrada tras una
+                comprobación de plataforma. */}
+            <div className="dash-seg dash-seg--movil" role="group" aria-label={t("dashboard.periodo")}>
+              {(["mes", "trimestre", "anio"] as Periodo[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={periodo === p ? "sel" : ""}
+                  aria-pressed={periodo === p}
+                  onClick={() => setPeriodo(p)}
+                >
+                  {t(`dashboard.periodo_${p}`)}
+                </button>
+              ))}
+            </div>
+
+            {/* «Las cuatro cifras en una sola tarjeta: el balance en grande con
+                su variación, y abajo los tres números con su punto de color
+                —incluido el saldo en caja, que va aparte porque no es del
+                periodo, es de hoy—.»
+
+                Lo que había: el balance suelto sobre el gris y, debajo, una
+                lista agrupada con ingresos, gastos y balance del año en filas.
+                Tres cifras del mismo peso en tres renglones no dicen cuál se
+                consulta a diario; en la tarjeta, el balance manda y las otras
+                tres lo explican.
+
+                Las barras del periodo que la maqueta pone en medio NO están
+                todavía: siguen siendo la gráfica de recharts de más abajo. Es
+                lo único que falta de esta pantalla. */}
+            <div className="ios-tarjeta-cifras">
+              <div className="itc-cabeza">
+                <span className="itc-bloque">
+                  <span className="itc-rotulo">{t("dashboard.balanceDelPeriodo", { periodo: periodoLargo })}</span>
+                  <span className="itc-num">
+                    <CountUp value={balancePer} format={fmtMoney} paso={100} />
+                  </span>
                 </span>
-                <span className="ios-hero-moneda">{church.moneda}</span>
+                <Delta pct={pctChange(balancePer, balanceAnt)} />
               </div>
-              <div className="ios-hero-pie">
-                <span>{t("dashboard.saldoDelMes", { mes: mesLegible(mes) })}</span>
-                <Delta pct={pctChange(balance, balanceAnt)} />
+              {/* Las barras del periodo. Solo si hay más de un tramo: con
+                  «Mes» en la primera semana del mes, una sola pareja de
+                  barras no compara nada — dice lo mismo que las cifras de
+                  abajo, ocupando 96 px. */}
+              {barrasPeriodo.length > 1 && (
+                <div className="itc-barras" aria-hidden="true">
+                  {barrasPeriodo.map((b) => (
+                    <span className="itc-barra" key={b.etiqueta}>
+                      <span className="itc-barra-par">
+                        <i className="itc-barra-in" style={{ height: `${Math.round((b.ingresos / topeBarra) * 100)}%` }} />
+                        <i className="itc-barra-out" style={{ height: `${Math.round((b.gastos / topeBarra) * 100)}%` }} />
+                      </span>
+                      <span className="itc-barra-rot">{b.etiqueta}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="itc-pie">
+                <span className="itc-cifra">
+                  <span className="itc-etiqueta"><i className="itc-punto itc-punto--ingreso" />{t("charts.ingresos")}</span>
+                  <span className="itc-valor">{fmtMoney(ingresosPer)}</span>
+                </span>
+                <span className="itc-cifra">
+                  <span className="itc-etiqueta"><i className="itc-punto itc-punto--gasto" />{t("charts.gastos")}</span>
+                  <span className="itc-valor">{fmtMoney(gastosPer)}</span>
+                </span>
+                <span className="itc-cifra itc-cifra--fin">
+                  <span className="itc-etiqueta"><i className="itc-punto itc-punto--caja" />{t("dashboard.enCaja")}</span>
+                  <span className="itc-valor">{fmtMoney(saldoCaja ?? CERO)}</span>
+                </span>
               </div>
             </div>
 
-            <SeccionIOS titulo={t("dashboard.resumenDelMes")}>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.ingresos")}</div></div>
-                <div className="ios-txrow-trailing">
-                  <span className="tx-amount positive">
-                    <CountUp value={ingresos} format={fmtMoney} paso={100} />
-                  </span>
+            {/* El grupo que la maqueta H1 pone bajo la tarjeta: dos salidas y
+                nada más. Sin encabezado, que es lo corriente en iOS para un
+                grupo de dos filas que se explican solas.
+
+                Lo que había aquí eran «Balance del año» y «Aportantes
+                activos»:
+
+                · El balance del año se va porque el segmentado ya lo da —es
+                  literalmente la tarjeta de arriba con «Año» puesto—, y dos
+                  cifras del mismo dinero a diez píxeles de distancia dejan al
+                  lector comparándolas para ver si son la misma.
+                · Los aportantes bajan a H2, donde acompañan al resto del
+                  detalle en vez de estar solos aquí.
+
+                «Por revisar» es nuevo en el teléfono: el conteo existía desde
+                siempre pero solo se pedía en el iPad. */}
+            <SeccionIOS compacta>
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => setDetalle(true)}>
+                <div className="ios-txrow-main">
+                  <div className="ios-txrow-title">{t(`dashboard.detalleDe_${periodo}`, { periodo: periodoMedio })}</div>
                 </div>
-              </div>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.gastos")}</div></div>
+                <div className="ios-txrow-trailing"><IosChevron /></div>
+              </button>
+              {/* `/bandeja`, no `/inbox`: el conteo es `countPendingTx` —los
+                  movimientos que esperan aprobación—, y quien los aprueba es
+                  la Bandeja. `/inbox` es la mensajería, que se llama
+                  «Registro» y no cuenta nada de esto. */}
+              <Link to="/bandeja" className="ios-txrow ios-txrow--clickable">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("nav.porRevisar")}</div></div>
                 <div className="ios-txrow-trailing">
-                  {/* `es-gasto` y no `negative` a secas: `.tx-amount.negative`
-                      pinta con `--text` a propósito (en una tabla de gastos,
-                      todo en rojo es ruido y no jerarquía). Aquí sí toca rojo
-                      —lo pide la maqueta— porque estas DOS filas están juntas
-                      justamente para contrastarse: lo que entró contra lo que
-                      salió. Es el único sitio donde conviven. */}
-                  <span className="tx-amount es-gasto">
-                    <CountUp value={gastos} format={fmtMoney} paso={100} />
-                  </span>
-                </div>
-              </div>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.balanceDelAnio")}</div></div>
-                <div className="ios-txrow-trailing">
-                  <span className={`tx-amount ${balanceAnio >= 0 ? "positive" : "negative"}`}>
-                    <CountUp value={balanceAnio} format={fmtMoney} paso={100} />
-                  </span>
-                </div>
-              </div>
-              {/* Ya era un enlace a Miembros; la fila entera sigue siéndolo,
-                  ahora con el galón a la derecha en vez de una tarjeta. */}
-              <Link to="/miembros" className="ios-txrow ios-txrow--clickable">
-                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.miembrosActivos")}</div></div>
-                <div className="ios-txrow-trailing">
-                  <span className="ios-fila-valor">{memberCount}</span>
+                  {/* La insignia solo si hay algo que revisar: un cero en
+                      ámbar es una alarma que no suena por nada. */}
+                  {pendientes > 0 && <span className="ios-insignia es-pendiente">{pendientes}</span>}
                   <IosChevron />
                 </div>
               </Link>
             </SeccionIOS>
 
-            {/* Los tres indicadores que no son una cifra de dinero a secas:
-                cada uno es un dato con su explicación, o sea exactamente una
-                fila de dos líneas. En la rejilla vivían apretados en una
-                tarjeta de media pantalla con la nota debajo cortada. */}
-            <SeccionIOS titulo={t("dashboard.detalleDelMes")}>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main">
-                  <div className="ios-txrow-title">{t("dashboard.mayorGasto")}</div>
-                  <div className="tx-secundaria-movil">
-                    {categoriaTopGasto
-                      ? `${categoriaTopGasto.info.nombre} · ${t("dashboard.pctDelGasto", { pct: categoriaTopGasto.pct })}`
-                      : t("dashboard.sinGastosEsteMes")}
-                  </div>
-                </div>
-                {categoriaTopGasto && (
-                  <div className="ios-txrow-trailing">
-                    <span className="tx-amount negative">
-                      <CountUp value={categoriaTopGasto.monto} format={fmtMoney} paso={100} />
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main">
-                  <div className="ios-txrow-title">{t("dashboard.ingresoMasFrecuente")}</div>
-                  <div className="tx-secundaria-movil">
-                    {ingresoMasFrecuente ? ingresoMasFrecuente.info.nombre : t("dashboard.sinIngresosEsteMes")}
-                  </div>
-                </div>
-                {ingresoMasFrecuente && (
-                  <div className="ios-txrow-trailing">
-                    <span className="ios-fila-valor">
-                      {ingresoMasFrecuente.cnt} {t("dashboard.movimientosUnidad")}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main">
-                  <div className="ios-txrow-title">{t("dashboard.ultimaActualizacion")}</div>
-                  <div className="tx-secundaria-movil">
-                    {ultimaActividad ? fmtFechaCorta(ultimaActividad) : t("dashboard.sinMovimientosRegistrados")}
-                  </div>
-                </div>
-                <div className="ios-txrow-trailing">
-                  <span className="ios-fila-valor">{fmtRelativo(ultimaActividad)}</span>
-                </div>
-              </div>
-            </SeccionIOS>
+            {/* Aquí estaba la gráfica de «Ingresos vs. gastos» (recharts). Se
+                retira del teléfono, y solo del teléfono: las barras que ahora
+                viven DENTRO de la tarjeta de cifras cuentan la misma historia
+                —cómo se repartió el movimiento a lo largo del periodo— pero
+                sin repetirla, y con una diferencia que en el teléfono era un
+                error de lectura: la gráfica ignoraba el segmentado de periodo
+                y pintaba siempre las mismas semanas, así que al tocar
+                «Trimestre» las cifras cambiaban y la curva de abajo no. Dos
+                series contradictorias, una encima de la otra, en 393 px.
 
-            {/* Las gráficas van DESPUÉS de la cifra y del resumen, no antes:
-                en la maqueta lo primero que se lee al abrir Inicio es cuánto
-                hay, y la tendencia viene a continuación a explicarlo. En Mac
-                y iPad siguen arriba (ver el ternario del lienzo). */}
-            {graficas}
+                En Mac y en iPad se conserva tal cual (ver el ternario del
+                lienzo): ahí hay ancho de sobra, la gráfica no compite con la
+                tarjeta y el iPad tiene además su propia `InicioGraficasIPad`.
+                `graficas` sigue construyéndose para ellos. */}
           </>
         ) : (
           <>
@@ -972,37 +1273,17 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
             categorías es la dona de INGRESOS. El desglose de gastos no se
             pierde: sigue en Mac, en el teléfono, en Reportes y en el estado
             financiero impreso, que es donde se consulta con calma. */}
-        {enIPad ? null : enIPhone ? (
-          <div className="ios-panel" ref={categoryChartRef}>
-            <div className="ios-panel-head">
-              <h2>{t("dashboard.distribucionGastos")}</h2>
-              {/* `topGastos` ya viene recortado a 5; si el mes tuvo más
-                  categorías, el resto se ve en Gastos. */}
-              {categoriasGasto.length > topGastos.length && (
-                <Link to="/gastos" className="ios-panel-action">{t("common.verTodo")}</Link>
-              )}
-            </div>
-            {topGastos.length === 0 ? (
-              <div className="ios-panel-empty">{t("dashboard.sinGastosEsteMesPunto")}</div>
-            ) : (
-              <div className="ios-listcard">
-                {topGastos.map((g) => (
-                  <div className="ios-txrow" key={g.id}>
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{g.nombre}</div>
-                      <div className="stat-bar" style={{ marginTop: 6 }}>
-                        <div className="stat-bar-fill" style={{ width: `${g.barPct}%`, background: g.color }} />
-                      </div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span style={{ fontWeight: 700, fontSize: "calc(15px * var(--fs-escala))", fontVariantNumeric: "tabular-nums" }}>{fmtMoney(g.monto)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : distribucionEscritorio}
+        {/* El desglose de gastos por categoría se retira del teléfono, y solo
+            del teléfono: es lo que baja a «Detalle del periodo» recortado a
+            tres, que es donde el handoff lo quiere. Tenerlo en las dos
+            pantallas era la misma lista dos veces, una con cinco filas y otra
+            con tres, y con la de arriba clavada en el MES mientras la de
+            dentro seguía al segmentado: dos respuestas distintas a la misma
+            pregunta, en la misma app.
+
+            Mac e iPad no se tocan: ahí no hay pantalla de detalle a la que
+            mudarlo, y `distribucionEscritorio` es la tarjeta de siempre. */}
+        {enIPad || enIPhone ? null : distribucionEscritorio}
         </div>
 
         {/* En el iPad las dos listas del diseño (Últimos movimientos · Esta
@@ -1030,6 +1311,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           />
         ) : (
           <TxList txs={txs} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
+        )}
+          </>
         )}
           </>
         )}

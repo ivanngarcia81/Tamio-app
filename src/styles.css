@@ -19253,3 +19253,2129 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   -webkit-tap-highlight-color: transparent;
 }
 :root.iphone .rep-cifra.es-boton:active { opacity: .5; }
+
+/* ============================================================================
+   15 · LA CABECERA DE MARCA (handoff «header verde», opción 1f)
+   ----------------------------------------------------------------------------
+   El segundo handoff cambia el material de la cáscara del teléfono, no una
+   pantalla: la banda de arriba —barra de estado, fila de acciones y rueda de
+   secciones— pasa de ser el gris translúcido del sistema a una banda SÓLIDA
+   en el verde de Tamio, con el contenido en blanco y sin hairline inferior,
+   «porque el color ya separa».
+
+   Tres consecuencias que el propio handoff obliga a asumir, y que están
+   aplicadas aquí y en los bloques siguientes:
+
+     · El acento del contenido baja de tono. Con verde oscuro arriba, los
+       enlaces y acciones de la lista usan el verde medio (--brand) y nada
+       más: dos verdes fuertes en la misma pantalla se pelean.
+     · Nada de verde para «positivo». El balance en verde dejaría de leerse
+       como bueno y pasaría a leerse como marca; los importes van en el color
+       del texto y solo el gasto usa el rojo del sistema.
+     · La barra de estado va en blanco. Eso NO se puede pedir desde el CSS:
+       en un WKWebView lo decide el lado nativo (`UIStatusBarStyle`). Aquí
+       solo se garantiza que el fondo bajo ella sea el verde, que es la mitad
+       que le toca a la maqueta. La otra mitad es de src-tauri.
+
+   El verde es de TAMIO, no de Tesorería: Secretaría no cambia de color, solo
+   cambian el nombre y las secciones de la rueda. Por eso el token no lleva
+   nada del área en el nombre. */
+:root.iphone {
+  /* #047857 = emerald 700. Es un escalón más oscuro que --brand (#059669),
+     que se queda para el acento del contenido. */
+  --cabecera: #047857;
+  --cabecera-tinta: #fff;
+  /* El material de la píldora de la rueda: blanco al 22 % sobre el verde, no
+     vidrio gris. Con borde interior claro para despegarla del fondo sin
+     añadir otra línea dura. */
+  --cabecera-pildora: rgba(255, 255, 255, .22);
+  --cabecera-pildora-linea: rgba(255, 255, 255, .45);
+  --cabecera-vecina: rgba(255, 255, 255, .92);
+}
+/* En modo oscuro el verde de marca se apaga un punto: sobre un fondo negro,
+   el 700 a pantalla completa pesa más de la cuenta. El blanco del contenido
+   no cambia — es el que hace que la banda siga siendo la banda. */
+:root.iphone[data-theme="dark"] { --cabecera: #065f46; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) { --cabecera: #065f46; }
+}
+
+/* ---- La banda ----
+   `.app::after` ya era la franja de la fila de acciones; aquí crece hasta
+   cubrir también la barra de estado y la rueda, se vuelve sólida y deja de
+   aparecer solo al hacer scroll.
+
+   Tres cambios sobre la regla base (~7855), todos deliberados:
+
+   · `opacity: 1` siempre. La franja de vidrio nacía transparente y se
+     encendía con `.scrolled` porque imitaba a Ajustes y a Mail, donde la
+     barra desaparece hasta que hay algo debajo. Una banda de MARCA no puede
+     parpadear: es la identidad de la app, no un material que reacciona.
+   · `z-index: 90`, no 100. La rueda de secciones vive en 95 y tiene que
+     quedar POR ENCIMA de su propio fondo; el "+" y el título fijo están en
+     101 y siguen encima de todo. Con 100 la banda se pintaba sobre la rueda
+     —a igualdad de z-index gana el orden del árbol, y ::after cuenta como
+     último hijo—, que es el mismo motivo por el que `.titulo-fijo` ya subía
+     a 101 (ver su comentario).
+   · Sin `border-bottom`. Es la regla del handoff: el color ya separa. */
+:root.iphone .app::after {
+  top: 0 !important;
+  height: calc(var(--navrow-h) + env(safe-area-inset-top)) !important;
+  z-index: 90;
+  background: var(--cabecera);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-bottom: 0 !important;
+  opacity: 1;
+}
+/* Donde hay rueda, la banda llega hasta debajo de ella: las dos franjas del
+   diseño anterior (fila de acciones + rueda, cada una con su material) son
+   aquí UNA superficie continua. `con-carrusel` lo marca App.tsx en las
+   páginas donde la rueda pinta algo de verdad. */
+:root.iphone .app:has(.main.con-carrusel)::after {
+  height: calc(var(--navrow-h) + var(--carrusel-h) + env(safe-area-inset-top)) !important;
+}
+/* Y su fondo propio sobra: lo pone la banda de arriba, de una pieza. */
+:root.iphone .carrusel-secciones::before { display: none; }
+
+/* ---- Lo que vive sobre la banda, en blanco ----
+   El "+", compartir, el "···" y la copia fija del Large Title. Todos usaban
+   el verde de marca sobre gris; sobre el verde oscuro serían invisibles. */
+:root.iphone .btn-crear,
+:root.iphone .btn-compartir-cabecera,
+:root.iphone .btn-header-menu-icono,
+:root.iphone .titulo-fijo { color: var(--cabecera-tinta); }
+
+/* ---- La rueda, con el material de la banda ----
+   Las medidas son las del handoff «la cabecera y el carrusel, solos»:
+
+     alto de la pieza          54 (estado) + 44 (acciones) + 52 (rueda)
+     píldora                   34 px de alto, r17, blanco 22 %
+     borde interior            blanco 45 % · 0.5 px
+     nombre activo / vecinas   16 px 600 / 16 px 400
+     vecina / segunda vecina   62 % · 0.7 px  /  34 % · 2 px
+     contador                  fondo #fff, texto verde, DENTRO de la píldora
+     hairline inferior         ninguno
+
+   Lo que NO se copia de la maqueta, y por qué: allí la rueda son dos mitades
+   `flex:1` con la píldora en medio, y las vecinas se recortan con
+   `overflow:hidden`. Eso centra el activo sin medir nada, pero no se puede
+   arrastrar — la maqueta finge el gesto con un `translateX`. El repo ya
+   resuelve lo mismo con un contenedor de scroll real y `scroll-snap`, que es
+   lo que hace que el dedo mueva también la página (`--nav-p`), y el propio
+   handoff pide ese gesto («mueve el arrastre… al soltar, la que quede bajo la
+   píldora es la que se abre»). Así que se conserva el mecanismo del repo y se
+   cambia solo la piel. La máscara de los bordes se queda por lo mismo: en una
+   tira que se desplaza de verdad, un corte en seco se ve como un corte. */
+:root.iphone { --carrusel-h: 52px; }
+:root.iphone .carrusel-secciones { padding: 9px 0; }
+:root.iphone .carrusel-selector {
+  top: 9px;
+  height: 34px;
+  border-radius: 17px;
+  background: var(--cabecera-pildora);
+  border: 0;
+  box-shadow: inset 0 0 0 .5px var(--cabecera-pildora-linea);
+}
+:root.iphone .carrusel-item {
+  min-height: 34px;
+  padding: 0 14px;
+  gap: 6px;
+  font-size: calc(16px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  color: var(--cabecera-tinta);
+}
+:root.iphone .carrusel-pista { gap: 2px; }
+:root.iphone .carrusel-item.activo {
+  font-weight: 600;
+  color: var(--cabecera-tinta);
+}
+/* La curva del apagado, atada a los dos escalones que da el handoff. `--d` lo
+   escribe CarruselSecciones.tsx y vale 0 bajo la píldora y 1 en el borde (ver
+   allí por qué se mide desde el centro y no por cuánto se sale el nombre).
+   Con 0,66 y 2 px, la segunda vecina aterriza exactamente en el 34 % / 2 px
+   que pide la tabla, y la inmediata —que cae alrededor de d≈0,45— queda en
+   70 % / 0,9 px, a un pelo del 62 % / 0,7 px de la maqueta. Es mucho más
+   suave que el vidrio gris de antes (0,38 y 5 px), y tiene que serlo: sobre
+   un fondo sólido no hay nada que emborronar por detrás, y una vecina casi
+   borrada sobre verde se lee como una mancha, no como un nombre. */
+:root.iphone .carrusel-item {
+  filter: blur(calc(var(--d) * 2px));
+  opacity: calc(1 - var(--d) * 0.66);
+}
+/* El contador viaja DENTRO de la píldora, y se invierte: fondo blanco y
+   número verde. Un globo rojo —o el gris del sistema— sobre el verde de la
+   banda vibra; el handoff lo dice y se ve. */
+:root.iphone .carrusel-badge,
+:root.iphone .carrusel-item.activo .carrusel-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--cabecera);
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 700;
+  line-height: 17px;
+}
+
+/* ---- Los glifos de la fila de acciones, sin cápsula ----
+   Cuando la barra era transparente hasta el primer scroll, el "+" y el
+   compartir llevaban su propia cápsula de vidrio para leerse sobre una lista
+   blanca (ver ~18544). Esa regla ya se disolvía sola al aparecer la barra —
+   «dos vidrios superpuestos se ven como un parche más claro»—; con la banda
+   de marca la barra está SIEMPRE opaca, así que la cápsula sobra siempre.
+   Quedan los glifos solos en blanco, que es lo que dibuja la maqueta: fila de
+   44 px, 16 px de margen y 16 px entre iconos, sin fondos ni bordes. */
+:root.iphone .btn-crear,
+:root.iphone .btn-compartir-cabecera.btn-compartir-cabecera,
+:root.iphone .btn-header-menu-icono {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  color: var(--cabecera-tinta);
+  width: 44px; height: var(--navrow-h);
+  margin-top: 0;
+}
+:root.iphone .btn-crear { right: 6px !important; }
+:root.iphone .btn-compartir-cabecera { right: 50px !important; }
+:root.iphone .btn-header-menu-icono { right: 6px !important; }
+/* Y el `:active` de la barra: atenuar, nunca cambiar de fondo. */
+:root.iphone .btn-compartir-cabecera.btn-compartir-cabecera:active,
+:root.iphone .btn-header-menu-icono:active { opacity: .4; background: none; }
+
+/* ---- El nombre del área, la mitad izquierda de la fila ----
+   17 px 600 en blanco, con el galón a 70 % de opacidad, alineado a la
+   izquierda con los mismos 16 px de margen que los glifos de la derecha. Es
+   `position: fixed` como el resto de la cáscara, y se para donde empieza el
+   título fijo (96 px) para que las dos etiquetas no se solapen nunca — el
+   título fijo aparece al hacer scroll y este no se va. */
+.area-cabecera { display: none; }
+:root.iphone .area-cabecera {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 16px;
+  max-width: 104px;
+  height: var(--navrow-h);
+  z-index: 101;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cabecera-tinta);
+  font-family: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .area-cabecera svg { flex: 0 0 auto; opacity: .7; }
+:root.iphone .area-cabecera.es-boton { cursor: pointer; }
+:root.iphone .area-cabecera.es-boton:active { opacity: .4; }
+
+/* Y la copia fija del Large Title se estrecha para dejarle sitio: antes
+   arrancaba en 96 px, que es justo donde termina «Secretaría» con su galón.
+   120 a cada lado la deja centrada de verdad (los glifos de la derecha
+   ocupan hasta 94) y sin tocar el nombre del área. */
+:root.iphone .titulo-fijo { left: 120px !important; right: 120px !important; }
+
+/* ============================================================================
+   16 · EL VOCABULARIO DE LISTA, REHECHO EN iOS (handoff «nativo»)
+   ----------------------------------------------------------------------------
+   El handoff es explícito sobre qué estaba mal en la primera vuelta:
+
+     «Las versiones anteriores eran correctas en contenido y sospechosas en
+      forma: tarjetas flotando con sombra, esquinas de 18 px, separadores de
+      medio píxel gris azulado, títulos de sección en negrita oscura. Eso es
+      vocabulario de web app metido en un teléfono.»
+
+   Y da el sistema que lo reemplaza, medida por medida:
+
+     lista agrupada insertada   radio 10, celda blanca SIN sombra
+     hairline                   0.33 px, rgba(60,60,67,.29), al ras del texto
+     cabecera de grupo          13 px gris — no negrita oscura
+     pie de grupo               texto gris que explica la regla
+     fila                       etiqueta + valor gris + galón #c7c7cc
+     título grande              34 px con la barra de 44 encima
+     acciones                   texto teñido de 17 px, sin botones rellenos
+     sombras                    ninguna, salvo hojas y barra inferior
+
+   Casi todo esto ya estaba escrito para las hojas y para Ajustes (`.ios-group`
+   con radio 10 y margen 16, `.ios-section-header` a 13/400 con sangría 32).
+   Lo que se había desviado eran las pantallas de datos, que en la primera
+   vuelta subieron a radio 18 y estrenaron sombra. Aquí vuelven a la familia. */
+:root.iphone {
+  /* 10, no 18. Es el radio de la lista insertada de iOS, y el mismo que ya
+     usaba `.ios-group` antes de que la primera vuelta lo subiera «para que las
+     dos cajas no se vieran como dos familias». Se igualan, pero hacia abajo. */
+  --ios-radio: 10px;
+  /* Ninguna. «La profundidad en iOS la da el material, no el box-shadow.» */
+  --ios-sombra: none;
+  /* El separator del sistema, más presente que el que había (.18) porque
+     ahora es más fino: a 0.33 px un gris al 18 % desaparece. */
+  --ios-sep: rgba(60, 60, 67, .29);
+  /* El galón de iOS. Es más claro que --text-3 a propósito: el galón no es
+     texto secundario, es una señal de que la fila lleva a algún sitio. */
+  --ios-galon: #c7c7cc;
+  /* El gris del valor de la derecha: secondaryLabel de iOS. */
+  --ios-valor: rgba(60, 60, 67, .6);
+}
+:root.iphone[data-theme="dark"] {
+  --ios-sep: rgba(84, 84, 88, .65);
+  --ios-galon: #48484a;
+  --ios-valor: rgba(235, 235, 245, .6);
+}
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) {
+    --ios-sep: rgba(84, 84, 88, .65);
+    --ios-galon: #48484a;
+    --ios-valor: rgba(235, 235, 245, .6);
+  }
+}
+
+/* ---- El hairline: 0.33 px, no 0.5 ----
+   El separador se dibuja con un `height: 1px` encogido por `scaleY`, que es la
+   única forma de pedir menos de un píxel lógico y que el navegador no lo
+   redondee a uno entero. 0.33 en vez de 0.5. */
+:root.iphone .ios-row:not(:last-child)::after,
+:root.iphone .ios-txrow:not(:last-child)::after,
+:root.iphone .ios-listrow:not(:last-child)::after { transform: scaleY(0.33); }
+
+/* ---- La cabecera de grupo vuelve a su sitio ----
+   La primera vuelta la sacó hacia afuera del texto de las filas (sangría 20 en
+   vez de 32) y la puso en 13/600 con tracking. El handoff la alinea CON el
+   texto —32 = los 16 del inset de la tarjeta más los 16 de la fila— y la deja
+   en peso normal: «13 px gris, no negrita oscura». Lo único que se conserva
+   son las mayúsculas, que sí están en la maqueta (COMPROBANTE, INFORMES,
+   PRÓXIMAS ACTIVIDADES) aunque allí vengan escritas en el texto. */
+:root.iphone .ios-section-header {
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--ios-valor);
+  padding: 0 32px 6px;
+}
+/* El pie del grupo es donde iOS pone las reglas, y el handoff lo usa en casi
+   todas las pantallas: «el efectivo en caja es lo cobrado que no está en
+   ningún corte», «quien registró no puede firmar». Ya existía para las hojas;
+   aquí solo toma el gris y la sangría de la maqueta. */
+:root.iphone .ios-section-footer {
+  color: var(--ios-valor);
+  padding: 7px 32px 0;
+  line-height: 1.35;
+}
+/* Y su variante de advertencia: ámbar oscuro, legible sobre el gris del fondo
+   —el naranja del sistema (#ff9500) sobre #f2f2f7 no pasa contraste—. */
+:root.iphone .ios-section-footer--aviso { color: #b25000; }
+:root.iphone[data-theme="dark"] .ios-section-footer--aviso { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .ios-section-footer--aviso { color: #ffb266; }
+}
+
+/* ---- El galón ----
+   #c7c7cc, no el gris del texto secundario: en iOS el galón es más claro que
+   cualquier texto de la fila porque no compite con él, solo promete que hay
+   algo detrás. */
+:root.iphone .ios-chevron { color: var(--ios-galon); }
+
+/* ---- Los títulos de panel, en la misma familia ----
+   `.ios-panel-head h2` era el otro sitio donde quedaba una negrita de 13 con
+   tracking. Misma corrección que la cabecera de grupo: no hay dos jerarquías
+   de sección en el teléfono, hay una. */
+:root.iphone .ios-panel-head h2 {
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--ios-valor);
+}
+
+/* ============================================================================
+   17 · NADA DE VERDE PARA «POSITIVO»
+   ----------------------------------------------------------------------------
+   Es la segunda de las tres decisiones que el handoff dice que la cabecera
+   sólida OBLIGA a tomar:
+
+     «El balance en verde dejaría de leerse como bueno y pasaría a leerse como
+      marca; los importes van en negro y solo el gasto usa el rojo del
+      sistema.»
+
+   Con el verde ocupando toda la banda de arriba, un importe verde deja de
+   significar «entró dinero» y pasa a significar «esto es de Tamio». La señal
+   se pierde justo donde más se usa. Así que en el teléfono el color del
+   dinero se reduce a dos: el del texto para todo, y el rojo del sistema para
+   lo que sale.
+
+   Solo `:root.iphone`. En el Mac y el iPad la cabecera sigue siendo gris, el
+   verde nunca se gastó en la marca y el semáforo de siempre se lee bien. */
+:root.iphone .tx-amount.positive,
+:root.iphone .balance .amount.pos,
+:root.iphone .ios-field-value--pos,
+:root.iphone .ios-field--pos { color: var(--text); }
+/* Y lo que sale, en el rojo del sistema —#ff3b30, el mismo que ya usan las
+   filas destructivas— y no en el #dc2626 de escritorio. `.es-gasto` era la
+   excepción que la primera vuelta abrió solo para el par ingresos/gastos de
+   Inicio; ahora es la regla general y la excepción sobra. */
+:root.iphone .tx-amount.negative,
+:root.iphone .tx-amount.es-gasto { color: var(--ios-red); }
+
+/* ---- Y las cajas que no son lista, al mismo radio ----
+   `.card`, `.stat-card`, `.tx-list` y `.data-table` ya habían perdido borde y
+   sombra en el rango móvil, pero se quedaron en radio 12 mientras la lista
+   agrupada iba a 10. Dos radios distintos en la misma pantalla se ven, y el
+   handoff no tiene más que uno. */
+:root.iphone .card,
+:root.iphone .stat-card,
+:root.iphone .tx-list,
+:root.iphone .data-table { border-radius: var(--ios-radio); }
+
+/* ---- La fila de datos, con las medidas de la maqueta ----
+   La fila de un movimiento del handoff, medida de su marcado:
+
+     fila        min-height 56, padding 8px 0 8px 16px
+     título      17 px, tracking −.2, peso NORMAL, color del texto
+     secundaria  15 px, gris
+     importe     17 px, peso normal, cifras tabulares
+     galón       8×13, #c7c7cc
+     sin tile    la fila no lleva icono delante
+
+   La primera vuelta la dejó en 64 px con el título en 16/600 y un tile de
+   color de 30 px delante. Las tres cosas son justo lo que el handoff señala
+   como vocabulario prestado: «una fila es etiqueta + valor + galón, no una
+   tarjeta con dos líneas». El punto de categoría se queda —ese sí está en la
+   maqueta, dentro de la secundaria— pero el tile se va. */
+:root.iphone .ios-txrow {
+  min-height: 56px;
+  padding: 8px 16px;
+}
+:root.iphone .ios-txrow:not(:last-child)::after { left: 16px; }
+:root.iphone .ios-txrow .tx-icon { display: none; }
+:root.iphone .ios-txrow-title {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+:root.iphone .tx-secundaria-movil { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .ios-txrow .tx-amount {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+/* El sufijo de moneda sobra en el teléfono: la iglesia trabaja en una sola
+   moneda y en la maqueta el importe es «$5,125.00», sin nada detrás. A 393 px
+   ese «USD» empuja la cifra y le roba el ancho al concepto. */
+:root.iphone .ios-txrow .tx-amount .cur { display: none; }
+
+/* ---- Los tres encabezados de grupo, alineados con el texto de las filas ----
+   El handoff pone la cabecera del grupo A PLOMO con la etiqueta de la fila:
+   32 px del borde de la pantalla, que son los 16 del inset de la tarjeta más
+   los 16 del padding de la fila. Medido con Playwright, `.ios-txrow-title`
+   cae en 32 y la tarjeta en 16, así que la referencia es correcta; lo que
+   estaba desalineado eran los encabezados, en 20 (`.tx-title`,
+   `.ios-panel-head`) — heredado de cuando llevaban 4 px de sangría propia
+   dentro de un contenedor de 16.
+
+   `.tx-title` además era el último título de sección en negrita de 20 px que
+   quedaba en el teléfono: «Todos los ingresos», «Todos los gastos». En el
+   sistema del handoff eso no es un título, es la cabecera del grupo que viene
+   debajo — 13 px gris, como INFORMES o COMPROBANTE. */
+:root.iphone .ios-panel-head { padding: 0 16px; }
+:root.iphone .tx-title {
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 18px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: uppercase;
+  color: var(--ios-valor);
+  padding: 0 16px 6px;
+}
+
+/* ============================================================================
+   18 · EL TÍTULO GRANDE, DENTRO DE LA BANDA Y EN BLANCO
+   ----------------------------------------------------------------------------
+   En las maquetas del handoff la banda verde no termina en la fila de
+   acciones: sigue hacia abajo y se lleva el Large Title dentro, en blanco.
+   Está así en las tres familias —«Membresía», «Actas», «Buenas tardes,
+   Iván»— con las mismas medidas siempre:
+
+     un bloque con el verde de fondo y 14 px de aire abajo, que contiene la
+     barra de estado, la fila de acciones de 44 y un <h1> de 34/41, peso 700,
+     tracking −.4, en blanco y con 16 px de sangría.
+
+   Sin esto, una pantalla sin rueda —Ajustes, Inicio, Mensajes, Ayuda— se
+   queda con una franja verde de 44 px vacía y el título negro debajo, sobre
+   el gris: se ve como una raya de color suelta, no como una cabecera.
+
+   El título sigue viviendo DENTRO del área con scroll, que es lo que hace que
+   se vaya al desplazar y que `--progreso-titulo` pueda pasárselo a la copia
+   fija de la barra. Lo único que cambia es que su bloque se pinta del mismo
+   verde y se pega contra la banda fija de arriba: al desplazar, el verde del
+   título se mete debajo del verde de la banda y no se ve ninguna costura.
+
+   `:has(.page-title)` acota el pintado a las cabeceras que de verdad llevan
+   título. Las otras —Miembros, Ingresos— usan `.header` para un selector de
+   mes o un par de acciones sobre el gris, y ahí la maqueta no pone verde. */
+:root.iphone .header:has(.page-title) {
+  /* −12 para cancelar el respiro que `.main` deja bajo la banda: el bloque del
+     título tiene que empezar EXACTAMENTE donde termina la banda fija, o se ve
+     una raya gris entre los dos verdes. */
+  margin-top: -12px;
+  padding: 0 16px 14px !important;
+  background: var(--cabecera);
+}
+:root.iphone .header:has(.page-title) .page-title {
+  font-size: calc(34px * var(--fs-escala));
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cabecera-tinta);
+}
+/* Lo que acompañe al título dentro de esa cabecera —el subtítulo del saludo,
+   una acción de texto— también va en blanco. El subtítulo al 78 %, que es lo
+   que dibuja la maqueta de Inicio: «Getsemaní · el corte de mes cierra en 5
+   días». */
+:root.iphone .header:has(.page-title) .page-sub,
+:root.iphone .header:has(.page-title) .subtitle,
+:root.iphone .header:has(.page-title) .muted { color: rgba(255, 255, 255, .78); }
+:root.iphone .header:has(.page-title) .btn.ghost,
+:root.iphone .header:has(.page-title) .btn.link { color: var(--cabecera-tinta); }
+
+/* El galón, con el trazo de la maqueta: 8×13 y stroke 2, no 7×12 y 2.5. En
+   #c7c7cc —más claro que cualquier texto de la fila— un trazo de 2.5 se ve
+   grueso y romo; el de la maqueta es más largo y más fino. */
+:root.iphone .ios-chevron { width: 8px; height: 13px; }
+:root.iphone .ios-chevron svg { stroke-width: 2; }
+
+/* ---- El balance de Inicio, también sin verde ----
+   Es el importe más grande de la app y era el más verde: `.ios-hero-num.pos`
+   lo pintaba con el color de marca. En la maqueta de Inicio esa cifra es
+   negra —30 px, 700, cifras tabulares— y el único verde de la tarjeta es la
+   pastilla de variación, que sí se queda: una VARIACIÓN sí es un semáforo,
+   un saldo no. El sufijo de moneda se va, igual que en las filas: la maqueta
+   escribe el balance a secas. */
+:root.iphone .ios-hero-num.pos { color: var(--text); }
+:root.iphone .ios-hero-num.neg { color: var(--ios-red); }
+:root.iphone .ios-hero-moneda { display: none; }
+
+/* ---- La cifra del periodo, sobre la lista ----
+   «El total del periodo como cifra grande sobre la lista, no como tarjeta»
+   (handoff de Tesorería). Las medidas salen del marcado de la maqueta:
+   rótulo de 13 gris encima, importe de 32/700 con tracking −.8 y cifras
+   tabulares, y el conteo a la derecha en 15 gris, alineado por la línea de
+   abajo con 5 px de respiro para que descanse sobre la base del importe.
+
+   No lleva tarjeta ni fondo: se apoya en el gris del contenido, como el
+   saldo de Inicio. Un total dentro de una fila de lista pesa lo mismo que la
+   categoría que va debajo; fuera, manda. */
+:root.iphone .ios-cifra-periodo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  /* Sin sangría propia: el contenedor ya viene insertado 16 px (medido), y la
+     maqueta alinea la cifra con el BORDE de la tarjeta —16—, no con el texto
+     de sus filas —32—, que es donde va la cabecera de grupo. */
+  padding: 14px 0 0;
+}
+:root.iphone .ios-cifra-bloque { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+:root.iphone .ios-cifra-rotulo {
+  font-size: calc(13px * var(--fs-escala));
+  color: var(--ios-valor);
+}
+:root.iphone .ios-cifra-num {
+  font-size: calc(32px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+:root.iphone .ios-cifra-conteo {
+  flex: 0 0 auto;
+  padding-bottom: 5px;
+  font-size: calc(15px * var(--fs-escala));
+  font-variant-numeric: tabular-nums;
+  color: var(--ios-valor);
+}
+/* La variante de la cifra cuando va sola —sin conteo a la derecha— y con su
+   pie explicativo debajo: Depósitos. El pie es el mismo `.ios-section-footer`
+   del sistema, solo que aquí cuelga de la cifra y no de un grupo, así que
+   necesita su propio respiro arriba. */
+:root.iphone .ios-cifra-periodo--sola { padding-bottom: 2px; }
+:root.iphone .ios-cifra-pie { padding-top: 4px; margin: 0; }
+
+/* ---- Los importes del estado financiero, en el sistema nuevo ----
+   `.rep-monto` iba a 16/600 con el semáforo de escritorio: verde para el
+   total de ingresos, #dc2626 para el de gastos. Con la banda de marca arriba
+   eso ya no vale (bloque 17): el importe es del color del texto y solo lo que
+   SALE usa el rojo del sistema. El tamaño se iguala al de cualquier valor de
+   fila —17— y el peso baja a normal salvo en el balance, que es la única
+   cifra que el handoff pide en negrita. */
+:root.iphone .rep-monto {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+}
+:root.iphone .rep-monto.pos { color: var(--text); }
+:root.iphone .rep-monto.neg { color: var(--ios-red); }
+:root.iphone .rep-total .rep-monto { font-weight: 600; }
+
+/* `.tx-head` traía 4 px de sangría propia, así que su título aterrizaba en 36
+   cuando el resto de cabeceras de grupo caen en 32 (medido con Playwright).
+   Se le quita al contenedor y la sangría la pone el título, como en
+   `.ios-panel-head`. */
+:root.iphone .tx-head { padding-left: 0; padding-right: 0; }
+/* Un depósito NO es un gasto: es dinero que va al banco y sigue siendo de la
+   iglesia. Lleva `.negative` para decir que sale de la caja, pero el rojo del
+   sistema es del gasto. (Ver el comentario de DepositoTable.tsx.) */
+:root.iphone .tx-amount.es-deposito { color: var(--text); }
+
+/* ---- La cabecera vacía no ocupa ----
+   Varias páginas montan `<div className="header">` con TODO su contenido
+   detrás de `{!enIPhone && …}`: en el teléfono queda un contenedor sin nada
+   dentro que sigue cobrando su padding. Medido en Depósitos: 22 px de
+   cabecera más 6 de `.content` antes de la primera cifra, o sea 40 px de gris
+   entre la banda y el contenido. En la maqueta la cifra arranca a 14 px de la
+   banda.
+
+   La regla busca la firma exacta de ese caso: una cabecera SIN título grande
+   cuyo único hijo sea `.header-actions` —el bloque de botones de escritorio,
+   que en el teléfono está oculto porque su trabajo lo hace el "+" de la
+   banda—. Le quita el padding, no el contenido: donde ese bloque sí trae
+   algo visible en el teléfono (el selector de mes de Ingresos y Gastos) el
+   control se queda, solo que pegado a la banda, que es como lo dibuja la
+   maqueta. Con título grande la regla no aplica: ese va dentro del verde y
+   trae su propio aire (bloque 18). */
+:root.iphone .header:not(:has(.page-title)):has(> .header-actions:only-child) {
+  padding: 0 !important;
+  min-height: 0;
+}
+
+/* ---- El "volver" y el nombre del área comparten hueco ----
+   `.ios-nav-volver` se escribió para «el hueco izquierdo que en las demás
+   pantallas está vacío». Desde el rediseño v2 ese hueco ya no está vacío: lo
+   ocupa el nombre del área. Se veía —capturado en el estado financiero de
+   Reportes— «Tesorería ⌄» y «‹ Reportes» impresos uno encima del otro.
+
+   Manda el volver: dentro de un documento, salir de él es lo que se busca, y
+   el área ya la dice la rueda de abajo. Y pasa a blanco, como todo lo que
+   vive sobre la banda: en el verde de marca, el verde del acento no se lee. */
+:root.iphone .app:has(.ios-nav-volver) .area-cabecera { display: none; }
+:root.iphone .ios-nav-volver { color: var(--cabecera-tinta); }
+
+/* Y la acción de texto de la barra (Bandeja: «Aprobar 2»), con el mismo
+   tratamiento que el "+": sin cápsula de vidrio —la banda ya es opaca— y en
+   blanco, porque el verde del acento no se lee sobre el verde de la marca. */
+:root.iphone .ios-nav-btn {
+  border: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--cabecera-tinta);
+  padding: 0 6px;
+  right: 8px;
+}
+/* Si además hay "+" o compartir —hoy no coinciden en ninguna pantalla, pero
+   son controles fijos del mismo extremo y nada lo impide— la acción de texto
+   se corre en vez de taparlos. Nunca al revés: esconder un botón para hacerle
+   sitio a otro es cambiar la función por la maqueta. */
+:root.iphone .app:has(.btn-crear) .ios-nav-btn,
+:root.iphone .app:has(.btn-compartir-cabecera) .ios-nav-btn { right: 52px; }
+
+/* ============================================================================
+   19 · EL ESTADO SE DICE CON LA PALABRA, NO CON UN GLOBO
+   ----------------------------------------------------------------------------
+   «Los cinco estados de ESTADOS_ACTA reducidos a un segmentado de tres —lo
+   que de verdad se filtra— y el estado como texto teñido en la fila, no como
+   pastilla de color: en iOS el estado de una fila se dice con la palabra en
+   color, no con un globo.»
+
+   La pastilla se quita en el teléfono y queda el texto, con el mismo tamaño y
+   color que cualquier valor de fila: 17 px y el gris secundario por defecto,
+   y el color solo cuando el estado significa algo —ámbar lo que espera,
+   verde lo que ya está—. En el iPad y el Mac la pastilla se queda: allí la
+   fila es de una tabla y el globo la ancla a su columna.
+
+   Y el verde del estado es --pos, no la marca: «aprobada/lista/entregada» es
+   un semáforo, no identidad. Con la banda de marca arriba eso vale más que
+   antes — el verde de Tamio ya está gastado en la cabecera, así que aquí no
+   se confunde con ella. */
+:root.iphone .ios-badge {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  color: var(--ios-valor);
+}
+:root.iphone .ios-badge--pending { background: none; color: var(--warn); }
+:root.iphone .ios-badge--ok { background: none; color: var(--pos); }
+/* El valor de la derecha, al gris del sistema: `--text-2` es el secundario de
+   la app entera y en el teléfono el handoff usa el `secondaryLabel` de iOS,
+   que es un pelo más claro. Se unifica con el que ya usan las filas de
+   etiqueta/valor para que un valor no se vea de dos grises según de qué
+   pantalla venga. */
+:root.iphone .ios-fila-valor { color: var(--ios-valor); }
+
+/* ============================================================================
+   20 · EL CALENDARIO, COMO EL DE iOS
+   ----------------------------------------------------------------------------
+   «El calendario de iOS: mes y año en el título grande —el año en color—,
+   iniciales de día en 11 px sobre un hairline, número del día en 19 px con el
+   relleno solo en hoy, y la lista del día seleccionado debajo de otro hairline
+   a todo el ancho.»
+
+   El cambio de fondo es el que más se nota: el mes deja de vivir en una
+   tarjeta blanca y se apoya directamente en el gris, con dos hairlines por
+   toda estructura. Una rejilla de números no es una lista agrupada, y meterla
+   en una tarjeta la hacía parecerlo.
+
+   El relleno solo en hoy: el día ELEGIDO se marca con el peso, no con otro
+   círculo. Dos rellenos en la misma rejilla —uno negro y otro verde— compiten
+   por decir «estás aquí», y cuál es cuál hay que aprenderlo. Cuál está
+   elegido lo dice además el título de la lista de abajo, que es donde de
+   verdad se lee lo que hay ese día. */
+:root.iphone .ios-cal {
+  background: none;
+  border-radius: 0;
+  padding: 10px 8px 0;
+  margin-bottom: 8px;
+}
+:root.iphone .ios-cal-dow {
+  padding: 0 4px 4px;
+  margin: 0 4px 4px;
+  border-bottom: .33px solid var(--ios-sep);
+}
+:root.iphone .ios-cal-dow span {
+  font-size: calc(11px * var(--fs-escala));
+  color: color-mix(in srgb, var(--ios-valor) 66%, transparent);
+}
+:root.iphone .ios-cal-dia {
+  min-height: 46px;
+  gap: 2px;
+  padding: 2px 0 0;
+}
+:root.iphone .ios-cal-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  font-size: calc(19px * var(--fs-escala));
+  letter-spacing: normal;
+}
+/* Elegido: solo el peso. El relleno es de hoy y de nadie más. */
+:root.iphone .ios-cal-num--sel {
+  background: none;
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---- El círculo del tipo de alerta, también en el teléfono ----
+   `.al-marca` estaba escrito solo para el maestro-detalle del iPad. En el
+   teléfono la fila de la bandeja lo usa igual —es la misma alerta— pero baja
+   a 30 px: la fila del rediseño mide 56 y un círculo de 34 la llena de borde
+   a borde, sin el aire que separa un elemento de una lista de la línea de
+   arriba. El ámbar de «pide decisión» se queda: es lo único que distingue de
+   un vistazo la mitad que hay que resolver. */
+:root.iphone .al-marca {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--ios-valor);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .al-marca.urgente {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}
+
+/* ============================================================================
+   21 · LA TARJETA DE CIFRAS DE INICIO (maqueta H1)
+   ----------------------------------------------------------------------------
+   «Las cuatro cifras en una sola tarjeta: el balance en grande con su
+   variación, las barras del periodo, y abajo los tres números con su punto de
+   color —incluido el saldo en caja, que va aparte porque no es del periodo, es
+   de hoy—.»
+
+   Lo que había: el balance suelto sobre el gris y, debajo, una lista agrupada
+   con ingresos, gastos y balance del año en tres filas del mismo peso. Tres
+   cifras iguales en tres renglones no dicen cuál se consulta a diario.
+
+   Radio 16 y no 10: es la única tarjeta del rediseño que no es una lista
+   agrupada —lleva una cifra grande, una pastilla y una fila de tres— y la
+   maqueta le da su propio radio. El resto del archivo usa --ios-radio a
+   propósito; esta es la excepción, y por eso está escrita a mano. */
+:root.iphone .ios-tarjeta-cifras {
+  margin: 14px 16px 0;
+  padding: 14px 16px 15px;
+  border-radius: 16px;
+  background: var(--surface);
+}
+:root.iphone .itc-cabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+:root.iphone .itc-bloque { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+:root.iphone .itc-rotulo { font-size: calc(13px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .itc-num {
+  font-size: calc(30px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+/* Las tres cifras, separadas por el mismo hairline del sistema pero más
+   tenue: dentro de una tarjeta, el separador no tiene que trabajar tanto como
+   entre dos filas de una lista. */
+:root.iphone .itc-pie {
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: .33px solid color-mix(in srgb, var(--ios-sep) 55%, transparent);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+:root.iphone .itc-cifra { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+:root.iphone .itc-cifra--fin { align-items: flex-end; }
+:root.iphone .itc-etiqueta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(12px * var(--fs-escala));
+  color: var(--ios-valor);
+}
+/* Cuadrado redondeado de 7 px, no un círculo: es la marca de una SERIE —lo
+   mismo que pintará la barra— y en la maqueta va con radio 2. El punto
+   redondo de 7 px ya significa otra cosa en esta app (la categoría de un
+   movimiento, `.ios-punto`), y dos marcas iguales para dos cosas distintas se
+   confunden. */
+:root.iphone .itc-punto { width: 7px; height: 7px; border-radius: 2px; flex: 0 0 auto; }
+:root.iphone .itc-punto--ingreso { background: var(--pos); }
+:root.iphone .itc-punto--gasto { background: var(--ios-red); }
+/* El saldo en caja no es una serie del periodo: es el dato de hoy. Por eso su
+   marca es gris y no un color propio — no hay una barra suya que emparejar. */
+:root.iphone .itc-punto--caja { background: color-mix(in srgb, var(--ios-valor) 58%, transparent); }
+:root.iphone .itc-valor {
+  font-size: calc(16px * var(--fs-escala));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* El pie de la tarjeta de cifras. La tarjeta tiene 16 px de margen propio y no
+   es una sección, así que su pie se alinea con ELLA (16+16 = 32 a la izquierda
+   como cualquier pie de grupo) y se pega a su borde inferior en vez de heredar
+   la separación entre secciones. */
+:root.iphone .itc-pie-texto { margin: 0; padding-top: 7px; }
+
+/* ---- 25 · LA MISMA TARJETA, EN LA PORTADA DE SECRETARÍA (maqueta H3) ----
+
+   La pieza es la de Tesorería; lo que cambia son tres cosas que ahí no hacen
+   falta: el total del padrón junto a la cifra grande, la pastilla de altas, y
+   una serie de UNA barra por tramo en vez de la pareja entrada/salida.
+
+   El color de la serie es morado y no el verde de Tesorería a propósito: no
+   es dinero. Que las dos portadas usen la misma tarjeta con dos colores dice
+   «lo mismo, de otra cosa»; con el mismo color diría «lo mismo», y no lo es. */
+:root.iphone .itc-de {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--ios-valor);
+}
+:root.iphone .itc-pastilla {
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 12px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 600;
+}
+:root.iphone .itc-pastilla--alta { background: rgba(124, 58, 237, .12); color: #7c3aed; }
+:root.iphone[data-theme="dark"] .itc-pastilla--alta { background: rgba(167, 139, 250, .18); color: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-pastilla--alta { background: rgba(167, 139, 250, .18); color: #a78bfa; }
+}
+:root.iphone .itc-punto--alta { background: #7c3aed; }
+:root.iphone[data-theme="dark"] .itc-punto--alta { background: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-punto--alta { background: #a78bfa; }
+}
+/* Ámbar oscuro, no el naranja del sistema: #ff9500 sobre el blanco de la
+   tarjeta no pasa contraste, y esta es la cifra que pide trabajo. */
+:root.iphone .itc-punto--aviso { background: #ff9500; }
+:root.iphone .itc-valor.es-aviso { color: #b25000; }
+:root.iphone[data-theme="dark"] .itc-valor.es-aviso { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-valor.es-aviso { color: #ffb266; }
+}
+/* La cifra que además es un destino. Sin galón —no cabe en el pie de una
+   tarjeta de tres columnas— pero con el gesto del sistema al tocar. */
+:root.iphone .itc-cifra--enlace { text-decoration: none; }
+:root.iphone .itc-cifra--enlace:active { opacity: .5; }
+
+/* La barra de una sola serie. Ocupa el par entero en vez de media, porque no
+   tiene con quién compartirlo. */
+:root.iphone .itc-barra-alta {
+  flex: 1;
+  max-width: 11px;
+  border-radius: 3px 3px 0 0;
+  display: block;
+  min-height: 2px;
+  background: #7c3aed;
+}
+:root.iphone[data-theme="dark"] .itc-barra-alta { background: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-barra-alta { background: #a78bfa; }
+}
+/* Un mes sin altas se queda como una raya gris al ras: se ve que el mes está
+   —no se lo saltó nadie— y se ve que no pasó nada. */
+:root.iphone .itc-barra-alta.es-cero {
+  background: color-mix(in srgb, var(--ios-valor) 30%, transparent);
+  border-radius: 1px;
+}
+/* Y su etiqueta se enciende solo en los meses que tuvieron altas, que es lo
+   que hace la maqueta: los doce rótulos en gris tenue y en color los que
+   importan. */
+:root.iphone .itc-barra-rot.es-viva { color: #7c3aed; }
+:root.iphone[data-theme="dark"] .itc-barra-rot.es-viva { color: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-barra-rot.es-viva { color: #a78bfa; }
+}
+
+/* El segmentado del periodo, ahora también en el teléfono. Las medidas son
+   las de la maqueta: 32 de alto, r9, relleno del sistema, y el elegido en
+   blanco con su sombra corta — el segmentado de iOS, no una fila de chips. */
+:root.iphone .dash-seg--movil {
+  display: flex;
+  gap: 2px;
+  height: 32px;
+  margin: 12px 16px 0;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, .12);
+}
+:root.iphone .dash-seg--movil button {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .dash-seg--movil button.sel {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+}
+
+/* ============================================================================
+   22 · LA HOJA DE TRES ALTURAS (Membresía, tercer enfoque)
+   ----------------------------------------------------------------------------
+   «El maestro-detalle no se rompe: se convierte en hoja. El padrón nunca se
+   va: se sigue viendo, se sigue tocando, y cambiar de miembro no es navegar,
+   es tocar otro nombre.»
+
+   No es `.ios-sheet`. Aquella es la hoja de FORMULARIO del repo: telón negro
+   al 35 %, 92 % de alto fijo y nada detrás se puede tocar. Aquí lo que hay
+   detrás es justamente lo que hay que poder tocar. Mismo idioma visual,
+   mecanismo distinto.
+
+   Las alturas son las de la maqueta, sobre su artboard de 828 px:
+   asomada 113 px por ENCIMA de la barra de pestañas, media 472/828 = 57 %,
+   completa 748/828 = 90 %.
+
+   Alto y desplazamiento se animan con la MISMA curva y la misma duración a
+   propósito: al soltar, el borde superior sale de donde lo dejó el dedo
+   (alto viejo + arrastre) y llega al detente nuevo sin ningún salto, porque
+   las dos interpolaciones arrancan de su valor actual. */
+.hoja-detentes, .hd-telon { display: none; }
+:root.iphone .hoja-detentes {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; right: 0;
+  z-index: 120;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 -10px 32px -8px rgba(0, 0, 0, .28);
+  overflow: hidden;
+  transform: translateY(var(--hd-arrastre, 0px));
+  transition: height .32s cubic-bezier(.32, .72, 0, 1),
+              bottom .32s cubic-bezier(.32, .72, 0, 1),
+              border-radius .32s cubic-bezier(.32, .72, 0, 1),
+              transform .32s cubic-bezier(.32, .72, 0, 1);
+}
+/* Mientras el dedo manda, ninguna transición: el desplazamiento tiene que
+   seguirlo 1:1, igual que el desenfoque del carrusel. */
+:root.iphone .hoja-detentes[data-arrastrando] { transition: none; }
+
+/* Asomada: por encima de la barra de pestañas —que ocupa de 26 a 84— y con
+   el radio un punto menor, como en la maqueta. Es la única altura que deja
+   ver la barra, y por eso es la única que no la tapa. */
+:root.iphone .hoja-detentes[data-detente="asomada"] {
+  bottom: calc(83px + env(safe-area-inset-bottom));
+  height: 113px;
+  border-radius: 20px 20px 0 0;
+}
+:root.iphone .hoja-detentes[data-detente="media"] {
+  bottom: 0;
+  height: 57%;
+  border-radius: 22px 22px 0 0;
+}
+:root.iphone .hoja-detentes[data-detente="completa"] {
+  bottom: 0;
+  height: 90%;
+  border-radius: 22px 22px 0 0;
+}
+
+/* El telón: solo a partir de «media», y mucho más suave que el de la hoja
+   modal (.35). Aquí no está para bloquear —se puede tocar para volver a
+   asomarse— sino para decir «el padrón sigue detrás»: si lo tapara del todo,
+   la hoja habría dejado de ser una hoja y sería una pantalla. */
+:root.iphone .hd-telon {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 119;
+  background: rgba(0, 0, 0, .14);
+  animation: overlayIn .18s ease both;
+}
+
+/* El asa: la barrita de la maqueta, con toda la franja de arriba como zona de
+   arrastre. Un objetivo de 5 px de alto no se acierta con el pulgar. */
+:root.iphone .hd-asa {
+  flex: 0 0 auto;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .hd-asa > span {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+}
+:root.iphone .hd-cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+/* En la altura asomada no se desplaza: lo que cabe es lo que hay que ver de
+   reojo, y un scroll de 90 px invita a pelearse con el arrastre de la hoja. */
+:root.iphone .hoja-detentes[data-detente="asomada"] .hd-cuerpo { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .hoja-detentes { transition: none; }
+  :root.iphone .hd-telon { animation: none; }
+}
+
+/* La fila de una línea, a la medida del sistema. Los 56 px de `.ios-txrow`
+   están calculados para dos renglones —título y subtítulo—; en un grupo de
+   «etiqueta a la izquierda, valor a la derecha» sobran 12 px por fila, y en un
+   grupo de cinco filas eso es una fila entera de aire. */
+:root.iphone .ios-section--compacta .ios-txrow { min-height: 44px; padding-top: 7px; padding-bottom: 7px; }
+
+/* La barra de acciones se retira en las pantallas que no las tienen. Va con
+   `display:none` y no con `visibility`, para que el título grande recupere el
+   ancho entero: «Detalle del 3.º trimestre» necesita los 393 px. */
+:root.iphone .header-actions.es-oculta { display: none; }
+
+/* ---- 26 · UNA PANTALLA QUE NO ES UNA RUTA ----
+
+   El detalle de una actividad (maqueta A5) se abre ENCIMA de la Agenda y se
+   cierra volviendo, así que no tiene URL ni entrada en el carrusel. Pero para
+   el que lo mira es una pantalla, no un cuadro de diálogo: ocupa el teléfono
+   entero, tiene su título grande y su «volver».
+
+   Por eso pinta su PROPIA banda verde. La banda de la app es `.app::after`
+   más la fila fija de acciones, las dos hermanas de `<main>`; una capa que
+   cubre el viewport las tapa, y sin repintarlas el título grande saldría
+   flotando sobre gris. Es la única pieza del teléfono que duplica la banda, y
+   lo hace porque es la única que se sale del `<main>`.
+
+   Si algún día esto es una ruta de verdad, esta clase sobra entera. */
+:root.iphone .pantalla-ios {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  animation: pi-entra .28s cubic-bezier(.32, .72, 0, 1);
+}
+@keyframes pi-entra { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .pantalla-ios { animation: none; }
+}
+:root.iphone .pi-banda {
+  flex: 0 0 auto;
+  background: var(--cabecera);
+  padding: calc(env(safe-area-inset-top) + 4px) 16px 14px;
+}
+:root.iphone .pi-nav { height: 44px; display: flex; align-items: center; }
+:root.iphone .pi-volver {
+  display: inline-flex; align-items: center; gap: 2px;
+  margin-left: -6px;
+  padding: 0 6px;
+  border: 0; background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -.3px;
+  color: var(--cabecera-tinta);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .pi-volver:active { opacity: .4; }
+:root.iphone .pi-titulo {
+  margin: 0;
+  font-size: calc(34px * var(--fs-escala));
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cabecera-tinta);
+  /* Un nombre de actividad puede ser largo. Dos renglones y luego elipsis: en
+     tres, el título se come la primera tarjeta. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+:root.iphone .pi-pastillas { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 8px; }
+/* Sobre el verde de marca, las pastillas son de vidrio blanco y no de color:
+   los tintes claros del sistema —el azul de «programada», el ámbar de
+   «pendiente»— sobre #047857 no se leen. El estado se distingue por la
+   palabra, que es lo que ya decidió el bloque 19. */
+:root.iphone .pi-pastilla {
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  font-size: calc(11.5px * var(--fs-escala));
+  font-weight: 600;
+  background: var(--cabecera-pildora);
+  color: var(--cabecera-tinta);
+}
+/* La cancelada sí se marca, porque es la única cuyo estado cambia lo que hay
+   que hacer con la actividad: nada. */
+:root.iphone .pi-pastilla.es-cancelada { background: rgba(255, 255, 255, .92); color: #b3261e; }
+:root.iphone .pi-cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Los 16 px de inset del grupo los pone el contenedor, no `.ios-listcard`:
+     así lo hace `.content` en las pantallas que sí son rutas. Sin ellos las
+     tarjetas llegaban al borde del teléfono y el encabezado del grupo, que
+     lleva su sangría de 32 en su propia regla, se quedaba flotando 32 px a la
+     derecha de una tarjeta pegada al canto. */
+  padding: 18px 16px 20px;
+}
+/* Y los encabezados y pies, que ya traen 32 = 16 del inset + 16 de la fila,
+   descuentan aquí los 16 que ahora pone el contenedor. */
+:root.iphone .pi-cuerpo .ios-section-header,
+:root.iphone .pi-cuerpo .ios-section-footer { padding-left: 16px; padding-right: 16px; }
+:root.iphone .pi-cuerpo > .ios-section:first-child { margin-top: 0; }
+/* El párrafo de la descripción: una fila que no es etiqueta + valor, sino
+   texto corrido. Conserva el inset de la tarjeta y suelta la altura fija. */
+:root.iphone .ios-txrow.pi-parrafo {
+  display: block;
+  white-space: pre-wrap;
+  font-size: calc(17px * var(--fs-escala));
+  line-height: 1.35;
+  min-height: 0;
+  padding: 11px 16px;
+}
+/* El pie fijo. Las dos acciones que no son «cambiar el estado» viven aquí y
+   no en la lista: «Eliminar» a un dedo de «Duplicar» es un accidente
+   esperando. */
+:root.iphone .pi-pie {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px);
+  border-top: .33px solid var(--ios-sep);
+  background: var(--surface);
+}
+:root.iphone .pi-eliminar,
+:root.iphone .pi-editar {
+  border: 0;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .pi-eliminar { background: none; color: var(--ios-red); padding: 10px 4px; }
+:root.iphone .pi-editar {
+  background: var(--cabecera);
+  color: var(--cabecera-tinta);
+  font-weight: 600;
+  padding: 11px 28px;
+  border-radius: 12px;
+}
+:root.iphone .pi-eliminar:active, :root.iphone .pi-editar:active { opacity: .55; }
+/* El icono de una acción, pegado a su palabra. */
+:root.iphone .ios-txrow-title.es-accion > svg,
+:root.iphone .ios-txrow-title.es-destructiva > svg { margin-right: 8px; vertical-align: -2px; }
+
+/* ---- 27 · EL MOVIMIENTO ABIERTO (maqueta T4) ----
+
+   No hay componente nuevo: es `DetalleMovimiento`, la columna derecha del
+   maestro-detalle del iPad, dentro de la misma `.pantalla-ios` que usa el
+   detalle de una actividad. Sus reglas están bajo `:root.ipad`, así que aquí
+   se traduce el MISMO DOM al vocabulario del teléfono — no se copian 50
+   reglas, se escriben las quince que hacen falta.
+
+   La maqueta pone importe, concepto y estado centrados arriba, «el patrón de
+   un pago en Wallet»: por eso esta pantalla no lleva título grande a la
+   izquierda como las otras. La banda solo sostiene el «volver». */
+:root.iphone .pi-banda--nav { padding-bottom: 0; }
+/* El `.dm-volver` del panel se desplaza con el contenido —está pensado para el
+   modo de empuje del iPad—; aquí el volver vive en la banda, quieto. */
+:root.iphone .pi-cuerpo--dm .dm-volver { display: none; }
+:root.iphone .pi-cuerpo--dm { padding: 0 16px 20px; }
+:root.iphone .pi-cuerpo--dm .dm { display: block; }
+
+/* La cabecera: el dinero manda, y lo demás lo explica. */
+:root.iphone .pi-cuerpo--dm .dm-cab { text-align: center; padding: 22px 0 4px; }
+:root.iphone .pi-cuerpo--dm .dm-chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+:root.iphone .pi-cuerpo--dm .dm-monto {
+  margin: 6px 0 0;
+  font-size: calc(38px * var(--fs-escala));
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .pi-cuerpo--dm .dm-moneda {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--ios-valor);
+  margin-left: 5px;
+}
+/* El titular baja DEBAJO del importe y en cuerpo normal. En el iPad es un h1
+   de 32 encima de la cifra porque ahí compite con una lista a su izquierda;
+   aquí no compite con nada, y dos titulares grandes seguidos harían dudar de
+   cuál es el dato. */
+:root.iphone .pi-cuerpo--dm .dm-titular {
+  order: 2;
+  margin: 8px 0 0;
+  font-size: calc(20px * var(--fs-escala));
+  line-height: 25px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+:root.iphone .pi-cuerpo--dm .dm-cab { display: flex; flex-direction: column; align-items: center; }
+:root.iphone .pi-cuerpo--dm .dm-monto { order: 1; }
+:root.iphone .pi-cuerpo--dm .dm-sub { order: 3; margin: 4px 0 0; font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .pi-cuerpo--dm .dm-acciones { order: 4; }
+
+/* Las acciones de la cabecera, como fila de enlaces y no como botones: los
+   dos importantes —aprobar, editar— viven abajo en su barra. */
+:root.iphone .pi-cuerpo--dm .dm-acciones {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  width: 100%;
+}
+:root.iphone .pi-cuerpo--dm .dm-acciones .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: calc(15px * var(--fs-escala));
+}
+
+/* La ficha de campos: un grupo de lista inset, con el mismo radio, el mismo
+   hairline y la misma sangría que el resto de la app. En el iPad es una
+   rejilla de dos columnas. */
+:root.iphone .pi-cuerpo--dm .dm-ficha {
+  display: block;
+  margin-top: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+  overflow: hidden;
+}
+:root.iphone .pi-cuerpo--dm .dm-pie-tarjetas { display: block; }
+/* Las dos tarjetas del pie se DESARMAN: en iOS el título de un grupo va
+   FUERA de la tarjeta, en gris de 13. La tarjeta la hereda el contenido —el
+   rastro o el comprobante—, no el contenedor. */
+:root.iphone .pi-cuerpo--dm .dm-tarjeta {
+  display: block;
+  margin-top: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+:root.iphone .pi-cuerpo--dm .dm-campo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+}
+:root.iphone .pi-cuerpo--dm .dm-campo + .dm-campo { border-top: .33px solid var(--ios-sep); }
+:root.iphone .pi-cuerpo--dm .dm-campo-etiqueta {
+  flex: 0 0 auto;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+:root.iphone .pi-cuerpo--dm .dm-campo-valor {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--ios-valor);
+  overflow-wrap: anywhere;
+}
+:root.iphone .pi-cuerpo--dm .dm-ver-ficha { flex: 0 0 auto; font-size: calc(15px * var(--fs-escala)); }
+:root.iphone .pi-cuerpo--dm .dm-tarjeta-titulo {
+  display: block;
+  padding: 0 16px 6px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: normal;
+  /* Mayúsculas, como cualquier otro encabezado de grupo del teléfono: el del
+     panel viene en versalitas de escritorio con su propio tracking, y dos
+     encabezados con dos formas en la misma pantalla se leen como dos cosas
+     distintas. */
+  text-transform: uppercase;
+  color: var(--ios-valor);
+}
+/* El contenido de cada tarjeta es el que lleva el fondo y el radio. */
+:root.iphone .pi-cuerpo--dm .dm-rastro,
+:root.iphone .pi-cuerpo--dm .dm-comp-hay,
+:root.iphone .pi-cuerpo--dm .dm-comp-falta {
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+  border: 0;
+}
+/* El rastro. Sin estas reglas los tres renglones salían pegados en una sola
+   línea —«Registrado27 ago 2026, 18:44AprobadoSin nada pendiente»—: la
+   maquetación de sus piezas está toda bajo `:root.ipad`, y en el teléfono
+   quedaban como spans en línea sin nada que los ordenara. */
+:root.iphone .pi-cuerpo--dm .dm-rastro {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+:root.iphone .pi-cuerpo--dm .dm-rastro-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 44px;
+  padding: 9px 16px;
+}
+:root.iphone .pi-cuerpo--dm .dm-rastro-item + .dm-rastro-item { border-top: .33px solid var(--ios-sep); }
+:root.iphone .pi-cuerpo--dm .dm-rastro-punto {
+  width: 7px; height: 7px; flex: 0 0 7px;
+  border-radius: 4px;
+  margin-top: 7px;
+  background: var(--ios-galon);
+}
+:root.iphone .pi-cuerpo--dm .dm-rastro-punto.ink { background: var(--text); }
+:root.iphone .pi-cuerpo--dm .dm-rastro-punto.aviso { background: #ff9500; }
+:root.iphone .pi-cuerpo--dm .dm-rastro-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.iphone .pi-cuerpo--dm .dm-rastro-titulo { font-size: calc(17px * var(--fs-escala)); letter-spacing: -0.2px; }
+:root.iphone .pi-cuerpo--dm .dm-rastro-detalle { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+
+/* El comprobante. El recuadro punteado del escritorio se va: en una lista
+   agrupada, el hueco ya lo dice la frase, y «Adjuntar» es una fila de acción
+   como las de cualquier otro grupo. */
+:root.iphone .pi-cuerpo--dm .dm-comp-hay { display: flex; align-items: center; gap: 11px; padding: 12px 16px; }
+:root.iphone .pi-cuerpo--dm .dm-comp-falta {
+  display: block;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-falta-texto {
+  display: block;
+  padding: 12px 16px;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--ios-valor);
+  border-bottom: .33px solid var(--ios-sep);
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-adjuntar {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  text-align: left;
+  color: var(--brand, #059669);
+  cursor: pointer;
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-archivo { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* Los dos restos de escritorio que quedaban a la vista: el chip de categoría
+   con su color de tabla y el botón «Ver ficha» con su recuadro. En el
+   teléfono la categoría ya se dice en su fila, así que arriba basta con el
+   par de pastillas del mismo idioma que las de la actividad; y una acción
+   dentro de una fila de lista es un enlace, no un botón con borde. */
+:root.iphone .pi-cuerpo--dm .dm-chips .tag,
+:root.iphone .pi-cuerpo--dm .dm-chips .status-pill,
+:root.iphone .pi-cuerpo--dm .dm-chip-rec {
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--ios-valor);
+}
+/* Solo «pendiente» se colorea: es el único estado que pide hacer algo. */
+:root.iphone .pi-cuerpo--dm .dm-chips .status-pill.pendiente {
+  background: rgba(245, 158, 11, .16);
+  color: #b25000;
+}
+:root.iphone[data-theme="dark"] .pi-cuerpo--dm .dm-chips .status-pill.pendiente { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .pi-cuerpo--dm .dm-chips .status-pill.pendiente { color: #ffb266; }
+}
+:root.iphone .pi-cuerpo--dm .dm-ver-ficha {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--brand, #059669);
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-enlaces { display: flex; gap: 14px; flex: 0 0 auto; }
+
+/* ---- 28 · EL CORTE Y SU DEPÓSITO (maqueta T6) ----
+
+   Misma jugada que T4: `DetalleDeposito` es la columna del iPad y ya usa el
+   andamio `.dm`, así que hereda casi todo el bloque de arriba. Lo propio suyo
+   son las `.dep-carta` —secciones con su `<h2>` dentro— y la rejilla de dos
+   columnas, que en 393 px es una sola.
+
+   Las cartas se DESARMAN igual que las del rastro: el `<h2>` pasa a ser el
+   encabezado del grupo, fuera de la tarjeta, y la tarjeta la heredan las filas
+   que van debajo. Como el encabezado y las filas son hermanos, el redondeo se
+   reparte entre la primera y la última. */
+:root.iphone .pi-cuerpo--dm .dep-cuerpo,
+:root.iphone .pi-cuerpo--dm .dep-col { display: block; }
+:root.iphone .pi-cuerpo--dm .dep-carta {
+  display: block;
+  margin: 26px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+:root.iphone .pi-cuerpo--dm .dep-carta-cab {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 0 16px 6px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: uppercase;
+  color: var(--ios-valor);
+  border: 0;
+  background: none;
+}
+/* Las filas de la carta forman la tarjeta entre todas: la primera redondea
+   arriba, la última abajo. Sin esto quedarían cinco rectángulos sueltos. */
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-par,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-mov,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-carta-pie,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dm-comp-hay,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dm-comp-falta,
+:root.iphone .pi-cuerpo--dm .dep-carta > .fm-vacio,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-ficha-grande { background: var(--surface); }
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-carta-cab + * {
+  border-top-left-radius: var(--ios-radio);
+  border-top-right-radius: var(--ios-radio);
+}
+:root.iphone .pi-cuerpo--dm .dep-carta > :last-child {
+  border-bottom-left-radius: var(--ios-radio);
+  border-bottom-right-radius: var(--ios-radio);
+}
+:root.iphone .pi-cuerpo--dm .dep-mov + .dep-mov,
+:root.iphone .pi-cuerpo--dm .dep-mov + .dep-carta-pie { border-top: .33px solid var(--ios-sep); }
+/* La fila de un movimiento del corte: método, concepto y monto en una línea.
+   Su maquetación vive bajo `:root.ipad`, así que sin esto los tres trozos
+   caían uno debajo del otro y la fila se leía «✓EFDiezmo · 3 / Andrés López ·
+   27 ago 2026 / $1,090.00». El check no se pinta: aquí no se marca nada, la
+   lista es de solo lectura y una casilla ya marcada invita a desmarcarla. */
+:root.iphone .pi-cuerpo--dm .dep-mov {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+:root.iphone .pi-cuerpo--dm .dep-mov-check { display: none; }
+:root.iphone .pi-cuerpo--dm .dep-mov-metodo {
+  flex: 0 0 auto;
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: var(--ios-valor);
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+:root.iphone .pi-cuerpo--dm .dep-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.iphone .pi-cuerpo--dm .dep-mov-concepto {
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+:root.iphone .pi-cuerpo--dm .dep-mov-folio { color: var(--ios-valor); }
+:root.iphone .pi-cuerpo--dm .dep-mov-sub { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .pi-cuerpo--dm .dep-mov-monto {
+  flex: 0 0 auto;
+  font-size: calc(17px * var(--fs-escala));
+  font-variant-numeric: tabular-nums;
+}
+/* El pie de la carta: el conteo a la izquierda y su total a la derecha. */
+:root.iphone .pi-cuerpo--dm .dep-carta-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+}
+:root.iphone .pi-cuerpo--dm .dep-carta-pie-total {
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las tres cifras del corte, en una fila como el pie de la tarjeta de Inicio:
+   en el iPad son una rejilla suelta sobre el fondo. */
+:root.iphone .pi-cuerpo--dm .dep-cifras {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+}
+:root.iphone .pi-cuerpo--dm .dep-cifra { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+:root.iphone .pi-cuerpo--dm .dep-cifra:last-child { align-items: flex-end; text-align: right; }
+:root.iphone .pi-cuerpo--dm .dep-cifra-et {
+  font-size: calc(12px * var(--fs-escala));
+  color: var(--ios-valor);
+  text-transform: none;
+  letter-spacing: normal;
+}
+:root.iphone .pi-cuerpo--dm .dep-cifra-val {
+  font-size: calc(16px * var(--fs-escala));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .pi-cuerpo--dm .dep-cifra-pie { font-size: calc(12px * var(--fs-escala)); color: var(--ios-valor); }
+
+/* La cabecera del corte: el nombre por su fecha, la pastilla y las acciones.
+   Se centra como la del movimiento, por lo mismo — es la misma pantalla con
+   otro contenido. */
+:root.iphone .pi-cuerpo--dm .dep-pen-cab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 0 0;
+  border: 0;
+}
+:root.iphone .pi-cuerpo--dm .dep-pen-titulos { text-align: center; }
+:root.iphone .pi-cuerpo--dm .dep-pen-linea { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+:root.iphone .pi-cuerpo--dm .dep-det-acciones { display: flex; gap: 8px; align-items: center; }
+:root.iphone .pi-cuerpo--dm .dep-chip {
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* La fila de la carta: etiqueta a la izquierda, valor a la derecha. Sin esto
+   los dos spans salían pegados —«Cuenta / bancoBBVA ····4471»—, que es lo que
+   pasa siempre que una pieza del iPad llega al teléfono sin su layout. */
+:root.iphone .pi-cuerpo--dm .dep-par {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.2px;
+}
+:root.iphone .pi-cuerpo--dm .dep-par + .dep-par { border-top: .33px solid var(--ios-sep); }
+:root.iphone .pi-cuerpo--dm .dep-par > span:first-child { flex: 0 0 auto; color: var(--text); }
+:root.iphone .pi-cuerpo--dm .dep-par-valor {
+  flex: 1 1 auto;
+  text-align: right;
+  color: var(--ios-valor);
+  overflow-wrap: anywhere;
+}
+
+/* El estado vacío de «movimientos incluidos»: título y explicación en dos
+   renglones, no seguidos. */
+:root.iphone .pi-cuerpo--dm .dep-carta > .fm-vacio {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 0;
+  text-align: left;
+}
+:root.iphone .pi-cuerpo--dm .fm-vacio-titulo { font-size: calc(17px * var(--fs-escala)); letter-spacing: -0.2px; }
+:root.iphone .pi-cuerpo--dm .fm-vacio-sub {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1.35;
+  color: var(--ios-valor);
+}
+
+/* El aviso de conciliación —lo contado contra lo registrado—: una fila con su
+   marca a la izquierda y dos renglones a la derecha, dentro de la tarjeta del
+   grupo. En el iPad es un recuadro suelto sobre el fondo. */
+:root.iphone .pi-cuerpo--dm .dep-concilia {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+}
+:root.iphone .pi-cuerpo--dm .dep-aviso-punto { flex: 0 0 auto; margin-top: 1px; }
+:root.iphone .pi-cuerpo--dm .dep-aviso-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+:root.iphone .pi-cuerpo--dm .dep-aviso-titulo { font-size: calc(17px * var(--fs-escala)); letter-spacing: -0.2px; }
+:root.iphone .pi-cuerpo--dm .dep-aviso-texto {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1.35;
+  color: var(--ios-valor);
+}
+
+/* ---- 29 · LA FICHA DEL MIEMBRO, EN TRES PASOS (maqueta N3) ----
+
+   El paso que no toca se esconde con `display:none` y NO se desmonta: así lo
+   escrito en «Datos» sigue ahí al volver de «Servicio», y las validaciones —
+   que miran todos los campos a la vez— siguen encontrándolos. Desmontarlo
+   habría sido partir un formulario en tres, con tres estados que sincronizar. */
+:root.iphone .fm-paso-oculto { display: none; }
+/* Es el MISMO segmentado que el periodo de Inicio —`.dash-seg--movil`—, no
+   uno nuevo: tres rótulos cortos caben en sus 13 px, y el 11.5 de `.ios-seg5`
+   existe solo porque Cartas tiene cinco pestañas. Aquí solo se coloca: la hoja
+   es un flex en columna y el segmentado no debe encogerse cuando el cuerpo
+   crece. */
+:root.iphone .fm-pasos { flex: 0 0 auto; margin: 10px 16px 2px; }
+
+/* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
+   «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
+   derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide
+   8 px y lleva su propio fondo de tarjeta: dentro de una fila de lista de 52
+   px se lee como un segundo elemento en vez de como el subrayado de la
+   categoría que acompaña. */
+:root.iphone .dp-barra {
+  margin-top: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(118, 118, 128, .16);
+  overflow: hidden;
+}
+:root.iphone[data-theme="dark"] .dp-barra { background: rgba(120, 120, 128, .32); }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .dp-barra { background: rgba(120, 120, 128, .32); }
+}
+:root.iphone .dp-barra > i {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  /* Un gasto que existe nunca es una barra de cero ancho: la más pequeña de
+     las tres se vería como «no hubo», y sí hubo. */
+  min-width: 3px;
+}
+
+/* ---- El cuerpo de la hoja de Membresía ---- */
+:root.iphone .hm { padding: 0 16px 20px; }
+:root.iphone .hm-cabeza { display: flex; align-items: center; gap: 12px; padding: 2px 0 4px; }
+/* Solo el tamaño y el tipo: el fondo lo pone la clase de color de
+   `mini-avatar`, que es la que comparte con la fila del padrón. El aro de 2 px
+   que `mini-avatar` lleva para separarse del fondo de una tabla sobra aquí,
+   donde el círculo va suelto sobre la hoja. */
+:root.iphone .hm-avatar {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  font-size: calc(15px * var(--fs-escala));
+  letter-spacing: -0.2px;
+  box-shadow: none;
+}
+:root.iphone .hm-quien { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+:root.iphone .hm-nombre {
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+:root.iphone .hm-sub {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* La alerta va en el ámbar oscuro del pie de grupo, no en el naranja del
+   sistema: sobre el gris de la hoja, #ff9500 no pasa contraste. Es el mismo
+   tono que ya usa `.ios-section-footer--aviso`. */
+:root.iphone .hm-alerta {
+  margin: 10px 0 0;
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1.35;
+  color: #b25000;
+}
+:root.iphone[data-theme="dark"] .hm-alerta { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .hm-alerta { color: #ffb266; }
+}
+/* Las tres cifras: mismo reparto que la tarjeta de Inicio —tres columnas que
+   se separan por los extremos— pero sin punto de color. Aquí no son series de
+   nada; son tres hechos sobre una persona. */
+:root.iphone .hm-cifras {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 0;
+  border-top: .33px solid color-mix(in srgb, var(--ios-sep) 55%, transparent);
+  border-bottom: .33px solid color-mix(in srgb, var(--ios-sep) 55%, transparent);
+}
+:root.iphone .hm-cifra { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+:root.iphone .hm-cifra:last-child { align-items: flex-end; text-align: right; }
+:root.iphone .hm-cifra-rot { font-size: calc(12px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .hm-cifra-num {
+  font-size: calc(22px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+/* La fecha no es una cifra: a 22 px una fecha corta ocupa más que el
+   porcentaje de al lado y desequilibra las tres columnas. */
+:root.iphone .hm-cifra-num--fecha { font-size: calc(17px * var(--fs-escala)); font-weight: 600; }
+:root.iphone .hm-cifra-num.es-aviso { color: var(--warn); }
+:root.iphone .hm-cifra-pie { font-size: calc(12px * var(--fs-escala)); color: var(--ios-valor); }
+
+:root.iphone .hm-acciones { margin: 16px 0 0; }
+/* Las filas de acción son botones: hay que deshacer lo que el navegador les
+   pone y alinearlas a la izquierda como cualquier fila. */
+:root.iphone .hm-acciones .ios-txrow { width: 100%; text-align: left; font: inherit; }
+:root.iphone .ios-txrow-title.es-accion { color: var(--brand, #059669); }
+:root.iphone .ios-txrow-title.es-destructiva { color: var(--ios-red); }
+/* «Ver la ficha completa» no es una acción más: sube la hoja. Va como enlace
+   centrado al final, no como cuarta fila de la lista. */
+:root.iphone .hm-completa {
+  display: block;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand, #059669);
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .hm-completa:active { opacity: .4; }
+/* La ficha entera dentro de la hoja. El panel del iPad no trae sangría propia
+   —allí la pone su columna—, así que se la damos aquí. Antes esta regla
+   quitaba el padding a CUALQUIER hijo del cuerpo de la hoja, y de paso se
+   llevaba por delante el de `.hm`: el avatar salía cortado por el borde
+   izquierdo y las filas de acción iban de canto a canto. Ahora apunta solo a
+   lo que venía del iPad. */
+:root.iphone .hoja-detentes .md-detalle { padding: 0 16px; }
+/* La hoja se apoya en el gris agrupado, no en el blanco de las tarjetas: con
+   los dos del mismo color, una `.ios-listcard` dentro de la hoja desaparecía
+   —se veía la lista pero no la caja—. Es lo que hace la maqueta, que pone la
+   hoja en #fafafc y las tarjetas en blanco. */
+:root.iphone .hoja-detentes { background: color-mix(in srgb, var(--bg) 97%, transparent); }
+
+/* ---- La hoja de filtros del padrón ---- */
+:root.iphone .hm-filtros { padding: 0 0 24px; }
+:root.iphone .hm-filtros-barra {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 16px 10px;
+}
+:root.iphone .hm-filtros-titulo {
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+}
+:root.iphone .hm-filtros-barra button {
+  flex: 0 0 auto;
+  border: 0; background: none; padding: 0;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* La tarjeta elegida se marca con una palomita a la derecha, no con fondo:
+   la hoja está encima de la lista que filtra, y un fondo de color aquí
+   competiría con lo que está pasando detrás. */
+:root.iphone .hm-filtros .ios-txrow.es-elegida .ios-txrow-title { font-weight: 600; }
+:root.iphone .hm-filtros .ios-txrow.es-elegida .ios-fila-valor { color: var(--brand, #059669); }
+:root.iphone .hm-filtros .ios-txrow { width: 100%; text-align: left; font: inherit; }
+:root.iphone .hm-filtros-destinos { margin-top: 18px; }
+
+/* ---- La ficha entera dentro de la hoja ----
+   `DetalleMembresia` es la columna derecha del maestro-detalle del iPad, y sus
+   reglas están escritas bajo `:root.ipad`: en el teléfono el componente salía
+   sin una sola de ellas —el avatar cortado por el borde, y cada par
+   etiqueta/valor pegado en un renglón: «Nacimiento—», «En roster—Racha sin
+   asistir—Última visita—»—.
+
+   Es el mismo caso que las `.mb-*` de la analítica de asistencia, que ya se
+   copiaron en su día: el JSX no se duplica, se le da al teléfono el estilo que
+   solo existía para la tablet. Estas 37 reglas son copia literal de las de
+   `:root.ipad`; lo que de verdad cambia para 393 px va DESPUÉS de este bloque,
+   escrito a mano y comentado. */
+:root.iphone .mb-det { display: flex; flex-direction: column; gap: 18px; }
+:root.iphone .mb-cab { display: flex; align-items: flex-start; gap: 16px; }
+:root.iphone .mb-cab-avatar {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 36px;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(24px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-cab-textos { flex: 1; min-width: 0; }
+:root.iphone .mb-cab-nombre {
+  margin: 0;
+  font-size: calc(27px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+:root.iphone .mb-cab-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+:root.iphone .mb-chip {
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text-2);
+  font-size: calc(12.5px * var(--fs-escala));
+  font-weight: 600;
+}
+:root.iphone .mb-cab-acciones { display: flex; gap: 8px; flex: 0 0 auto; }
+:root.iphone .mb-alertas { display: flex; flex-direction: column; gap: 8px; }
+:root.iphone .mb-alerta {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+}
+:root.iphone .mb-alerta-punto {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 11px;
+  background: var(--warn-text, #c2600e);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-alerta-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+:root.iphone .mb-alerta-titulo { font-size: calc(14.5px * var(--fs-escala)); font-weight: 600; color: var(--warn-text, #c2600e); }
+:root.iphone .mb-alerta-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--warn-text, #c2600e); opacity: 0.85; }
+:root.iphone .mb-alerta-revisar {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: calc(13.5px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--warn-text, #c2600e);
+  cursor: pointer;
+}
+:root.iphone .mb-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+:root.iphone .mb-metricas {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--line);
+}
+:root.iphone .mb-metrica { display: flex; flex-direction: column; gap: 2px; }
+:root.iphone .mb-metrica > span { font-size: calc(11.5px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .mb-metrica > strong { font-size: calc(15px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.iphone .mb-dato-k { width: 150px; flex: 0 0 150px; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .mb-dato-v { flex: 1; min-width: 0; font-size: calc(15px * var(--fs-escala)); font-weight: 500; overflow-wrap: anywhere; }
+:root.iphone .mb-exp-estado { font-size: calc(13px * var(--fs-escala)); font-weight: 600; color: var(--brand); }
+:root.iphone .mb-exp-estado.pendiente { color: var(--warn-text, #c2600e); }
+:root.iphone .mb-exp-lista { display: flex; flex-direction: column; gap: 9px; }
+:root.iphone .mb-exp-campo { display: flex; align-items: center; gap: 10px; font-size: calc(14px * var(--fs-escala)); }
+:root.iphone .mb-exp-icono {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  border-radius: 10px;
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-exp-icono.falta { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
+:root.iphone .mb-exp-nombre { flex: 1; min-width: 0; color: var(--text); }
+:root.iphone .mb-exp-nombre.falta { color: var(--warn-text, #c2600e); }
+:root.iphone .mb-movs { display: flex; flex-direction: column; gap: 12px; }
+:root.iphone .mb-mov { display: flex; gap: 11px; font-size: calc(14px * var(--fs-escala)); }
+:root.iphone .mb-mov-punto {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 4px;
+  background: var(--line);
+  margin-top: 6px;
+}
+:root.iphone .mb-mov-punto.reciente { background: var(--brand); }
+:root.iphone .mb-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+:root.iphone .mb-mov-titulo { font-weight: 500; }
+:root.iphone .mb-mov-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
+/* Lo que sí cambia a 393 px, sobre las copias de arriba: */
+/* El avatar de 72 y el nombre de 27 son medidas de panel. En una hoja, esa
+   cabecera se lleva un tercio de la altura de trabajo antes de decir nada. */
+:root.iphone .hoja-detentes .mb-cab-avatar {
+  width: 52px; height: 52px; flex: 0 0 52px; border-radius: 26px;
+  font-size: calc(19px * var(--fs-escala));
+}
+:root.iphone .hoja-detentes .mb-cab-nombre { font-size: calc(22px * var(--fs-escala)); letter-spacing: -0.4px; }
+/* Las tres métricas se reparten el ancho en vez de envolverse: con `wrap` y
+   22 px de hueco, a 393 la tercera se caía sola a un segundo renglón. */
+:root.iphone .hoja-detentes .mb-metricas { flex-wrap: nowrap; gap: 10px; justify-content: space-between; }
+/* Las dos acciones de la cabecera caben una al lado de la otra, pero no con
+   el ancho de panel: se dejan crecer y se parten si hace falta. */
+:root.iphone .hoja-detentes .mb-cab-acciones { flex-wrap: wrap; gap: 8px; }
+/* La ficha necesita respirar por los lados: el panel del iPad se lo daba su
+   columna, y la hoja no. */
+:root.iphone .hoja-detentes .mb-det { padding: 4px 16px 24px; gap: 16px; }
+/* La cabecera de la ficha, apilada. En el panel del iPad caben en una fila el
+   avatar, el nombre y las dos acciones; a 393 px eso parte el nombre en tres
+   renglones y le mete los botones encima —capturado—. Aquí el avatar y el
+   nombre van juntos, los chips debajo, y las acciones en su propia fila a lo
+   ancho, que es como se leen sin adivinar dónde empiezan. */
+:root.iphone .hoja-detentes .mb-cab { flex-wrap: wrap; align-items: center; gap: 12px; }
+:root.iphone .hoja-detentes .mb-cab-textos { flex: 1 1 60%; }
+:root.iphone .hoja-detentes .mb-cab-acciones { flex: 1 0 100%; }
+:root.iphone .hoja-detentes .mb-cab-acciones .btn { flex: 1; justify-content: center; }
+/* El chip no se parte: «Sin ministerio» salía en dos renglones dentro de su
+   propia pastilla. */
+:root.iphone .hoja-detentes .mb-chip { white-space: nowrap; }
+/* Etiqueta y valor: la etiqueta ocupa lo que necesita y el valor se va a la
+   derecha, como cualquier fila de este rediseño. Los 150 px fijos de la
+   etiqueta son del panel; aquí dejaban el valor plantado a media fila. */
+:root.iphone .hoja-detentes .mb-dato-k { width: auto; flex: 1 1 auto; }
+:root.iphone .hoja-detentes .mb-dato-v { flex: 0 1 auto; text-align: right; color: var(--ios-valor); font-weight: 400; }
+/* Las dos tarjetas de la hoja de filtros, insertadas como cualquier lista
+   agrupada: sin esto salían de canto a canto y la hoja parecía una tabla. */
+:root.iphone .hm-filtros .ios-listcard { margin: 0 16px; }
+
+/* ============================================================================
+   23 · EL SEGMENTADO DE CINCO (Cartas)
+   ----------------------------------------------------------------------------
+   Las cinco pestañas del handoff —Cartas · Solicitudes · Traslados ·
+   Plantillas · Archivo— bajo el título grande. Las medidas son las de la
+   maqueta, y la que importa es el tamaño de letra: 11,5 px, no los 13 del
+   segmentado de Inicio. Con cinco botones en 361 px, a 13 «Solicitudes» y
+   «Plantillas» se parten o se recortan; a 11,5 caben enteras. Es el único
+   segmentado de la app que baja de 13, y baja porque tiene cinco tramos.
+
+   Sustituye al índice que el teléfono tenía: aquel era la respuesta cuando
+   había SEIS destinos y ninguna columna donde ponerlos —el iPad los pinta en
+   la suya—. Con cinco caben aquí y sobra una pantalla entera de por medio. */
+:root.iphone .ios-seg5 {
+  display: flex;
+  gap: 2px;
+  height: 32px;
+  margin: 12px 16px 0;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, .12);
+}
+:root.iphone .ios-seg5 button {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  font-size: calc(11.5px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-seg5 button.sel {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+}
+/* La fila de Cartas es un `<button>`: hay que deshacer lo que el navegador le
+   pone y alinearla a la izquierda, igual que las filas de acción de la hoja
+   de Membresía. */
+:root.iphone .ios-listcard > button.ios-txrow { width: 100%; text-align: left; font: inherit; }
+/* ---- Las barras del periodo, dentro de la tarjeta ----
+   Las medidas son las de la maqueta: franja de 96, la pareja de barras en 76
+   y la etiqueta debajo en 10,5. Cada barra crece hasta 14 px y no más — con
+   pocos tramos, unas barras a todo el ancho de su columna se leerían como
+   bloques, no como una serie.
+
+   El alto de cada barra es relativo al tramo MÁS ALTO del periodo, no al
+   total: lo que se compara aquí es un mes contra otro. */
+:root.iphone .itc-barras {
+  margin-top: 14px;
+  height: 96px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+:root.iphone .itc-barra {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+:root.iphone .itc-barra-par {
+  width: 100%;
+  height: 76px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+}
+:root.iphone .itc-barra-par i {
+  flex: 1;
+  max-width: 14px;
+  border-radius: 3px 3px 0 0;
+  display: block;
+  /* Un tramo en cero no desaparece: deja una raya de 2 px. Un hueco sin nada
+     se lee como «no hubo datos»; una raya al ras dice «hubo, y fue cero». */
+  min-height: 2px;
+}
+:root.iphone .itc-barra-in { background: var(--pos); }
+:root.iphone .itc-barra-out { background: var(--ios-red); }
+:root.iphone .itc-barra-rot {
+  font-size: calc(10.5px * var(--fs-escala));
+  color: color-mix(in srgb, var(--ios-valor) 84%, transparent);
+  white-space: nowrap;
+  /* Sin recorte. Con doce meses cada columna mide ~22 px y «may» —la única
+     etiqueta con `m` ancha y `y` ancha a la vez— medía 23: se cortaba en
+     «m…» mientras sus once hermanas cabían enteras, que es la peor forma de
+     no caber. Las etiquetas van centradas en su columna y entre columnas hay
+     6 px de aire, así que un desborde de un píxel por lado no toca a nadie;
+     y aunque tocara, dos abreviaturas rozándose se leen, «m…» no. */
+  overflow: visible;
+  letter-spacing: -0.1px;
+}

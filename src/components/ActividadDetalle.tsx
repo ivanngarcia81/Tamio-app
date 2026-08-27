@@ -50,7 +50,11 @@ export default function ActividadDetalle({
             <div className="modal-sub">
               {tipoLabel}
               {esRecurrente && <span className="tag servicios" style={{ marginLeft: 8 }}>{t("agenda.recurrenteBadge")}</span>}
-              {a.es_fecha_importante && <span className="tag eventos" style={{ marginLeft: 8 }}>{t("agenda.fechaImportanteBadge")}</span>}
+              {/* `=== 1` y no a secas: `es_fecha_importante` es un entero de
+                  SQLite, y `0 && <span>` no se salta el JSX — devuelve 0, que
+                  React pinta. Se leía «Culto regular0» en el subtítulo de toda
+                  actividad que no fuera fecha importante, o sea casi todas. */}
+              {a.es_fecha_importante === 1 && <span className="tag eventos" style={{ marginLeft: 8 }}>{t("agenda.fechaImportanteBadge")}</span>}
             </div>
           </div>
           <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>

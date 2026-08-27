@@ -81,8 +81,9 @@ for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { vite.kill(); proces
 // ---------- 4. Navegador ----------
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 
-/** Un contexto de iPhone. `tema` = "light" | "dark". */
-async function contextoIPhone(tema) {
+/** Un contexto de iPhone. `tema` = "light" | "dark"; `rol` = el de `role.ts`
+ *  ("administrador" por omisión, que es con el que arranca la app). */
+async function contextoIPhone(tema, rol = "administrador") {
   const ctx = await browser.newContext({
     viewport: { width: 393, height: 852 },
     deviceScaleFactor: 3,
@@ -95,13 +96,21 @@ async function contextoIPhone(tema) {
     try { return esSelect ? sqlSelect(q, ps) : sqlExecute(q, ps); }
     catch (e) { console.error(`SQL: ${e.message}\n  ${q.slice(0, 120)}`); throw e; }
   });
-  await ctx.addInitScript(({ tema }) => {
+  await ctx.addInitScript(({ tema, rol }) => {
     try {
       localStorage.setItem("tesoreria-welcomed", "1");
       localStorage.setItem("tesoreria-lang", "es");
       localStorage.setItem("tesoreria-theme", tema);
+      localStorage.setItem("tamio-rol", rol);
     } catch { /* noop */ }
     const noop = async () => null;
+    /* `listen()` de Tauri registra el listener por `invoke` pero lo SUELTA
+       llamando a este objeto. Sin él, cada desmontaje de la app lanzaba
+       «Cannot read properties of undefined (reading 'unregisterListener')»,
+       y con React lanzando dentro de un efecto de limpieza el árbol se
+       quedaba a medio desmontar: el `.app` desaparecía y la siguiente
+       navegación del arnés se colgaba esperándolo. */
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => {} };
     window.__TAURI_INTERNALS__ = {
       metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
       transformCallback: (cb) => { const id = Math.floor(Math.random() * 1e9); window[`_cb${id}`] = cb; return id; },
@@ -112,7 +121,7 @@ async function contextoIPhone(tema) {
         return noop();
       },
     };
-  }, { tema });
+  }, { tema, rol });
   return ctx;
 }
 
@@ -141,7 +150,18 @@ const ctxSemilla = await contextoIPhone("light");
       "Karla Domínguez", "Luis Navarro", "María Delgado", "Nadia Fuentes",
       "Óscar Reyes", "Patricia Lara", "Raúl Estrada", "Sofía Cabrera",
     ];
-    for (const nombre of nombres) await db.insertMember(id, { nombre, fecha_ingreso: hace(400) });
+    /* Cinco altas del año en curso, repartidas y con meses vacíos por medio:
+       es lo que hace falta para que las barras de la portada de Secretaría
+       dibujen algo. Con todo el padrón entrando "hace 400 días" —el año
+       pasado— la serie salía en cero de enero a diciembre y la franja de la
+       tarjeta era una raya gris de doce tramos. */
+    const antiguedades = [200, 150, 90, 45, 10];
+    for (const [i, nombre] of nombres.entries()) {
+      const dias = i >= nombres.length - antiguedades.length
+        ? antiguedades[i - (nombres.length - antiguedades.length)]
+        : 400;
+      await db.insertMember(id, { nombre, fecha_ingreso: hace(dias) });
+    }
     const miembros = await db.listMembers(id);
 
     // Ingresos y gastos repartidos en los últimos días, para que las secciones
@@ -177,6 +197,29 @@ const ctxSemilla = await contextoIPhone("light");
         referencia: `REF-${1000 + dia}`, periodo: hace(dia).slice(0, 7), notas: null,
       });
     }
+    /* Un depósito nacido de un CORTE, con su doble firma pedida. Los seis de
+       arriba se registran sueltos, y un depósito suelto no tiene desglose ni
+       segunda firma que enseñar: la pantalla del corte —la mitad de la que
+       existe— quedaba sin fotografiar. Este lleva movimientos dentro, así que
+       sale su efectivo, sus cheques y a quién le toca firmar. */
+    {
+      const delDia = await db.listTx(id, { limit: 500 });
+      const paraElCorte = delDia.filter((x) => x.tipo === "ingreso").slice(0, 4);
+      const total = paraElCorte.reduce((a, x) => a + x.monto, 0);
+      const depId = await db.insertDeposito(id, iglesia.moneda, {
+        fecha: hace(1), monto: total, cuenta_banco: "BBVA ····4471",
+        referencia: "REF-2001", periodo: hace(1).slice(0, 7), notas: null,
+      });
+      const corteId = await db.insertCorte(id, {
+        fecha: hace(1),
+        nombre: "Corte del culto dominical",
+        cuenta_banco: "BBVA ····4471",
+        responsable: "Rosa Elena Vega",
+        dobleFirma: true,
+      }, paraElCorte.map((x) => x.id));
+      if (corteId != null && depId != null) await db.cerrarCorte(corteId, id, depId);
+    }
+
     // Cartas repartidas por estado, para que el Archivo y las colas del
     // Resumen tengan algo que enseñar y se vea la insignia de cada estado.
     const tiposCarta = ["traslado", "recomendacion", "certificacion", "constanciaActivo", "buenaConducta"];
@@ -270,6 +313,9 @@ const PANTALLAS = [
   { nombre: "8-informes", ruta: "/reportes" },
   { nombre: "10-cartas-indice", ruta: "/cartas" },
   { nombre: "13-reporte-miembros", ruta: "/reporte-miembros" },
+  /* Actas faltaba en la lista: es una de las seis secciones de Secretaria y
+     la unica sin foto, asi que sus cambios se comprobaban a ciegas. */
+  { nombre: "16-actas", ruta: "/actas" },
   { nombre: "14-servicios", ruta: "/servicios" },
   { nombre: "15-membresia", ruta: "/membresia" },
   { nombre: "17-agenda", ruta: "/agenda" },
@@ -289,6 +335,162 @@ for (const tema of ["light", "dark"]) {
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   }
+  await ctx.close();
+}
+
+// Inicio con el segmentado en «Trimestre». Es la captura que faltaba: las
+// cifras de la tarjeta siempre siguieron al periodo, pero la gráfica de
+// recharts que había debajo no —pintaba las mismas semanas dijera lo que
+// dijera el mando—. Ahora las barras viven dentro de la tarjeta y cambian de
+// semanas a meses con ella; sin esta foto, esa promesa no está comprobada.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const periodo of ["Trimestre", "Año"]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.getByRole("button", { name: periodo, exact: true }).click();
+    await page.waitForTimeout(1600);
+    const archivo = `${SALIDA}/1-inicio-${periodo === "Año" ? "anio" : "trimestre"}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+/* ---- Las hojas y los modales ----
+   Ninguna de estas siete tenía captura: no son rutas, se abren tocando algo.
+   Son justo donde el rediseño puede haberse quedado a medias sin que se note,
+   porque no salen ni en la hoja de contactos ni en una revisión por URL. */
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  async function toma(nombre) {
+    await page.waitForTimeout(1100);
+    const archivo = `${SALIDA}/30-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  async function ir(ruta) {
+    /* Recarga de verdad, no cambio de hash: estas pantallas dejan un modal
+       abierto detrás, y un `goto` al mismo documento solo enruta —el modal
+       de la vuelta anterior seguiría encima de la siguiente captura—. */
+    await page.goto(`${URL_BASE}${ruta}`, { waitUntil: "domcontentloaded" });
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.waitForTimeout(900);
+  }
+  const mas = () => page.locator(".btn-crear").click();
+
+  // T2 · Nuevo ingreso, y T4 · el movimiento abierto.
+  await ir("/#/ingresos");  await mas();                             await toma("t2-nuevo-ingreso");
+  /* El movimiento abierto. Hay que tocar una fila de la LISTA, no del
+     resumen de arriba: las del resumen filtran, y el primer `.ios-txrow` de
+     la pantalla es una de ésas. */
+  await ir("/#/ingresos");
+  await page.locator(".ios-txrow[data-fila]").first().click();
+  await toma("t4-movimiento");
+
+  // T6 · el corte y su depósito.
+  await ir("/#/depositos"); await mas();                             await toma("t6-nuevo-deposito");
+  await ir("/#/depositos");
+  await page.locator(".ios-txrow[data-fila]").first().click();
+  await toma("t6-corte");
+  /* Y el pie del corte, que es donde está lo que hace falta ver: la
+     conciliación y la doble firma. En una captura de la primera pantalla no
+     salen, y son el motivo de que esta pantalla exista. */
+  await page.evaluate(() => document.querySelector(".pi-cuerpo--dm")?.scrollTo({ top: 2000 }));
+  await toma("t6-corte-pie");
+
+  // A6 · nueva actividad, A5 · la actividad abierta.
+  await ir("/#/agenda");    await mas();                             await toma("a6-nueva-actividad");
+  await ir("/#/agenda");
+  await page.getByText("Culto de oración", { exact: false }).first().click();
+  await toma("a5-actividad");
+
+  // N4 · nuevo miembro, y N3 · la ficha en sus tres pasos.
+  await ir("/#/membresia"); await mas();                             await toma("n4-nuevo-miembro");
+  /* La ficha se abre desde la hoja del miembro, y sus acciones solo salen a
+     media altura: hay que subir la hoja antes de poder tocarlas. */
+  await ir("/#/membresia");
+  await page.locator(".ios-txrow--clickable").first().click();
+  await page.waitForTimeout(700);
+  {
+    const asa = page.locator(".hd-asa");
+    const caja = await asa.boundingBox();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y - 300, { steps: 12 });
+    await page.mouse.up();
+    await page.waitForTimeout(600);
+  }
+  await page.getByRole("button", { name: "Completar el expediente" }).click();
+  await toma("n3-ficha-datos");
+  for (const [nombre, paso] of [["membresia", "Membresía"], ["servicio", "Servicio"]]) {
+    await page.getByRole("tab", { name: paso, exact: true }).click();
+    await toma(`n3-ficha-${nombre}`);
+  }
+  await ctx.close();
+}
+
+// Inicio desplazado. El Large Title de esta pantalla es el saludo del día, y
+// la copia compacta que se queda en la barra NO puede decir «Buenas tardes»:
+// esa barra existe para responder dónde estás. Sin esta foto, el
+// `data-titulo-fijo` que lo arregla no está comprobado.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".app", { timeout: 30000 });
+  await page.waitForTimeout(1400);
+  await page.evaluate(() => document.querySelector(".main")?.scrollTo({ top: 260 }));
+  await page.waitForTimeout(700);
+  const archivo = `${SALIDA}/1-inicio-desplazado-${tema}.png`;
+  await page.screenshot({ path: archivo });
+  console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  await ctx.close();
+}
+
+// H2 · Detalle del periodo. No es una ruta —es estado, como el documento
+// abierto de Reportes—, así que hay que entrar tocando su fila. Se toma en
+// «Mes» y en «Año» para ver que el título, el pie y el desglose siguen al
+// segmentado y no se quedan clavados en el mes.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const periodo of [null, "Año"]) {
+    /* Por otra ruta primero: el detalle es estado de React, y un `goto` al
+       mismo hash no remonta —se quedaría en el detalle de la vuelta anterior,
+       donde el segmentado ya no existe—. */
+    await page.goto(`${URL_BASE}/#/ajustes`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    if (periodo) await page.getByRole("button", { name: periodo, exact: true }).click();
+    await page.getByText(/^Detalle de[l]? /).first().click();
+    await page.waitForTimeout(1200);
+    const archivo = `${SALIDA}/1-detalle-${periodo ? "anio" : "mes"}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+// H3 · La portada de Secretaría. Es la ruta "/" con el rol de secretaria: el
+// único modo de verla es arrancar con ese rol puesto.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema, "secretaria");
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".app", { timeout: 30000 });
+  await page.waitForTimeout(1600);
+  const archivo = `${SALIDA}/20-inicio-secretaria-${tema}.png`;
+  await page.screenshot({ path: archivo });
+  console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   await ctx.close();
 }
 
@@ -316,16 +518,21 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
-// Cartas: dos destinos del índice, para comprobar que se entra Y se sale.
+// Cartas: las cinco pestañas del segmentado. Ya no hay índice que abrir y
+// cerrar —el teléfono aterriza en «Cartas» y se mueve por el segmentado—, así
+// que lo que hay que ver es que las cinco pintan algo y ninguna se desborda.
 for (const tema of ["light", "dark"]) {
   const ctx = await contextoIPhone(tema);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
-  for (const [nombre, fila] of [["resumen", "Resumen"], ["archivo", "Archivo"], ["solicitudes", "Solicitudes"]]) {
-    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
-    await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
-    await page.getByText(fila, { exact: true }).first().click();
-    await page.waitForTimeout(1200);
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  for (const [nombre, pestana] of [
+    ["resumen", "Cartas"], ["solicitudes", "Solicitudes"], ["traslados", "Traslados"],
+    ["plantillas", "Plantillas"], ["archivo", "Archivo"],
+  ]) {
+    await page.getByRole("tab", { name: pestana, exact: true }).click();
+    await page.waitForTimeout(900);
     const archivo = `${SALIDA}/11-cartas-${nombre}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
@@ -338,14 +545,44 @@ for (const tema of ["light", "dark"]) {
   const ctx = await contextoIPhone(tema);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
-  for (const [nombre, fila] of [["padron", "Miembros"], ["asistencia", "Asistencia"], ["seguimiento", "Seguimiento"]]) {
-    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
-    await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
-    await page.getByText(fila, { exact: true }).first().click();
-    await page.waitForTimeout(1400);
+  // Ya no hay pantalla de resumen que abrir: el teléfono aterriza en el padrón
+  // y de ahí sale todo. El recorrido es el de verdad — padrón, hoja del
+  // miembro en sus dos alturas, hoja de filtros, y los dos destinos que
+  // cuelgan de ella.
+  async function toma(nombre) {
+    await page.waitForTimeout(1200);
     const archivo = `${SALIDA}/16-membresia-${nombre}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await toma("padron");
+
+  // La hoja del miembro: tocar un nombre la asoma; el asa la sube a media.
+  await page.locator(".ios-txrow--clickable").first().click();
+  await toma("hoja-asomada");
+  {
+    const asa = page.locator(".hd-asa");
+    const caja = await asa.boundingBox();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y - 300, { steps: 12 });
+    await page.mouse.up();
+  }
+  await toma("hoja-media");
+
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Filtros", exact: true }).click();
+  await toma("filtros");
+  for (const [nombre, fila] of [["asistencia", "Asistencia"], ["seguimiento", "Seguimiento"]]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Filtros", exact: true }).click();
+    await page.waitForTimeout(500);
+    await page.getByText(fila, { exact: true }).last().click();
+    await toma(nombre);
   }
   await ctx.close();
 }
@@ -418,3 +655,10 @@ for (const tema of ["light", "dark"]) {
 await browser.close();
 vite.kill();
 console.log("\nlisto");
+/* `vite.kill()` manda SIGTERM y sigue: si el hijo tarda en morir —o no
+   muere— el bucle de eventos se queda vivo y el proceso cuelga DESPUÉS de
+   imprimir "listo", con el 1420 todavía tomado. La siguiente pasada falla
+   entonces con "vite no arrancó (¿puerto 1420 ocupado?)", que es justo el
+   error que el comentario de arriba llama confuso: parece del arranque y
+   viene del cierre anterior. Salir a la fuerza cierra el asunto. */
+process.exit(0);

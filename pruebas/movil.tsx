@@ -43,7 +43,7 @@ function Pantalla() {
           <div className="header" style={{ paddingLeft: 0, paddingRight: 0 }}>
             <div><h1 style={{ margin: 0 }}>Ingresos</h1></div>
           </div>
-          <CarruselSecciones role={ROL} memberCount={104} pendingCount={3} unreadCount={2} />
+          <CarruselSecciones role={ROL} memberCount={104} pendingCount={3} sinVerCount={2} />
           <div className="summary-4" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
             {[["Ingresos del mes", "$6,420.00"], ["Diezmos", "$4,180.00"],
               ["Ofrendas", "$1,865.50"], ["Donaciones", "$374.50"]].map(([k, v]) => (
@@ -72,7 +72,7 @@ function Pantalla() {
           </div>
         </div>
       </main>
-      <BarraInferior role={ROL} memberCount={104} pendingCount={3} unreadCount={2} />
+      <BarraInferior role={ROL} memberCount={104} pendingCount={3} sinVerCount={2} />
       <BotonCrear onCrear={() => setHoja(true)} />
       {hoja && <HojaCrear role={ROL} onCerrar={() => setHoja(false)} onElegir={() => setHoja(false)} />}
     </div>

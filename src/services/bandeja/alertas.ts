@@ -38,6 +38,28 @@ export type TipoAlerta =
   /** Un corte que pidió segunda firma y sigue sin ella (migración 47). */
   | "firmaPendiente";
 
+/** Los dos grupos en los que el teléfono reparte las siete alertas. */
+export type GrupoAlerta = "decision" | "arreglo";
+
+/**
+ * A cuál de los dos grupos pertenece cada tipo.
+ *
+ * El handoff parte la bandeja del teléfono en dos: «pide una decisión» y
+ * «pide un arreglo». No es una taxonomía nueva —`calcularAlertas` ya las
+ * devuelve en ese orden, «lo que pide decisión primero, después lo que pide
+ * arreglo»— sino el mismo criterio dicho en voz alta para que la pantalla
+ * pueda encabezar cada mitad.
+ *
+ * La línea entre los dos: una DECISIÓN es una bifurcación —¿este movimiento
+ * queda o se devuelve?, ¿cuál de estos dos duplicados es el bueno?— y no hay
+ * respuesta correcta que la app pueda saber. Un ARREGLO es un hueco: falta un
+ * comprobante, falta la categoría, falta el aportante, falta una firma. Ahí
+ * sí se sabe qué debería haber; solo hay que ir a ponerlo.
+ */
+export function grupoDeAlerta(tipo: TipoAlerta): GrupoAlerta {
+  return tipo === "pendiente" || tipo === "duplicado" ? "decision" : "arreglo";
+}
+
 export interface Alerta {
   /** Estable entre recargas: la lista lo usa de `key` y de selección. */
   clave: string;

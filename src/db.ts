@@ -4703,6 +4703,15 @@ const MESES: Record<"es" | "en", string[]> = {
   en: ["January", "February", "March", "April", "May", "June",
        "July", "August", "September", "October", "November", "December"],
 };
+/** Nombre corto de un mes "YYYY-MM", en el idioma activo: "Ago", "Aug".
+ *  Lo pide la etiqueta de las barras del periodo de Inicio, donde caben tres
+ *  letras y no "Agosto". Sale de la MISMA tabla que `fmtFechaCorta`, para que
+ *  no haya dos listas de meses abreviados que se desincronicen. */
+export function mesCorto(yyyyMm: string): string {
+  const m = Number(yyyyMm.slice(5, 7));
+  return MESES_ABBR[currentLang() === "en" ? "en" : "es"][m - 1] ?? yyyyMm;
+}
+
 const MESES_ABBR: Record<"es" | "en", string[]> = {
   es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],

@@ -10,6 +10,7 @@ import UpdateBanner from "./components/UpdateBanner";
 import BarraEstadoProvider from "./components/BarraEstado";
 import BarraInferior from "./components/BarraInferior";
 import BotonCrear from "./components/BotonCrear";
+import AreaCabecera from "./components/AreaCabecera";
 import CarruselSecciones from "./components/CarruselSecciones";
 import SyncPausadoBanner from "./components/SyncPausadoBanner";
 import CmdPalette from "./components/CmdPalette";
@@ -270,7 +271,16 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       el!.classList.toggle("scrolled", progreso >= 1);
       document.documentElement.style.setProperty("--progreso-titulo", String(progreso));
       const fijo = tituloFijoRef.current;
-      if (fijo) fijo.textContent = el!.querySelector(".page-title")?.textContent ?? "";
+      if (fijo) {
+        /* Normalmente la copia fija ES el título grande. La excepción la pide
+           Inicio, cuyo Large Title es el saludo del día: «Buenas tardes, Iván»
+           en la barra compacta no responde a la pregunta que esa barra existe
+           para responder, que es dónde estoy. Una pantalla puede declarar con
+           `data-titulo-fijo` qué decir ahí arriba cuando su título grande no
+           sirve; sin el atributo, todo sigue igual que antes. */
+        const t = el!.querySelector(".page-title");
+        fijo.textContent = t?.getAttribute("data-titulo-fijo") ?? t?.textContent ?? "";
+      }
     }
     sync();
     el.addEventListener("scroll", sync, { passive: true });
@@ -764,6 +774,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           (--progreso-titulo en 0); al hacer scroll se desvanece hacia
           dentro mientras el título grande se desvanece hacia afuera —
           ver styles.css. */}
+      {/* El nombre del área, a la izquierda de la misma fila fija: la mitad
+          izquierda de la cabecera de marca, que sin esto se quedaba vacía.
+          Hermano de <main> por lo mismo que el carrusel y `.titulo-fijo` —
+          es cáscara, no contenido de la página. */}
+      <AreaCabecera role={role} permisos={permisos} />
       <div className="titulo-fijo" ref={tituloFijoRef} aria-hidden="true" />
       <main className={`main${hayCarrusel ? " con-carrusel" : ""}`} ref={mainRef}>
         <UpdateBanner />
