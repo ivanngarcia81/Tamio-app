@@ -1271,6 +1271,9 @@ export const es = {
     inicio: "Inicio",
     grupoTesoreria: "Tesorería",
     grupoSecretaria: "Secretaría",
+    // El nombre del área en la cabecera del teléfono es un botón que salta
+    // a la otra área; esto es lo que anuncia el lector de pantalla.
+    irA: "Ir a {{area}}",
     ingresos: "Ingresos",
     gastos: "Gastos",
     miembros: "Aportantes",

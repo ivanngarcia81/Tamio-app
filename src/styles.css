@@ -19253,3 +19253,238 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   -webkit-tap-highlight-color: transparent;
 }
 :root.iphone .rep-cifra.es-boton:active { opacity: .5; }
+
+/* ============================================================================
+   15 · LA CABECERA DE MARCA (handoff «header verde», opción 1f)
+   ----------------------------------------------------------------------------
+   El segundo handoff cambia el material de la cáscara del teléfono, no una
+   pantalla: la banda de arriba —barra de estado, fila de acciones y rueda de
+   secciones— pasa de ser el gris translúcido del sistema a una banda SÓLIDA
+   en el verde de Tamio, con el contenido en blanco y sin hairline inferior,
+   «porque el color ya separa».
+
+   Tres consecuencias que el propio handoff obliga a asumir, y que están
+   aplicadas aquí y en los bloques siguientes:
+
+     · El acento del contenido baja de tono. Con verde oscuro arriba, los
+       enlaces y acciones de la lista usan el verde medio (--brand) y nada
+       más: dos verdes fuertes en la misma pantalla se pelean.
+     · Nada de verde para «positivo». El balance en verde dejaría de leerse
+       como bueno y pasaría a leerse como marca; los importes van en el color
+       del texto y solo el gasto usa el rojo del sistema.
+     · La barra de estado va en blanco. Eso NO se puede pedir desde el CSS:
+       en un WKWebView lo decide el lado nativo (`UIStatusBarStyle`). Aquí
+       solo se garantiza que el fondo bajo ella sea el verde, que es la mitad
+       que le toca a la maqueta. La otra mitad es de src-tauri.
+
+   El verde es de TAMIO, no de Tesorería: Secretaría no cambia de color, solo
+   cambian el nombre y las secciones de la rueda. Por eso el token no lleva
+   nada del área en el nombre. */
+:root.iphone {
+  /* #047857 = emerald 700. Es un escalón más oscuro que --brand (#059669),
+     que se queda para el acento del contenido. */
+  --cabecera: #047857;
+  --cabecera-tinta: #fff;
+  /* El material de la píldora de la rueda: blanco al 22 % sobre el verde, no
+     vidrio gris. Con borde interior claro para despegarla del fondo sin
+     añadir otra línea dura. */
+  --cabecera-pildora: rgba(255, 255, 255, .22);
+  --cabecera-pildora-linea: rgba(255, 255, 255, .45);
+  --cabecera-vecina: rgba(255, 255, 255, .92);
+}
+/* En modo oscuro el verde de marca se apaga un punto: sobre un fondo negro,
+   el 700 a pantalla completa pesa más de la cuenta. El blanco del contenido
+   no cambia — es el que hace que la banda siga siendo la banda. */
+:root.iphone[data-theme="dark"] { --cabecera: #065f46; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) { --cabecera: #065f46; }
+}
+
+/* ---- La banda ----
+   `.app::after` ya era la franja de la fila de acciones; aquí crece hasta
+   cubrir también la barra de estado y la rueda, se vuelve sólida y deja de
+   aparecer solo al hacer scroll.
+
+   Tres cambios sobre la regla base (~7855), todos deliberados:
+
+   · `opacity: 1` siempre. La franja de vidrio nacía transparente y se
+     encendía con `.scrolled` porque imitaba a Ajustes y a Mail, donde la
+     barra desaparece hasta que hay algo debajo. Una banda de MARCA no puede
+     parpadear: es la identidad de la app, no un material que reacciona.
+   · `z-index: 90`, no 100. La rueda de secciones vive en 95 y tiene que
+     quedar POR ENCIMA de su propio fondo; el "+" y el título fijo están en
+     101 y siguen encima de todo. Con 100 la banda se pintaba sobre la rueda
+     —a igualdad de z-index gana el orden del árbol, y ::after cuenta como
+     último hijo—, que es el mismo motivo por el que `.titulo-fijo` ya subía
+     a 101 (ver su comentario).
+   · Sin `border-bottom`. Es la regla del handoff: el color ya separa. */
+:root.iphone .app::after {
+  top: 0 !important;
+  height: calc(var(--navrow-h) + env(safe-area-inset-top)) !important;
+  z-index: 90;
+  background: var(--cabecera);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-bottom: 0 !important;
+  opacity: 1;
+}
+/* Donde hay rueda, la banda llega hasta debajo de ella: las dos franjas del
+   diseño anterior (fila de acciones + rueda, cada una con su material) son
+   aquí UNA superficie continua. `con-carrusel` lo marca App.tsx en las
+   páginas donde la rueda pinta algo de verdad. */
+:root.iphone .app:has(.main.con-carrusel)::after {
+  height: calc(var(--navrow-h) + var(--carrusel-h) + env(safe-area-inset-top)) !important;
+}
+/* Y su fondo propio sobra: lo pone la banda de arriba, de una pieza. */
+:root.iphone .carrusel-secciones::before { display: none; }
+
+/* ---- Lo que vive sobre la banda, en blanco ----
+   El "+", compartir, el "···" y la copia fija del Large Title. Todos usaban
+   el verde de marca sobre gris; sobre el verde oscuro serían invisibles. */
+:root.iphone .btn-crear,
+:root.iphone .btn-compartir-cabecera,
+:root.iphone .btn-header-menu-icono,
+:root.iphone .titulo-fijo { color: var(--cabecera-tinta); }
+
+/* ---- La rueda, con el material de la banda ----
+   Las medidas son las del handoff «la cabecera y el carrusel, solos»:
+
+     alto de la pieza          54 (estado) + 44 (acciones) + 52 (rueda)
+     píldora                   34 px de alto, r17, blanco 22 %
+     borde interior            blanco 45 % · 0.5 px
+     nombre activo / vecinas   16 px 600 / 16 px 400
+     vecina / segunda vecina   62 % · 0.7 px  /  34 % · 2 px
+     contador                  fondo #fff, texto verde, DENTRO de la píldora
+     hairline inferior         ninguno
+
+   Lo que NO se copia de la maqueta, y por qué: allí la rueda son dos mitades
+   `flex:1` con la píldora en medio, y las vecinas se recortan con
+   `overflow:hidden`. Eso centra el activo sin medir nada, pero no se puede
+   arrastrar — la maqueta finge el gesto con un `translateX`. El repo ya
+   resuelve lo mismo con un contenedor de scroll real y `scroll-snap`, que es
+   lo que hace que el dedo mueva también la página (`--nav-p`), y el propio
+   handoff pide ese gesto («mueve el arrastre… al soltar, la que quede bajo la
+   píldora es la que se abre»). Así que se conserva el mecanismo del repo y se
+   cambia solo la piel. La máscara de los bordes se queda por lo mismo: en una
+   tira que se desplaza de verdad, un corte en seco se ve como un corte. */
+:root.iphone { --carrusel-h: 52px; }
+:root.iphone .carrusel-secciones { padding: 9px 0; }
+:root.iphone .carrusel-selector {
+  top: 9px;
+  height: 34px;
+  border-radius: 17px;
+  background: var(--cabecera-pildora);
+  border: 0;
+  box-shadow: inset 0 0 0 .5px var(--cabecera-pildora-linea);
+}
+:root.iphone .carrusel-item {
+  min-height: 34px;
+  padding: 0 14px;
+  gap: 6px;
+  font-size: calc(16px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  color: var(--cabecera-tinta);
+}
+:root.iphone .carrusel-pista { gap: 2px; }
+:root.iphone .carrusel-item.activo {
+  font-weight: 600;
+  color: var(--cabecera-tinta);
+}
+/* La curva del apagado, atada a los dos escalones que da el handoff. `--d` lo
+   escribe CarruselSecciones.tsx y vale 0 bajo la píldora y 1 en el borde (ver
+   allí por qué se mide desde el centro y no por cuánto se sale el nombre).
+   Con 0,66 y 2 px, la segunda vecina aterriza exactamente en el 34 % / 2 px
+   que pide la tabla, y la inmediata —que cae alrededor de d≈0,45— queda en
+   70 % / 0,9 px, a un pelo del 62 % / 0,7 px de la maqueta. Es mucho más
+   suave que el vidrio gris de antes (0,38 y 5 px), y tiene que serlo: sobre
+   un fondo sólido no hay nada que emborronar por detrás, y una vecina casi
+   borrada sobre verde se lee como una mancha, no como un nombre. */
+:root.iphone .carrusel-item {
+  filter: blur(calc(var(--d) * 2px));
+  opacity: calc(1 - var(--d) * 0.66);
+}
+/* El contador viaja DENTRO de la píldora, y se invierte: fondo blanco y
+   número verde. Un globo rojo —o el gris del sistema— sobre el verde de la
+   banda vibra; el handoff lo dice y se ve. */
+:root.iphone .carrusel-badge,
+:root.iphone .carrusel-item.activo .carrusel-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--cabecera);
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 700;
+  line-height: 17px;
+}
+
+/* ---- Los glifos de la fila de acciones, sin cápsula ----
+   Cuando la barra era transparente hasta el primer scroll, el "+" y el
+   compartir llevaban su propia cápsula de vidrio para leerse sobre una lista
+   blanca (ver ~18544). Esa regla ya se disolvía sola al aparecer la barra —
+   «dos vidrios superpuestos se ven como un parche más claro»—; con la banda
+   de marca la barra está SIEMPRE opaca, así que la cápsula sobra siempre.
+   Quedan los glifos solos en blanco, que es lo que dibuja la maqueta: fila de
+   44 px, 16 px de margen y 16 px entre iconos, sin fondos ni bordes. */
+:root.iphone .btn-crear,
+:root.iphone .btn-compartir-cabecera.btn-compartir-cabecera,
+:root.iphone .btn-header-menu-icono {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  color: var(--cabecera-tinta);
+  width: 44px; height: var(--navrow-h);
+  margin-top: 0;
+}
+:root.iphone .btn-crear { right: 6px !important; }
+:root.iphone .btn-compartir-cabecera { right: 50px !important; }
+:root.iphone .btn-header-menu-icono { right: 6px !important; }
+/* Y el `:active` de la barra: atenuar, nunca cambiar de fondo. */
+:root.iphone .btn-compartir-cabecera.btn-compartir-cabecera:active,
+:root.iphone .btn-header-menu-icono:active { opacity: .4; background: none; }
+
+/* ---- El nombre del área, la mitad izquierda de la fila ----
+   17 px 600 en blanco, con el galón a 70 % de opacidad, alineado a la
+   izquierda con los mismos 16 px de margen que los glifos de la derecha. Es
+   `position: fixed` como el resto de la cáscara, y se para donde empieza el
+   título fijo (96 px) para que las dos etiquetas no se solapen nunca — el
+   título fijo aparece al hacer scroll y este no se va. */
+.area-cabecera { display: none; }
+:root.iphone .area-cabecera {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 16px;
+  max-width: 104px;
+  height: var(--navrow-h);
+  z-index: 101;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cabecera-tinta);
+  font-family: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .area-cabecera svg { flex: 0 0 auto; opacity: .7; }
+:root.iphone .area-cabecera.es-boton { cursor: pointer; }
+:root.iphone .area-cabecera.es-boton:active { opacity: .4; }
+
+/* Y la copia fija del Large Title se estrecha para dejarle sitio: antes
+   arrancaba en 96 px, que es justo donde termina «Secretaría» con su galón.
+   120 a cada lado la deja centrada de verdad (los glifos de la derecha
+   ocupan hasta 94) y sin tocar el nombre del área. */
+:root.iphone .titulo-fijo { left: 120px !important; right: 120px !important; }

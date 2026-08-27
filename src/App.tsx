@@ -10,6 +10,7 @@ import UpdateBanner from "./components/UpdateBanner";
 import BarraEstadoProvider from "./components/BarraEstado";
 import BarraInferior from "./components/BarraInferior";
 import BotonCrear from "./components/BotonCrear";
+import AreaCabecera from "./components/AreaCabecera";
 import CarruselSecciones from "./components/CarruselSecciones";
 import SyncPausadoBanner from "./components/SyncPausadoBanner";
 import CmdPalette from "./components/CmdPalette";
@@ -764,6 +765,11 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           (--progreso-titulo en 0); al hacer scroll se desvanece hacia
           dentro mientras el título grande se desvanece hacia afuera —
           ver styles.css. */}
+      {/* El nombre del área, a la izquierda de la misma fila fija: la mitad
+          izquierda de la cabecera de marca, que sin esto se quedaba vacía.
+          Hermano de <main> por lo mismo que el carrusel y `.titulo-fijo` —
+          es cáscara, no contenido de la página. */}
+      <AreaCabecera role={role} permisos={permisos} />
       <div className="titulo-fijo" ref={tituloFijoRef} aria-hidden="true" />
       <main className={`main${hayCarrusel ? " con-carrusel" : ""}`} ref={mainRef}>
         <UpdateBanner />

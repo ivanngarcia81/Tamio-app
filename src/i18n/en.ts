@@ -1249,6 +1249,7 @@ export const en: Resources = {
     inicio: "Home",
     grupoTesoreria: "Treasury",
     grupoSecretaria: "Secretary",
+    irA: "Go to {{area}}",
     ingresos: "Income",
     gastos: "Expenses",
     miembros: "Contributors",
