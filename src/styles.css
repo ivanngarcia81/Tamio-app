@@ -19746,3 +19746,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .header:has(.page-title) .muted { color: rgba(255, 255, 255, .78); }
 :root.iphone .header:has(.page-title) .btn.ghost,
 :root.iphone .header:has(.page-title) .btn.link { color: var(--cabecera-tinta); }
+
+/* El galón, con el trazo de la maqueta: 8×13 y stroke 2, no 7×12 y 2.5. En
+   #c7c7cc —más claro que cualquier texto de la fila— un trazo de 2.5 se ve
+   grueso y romo; el de la maqueta es más largo y más fino. */
+:root.iphone .ios-chevron { width: 8px; height: 13px; }
+:root.iphone .ios-chevron svg { stroke-width: 2; }
+
+/* ---- El balance de Inicio, también sin verde ----
+   Es el importe más grande de la app y era el más verde: `.ios-hero-num.pos`
+   lo pintaba con el color de marca. En la maqueta de Inicio esa cifra es
+   negra —30 px, 700, cifras tabulares— y el único verde de la tarjeta es la
+   pastilla de variación, que sí se queda: una VARIACIÓN sí es un semáforo,
+   un saldo no. El sufijo de moneda se va, igual que en las filas: la maqueta
+   escribe el balance a secas. */
+:root.iphone .ios-hero-num.pos { color: var(--text); }
+:root.iphone .ios-hero-num.neg { color: var(--ios-red); }
+:root.iphone .ios-hero-moneda { display: none; }
