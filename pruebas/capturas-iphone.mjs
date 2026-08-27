@@ -104,6 +104,13 @@ async function contextoIPhone(tema, rol = "administrador") {
       localStorage.setItem("tamio-rol", rol);
     } catch { /* noop */ }
     const noop = async () => null;
+    /* `listen()` de Tauri registra el listener por `invoke` pero lo SUELTA
+       llamando a este objeto. Sin él, cada desmontaje de la app lanzaba
+       «Cannot read properties of undefined (reading 'unregisterListener')»,
+       y con React lanzando dentro de un efecto de limpieza el árbol se
+       quedaba a medio desmontar: el `.app` desaparecía y la siguiente
+       navegación del arnés se colgaba esperándolo. */
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => {} };
     window.__TAURI_INTERNALS__ = {
       metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
       transformCallback: (cb) => { const id = Math.floor(Math.random() * 1e9); window[`_cb${id}`] = cb; return id; },
@@ -326,6 +333,52 @@ for (const tema of ["light", "dark"]) {
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   }
+  await ctx.close();
+}
+
+/* ---- Las hojas y los modales ----
+   Ninguna de estas siete tenía captura: no son rutas, se abren tocando algo.
+   Son justo donde el rediseño puede haberse quedado a medias sin que se note,
+   porque no salen ni en la hoja de contactos ni en una revisión por URL. */
+for (const tema of ["light"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  async function toma(nombre) {
+    await page.waitForTimeout(1100);
+    const archivo = `${SALIDA}/30-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  async function ir(ruta) {
+    /* Recarga de verdad, no cambio de hash: estas pantallas dejan un modal
+       abierto detrás, y un `goto` al mismo documento solo enruta —el modal
+       de la vuelta anterior seguiría encima de la siguiente captura—. */
+    await page.goto(`${URL_BASE}${ruta}`, { waitUntil: "domcontentloaded" });
+    await page.reload({ waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.waitForTimeout(900);
+  }
+  const mas = () => page.locator(".btn-crear").click();
+
+  // T2 · Nuevo ingreso, y T4 · el movimiento abierto.
+  await ir("/#/ingresos");  await mas();                             await toma("t2-nuevo-ingreso");
+  await ir("/#/ingresos");  await page.locator("[data-fila], .ios-txrow--clickable").first().click();
+  await toma("t4-movimiento");
+
+  // T6 · el corte y su depósito.
+  await ir("/#/depositos"); await mas();                             await toma("t6-nuevo-deposito");
+  await ir("/#/depositos"); await page.locator("[data-fila], .ios-txrow--clickable").first().click();
+  await toma("t6-corte");
+
+  // A6 · nueva actividad, A5 · la actividad abierta.
+  await ir("/#/agenda");    await mas();                             await toma("a6-nueva-actividad");
+  await ir("/#/agenda");
+  await page.getByText("Culto de oración", { exact: false }).first().click();
+  await toma("a5-actividad");
+
+  // N4 · nuevo miembro, y la ficha desde la que se llega a N3.
+  await ir("/#/membresia"); await mas();                             await toma("n4-nuevo-miembro");
   await ctx.close();
 }
 
