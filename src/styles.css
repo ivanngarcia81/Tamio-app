@@ -19763,3 +19763,126 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-hero-num.pos { color: var(--text); }
 :root.iphone .ios-hero-num.neg { color: var(--ios-red); }
 :root.iphone .ios-hero-moneda { display: none; }
+
+/* ---- La cifra del periodo, sobre la lista ----
+   «El total del periodo como cifra grande sobre la lista, no como tarjeta»
+   (handoff de Tesorería). Las medidas salen del marcado de la maqueta:
+   rótulo de 13 gris encima, importe de 32/700 con tracking −.8 y cifras
+   tabulares, y el conteo a la derecha en 15 gris, alineado por la línea de
+   abajo con 5 px de respiro para que descanse sobre la base del importe.
+
+   No lleva tarjeta ni fondo: se apoya en el gris del contenido, como el
+   saldo de Inicio. Un total dentro de una fila de lista pesa lo mismo que la
+   categoría que va debajo; fuera, manda. */
+:root.iphone .ios-cifra-periodo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  /* Sin sangría propia: el contenedor ya viene insertado 16 px (medido), y la
+     maqueta alinea la cifra con el BORDE de la tarjeta —16—, no con el texto
+     de sus filas —32—, que es donde va la cabecera de grupo. */
+  padding: 14px 0 0;
+}
+:root.iphone .ios-cifra-bloque { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+:root.iphone .ios-cifra-rotulo {
+  font-size: calc(13px * var(--fs-escala));
+  color: var(--ios-valor);
+}
+:root.iphone .ios-cifra-num {
+  font-size: calc(32px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+:root.iphone .ios-cifra-conteo {
+  flex: 0 0 auto;
+  padding-bottom: 5px;
+  font-size: calc(15px * var(--fs-escala));
+  font-variant-numeric: tabular-nums;
+  color: var(--ios-valor);
+}
+/* La variante de la cifra cuando va sola —sin conteo a la derecha— y con su
+   pie explicativo debajo: Depósitos. El pie es el mismo `.ios-section-footer`
+   del sistema, solo que aquí cuelga de la cifra y no de un grupo, así que
+   necesita su propio respiro arriba. */
+:root.iphone .ios-cifra-periodo--sola { padding-bottom: 2px; }
+:root.iphone .ios-cifra-pie { padding-top: 4px; margin: 0; }
+
+/* ---- Los importes del estado financiero, en el sistema nuevo ----
+   `.rep-monto` iba a 16/600 con el semáforo de escritorio: verde para el
+   total de ingresos, #dc2626 para el de gastos. Con la banda de marca arriba
+   eso ya no vale (bloque 17): el importe es del color del texto y solo lo que
+   SALE usa el rojo del sistema. El tamaño se iguala al de cualquier valor de
+   fila —17— y el peso baja a normal salvo en el balance, que es la única
+   cifra que el handoff pide en negrita. */
+:root.iphone .rep-monto {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+}
+:root.iphone .rep-monto.pos { color: var(--text); }
+:root.iphone .rep-monto.neg { color: var(--ios-red); }
+:root.iphone .rep-total .rep-monto { font-weight: 600; }
+
+/* `.tx-head` traía 4 px de sangría propia, así que su título aterrizaba en 36
+   cuando el resto de cabeceras de grupo caen en 32 (medido con Playwright).
+   Se le quita al contenedor y la sangría la pone el título, como en
+   `.ios-panel-head`. */
+:root.iphone .tx-head { padding-left: 0; padding-right: 0; }
+/* Un depósito NO es un gasto: es dinero que va al banco y sigue siendo de la
+   iglesia. Lleva `.negative` para decir que sale de la caja, pero el rojo del
+   sistema es del gasto. (Ver el comentario de DepositoTable.tsx.) */
+:root.iphone .tx-amount.es-deposito { color: var(--text); }
+
+/* ---- La cabecera vacía no ocupa ----
+   Varias páginas montan `<div className="header">` con TODO su contenido
+   detrás de `{!enIPhone && …}`: en el teléfono queda un contenedor sin nada
+   dentro que sigue cobrando su padding. Medido en Depósitos: 22 px de
+   cabecera más 6 de `.content` antes de la primera cifra, o sea 40 px de gris
+   entre la banda y el contenido. En la maqueta la cifra arranca a 14 px de la
+   banda.
+
+   La regla busca la firma exacta de ese caso: una cabecera SIN título grande
+   cuyo único hijo sea `.header-actions` —el bloque de botones de escritorio,
+   que en el teléfono está oculto porque su trabajo lo hace el "+" de la
+   banda—. Le quita el padding, no el contenido: donde ese bloque sí trae
+   algo visible en el teléfono (el selector de mes de Ingresos y Gastos) el
+   control se queda, solo que pegado a la banda, que es como lo dibuja la
+   maqueta. Con título grande la regla no aplica: ese va dentro del verde y
+   trae su propio aire (bloque 18). */
+:root.iphone .header:not(:has(.page-title)):has(> .header-actions:only-child) {
+  padding: 0 !important;
+  min-height: 0;
+}
+
+/* ---- El "volver" y el nombre del área comparten hueco ----
+   `.ios-nav-volver` se escribió para «el hueco izquierdo que en las demás
+   pantallas está vacío». Desde el rediseño v2 ese hueco ya no está vacío: lo
+   ocupa el nombre del área. Se veía —capturado en el estado financiero de
+   Reportes— «Tesorería ⌄» y «‹ Reportes» impresos uno encima del otro.
+
+   Manda el volver: dentro de un documento, salir de él es lo que se busca, y
+   el área ya la dice la rueda de abajo. Y pasa a blanco, como todo lo que
+   vive sobre la banda: en el verde de marca, el verde del acento no se lee. */
+:root.iphone .app:has(.ios-nav-volver) .area-cabecera { display: none; }
+:root.iphone .ios-nav-volver { color: var(--cabecera-tinta); }
+
+/* Y la acción de texto de la barra (Bandeja: «Aprobar 2»), con el mismo
+   tratamiento que el "+": sin cápsula de vidrio —la banda ya es opaca— y en
+   blanco, porque el verde del acento no se lee sobre el verde de la marca. */
+:root.iphone .ios-nav-btn {
+  border: 0;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--cabecera-tinta);
+  padding: 0 6px;
+  right: 8px;
+}
+/* Si además hay "+" o compartir —hoy no coinciden en ninguna pantalla, pero
+   son controles fijos del mismo extremo y nada lo impide— la acción de texto
+   se corre en vez de taparlos. Nunca al revés: esconder un botón para hacerle
+   sitio a otro es cambiar la función por la maqueta. */
+:root.iphone .app:has(.btn-crear) .ios-nav-btn,
+:root.iphone .app:has(.btn-compartir-cabecera) .ios-nav-btn { right: 52px; }

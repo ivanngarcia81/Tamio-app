@@ -882,30 +882,34 @@ export default function Reportes({ church, refreshKey, onChanged }: Props) {
             )}
           </div>
 
-          {/* Los cuatro totales del pie, en la misma cuadrícula de dos
-              columnas que el resumen de arriba. La nota de depósitos se
-              queda: es información contable, no adorno. */}
+          {/* Los cuatro totales del pie. Eran una cuadrícula de dos columnas
+              de tarjetas KPI; el handoff los pide como filas de una lista —
+              «las cifras del periodo primero, con el balance en negrita y lo
+              depositado fuera de la suma»— y la nota como PIE DE GRUPO, que
+              es donde iOS pone las reglas. En dos columnas las cuatro cifras
+              competían entre sí por ser la principal y la nota colgaba suelta
+              debajo de la rejilla. */}
           <div className="ios-panel">
-            <div className="ios-panel-grid">
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalIngresos")}</span></div>
-                <span className="ios-stat-num money pos">{fmtMoney(ingresos)}</span>
+            <div className="ios-listcard">
+              <div className="ios-txrow rep-fila">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("reportes.totalIngresos")}</div></div>
+                <div className="ios-txrow-trailing"><span className="rep-monto">{fmtMoney(ingresos)}</span></div>
               </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.totalGastos")}</span></div>
-                <span className="ios-stat-num money neg">{fmtMoney(gastos)}</span>
+              <div className="ios-txrow rep-fila">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("reportes.totalGastos")}</div></div>
+                <div className="ios-txrow-trailing"><span className="rep-monto neg">−{fmtMoney(gastos)}</span></div>
               </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.balanceNeto")}</span></div>
-                <span className="ios-stat-num money">{fmtMoney(balance)}</span>
+              <div className="ios-txrow rep-fila rep-total">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("reportes.balanceNeto")}</div></div>
+                <div className="ios-txrow-trailing"><span className="rep-monto">{fmtMoney(balance)}</span></div>
               </div>
-              <div className="ios-stat" style={{ cursor: "default" }}>
-                <div className="ios-stat-top"><span className="ios-stat-label">{t("reportes.depositosBancarios")}</span></div>
-                <span className="ios-stat-num money">{fmtMoney(depositosMes)}</span>
+              <div className="ios-txrow rep-fila">
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("reportes.depositosBancarios")}</div></div>
+                <div className="ios-txrow-trailing"><span className="rep-monto">{fmtMoney(depositosMes)}</span></div>
               </div>
             </div>
             {depositosMes > 0 && (
-              <p className="ios-panel-note">{t("reportes.depositosNota")}</p>
+              <p className="ios-section-footer">{t("reportes.depositosNota")}</p>
             )}
           </div>
     </>

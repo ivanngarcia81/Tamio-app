@@ -785,26 +785,35 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
         ) : (
           <>
             {enIPhone ? (
+              <>
+                {/* Rediseño v2: el total del periodo sale de la tarjeta y se
+                    convierte en la CIFRA de la pantalla, sobre el gris del
+                    fondo. Es la instrucción del handoff —«el total del periodo
+                    como cifra grande sobre la lista, no como tarjeta»— y la
+                    maqueta la mide: rótulo de 13 gris, importe de 32/700 con
+                    cifras tabulares, y el conteo a la derecha alineado por su
+                    línea base. Un total metido en una fila de lista pesa lo
+                    mismo que la categoría de debajo; sacado, manda. */}
+                <div className="ios-cifra-periodo">
+                  <div className="ios-cifra-bloque">
+                    <span className="ios-cifra-rotulo">
+                      {t(esIngreso ? "mov.ingresosDe" : "mov.gastosDe", { mes: mesLegible(mes) })}
+                    </span>
+                    <span className="ios-cifra-num">
+                      <CountUp value={totalMes} format={fmtMoney} paso={100} />
+                    </span>
+                  </div>
+                  <span className="ios-cifra-conteo">{t("mov.nRegistros", { count: txs.length })}</span>
+                </div>
               <div className="ios-panel">
                 <div className="ios-panel-head"><h2>{t("mov.seccionResumen")}</h2></div>
-                {/* Rediseño de iOS 26: la rejilla de tarjetas KPI —la misma
-                    que se quitó de Inicio, Depósitos y Aportantes— pasa a
-                    lista agrupada. Aquí el total del mes es la primera fila y
-                    cada categoría una fila con su punto de color, su importe y
-                    el porcentaje en la secundaria; la barra de proporción se
-                    va porque el porcentaje ya lo dice con más precisión y en
-                    una fila de 44px no cabía sin apretar el resto. */}
+                {/* Las categorías se quedan —el handoff mueve el TOTAL, no el
+                    desglose— pero ya sin la fila «Total del mes» delante, que
+                    ahora vive arriba. Cada categoría es una fila con su punto
+                    de color, su importe y el porcentaje en la secundaria; la
+                    barra de proporción se fue porque el porcentaje lo dice con
+                    más precisión y en una fila de 44px no cabía. */}
                 <div className="ios-listcard">
-                  <div className="ios-txrow">
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{t("mov.totalDelMes")}</div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      <span className="tx-amount positive">
-                        <CountUp value={totalMes} format={fmtMoney} paso={100} />
-                      </span>
-                    </div>
-                  </div>
                   {tarjetasCategoria.map((c) => {
                     const pct = totalMes > 0 ? Math.round((c.monto / totalMes) * 1000) / 10 : 0;
                     return (
@@ -826,6 +835,7 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                   })}
                 </div>
               </div>
+              </>
             ) : resumenEscritorio}
 
             {tarjetaRecurrentes}

@@ -87,7 +87,14 @@ export default function DepositoTable({ depositos, onEdit, onChanged, sinCaja }:
             <div className="tx-secundaria-movil" title={secundaria}>{secundaria}</div>
           </div>
           <div className="ios-txrow-trailing">
-            <span className="tx-amount negative">
+            {/* `negative` marca «sale de la caja», no «es un gasto»: un
+                depósito es dinero que va al banco, sigue siendo de la
+                iglesia. La distinción no importaba mientras `.negative` fuera
+                del color del texto; desde el rediseño v2 el gasto va en rojo
+                del sistema, así que hay que decir cuál de los dos es este —o
+                los tres depósitos del mes salían en rojo, como si se hubieran
+                perdido. */}
+            <span className="tx-amount negative es-deposito">
               {fmtMoney(dep.monto)}<span className="cur">{dep.moneda}</span>
             </span>
           </div>

@@ -267,6 +267,12 @@ export const es = {
     nuevoGasto: "Nuevo gasto",
     noHayRegistros: "No hay registros para imprimir.",
     totalDelMes: "Total del mes",
+    // El rótulo y el conteo de la cifra grande del periodo (rediseño v2):
+    // «Ingresos de agosto» sobre «$10,125.00», y «41 registros» a su derecha.
+    ingresosDe: "Ingresos de {{mes}}",
+    gastosDe: "Gastos de {{mes}}",
+    nRegistros_one: "{{count}} registro",
+    nRegistros_other: "{{count}} registros",
     seccionResumen: "Resumen",
     pctDelTotal: "{{pct}}% del total",
     todosIngresos: "Todos los ingresos",
@@ -620,6 +626,11 @@ export const es = {
     movsDelCorte_one: "{{count}} movimiento",
     movsDelCorte_other: "{{count}} movimientos",
     cortesPie: "Efectivo estimado en caja: {{monto}}",
+    // La cifra grande de Depósitos en el teléfono (rediseño v2): el dato que
+    // de verdad se consulta, con la regla del repo escrita en el pie —la app
+    // no sabe qué billete fue al banco, sabe qué corte se hizo—.
+    enCajaRotulo: "Efectivo en caja por depositar",
+    enCajaPie: "Lo cobrado en efectivo o cheque que no está en ningún corte. La app no sabe qué billete fue al banco: sabe qué corte se hizo.",
     eligeCorte: "Elige un corte",
     eligeCorteSub: "Sus movimientos, el desglose y lo que falta por revisar salen aquí al tocar uno de la lista.",
     /* ---- La hoja "Nuevo corte" ---- */

@@ -789,6 +789,26 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
         </div>
       ) : (
       <div className="content content-lienzo">
+        {enIPhone && (
+          /* Rediseño v2: la cifra que de verdad se consulta —cuánto efectivo
+             hay por depositar— arriba y sola, con su explicación debajo. Es
+             literalmente lo que pide el handoff para esta pantalla, y la
+             regla del pie es la del repo: la app no sabe qué billete fue al
+             banco, sabe qué corte se hizo. Estaba escondida en el pie de un
+             grupo («Efectivo estimado en caja: …»), que es donde menos pesa. */
+          <>
+            <div className="ios-cifra-periodo ios-cifra-periodo--sola">
+              <div className="ios-cifra-bloque">
+                <span className="ios-cifra-rotulo">{t("depositos.enCajaRotulo")}</span>
+                <span className="ios-cifra-num">
+                  <CountUp value={porDepositar ?? CERO} format={fmtMoney} paso={100} />
+                </span>
+              </div>
+            </div>
+            <p className="ios-section-footer ios-cifra-pie">{t("depositos.enCajaPie")}</p>
+          </>
+        )}
+
         {enIPhone ? (
           /* Rediseño de iOS 26 (GUIA §4): las tres tarjetas de resumen pasan
              a ser las tres filas de una lista agrupada. En dos columnas la
