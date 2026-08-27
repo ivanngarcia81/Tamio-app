@@ -1992,6 +1992,21 @@ export const es = {
     camposCompletos: "Campos: {{hechos}} de {{total}} completos",
     grupoTraslados: "Traslados",
     tab: { resumen: "Resumen", nueva: "Nueva carta", solicitudes: "Solicitudes", salida: "Traslado de salida", entrada: "Traslado de entrada", plantillas: "Plantillas", archivo: "Archivo" },
+    // Los cinco del segmentado del teléfono. Cortos porque en 361 px cinco
+    // botones no admiten "Traslado de salida", y "Cartas" en vez de "Resumen"
+    // porque ahí la pestaña ES la lista de cartas, no un resumen de nada.
+    tabCorto: { resumen: "Cartas", solicitudes: "Solicitudes", traslados: "Traslados", plantillas: "Plantillas", archivo: "Archivo" },
+    // Cabeceras y pies de cada pestaña, del handoff.
+    cabCartas: "Emitidas en {{anio}}",
+    cabSolicitudes: "Solicitudes recibidas",
+    cabTraslados: "Movimientos del año",
+    cabPlantillas: "Plantillas de secretaría",
+    cabArchivo: "Años anteriores",
+    pieCartas: "Una carta entregada ya no se edita: se cancela y se emite otra, para que el folio siga contando lo que pasó.",
+    pieSolicitudes: "Atender una solicitud crea la carta y las deja vinculadas por folio.",
+    pieTraslados: "De salida (TS) y de entrada (TE). Solo los completados cuentan en los informes del periodo.",
+    piePlantillas: "Cada tipo de carta usa una plantilla. Editarla no cambia las que ya se emitieron.",
+    pieArchivo: "Lo emitido en periodos cerrados: se consulta y se imprime, pero ya no se edita.",
     eligeCarta: "Elige una carta",
     eligeCartaSub: "Toca una fila de la lista para leerla aquí tal como va a imprimirse.",
     nuevaCarta: "Nueva carta",
@@ -2250,6 +2265,7 @@ export const es = {
     colProceso: "Persona y procedencia",
     colConfirmacion: "Confirmación",
     sinDestino: "Sin iglesia de destino",
+    sinProcedencia: "Sin iglesia de procedencia",
     secMiembro: "Miembro que se traslada",
     secDestino: "Iglesia de destino",
     secProceso: "Proceso",

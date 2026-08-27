@@ -20525,3 +20525,56 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Las dos tarjetas de la hoja de filtros, insertadas como cualquier lista
    agrupada: sin esto salían de canto a canto y la hoja parecía una tabla. */
 :root.iphone .hm-filtros .ios-listcard { margin: 0 16px; }
+
+/* ============================================================================
+   23 · EL SEGMENTADO DE CINCO (Cartas)
+   ----------------------------------------------------------------------------
+   Las cinco pestañas del handoff —Cartas · Solicitudes · Traslados ·
+   Plantillas · Archivo— bajo el título grande. Las medidas son las de la
+   maqueta, y la que importa es el tamaño de letra: 11,5 px, no los 13 del
+   segmentado de Inicio. Con cinco botones en 361 px, a 13 «Solicitudes» y
+   «Plantillas» se parten o se recortan; a 11,5 caben enteras. Es el único
+   segmentado de la app que baja de 13, y baja porque tiene cinco tramos.
+
+   Sustituye al índice que el teléfono tenía: aquel era la respuesta cuando
+   había SEIS destinos y ninguna columna donde ponerlos —el iPad los pinta en
+   la suya—. Con cinco caben aquí y sobra una pantalla entera de por medio. */
+:root.iphone .ios-seg5 {
+  display: flex;
+  gap: 2px;
+  height: 32px;
+  margin: 12px 16px 0;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, .12);
+}
+:root.iphone .ios-seg5 button {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  font: inherit;
+  font-size: calc(11.5px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-seg5 button.sel {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
+}
+/* La fila de Cartas es un `<button>`: hay que deshacer lo que el navegador le
+   pone y alinearla a la izquierda, igual que las filas de acción de la hoja
+   de Membresía. */
+:root.iphone .ios-listcard > button.ios-txrow { width: 100%; text-align: left; font: inherit; }

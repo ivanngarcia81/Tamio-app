@@ -84,12 +84,15 @@ const ArchiveIcon = () => (
     <path d="M2 4h20v4H2zM9 13h6" />
   </svg>
 );
-/* "indice" es SOLO del teléfono, y por eso no está en `SECCIONES_CARTAS`: no
-   es un destino de la lista, es la lista. En el iPad el índice es una columna
-   fija que siempre se ve, así que ahí nunca hace falta "estar" en él; en 390 px
-   no cabe una columna, así que el índice pasa a ser una pantalla más y necesita
-   su propio valor. */
-type Tab = "indice" | "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "plantillas" | "archivo";
+type Tab = "resumen" | "nueva" | "solicitudes" | "salida" | "entrada" | "traslados" | "plantillas" | "archivo";
+
+/* Las CINCO pestañas del segmentado del teléfono, en su orden.
+   No es `SECCIONES_CARTAS` con otra cara: aquella son los seis destinos de la
+   columna del iPad, y esta junta salida y entrada en un solo "Traslados" —
+   «de salida (TS) y de entrada (TE)», dice el pie de la maqueta—. Las dos
+   listas siguen existiendo por separado para el iPad y el Mac; lo que cambia
+   es que en 393 px cinco botones caben y seis ya no. */
+const PESTANAS_IPHONE: Tab[] = ["resumen", "solicitudes", "traslados", "plantillas", "archivo"];
 
 /** Las secciones del índice del iPad, agrupadas como el handoff agrupa su
  *  columna: los documentos por un lado y los traslados por otro. Son LUGARES
@@ -243,7 +246,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
      saltar a otra sin salir de la pantalla — el mismo problema que el comentario
      de la rama `partido` (más abajo) dice haber resuelto, pero que solo se
      resolvió para el iPad. */
-  const [tab, setTab] = useState<Tab>(esIPhone() ? "indice" : "resumen");
+  /* El teléfono ya no aterriza en un índice: aterriza en la primera pestaña,
+     con el segmentado arriba. El índice era la respuesta cuando no había
+     dónde poner seis destinos; con cinco caben en un segmentado y sobra una
+     pantalla entera de por medio. */
+  const [tab, setTab] = useState<Tab>("resumen");
 
   /* ---- Maestro-detalle del iPad: los dos umbrales de siempre. ---- */
   const anchoPartido = useMediaQuery("(min-width: 700px)");
@@ -552,23 +559,6 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
     listas: cartas.filter((c) => ["aprobada", "lista"].includes(c.estado)).length,
   }), [cartas]);
 
-  /** Cuántos hay detrás de cada destino del índice, para la derecha de su fila.
-   *
-   *  Es lo que convierte el índice en algo que se puede leer de un vistazo en
-   *  vez de en seis nombres: dice dónde hay trabajo. Cuenta lo VIVO, no el
-   *  total —solicitudes sin entregar ni cancelar, traslados sin cerrar—, con
-   *  los mismos filtros que ya usan el resumen y el pie de cada sección, para
-   *  que el número del índice y el de dentro nunca discrepen.
-   *
-   *  `null` en Resumen: no es una cola, es una vista de las otras. */
-  function contadorDeSeccion(id: Tab): number | null {
-    if (id === "archivo") return cartas.length;
-    if (id === "plantillas") return plantillas.length;
-    if (id === "solicitudes") return solicitudes.filter((x) => !["entregada", "cancelada"].includes(x.estado)).length;
-    if (id === "salida") return trasladosSalida.filter((x) => !["completado", "cancelado"].includes(x.estado)).length;
-    if (id === "entrada") return trasladosEntrada.filter((x) => !["completado", "archivado", "noAceptado"].includes(x.estado)).length;
-    return null;
-  }
 
   const q = query.trim().toLowerCase();
   const visibles = cartas
@@ -708,71 +698,39 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
      `.content` de siempre. Los mismos nodos en los dos sitios. */
   const contenido = (
     <>
+        {/* El segmentado de cinco, siempre arriba. Sustituye al índice: aquel
+            era la respuesta cuando había seis destinos y ninguna columna donde
+            ponerlos; con cinco caben y se cambian sin salir. A 11,5 px, que es
+            lo que la maqueta necesita para que «Solicitudes» y «Plantillas»
+            quepan enteras en 361 px sin partirse. */}
+        {enIPhone && tab !== "nueva" && (
+          <div className="ios-seg5" role="tablist" aria-label={t("nav.cartas")}>
+            {PESTANAS_IPHONE.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={tab === id ? "sel" : ""}
+                onClick={() => cambiarTab(id)}
+              >
+                {t(`cartas.tabCorto.${id}`)}
+              </button>
+            ))}
+          </div>
+        )}
         {loading ? (
           <LoadingState />
-        ) : tab === "indice" ? (
-          /* El índice del teléfono: los MISMOS seis destinos y los mismos dos
-             grupos que la columna del iPad (`SECCIONES_CARTAS`), que hasta ahora
-             solo se pintaban dentro de `{partido ? …}`. No es una lista nueva:
-             es la de siempre, montada como pantalla porque en 390 px no hay
-             columna donde ponerla. */
-          <>
-            {SECCIONES_CARTAS.map((g) => (
-              <SeccionIOS key={g.grupo} titulo={t(g.grupo)}>
-                {g.items.map((id) => (
-                  <button
-                    type="button"
-                    key={id}
-                    className="ios-txrow ios-txrow--clickable"
-                    onClick={() => cambiarTab(id)}
-                  >
-                    <div className="ios-txrow-main">
-                      <div className="ios-txrow-title">{t(`cartas.tab.${id}`)}</div>
-                    </div>
-                    <div className="ios-txrow-trailing">
-                      {contadorDeSeccion(id) !== null && (
-                        <span className="ios-fila-valor">{contadorDeSeccion(id)}</span>
-                      )}
-                      <IosChevron />
-                    </div>
-                  </button>
-                ))}
-              </SeccionIOS>
-            ))}
-          </>
         ) : tab === "resumen" ? (
           <>
-            {enIPhone ? (
-              <div className="ios-panel">
-                <div className="ios-panel-head"><h2>{t("cartas.seccionEstado")}</h2></div>
-                <div className="ios-panel-grid">
-                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("borrador")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardPreparacion")}</span></div>
-                    <span className="ios-stat-num"><CountUp value={resumen.enPreparacion} format={String} /></span>
-                  </button>
-                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("firma")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardFirma")}</span></div>
-                    <span className="ios-stat-num"><CountUp value={resumen.esperandoFirma} format={String} /></span>
-                  </button>
-                  <button type="button" className="ios-stat" onClick={() => irAArchivoFiltrado("lista")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("cartas.cardListas")}</span></div>
-                    <span className="ios-stat-num"><CountUp value={resumen.listas} format={String} /></span>
-                  </button>
-                  <button type="button" className="ios-stat" onClick={() => cambiarTab("salida")}>
-                    <div className="ios-stat-top"><span className="ios-stat-label">{t("traslados.cardEnProceso")}</span></div>
-                    <span className="ios-stat-num">
-                      <CountUp
-                        value={
-                          trasladosSalida.filter((s) => !["completado", "cancelado"].includes(s.estado)).length +
-                          trasladosEntrada.filter((s) => !["completado", "archivado", "noAceptado"].includes(s.estado)).length
-                        }
-                        format={String}
-                      />
-                    </span>
-                  </button>
-                </div>
-              </div>
-            ) : (
+            {/* La rejilla de cuatro cifras del teléfono se fue: el handoff
+                sustituye las cuadrículas de KPI por filas en todas partes, y
+                aquí además las cuatro decían lo que ahora se lee entrando a
+                cada pestaña. Las tres primeras son estados de carta —viven en
+                los filtros de esta misma lista— y la cuarta era el conteo de
+                traslados, que ahora es una pestaña. Mac e iPad la conservan:
+                ahí la cuadrícula tiene ancho y no compite con nada. */}
+            {enIPhone ? null : (
               <div className="dash-canvas">
               <div className="summary-4 enter">
                 <button className="stat-card accent" style={accent("var(--accent-4)")} onClick={() => irAArchivoFiltrado("borrador")}>
@@ -814,7 +772,11 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                 bloque no varía por plataforma: no es parte del idioma de
                 panel de iPhone, es el reemplazo directo de la fila de
                 pastillas que se quitó para todos por igual. */}
-            <div className="ios-navcards" style={{ marginTop: 14 }}>
+            {/* En el teléfono estas dos tarjetas repetían dos botones del
+                segmentado que está justo arriba: la misma orden en dos sitios
+                a la vez. Mac e iPad las conservan —allí no hay segmentado— y
+                por eso el bloque no se borra, se acota. */}
+            <div className="ios-navcards" style={{ marginTop: 14, display: enIPhone ? "none" : undefined }}>
               <button type="button" className="ios-navcard" onClick={() => cambiarTab("plantillas")}>
                 <span className="ios-navcard-icon"><TemplateIcon /></span>
                 <span className="ios-navcard-label">{t("cartas.tab.plantillas")}</span>
@@ -827,31 +789,48 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </button>
             </div>
 
+            {/* La pestaña «Cartas»: la lista entera, no una muestra de cinco.
+                Con el segmentado arriba, «actividad reciente» y su «Ver todo»
+                sobraban —el «todo» es esta misma pestaña—, y la cabecera y el
+                pie son los del handoff: qué se está viendo, y la regla que
+                gobierna lo que se ve. */}
             {enIPhone ? (
-              <div className="ios-panel" style={{ marginTop: 18 }}>
-                <div className="ios-panel-head">
-                  <h2>{t("cartas.actividadReciente")}</h2>
-                  {cartas.length > 0 && (
-                    <button type="button" className="ios-panel-action" onClick={() => cambiarTab("archivo")}>
-                      {t("cartas.verTodo")}
-                    </button>
-                  )}
-                </div>
-                {cartas.length === 0 ? (
-                  <div className="ios-panel-empty">{t("cartas.aunNoHay")}</div>
-                ) : (
-                  <div className="ios-listcard">
-                    {cartas.slice(0, 5).map((c) => (
-                      <button key={c.id} type="button" className="ios-listrow" onClick={() => abrirCarta(c)}>
-                        <span className="ios-listrow-code">{c.folio}</span>
-                        <span className="ios-listrow-name">{c.destinatario_nombre} — {t(`cartas.tipoDoc.${c.tipo}`)}</span>
-                        <span className={`ios-badge ${badgeClaseIOS(c.estado)}`}>{t(`cartas.estado.${c.estado}`)}</span>
-                        <IosChevron />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              cartas.length === 0 ? (
+                <div className="ios-panel-empty">{t("cartas.aunNoHay")}</div>
+              ) : (
+                <>
+                  <SeccionIOS titulo={t("cartas.cabCartas", { anio: new Date().getFullYear() })}>
+                    <div className="ios-listcard">
+                      {/* Dos renglones, no tres columnas. `.ios-listrow` mete
+                          folio, nombre y estado en una línea; con el estado ya
+                          en texto —«Lista para entregar»— el nombre se comía
+                          los puntos suspensivos a la tercera letra. La maqueta
+                          la dibuja como cualquier otra fila: título arriba,
+                          folio y tipo debajo, estado a la derecha. */}
+                      {cartas.map((c) => (
+                        <button key={c.id} type="button" className="ios-txrow ios-txrow--clickable" onClick={() => abrirCarta(c)}>
+                          <div className="ios-txrow-main">
+                            {/* `.truncate` y no el texto suelto: `.ios-txrow-title`
+                                es un contenedor flex, y `text-overflow` no actúa
+                                sobre un flex — el nombre se cortaba a hachazo, sin
+                                puntos suspensivos. Es lo que ya hacen TxTable y las
+                                demás filas de dos renglones. */}
+                            <div className="ios-txrow-title"><span className="truncate">{c.destinatario_nombre}</span></div>
+                            <div className="tx-secundaria-movil">
+                              {c.folio} · {t(`cartas.tipoDoc.${c.tipo}`)}
+                            </div>
+                          </div>
+                          <div className="ios-txrow-trailing">
+                            <span className={`ios-badge ${badgeClaseIOS(c.estado)}`}>{t(`cartas.estado.${c.estado}`)}</span>
+                            <IosChevron />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </SeccionIOS>
+                  <p className="ios-section-footer">{t("cartas.pieCartas")}</p>
+                </>
+              )
             ) : (
               <div className="card enter" style={{ marginTop: 18 }}>
                 <div className="card-head">
@@ -1019,6 +998,69 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               </div>
             )}
           </>
+        ) : tab === "traslados" ? (
+          /* La pestaña combinada del teléfono: salida y entrada en una sola
+             lista, ordenada por fecha. «De salida (TS) y de entrada (TE)»,
+             dice el pie del handoff, y por eso el folio va delante de la
+             secundaria: es lo único que distingue de un vistazo un TS de un
+             TE cuando los dos hablan de una persona y una iglesia.
+
+             Las dos listas siguen existiendo por separado —el iPad y el Mac
+             las pintan en sus dos pestañas— y cada fila abre el MISMO modal
+             que abriría desde allí. Aquí solo se juntan para verse. */
+          (() => {
+            const juntos = [
+              ...trasladosSalida.map((x) => ({
+                clave: `ts-${x.id}`,
+                folio: x.folio,
+                fecha: x.fecha_solicitud,
+                nombre: nombreMiembro(x.member_id) ?? "—",
+                donde: x.iglesia_destino ?? t("traslados.sinDestino"),
+                estado: t(`traslados.estadoTS.${x.estado}`),
+                abrir: () => setTsModal({ open: true, traslado: x }),
+              })),
+              ...trasladosEntrada.map((x) => ({
+                clave: `te-${x.id}`,
+                folio: x.folio,
+                fecha: x.fecha_recepcion ?? x.fecha_emision_carta ?? "",
+                nombre: x.nombre,
+                donde: x.iglesia_procedencia ?? t("traslados.sinProcedencia"),
+                estado: t(`traslados.estadoTE.${x.estado}`),
+                abrir: () => setTeModal({ open: true, traslado: x }),
+              })),
+            ].sort((a2, b2) => (b2.fecha ?? "").localeCompare(a2.fecha ?? ""));
+            if (juntos.length === 0) {
+              return (
+                <EmptyState
+                  titulo={t("traslados.aunNoHaySalida")}
+                  sub={t("traslados.agregaPrimeroSalida")}
+                  icon={<IconMail size={20} strokeWidth={1.8} />}
+                />
+              );
+            }
+            return (
+              <>
+                <SeccionIOS titulo={t("cartas.cabTraslados")}>
+                  <div className="ios-listcard">
+                    {juntos.map((x) => (
+                      <div className="ios-txrow ios-txrow--clickable" key={x.clave} onClick={x.abrir}>
+                        <div className="ios-txrow-main">
+                          <div className="ios-txrow-title"><span className="truncate">{x.nombre}</span></div>
+                          <div className="tx-secundaria-movil">
+                            {x.folio} · {x.donde}
+                          </div>
+                        </div>
+                        <div className="ios-txrow-trailing">
+                          <span className="ios-badge">{x.estado}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </SeccionIOS>
+                <p className="ios-section-footer">{t("cartas.pieTraslados")}</p>
+              </>
+            );
+          })()
         ) : tab === "salida" ? (
           <>
             <div className="tx-head">
@@ -1403,8 +1445,12 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           el iPad tiene junto a su panel; sin él se entraba a una sección desde
           las tarjetas del resumen y solo se salía abandonando la pantalla por
           la barra de pestañas. */}
-      {enIPhone && tab !== "indice" && (
-        <button type="button" className="ios-nav-volver" onClick={() => cambiarTab("indice")}>
+      {/* Solo desde el editor. Las cinco pestañas viven en el segmentado y se
+          cambian sin salir de ninguna parte; la única pantalla del teléfono
+          que no lo lleva —porque ocupa el alto entero— es «nueva», y de ahí sí
+          hay que poder volver. */}
+      {enIPhone && tab === "nueva" && (
+        <button type="button" className="ios-nav-volver" onClick={() => cambiarTab("resumen")}>
           <IconChevronLeft size={17} strokeWidth={2.4} /> {t("secretaria.cartas.titulo")}
         </button>
       )}
@@ -1460,6 +1506,10 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
                         className={`md-indice-item${tab === id ? " sel" : ""}`}
                         onClick={() => cambiarTab(id)}
                       >
+                        {/* El índice del iPad usa los nombres LARGOS: ahí hay
+                            columna de sobra y «Traslado de salida» dice de cuál
+                            de los dos se trata. `tabCorto` es del segmentado del
+                            teléfono y ni siquiera tiene esas dos claves. */}
                         <span className="md-indice-nombre">{t(`cartas.tab.${id}`)}</span>
                       </button>
                     ))}
