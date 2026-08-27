@@ -1002,7 +1002,20 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
 
             {visibles.length === 0 ? estadoVacio : (
               <>
-                <TxTable tipo={tipo} txs={pagina} onEdit={onEditTx} onChanged={onChanged} puedeEliminar={puedeEliminar} />
+                <TxTable
+                  tipo={tipo}
+                  txs={pagina}
+                  onEdit={onEditTx}
+                  /* Maqueta T4. En el teléfono, tocar un movimiento lo ABRE.
+                     Hasta ahora no hacía nada: la única forma de mirar un
+                     gasto era deslizar la fila y darle a «Editar», o sea
+                     entrar al formulario para leer. Y la pantalla que hace
+                     falta ya existía —`DetalleMovimiento`, la columna del
+                     iPad—, encerrada tras `partido`. */
+                  onAbrir={enIPhone ? (tx) => setSelId(tx.id) : undefined}
+                  onChanged={onChanged}
+                  puedeEliminar={puedeEliminar}
+                />
                 {enIPhone
                   ? <div ref={centinela} aria-hidden="true" />
                   : <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
@@ -1011,6 +1024,40 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           </>
         )}
       </div>
+      )}
+
+      {/* El movimiento abierto, como PANTALLA (maqueta T4). Es el mismo panel
+          que el iPad pinta en su columna derecha: mismo importe grande, misma
+          ficha, mismo comprobante, mismas acciones. Lo único que cambia es el
+          envoltorio —aquí ocupa el teléfono entero, con su banda y su
+          «volver»— y eso lo pone el CSS, no un segundo componente que
+          enseñaría lo mismo con otro código. */}
+      {enIPhone && sel && (
+        <div className="pantalla-ios" role="dialog" aria-modal="true" aria-label={sel.concepto}>
+          {/* El «volver» va en la banda, no en el cuerpo. `DetalleMovimiento`
+              trae el suyo —`.dm-volver`, para el modo de empuje del iPad—,
+              pero ese se desplaza con el contenido; aquí tiene que quedarse
+              arriba. El del panel se apaga por CSS en esta pantalla. */}
+          <div className="pi-banda pi-banda--nav">
+            <div className="pi-nav">
+              <button type="button" className="pi-volver" onClick={() => setSelId(null)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {titulo}
+              </button>
+            </div>
+          </div>
+          <div className="pi-cuerpo pi-cuerpo--dm">
+            <DetalleMovimiento
+              tx={sel}
+              tituloLista={titulo}
+              onVolver={() => setSelId(null)}
+              onEditar={onEditTx}
+              onEliminar={puedeEliminar ? setPendingDeleteSel : undefined}
+              onVerComprobante={setPreviewSel}
+              onVerFicha={(mid) => navigate("/miembros", { state: { verMiembro: mid } })}
+              onCompartir={compartirMovimiento}
+            />
+          </div>
+        </div>
       )}
 
       {pendingDeleteRec && (

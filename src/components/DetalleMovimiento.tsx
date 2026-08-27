@@ -5,6 +5,7 @@ import {
 } from "../db";
 import { IconChevronLeft, IconClip, IconEdit, IconRepeat, IconTrash } from "../icons";
 import { ShareIcon } from "./icons/IOSIcons";
+import { esIPhone } from "../movil";
 
 interface Props {
   tx: Tx;
@@ -142,8 +143,13 @@ export default function DetalleMovimiento({ tx, tituloLista, onVolver, onEditar,
             deducirlo de la fila que quedaba resaltada a la izquierda, y en el
             modo de empuje esa fila ni se ve. */}
         <h1 className="dm-titular">{titular}</h1>
+        {/* El «+» del ingreso solo en iPad y Mac. En el teléfono la fila de la
+            lista ya lo quitó —la maqueta escribe «$5,125.00» a secas y reserva
+            el signo, y el rojo, para lo que sale—, y el panel abre desde esa
+            misma fila: con el «+» aquí, el importe cambiaría de forma al
+            tocarlo. */}
         <h2 className={`dm-monto ${esIngreso ? "positive" : "negative"}`}>
-          {esIngreso ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
+          {esIngreso ? (esIPhone() ? "" : "+") : "−"}{fmtMoney(tx.monto).replace("−", "")}
           <span className="dm-moneda">{tx.moneda}</span>
         </h2>
         <p className="dm-sub">

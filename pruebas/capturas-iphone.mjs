@@ -363,7 +363,11 @@ for (const tema of ["light", "dark"]) {
 
   // T2 · Nuevo ingreso, y T4 · el movimiento abierto.
   await ir("/#/ingresos");  await mas();                             await toma("t2-nuevo-ingreso");
-  await ir("/#/ingresos");  await page.locator("[data-fila], .ios-txrow--clickable").first().click();
+  /* El movimiento abierto. Hay que tocar una fila de la LISTA, no del
+     resumen de arriba: las del resumen filtran, y el primer `.ios-txrow` de
+     la pantalla es una de ésas. */
+  await ir("/#/ingresos");
+  await page.locator(".ios-txrow[data-fila]").first().click();
   await toma("t4-movimiento");
 
   // T6 · el corte y su depósito.

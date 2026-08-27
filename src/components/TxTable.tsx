@@ -8,6 +8,7 @@ import SeccionIOS from "./ios/SeccionIOS";
 import { IconArrowDown, IconArrowUp, IconClip, IconEdit, IconRepeat } from "../icons";
 import { esIPhone, esMac } from "../movil";
 import RowMenu from "./RowMenu";
+import { hayFilaAbierta } from "./useFilaDeslizable";
 import { useContextMenu, type CtxMenuItem } from "./ContextMenu";
 import ComprobantePreview from "./ComprobantePreview";
 import { showToast } from "../toast";
@@ -18,6 +19,10 @@ interface Props {
   tipo: "ingreso" | "gasto";
   txs: Tx[];
   onEdit: (tx: Tx) => void;
+  /** Tocar la fila abre el movimiento (maqueta T4). Solo lo pasa el teléfono:
+   *  en Mac la fila se opera con el menú y en el iPad el detalle vive en la
+   *  columna de al lado, así que quien no lo pasa deja la fila como estaba. */
+  onAbrir?: (tx: Tx) => void;
   onChanged: () => void;
   /** Permiso de la iglesia (migración 49). Cuando está apagado, Eliminar no
    *  se ofrece —ni en el menú, ni en el deslizamiento, ni con clic derecho—.
@@ -60,7 +65,7 @@ const COLS_GASTO = COLS_INGRESO;
    vuelva a cerrarse a cero. */
 const COLS_MAC = "104px minmax(160px, 1fr) 124px 148px 126px 128px 86px 76px";
 
-export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = true }: Props) {
+export default function TxTable({ tipo, txs, onEdit, onAbrir, onChanged, puedeEliminar = true }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Tx | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -141,10 +146,29 @@ export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = 
       if (enIPhone) {
         return (
           <div
-            className="ios-txrow"
+            className={`ios-txrow${onAbrir ? " ios-txrow--clickable" : ""}`}
             data-fila
             key={tx.id}
+            role={onAbrir ? "button" : undefined}
+            tabIndex={onAbrir ? 0 : undefined}
             onContextMenu={(e) => abrirMenu(e, itemsDe(tx))}
+            onClick={onAbrir
+              ? (e) => {
+                  /* Con una fila deslizada abierta, el toque solo la cierra
+                     —lo hace el propio gesto— y NO abre el movimiento: si
+                     abriera, descubrir «Eliminar» y arrepentirse tocando
+                     fuera acabaría en otra pantalla.
+                     Y los controles de la derecha (el clip del comprobante,
+                     los tres puntitos) tienen lo suyo que hacer: un clic en
+                     ellos no es un clic en la fila. */
+                  if (hayFilaAbierta()) return;
+                  if ((e.target as HTMLElement).closest(".row-icon-btn, .more, .row-menu-dropdown, .fila-acciones")) return;
+                  onAbrir(tx);
+                }
+              : undefined}
+            onKeyDown={onAbrir
+              ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAbrir(tx); } }
+              : undefined}
           >
             <span className={`tx-icon ${tx.tipo === "ingreso" ? "income" : "expense"}`} aria-hidden="true">
               {tx.tipo === "ingreso" ? <IconArrowUp size={13} strokeWidth={2.2} /> : <IconArrowDown size={13} strokeWidth={2.2} />}

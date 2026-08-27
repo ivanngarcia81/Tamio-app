@@ -20446,6 +20446,252 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-txrow-title.es-accion > svg,
 :root.iphone .ios-txrow-title.es-destructiva > svg { margin-right: 8px; vertical-align: -2px; }
 
+/* ---- 27 · EL MOVIMIENTO ABIERTO (maqueta T4) ----
+
+   No hay componente nuevo: es `DetalleMovimiento`, la columna derecha del
+   maestro-detalle del iPad, dentro de la misma `.pantalla-ios` que usa el
+   detalle de una actividad. Sus reglas están bajo `:root.ipad`, así que aquí
+   se traduce el MISMO DOM al vocabulario del teléfono — no se copian 50
+   reglas, se escriben las quince que hacen falta.
+
+   La maqueta pone importe, concepto y estado centrados arriba, «el patrón de
+   un pago en Wallet»: por eso esta pantalla no lleva título grande a la
+   izquierda como las otras. La banda solo sostiene el «volver». */
+:root.iphone .pi-banda--nav { padding-bottom: 0; }
+/* El `.dm-volver` del panel se desplaza con el contenido —está pensado para el
+   modo de empuje del iPad—; aquí el volver vive en la banda, quieto. */
+:root.iphone .pi-cuerpo--dm .dm-volver { display: none; }
+:root.iphone .pi-cuerpo--dm { padding: 0 16px 20px; }
+:root.iphone .pi-cuerpo--dm .dm { display: block; }
+
+/* La cabecera: el dinero manda, y lo demás lo explica. */
+:root.iphone .pi-cuerpo--dm .dm-cab { text-align: center; padding: 22px 0 4px; }
+:root.iphone .pi-cuerpo--dm .dm-chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+:root.iphone .pi-cuerpo--dm .dm-monto {
+  margin: 6px 0 0;
+  font-size: calc(38px * var(--fs-escala));
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .pi-cuerpo--dm .dm-moneda {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--ios-valor);
+  margin-left: 5px;
+}
+/* El titular baja DEBAJO del importe y en cuerpo normal. En el iPad es un h1
+   de 32 encima de la cifra porque ahí compite con una lista a su izquierda;
+   aquí no compite con nada, y dos titulares grandes seguidos harían dudar de
+   cuál es el dato. */
+:root.iphone .pi-cuerpo--dm .dm-titular {
+  order: 2;
+  margin: 8px 0 0;
+  font-size: calc(20px * var(--fs-escala));
+  line-height: 25px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+:root.iphone .pi-cuerpo--dm .dm-cab { display: flex; flex-direction: column; align-items: center; }
+:root.iphone .pi-cuerpo--dm .dm-monto { order: 1; }
+:root.iphone .pi-cuerpo--dm .dm-sub { order: 3; margin: 4px 0 0; font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .pi-cuerpo--dm .dm-acciones { order: 4; }
+
+/* Las acciones de la cabecera, como fila de enlaces y no como botones: los
+   dos importantes —aprobar, editar— viven abajo en su barra. */
+:root.iphone .pi-cuerpo--dm .dm-acciones {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  width: 100%;
+}
+:root.iphone .pi-cuerpo--dm .dm-acciones .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: calc(15px * var(--fs-escala));
+}
+
+/* La ficha de campos: un grupo de lista inset, con el mismo radio, el mismo
+   hairline y la misma sangría que el resto de la app. En el iPad es una
+   rejilla de dos columnas. */
+:root.iphone .pi-cuerpo--dm .dm-ficha {
+  display: block;
+  margin-top: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+  overflow: hidden;
+}
+:root.iphone .pi-cuerpo--dm .dm-pie-tarjetas { display: block; }
+/* Las dos tarjetas del pie se DESARMAN: en iOS el título de un grupo va
+   FUERA de la tarjeta, en gris de 13. La tarjeta la hereda el contenido —el
+   rastro o el comprobante—, no el contenedor. */
+:root.iphone .pi-cuerpo--dm .dm-tarjeta {
+  display: block;
+  margin-top: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+:root.iphone .pi-cuerpo--dm .dm-campo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+}
+:root.iphone .pi-cuerpo--dm .dm-campo + .dm-campo { border-top: .33px solid var(--ios-sep); }
+:root.iphone .pi-cuerpo--dm .dm-campo-etiqueta {
+  flex: 0 0 auto;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+:root.iphone .pi-cuerpo--dm .dm-campo-valor {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--ios-valor);
+  overflow-wrap: anywhere;
+}
+:root.iphone .pi-cuerpo--dm .dm-ver-ficha { flex: 0 0 auto; font-size: calc(15px * var(--fs-escala)); }
+:root.iphone .pi-cuerpo--dm .dm-tarjeta-titulo {
+  display: block;
+  padding: 0 16px 6px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: normal;
+  /* Mayúsculas, como cualquier otro encabezado de grupo del teléfono: el del
+     panel viene en versalitas de escritorio con su propio tracking, y dos
+     encabezados con dos formas en la misma pantalla se leen como dos cosas
+     distintas. */
+  text-transform: uppercase;
+  color: var(--ios-valor);
+}
+/* El contenido de cada tarjeta es el que lleva el fondo y el radio. */
+:root.iphone .pi-cuerpo--dm .dm-rastro,
+:root.iphone .pi-cuerpo--dm .dm-comp-hay,
+:root.iphone .pi-cuerpo--dm .dm-comp-falta {
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+  border: 0;
+}
+/* El rastro. Sin estas reglas los tres renglones salían pegados en una sola
+   línea —«Registrado27 ago 2026, 18:44AprobadoSin nada pendiente»—: la
+   maquetación de sus piezas está toda bajo `:root.ipad`, y en el teléfono
+   quedaban como spans en línea sin nada que los ordenara. */
+:root.iphone .pi-cuerpo--dm .dm-rastro {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+:root.iphone .pi-cuerpo--dm .dm-rastro-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 44px;
+  padding: 9px 16px;
+}
+:root.iphone .pi-cuerpo--dm .dm-rastro-item + .dm-rastro-item { border-top: .33px solid var(--ios-sep); }
+:root.iphone .pi-cuerpo--dm .dm-rastro-punto {
+  width: 7px; height: 7px; flex: 0 0 7px;
+  border-radius: 4px;
+  margin-top: 7px;
+  background: var(--ios-galon);
+}
+:root.iphone .pi-cuerpo--dm .dm-rastro-punto.ink { background: var(--text); }
+:root.iphone .pi-cuerpo--dm .dm-rastro-punto.aviso { background: #ff9500; }
+:root.iphone .pi-cuerpo--dm .dm-rastro-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.iphone .pi-cuerpo--dm .dm-rastro-titulo { font-size: calc(17px * var(--fs-escala)); letter-spacing: -0.2px; }
+:root.iphone .pi-cuerpo--dm .dm-rastro-detalle { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+
+/* El comprobante. El recuadro punteado del escritorio se va: en una lista
+   agrupada, el hueco ya lo dice la frase, y «Adjuntar» es una fila de acción
+   como las de cualquier otro grupo. */
+:root.iphone .pi-cuerpo--dm .dm-comp-hay { display: flex; align-items: center; gap: 11px; padding: 12px 16px; }
+:root.iphone .pi-cuerpo--dm .dm-comp-falta {
+  display: block;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-falta-texto {
+  display: block;
+  padding: 12px 16px;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--ios-valor);
+  border-bottom: .33px solid var(--ios-sep);
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-adjuntar {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  text-align: left;
+  color: var(--brand, #059669);
+  cursor: pointer;
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-archivo { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* Los dos restos de escritorio que quedaban a la vista: el chip de categoría
+   con su color de tabla y el botón «Ver ficha» con su recuadro. En el
+   teléfono la categoría ya se dice en su fila, así que arriba basta con el
+   par de pastillas del mismo idioma que las de la actividad; y una acción
+   dentro de una fila de lista es un enlace, no un botón con borde. */
+:root.iphone .pi-cuerpo--dm .dm-chips .tag,
+:root.iphone .pi-cuerpo--dm .dm-chips .status-pill,
+:root.iphone .pi-cuerpo--dm .dm-chip-rec {
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--ios-valor);
+}
+/* Solo «pendiente» se colorea: es el único estado que pide hacer algo. */
+:root.iphone .pi-cuerpo--dm .dm-chips .status-pill.pendiente {
+  background: rgba(245, 158, 11, .16);
+  color: #b25000;
+}
+:root.iphone[data-theme="dark"] .pi-cuerpo--dm .dm-chips .status-pill.pendiente { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .pi-cuerpo--dm .dm-chips .status-pill.pendiente { color: #ffb266; }
+}
+:root.iphone .pi-cuerpo--dm .dm-ver-ficha {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--brand, #059669);
+}
+:root.iphone .pi-cuerpo--dm .dm-comp-enlaces { display: flex; gap: 14px; flex: 0 0 auto; }
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide
