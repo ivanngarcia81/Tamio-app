@@ -1492,6 +1492,11 @@ export const es = {
     },
     sinResultados: "Sin resultados",
     sinResultadosSub: "Prueba otro término o cambia el filtro de estado.",
+    // Las tres acciones de la hoja de tres alturas (tercer enfoque). Ninguna
+    // abre algo nuevo: llevan al seguimiento, a la ficha y a la baja de siempre.
+    anotarVisita: "Anotar una visita",
+    completarExpediente: "Completar el expediente",
+    verFichaCompleta: "Ver la ficha completa",
     darDeBaja: "Dar de baja",
     reactivar: "Reactivar",
     bajaTitulo: "Dar de baja a {{nombre}}",

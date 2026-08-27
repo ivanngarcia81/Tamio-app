@@ -15,6 +15,8 @@ import {
 } from "../services/informes/membresia";
 import { cargarUmbrales, UMBRALES_DEFAULT, type Umbrales } from "../services/informes/umbrales";
 import DetalleMembresia from "../components/DetalleMembresia";
+import HojaDetentesIOS, { type Detente } from "../components/ios/HojaDetentesIOS";
+import HojaMiembro from "../components/ios/HojaMiembro";
 import SeguimientoModal from "../components/SeguimientoModal";
 import { MenuAnchor } from "../components/MenuAnchor";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -231,10 +233,30 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
   type VistaMb = "resumen" | "miembros" | "asistencia" | "seguimiento";
   const anchoPartido = useMediaQuery("(min-width: 700px)");
   const partido = enIPad && anchoPartido;
-  const [vistaMb, setVistaMb] = useState<VistaMb>(esIPhone() ? "resumen" : "miembros");
+  /* El teléfono aterriza en el PADRÓN, no en el resumen.
+     Con el segundo enfoque el resumen era una pantalla previa que había que
+     atravesar; en el tercero las ocho tarjetas son un filtro de esta misma
+     lista —se abren desde la barra y se ven actuar detrás—, así que ya no hay
+     nada que atravesar. Mac e iPad no cambian: allí siempre fue "miembros". */
+  const [vistaMb, setVistaMb] = useState<VistaMb>("miembros");
   /* El detalle es un ID que se re-busca, no una copia congelada. */
   const [selId, setSelId] = useState<number | null>(null);
   const [tarjeta, setTarjeta] = useState<string>("todos");
+  /* La hoja de tres alturas del teléfono (tercer enfoque). `hojaDe` es el
+     miembro que se está mirando —null con la hoja cerrada— y `detente` a qué
+     altura está. Van juntos porque cerrar y volver a abrir tiene que empezar
+     otra vez asomada: si la hoja recordara la altura, tocar un nombre desde
+     el padrón te la subiría a media pantalla sin haberlo pedido. */
+  const [hojaDe, setHojaDe] = useState<Member | null>(null);
+  const [detente, setDetente] = useState<Detente>("asomada");
+  function abrirHoja(m: Member) { setHojaDe(m); setDetente("asomada"); }
+  /* La hoja de filtros: las ocho tarjetas del iPad y los dos destinos que
+     antes vivían en la pantalla de resumen. Con el padrón como aterrizaje,
+     ese resumen ya no se pisa, y sin esta hoja las ocho tarjetas, la
+     asistencia y el seguimiento se quedaban sin ninguna puerta en el
+     teléfono. Es exactamente el defecto que este rediseño lleva seis veces
+     arreglando, y esta vez lo habría metido yo. */
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [segDe, setSegDe] = useState<Member | null>(null);
   const [menuAnio, setMenuAnio] = useState(false);
   const [menuFiltros, setMenuFiltros] = useState(false);
@@ -594,14 +616,15 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
 
   return (
     <>
-      {/* La salida del teléfono, en la barra fija. Solo cuando hay de dónde
-          volver: en el resumen no se pinta. Es el mismo `dm-volver` que el iPad
-          tiene junto a su panel. */}
-      {enIPhone && vistaMb !== "resumen" && (
+      {/* La salida del teléfono, en la barra fija. Solo desde asistencia y
+          seguimiento: el padrón es el aterrizaje del tercer enfoque, y un
+          "volver" en la pantalla a la que se llega no vuelve a ninguna parte.
+          Es el mismo `dm-volver` que el iPad tiene junto a su panel. */}
+      {enIPhone && (vistaMb === "asistencia" || vistaMb === "seguimiento") && (
         <button
           type="button"
           className="ios-nav-volver"
-          onClick={() => { setVistaMb("resumen"); setTarjeta("todos"); }}
+          onClick={() => { setVistaMb("miembros"); setTarjeta("todos"); }}
         >
           <IconChevronLeft size={17} strokeWidth={2.4} /> {t("secretaria.membresia.titulo")}
         </button>
@@ -1002,7 +1025,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                   data-fila
                   key={m.id}
                   style={{ opacity: m.activo === 1 ? 1 : 0.72 }}
-                  onClick={() => setFicha(m)}
+                  onClick={() => (enIPhone ? abrirHoja(m) : setFicha(m))}
                 >
                   <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
                     {initials(m.nombre)}
@@ -1172,6 +1195,109 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           onClose={() => setFusionando(null)}
           onMerged={onChanged}
         />
+      )}
+
+      {/* ---- La hoja de tres alturas (tercer enfoque) ----
+          Asomada: lo que se mira de reojo —quién es y qué le pasa—, con el
+          padrón entero arriba y TOCABLE: tocar otro nombre cambia la hoja sin
+          navegar, que es la promesa del enfoque.
+          Media: la altura de trabajo. Por qué me importa este miembro, tres
+          cifras y las tres cosas que se hacen con él.
+          Completa: `DetalleMembresia`, la MISMA columna que el iPad pinta en
+          su panel —asistencia por mes, los cuatro requisitos del expediente,
+          movimientos y documentos—. No se duplicó nada: estaba escrita y solo
+          se pintaba dentro de `{partido ? … }`. Van siete veces en este
+          rediseño. */}
+      {/* El botón de la barra: el juego de las ocho tarjetas, convertido en
+          filtro de esta misma lista. Lleva puesto el nombre del filtro activo,
+          que es lo que hace la maqueta con `{{ labelFiltro }}`. */}
+      {enIPhone && vistaMb === "miembros" && (
+        <button type="button" className="ios-nav-btn" onClick={() => setFiltrosAbiertos(true)}>
+          {tarjetaSel ? tarjetaSel.label : t("agenda.filtros")}
+        </button>
+      )}
+
+      {/* La hoja de filtros: una sola altura, sin telón. «Toca una tarjeta: la
+          lista de detrás ya está filtrada mientras la hoja sigue abierta, así
+          que se puede probar otra sin salir y volver.» Debajo de las ocho, los
+          dos destinos que antes colgaban de la pantalla de resumen —asistencia
+          y seguimiento—, que si no se quedaban sin puerta. */}
+      {enIPhone && filtrosAbiertos && (
+        <HojaDetentesIOS
+          detente="media"
+          detentes={["media"]}
+          onDetente={() => {}}
+          onCerrar={() => setFiltrosAbiertos(false)}
+          etiqueta={t("membresia.elPadronEn", { anio })}
+        >
+          <div className="hm-filtros">
+            <div className="hm-filtros-barra">
+              <span className="hm-filtros-titulo">{t("membresia.elPadronEn", { anio })}</span>
+              {tarjetaSel
+                ? <button type="button" onClick={() => setTarjeta("todos")}>{t("common.quitar")}</button>
+                : <button type="button" onClick={() => setFiltrosAbiertos(false)}>{t("common.listo")}</button>}
+            </div>
+            <div className="ios-listcard">
+              {tarjetas.filter((c) => c.id !== "todos").map((c) => (
+                <button
+                  type="button"
+                  key={c.id}
+                  className={`ios-txrow ios-txrow--clickable${tarjeta === c.id ? " es-elegida" : ""}`}
+                  onClick={() => setTarjeta(tarjeta === c.id ? "todos" : c.id)}
+                >
+                  <span className="ios-punto" style={{ background: c.color }} aria-hidden="true" />
+                  <div className="ios-txrow-main"><div className="ios-txrow-title">{c.label}</div></div>
+                  <div className="ios-txrow-trailing"><span className="ios-fila-valor">{c.valor}</span></div>
+                </button>
+              ))}
+            </div>
+            <div className="ios-listcard hm-filtros-destinos">
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => { setFiltrosAbiertos(false); setVistaMb("asistencia"); }}>
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("membresia.vista.asistencia")}</div></div>
+                <div className="ios-txrow-trailing"><IosChevron /></div>
+              </button>
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => { setFiltrosAbiertos(false); setVistaMb("seguimiento"); }}>
+                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("membresia.vista.seguimiento")}</div></div>
+                <div className="ios-txrow-trailing">
+                  {conAlertas.length > 0 && <span className="ios-insignia es-pendiente">{conAlertas.length}</span>}
+                  <IosChevron />
+                </div>
+              </button>
+            </div>
+          </div>
+        </HojaDetentesIOS>
+      )}
+
+      {enIPhone && hojaDe && (
+        <HojaDetentesIOS
+          detente={detente}
+          onDetente={setDetente}
+          onCerrar={() => setHojaDe(null)}
+          etiqueta={hojaDe.nombre}
+        >
+          {detente === "completa" ? (
+            <DetalleMembresia
+              member={hojaDe}
+              asis={asistencia?.get(hojaDe.id)}
+              filasAsis={asisFilas.filter((fla) => fla.member_id === hojaDe.id)}
+              periodo={periodoObj}
+              umbralRacha={umbrales.rachaServicios}
+              onEditar={(mm) => { setHojaDe(null); setFicha(mm); }}
+              onSeguimiento={(mm) => setSegDe(mm)}
+            />
+          ) : (
+            <HojaMiembro
+              m={hojaDe}
+              detente={detente}
+              asis={asistencia?.get(hojaDe.id)}
+              alertas={alertasDe(hojaDe)}
+              onSubir={() => setDetente("completa")}
+              onVisita={() => setSegDe(hojaDe)}
+              onExpediente={() => { setHojaDe(null); setFicha(hojaDe); }}
+              onBaja={() => setPendingBaja(hojaDe)}
+            />
+          )}
+        </HojaDetentesIOS>
       )}
 
       {ficha && (

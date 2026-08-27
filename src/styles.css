@@ -20106,3 +20106,422 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   background: var(--surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, .1);
 }
+
+/* ============================================================================
+   22 · LA HOJA DE TRES ALTURAS (Membresía, tercer enfoque)
+   ----------------------------------------------------------------------------
+   «El maestro-detalle no se rompe: se convierte en hoja. El padrón nunca se
+   va: se sigue viendo, se sigue tocando, y cambiar de miembro no es navegar,
+   es tocar otro nombre.»
+
+   No es `.ios-sheet`. Aquella es la hoja de FORMULARIO del repo: telón negro
+   al 35 %, 92 % de alto fijo y nada detrás se puede tocar. Aquí lo que hay
+   detrás es justamente lo que hay que poder tocar. Mismo idioma visual,
+   mecanismo distinto.
+
+   Las alturas son las de la maqueta, sobre su artboard de 828 px:
+   asomada 113 px por ENCIMA de la barra de pestañas, media 472/828 = 57 %,
+   completa 748/828 = 90 %.
+
+   Alto y desplazamiento se animan con la MISMA curva y la misma duración a
+   propósito: al soltar, el borde superior sale de donde lo dejó el dedo
+   (alto viejo + arrastre) y llega al detente nuevo sin ningún salto, porque
+   las dos interpolaciones arrancan de su valor actual. */
+.hoja-detentes, .hd-telon { display: none; }
+:root.iphone .hoja-detentes {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; right: 0;
+  z-index: 120;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 -10px 32px -8px rgba(0, 0, 0, .28);
+  overflow: hidden;
+  transform: translateY(var(--hd-arrastre, 0px));
+  transition: height .32s cubic-bezier(.32, .72, 0, 1),
+              bottom .32s cubic-bezier(.32, .72, 0, 1),
+              border-radius .32s cubic-bezier(.32, .72, 0, 1),
+              transform .32s cubic-bezier(.32, .72, 0, 1);
+}
+/* Mientras el dedo manda, ninguna transición: el desplazamiento tiene que
+   seguirlo 1:1, igual que el desenfoque del carrusel. */
+:root.iphone .hoja-detentes[data-arrastrando] { transition: none; }
+
+/* Asomada: por encima de la barra de pestañas —que ocupa de 26 a 84— y con
+   el radio un punto menor, como en la maqueta. Es la única altura que deja
+   ver la barra, y por eso es la única que no la tapa. */
+:root.iphone .hoja-detentes[data-detente="asomada"] {
+  bottom: calc(83px + env(safe-area-inset-bottom));
+  height: 113px;
+  border-radius: 20px 20px 0 0;
+}
+:root.iphone .hoja-detentes[data-detente="media"] {
+  bottom: 0;
+  height: 57%;
+  border-radius: 22px 22px 0 0;
+}
+:root.iphone .hoja-detentes[data-detente="completa"] {
+  bottom: 0;
+  height: 90%;
+  border-radius: 22px 22px 0 0;
+}
+
+/* El telón: solo a partir de «media», y mucho más suave que el de la hoja
+   modal (.35). Aquí no está para bloquear —se puede tocar para volver a
+   asomarse— sino para decir «el padrón sigue detrás»: si lo tapara del todo,
+   la hoja habría dejado de ser una hoja y sería una pantalla. */
+:root.iphone .hd-telon {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 119;
+  background: rgba(0, 0, 0, .14);
+  animation: overlayIn .18s ease both;
+}
+
+/* El asa: la barrita de la maqueta, con toda la franja de arriba como zona de
+   arrastre. Un objetivo de 5 px de alto no se acierta con el pulgar. */
+:root.iphone .hd-asa {
+  flex: 0 0 auto;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .hd-asa > span {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+}
+:root.iphone .hd-cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+/* En la altura asomada no se desplaza: lo que cabe es lo que hay que ver de
+   reojo, y un scroll de 90 px invita a pelearse con el arrastre de la hoja. */
+:root.iphone .hoja-detentes[data-detente="asomada"] .hd-cuerpo { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .hoja-detentes { transition: none; }
+  :root.iphone .hd-telon { animation: none; }
+}
+
+/* ---- El cuerpo de la hoja de Membresía ---- */
+:root.iphone .hm { padding: 0 16px 20px; }
+:root.iphone .hm-cabeza { display: flex; align-items: center; gap: 12px; padding: 2px 0 4px; }
+:root.iphone .hm-avatar {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--ios-valor);
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+:root.iphone .hm-quien { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+:root.iphone .hm-nombre {
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+:root.iphone .hm-sub {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* La alerta va en el ámbar oscuro del pie de grupo, no en el naranja del
+   sistema: sobre el gris de la hoja, #ff9500 no pasa contraste. Es el mismo
+   tono que ya usa `.ios-section-footer--aviso`. */
+:root.iphone .hm-alerta {
+  margin: 10px 0 0;
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1.35;
+  color: #b25000;
+}
+:root.iphone[data-theme="dark"] .hm-alerta { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .hm-alerta { color: #ffb266; }
+}
+/* Las tres cifras: mismo reparto que la tarjeta de Inicio —tres columnas que
+   se separan por los extremos— pero sin punto de color. Aquí no son series de
+   nada; son tres hechos sobre una persona. */
+:root.iphone .hm-cifras {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 0;
+  border-top: .33px solid color-mix(in srgb, var(--ios-sep) 55%, transparent);
+  border-bottom: .33px solid color-mix(in srgb, var(--ios-sep) 55%, transparent);
+}
+:root.iphone .hm-cifra { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+:root.iphone .hm-cifra:last-child { align-items: flex-end; text-align: right; }
+:root.iphone .hm-cifra-rot { font-size: calc(12px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .hm-cifra-num {
+  font-size: calc(22px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+/* La fecha no es una cifra: a 22 px una fecha corta ocupa más que el
+   porcentaje de al lado y desequilibra las tres columnas. */
+:root.iphone .hm-cifra-num--fecha { font-size: calc(17px * var(--fs-escala)); font-weight: 600; }
+:root.iphone .hm-cifra-num.es-aviso { color: var(--warn); }
+:root.iphone .hm-cifra-pie { font-size: calc(12px * var(--fs-escala)); color: var(--ios-valor); }
+
+:root.iphone .hm-acciones { margin: 16px 0 0; }
+/* Las filas de acción son botones: hay que deshacer lo que el navegador les
+   pone y alinearlas a la izquierda como cualquier fila. */
+:root.iphone .hm-acciones .ios-txrow { width: 100%; text-align: left; font: inherit; }
+:root.iphone .ios-txrow-title.es-accion { color: var(--brand, #059669); }
+:root.iphone .ios-txrow-title.es-destructiva { color: var(--ios-red); }
+/* «Ver la ficha completa» no es una acción más: sube la hoja. Va como enlace
+   centrado al final, no como cuarta fila de la lista. */
+:root.iphone .hm-completa {
+  display: block;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand, #059669);
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .hm-completa:active { opacity: .4; }
+/* La ficha entera dentro de la hoja. El panel del iPad no trae sangría propia
+   —allí la pone su columna—, así que se la damos aquí. Antes esta regla
+   quitaba el padding a CUALQUIER hijo del cuerpo de la hoja, y de paso se
+   llevaba por delante el de `.hm`: el avatar salía cortado por el borde
+   izquierdo y las filas de acción iban de canto a canto. Ahora apunta solo a
+   lo que venía del iPad. */
+:root.iphone .hoja-detentes .md-detalle { padding: 0 16px; }
+/* La hoja se apoya en el gris agrupado, no en el blanco de las tarjetas: con
+   los dos del mismo color, una `.ios-listcard` dentro de la hoja desaparecía
+   —se veía la lista pero no la caja—. Es lo que hace la maqueta, que pone la
+   hoja en #fafafc y las tarjetas en blanco. */
+:root.iphone .hoja-detentes { background: color-mix(in srgb, var(--bg) 97%, transparent); }
+
+/* ---- La hoja de filtros del padrón ---- */
+:root.iphone .hm-filtros { padding: 0 0 24px; }
+:root.iphone .hm-filtros-barra {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 16px 10px;
+}
+:root.iphone .hm-filtros-titulo {
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+}
+:root.iphone .hm-filtros-barra button {
+  flex: 0 0 auto;
+  border: 0; background: none; padding: 0;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* La tarjeta elegida se marca con una palomita a la derecha, no con fondo:
+   la hoja está encima de la lista que filtra, y un fondo de color aquí
+   competiría con lo que está pasando detrás. */
+:root.iphone .hm-filtros .ios-txrow.es-elegida .ios-txrow-title { font-weight: 600; }
+:root.iphone .hm-filtros .ios-txrow.es-elegida .ios-fila-valor { color: var(--brand, #059669); }
+:root.iphone .hm-filtros .ios-txrow { width: 100%; text-align: left; font: inherit; }
+:root.iphone .hm-filtros-destinos { margin-top: 18px; }
+
+/* ---- La ficha entera dentro de la hoja ----
+   `DetalleMembresia` es la columna derecha del maestro-detalle del iPad, y sus
+   reglas están escritas bajo `:root.ipad`: en el teléfono el componente salía
+   sin una sola de ellas —el avatar cortado por el borde, y cada par
+   etiqueta/valor pegado en un renglón: «Nacimiento—», «En roster—Racha sin
+   asistir—Última visita—»—.
+
+   Es el mismo caso que las `.mb-*` de la analítica de asistencia, que ya se
+   copiaron en su día: el JSX no se duplica, se le da al teléfono el estilo que
+   solo existía para la tablet. Estas 37 reglas son copia literal de las de
+   `:root.ipad`; lo que de verdad cambia para 393 px va DESPUÉS de este bloque,
+   escrito a mano y comentado. */
+:root.iphone .mb-det { display: flex; flex-direction: column; gap: 18px; }
+:root.iphone .mb-cab { display: flex; align-items: flex-start; gap: 16px; }
+:root.iphone .mb-cab-avatar {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 36px;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(24px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-cab-textos { flex: 1; min-width: 0; }
+:root.iphone .mb-cab-nombre {
+  margin: 0;
+  font-size: calc(27px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+:root.iphone .mb-cab-chips {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+:root.iphone .mb-chip {
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--fill, rgba(118, 118, 128, 0.12));
+  color: var(--text-2);
+  font-size: calc(12.5px * var(--fs-escala));
+  font-weight: 600;
+}
+:root.iphone .mb-cab-acciones { display: flex; gap: 8px; flex: 0 0 auto; }
+:root.iphone .mb-alertas { display: flex; flex-direction: column; gap: 8px; }
+:root.iphone .mb-alerta {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: var(--warn-bg);
+}
+:root.iphone .mb-alerta-punto {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 11px;
+  background: var(--warn-text, #c2600e);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-alerta-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+:root.iphone .mb-alerta-titulo { font-size: calc(14.5px * var(--fs-escala)); font-weight: 600; color: var(--warn-text, #c2600e); }
+:root.iphone .mb-alerta-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--warn-text, #c2600e); opacity: 0.85; }
+:root.iphone .mb-alerta-revisar {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: calc(13.5px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--warn-text, #c2600e);
+  cursor: pointer;
+}
+:root.iphone .mb-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+:root.iphone .mb-metricas {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--line);
+}
+:root.iphone .mb-metrica { display: flex; flex-direction: column; gap: 2px; }
+:root.iphone .mb-metrica > span { font-size: calc(11.5px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .mb-metrica > strong { font-size: calc(15px * var(--fs-escala)); font-weight: 600; font-variant-numeric: tabular-nums; }
+:root.iphone .mb-dato-k { width: 150px; flex: 0 0 150px; font-size: calc(15px * var(--fs-escala)); color: var(--text-2); }
+:root.iphone .mb-dato-v { flex: 1; min-width: 0; font-size: calc(15px * var(--fs-escala)); font-weight: 500; overflow-wrap: anywhere; }
+:root.iphone .mb-exp-estado { font-size: calc(13px * var(--fs-escala)); font-weight: 600; color: var(--brand); }
+:root.iphone .mb-exp-estado.pendiente { color: var(--warn-text, #c2600e); }
+:root.iphone .mb-exp-lista { display: flex; flex-direction: column; gap: 9px; }
+:root.iphone .mb-exp-campo { display: flex; align-items: center; gap: 10px; font-size: calc(14px * var(--fs-escala)); }
+:root.iphone .mb-exp-icono {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  border-radius: 10px;
+  background: var(--brand-soft, rgba(16, 185, 129, 0.14));
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .mb-exp-icono.falta { background: var(--warn-bg); color: var(--warn-text, #c2600e); }
+:root.iphone .mb-exp-nombre { flex: 1; min-width: 0; color: var(--text); }
+:root.iphone .mb-exp-nombre.falta { color: var(--warn-text, #c2600e); }
+:root.iphone .mb-movs { display: flex; flex-direction: column; gap: 12px; }
+:root.iphone .mb-mov { display: flex; gap: 11px; font-size: calc(14px * var(--fs-escala)); }
+:root.iphone .mb-mov-punto {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 4px;
+  background: var(--line);
+  margin-top: 6px;
+}
+:root.iphone .mb-mov-punto.reciente { background: var(--brand); }
+:root.iphone .mb-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+:root.iphone .mb-mov-titulo { font-weight: 500; }
+:root.iphone .mb-mov-detalle { font-size: calc(12.5px * var(--fs-escala)); color: var(--text-3); }
+/* Lo que sí cambia a 393 px, sobre las copias de arriba: */
+/* El avatar de 72 y el nombre de 27 son medidas de panel. En una hoja, esa
+   cabecera se lleva un tercio de la altura de trabajo antes de decir nada. */
+:root.iphone .hoja-detentes .mb-cab-avatar {
+  width: 52px; height: 52px; flex: 0 0 52px; border-radius: 26px;
+  font-size: calc(19px * var(--fs-escala));
+}
+:root.iphone .hoja-detentes .mb-cab-nombre { font-size: calc(22px * var(--fs-escala)); letter-spacing: -0.4px; }
+/* Las tres métricas se reparten el ancho en vez de envolverse: con `wrap` y
+   22 px de hueco, a 393 la tercera se caía sola a un segundo renglón. */
+:root.iphone .hoja-detentes .mb-metricas { flex-wrap: nowrap; gap: 10px; justify-content: space-between; }
+/* Las dos acciones de la cabecera caben una al lado de la otra, pero no con
+   el ancho de panel: se dejan crecer y se parten si hace falta. */
+:root.iphone .hoja-detentes .mb-cab-acciones { flex-wrap: wrap; gap: 8px; }
+/* La ficha necesita respirar por los lados: el panel del iPad se lo daba su
+   columna, y la hoja no. */
+:root.iphone .hoja-detentes .mb-det { padding: 4px 16px 24px; gap: 16px; }
+/* La cabecera de la ficha, apilada. En el panel del iPad caben en una fila el
+   avatar, el nombre y las dos acciones; a 393 px eso parte el nombre en tres
+   renglones y le mete los botones encima —capturado—. Aquí el avatar y el
+   nombre van juntos, los chips debajo, y las acciones en su propia fila a lo
+   ancho, que es como se leen sin adivinar dónde empiezan. */
+:root.iphone .hoja-detentes .mb-cab { flex-wrap: wrap; align-items: center; gap: 12px; }
+:root.iphone .hoja-detentes .mb-cab-textos { flex: 1 1 60%; }
+:root.iphone .hoja-detentes .mb-cab-acciones { flex: 1 0 100%; }
+:root.iphone .hoja-detentes .mb-cab-acciones .btn { flex: 1; justify-content: center; }
+/* El chip no se parte: «Sin ministerio» salía en dos renglones dentro de su
+   propia pastilla. */
+:root.iphone .hoja-detentes .mb-chip { white-space: nowrap; }
+/* Etiqueta y valor: la etiqueta ocupa lo que necesita y el valor se va a la
+   derecha, como cualquier fila de este rediseño. Los 150 px fijos de la
+   etiqueta son del panel; aquí dejaban el valor plantado a media fila. */
+:root.iphone .hoja-detentes .mb-dato-k { width: auto; flex: 1 1 auto; }
+:root.iphone .hoja-detentes .mb-dato-v { flex: 0 1 auto; text-align: right; color: var(--ios-valor); font-weight: 400; }
+/* Las dos tarjetas de la hoja de filtros, insertadas como cualquier lista
+   agrupada: sin esto salían de canto a canto y la hoja parecía una tabla. */
+:root.iphone .hm-filtros .ios-listcard { margin: 0 16px; }
