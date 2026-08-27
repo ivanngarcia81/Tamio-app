@@ -340,7 +340,7 @@ for (const tema of ["light", "dark"]) {
    Ninguna de estas siete tenía captura: no son rutas, se abren tocando algo.
    Son justo donde el rediseño puede haberse quedado a medias sin que se note,
    porque no salen ni en la hoja de contactos ni en una revisión por URL. */
-for (const tema of ["light"]) {
+for (const tema of ["light", "dark"]) {
   const ctx = await contextoIPhone(tema);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));

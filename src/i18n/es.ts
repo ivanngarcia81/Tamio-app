@@ -2735,6 +2735,11 @@ export const es = {
     accRegistrarServicio: "Registrar en bitácora",
     toastEstado: "Estado actualizado",
     recurrenteBadge: "Se repite",
+    acciones: "Acciones",
+    // El pie del grupo de datos en el detalle del teléfono. Explica una
+    // ausencia, que es lo que un pie de grupo hace mejor: la ficha no está
+    // incompleta, es que lo vacío no se pinta.
+    detallePie: "Los campos vacíos no se pintan: invitado, contacto y descripción aparecen solo si tienen algo.",
     // Repetición / recurrencia
     secRepeticion: "Repetición",
     repeticion: "Se repite",

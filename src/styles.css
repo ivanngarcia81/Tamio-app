@@ -20307,6 +20307,145 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    ancho entero: «Detalle del 3.º trimestre» necesita los 393 px. */
 :root.iphone .header-actions.es-oculta { display: none; }
 
+/* ---- 26 · UNA PANTALLA QUE NO ES UNA RUTA ----
+
+   El detalle de una actividad (maqueta A5) se abre ENCIMA de la Agenda y se
+   cierra volviendo, así que no tiene URL ni entrada en el carrusel. Pero para
+   el que lo mira es una pantalla, no un cuadro de diálogo: ocupa el teléfono
+   entero, tiene su título grande y su «volver».
+
+   Por eso pinta su PROPIA banda verde. La banda de la app es `.app::after`
+   más la fila fija de acciones, las dos hermanas de `<main>`; una capa que
+   cubre el viewport las tapa, y sin repintarlas el título grande saldría
+   flotando sobre gris. Es la única pieza del teléfono que duplica la banda, y
+   lo hace porque es la única que se sale del `<main>`.
+
+   Si algún día esto es una ruta de verdad, esta clase sobra entera. */
+:root.iphone .pantalla-ios {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  animation: pi-entra .28s cubic-bezier(.32, .72, 0, 1);
+}
+@keyframes pi-entra { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  :root.iphone .pantalla-ios { animation: none; }
+}
+:root.iphone .pi-banda {
+  flex: 0 0 auto;
+  background: var(--cabecera);
+  padding: calc(env(safe-area-inset-top) + 4px) 16px 14px;
+}
+:root.iphone .pi-nav { height: 44px; display: flex; align-items: center; }
+:root.iphone .pi-volver {
+  display: inline-flex; align-items: center; gap: 2px;
+  margin-left: -6px;
+  padding: 0 6px;
+  border: 0; background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -.3px;
+  color: var(--cabecera-tinta);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .pi-volver:active { opacity: .4; }
+:root.iphone .pi-titulo {
+  margin: 0;
+  font-size: calc(34px * var(--fs-escala));
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cabecera-tinta);
+  /* Un nombre de actividad puede ser largo. Dos renglones y luego elipsis: en
+     tres, el título se come la primera tarjeta. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+:root.iphone .pi-pastillas { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 8px; }
+/* Sobre el verde de marca, las pastillas son de vidrio blanco y no de color:
+   los tintes claros del sistema —el azul de «programada», el ámbar de
+   «pendiente»— sobre #047857 no se leen. El estado se distingue por la
+   palabra, que es lo que ya decidió el bloque 19. */
+:root.iphone .pi-pastilla {
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  font-size: calc(11.5px * var(--fs-escala));
+  font-weight: 600;
+  background: var(--cabecera-pildora);
+  color: var(--cabecera-tinta);
+}
+/* La cancelada sí se marca, porque es la única cuyo estado cambia lo que hay
+   que hacer con la actividad: nada. */
+:root.iphone .pi-pastilla.es-cancelada { background: rgba(255, 255, 255, .92); color: #b3261e; }
+:root.iphone .pi-cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Los 16 px de inset del grupo los pone el contenedor, no `.ios-listcard`:
+     así lo hace `.content` en las pantallas que sí son rutas. Sin ellos las
+     tarjetas llegaban al borde del teléfono y el encabezado del grupo, que
+     lleva su sangría de 32 en su propia regla, se quedaba flotando 32 px a la
+     derecha de una tarjeta pegada al canto. */
+  padding: 18px 16px 20px;
+}
+/* Y los encabezados y pies, que ya traen 32 = 16 del inset + 16 de la fila,
+   descuentan aquí los 16 que ahora pone el contenedor. */
+:root.iphone .pi-cuerpo .ios-section-header,
+:root.iphone .pi-cuerpo .ios-section-footer { padding-left: 16px; padding-right: 16px; }
+:root.iphone .pi-cuerpo > .ios-section:first-child { margin-top: 0; }
+/* El párrafo de la descripción: una fila que no es etiqueta + valor, sino
+   texto corrido. Conserva el inset de la tarjeta y suelta la altura fija. */
+:root.iphone .ios-txrow.pi-parrafo {
+  display: block;
+  white-space: pre-wrap;
+  font-size: calc(17px * var(--fs-escala));
+  line-height: 1.35;
+  min-height: 0;
+  padding: 11px 16px;
+}
+/* El pie fijo. Las dos acciones que no son «cambiar el estado» viven aquí y
+   no en la lista: «Eliminar» a un dedo de «Duplicar» es un accidente
+   esperando. */
+:root.iphone .pi-pie {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px);
+  border-top: .33px solid var(--ios-sep);
+  background: var(--surface);
+}
+:root.iphone .pi-eliminar,
+:root.iphone .pi-editar {
+  border: 0;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .pi-eliminar { background: none; color: var(--ios-red); padding: 10px 4px; }
+:root.iphone .pi-editar {
+  background: var(--cabecera);
+  color: var(--cabecera-tinta);
+  font-weight: 600;
+  padding: 11px 28px;
+  border-radius: 12px;
+}
+:root.iphone .pi-eliminar:active, :root.iphone .pi-editar:active { opacity: .55; }
+/* El icono de una acción, pegado a su palabra. */
+:root.iphone .ios-txrow-title.es-accion > svg,
+:root.iphone .ios-txrow-title.es-destructiva > svg { margin-right: 8px; vertical-align: -2px; }
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide

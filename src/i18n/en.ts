@@ -2652,6 +2652,8 @@ export const en: Resources = {
     accRegistrarServicio: "Log in service record",
     toastEstado: "Status updated",
     recurrenteBadge: "Repeats",
+    acciones: "Actions",
+    detallePie: "Empty fields are not shown: guest, contact and description appear only when they have something.",
     secRepeticion: "Repetition",
     repeticion: "Repeats",
     repetir: "Repeat",
