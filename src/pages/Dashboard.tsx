@@ -774,7 +774,12 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                 lector comparando dos cifras idénticas para ver si eran la
                 misma. Se quedan las dos que la tarjeta no cubre —el balance
                 del AÑO, que no depende del segmentado, y los aportantes—. */}
-            <SeccionIOS titulo={t("dashboard.resumenDelMes")}>
+            {/* Sin encabezado: al quitarle ingresos y gastos, este grupo se
+                quedó con el balance del AÑO y los aportantes, y ninguno de los
+                dos es «del mes». Un título que no describe lo que hay debajo
+                estorba más que la falta de título, y en iOS un grupo sin
+                encabezado es corriente —las dos filas se explican solas—. */}
+            <SeccionIOS>
               <div className="ios-txrow">
                 <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.balanceDelAnio")}</div></div>
                 <div className="ios-txrow-trailing">

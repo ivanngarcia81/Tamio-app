@@ -180,7 +180,6 @@ export const es = {
     sinIngresosEsteMes: "Sin ingresos este mes",
     // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
     // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
-    resumenDelMes: "Resumen del mes",
     detalleDelMes: "Detalle del mes",
     // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
     // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos

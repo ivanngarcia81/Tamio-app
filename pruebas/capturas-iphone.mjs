@@ -421,3 +421,10 @@ for (const tema of ["light", "dark"]) {
 await browser.close();
 vite.kill();
 console.log("\nlisto");
+/* `vite.kill()` manda SIGTERM y sigue: si el hijo tarda en morir —o no
+   muere— el bucle de eventos se queda vivo y el proceso cuelga DESPUÉS de
+   imprimir "listo", con el 1420 todavía tomado. La siguiente pasada falla
+   entonces con "vite no arrancó (¿puerto 1420 ocupado?)", que es justo el
+   error que el comentario de arriba llama confuso: parece del arranque y
+   viene del cierre anterior. Salir a la fuerza cierra el asunto. */
+process.exit(0);
