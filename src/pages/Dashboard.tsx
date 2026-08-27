@@ -774,7 +774,31 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               </div>
             </div>
           ) : (
-            <div className="page-title">{t("nav.inicio")}</div>
+            /* «El saludo con el corte de mes es el título grande — la única
+                pantalla donde el título cambia según la hora.»
+
+                El saludo ya estaba escrito y calculado (`saludo`,
+                `diasParaCorte`): se pintaba en `heroIPad`, tras un
+                `enIPad &&`. En el teléfono la cabecera decía «Inicio», que es
+                el nombre de la pestaña y no lo que esta pantalla tiene que
+                decir al abrirse.
+
+                El subtítulo es el de la maqueta —la iglesia y el corte—, no el
+                del iPad —el día de la semana y el corte—: en el teléfono no
+                hay membrete en ninguna otra parte, y el día ya está en la
+                lista de movimientos de más abajo.
+
+                `data-titulo-fijo` es para la copia compacta que se queda
+                arriba al desplazar: ahí sí manda «Inicio». Un saludo no dice
+                dónde estás. */
+            <>
+              <div className="page-title" data-titulo-fijo={t("nav.inicio")}>{saludo}</div>
+              <div className="page-sub">
+                {church.nombre} · {diasParaCorte === 0
+                  ? t("dashboard.corteHoy")
+                  : t("dashboard.corteDias", { count: diasParaCorte })}
+              </div>
+            </>
           )
         ) : (
         <div>

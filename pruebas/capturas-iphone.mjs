@@ -329,6 +329,25 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// Inicio desplazado. El Large Title de esta pantalla es el saludo del día, y
+// la copia compacta que se queda en la barra NO puede decir «Buenas tardes»:
+// esa barra existe para responder dónde estás. Sin esta foto, el
+// `data-titulo-fijo` que lo arregla no está comprobado.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".app", { timeout: 30000 });
+  await page.waitForTimeout(1400);
+  await page.evaluate(() => document.querySelector(".main")?.scrollTo({ top: 260 }));
+  await page.waitForTimeout(700);
+  const archivo = `${SALIDA}/1-inicio-desplazado-${tema}.png`;
+  await page.screenshot({ path: archivo });
+  console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  await ctx.close();
+}
+
 // H2 · Detalle del periodo. No es una ruta —es estado, como el documento
 // abierto de Reportes—, así que hay que entrar tocando su fila. Se toma en
 // «Mes» y en «Año» para ver que el título, el pie y el desglose siguen al
