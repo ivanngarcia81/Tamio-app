@@ -410,8 +410,28 @@ for (const tema of ["light", "dark"]) {
   await page.getByText("Culto de oración", { exact: false }).first().click();
   await toma("a5-actividad");
 
-  // N4 · nuevo miembro, y la ficha desde la que se llega a N3.
+  // N4 · nuevo miembro, y N3 · la ficha en sus tres pasos.
   await ir("/#/membresia"); await mas();                             await toma("n4-nuevo-miembro");
+  /* La ficha se abre desde la hoja del miembro, y sus acciones solo salen a
+     media altura: hay que subir la hoja antes de poder tocarlas. */
+  await ir("/#/membresia");
+  await page.locator(".ios-txrow--clickable").first().click();
+  await page.waitForTimeout(700);
+  {
+    const asa = page.locator(".hd-asa");
+    const caja = await asa.boundingBox();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y - 300, { steps: 12 });
+    await page.mouse.up();
+    await page.waitForTimeout(600);
+  }
+  await page.getByRole("button", { name: "Completar el expediente" }).click();
+  await toma("n3-ficha-datos");
+  for (const [nombre, paso] of [["membresia", "Membresía"], ["servicio", "Servicio"]]) {
+    await page.getByRole("tab", { name: paso, exact: true }).click();
+    await toma(`n3-ficha-${nombre}`);
+  }
   await ctx.close();
 }
 

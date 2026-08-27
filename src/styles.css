@@ -20920,6 +20920,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--ios-valor);
 }
 
+/* ---- 29 · LA FICHA DEL MIEMBRO, EN TRES PASOS (maqueta N3) ----
+
+   El paso que no toca se esconde con `display:none` y NO se desmonta: así lo
+   escrito en «Datos» sigue ahí al volver de «Servicio», y las validaciones —
+   que miran todos los campos a la vez— siguen encontrándolos. Desmontarlo
+   habría sido partir un formulario en tres, con tres estados que sincronizar. */
+:root.iphone .fm-paso-oculto { display: none; }
+/* Es el MISMO segmentado que el periodo de Inicio —`.dash-seg--movil`—, no
+   uno nuevo: tres rótulos cortos caben en sus 13 px, y el 11.5 de `.ios-seg5`
+   existe solo porque Cartas tiene cinco pestañas. Aquí solo se coloca: la hoja
+   es un flex en columna y el segmentado no debe encogerse cuando el cuerpo
+   crece. */
+:root.iphone .fm-pasos { flex: 0 0 auto; margin: 10px 16px 2px; }
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide

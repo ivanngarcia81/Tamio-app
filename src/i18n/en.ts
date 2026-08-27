@@ -1506,6 +1506,8 @@ export const en: Resources = {
     },
     secMembresia: "Membership information",
     secEspiritual: "Spiritual information",
+    pasos: "Record steps",
+    paso: { datos: "Details", membresia: "Membership", servicio: "Service" },
     secServicio: "Service and skills",
     iosQuienEs: "Who they are",
     iosMembresia: "Membership",

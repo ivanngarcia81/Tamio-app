@@ -202,9 +202,15 @@ export function SwitchRow({ label, value, onChange }: { label: string; value: bo
  *  ficha completa —las siete secciones— sigue siendo la misma en las dos
  *  plataformas. Lo táctil se va a `FichaMiembroIOS` para el ALTA siempre, y
  *  para la EDICIÓN solo en el iPad; el porqué está en `enHoja`, más abajo. */
+/** Los tres pasos del teléfono (maqueta N3), en el orden en que se llenan. */
+const PASOS = ["datos", "membresia", "servicio"] as const;
+type PasoFicha = (typeof PASOS)[number];
+
 export default function FichaMiembroModal(props: PropsFicha) {
   const { church, member, onClose, onFusionar } = props;
   const { t } = useTranslation();
+  const enIPhone = esIPhone();
+  const [paso, setPaso] = useState<PasoFicha>("datos");
   const h = useFichaMiembro(props);
   const {
     crear, esBaja, saving, error,
@@ -283,7 +289,34 @@ export default function FichaMiembroModal(props: PropsFicha) {
           <button type="button" className="modal-close" aria-label={t("common.cerrar")} onClick={onClose}><IconClose /></button>
         </div>
 
+        {/* Maqueta N3. «Las siete secciones del iPad son tres pasos aquí: una
+            pantalla de cincuenta chips y veinte campos no se recorre de un
+            tirón en el teléfono.»
+
+            No se parte el formulario en tres formularios: es UNO, con el mismo
+            estado y el mismo Guardar. Lo que cambia es qué secciones se pintan
+            —las otras siguen montadas en el DOM, así que lo escrito en un paso
+            no se pierde al ir a otro, y las validaciones siguen viendo todos
+            los campos—. En Mac y iPad no hay pasos: las siete van seguidas. */}
+        {enIPhone && (
+          <div className="dash-seg dash-seg--movil fm-pasos" role="tablist" aria-label={t("ficha.pasos")}>
+            {PASOS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={paso === id}
+                className={paso === id ? "sel" : ""}
+                onClick={() => setPaso(id)}
+              >
+                {t(`ficha.paso.${id}`)}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="modal-body">
+          <div className={enIPhone && paso !== "datos" ? "fm-paso-oculto" : undefined}>
           {crear && (
             <Seccion titulo={t("ficha.secPersonal")}>
               <div className="form-group full">
@@ -364,6 +397,9 @@ export default function FichaMiembroModal(props: PropsFicha) {
             </div>
           </Seccion>
 
+          </div>
+
+          <div className={enIPhone && paso !== "membresia" ? "fm-paso-oculto" : undefined}>
           <Seccion titulo={t("ficha.secMembresia")}>
             <div className="form-grid">
               <div className="form-group">
@@ -444,6 +480,9 @@ export default function FichaMiembroModal(props: PropsFicha) {
             </div>
           </Seccion>
 
+          </div>
+
+          <div className={enIPhone && paso !== "servicio" ? "fm-paso-oculto" : undefined}>
           {/* 3.6: la sección más pesada del formulario (≈50 chips) va plegada
               en el ALTA — para registrar a alguien casi nada de esto es
               urgente. Al editar se abre, y plegada enseña cuántas cosas hay
@@ -654,6 +693,7 @@ export default function FichaMiembroModal(props: PropsFicha) {
             )}
           </Seccion>
           </>)}
+          </div>
         </div>
 
         <div className="modal-footer">

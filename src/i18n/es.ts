@@ -1565,6 +1565,9 @@ export const es = {
     },
     secMembresia: "Información de membresía",
     secEspiritual: "Información espiritual",
+    // Los tres pasos del teléfono (maqueta N3).
+    pasos: "Pasos de la ficha",
+    paso: { datos: "Datos", membresia: "Membresía", servicio: "Servicio" },
     secServicio: "Servicio y habilidades",
     /* Encabezados del alta en iPhone: ahí las secciones se leen como
        preguntas cortas, no como títulos de expediente. Los campos de dentro
