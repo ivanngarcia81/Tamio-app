@@ -20692,6 +20692,234 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .pi-cuerpo--dm .dm-comp-enlaces { display: flex; gap: 14px; flex: 0 0 auto; }
 
+/* ---- 28 · EL CORTE Y SU DEPÓSITO (maqueta T6) ----
+
+   Misma jugada que T4: `DetalleDeposito` es la columna del iPad y ya usa el
+   andamio `.dm`, así que hereda casi todo el bloque de arriba. Lo propio suyo
+   son las `.dep-carta` —secciones con su `<h2>` dentro— y la rejilla de dos
+   columnas, que en 393 px es una sola.
+
+   Las cartas se DESARMAN igual que las del rastro: el `<h2>` pasa a ser el
+   encabezado del grupo, fuera de la tarjeta, y la tarjeta la heredan las filas
+   que van debajo. Como el encabezado y las filas son hermanos, el redondeo se
+   reparte entre la primera y la última. */
+:root.iphone .pi-cuerpo--dm .dep-cuerpo,
+:root.iphone .pi-cuerpo--dm .dep-col { display: block; }
+:root.iphone .pi-cuerpo--dm .dep-carta {
+  display: block;
+  margin: 26px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+:root.iphone .pi-cuerpo--dm .dep-carta-cab {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 0 16px 6px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: uppercase;
+  color: var(--ios-valor);
+  border: 0;
+  background: none;
+}
+/* Las filas de la carta forman la tarjeta entre todas: la primera redondea
+   arriba, la última abajo. Sin esto quedarían cinco rectángulos sueltos. */
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-par,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-mov,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-carta-pie,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dm-comp-hay,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dm-comp-falta,
+:root.iphone .pi-cuerpo--dm .dep-carta > .fm-vacio,
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-ficha-grande { background: var(--surface); }
+:root.iphone .pi-cuerpo--dm .dep-carta > .dep-carta-cab + * {
+  border-top-left-radius: var(--ios-radio);
+  border-top-right-radius: var(--ios-radio);
+}
+:root.iphone .pi-cuerpo--dm .dep-carta > :last-child {
+  border-bottom-left-radius: var(--ios-radio);
+  border-bottom-right-radius: var(--ios-radio);
+}
+:root.iphone .pi-cuerpo--dm .dep-mov + .dep-mov,
+:root.iphone .pi-cuerpo--dm .dep-mov + .dep-carta-pie { border-top: .33px solid var(--ios-sep); }
+/* La fila de un movimiento del corte: método, concepto y monto en una línea.
+   Su maquetación vive bajo `:root.ipad`, así que sin esto los tres trozos
+   caían uno debajo del otro y la fila se leía «✓EFDiezmo · 3 / Andrés López ·
+   27 ago 2026 / $1,090.00». El check no se pinta: aquí no se marca nada, la
+   lista es de solo lectura y una casilla ya marcada invita a desmarcarla. */
+:root.iphone .pi-cuerpo--dm .dep-mov {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+:root.iphone .pi-cuerpo--dm .dep-mov-check { display: none; }
+:root.iphone .pi-cuerpo--dm .dep-mov-metodo {
+  flex: 0 0 auto;
+  font-size: calc(11px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: var(--ios-valor);
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+:root.iphone .pi-cuerpo--dm .dep-mov-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+:root.iphone .pi-cuerpo--dm .dep-mov-concepto {
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+:root.iphone .pi-cuerpo--dm .dep-mov-folio { color: var(--ios-valor); }
+:root.iphone .pi-cuerpo--dm .dep-mov-sub { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .pi-cuerpo--dm .dep-mov-monto {
+  flex: 0 0 auto;
+  font-size: calc(17px * var(--fs-escala));
+  font-variant-numeric: tabular-nums;
+}
+/* El pie de la carta: el conteo a la izquierda y su total a la derecha. */
+:root.iphone .pi-cuerpo--dm .dep-carta-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+}
+:root.iphone .pi-cuerpo--dm .dep-carta-pie-total {
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las tres cifras del corte, en una fila como el pie de la tarjeta de Inicio:
+   en el iPad son una rejilla suelta sobre el fondo. */
+:root.iphone .pi-cuerpo--dm .dep-cifras {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+}
+:root.iphone .pi-cuerpo--dm .dep-cifra { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+:root.iphone .pi-cuerpo--dm .dep-cifra:last-child { align-items: flex-end; text-align: right; }
+:root.iphone .pi-cuerpo--dm .dep-cifra-et {
+  font-size: calc(12px * var(--fs-escala));
+  color: var(--ios-valor);
+  text-transform: none;
+  letter-spacing: normal;
+}
+:root.iphone .pi-cuerpo--dm .dep-cifra-val {
+  font-size: calc(16px * var(--fs-escala));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .pi-cuerpo--dm .dep-cifra-pie { font-size: calc(12px * var(--fs-escala)); color: var(--ios-valor); }
+
+/* La cabecera del corte: el nombre por su fecha, la pastilla y las acciones.
+   Se centra como la del movimiento, por lo mismo — es la misma pantalla con
+   otro contenido. */
+:root.iphone .pi-cuerpo--dm .dep-pen-cab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 0 0;
+  border: 0;
+}
+:root.iphone .pi-cuerpo--dm .dep-pen-titulos { text-align: center; }
+:root.iphone .pi-cuerpo--dm .dep-pen-linea { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+:root.iphone .pi-cuerpo--dm .dep-det-acciones { display: flex; gap: 8px; align-items: center; }
+:root.iphone .pi-cuerpo--dm .dep-chip {
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+/* La fila de la carta: etiqueta a la izquierda, valor a la derecha. Sin esto
+   los dos spans salían pegados —«Cuenta / bancoBBVA ····4471»—, que es lo que
+   pasa siempre que una pieza del iPad llega al teléfono sin su layout. */
+:root.iphone .pi-cuerpo--dm .dep-par {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.2px;
+}
+:root.iphone .pi-cuerpo--dm .dep-par + .dep-par { border-top: .33px solid var(--ios-sep); }
+:root.iphone .pi-cuerpo--dm .dep-par > span:first-child { flex: 0 0 auto; color: var(--text); }
+:root.iphone .pi-cuerpo--dm .dep-par-valor {
+  flex: 1 1 auto;
+  text-align: right;
+  color: var(--ios-valor);
+  overflow-wrap: anywhere;
+}
+
+/* El estado vacío de «movimientos incluidos»: título y explicación en dos
+   renglones, no seguidos. */
+:root.iphone .pi-cuerpo--dm .dep-carta > .fm-vacio {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 0;
+  text-align: left;
+}
+:root.iphone .pi-cuerpo--dm .fm-vacio-titulo { font-size: calc(17px * var(--fs-escala)); letter-spacing: -0.2px; }
+:root.iphone .pi-cuerpo--dm .fm-vacio-sub {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1.35;
+  color: var(--ios-valor);
+}
+
+/* El aviso de conciliación —lo contado contra lo registrado—: una fila con su
+   marca a la izquierda y dos renglones a la derecha, dentro de la tarjeta del
+   grupo. En el iPad es un recuadro suelto sobre el fondo. */
+:root.iphone .pi-cuerpo--dm .dep-concilia {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--ios-radio);
+  background: var(--surface);
+  box-shadow: var(--ios-sombra);
+}
+:root.iphone .pi-cuerpo--dm .dep-aviso-punto { flex: 0 0 auto; margin-top: 1px; }
+:root.iphone .pi-cuerpo--dm .dep-aviso-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+:root.iphone .pi-cuerpo--dm .dep-aviso-titulo { font-size: calc(17px * var(--fs-escala)); letter-spacing: -0.2px; }
+:root.iphone .pi-cuerpo--dm .dep-aviso-texto {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 1.35;
+  color: var(--ios-valor);
+}
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide

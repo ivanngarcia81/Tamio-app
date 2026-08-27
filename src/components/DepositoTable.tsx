@@ -8,10 +8,14 @@ import { showToast } from "../toast";
 import { playSound } from "../sound";
 import ConfirmDialog from "./ConfirmDialog";
 import { esIPhone } from "../movil";
+import { hayFilaAbierta } from "./useFilaDeslizable";
 
 interface Props {
   depositos: Deposito[];
   onEdit: (dep: Deposito) => void;
+  /** Tocar la fila abre el corte (maqueta T6). Solo lo pasa el teléfono: en el
+   *  iPad el detalle vive en la columna de al lado. */
+  onAbrir?: (dep: Deposito) => void;
   onChanged: () => void;
   /** Sin la tarjeta `.ios-listcard` propia, porque quien llama ya la pone.
    *  Desde el rediseño de iOS 26, Depósitos parte el historial en una sección
@@ -23,7 +27,7 @@ interface Props {
 
 const COLS = "100px 1fr 140px 1fr 150px 72px";
 
-export default function DepositoTable({ depositos, onEdit, onChanged, sinCaja }: Props) {
+export default function DepositoTable({ depositos, onEdit, onAbrir, onChanged, sinCaja }: Props) {
   const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState<Deposito | null>(null);
   const { abrirMenu, menu } = useContextMenu();
@@ -72,7 +76,22 @@ export default function DepositoTable({ depositos, onEdit, onChanged, sinCaja }:
       ].filter(Boolean).join(" · ");
       return (
         <div
-          className="ios-txrow" data-fila
+          className={`ios-txrow${onAbrir ? " ios-txrow--clickable" : ""}`} data-fila
+          role={onAbrir ? "button" : undefined}
+          tabIndex={onAbrir ? 0 : undefined}
+          onClick={onAbrir
+            ? (e) => {
+                /* Igual que en la lista de movimientos: con una fila
+                   deslizada abierta el toque solo la cierra, y los controles
+                   de la derecha tienen lo suyo que hacer. */
+                if (hayFilaAbierta()) return;
+                if ((e.target as HTMLElement).closest(".row-icon-btn, .more, .row-menu-dropdown, .fila-acciones")) return;
+                onAbrir(dep);
+              }
+            : undefined}
+          onKeyDown={onAbrir
+            ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onAbrir(dep); } }
+            : undefined}
           key={dep.id}
           onContextMenu={(e) =>
             abrirMenu(e, [

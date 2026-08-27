@@ -197,6 +197,29 @@ const ctxSemilla = await contextoIPhone("light");
         referencia: `REF-${1000 + dia}`, periodo: hace(dia).slice(0, 7), notas: null,
       });
     }
+    /* Un depósito nacido de un CORTE, con su doble firma pedida. Los seis de
+       arriba se registran sueltos, y un depósito suelto no tiene desglose ni
+       segunda firma que enseñar: la pantalla del corte —la mitad de la que
+       existe— quedaba sin fotografiar. Este lleva movimientos dentro, así que
+       sale su efectivo, sus cheques y a quién le toca firmar. */
+    {
+      const delDia = await db.listTx(id, { limit: 500 });
+      const paraElCorte = delDia.filter((x) => x.tipo === "ingreso").slice(0, 4);
+      const total = paraElCorte.reduce((a, x) => a + x.monto, 0);
+      const depId = await db.insertDeposito(id, iglesia.moneda, {
+        fecha: hace(1), monto: total, cuenta_banco: "BBVA ····4471",
+        referencia: "REF-2001", periodo: hace(1).slice(0, 7), notas: null,
+      });
+      const corteId = await db.insertCorte(id, {
+        fecha: hace(1),
+        nombre: "Corte del culto dominical",
+        cuenta_banco: "BBVA ····4471",
+        responsable: "Rosa Elena Vega",
+        dobleFirma: true,
+      }, paraElCorte.map((x) => x.id));
+      if (corteId != null && depId != null) await db.cerrarCorte(corteId, id, depId);
+    }
+
     // Cartas repartidas por estado, para que el Archivo y las colas del
     // Resumen tengan algo que enseñar y se vea la insignia de cada estado.
     const tiposCarta = ["traslado", "recomendacion", "certificacion", "constanciaActivo", "buenaConducta"];
@@ -372,8 +395,14 @@ for (const tema of ["light", "dark"]) {
 
   // T6 · el corte y su depósito.
   await ir("/#/depositos"); await mas();                             await toma("t6-nuevo-deposito");
-  await ir("/#/depositos"); await page.locator("[data-fila], .ios-txrow--clickable").first().click();
+  await ir("/#/depositos");
+  await page.locator(".ios-txrow[data-fila]").first().click();
   await toma("t6-corte");
+  /* Y el pie del corte, que es donde está lo que hace falta ver: la
+     conciliación y la doble firma. En una captura de la primera pantalla no
+     salen, y son el motivo de que esta pantalla exista. */
+  await page.evaluate(() => document.querySelector(".pi-cuerpo--dm")?.scrollTo({ top: 2000 }));
+  await toma("t6-corte-pie");
 
   // A6 · nueva actividad, A5 · la actividad abierta.
   await ir("/#/agenda");    await mas();                             await toma("a6-nueva-actividad");

@@ -18,7 +18,7 @@ import Pagination from "../components/Pagination";
 import SeccionIOS from "../components/ios/SeccionIOS";
 import { agruparPorMes } from "../components/ios/agrupado";
 import { useScrollInfinito } from "../hooks/useScrollInfinito";
-import { IconBank, IconClock, IconPlus } from "../icons";
+import { IconBank, IconChevronLeft, IconClock, IconPlus } from "../icons";
 import CountUp from "../components/CountUp";
 import { CERO, sumar, type Centavos } from "../dinero";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
@@ -876,7 +876,18 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           <>
             {agruparPorMes(depositos.slice(0, page * PAGE_SIZE), (d) => d.fecha).map((seccion) => (
               <SeccionIOS key={seccion.clave} titulo={seccion.etiqueta}>
-                <DepositoTable depositos={seccion.items} onEdit={abrirEditar} onChanged={onChanged} sinCaja />
+                <DepositoTable
+                  depositos={seccion.items}
+                  onEdit={abrirEditar}
+                  /* Maqueta T6: tocar un corte lo abre. Igual que en
+                     movimientos, la pantalla ya existía —`DetalleDeposito`,
+                     la columna del iPad— y en el teléfono no había forma de
+                     llegar a ella: el desglose, quién contó el dinero y la
+                     segunda firma solo se veían en un iPad. */
+                  onAbrir={(d) => setSelId(d.id)}
+                  onChanged={onChanged}
+                  sinCaja
+                />
               </SeccionIOS>
             ))}
             <div ref={centinela} aria-hidden="true" />
@@ -896,6 +907,33 @@ export default function Depositos({ church, refreshKey, onChanged }: Props) {
           </>
         )}
       </div>
+      )}
+
+      {/* El corte abierto, como pantalla (maqueta T6). Mismo panel que el
+          iPad, mismo envoltorio que el movimiento abierto: `.pantalla-ios` con
+          la banda sosteniendo el «volver». */}
+      {enIPhone && sel && (
+        <div className="pantalla-ios" role="dialog" aria-modal="true" aria-label={sel.cuenta_banco}>
+          <div className="pi-banda pi-banda--nav">
+            <div className="pi-nav">
+              <button type="button" className="pi-volver" onClick={() => setSelId(null)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {t("nav.depositos")}
+              </button>
+            </div>
+          </div>
+          <div className="pi-cuerpo pi-cuerpo--dm">
+            <DetalleDeposito
+              dep={sel}
+              church={church}
+              tituloLista={t("nav.depositos")}
+              onVolver={() => setSelId(null)}
+              onEditar={abrirEditar}
+              onEliminar={setPendingDeleteSel}
+              onVerComprobante={setPreviewSel}
+              onCambiado={onChanged}
+            />
+          </div>
+        </div>
       )}
 
       {previewSel && <ComprobantePreview path={previewSel} onClose={() => setPreviewSel(null)} />}
