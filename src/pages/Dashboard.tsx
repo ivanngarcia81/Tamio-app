@@ -790,7 +790,18 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
           <div className="balance-sub">{t("dashboard.balanceDelMes", { mes: mesLegible(mes) })}</div>
         </div>
         )}
-        <div className="header-actions">
+        {/* En el detalle, la barra es SOLO el volver — que es lo que dibuja la
+            maqueta H2, con el hueco derecho vacío. Y no es solo fidelidad: el
+            botón de compartir de esta barra imprime el estado financiero del
+            INICIO, así que desde el detalle ofrecería compartir otra cosa
+            distinta de la que se está mirando. El «+» se va con él: crear un
+            movimiento desde una pantalla de solo lectura obliga a volver para
+            ver el efecto, y para eso ya está la rueda de abajo.
+
+            Se oculta con CSS y no desmontando el bloque, porque en Mac y en
+            iPad `detalle` nunca es cierto y estas dos acciones son las de
+            siempre. */}
+        <div className={`header-actions${enIPhone && detalle ? " es-oculta" : ""}`}>
           <button className="btn secondary btn-compartir-cabecera" onClick={handlePrint} disabled={printing}>
             <span className="solo-escritorio"><IconPrinter size={14} /></span>
             <span className="solo-movil"><ShareIcon size={22} /></span>
@@ -831,6 +842,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
              cifra de la derecha. */
           <>
             <SeccionIOS
+              compacta
               /* «Una sola fila puede explicar el balance, y por eso vive aquí
                   y no en una gráfica.» */
               pie={mayorGastoPer
@@ -1043,7 +1055,7 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
 
                 «Por revisar» es nuevo en el teléfono: el conteo existía desde
                 siempre pero solo se pedía en el iPad. */}
-            <SeccionIOS>
+            <SeccionIOS compacta>
               <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => setDetalle(true)}>
                 <div className="ios-txrow-main">
                   <div className="ios-txrow-title">{t(`dashboard.detalleDe_${periodo}`, { periodo: periodoMedio })}</div>

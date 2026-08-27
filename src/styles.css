@@ -20296,6 +20296,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   :root.iphone .hd-telon { animation: none; }
 }
 
+/* La fila de una línea, a la medida del sistema. Los 56 px de `.ios-txrow`
+   están calculados para dos renglones —título y subtítulo—; en un grupo de
+   «etiqueta a la izquierda, valor a la derecha» sobran 12 px por fila, y en un
+   grupo de cinco filas eso es una fila entera de aire. */
+:root.iphone .ios-section--compacta .ios-txrow { min-height: 44px; padding-top: 7px; padding-bottom: 7px; }
+
+/* La barra de acciones se retira en las pantallas que no las tienen. Va con
+   `display:none` y no con `visibility`, para que el título grande recupere el
+   ancho entero: «Detalle del 3.º trimestre» necesita los 393 px. */
+:root.iphone .header-actions.es-oculta { display: none; }
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide
