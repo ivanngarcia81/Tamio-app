@@ -270,6 +270,9 @@ const PANTALLAS = [
   { nombre: "8-informes", ruta: "/reportes" },
   { nombre: "10-cartas-indice", ruta: "/cartas" },
   { nombre: "13-reporte-miembros", ruta: "/reporte-miembros" },
+  /* Actas faltaba en la lista: es una de las seis secciones de Secretaria y
+     la unica sin foto, asi que sus cambios se comprobaban a ciegas. */
+  { nombre: "16-actas", ruta: "/actas" },
   { nombre: "14-servicios", ruta: "/servicios" },
   { nombre: "15-membresia", ruta: "/membresia" },
   { nombre: "17-agenda", ruta: "/agenda" },
