@@ -559,11 +559,12 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
           )}
         </div>
       ) : (
-      /* Mac y ventana angosta que no es un iPhone. Los `enIPhone ? … : …` que
-         quedan dentro de este bloque ya NO se alcanzan —el teléfono sale por
-         la rama de arriba— y están marcados para limpiarse; se dejan en esta
-         pasada para no mezclar el rediseño con un borrado de cien líneas en la
-         misma revisión. */
+      /* Mac y ventana angosta que no es un iPhone. Este bloque ya no tiene
+         ninguna rama de teléfono: el iPhone sale por la de arriba, con las
+         siete alertas. Lo que había aquí —dos listas `.ios-listcard` con su
+         paginación— quedó inalcanzable al añadirla y se borró en la pasada
+         siguiente, no en la misma, para no esconder un borrado de cien líneas
+         dentro de un rediseño. */
       <div className="content">
         {loading ? (
           <LoadingState />
@@ -580,68 +581,11 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                 cada bloque, donde además dice a qué lista pertenece cada
                 número. Se reutiliza la misma etiqueta de sección que Mac ya
                 usa en vez de inventar una llave nueva. */}
-            {enIPhone ? (
-              <div className="ios-panel-head">
-                <h2>{t("bandeja.pendientesRevision")} ({pendientes.length})</h2>
-              </div>
-            ) : (
-              <div className="inbox-section-label">{t("bandeja.pendientesRevision")}</div>
-            )}
+            <div className="inbox-section-label">{t("bandeja.pendientesRevision")}</div>
             {pendientes.length === 0 ? (
-              enIPhone ? (
-                <div className="ios-panel-empty">{t("bandeja.noMovsRevisar")}</div>
-              ) : (
-                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", marginBottom: 20 }}>
-                  {t("bandeja.noMovsRevisar")}
-                </div>
-              )
-            ) : enIPhone ? (
-              <>
-                <div className="ios-listcard" style={{ marginBottom: 8 }}>
-                  {paginaPendientes.map((tx) => {
-                    const cat = categoriaInfo(tx.tipo, tx.categoria);
-                    const secundaria = [
-                      tx.tipo === "ingreso" ? t("tx.ingreso") : t("tx.gasto"),
-                      cat.nombre,
-                      fmtFechaCorta(tx.fecha),
-                    ].join(" · ");
-                    return (
-                      /* Los dos botones de texto de Mac ("Editar" y "Marcar
-                         revisado") no caben junto al concepto y el monto: el
-                         gesto de editar pasa a la fila entera y solo la acción
-                         positiva se queda visible, como botón redondo. */
-                      <div
-                        className="ios-txrow ios-txrow--clickable"
-                        key={tx.id}
-                        onClick={() => onEditTx(tx)}
-                      >
-                        <div className="ios-txrow-main">
-                          <div className="ios-txrow-title" title={tx.concepto}>
-                            <span className="truncate">{tx.concepto}</span>
-                          </div>
-                          <div className="tx-secundaria-movil" title={secundaria}>{secundaria}</div>
-                        </div>
-                        <div className="ios-txrow-trailing">
-                          <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
-                            {tx.tipo === "ingreso" ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
-                            <span className="cur">{tx.moneda}</span>
-                          </span>
-                          <button
-                            type="button"
-                            className="ios-row-accion"
-                            aria-label={t("bandeja.marcarRevisado")}
-                            title={t("bandeja.marcarRevisado")}
-                            onClick={(e) => { e.stopPropagation(); void handleReviewed(tx); }}
-                          >
-                            <span><IconCheck size={15} strokeWidth={2.6} /></span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <Pagination page={pagPendientes} totalPages={totalPagPendientes} onPageChange={setPagPendientes} />
-              </>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))", marginBottom: 20 }}>
+                {t("bandeja.noMovsRevisar")}
+              </div>
             ) : (
               <>
                 <div className="inbox-list" style={{ marginBottom: 8 }}>
@@ -690,52 +634,11 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
               </>
             )}
 
-            {enIPhone ? (
-              <div className="ios-panel-head" style={{ marginTop: 26 }}>
-                <h2>{t("bandeja.miembrosArchivadosLabel")} ({archivados.length})</h2>
-              </div>
-            ) : (
-              <div className="inbox-section-label" style={{ marginTop: 20 }}>{t("bandeja.miembrosArchivadosLabel")}</div>
-            )}
+            <div className="inbox-section-label" style={{ marginTop: 20 }}>{t("bandeja.miembrosArchivadosLabel")}</div>
             {archivados.length === 0 ? (
-              enIPhone ? (
-                <div className="ios-panel-empty">{t("bandeja.noMiembrosArchivados")}</div>
-              ) : (
-                <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>
-                  {t("bandeja.noMiembrosArchivados")}
-                </div>
-              )
-            ) : enIPhone ? (
-              <>
-                <div className="ios-listcard" style={{ marginBottom: 8 }}>
-                  {paginaArchivados.map((m) => (
-                    /* La fila no lleva `--clickable`: en Mac tocarla tampoco
-                       hace nada, la única acción es "Restaurar". */
-                    <div className="ios-txrow" key={m.id}>
-                      <div className="ios-txrow-main">
-                        <div className="ios-txrow-title" title={m.nombre}>
-                          <span className="truncate">{m.nombre}</span>
-                        </div>
-                        <div className="tx-secundaria-movil">
-                          {m.email ?? m.rfc ?? t("bandeja.sinCorreoRegistrado")}
-                        </div>
-                      </div>
-                      <div className="ios-txrow-trailing">
-                        <button
-                          type="button"
-                          className="ios-row-accion"
-                          aria-label={t("bandeja.restaurar")}
-                          title={t("bandeja.restaurar")}
-                          onClick={() => void handleRestore(m)}
-                        >
-                          <span><IconRefreshCw size={15} strokeWidth={2.2} /></span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Pagination page={pagArchivados} totalPages={totalPagArchivados} onPageChange={setPagArchivados} />
-              </>
+              <div style={{ color: "var(--text-3)", fontSize: "calc(13px * var(--fs-escala))" }}>
+                {t("bandeja.noMiembrosArchivados")}
+              </div>
             ) : (
               <>
                 <div className="inbox-list">
