@@ -19488,3 +19488,261 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    120 a cada lado la deja centrada de verdad (los glifos de la derecha
    ocupan hasta 94) y sin tocar el nombre del área. */
 :root.iphone .titulo-fijo { left: 120px !important; right: 120px !important; }
+
+/* ============================================================================
+   16 · EL VOCABULARIO DE LISTA, REHECHO EN iOS (handoff «nativo»)
+   ----------------------------------------------------------------------------
+   El handoff es explícito sobre qué estaba mal en la primera vuelta:
+
+     «Las versiones anteriores eran correctas en contenido y sospechosas en
+      forma: tarjetas flotando con sombra, esquinas de 18 px, separadores de
+      medio píxel gris azulado, títulos de sección en negrita oscura. Eso es
+      vocabulario de web app metido en un teléfono.»
+
+   Y da el sistema que lo reemplaza, medida por medida:
+
+     lista agrupada insertada   radio 10, celda blanca SIN sombra
+     hairline                   0.33 px, rgba(60,60,67,.29), al ras del texto
+     cabecera de grupo          13 px gris — no negrita oscura
+     pie de grupo               texto gris que explica la regla
+     fila                       etiqueta + valor gris + galón #c7c7cc
+     título grande              34 px con la barra de 44 encima
+     acciones                   texto teñido de 17 px, sin botones rellenos
+     sombras                    ninguna, salvo hojas y barra inferior
+
+   Casi todo esto ya estaba escrito para las hojas y para Ajustes (`.ios-group`
+   con radio 10 y margen 16, `.ios-section-header` a 13/400 con sangría 32).
+   Lo que se había desviado eran las pantallas de datos, que en la primera
+   vuelta subieron a radio 18 y estrenaron sombra. Aquí vuelven a la familia. */
+:root.iphone {
+  /* 10, no 18. Es el radio de la lista insertada de iOS, y el mismo que ya
+     usaba `.ios-group` antes de que la primera vuelta lo subiera «para que las
+     dos cajas no se vieran como dos familias». Se igualan, pero hacia abajo. */
+  --ios-radio: 10px;
+  /* Ninguna. «La profundidad en iOS la da el material, no el box-shadow.» */
+  --ios-sombra: none;
+  /* El separator del sistema, más presente que el que había (.18) porque
+     ahora es más fino: a 0.33 px un gris al 18 % desaparece. */
+  --ios-sep: rgba(60, 60, 67, .29);
+  /* El galón de iOS. Es más claro que --text-3 a propósito: el galón no es
+     texto secundario, es una señal de que la fila lleva a algún sitio. */
+  --ios-galon: #c7c7cc;
+  /* El gris del valor de la derecha: secondaryLabel de iOS. */
+  --ios-valor: rgba(60, 60, 67, .6);
+}
+:root.iphone[data-theme="dark"] {
+  --ios-sep: rgba(84, 84, 88, .65);
+  --ios-galon: #48484a;
+  --ios-valor: rgba(235, 235, 245, .6);
+}
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) {
+    --ios-sep: rgba(84, 84, 88, .65);
+    --ios-galon: #48484a;
+    --ios-valor: rgba(235, 235, 245, .6);
+  }
+}
+
+/* ---- El hairline: 0.33 px, no 0.5 ----
+   El separador se dibuja con un `height: 1px` encogido por `scaleY`, que es la
+   única forma de pedir menos de un píxel lógico y que el navegador no lo
+   redondee a uno entero. 0.33 en vez de 0.5. */
+:root.iphone .ios-row:not(:last-child)::after,
+:root.iphone .ios-txrow:not(:last-child)::after,
+:root.iphone .ios-listrow:not(:last-child)::after { transform: scaleY(0.33); }
+
+/* ---- La cabecera de grupo vuelve a su sitio ----
+   La primera vuelta la sacó hacia afuera del texto de las filas (sangría 20 en
+   vez de 32) y la puso en 13/600 con tracking. El handoff la alinea CON el
+   texto —32 = los 16 del inset de la tarjeta más los 16 de la fila— y la deja
+   en peso normal: «13 px gris, no negrita oscura». Lo único que se conserva
+   son las mayúsculas, que sí están en la maqueta (COMPROBANTE, INFORMES,
+   PRÓXIMAS ACTIVIDADES) aunque allí vengan escritas en el texto. */
+:root.iphone .ios-section-header {
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--ios-valor);
+  padding: 0 32px 6px;
+}
+/* El pie del grupo es donde iOS pone las reglas, y el handoff lo usa en casi
+   todas las pantallas: «el efectivo en caja es lo cobrado que no está en
+   ningún corte», «quien registró no puede firmar». Ya existía para las hojas;
+   aquí solo toma el gris y la sangría de la maqueta. */
+:root.iphone .ios-section-footer {
+  color: var(--ios-valor);
+  padding: 7px 32px 0;
+  line-height: 1.35;
+}
+/* Y su variante de advertencia: ámbar oscuro, legible sobre el gris del fondo
+   —el naranja del sistema (#ff9500) sobre #f2f2f7 no pasa contraste—. */
+:root.iphone .ios-section-footer--aviso { color: #b25000; }
+:root.iphone[data-theme="dark"] .ios-section-footer--aviso { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .ios-section-footer--aviso { color: #ffb266; }
+}
+
+/* ---- El galón ----
+   #c7c7cc, no el gris del texto secundario: en iOS el galón es más claro que
+   cualquier texto de la fila porque no compite con él, solo promete que hay
+   algo detrás. */
+:root.iphone .ios-chevron { color: var(--ios-galon); }
+
+/* ---- Los títulos de panel, en la misma familia ----
+   `.ios-panel-head h2` era el otro sitio donde quedaba una negrita de 13 con
+   tracking. Misma corrección que la cabecera de grupo: no hay dos jerarquías
+   de sección en el teléfono, hay una. */
+:root.iphone .ios-panel-head h2 {
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--ios-valor);
+}
+
+/* ============================================================================
+   17 · NADA DE VERDE PARA «POSITIVO»
+   ----------------------------------------------------------------------------
+   Es la segunda de las tres decisiones que el handoff dice que la cabecera
+   sólida OBLIGA a tomar:
+
+     «El balance en verde dejaría de leerse como bueno y pasaría a leerse como
+      marca; los importes van en negro y solo el gasto usa el rojo del
+      sistema.»
+
+   Con el verde ocupando toda la banda de arriba, un importe verde deja de
+   significar «entró dinero» y pasa a significar «esto es de Tamio». La señal
+   se pierde justo donde más se usa. Así que en el teléfono el color del
+   dinero se reduce a dos: el del texto para todo, y el rojo del sistema para
+   lo que sale.
+
+   Solo `:root.iphone`. En el Mac y el iPad la cabecera sigue siendo gris, el
+   verde nunca se gastó en la marca y el semáforo de siempre se lee bien. */
+:root.iphone .tx-amount.positive,
+:root.iphone .balance .amount.pos,
+:root.iphone .ios-field-value--pos,
+:root.iphone .ios-field--pos { color: var(--text); }
+/* Y lo que sale, en el rojo del sistema —#ff3b30, el mismo que ya usan las
+   filas destructivas— y no en el #dc2626 de escritorio. `.es-gasto` era la
+   excepción que la primera vuelta abrió solo para el par ingresos/gastos de
+   Inicio; ahora es la regla general y la excepción sobra. */
+:root.iphone .tx-amount.negative,
+:root.iphone .tx-amount.es-gasto { color: var(--ios-red); }
+
+/* ---- Y las cajas que no son lista, al mismo radio ----
+   `.card`, `.stat-card`, `.tx-list` y `.data-table` ya habían perdido borde y
+   sombra en el rango móvil, pero se quedaron en radio 12 mientras la lista
+   agrupada iba a 10. Dos radios distintos en la misma pantalla se ven, y el
+   handoff no tiene más que uno. */
+:root.iphone .card,
+:root.iphone .stat-card,
+:root.iphone .tx-list,
+:root.iphone .data-table { border-radius: var(--ios-radio); }
+
+/* ---- La fila de datos, con las medidas de la maqueta ----
+   La fila de un movimiento del handoff, medida de su marcado:
+
+     fila        min-height 56, padding 8px 0 8px 16px
+     título      17 px, tracking −.2, peso NORMAL, color del texto
+     secundaria  15 px, gris
+     importe     17 px, peso normal, cifras tabulares
+     galón       8×13, #c7c7cc
+     sin tile    la fila no lleva icono delante
+
+   La primera vuelta la dejó en 64 px con el título en 16/600 y un tile de
+   color de 30 px delante. Las tres cosas son justo lo que el handoff señala
+   como vocabulario prestado: «una fila es etiqueta + valor + galón, no una
+   tarjeta con dos líneas». El punto de categoría se queda —ese sí está en la
+   maqueta, dentro de la secundaria— pero el tile se va. */
+:root.iphone .ios-txrow {
+  min-height: 56px;
+  padding: 8px 16px;
+}
+:root.iphone .ios-txrow:not(:last-child)::after { left: 16px; }
+:root.iphone .ios-txrow .tx-icon { display: none; }
+:root.iphone .ios-txrow-title {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+:root.iphone .tx-secundaria-movil { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .ios-txrow .tx-amount {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+/* El sufijo de moneda sobra en el teléfono: la iglesia trabaja en una sola
+   moneda y en la maqueta el importe es «$5,125.00», sin nada detrás. A 393 px
+   ese «USD» empuja la cifra y le roba el ancho al concepto. */
+:root.iphone .ios-txrow .tx-amount .cur { display: none; }
+
+/* ---- Los tres encabezados de grupo, alineados con el texto de las filas ----
+   El handoff pone la cabecera del grupo A PLOMO con la etiqueta de la fila:
+   32 px del borde de la pantalla, que son los 16 del inset de la tarjeta más
+   los 16 del padding de la fila. Medido con Playwright, `.ios-txrow-title`
+   cae en 32 y la tarjeta en 16, así que la referencia es correcta; lo que
+   estaba desalineado eran los encabezados, en 20 (`.tx-title`,
+   `.ios-panel-head`) — heredado de cuando llevaban 4 px de sangría propia
+   dentro de un contenedor de 16.
+
+   `.tx-title` además era el último título de sección en negrita de 20 px que
+   quedaba en el teléfono: «Todos los ingresos», «Todos los gastos». En el
+   sistema del handoff eso no es un título, es la cabecera del grupo que viene
+   debajo — 13 px gris, como INFORMES o COMPROBANTE. */
+:root.iphone .ios-panel-head { padding: 0 16px; }
+:root.iphone .tx-title {
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 18px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: uppercase;
+  color: var(--ios-valor);
+  padding: 0 16px 6px;
+}
+
+/* ============================================================================
+   18 · EL TÍTULO GRANDE, DENTRO DE LA BANDA Y EN BLANCO
+   ----------------------------------------------------------------------------
+   En las maquetas del handoff la banda verde no termina en la fila de
+   acciones: sigue hacia abajo y se lleva el Large Title dentro, en blanco.
+   Está así en las tres familias —«Membresía», «Actas», «Buenas tardes,
+   Iván»— con las mismas medidas siempre:
+
+     un bloque con el verde de fondo y 14 px de aire abajo, que contiene la
+     barra de estado, la fila de acciones de 44 y un <h1> de 34/41, peso 700,
+     tracking −.4, en blanco y con 16 px de sangría.
+
+   Sin esto, una pantalla sin rueda —Ajustes, Inicio, Mensajes, Ayuda— se
+   queda con una franja verde de 44 px vacía y el título negro debajo, sobre
+   el gris: se ve como una raya de color suelta, no como una cabecera.
+
+   El título sigue viviendo DENTRO del área con scroll, que es lo que hace que
+   se vaya al desplazar y que `--progreso-titulo` pueda pasárselo a la copia
+   fija de la barra. Lo único que cambia es que su bloque se pinta del mismo
+   verde y se pega contra la banda fija de arriba: al desplazar, el verde del
+   título se mete debajo del verde de la banda y no se ve ninguna costura.
+
+   `:has(.page-title)` acota el pintado a las cabeceras que de verdad llevan
+   título. Las otras —Miembros, Ingresos— usan `.header` para un selector de
+   mes o un par de acciones sobre el gris, y ahí la maqueta no pone verde. */
+:root.iphone .header:has(.page-title) {
+  /* −12 para cancelar el respiro que `.main` deja bajo la banda: el bloque del
+     título tiene que empezar EXACTAMENTE donde termina la banda fija, o se ve
+     una raya gris entre los dos verdes. */
+  margin-top: -12px;
+  padding: 0 16px 14px !important;
+  background: var(--cabecera);
+}
+:root.iphone .header:has(.page-title) .page-title {
+  font-size: calc(34px * var(--fs-escala));
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--cabecera-tinta);
+}
+/* Lo que acompañe al título dentro de esa cabecera —el subtítulo del saludo,
+   una acción de texto— también va en blanco. El subtítulo al 78 %, que es lo
+   que dibuja la maqueta de Inicio: «Getsemaní · el corte de mes cierra en 5
+   días». */
+:root.iphone .header:has(.page-title) .page-sub,
+:root.iphone .header:has(.page-title) .subtitle,
+:root.iphone .header:has(.page-title) .muted { color: rgba(255, 255, 255, .78); }
+:root.iphone .header:has(.page-title) .btn.ghost,
+:root.iphone .header:has(.page-title) .btn.link { color: var(--cabecera-tinta); }

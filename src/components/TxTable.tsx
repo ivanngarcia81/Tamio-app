@@ -176,7 +176,12 @@ export default function TxTable({ tipo, txs, onEdit, onChanged, puedeEliminar = 
                 </span>
               )}
               <span className={`tx-amount ${tx.tipo === "ingreso" ? "positive" : "negative"}`}>
-                {tx.tipo === "ingreso" ? "+" : "−"}{fmtMoney(tx.monto).replace("−", "")}
+                {/* En el teléfono el ingreso va sin el «+» delante: la maqueta
+                    escribe «$5,125.00» a secas y reserva el signo —y el rojo— para
+                    lo que sale. Con el importe ya en el color del texto (bloque 17
+                    de styles.css), ese «+» era la última marca que quedaba de un
+                    semáforo que el rediseño quitó. */}
+                {tx.tipo === "ingreso" ? "" : "−"}{fmtMoney(tx.monto).replace("−", "")}
                 <span className="cur">{tx.moneda}</span>
               </span>
             </div>
