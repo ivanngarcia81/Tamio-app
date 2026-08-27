@@ -19886,3 +19886,91 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    sitio a otro es cambiar la función por la maqueta. */
 :root.iphone .app:has(.btn-crear) .ios-nav-btn,
 :root.iphone .app:has(.btn-compartir-cabecera) .ios-nav-btn { right: 52px; }
+
+/* ============================================================================
+   19 · EL ESTADO SE DICE CON LA PALABRA, NO CON UN GLOBO
+   ----------------------------------------------------------------------------
+   «Los cinco estados de ESTADOS_ACTA reducidos a un segmentado de tres —lo
+   que de verdad se filtra— y el estado como texto teñido en la fila, no como
+   pastilla de color: en iOS el estado de una fila se dice con la palabra en
+   color, no con un globo.»
+
+   La pastilla se quita en el teléfono y queda el texto, con el mismo tamaño y
+   color que cualquier valor de fila: 17 px y el gris secundario por defecto,
+   y el color solo cuando el estado significa algo —ámbar lo que espera,
+   verde lo que ya está—. En el iPad y el Mac la pastilla se queda: allí la
+   fila es de una tabla y el globo la ancla a su columna.
+
+   Y el verde del estado es --pos, no la marca: «aprobada/lista/entregada» es
+   un semáforo, no identidad. Con la banda de marca arriba eso vale más que
+   antes — el verde de Tamio ya está gastado en la cabecera, así que aquí no
+   se confunde con ella. */
+:root.iphone .ios-badge {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  color: var(--ios-valor);
+}
+:root.iphone .ios-badge--pending { background: none; color: var(--warn); }
+:root.iphone .ios-badge--ok { background: none; color: var(--pos); }
+/* El valor de la derecha, al gris del sistema: `--text-2` es el secundario de
+   la app entera y en el teléfono el handoff usa el `secondaryLabel` de iOS,
+   que es un pelo más claro. Se unifica con el que ya usan las filas de
+   etiqueta/valor para que un valor no se vea de dos grises según de qué
+   pantalla venga. */
+:root.iphone .ios-fila-valor { color: var(--ios-valor); }
+
+/* ============================================================================
+   20 · EL CALENDARIO, COMO EL DE iOS
+   ----------------------------------------------------------------------------
+   «El calendario de iOS: mes y año en el título grande —el año en color—,
+   iniciales de día en 11 px sobre un hairline, número del día en 19 px con el
+   relleno solo en hoy, y la lista del día seleccionado debajo de otro hairline
+   a todo el ancho.»
+
+   El cambio de fondo es el que más se nota: el mes deja de vivir en una
+   tarjeta blanca y se apoya directamente en el gris, con dos hairlines por
+   toda estructura. Una rejilla de números no es una lista agrupada, y meterla
+   en una tarjeta la hacía parecerlo.
+
+   El relleno solo en hoy: el día ELEGIDO se marca con el peso, no con otro
+   círculo. Dos rellenos en la misma rejilla —uno negro y otro verde— compiten
+   por decir «estás aquí», y cuál es cuál hay que aprenderlo. Cuál está
+   elegido lo dice además el título de la lista de abajo, que es donde de
+   verdad se lee lo que hay ese día. */
+:root.iphone .ios-cal {
+  background: none;
+  border-radius: 0;
+  padding: 10px 8px 0;
+  margin-bottom: 8px;
+}
+:root.iphone .ios-cal-dow {
+  padding: 0 4px 4px;
+  margin: 0 4px 4px;
+  border-bottom: .33px solid var(--ios-sep);
+}
+:root.iphone .ios-cal-dow span {
+  font-size: calc(11px * var(--fs-escala));
+  color: color-mix(in srgb, var(--ios-valor) 66%, transparent);
+}
+:root.iphone .ios-cal-dia {
+  min-height: 46px;
+  gap: 2px;
+  padding: 2px 0 0;
+}
+:root.iphone .ios-cal-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  font-size: calc(19px * var(--fs-escala));
+  letter-spacing: normal;
+}
+/* Elegido: solo el peso. El relleno es de hoy y de nadie más. */
+:root.iphone .ios-cal-num--sel {
+  background: none;
+  color: var(--text);
+  font-weight: 600;
+}

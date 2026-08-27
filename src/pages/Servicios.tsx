@@ -13,6 +13,7 @@ import LoadingState from "../components/LoadingState";
 import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
 import SeccionIOS from "../components/ios/SeccionIOS";
+import { agruparPorMes } from "../components/ios/agrupado";
 import { useScrollInfinito } from "../hooks/useScrollInfinito";
 import { showToast } from "../toast";
 import { playSound } from "../sound";
@@ -383,8 +384,14 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
         ) : visibles.length === 0 ? (
           estadoVacio
         ) : enIPhone ? (
+          /* Rediseño v2: «agrupada por mes, con el conteo como valor de la
+             fila». Era una lista plana con el conteo en negrita de 16; ahora
+             cada mes es su sección y el número se lee como cualquier otro
+             valor de la derecha, que es lo que es. */
+          agruparPorMes(pagina, (s) => s.fecha).map((seccion) => (
+          <SeccionIOS key={seccion.clave} titulo={seccion.etiqueta}>
           <div className="ios-listcard">
-            {pagina.map((s) => (
+            {seccion.items.map((s) => (
               <div
                 className="ios-txrow ios-txrow--clickable"
                 data-fila
@@ -398,9 +405,7 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
                   </div>
                 </div>
                 <div className="ios-txrow-trailing">
-                  <span style={{ fontWeight: 700, fontSize: "calc(16px * var(--fs-escala))", fontVariantNumeric: "tabular-nums" }}>
-                    {totalPresentes(s) || "—"}
-                  </span>
+                  <span className="ios-fila-valor">{totalPresentes(s) || "—"}</span>
                 </div>
                 <RowMenu
                   onEdit={() => setModal({ open: true, servicio: s })}
@@ -409,6 +414,8 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
               </div>
             ))}
           </div>
+          </SeccionIOS>
+          ))
         ) : (
           <div className="data-table roomy tabla-servicios">
             <div className="thead" style={{ gridTemplateColumns: COLS }}>

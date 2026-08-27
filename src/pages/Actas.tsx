@@ -17,6 +17,8 @@ import { playSound } from "../sound";
 import { printActaPdf } from "../services/print/printActa";
 import { IconFileText, IconPlus, IconPrinter, IconSearch } from "../icons";
 import { useAbrirCrearDesdeMas } from "../hooks/useAbrirCrearDesdeMas";
+import SeccionIOS from "../components/ios/SeccionIOS";
+import { agruparPorAnio } from "../components/ios/agrupado";
 
 const COLS = "110px 1.8fr 110px 1fr 130px 72px";
 /* En Mac, la columna de Estado sube de 130 a 168 px. Medido: "Pendiente de
@@ -429,8 +431,16 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
         ) : visibles.length === 0 ? (
           estadoVacio
         ) : enIPhone ? (
+          /* Rediseño v2: «se agrupan por año, que es como las numera el
+             folio». La lista era plana; ahora cada ejercicio es su propia
+             sección con su encabezado, que es también donde el folio cambia
+             de serie (ACT-2026-014). El orden de entrada manda: la consulta ya
+             viene descendente por fecha, así que las secciones salen del año
+             más nuevo al más viejo sin reordenar nada. */
+          agruparPorAnio(pagina, (a) => a.fecha).map((seccion) => (
+          <SeccionIOS key={seccion.clave} titulo={seccion.etiqueta}>
           <div className="ios-listcard">
-            {pagina.map((a) => (
+            {seccion.items.map((a) => (
               <div
                 className="ios-txrow ios-txrow--clickable"
                 data-fila
@@ -461,6 +471,8 @@ export default function Actas({ church, refreshKey, onChanged }: Props) {
               </div>
             ))}
           </div>
+          </SeccionIOS>
+          ))
         ) : (
           <div className="data-table roomy tabla-actas">
             <div className="thead" style={{ gridTemplateColumns: cols }}>

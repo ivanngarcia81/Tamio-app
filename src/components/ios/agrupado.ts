@@ -78,6 +78,32 @@ export function agruparPorMes<T>(items: T[], fechaDe: (item: T) => string): Grup
 }
 
 /**
+ * Agrupa por año.
+ *
+ * Es lo que pide el handoff para el libro de actas —«se agrupan por año, que
+ * es como las numera el folio»— y sirve igual para cualquier lista que se
+ * consulte por ejercicio. La etiqueta es el año a secas: no hay nada que
+ * formatear y un "Año 2026" delante sobra cuando el encabezado ya está en el
+ * sitio donde iOS pone el nombre del grupo.
+ *
+ * Conserva el orden de entrada, igual que las otras tres: quien consulta la
+ * lista ya la pidió ordenada, y reordenar aquí escondería ese criterio.
+ */
+export function agruparPorAnio<T>(items: T[], fechaDe: (item: T) => string): GrupoIOS<T>[] {
+  const grupos: GrupoIOS<T>[] = [];
+  let actual: GrupoIOS<T> | null = null;
+  for (const item of items) {
+    const anio = fechaDe(item).slice(0, 4);
+    if (!actual || actual.clave !== anio) {
+      actual = { clave: anio, etiqueta: anio, items: [] };
+      grupos.push(actual);
+    }
+    actual.items.push(item);
+  }
+  return grupos;
+}
+
+/**
  * Agrupa por inicial, para el índice alfabético de Miembros.
  *
  * Lo que no es letra —un nombre que empieza por número o por símbolo— cae en
