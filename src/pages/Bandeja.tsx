@@ -7,7 +7,7 @@ import {
   type Church, type Corte, type Member, type MovimientoRecurrente, type Tx,
 } from "../db";
 import {
-  calcularAlertas, conteoPorTipo, UMBRAL_COMPROBANTE,
+  calcularAlertas, conteoPorTipo, grupoDeAlerta, UMBRAL_COMPROBANTE,
   type Alerta, type TipoAlerta,
 } from "../services/bandeja/alertas";
 import PanelAlerta from "../components/PanelAlerta";
@@ -23,6 +23,7 @@ import DetalleMovimiento from "../components/DetalleMovimiento";
 import DetalleMiembro from "../components/DetalleMiembro";
 import ComprobantePreview from "../components/ComprobantePreview";
 import { IconCheck, IconEdit, IconRefreshCw } from "../icons";
+import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
 
 interface Props {
   church: Church;
@@ -481,7 +482,88 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
             </>
           )}
         </div>
+      ) : enIPhone ? (
+        /* ---- Las siete alertas, en el teléfono ----
+           Hasta aquí la pantalla enseñaba en el teléfono sus dos grupos
+           viejos —movimientos pendientes y miembros archivados— mientras las
+           SIETE alertas de `calcularAlertas` solo se pintaban en el iPad. No
+           faltaba el dato: faltaba la pantalla. Los dos grupos viejos son dos
+           de los siete tipos (`pendiente` y `miembroArchivado`), así que esta
+           lista los contiene: no se pierde nada y aparecen las otras cinco.
+
+           Los dos encabezados y sus pies son los del handoff. El reparto lo
+           hace `grupoDeAlerta`, que vive junto a los tipos porque es de ellos:
+           una DECISIÓN es una bifurcación que la app no puede resolver sola,
+           un ARREGLO es un hueco que sí se sabe cómo llenar.
+
+           Adónde lleva cada fila: si la alerta habla de un movimiento, al
+           editor —que es donde se resuelve—; si habla de un miembro
+           archivado, a su acción de restaurar, como hasta ahora. Las dos que
+           hablan de un corte sin firma o de un recurrente vencido NO llevan a
+           ningún sitio en el teléfono: el iPad las abre en su panel y aquí no
+           hay panel. Se quedan como fila informativa, sin galón y sin toque,
+           en vez de fingir un destino que no existe. Cuando el otro chat les
+           dé pantalla, lo único que cambia aquí es el `onClick`. */
+        <div className="content">
+          {loading ? (
+            <LoadingState />
+          ) : alertas.length === 0 ? (
+            <EmptyState pagina titulo={t("bandeja.sinPendientes")} sub={t("bandeja.emptySub")} />
+          ) : (
+            (["decision", "arreglo"] as const).map((grupo) => {
+              const delGrupo = alertas.filter((a) => grupoDeAlerta(a.tipo) === grupo);
+              if (delGrupo.length === 0) return null;
+              return (
+                <div key={grupo}>
+                  <SeccionIOS titulo={t(grupo === "decision" ? "bandeja.grupoDecision" : "bandeja.grupoArreglo")}>
+                    <div className="ios-listcard">
+                      {delGrupo.map((a) => {
+                        const llevaA = a.tx ? () => onEditTx(a.tx!) : null;
+                        return (
+                          <div
+                            className={`ios-txrow${llevaA ? " ios-txrow--clickable" : ""}`}
+                            key={a.clave}
+                            onClick={llevaA ?? undefined}
+                          >
+                            <span className={`al-marca${a.tipo === "pendiente" ? " urgente" : ""}`} aria-hidden="true">
+                              {a.tipo === "pendiente" ? "!" : inicialDe(a.tipo)}
+                            </span>
+                            <div className="ios-txrow-main">
+                              <div className="ios-txrow-title">{t(`bandeja.alerta_${a.tipo}`)}</div>
+                              <div className="tx-secundaria-movil">{subDeAlerta(a)}</div>
+                            </div>
+                            <div className="ios-txrow-trailing">
+                              {a.miembro ? (
+                                <button
+                                  type="button"
+                                  className="ios-row-accion"
+                                  aria-label={t("bandeja.restaurar")}
+                                  title={t("bandeja.restaurar")}
+                                  onClick={(e) => { e.stopPropagation(); void handleRestore(a.miembro!); }}
+                                >
+                                  <span><IconRefreshCw size={15} strokeWidth={2.2} /></span>
+                                </button>
+                              ) : llevaA ? <IosChevron /> : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SeccionIOS>
+                  <p className="ios-section-footer">
+                    {t(grupo === "decision" ? "bandeja.pieDecision" : "bandeja.pieArreglo")}
+                  </p>
+                </div>
+              );
+            })
+          )}
+        </div>
       ) : (
+      /* Mac y ventana angosta que no es un iPhone. Los `enIPhone ? … : …` que
+         quedan dentro de este bloque ya NO se alcanzan —el teléfono sale por
+         la rama de arriba— y están marcados para limpiarse; se dejan en esta
+         pasada para no mezclar el rediseño con un borrado de cien líneas en la
+         misma revisión. */
       <div className="content">
         {loading ? (
           <LoadingState />

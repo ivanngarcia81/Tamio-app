@@ -19974,3 +19974,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text);
   font-weight: 600;
 }
+
+/* ---- El círculo del tipo de alerta, también en el teléfono ----
+   `.al-marca` estaba escrito solo para el maestro-detalle del iPad. En el
+   teléfono la fila de la bandeja lo usa igual —es la misma alerta— pero baja
+   a 30 px: la fila del rediseño mide 56 y un círculo de 34 la llena de borde
+   a borde, sin el aire que separa un elemento de una lista de la línea de
+   arriba. El ámbar de «pide decisión» se queda: es lo único que distingue de
+   un vistazo la mitad que hay que resolver. */
+:root.iphone .al-marca {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--ios-valor);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone .al-marca.urgente {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
+}

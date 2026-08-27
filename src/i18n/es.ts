@@ -339,6 +339,12 @@ export const es = {
     eligeAsuntoSub: "Toca un movimiento pendiente o un miembro archivado para verlo aquí y resolverlo.",
     todoAlDia: "Todo al día",
     titulo: "Por revisar",
+    // Los dos grupos de la bandeja del teléfono (rediseño v2). El pie de cada
+    // uno es el del handoff, palabra por palabra.
+    grupoDecision: "Pide una decisión",
+    grupoArreglo: "Pide un arreglo",
+    pieDecision: "Un movimiento puede salir dos veces: son dos cosas distintas que revisar.",
+    pieArreglo: "Las siete se calculan con lo que ya hay en la base: ninguna necesita una tabla nueva.",
     sinPendientes: "No tienes pendientes",
     porRevisar_one: "{{count}} movimiento por revisar",
     porRevisar_other: "{{count}} movimientos por revisar",
