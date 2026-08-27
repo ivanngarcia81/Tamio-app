@@ -210,6 +210,10 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const ingresosPer = totPer?.ingresos ?? totales?.ingresos ?? CERO;
   const gastosPer = totPer?.gastos ?? totales?.gastos ?? CERO;
   const gastosPerAnt = totPerAnt?.gastos ?? CERO;
+  /* El balance del periodo elegido. `balance` a secas es siempre el del
+     MES; con el segmentado ya en el teléfono hacía falta el que sigue al
+     mando. */
+  const balancePer = restar(ingresosPer, gastosPer);
   const registrosIngresoPer = useMemo(
     () => Object.values(totPer?.conteoCategoriaIngreso ?? {}).reduce((a, b) => a + b, 0),
     [totPer]
@@ -704,42 +708,73 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
              barra con un dato: se desplaza con el contenido, y al llegar
              arriba lo que queda es el título, no el saldo. */
           <>
-            <div className="ios-hero">
-              <div className="ios-hero-cifra">
-                <span className={`ios-hero-num ${balance >= 0 ? "pos" : "neg"}`}>
-                  <CountUp value={balance} format={fmtMoney} paso={100} />
+            {/* Rediseño v2 (maqueta H1): el segmentado del periodo deja de ser
+                del iPad. Vivía tras `enIPad` desde el handoff anterior, pero
+                el estado, las consultas y los tres rótulos ya estaban escritos
+                para los tres periodos; lo único que faltaba era el mando. Es
+                el mismo defecto que la bandeja: función encerrada tras una
+                comprobación de plataforma. */}
+            <div className="dash-seg dash-seg--movil" role="group" aria-label={t("dashboard.periodo")}>
+              {(["mes", "trimestre", "anio"] as Periodo[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={periodo === p ? "sel" : ""}
+                  aria-pressed={periodo === p}
+                  onClick={() => setPeriodo(p)}
+                >
+                  {t(`dashboard.periodo_${p}`)}
+                </button>
+              ))}
+            </div>
+
+            {/* «Las cuatro cifras en una sola tarjeta: el balance en grande con
+                su variación, y abajo los tres números con su punto de color
+                —incluido el saldo en caja, que va aparte porque no es del
+                periodo, es de hoy—.»
+
+                Lo que había: el balance suelto sobre el gris y, debajo, una
+                lista agrupada con ingresos, gastos y balance del año en filas.
+                Tres cifras del mismo peso en tres renglones no dicen cuál se
+                consulta a diario; en la tarjeta, el balance manda y las otras
+                tres lo explican.
+
+                Las barras del periodo que la maqueta pone en medio NO están
+                todavía: siguen siendo la gráfica de recharts de más abajo. Es
+                lo único que falta de esta pantalla. */}
+            <div className="ios-tarjeta-cifras">
+              <div className="itc-cabeza">
+                <span className="itc-bloque">
+                  <span className="itc-rotulo">{t("dashboard.balanceDelPeriodo", { periodo: periodoLargo })}</span>
+                  <span className="itc-num">
+                    <CountUp value={balancePer} format={fmtMoney} paso={100} />
+                  </span>
                 </span>
-                <span className="ios-hero-moneda">{church.moneda}</span>
+                <Delta pct={pctChange(balancePer, balanceAnt)} />
               </div>
-              <div className="ios-hero-pie">
-                <span>{t("dashboard.saldoDelMes", { mes: mesLegible(mes) })}</span>
-                <Delta pct={pctChange(balance, balanceAnt)} />
+              <div className="itc-pie">
+                <span className="itc-cifra">
+                  <span className="itc-etiqueta"><i className="itc-punto itc-punto--ingreso" />{t("charts.ingresos")}</span>
+                  <span className="itc-valor">{fmtMoney(ingresosPer)}</span>
+                </span>
+                <span className="itc-cifra">
+                  <span className="itc-etiqueta"><i className="itc-punto itc-punto--gasto" />{t("charts.gastos")}</span>
+                  <span className="itc-valor">{fmtMoney(gastosPer)}</span>
+                </span>
+                <span className="itc-cifra itc-cifra--fin">
+                  <span className="itc-etiqueta"><i className="itc-punto itc-punto--caja" />{t("dashboard.enCaja")}</span>
+                  <span className="itc-valor">{fmtMoney(saldoCaja ?? CERO)}</span>
+                </span>
               </div>
             </div>
 
+            {/* Ingresos y gastos ya NO están aquí: los dice la tarjeta de
+                arriba, con su punto de color. Repetirlos en una lista a diez
+                píxeles de distancia era decir dos veces lo mismo y dejar al
+                lector comparando dos cifras idénticas para ver si eran la
+                misma. Se quedan las dos que la tarjeta no cubre —el balance
+                del AÑO, que no depende del segmentado, y los aportantes—. */}
             <SeccionIOS titulo={t("dashboard.resumenDelMes")}>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.ingresos")}</div></div>
-                <div className="ios-txrow-trailing">
-                  <span className="tx-amount positive">
-                    <CountUp value={ingresos} format={fmtMoney} paso={100} />
-                  </span>
-                </div>
-              </div>
-              <div className="ios-txrow">
-                <div className="ios-txrow-main"><div className="ios-txrow-title">{t("charts.gastos")}</div></div>
-                <div className="ios-txrow-trailing">
-                  {/* `es-gasto` y no `negative` a secas: `.tx-amount.negative`
-                      pinta con `--text` a propósito (en una tabla de gastos,
-                      todo en rojo es ruido y no jerarquía). Aquí sí toca rojo
-                      —lo pide la maqueta— porque estas DOS filas están juntas
-                      justamente para contrastarse: lo que entró contra lo que
-                      salió. Es el único sitio donde conviven. */}
-                  <span className="tx-amount es-gasto">
-                    <CountUp value={gastos} format={fmtMoney} paso={100} />
-                  </span>
-                </div>
-              </div>
               <div className="ios-txrow">
                 <div className="ios-txrow-main"><div className="ios-txrow-title">{t("dashboard.balanceDelAnio")}</div></div>
                 <div className="ios-txrow-trailing">

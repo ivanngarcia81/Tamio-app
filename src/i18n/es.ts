@@ -164,6 +164,11 @@ export const es = {
     gastosDelMes: "Gastos del mes",
     balanceDelMesLabel: "Balance del mes",
     saldoDelMes: "Saldo de {{mes}}",
+    // La tarjeta de cifras del teléfono (rediseño v2): el balance del periodo
+    // que manda el segmentado, y el saldo en caja, que va aparte porque no es
+    // del periodo — es de hoy.
+    balanceDelPeriodo: "Balance de {{periodo}}",
+    enCaja: "En caja",
     balanceDelAnio: "Balance del año",
     vsMesAnterior: "vs. mes anterior",
     anioResumen: "{{anio}} · Ingresos {{ingresos}} · Gastos {{gastos}}",
