@@ -168,6 +168,9 @@ export const es = {
     // que manda el segmentado, y el saldo en caja, que va aparte porque no es
     // del periodo — es de hoy.
     balanceDelPeriodo: "Balance de {{periodo}}",
+    // La etiqueta de cada barra cuando el periodo es el mes: "S1", "S2"…
+    // Tres caracteres, que es lo que cabe bajo una barra de 14 px.
+    semanaN: "S{{n}}",
     enCaja: "En caja",
     balanceDelAnio: "Balance del año",
     vsMesAnterior: "vs. mes anterior",

@@ -3,6 +3,13 @@ import { fmtFechaCorta, type Member } from "../../db";
 import { camposFaltantes, estadoEfectivo, type AsistenciaMiembro } from "../../services/informes/membresia";
 import type { Detente } from "./HojaDetentesIOS";
 
+/* Las mismas ocho de `mini-avatar`. El color se saca del `id` y no de la
+   posición en la lista: la fila del padrón usaba el índice, así que a Abel le
+   tocaba morado en «De alta» y otro color en «Todos» o en la página 2. En la
+   lista no se notaba —nunca se ven dos a la vez—; con la hoja abierta sí, que
+   enseña al mismo miembro dos veces y con dos colores. */
+const AVATAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"];
+
 /** Iniciales para el círculo, con la misma regla que la lista del padrón. */
 function inicialesDe(nombre: string): string {
   return nombre.split(" ").filter((w) => w.length > 2).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
@@ -58,7 +65,9 @@ export default function HojaMiembro({
   return (
     <div className="hm">
       <div className="hm-cabeza">
-        <span className="hm-avatar" aria-hidden="true">{inicialesDe(m.nombre)}</span>
+        <span className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]} hm-avatar`} aria-hidden="true">
+          {inicialesDe(m.nombre)}
+        </span>
         <span className="hm-quien">
           <span className="hm-nombre">{m.nombre}</span>
           <span className="hm-sub">{resumen}</span>

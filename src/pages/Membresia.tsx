@@ -714,7 +714,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                 {filasSplit.length === 0 ? (
                   <div className="mb-filas-vacio">{t("membresia.sinResultados")}</div>
                 ) : (
-                  filasSplit.map((m, i) => {
+                  filasSplit.map((m) => {
                     const a = asistencia?.get(m.id);
                     const alertasM = vistaMb === "seguimiento" ? alertasDe(m) : [];
                     const esNuevo = esNuevoEnPeriodo(m, periodoObj, umbrales);
@@ -736,7 +736,8 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                         className={`mb-fila${selId === m.id ? " sel" : ""}`}
                         onClick={() => { setSelId(m.id); if (vistaMb === "asistencia") setVistaMb("miembros"); }}
                       >
-                        <span className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]} mb-fila-avatar`}>
+                        {/* Por `id` y no por índice: ver la nota en `HojaMiembro`. */}
+                        <span className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]} mb-fila-avatar`}>
                           {initials(m.nombre)}
                         </span>
                         <span className="mb-fila-textos">
@@ -1009,7 +1010,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           />
         ) : enIPhone ? (
           <div className="ios-listcard">
-            {pagina.map((m, i) => {
+            {pagina.map((m) => {
               const badge = estadoBadge(m);
               const motivoTexto = m.motivo_baja
                 ? MOTIVOS_CONOCIDOS.includes(m.motivo_baja)
@@ -1027,7 +1028,8 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                   style={{ opacity: m.activo === 1 ? 1 : 0.72 }}
                   onClick={() => (enIPhone ? abrirHoja(m) : setFicha(m))}
                 >
-                  <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                  {/* Por `id` y no por índice: ver la nota en `HojaMiembro`. */}
+                  <div className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]}`}>
                     {initials(m.nombre)}
                   </div>
                   <div className="ios-txrow-main">
@@ -1063,7 +1065,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               )}
               <div className="th"></div>
             </div>
-            {pagina.map((m, i) => (
+            {pagina.map((m) => (
               <div
                 className="tr" data-fila
                 key={m.id}
@@ -1072,7 +1074,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               >
                 <div className="td">
                   <div className="person" style={{ minWidth: 0 }}>
-                    <div className={`mini-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                    <div className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]}`}>
                       {initials(m.nombre)}
                     </div>
                     <div style={{ minWidth: 0, flex: "1 1 auto" }}>

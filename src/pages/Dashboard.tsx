@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useBarraEstado } from "../components/BarraEstado";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  catNombre, categoriaInfo, countPendingTx, currentMonth, currentYear, dailyTotals, efectivoDisponibleHasta,
+  catNombre, categoriaInfo, countPendingTx, currentMonth, currentYear, dailyTotals, efectivoDisponibleHasta, mesCorto,
   getCategoriasGasto, getCategoriasIngreso,
   fmtFecha, fmtFechaCorta, fmtMoney, fmtRelativo, hoyISO, lastActivityAt, listActividades, listTx, mesLegible,
   metodoNombre, monthDepositos, monthTotals, monthlySummary, pctChange, prevMonth, yearTotals,
@@ -24,7 +24,7 @@ import SeccionIOS from "../components/ios/SeccionIOS";
 import { printDashboard } from "../services/print/printDashboard";
 import { IconArrowDown, IconArrowUp, IconClock, IconMiembros, IconPlus, IconPrinter } from "../icons";
 import { ShareIcon } from "../components/icons/IOSIcons";
-import { CERO, restar, type Centavos } from "../dinero";
+import { CERO, restar, sumar, type Centavos } from "../dinero";
 import { esIPad, esIPhone, esMac } from "../movil";
 
 interface Props {
@@ -165,7 +165,12 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
   const [histMeses, setHistMeses] = useState<MonthSummary[]>([]);
 
   useEffect(() => {
-    if (!enIPad) return;
+    /* También en el teléfono desde que el segmentado bajó a él. Sin esto,
+       `totPer` no se cargaba nunca en el iPhone y las cifras de la tarjeta
+       caían al `?? totales` del mes: el mando se movía y los números no. Se
+       veía trabajando —el botón cambiaba de sitio— y decía siempre lo mismo,
+       que es peor que no tenerlo. */
+    if (!enIPad && !enIPhone) return;
     const dentro = mesesDePeriodo(periodo, mes);
     const antes = mesesDePeriodoAnterior(periodo, mes);
     Promise.all(dentro.map((m) => monthTotals(church.id, m)))
@@ -183,7 +188,8 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
     // 24 meses de histórico para poder recortar la ventana de 6 del diseño
     // aunque haya huecos sin movimiento por medio.
     monthlySummary(church.id, 24).then(setHistMeses).catch(console.error);
-    // `enIPad` es constante durante la sesión (clase puesta antes de montar).
+    // `enIPad`/`enIPhone` son constantes durante la sesión (la clase se pone
+    // antes de montar), así que no entran en las dependencias.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [church.id, church.saldo_inicial, refreshKey, mes, periodo]);
 
@@ -214,6 +220,53 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
      MES; con el segmentado ya en el teléfono hacía falta el que sigue al
      mando. */
   const balancePer = restar(ingresosPer, gastosPer);
+
+  /* Las barras de la tarjeta (maqueta H1). Una pareja por tramo del periodo:
+     lo que entró y lo que salió. El balance de arriba dice cómo TERMINÓ; esto
+     dice cómo llegó ahí — si fue parejo o si una semana se comió el mes.
+
+     Los tramos cambian con el segmentado, que es lo que pide el handoff
+     («cambia el periodo: las barras pasan de semanas a meses»), y cada uno
+     sale de la serie que ya se consulta, sin una consulta nueva:
+
+     · Mes       → semanas, de `dias` (`dailyTotals`, 30 días). Inicio siempre
+                   mira el mes en curso —`mes` es `currentMonth()` y no hay
+                   selector—, así que 30 días lo cubren; los días que caen en
+                   el mes anterior se descartan, o la primera barra mezclaría
+                   dos meses.
+     · Trimestre → meses del trimestre, de `histMeses` (`monthlySummary`).
+     · Año       → los doce meses, de la misma serie. Los meses sin movimiento
+                   se dejan a la vista, en cero: un hueco dice tanto como una
+                   barra, y saltárselos haría que "julio" y "septiembre"
+                   parecieran consecutivos. */
+  const barrasPeriodo = useMemo(() => {
+    if (periodo === "mes") {
+      const delMes = dias.filter((d) => d.fecha.slice(0, 7) === mes);
+      const semanas = new Map<number, { ingresos: Centavos; gastos: Centavos }>();
+      for (const d of delMes) {
+        const semana = Math.floor((Number(d.fecha.slice(8, 10)) - 1) / 7);
+        const acc = semanas.get(semana) ?? { ingresos: CERO, gastos: CERO };
+        semanas.set(semana, { ingresos: sumar(acc.ingresos, d.ingresos), gastos: sumar(acc.gastos, d.gastos) });
+      }
+      return [...semanas.entries()]
+        .sort((a2, b2) => a2[0] - b2[0])
+        .map(([n, v]) => ({ etiqueta: t("dashboard.semanaN", { n: n + 1 }), ...v }));
+    }
+    const porMes = new Map(histMeses.map((m) => [m.mes, m]));
+    return mesesDePeriodo(periodo, mes).map((m) => {
+      const v = porMes.get(m);
+      return {
+        etiqueta: mesCorto(m),
+        ingresos: v?.ingresos ?? CERO,
+        gastos: v?.gastos ?? CERO,
+      };
+    });
+  }, [periodo, mes, dias, histMeses, t]);
+
+  /* El alto de cada barra es relativo al tramo MÁS ALTO del periodo, no al
+     total: lo que se compara es un mes contra otro, y con el total de
+     referencia todas las barras saldrían enanas en un año bueno. */
+  const topeBarra = Math.max(1, ...barrasPeriodo.flatMap((b) => [b.ingresos, b.gastos]));
   const registrosIngresoPer = useMemo(
     () => Object.values(totPer?.conteoCategoriaIngreso ?? {}).reduce((a, b) => a + b, 0),
     [totPer]
@@ -752,6 +805,23 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
                 </span>
                 <Delta pct={pctChange(balancePer, balanceAnt)} />
               </div>
+              {/* Las barras del periodo. Solo si hay más de un tramo: con
+                  «Mes» en la primera semana del mes, una sola pareja de
+                  barras no compara nada — dice lo mismo que las cifras de
+                  abajo, ocupando 96 px. */}
+              {barrasPeriodo.length > 1 && (
+                <div className="itc-barras" aria-hidden="true">
+                  {barrasPeriodo.map((b) => (
+                    <span className="itc-barra" key={b.etiqueta}>
+                      <span className="itc-barra-par">
+                        <i className="itc-barra-in" style={{ height: `${Math.round((b.ingresos / topeBarra) * 100)}%` }} />
+                        <i className="itc-barra-out" style={{ height: `${Math.round((b.gastos / topeBarra) * 100)}%` }} />
+                      </span>
+                      <span className="itc-barra-rot">{b.etiqueta}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="itc-pie">
                 <span className="itc-cifra">
                   <span className="itc-etiqueta"><i className="itc-punto itc-punto--ingreso" />{t("charts.ingresos")}</span>
@@ -849,11 +919,20 @@ export default function Dashboard({ church, refreshKey, memberCount, onEditTx, o
               </div>
             </SeccionIOS>
 
-            {/* Las gráficas van DESPUÉS de la cifra y del resumen, no antes:
-                en la maqueta lo primero que se lee al abrir Inicio es cuánto
-                hay, y la tendencia viene a continuación a explicarlo. En Mac
-                y iPad siguen arriba (ver el ternario del lienzo). */}
-            {graficas}
+            {/* Aquí estaba la gráfica de «Ingresos vs. gastos» (recharts). Se
+                retira del teléfono, y solo del teléfono: las barras que ahora
+                viven DENTRO de la tarjeta de cifras cuentan la misma historia
+                —cómo se repartió el movimiento a lo largo del periodo— pero
+                sin repetirla, y con una diferencia que en el teléfono era un
+                error de lectura: la gráfica ignoraba el segmentado de periodo
+                y pintaba siempre las mismas semanas, así que al tocar
+                «Trimestre» las cifras cambiaban y la curva de abajo no. Dos
+                series contradictorias, una encima de la otra, en 393 px.
+
+                En Mac y en iPad se conserva tal cual (ver el ternario del
+                lienzo): ahí hay ancho de sobra, la gráfica no compite con la
+                tarjeta y el iPad tiene además su propia `InicioGraficasIPad`.
+                `graficas` sigue construyéndose para ellos. */}
           </>
         ) : (
           <>

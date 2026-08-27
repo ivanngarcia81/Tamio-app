@@ -295,6 +295,27 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// Inicio con el segmentado en «Trimestre». Es la captura que faltaba: las
+// cifras de la tarjeta siempre siguieron al periodo, pero la gráfica de
+// recharts que había debajo no —pintaba las mismas semanas dijera lo que
+// dijera el mando—. Ahora las barras viven dentro de la tarjeta y cambian de
+// semanas a meses con ella; sin esta foto, esa promesa no está comprobada.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const periodo of ["Trimestre", "Año"]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.getByRole("button", { name: periodo, exact: true }).click();
+    await page.waitForTimeout(1600);
+    const archivo = `${SALIDA}/1-inicio-${periodo === "Año" ? "anio" : "trimestre"}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
 // Informes: el índice y DOS documentos abiertos. Hay que tocar la fila para
 // llegar: el documento no tiene URL propia (es estado de React, `informe`),
 // así que sin el clic solo se fotografiaría el índice.
@@ -319,16 +340,21 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
-// Cartas: dos destinos del índice, para comprobar que se entra Y se sale.
+// Cartas: las cinco pestañas del segmentado. Ya no hay índice que abrir y
+// cerrar —el teléfono aterriza en «Cartas» y se mueve por el segmentado—, así
+// que lo que hay que ver es que las cinco pintan algo y ninguna se desborda.
 for (const tema of ["light", "dark"]) {
   const ctx = await contextoIPhone(tema);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
-  for (const [nombre, fila] of [["resumen", "Resumen"], ["archivo", "Archivo"], ["solicitudes", "Solicitudes"]]) {
-    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
-    await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
-    await page.getByText(fila, { exact: true }).first().click();
-    await page.waitForTimeout(1200);
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+  for (const [nombre, pestana] of [
+    ["resumen", "Cartas"], ["solicitudes", "Solicitudes"], ["traslados", "Traslados"],
+    ["plantillas", "Plantillas"], ["archivo", "Archivo"],
+  ]) {
+    await page.getByRole("tab", { name: pestana, exact: true }).click();
+    await page.waitForTimeout(900);
     const archivo = `${SALIDA}/11-cartas-${nombre}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
@@ -341,14 +367,44 @@ for (const tema of ["light", "dark"]) {
   const ctx = await contextoIPhone(tema);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
-  for (const [nombre, fila] of [["padron", "Miembros"], ["asistencia", "Asistencia"], ["seguimiento", "Seguimiento"]]) {
-    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
-    await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
-    await page.getByText(fila, { exact: true }).first().click();
-    await page.waitForTimeout(1400);
+  // Ya no hay pantalla de resumen que abrir: el teléfono aterriza en el padrón
+  // y de ahí sale todo. El recorrido es el de verdad — padrón, hoja del
+  // miembro en sus dos alturas, hoja de filtros, y los dos destinos que
+  // cuelgan de ella.
+  async function toma(nombre) {
+    await page.waitForTimeout(1200);
     const archivo = `${SALIDA}/16-membresia-${nombre}-${tema}.png`;
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await toma("padron");
+
+  // La hoja del miembro: tocar un nombre la asoma; el asa la sube a media.
+  await page.locator(".ios-txrow--clickable").first().click();
+  await toma("hoja-asomada");
+  {
+    const asa = page.locator(".hd-asa");
+    const caja = await asa.boundingBox();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(caja.x + caja.width / 2, caja.y - 300, { steps: 12 });
+    await page.mouse.up();
+  }
+  await toma("hoja-media");
+
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Filtros", exact: true }).click();
+  await toma("filtros");
+  for (const [nombre, fila] of [["asistencia", "Asistencia"], ["seguimiento", "Seguimiento"]]) {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Filtros", exact: true }).click();
+    await page.waitForTimeout(500);
+    await page.getByText(fila, { exact: true }).last().click();
+    await toma(nombre);
   }
   await ctx.close();
 }

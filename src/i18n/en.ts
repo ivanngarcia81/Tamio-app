@@ -171,6 +171,7 @@ export const en: Resources = {
     balanceDelMesLabel: "Balance this month",
     saldoDelMes: "{{mes}} balance",
     balanceDelPeriodo: "{{periodo}} balance",
+    semanaN: "W{{n}}",
     enCaja: "On hand",
     balanceDelAnio: "Balance this year",
     vsMesAnterior: "vs. last month",
