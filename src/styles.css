@@ -20076,6 +20076,88 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   color: var(--text);
 }
 
+/* El pie de la tarjeta de cifras. La tarjeta tiene 16 px de margen propio y no
+   es una sección, así que su pie se alinea con ELLA (16+16 = 32 a la izquierda
+   como cualquier pie de grupo) y se pega a su borde inferior en vez de heredar
+   la separación entre secciones. */
+:root.iphone .itc-pie-texto { margin: 0; padding-top: 7px; }
+
+/* ---- 25 · LA MISMA TARJETA, EN LA PORTADA DE SECRETARÍA (maqueta H3) ----
+
+   La pieza es la de Tesorería; lo que cambia son tres cosas que ahí no hacen
+   falta: el total del padrón junto a la cifra grande, la pastilla de altas, y
+   una serie de UNA barra por tramo en vez de la pareja entrada/salida.
+
+   El color de la serie es morado y no el verde de Tesorería a propósito: no
+   es dinero. Que las dos portadas usen la misma tarjeta con dos colores dice
+   «lo mismo, de otra cosa»; con el mismo color diría «lo mismo», y no lo es. */
+:root.iphone .itc-de {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--ios-valor);
+}
+:root.iphone .itc-pastilla {
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 12px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: calc(13px * var(--fs-escala));
+  font-weight: 600;
+}
+:root.iphone .itc-pastilla--alta { background: rgba(124, 58, 237, .12); color: #7c3aed; }
+:root.iphone[data-theme="dark"] .itc-pastilla--alta { background: rgba(167, 139, 250, .18); color: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-pastilla--alta { background: rgba(167, 139, 250, .18); color: #a78bfa; }
+}
+:root.iphone .itc-punto--alta { background: #7c3aed; }
+:root.iphone[data-theme="dark"] .itc-punto--alta { background: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-punto--alta { background: #a78bfa; }
+}
+/* Ámbar oscuro, no el naranja del sistema: #ff9500 sobre el blanco de la
+   tarjeta no pasa contraste, y esta es la cifra que pide trabajo. */
+:root.iphone .itc-punto--aviso { background: #ff9500; }
+:root.iphone .itc-valor.es-aviso { color: #b25000; }
+:root.iphone[data-theme="dark"] .itc-valor.es-aviso { color: #ffb266; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-valor.es-aviso { color: #ffb266; }
+}
+/* La cifra que además es un destino. Sin galón —no cabe en el pie de una
+   tarjeta de tres columnas— pero con el gesto del sistema al tocar. */
+:root.iphone .itc-cifra--enlace { text-decoration: none; }
+:root.iphone .itc-cifra--enlace:active { opacity: .5; }
+
+/* La barra de una sola serie. Ocupa el par entero en vez de media, porque no
+   tiene con quién compartirlo. */
+:root.iphone .itc-barra-alta {
+  flex: 1;
+  max-width: 11px;
+  border-radius: 3px 3px 0 0;
+  display: block;
+  min-height: 2px;
+  background: #7c3aed;
+}
+:root.iphone[data-theme="dark"] .itc-barra-alta { background: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-barra-alta { background: #a78bfa; }
+}
+/* Un mes sin altas se queda como una raya gris al ras: se ve que el mes está
+   —no se lo saltó nadie— y se ve que no pasó nada. */
+:root.iphone .itc-barra-alta.es-cero {
+  background: color-mix(in srgb, var(--ios-valor) 30%, transparent);
+  border-radius: 1px;
+}
+/* Y su etiqueta se enciende solo en los meses que tuvieron altas, que es lo
+   que hace la maqueta: los doce rótulos en gris tenue y en color los que
+   importan. */
+:root.iphone .itc-barra-rot.es-viva { color: #7c3aed; }
+:root.iphone[data-theme="dark"] .itc-barra-rot.es-viva { color: #a78bfa; }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .itc-barra-rot.es-viva { color: #a78bfa; }
+}
+
 /* El segmentado del periodo, ahora también en el teléfono. Las medidas son
    las de la maqueta: 32 de alto, r9, relleno del sistema, y el elegido en
    blanco con su sombra corta — el segmentado de iOS, no una fila de chips. */
@@ -20212,6 +20294,32 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 @media (prefers-reduced-motion: reduce) {
   :root.iphone .hoja-detentes { transition: none; }
   :root.iphone .hd-telon { animation: none; }
+}
+
+/* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
+   «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
+   derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide
+   8 px y lleva su propio fondo de tarjeta: dentro de una fila de lista de 52
+   px se lee como un segundo elemento en vez de como el subrayado de la
+   categoría que acompaña. */
+:root.iphone .dp-barra {
+  margin-top: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(118, 118, 128, .16);
+  overflow: hidden;
+}
+:root.iphone[data-theme="dark"] .dp-barra { background: rgba(120, 120, 128, .32); }
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]) .dp-barra { background: rgba(120, 120, 128, .32); }
+}
+:root.iphone .dp-barra > i {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  /* Un gasto que existe nunca es una barra de cero ancho: la más pequeña de
+     las tres se vería como «no hubo», y sí hubo. */
+  min-width: 3px;
 }
 
 /* ---- El cuerpo de la hoja de Membresía ---- */

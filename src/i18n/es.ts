@@ -183,7 +183,24 @@ export const es = {
     sinIngresosEsteMes: "Sin ingresos este mes",
     // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
     // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
-    detalleDelMes: "Detalle del mes",
+    // `detalleDelMes` se retiró con la maqueta H2: el grupo dejó de ser
+    // «del mes» cuando el segmentado bajó al teléfono, y ahora es una
+    // pantalla propia cuyo título sigue al periodo.
+    // Tres, y no uno con la preposición interpolada, por lo mismo que
+    // `vsAnterior_*`: en español "de agosto" y "del 3.er trimestre" no se
+    // resuelven con la misma plantilla, y un "Detalle de 3.er trimestre" es
+    // exactamente el tipo de frase que delata que la escribió una máquina.
+    detalleDe_mes: "Detalle de {{periodo}}",
+    detalleDe_trimestre: "Detalle del {{periodo}}",
+    detalleDe_anio: "Detalle de {{periodo}}",
+    // El subtítulo de esa pantalla: cuánto hay detrás de las cifras.
+    subDetalle: "{{movimientos}} movimientos · {{categorias}} categorías",
+    // El pie del grupo. Es la frase que explica el balance sin una gráfica:
+    // «Limpieza es el 31 % del gasto de Agosto 2026.»
+    mayorGastoPie_mes: "{{categoria}} es el {{pct}} % del gasto de {{periodo}}.",
+    mayorGastoPie_trimestre: "{{categoria}} es el {{pct}} % del gasto del {{periodo}}.",
+    mayorGastoPie_anio: "{{categoria}} es el {{pct}} % del gasto de {{periodo}}.",
+    gastoPorCategoria: "Gasto por categoría",
     // El Inicio del iPad (diseño del handoff): saludo con el corte de mes,
     // pie de la tarjeta de ingresos, la tarjeta de la bandeja y las dos
     // listas del pie.
@@ -3027,6 +3044,20 @@ export const es = {
     proximasTitulo: "Próximas actividades",
     verAgenda: "Ver agenda",
     sinProximas: "No hay actividades próximas.",
+    // El total del padrón junto a los activos: un «6» solo no dice nada;
+    // «6 de 9» sí.
+    // Los rótulos del pie de la tarjeta. Son los del escritorio recortados:
+    // en tres columnas de ~110 px, «Expedientes incompletos» se parte en dos
+    // renglones y descuadra las tres cifras que van debajo.
+    cortoAltas: "Altas {{anio}}",
+    cortoIncompletos: "Expedientes",
+    cortoProximas: "Próximas",
+    deTotal: " de {{total}}",
+    nAltas: "{{n}} altas",
+    nSinLlenar: "{{n}} sin llenar",
+    // El pie de la tarjeta, que explica las dos cifras que no se explican
+    // solas: por qué hay meses en cero y qué cuenta «próximas».
+    pieTarjeta: "Las barras son las altas por mes; los meses en cero se dejan a la vista. Las próximas son las ocurrencias de los siguientes 60 días sin las canceladas.",
     accesosTitulo: "Accesos rápidos",
   },
 

@@ -37,6 +37,7 @@ export default function SeccionIOS({
   total,
   accion,
   indexada,
+  pie,
   children,
 }: {
   /** Encabezado de la sección. Sin él, la tarjeta va suelta (el grupo de
@@ -48,6 +49,13 @@ export default function SeccionIOS({
   accion?: ReactNode;
   /** Encabezado pegajoso, para las listas con índice alfabético (Miembros). */
   indexada?: boolean;
+  /** Texto explicativo bajo la tarjeta: donde iOS pone las reglas del grupo.
+   *  Va DENTRO de la sección a propósito. El repo lo venía escribiendo como
+   *  un `<p className="ios-section-footer">` hermano, y así el margen de 35 px
+   *  con el que la sección se separa de la siguiente caía ENTRE la tarjeta y
+   *  su pie: el texto quedaba más cerca del grupo de abajo —al que no explica
+   *  nada— que del de arriba. Dentro, el pie viaja con lo que explica. */
+  pie?: ReactNode;
   children: ReactNode;
 }) {
   const encabezado = titulo != null && (total ? `${titulo} · ${total}` : titulo);
@@ -64,6 +72,7 @@ export default function SeccionIOS({
           : <h2 className="ios-section-header">{encabezado}</h2>
       )}
       <div className="ios-listcard">{children}</div>
+      {pie && <p className="ios-section-footer">{pie}</p>}
     </section>
   );
 }

@@ -81,8 +81,9 @@ for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => { vite.kill(); proces
 // ---------- 4. Navegador ----------
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 
-/** Un contexto de iPhone. `tema` = "light" | "dark". */
-async function contextoIPhone(tema) {
+/** Un contexto de iPhone. `tema` = "light" | "dark"; `rol` = el de `role.ts`
+ *  ("administrador" por omisión, que es con el que arranca la app). */
+async function contextoIPhone(tema, rol = "administrador") {
   const ctx = await browser.newContext({
     viewport: { width: 393, height: 852 },
     deviceScaleFactor: 3,
@@ -95,11 +96,12 @@ async function contextoIPhone(tema) {
     try { return esSelect ? sqlSelect(q, ps) : sqlExecute(q, ps); }
     catch (e) { console.error(`SQL: ${e.message}\n  ${q.slice(0, 120)}`); throw e; }
   });
-  await ctx.addInitScript(({ tema }) => {
+  await ctx.addInitScript(({ tema, rol }) => {
     try {
       localStorage.setItem("tesoreria-welcomed", "1");
       localStorage.setItem("tesoreria-lang", "es");
       localStorage.setItem("tesoreria-theme", tema);
+      localStorage.setItem("tamio-rol", rol);
     } catch { /* noop */ }
     const noop = async () => null;
     window.__TAURI_INTERNALS__ = {
@@ -112,7 +114,7 @@ async function contextoIPhone(tema) {
         return noop();
       },
     };
-  }, { tema });
+  }, { tema, rol });
   return ctx;
 }
 
@@ -141,7 +143,18 @@ const ctxSemilla = await contextoIPhone("light");
       "Karla Domínguez", "Luis Navarro", "María Delgado", "Nadia Fuentes",
       "Óscar Reyes", "Patricia Lara", "Raúl Estrada", "Sofía Cabrera",
     ];
-    for (const nombre of nombres) await db.insertMember(id, { nombre, fecha_ingreso: hace(400) });
+    /* Cinco altas del año en curso, repartidas y con meses vacíos por medio:
+       es lo que hace falta para que las barras de la portada de Secretaría
+       dibujen algo. Con todo el padrón entrando "hace 400 días" —el año
+       pasado— la serie salía en cero de enero a diciembre y la franja de la
+       tarjeta era una raya gris de doce tramos. */
+    const antiguedades = [200, 150, 90, 45, 10];
+    for (const [i, nombre] of nombres.entries()) {
+      const dias = i >= nombres.length - antiguedades.length
+        ? antiguedades[i - (nombres.length - antiguedades.length)]
+        : 400;
+      await db.insertMember(id, { nombre, fecha_ingreso: hace(dias) });
+    }
     const miembros = await db.listMembers(id);
 
     // Ingresos y gastos repartidos en los últimos días, para que las secciones
@@ -313,6 +326,46 @@ for (const tema of ["light", "dark"]) {
     await page.screenshot({ path: archivo });
     console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   }
+  await ctx.close();
+}
+
+// H2 · Detalle del periodo. No es una ruta —es estado, como el documento
+// abierto de Reportes—, así que hay que entrar tocando su fila. Se toma en
+// «Mes» y en «Año» para ver que el título, el pie y el desglose siguen al
+// segmentado y no se quedan clavados en el mes.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  for (const periodo of [null, "Año"]) {
+    /* Por otra ruta primero: el detalle es estado de React, y un `goto` al
+       mismo hash no remonta —se quedaría en el detalle de la vuelta anterior,
+       donde el segmentado ya no existe—. */
+    await page.goto(`${URL_BASE}/#/ajustes`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    if (periodo) await page.getByRole("button", { name: periodo, exact: true }).click();
+    await page.getByText(/^Detalle de[l]? /).first().click();
+    await page.waitForTimeout(1200);
+    const archivo = `${SALIDA}/1-detalle-${periodo ? "anio" : "mes"}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  await ctx.close();
+}
+
+// H3 · La portada de Secretaría. Es la ruta "/" con el rol de secretaria: el
+// único modo de verla es arrancar con ese rol puesto.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema, "secretaria");
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+  await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".app", { timeout: 30000 });
+  await page.waitForTimeout(1600);
+  const archivo = `${SALIDA}/20-inicio-secretaria-${tema}.png`;
+  await page.screenshot({ path: archivo });
+  console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
   await ctx.close();
 }
 

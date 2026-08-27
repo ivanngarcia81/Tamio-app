@@ -184,7 +184,14 @@ export const en: Resources = {
     sinIngresosEsteMes: "No income this month",
     // Encabezados de las dos listas agrupadas del Inicio en iPhone (rediseño
     // de iOS 26): sustituyen a la rejilla de ocho tarjetas KPI.
-    detalleDelMes: "Details",
+    detalleDe_mes: "{{periodo}} detail",
+    detalleDe_trimestre: "{{periodo}} detail",
+    detalleDe_anio: "{{periodo}} detail",
+    subDetalle: "{{movimientos}} entries · {{categorias}} categories",
+    mayorGastoPie_mes: "{{categoria}} is {{pct}}% of {{periodo}} spending.",
+    mayorGastoPie_trimestre: "{{categoria}} is {{pct}}% of {{periodo}} spending.",
+    mayorGastoPie_anio: "{{categoria}} is {{pct}}% of {{periodo}} spending.",
+    gastoPorCategoria: "Spending by category",
     // El Inicio del iPad (diseño del handoff).
     corteHoy: "the monthly close is today",
     corteDias_one: "the monthly close is tomorrow",
@@ -2939,6 +2946,13 @@ export const en: Resources = {
     proximasTitulo: "Upcoming activities",
     verAgenda: "View agenda",
     sinProximas: "No upcoming activities.",
+    cortoAltas: "New in {{anio}}",
+    cortoIncompletos: "Records",
+    cortoProximas: "Upcoming",
+    deTotal: " of {{total}}",
+    nAltas: "{{n}} new",
+    nSinLlenar: "{{n}} to fill",
+    pieTarjeta: "Bars are new members per month; months with none stay visible. Upcoming counts the next 60 days of occurrences, cancelled ones excluded.",
     accesosTitulo: "Quick access",
   },
 
