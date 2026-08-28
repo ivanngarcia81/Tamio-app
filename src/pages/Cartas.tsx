@@ -25,6 +25,7 @@ import SolicitudModal from "../components/SolicitudModal";
 import TrasladoSalidaModal from "../components/TrasladoSalidaModal";
 import TrasladoEntradaModal from "../components/TrasladoEntradaModal";
 import PlantillaModal from "../components/PlantillaModal";
+import PlantillaEditorIOS from "../components/PlantillaEditorIOS";
 import LoadingState from "../components/LoadingState";
 import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
 import Pagination from "../components/Pagination";
@@ -200,6 +201,27 @@ interface Props {
   church: Church;
   refreshKey: number;
   onChanged: () => void;
+}
+
+
+/** Una plantilla, como fila de lista del teléfono: el nombre arriba, el tipo
+ *  debajo, y a la derecha la única distinción que cambia lo que pasa al
+ *  escribir una carta —cuál es la predeterminada de su tipo—. «Activa» no va
+ *  como etiqueta: es lo que separa los dos grupos. */
+function FilaPlantilla({ p, onAbrir }: { p: Plantilla; onAbrir: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button type="button" className="ios-txrow ios-txrow--clickable" onClick={onAbrir}>
+      <div className="ios-txrow-main">
+        <div className="ios-txrow-title">{p.nombre}</div>
+        <div className="pl-sub">{t(`cartas.tipoDoc.${p.tipo}`)}</div>
+      </div>
+      <div className="ios-txrow-trailing">
+        {p.predeterminada === 1 && <span className="ios-fila-valor">{t("plantillas.predeterminadaBadge")}</span>}
+        <IosChevron />
+      </div>
+    </button>
+  );
 }
 
 export default function Cartas({ church, refreshKey, onChanged }: Props) {
@@ -1223,6 +1245,31 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
             )}
           </>
         ) : tab === "plantillas" ? (
+          enIPhone ? (
+            /* La lista de plantillas del teléfono. Era la `.data-table` de
+               escritorio, que sin su rejilla apilaba los cuatro encabezados
+               —PLANTILLA, TIPO DE CARTA, ESTADO— uno debajo de otro y dejaba
+               cada fila en 230 px con el tipo repetido bajo el nombre. Es la
+               puerta al editor C8, así que no podía quedarse así. */
+            <>
+              <SeccionIOS
+                titulo={t("plantillas.activas")}
+                total={String(plantillas.filter((p) => p.activa === 1).length)}
+                pie={t("plantillas.pieLista")}
+              >
+                {plantillas.filter((p) => p.activa === 1).map((p) => (
+                  <FilaPlantilla key={p.id} p={p} onAbrir={() => setPlantillaModal({ open: true, plantilla: p, base: null })} />
+                ))}
+              </SeccionIOS>
+              {plantillas.some((p) => p.activa !== 1) && (
+                <SeccionIOS titulo={t("plantillas.inactivas")} pie={t("plantillas.pieInactivas")}>
+                  {plantillas.filter((p) => p.activa !== 1).map((p) => (
+                    <FilaPlantilla key={p.id} p={p} onAbrir={() => setPlantillaModal({ open: true, plantilla: p, base: null })} />
+                  ))}
+                </SeccionIOS>
+              )}
+            </>
+          ) : (
           <>
             <div className="tx-head">
               <span className="roster-counters">
@@ -1270,6 +1317,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
               ))}
             </div>
           </>
+          )
         ) : (
           <>
             {enIPhone ? (
@@ -1664,7 +1712,20 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
         />
       )}
 
-      {plantillaModal.open && (
+      {/* El editor de plantilla del teléfono es otra pantalla, no el mismo
+          formulario encogido: la hoja C8 con el cuerpo y los huecos en
+          pantalla propia. El de escritorio se queda como estaba. */}
+      {plantillaModal.open && (enIPhone ? (
+        <PlantillaEditorIOS
+          church={church}
+          plantilla={plantillaModal.plantilla}
+          base={plantillaModal.base}
+          plantillas={plantillas}
+          members={members}
+          onClose={() => setPlantillaModal({ open: false, plantilla: null, base: null })}
+          onSaved={() => setRefrescoLocal((k) => k + 1)}
+        />
+      ) : (
         <PlantillaModal
           church={church}
           plantilla={plantillaModal.plantilla}
@@ -1672,7 +1733,7 @@ export default function Cartas({ church, refreshKey, onChanged }: Props) {
           onClose={() => setPlantillaModal({ open: false, plantilla: null, base: null })}
           onSaved={() => setRefrescoLocal((k) => k + 1)}
         />
-      )}
+      ))}
 
       {pendingDeletePl && (
         <ConfirmDialog
