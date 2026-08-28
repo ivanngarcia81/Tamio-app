@@ -339,7 +339,10 @@ export function SwitchField({
   title?: string;
 }) {
   return (
-    <div className={`ios-field${disabled ? " ios-field--apagado" : ""}`} title={title}>
+    /* `--explica` en cuanto hay segunda línea: esa línea existe para poder
+       ser larga, y sin la clase salía en una sola con puntos suspensivos
+       («Reproduce un tono corto al gu…»). Es la regla A de la lámina S11. */
+    <div className={`ios-field${sub ? " ios-field--explica" : ""}${disabled ? " ios-field--apagado" : ""}`} title={title}>
       {sub ? (
         <span className="ios-field-textos">
           <span className="ios-field-label">{label}</span>

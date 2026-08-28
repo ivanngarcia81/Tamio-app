@@ -3081,6 +3081,9 @@ export const en: Resources = {
     imagen: "Image",
     logoAlt: "Church logo",
     logoFila: "Logo",
+    logoSub: "Appears on letters and reports",
+    logoAnadir: "Add",
+    einOpcionalPie: "The tax ID is optional and is only printed when it is filled in.",
     nombreLabel: "Church name",
     nombrePlaceholder: "e.g. Central Church",
     ciudad: "City",
@@ -3095,6 +3098,7 @@ export const en: Resources = {
     einPlaceholder: "e.g. 12-3456789",
     einHint: "The church's tax ID number (EIN in the US, or its equivalent). Shown next to the church name on PDFs.",
     moneda: "Currency",
+    fiscalYContable: "Tax and accounting",
     monedaUsd: "USD — US Dollar",
     monedaMxn: "MXN — Mexican Peso",
     monedaHint: "Used for all new transactions, reports and balances.",
@@ -3187,10 +3191,12 @@ export const en: Resources = {
     oscuro: "Dark",
     automatico: "Automatic",
     hint: "\"Automatic\" follows the operating system's light/dark mode and only changes when you change it there.",
+    pieGrupo: "\"Automatic\" follows the system mode. The accent tints buttons and links; the green of the band above does not change — that is the brand.",
   },
 
   idioma: {
     titulo: "Language",
+    tituloGrupo: "Language and text",
     sub: "Choose the application language",
     automatico: "Automatic",
     espanol: "Español",
@@ -3326,6 +3332,7 @@ export const en: Resources = {
     desactivado: "Off",
     hint: "A different sound plays when you record an income, an expense, or delete a transaction.",
     juego: "Sound set",
+    pieGrupo: "With sound off, the set stays in view but dimmed: the setting does not move.",
     juegos: {
       clasico: "Classic",
       suave: "Soft",

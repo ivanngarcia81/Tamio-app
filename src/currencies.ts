@@ -65,6 +65,19 @@ export function currencyLocale(code: string): string {
   return PORCODE[code]?.locale ?? "en-US";
 }
 
+/** Forma CORTA canónica, p. ej. "GTQ Q" o "USD $".
+ *
+ *  La regla D de la lámina S11 del handoff de Ajustes: un valor que no cabe
+ *  en una línea no se abrevia con puntos ni se parte en dos. «USD — Dólar
+ *  estadounidense» salía como «USD — Dólar estadounide…» en la fila de
+ *  Iglesia, y una elipsis no informa de nada —el código y el símbolo sí, y
+ *  son lo que se reconoce de un vistazo—. El nombre completo se lee en el
+ *  selector que empuja, donde está la lista entera y hay sitio de sobra. */
+export function currencyShort(code: string): string {
+  const c = PORCODE[code];
+  return c ? `${c.code} ${c.symbol}` : code;
+}
+
 /** Etiqueta para los selectores, p. ej. "GTQ — Quetzal guatemalteco". */
 export function currencyLabel(code: string, lang: string): string {
   const c = PORCODE[code];

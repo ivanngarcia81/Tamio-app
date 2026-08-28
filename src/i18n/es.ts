@@ -3201,6 +3201,9 @@ export const es = {
     imagen: "Imagen",
     logoAlt: "Logo de la iglesia",
     logoFila: "Logo",
+    logoSub: "Sale en cartas y reportes",
+    logoAnadir: "Añadir",
+    einOpcionalPie: "La identificación fiscal es opcional y solo se imprime si está llena.",
     nombreLabel: "Nombre de la iglesia",
     nombrePlaceholder: "p. ej. Iglesia Central",
     ciudad: "Ciudad",
@@ -3215,6 +3218,7 @@ export const es = {
     einPlaceholder: "p. ej. 12-3456789",
     einHint: "Número de identificación fiscal de la iglesia (EIN en EE. UU., o su equivalente). Se muestra junto al nombre de la iglesia en los PDF.",
     moneda: "Moneda",
+    fiscalYContable: "Fiscal y contable",
     monedaUsd: "USD — Dólar",
     monedaMxn: "MXN — Peso mexicano",
     monedaHint: "Se usará en todos los movimientos nuevos, reportes y balances.",
@@ -3307,10 +3311,12 @@ export const es = {
     oscuro: "Oscuro",
     automatico: "Automático",
     hint: "\"Automático\" sigue el modo claro/oscuro del sistema operativo y cambia solo si tú lo cambias ahí.",
+    pieGrupo: "\"Automático\" sigue el modo del sistema. El acento tiñe botones y enlaces; el verde de la banda de arriba no cambia, es la marca.",
   },
 
   idioma: {
     titulo: "Idioma",
+    tituloGrupo: "Idioma y texto",
     sub: "Elige el idioma de la aplicación",
     automatico: "Automático",
     espanol: "Español",
@@ -3456,6 +3462,7 @@ export const es = {
     desactivado: "Desactivado",
     hint: "Se reproduce un sonido distinto al registrar un ingreso, un gasto o al eliminar un movimiento.",
     juego: "Juego de sonidos",
+    pieGrupo: "Con el sonido apagado, el juego se queda a la vista pero atenuado: el ajuste no cambia de sitio.",
     juegos: {
       clasico: "Clásico",
       suave: "Suave",

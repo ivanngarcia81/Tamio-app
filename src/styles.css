@@ -18809,6 +18809,25 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .content .ios-section-header { padding-left: 4px; padding-right: 4px; }
 :root.iphone .content .ios-section-footer { padding-left: 4px; padding-right: 4px; }
 
+/* ---- Las zonas de Ajustes, a plomo ----
+   Medido con `pruebas/.pref.mjs` sobre Preferencias: la tarjeta salía a 32
+   px y no a 16 —`.content` pone su inset y `.ios-group` volvía a poner el
+   suyo—, y encima el encabezado del grupo se quedaba en 20. Tres bordes
+   distintos en una pantalla de ocho filas.
+
+   Es el mismo defecto que Iván vio en el aparato y que ya se arregló en las
+   tarjetas del Inicio y de Cartas; aquí sobrevivió porque las zonas cuelgan
+   de `.settings-detail` y no del `.content` pelado.
+
+   Con esto: tarjeta a 16, texto de fila a 32 (16 + los 16 de la fila) y
+   encabezado a 32 —a plomo con la etiqueta, que es lo que hace Ajustes de
+   iOS—. El handoff dibuja el encabezado a 36; se queda en 32 a propósito,
+   porque 36 lo dejaría cuatro píxeles a la derecha del texto que titula y
+   el resto de la app ya alinea en 32. */
+:root.iphone .content .settings-detail .ios-group { margin-left: 0; margin-right: 0; }
+:root.iphone .content .settings-detail .ios-section-header,
+:root.iphone .content .settings-detail .ios-section-footer { padding-left: 16px; padding-right: 16px; }
+
 /* Los 44px entre secciones son el aire de una hoja de Ajustes, donde cada
    grupo es un tema distinto. En una lista de datos las secciones son el MISMO
    tema partido por fecha, y con ese hueco se leían como pantallas separadas:
@@ -21956,3 +21975,206 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    efecto se delata como lo que es: una raya pintada, no un canto de vidrio.
    El filo solo tiene sentido donde hay vidrio de verdad y algo pasa por
    debajo. */
+
+/* ---- 33 · LOS CINCO TIPOS DE FILA DE AJUSTES (lámina S11) ----
+
+   El handoff de Ajustes v2 trae una lámina a tamaño real con las únicas
+   formas de fila NUEVAS que hacían falta; todo lo demás sigue siendo la fila
+   de 44 px de siempre. Este bloque es esa lámina, y solo esa.
+
+   La regla que las gobierna a todas —la E de la lámina— no necesita CSS
+   nuevo: la casilla del icono se reserva POR GRUPO y no por fila, y eso ya
+   lo hace el marcado (`.ios-icon` existe o no existe en las filas del
+   grupo). Lo que sí hacía falta era quitar el `.ios-group` que `ChoiceGroup`
+   metía DENTRO del de `Section`: dos grupos anidados, 16 px de más, y las
+   filas de opción sangrando distinto que las de interruptor en la misma
+   pantalla. Eso se arregló en el componente, no aquí. */
+
+/* --- A · Interruptor con explicación · 64 px ---
+   La frase va DEBAJO de la etiqueta, nunca en la columna del valor: es lo
+   que hacía que «Reproduce un tono corto al gu…» saliera con puntos
+   suspensivos en el aparato. El interruptor manda el alto —31 + 2×9 de aire
+   = 49— y 64 deja que la explicación quepa en dos renglones sin apretar. */
+:root.iphone .ios-field--explica { min-height: 64px; align-items: center; }
+:root.iphone .ios-field--explica .ios-field-textos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+:root.iphone .ios-field--explica .ios-field-label { white-space: normal; }
+:root.iphone .ios-field--explica .ios-field-sub {
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 1.3;
+  color: var(--ios-valor);
+  /* Sin `nowrap` y sin elipsis: esta línea EXISTE para poder ser larga. */
+  white-space: normal;
+  overflow: visible;
+  text-wrap: pretty;
+}
+
+/* --- B · Campo de etiqueta larga · 56 px ---
+   Invertida: etiqueta 17 arriba, valor 15 gris debajo. Se usa cuando la
+   etiqueta pasa de 20 caracteres o el valor de 22 — y entonces la usan TODAS
+   las filas del grupo, para que no convivan dos formas en la misma tarjeta.
+   El vacío se dice, nunca se deja en blanco. */
+:root.iphone .ios-fila-larga { min-height: 56px; align-items: center; }
+:root.iphone .ios-fila-larga .ios-larga-textos {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+:root.iphone .ios-larga-etiqueta {
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.41px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .ios-larga-valor {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .ios-larga-valor.es-vacio { color: var(--text-3); font-variant-numeric: normal; }
+
+/* --- C · Selector de color · 56 px ---
+   El acento deja de ser una tarjeta suelta con cinco círculos y pasa a ser
+   UNA FILA de su grupo, con las pastillas alineadas a la derecha donde iría
+   el valor. Cinco de 30 px con 9 de separación caben en el ancho útil junto
+   a la etiqueta.
+
+   Lo elegido lleva anillo —2 px de blanco y 2 del propio color— y no
+   palomita encima: sobre un círculo saturado, en claro y en oscuro, el
+   anillo se ve siempre y la palomita depende del color de debajo. El área
+   táctil se estira a 44 sin dibujarse. */
+:root.iphone .ios-colors-row {
+  min-height: 56px;
+  gap: 9px;
+  padding: 8px 16px;
+  justify-content: flex-end;
+}
+:root.iphone .ios-colors-row .ios-colors-etiqueta {
+  flex: 1 1 auto;
+  margin-right: auto;
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -0.41px;
+  color: var(--text);
+}
+:root.iphone .ios-color-dot {
+  width: 30px;
+  height: 30px;
+  /* 44 de objetivo táctil sin ocupar 44 de dibujo: el área invisible se
+     reparte a los lados y el `gap` de 9 sigue mandando en lo que se ve. */
+  outline: none;
+  box-shadow: none;
+}
+:root.iphone .ios-color-dot::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+}
+:root.iphone .ios-color-dot[aria-selected="true"] {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px currentColor;
+}
+
+/* --- D · Valor largo ---
+   No lleva CSS: es una decisión de DATO. Si un valor no cabe en una línea no
+   se abrevia con puntos ni se parte en dos —se guarda la forma corta
+   canónica («MXN $») y el nombre completo se lee en la pantalla que empuja,
+   donde está la lista entera. Vive en `monedaCorta()`. */
+
+/* --- La fila del tamaño de texto (maqueta S8) ---
+   Dos renglones: la etiqueta con el nombre del paso a la derecha, y debajo el
+   deslizador entre las dos «A». El alto sale de eso: 76. */
+:root.iphone .ios-fila-tamano {
+  min-height: 76px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 16px;
+}
+:root.iphone .ft-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+:root.iphone .ft-paso { font-size: calc(15px * var(--fs-escala)); color: var(--ios-valor); }
+:root.iphone .ft-control { display: flex; align-items: center; gap: 12px; }
+/* Las dos «A» marcan los extremos de la escala, y ESCALAN ellas también.
+   Mi primer impulso fue dejarlas fijas —son un icono, no un texto—, y la
+   guarda de tipografía lo cazó con el argumento correcto: en «Grande» se
+   habrían quedado quietas mientras el resto de la pantalla crece, que es
+   justo lo que quien sube el tamaño no quiere ver. La metáfora aguanta igual
+   porque lo que la sostiene es la PROPORCIÓN entre las dos, no su tamaño. */
+:root.iphone .ft-a { flex: 0 0 auto; color: var(--ios-valor); }
+:root.iphone .ft-a--chica { font-size: calc(13px * var(--fs-escala)); }
+:root.iphone .ft-a--grande { font-size: calc(21px * var(--fs-escala)); }
+:root.iphone .ios-fila-tamano input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  margin: 0;
+  background: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+:root.iphone .ios-fila-tamano input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(118, 118, 128, .16);
+}
+:root.iphone .ios-fila-tamano input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -11px;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+}
+:root.iphone .ios-fila-tamano input[type="range"]::-moz-range-track {
+  height: 4px; border-radius: 2px; background: rgba(118, 118, 128, .16);
+}
+:root.iphone .ios-fila-tamano input[type="range"]::-moz-range-thumb {
+  width: 26px; height: 26px; border: 0; border-radius: 13px;
+  background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .22);
+}
+
+/* --- La fila del logo (maqueta S3) ---
+   64 px como la de interruptor con explicación: la frase «Sale en cartas y
+   reportes» vive DENTRO de la fila y no en el pie del grupo, porque explica
+   este dato y no la regla del grupo entero. */
+:root.iphone .ios-field--logo { min-height: 64px; }
+:root.iphone .ios-logo-caja {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--cabecera);
+}
+:root.iphone .ios-logo-caja img { width: 100%; height: 100%; object-fit: contain; background: var(--surface); }
+:root.iphone .ios-logo-iniciales {
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: .4px;
+  color: var(--cabecera-tinta);
+}
+/* «Añadir» solo cuando NO hay logo: con logo, el cuadro ya dice que lo hay y
+   la palabra sobraría. */
+:root.iphone .ios-logo-anadir {
+  flex: 0 0 auto;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand, #059669);
+}
+/* Un pie de grupo con más de una frase: cada una en su párrafo. Pegadas se
+   leen como un solo texto largo y la segunda regla se pierde. */
+:root.movil .ios-section-footer .ios-pie-parrafo { display: block; }
+:root.movil .ios-section-footer .ios-pie-parrafo + .ios-pie-parrafo { margin-top: 6px; }
