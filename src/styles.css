@@ -21879,3 +21879,80 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Y la única cifra que importa debajo: nueve de nueve. Si faltara uno, en
    ámbar, antes de que la carta salga impresa. */
 :root.iphone .pl-incompleto { color: var(--warn); font-weight: 600; }
+
+/* ---- 32 · EL FILO ESPECULAR ----
+
+   Lo que separa el vidrio de iOS 26 del esmerilado de iOS 7 son dos cosas: la
+   REFRACCIÓN —que dobla lo que hay detrás— y el FILO —la línea de luz que se
+   engancha en el canto—. La primera no se puede en un WebView: `backdrop-filter`
+   solo acepta funciones de filtro, no `url(#filtroSVG)`, ni en WebKit ni en
+   Chrome, así que no hay manera de pasarle un `feDisplacementMap` a lo de
+   detrás. La segunda sí, y es este bloque.
+
+   Un canto de vidrio real no se ilumina por igual: recoge la luz ARRIBA y
+   devuelve un rebote mucho más flojo ABAJO. Por eso son dos sombras interiores
+   y no un borde: un `border` reparte lo mismo por los cuatro lados y lo que
+   sale es un aro, no un filo.
+
+   Va sobre el `border` que estas piezas ya tenían, no en su lugar. Los dos
+   hacen trabajos distintos: el borde es la separación con lo de fuera (una
+   línea OSCURA sobre claro), el filo es el brillo justo por dentro. Juntos son
+   el canto; cada uno solo se lee como un contorno dibujado.
+
+   No añade ni una capa de composición: son sombras del elemento que ya está
+   ahí. Eso es deliberado —cada `backdrop-filter` obliga a un pase fuera de
+   pantalla por fotograma, y en este proyecto ya hubo blurs que WebKit soltaba
+   en el carrusel—, así que el filo se paga con pintura, no con vidrio nuevo.
+
+   Se quita entero borrando el bloque. */
+:root {
+  /* Claro: el vidrio es blanco al 72%, así que el filo tiene que ser casi
+     blanco puro para despegarse de él. */
+  --ios-filo: rgba(255, 255, 255, .58);
+  --ios-filo-bajo: rgba(255, 255, 255, .20);
+}
+:root.iphone[data-theme="dark"], :root.mac[data-theme="dark"] {
+  /* Oscuro: sobre `rgba(28,28,30,.72)` el mismo blanco sería un tubo de neón.
+     Baja a un tercio — en oscuro el canto se lee por contraste, no por
+     brillo. */
+  --ios-filo: rgba(255, 255, 255, .22);
+  --ios-filo-bajo: rgba(255, 255, 255, .07);
+}
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]), :root.mac:not([data-theme="light"]) {
+    --ios-filo: rgba(255, 255, 255, .22);
+    --ios-filo-bajo: rgba(255, 255, 255, .07);
+  }
+}
+
+/* La tab bar. Conserva su sombra de caída —la que la levanta del contenido—
+   y le añade el filo: sin repetirla aquí, `box-shadow` la borraría. */
+:root.iphone .barra-inferior {
+  box-shadow:
+    0 12px 32px -10px rgba(0, 0, 0, .35),
+    inset 0 .5px 0 var(--ios-filo),
+    inset 0 -.5px 0 var(--ios-filo-bajo);
+}
+
+/* Las dos barras de vidrio de las hojas: la de «Vista previa / Guardar» del
+   editor de plantilla y la de formato del cuerpo. Van pegadas al canto de
+   abajo, así que solo llevan el filo de ARRIBA: el de abajo caería fuera de
+   la pantalla y lo único que haría es un renglón de luz sobre el indicador
+   de inicio. */
+:root.iphone .pl-pie,
+:root.iphone .eh-barra {
+  box-shadow: inset 0 .5px 0 var(--ios-filo);
+}
+
+/* --- Y dónde NO va, que es la mitad del trabajo ---------------------------
+   Las tres piezas de la cabecera —«+», compartir y el «···»— NO llevan filo.
+   Tuvieron cápsula de vidrio en la primera versión del rediseño y la v2 se la
+   quitó a propósito (~19479): con la banda de marca, la barra de detrás está
+   SIEMPRE opaca, así que la cápsula sobraba siempre y la maqueta las dibuja
+   como glifos blancos desnudos.
+
+   Ponerles el filo —que es lo primero que probé— dibuja media línea de luz
+   cruzando un botón transparente sobre el verde. Es el único sitio donde el
+   efecto se delata como lo que es: una raya pintada, no un canto de vidrio.
+   El filo solo tiene sentido donde hay vidrio de verdad y algo pasa por
+   debajo. */
