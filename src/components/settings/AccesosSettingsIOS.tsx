@@ -20,19 +20,23 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { updateSuscripcion, type Church } from "../../db";
+import { updateSuscripcion, type Church, type Usuario } from "../../db";
 import { authHabilitado } from "../../supabase";
 import { PLANES, incluyeSecretaria, incluyeTesoreria } from "../../plan";
 import { ROLES_ACCESO, type Role } from "../../role";
 import { SYNC_HABILITADO, ejecutarSync, useSync } from "../../syncManager";
 import { playSound } from "../../sound";
-import { ActionField, Section, SwitchField, TextField } from "../ios/FormularioIOS";
+import { ActionField, IosChevron, Section, SwitchField, TextField } from "../ios/FormularioIOS";
 import { IOSPickerField } from "../ios/IOSPickerField";
+import { iniciales } from "../../services/avatar";
 import { useInvitacion } from "./InvitarUsuario";
 import { usePermisosTesoreria } from "./PermisosSettings";
 
 interface Props {
   church: Church;
+  /** Las personas de la iglesia, para los dos grupos de la maqueta S6. */
+  usuarios?: Usuario[];
+  onAbrirUsuario?: (u: Usuario) => void;
   role: Role;
   onRoleChange: (r: Role) => void;
   onChurchUpdated: (c: Church) => void;
@@ -52,8 +56,18 @@ function FilaValor({ label, value, tono }: { label: string; value: string; tono?
   );
 }
 
+/** De qué áreas entra alguien, según su rol. Sale de la MISMA regla que usa
+ *  la app para decidir qué zonas se ven, así que la lista no puede decir una
+ *  cosa distinta de la que hace el menú. */
+function areasDe(rol: string, t: (k: string) => string): string {
+  if (rol === "administrador") return `${t("cuenta.areas.tesoreria")} · ${t("cuenta.areas.secretaria")}`;
+  if (rol === "tesorero") return t("cuenta.areas.tesoreria");
+  if (rol === "secretaria") return t("cuenta.areas.secretaria");
+  return t("cuenta.areas.ninguna");
+}
+
 export default function AccesosSettingsIOS({
-  church, role, onRoleChange, onChurchUpdated, esAdmin, authActivo,
+  church, usuarios, onAbrirUsuario, role, onRoleChange, onChurchUpdated, esAdmin, authActivo,
 }: Props) {
   const { t } = useTranslation();
   const inv = useInvitacion();
@@ -107,6 +121,50 @@ export default function AccesosSettingsIOS({
 
   return (
     <div className="ios-form">
+      {/* La pregunta de esta zona se lee de dos maneras y las dos hacen falta:
+          por PERSONA —quién entra y a qué— y por ÁREA —quién hay en cada una—.
+          Con una sola lectura siempre falta la otra: la lista de personas no
+          dice si Tesorería se quedó sin nadie (maqueta S6). */}
+      {usuarios && usuarios.length > 0 && (
+        <>
+          <Section header={t("usuarios.personasGrupo")} footer={t("usuarios.piePersonas")}>
+            {usuarios.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                className="ios-row ios-fila-persona"
+                onClick={() => onAbrirUsuario?.(u)}
+              >
+                <span className="ios-persona-avatar">{iniciales(u.nombre, u.email)}</span>
+                <span className="ios-row-textos">
+                  <span className="ios-row-label">{u.nombre}</span>
+                  <span className="ios-row-sub">{areasDe(u.rol, t)}</span>
+                </span>
+                <IosChevron />
+              </button>
+            ))}
+          </Section>
+
+          <Section header={t("usuarios.areasGrupo")} footer={t("usuarios.pieAreas")}>
+            {(["tesoreria", "secretaria"] as const).map((area) => {
+              const dentro = usuarios.filter((u) =>
+                u.rol === "administrador"
+                || (area === "tesoreria" ? u.rol === "tesorero" : u.rol === "secretaria"));
+              return (
+                <div className="ios-field ios-fila-larga" key={area}>
+                  <span className="ios-larga-textos">
+                    <span className="ios-larga-etiqueta">{t(`cuenta.areas.${area}`)}</span>
+                    <span className={`ios-larga-valor${dentro.length ? "" : " es-vacio"}`}>
+                      {dentro.length ? dentro.map((u) => u.nombre).join(", ") : t("usuarios.nadieEnArea")}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </Section>
+        </>
+      )}
+
       {verInvitar && (
         <Section
           header={t("invitar.titulo")}

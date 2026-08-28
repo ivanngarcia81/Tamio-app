@@ -3175,6 +3175,11 @@ export const en: Resources = {
   },
 
   usuarios: {
+    personasGrupo: "People",
+    areasGrupo: "Areas",
+    piePersonas: "Tap a person to change their role. The role decides which areas they enter.",
+    pieAreas: "The area decides what each person sees when opening the app. Someone can be in both.",
+    nadieEnArea: "No one yet",
     titulo: "Users",
     sub: "Directory of people who manage the church",
     agregar: "Add user",

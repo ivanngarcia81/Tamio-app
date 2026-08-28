@@ -22313,3 +22313,23 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone[data-theme="dark"] .ios-firma-anadir { color: #ffb340; }
 /* El segmentado de Categorías, sobre el gris y no dentro de una tarjeta. */
 :root.iphone .cat-seg { padding: 16px 16px 0; }
+
+/* --- S6 · La fila de persona ---
+   Avatar redondo de 38 en la casilla del icono: en una lista de personas la
+   inicial identifica antes que el nombre completo, sobre todo cuando dos
+   comparten apellido. Redondo y no cuadrado —el tile cuadrado de 29 es de
+   los ajustes, no de la gente. */
+:root.iphone .ios-fila-persona { min-height: 62px; }
+:root.iphone .ios-persona-avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 120, 87, .12);
+  color: var(--cabecera);
+  font-size: calc(14px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone[data-theme="dark"] .ios-persona-avatar { background: rgba(52, 211, 153, .16); color: #34d399; }

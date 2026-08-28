@@ -3295,6 +3295,11 @@ export const es = {
   },
 
   usuarios: {
+    personasGrupo: "Personas",
+    areasGrupo: "Áreas",
+    piePersonas: "Toca una persona para cambiar su rol. El rol decide en qué áreas entra.",
+    pieAreas: "El área decide qué ve cada persona al abrir la app. Alguien puede estar en las dos.",
+    nadieEnArea: "Nadie todavía",
     titulo: "Usuarios",
     sub: "Directorio de personas que administran la iglesia",
     agregar: "Agregar usuario",

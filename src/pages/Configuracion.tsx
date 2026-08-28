@@ -871,6 +871,7 @@ export default function Configuracion({
                 {/* Las cuatro guardas de abajo viven ahora dentro del
                     componente, con las mismas condiciones. */}
                 <AccesosSettingsIOS
+                  usuarios={usuarios}
                   church={church}
                   role={role}
                   onRoleChange={onRoleChange}
