@@ -167,7 +167,7 @@ export default function EditorHuecosIOS({
       </div>
 
       {insertando && (
-        <HojaHuecos ejemplos={ejemplos} faltan={faltan} onElegir={insertar} onCerrar={() => setInsertando(false)} />
+        <HojaHuecos ejemplos={ejemplos} onElegir={insertar} onCerrar={() => setInsertando(false)} />
       )}
     </Portal>
   );
@@ -185,9 +185,8 @@ export default function EditorHuecosIOS({
  * La hoja no ocupa toda la altura a propósito: deja ver el texto de arriba
  * para no perder el sitio del cursor.
  */
-function HojaHuecos({ ejemplos, faltan, onElegir, onCerrar }: {
+function HojaHuecos({ ejemplos, onElegir, onCerrar }: {
   ejemplos: Partial<Record<VariableId, string>>;
-  faltan: ReadonlySet<string>;
   onElegir: (clave: VariableId) => void;
   onCerrar: () => void;
 }) {
@@ -212,8 +211,13 @@ function HojaHuecos({ ejemplos, faltan, onElegir, onCerrar }: {
                   <button type="button" className="ios-txrow ios-txrow--clickable eh-fila" key={clave} onClick={() => onElegir(clave)}>
                     <div className="ios-txrow-main">
                       <div className="ios-txrow-title es-accion">{etiquetaHueco(clave)}</div>
-                      <div className={`eh-ejemplo${faltan.has(clave) ? " es-falta" : ""}`}>
-                        {ejemplos[clave] || t("plantillas.huecoSinDato")}
+                      {/* El ejemplo REAL, o —si no hay— por qué no lo hay. Y el
+                          porqué depende del grupo: que a «Dirección de la
+                          iglesia» le falte el dato no tiene nada que ver con el
+                          miembro al que se le escribe. Ámbar cuando falta, que
+                          es la misma señal que la pastilla usa en el texto. */}
+                      <div className={`eh-ejemplo${ejemplos[clave] ? "" : " es-falta"}`}>
+                        {ejemplos[clave] || t(`plantillas.huecoSinDato.${g.id}`)}
                       </div>
                     </div>
                     <div className="ios-txrow-trailing">

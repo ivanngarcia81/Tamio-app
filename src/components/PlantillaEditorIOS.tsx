@@ -124,15 +124,17 @@ export default function PlantillaEditorIOS({ church, plantilla, base, plantillas
   const cuenta = useMemo(() => contarHuecos(textos, ctx), [textos, ctx]);
   const resumen = useMemo(() => resumenCuerpo(cuerpo), [cuerpo]);
 
-  /** El recuento de plantillas por tipo, para el grupo «YA EN USO» de C10. */
+  /** El recuento de plantillas por tipo, para el grupo «YA EN USO» de C10.
+   *
+   *  Cuenta TAMBIÉN la que se está editando. Descontarla parecía más honesto
+   *  —«cuántas otras hay»— y hacía justo lo contrario: el tipo de esta
+   *  plantilla, que es por definición un tipo en uso, bajaba a «TODOS LOS
+   *  TIPOS» y la palomita aparecía en el grupo de los que nadie usa. */
   const porTipo = useMemo(() => {
     const m = new Map<string, number>();
-    for (const p of plantillas) {
-      if (plantilla && p.id === plantilla.id) continue;
-      m.set(p.tipo, (m.get(p.tipo) ?? 0) + 1);
-    }
+    for (const p of plantillas) m.set(p.tipo, (m.get(p.tipo) ?? 0) + 1);
     return m;
-  }, [plantillas, plantilla]);
+  }, [plantillas]);
 
   function payload(): NewPlantilla | null {
     setError(null);
@@ -261,8 +263,13 @@ export default function PlantillaEditorIOS({ church, plantilla, base, plantillas
               <button type="button" className="ios-txrow ios-txrow--clickable" onClick={() => setPantalla("cuerpo")}>
                 <div className="ios-txrow-main">
                   <div className="ios-txrow-title">{t("cartas.cuerpo")}</div>
+                  {/* Dos cuentas y no una cadena con dos números: «1 huecos»
+                      es exactamente la clase de detalle que delata que la
+                      pantalla se armó sin mirarla. */}
                   <div className="pl-sub">
-                    {t("plantillas.resumenCuerpo", { parrafos: resumen.parrafos, huecos: resumen.huecos })}
+                    {t("plantillas.parrafos", { count: resumen.parrafos })}
+                    {" · "}
+                    {t("plantillas.huecosCuenta", { count: resumen.huecos })}
                   </div>
                 </div>
                 <div className="ios-txrow-trailing"><IosChevron /></div>

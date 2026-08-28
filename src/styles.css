@@ -21485,7 +21485,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    resto del teléfono, y abajo hay una barra fija con las dos acciones que no
    son campos. */
 :root.iphone .pl-hoja .ios-nav-title { font-weight: 600; }
-:root.iphone .pl-cuerpo { padding: 16px 16px 24px; }
+/* 96 abajo, no 24: la barra fija de «Vista previa / Guardar» es vidrio, así
+   que el contenido pasa POR DEBAJO. Sin ese aire el último grupo —el de
+   eliminar— no llegaba nunca a verse entero por mucho que se desplazara. */
+:root.iphone .pl-cuerpo { padding: 16px 16px 96px; }
 :root.iphone .pl-cuerpo > .ios-section:first-child { margin-top: 0; }
 /* Los encabezados y pies traen su sangría de 32 = 16 del inset + 16 de la
    fila; aquí el inset lo pone el contenedor, así que descuentan esos 16. */
@@ -21541,6 +21544,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* Saludo y despedida son de una línea aunque el grupo no sea `compacta`: el
    grupo lo comparten con el asunto y el cuerpo, que sí necesitan dos. */
 :root.iphone .ios-txrow.pl-fila-corta { min-height: 44px; padding-top: 7px; padding-bottom: 7px; }
+/* Y quien se encoge es el VALOR, no la etiqueta. `.ios-txrow` reparte el
+   ancho al revés —`-main` crece y `-trailing` no—, que es lo correcto cuando
+   el título es el dato; aquí el título es la ETIQUETA de un campo, y con
+   «Atentamente, en el amor de Cristo,» al lado se leía «Despedid…». */
+:root.iphone .pl-fila-corta .ios-txrow-main { flex: 0 0 auto; }
+:root.iphone .pl-fila-corta .ios-txrow-trailing { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
+:root.iphone .pl-fila-corta .ios-fila-valor {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 :root.iphone .pl-cifra { font-variant-numeric: tabular-nums; }
 :root.iphone .pl-error { color: var(--ios-red); }
 
@@ -21740,6 +21755,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .pl-papel {
   background: var(--surface);
+  /* El aire que separa el papel del grupo de abajo. `.ios-section` solo trae
+     margen INFERIOR, así que sin esto la tarjeta de «Huecos llenos» nacía
+     pegada al canto de la hoja y las dos se leían como una sola. */
+  margin-bottom: 18px;
   border-radius: 6px;
   box-shadow: 0 6px 20px -12px rgba(0, 0, 0, .4);
   padding: 26px 24px 30px;

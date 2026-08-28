@@ -677,7 +677,10 @@ for (const tema of ["light", "dark"]) {
   await toma("c12-cuerpo");
   await page.getByRole("button", { name: "Insertar hueco", exact: true }).click();
   await toma("c11-huecos");
-  await page.getByRole("button", { name: "Cancelar", exact: true }).first().click();
+  // `.last()`: la hoja de huecos está ENCIMA de la del editor, y las dos
+  // tienen su «Cancelar». Con `.first()` Playwright apunta al de abajo, que
+  // el telón de la de arriba intercepta.
+  await page.getByRole("button", { name: "Cancelar", exact: true }).last().click();
   await page.waitForTimeout(400);
   await page.getByRole("button", { name: "Listo", exact: true }).click();
   await page.waitForTimeout(500);
