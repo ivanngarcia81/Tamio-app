@@ -687,6 +687,7 @@ export const es = {
 
   recordModal: {
     posibleDuplicado: "Ya hay un movimiento parecido registrado ({{nombres}}). Revisa antes de guardar; si es correcto, guarda de nuevo.",
+    contacto: "Contacto",
     editarIngreso: "Editar ingreso",
     editarGasto: "Editar gasto",
     editarMiembro: "Editar miembro",
@@ -763,6 +764,7 @@ export const es = {
     marcarPendienteLabel: "Marcar para revisar después — no se contará en los totales del mes hasta que lo confirmes en Bandeja",
     nombreFamilia: "Nombre completo o de familia",
     nombreFamiliaPlaceholder: "p. ej. Carlos y Ana Ruiz",
+    rfcMiembroPie: "Solo hace falta para emitir constancias deducibles de impuestos.",
     rfcMiembroHint: "(opcional — necesario para constancias deducibles)",
     rfcMiembroPlaceholder: "Identificación fiscal (opcional)",
     fechaFuturaIngresos: "No se pueden registrar ingresos con una fecha futura.",

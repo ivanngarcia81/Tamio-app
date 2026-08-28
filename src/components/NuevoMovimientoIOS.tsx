@@ -43,6 +43,8 @@ export default function NuevoMovimientoIOS({
   const { t } = useTranslation();
   const {
     tab, setTab, saving, error, isEdit, pestanaBloqueada, titulo,
+    mNombre, setMNombre, mEmail, setMEmail, mTelefono, setMTelefono,
+    mRfc, setMRfc, mNotas, setMNotas, mEstado, setMEstado,
     categoria, setCategoria, subcategoria, setSubcategoria, concepto, setConcepto,
     fecha, setFecha, hora, setHora, monto, setMonto, metodo, setMetodo,
     aportanteQuery, setAportanteQuery, aportanteId, setAportanteId,
@@ -102,6 +104,111 @@ export default function NuevoMovimientoIOS({
           </div>
 
           <div className="ios-sheet-body nm-cuerpo">
+            {/* ---- La pestaña «miembro»: dar de alta un APORTANTE ----
+                Era la única del «+» que no tenía hoja: `NewRecordModal` la
+                excluía a mano (`esMovil() && h.tab !== "miembro"`) y en el
+                teléfono salía la ventana de escritorio, con sus etiquetas
+                encima de cajas de ancho completo y tres botones al pie.
+
+                No la dibujó nadie: el handoff trae N4, que es el alta del
+                PADRÓN (Secretaría), otro formulario con otros campos. Ésta es
+                la de Tesorería, y se arma con el vocabulario que ya está
+                montado —los mismos grupos, filas y tipos de la lámina S11—.
+
+                El tipo va en segmentado y no en dos filas con palomita porque
+                es una bifurcación de dos, no una lista: la misma decisión que
+                Ingreso/Gasto tres líneas más abajo. */}
+            {tab === "miembro" ? (
+              <>
+                {/* El pie va pegado al segmentado, no al grupo del nombre:
+                    explica lo que hace ESTE control —qué pasa si eliges
+                    «Visitante»—, y colgado del grupo de abajo parecía hablar
+                    del campo del nombre. */}
+                {!isEdit && (
+                  <div className="nm-tipo">
+                    <IOSSegmented
+                      options={[
+                        { value: "activo" as const, label: t("recordModal.tipoMiembro") },
+                        { value: "visitante" as const, label: t("recordModal.tipoVisitante") },
+                      ]}
+                      value={mEstado}
+                      onChange={setMEstado}
+                    />
+                    <p className="ios-section-footer nm-tipo-pie">{t("recordModal.tipoPersonaHint")}</p>
+                  </div>
+                )}
+
+                <Section>
+                  <TextField
+                    label={t("recordModal.nombreFamilia")}
+                    value={mNombre}
+                    onChange={setMNombre}
+                    placeholder={t("recordModal.nombreFamiliaPlaceholder")}
+                    stacked
+                  />
+                </Section>
+
+                <Section header={t("recordModal.contacto")}>
+                  <TextField
+                    label={t("tesorero.correo")}
+                    value={mEmail}
+                    onChange={setMEmail}
+                    placeholder={t("tesorero.correoPlaceholder")}
+                    type="email"
+                    optional
+                    stacked
+                  />
+                  <TextField
+                    label={t("tesorero.telefono")}
+                    value={mTelefono}
+                    onChange={setMTelefono}
+                    placeholder={t("tesorero.telefonoPlaceholder")}
+                    optional
+                  />
+                </Section>
+
+                {/* El RFC lleva su explicación en el pie del grupo y no
+                    pegada a la etiqueta: «(opcional — hace falta para los
+                    recibos deducibles)» no cabe al lado de «RFC» en 393 px. */}
+                <Section footer={t("recordModal.rfcMiembroPie")}>
+                  <TextField
+                    label={t("recordModal.rfc")}
+                    value={mRfc}
+                    onChange={setMRfc}
+                    optional
+                    stacked
+                  />
+                </Section>
+
+                <Section>
+                  <TextField
+                    label={t("recordModal.notas")}
+                    value={mNotas}
+                    onChange={setMNotas}
+                    placeholder={t("usuarios.notasPlaceholder")}
+                    optional
+                    stacked
+                  />
+                </Section>
+
+                {error && (
+                  <p className="nm-aviso" role="alert">
+                    <IconWarn size={14} /> {error}
+                  </p>
+                )}
+
+                {!isEdit && (
+                  <Section>
+                    <ActionField
+                      label={t("recordModal.guardarYAgregarOtro")}
+                      onPress={() => guardar(false)}
+                      disabled={saving}
+                    />
+                  </Section>
+                )}
+              </>
+            ) : (
+            <>
             {!isEdit && !pestanaBloqueada && (
               <div className="nm-tipo">
                 <IOSSegmented
@@ -310,6 +417,8 @@ export default function NuevoMovimientoIOS({
                   disabled={saving}
                 />
               </Section>
+            )}
+            </>
             )}
 
           </div>

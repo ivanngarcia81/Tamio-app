@@ -669,6 +669,7 @@ export const en: Resources = {
 
   recordModal: {
     posibleDuplicado: "A similar entry already exists ({{nombres}}). Check before saving; if it is correct, save again.",
+    contacto: "Contact",
     editarIngreso: "Edit income",
     editarGasto: "Edit expense",
     editarMiembro: "Edit member",
@@ -745,6 +746,7 @@ export const en: Resources = {
     marcarPendienteLabel: "Flag for later review — it will not count toward monthly totals until you confirm it in the Inbox",
     nombreFamilia: "Full or family name",
     nombreFamiliaPlaceholder: "e.g. Carlos and Ana Ruiz",
+    rfcMiembroPie: "Only needed to issue tax-deductible receipts.",
     rfcMiembroHint: "(optional — needed for tax-deductible receipts)",
     rfcMiembroPlaceholder: "Tax ID (optional)",
     fechaFuturaIngresos: "Income cannot be recorded with a future date.",
