@@ -294,9 +294,15 @@ export default function CategoriesSettingsIOS({ church, onChanged }: Props) {
   /** Con la MISMA clave que guarda `transactions.categoria`: el id del
    *  catálogo, o la referencia de la personalizada. */
   const conteoDe = (c: CategoriaUI) => conteos[c.custom && c.uid ? customCatRef(c.uid) : c.id] ?? 0;
+  /** Cuál de los dos catálogos se está viendo. Arranca en gasto: es el que
+   *  tiene más categorías y el que se retoca más a menudo. */
+  const [verTipo, setVerTipo] = useState<Kind>("gasto");
 
+  /* Sin `.ios-group` propio: `Section` ya envuelve a sus hijos en uno, y dos
+     anidados suman 16 px de sangría cada uno. Es el mismo defecto que tenía
+     `ChoiceGroup` en Preferencias. */
   const Grupo = ({ tipo, lista }: { tipo: Kind; lista: CategoriaUI[] }) => (
-    <div className="ios-group">
+    <>
       {lista.map((c) => (
         <CategoryRow
           key={c.id}
@@ -313,17 +319,31 @@ export default function CategoriesSettingsIOS({ church, onChanged }: Props) {
         </span>
         <span>{tipo === "ingreso" ? t("categorias.nuevaIngreso") : t("categorias.nuevaEgreso")}</span>
       </button>
-    </div>
+    </>
   );
 
   return (
     <div className="ios-form">
-      <Section header={t("charts.ingresos")}>
-        <Grupo tipo="ingreso" lista={ingresos} />
-      </Section>
+      {/* Ingreso y gasto no son dos grupos de una lista: son dos catálogos que
+          nunca se comparan entre sí. Uno debajo del otro obligaba a recorrer
+          los siete ingresos para llegar al primer gasto; en segmentado —el
+          mismo de Cartas— cada uno empieza arriba (maqueta S7). */}
+      <div className="cat-seg">
+        <IOSSegmented
+          options={[
+            { value: "ingreso" as const, label: t("charts.ingresos") },
+            { value: "gasto" as const, label: t("charts.gastos") },
+          ]}
+          value={verTipo}
+          onChange={setVerTipo}
+        />
+      </div>
 
-      <Section header={t("charts.gastos")} footer={errorLista ?? t("categorias.hint")}>
-        <Grupo tipo="gasto" lista={gastos} />
+      <Section
+        header={verTipo === "ingreso" ? t("charts.ingresos") : t("charts.gastos")}
+        footer={errorLista ?? t("categorias.hint")}
+      >
+        <Grupo tipo={verTipo} lista={verTipo === "ingreso" ? ingresos : gastos} />
       </Section>
 
       {sheet && (

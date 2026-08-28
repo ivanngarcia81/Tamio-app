@@ -13609,7 +13609,19 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
      especificidad que la regla de la línea ~4462 que ESTA sustituye — con
      bare ".content" el bug volvía a colarse en cuanto alguien tocara esa
      zona sin saber que esta regla dependía de ganarle por especificidad. */
-  :root.movil .content { padding-bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom)); }
+  /* La cuenta, escrita: la barra dejó de ser una franja pegada al borde y es
+     una PÍLDORA FLOTANTE (bloque 18 del rediseño v2). Mide `--tabbar-h + 9`
+     de alto y flota a 12 px del canto, así que despejarla cuesta
+     12 + 58 + 16 de aire = 86, no los 49 + 16 = 65 que reservaba esta regla
+     cuando la barra iba pegada abajo. Faltaban 21 px, y se veían: el último
+     pie de grupo de cada zona de Ajustes acababa medio tapado por el vidrio.
+
+     El 9 y el 12 no se repiten a mano —salen de la propia `.barra-inferior`,
+     unas líneas más abajo—: si la píldora cambia de alto o de margen, esto
+     cambia con ella. */
+  :root.movil .content {
+    padding-bottom: calc(12px + var(--tabbar-h) + 9px + 16px + env(safe-area-inset-bottom));
+  }
 
   .barra-inferior {
     display: grid;
@@ -22178,3 +22190,126 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    leen como un solo texto largo y la segunda regla se pierde. */
 :root.movil .ios-section-footer .ios-pie-parrafo { display: block; }
 :root.movil .ios-section-footer .ios-pie-parrafo + .ios-pie-parrafo { margin-top: 6px; }
+
+/* --- S2 · La tarjeta de identidad de «Cuenta» ---
+   No es una fila de lista: es la respuesta a «¿con qué permisos entro?», y
+   por eso tiene su propia caja sin hermanas. El avatar mide 56 —el doble que
+   el tile de 29 del índice— porque aquí es el sujeto y no un adorno. */
+:root.iphone .ios-tarjeta-cuenta {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-tarjeta-cuenta:active { background: var(--line); }
+:root.iphone .itc-avatar {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 120, 87, .12);
+  color: var(--cabecera);
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 700;
+}
+:root.iphone[data-theme="dark"] .itc-avatar { background: rgba(52, 211, 153, .16); }
+:root.iphone .itc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+:root.iphone .itc-textos { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+:root.iphone .itc-nombre {
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -.3px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .itc-linea {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Una fila que solo enseña un dato: ni galón ni pulsación. */
+:root.iphone .ios-row--dato { cursor: default; }
+:root.iphone .ios-row--dato:active { background: transparent; }
+/* Y la acción única de una pantalla: centrada y sin icono. */
+:root.iphone .ios-row--centrada { justify-content: center; }
+:root.iphone .ios-row--centrada .ios-row-label { flex: 0 0 auto; }
+
+/* --- S4 · El membrete a escala ---
+   Papel, no tarjeta de lista: radio 6 y una sombra de papel, para que se lea
+   como el encabezado de un documento y no como un grupo más de la pantalla.
+   Los tamaños son los del handoff (14 el nombre, 11 las líneas): pequeños a
+   propósito, porque están retratando una hoja tamaño carta. */
+:root.iphone .ios-membrete {
+  background: var(--surface);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px -14px rgba(0, 0, 0, .5);
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+:root.iphone .im-nombre {
+  font-size: calc(14px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -.2px;
+  color: var(--cabecera);
+  text-align: center;
+}
+:root.iphone .im-linea {
+  font-size: calc(11px * var(--fs-escala));
+  color: var(--ios-valor);
+  text-align: center;
+  text-wrap: pretty;
+}
+:root.iphone .im-raya { width: 100%; height: .5px; margin-top: 9px; background: var(--ios-sep); }
+
+/* --- S5 · La fila de firma ---
+   88 px, porque el recuadro de la firma mide 56 y necesita su aire. La caja
+   es 112×56: la proporción con la que la firma se imprime en el PDF, así que
+   lo que se ve aquí es lo que va a salir. */
+:root.iphone .ios-field--firma { min-height: 88px; align-items: center; }
+:root.iphone .ios-firma-caja {
+  flex: 0 0 auto;
+  width: 112px;
+  height: 56px;
+  border-radius: 8px;
+  background: rgba(118, 118, 128, .08);
+  border: .5px solid var(--ios-sep);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+:root.iphone .ios-firma-caja img { max-width: 100%; max-height: 100%; object-fit: contain; }
+/* Sin firma: ámbar y punteado. Ámbar y no rojo — que falte no es un fallo. */
+:root.iphone .ios-field--firma.es-sin-firma .ios-field-sub { color: var(--warn); }
+:root.iphone .ios-field--firma.es-sin-firma .ios-firma-caja {
+  background: rgba(255, 149, 0, .08);
+  border: .5px dashed rgba(255, 149, 0, .5);
+}
+:root.iphone .ios-firma-anadir {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(14px * var(--fs-escala));
+  color: #8a4b00;
+}
+:root.iphone[data-theme="dark"] .ios-firma-anadir { color: #ffb340; }
+/* El segmentado de Categorías, sobre el gris y no dentro de una tarjeta. */
+:root.iphone .cat-seg { padding: 16px 16px 0; }

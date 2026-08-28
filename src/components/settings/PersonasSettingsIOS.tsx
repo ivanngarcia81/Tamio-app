@@ -84,18 +84,27 @@ function FirmaField({
 
   return (
     <>
+      {/* La firma SE VE, a 112×56 —la proporción con la que se imprime—, y su
+          ausencia se dice dos veces sin gritar: «Sin cargar» en ámbar en la
+          línea de meta y un recuadro punteado con «Añadir». Ninguno de los dos
+          en rojo: que falte una firma no es un error, es algo por hacer
+          (maqueta S5). */}
       <button
         type="button"
-        className="ios-field ios-field--link ios-field--avatar"
+        className={`ios-field ios-field--firma${previewUrl ? "" : " es-sin-firma"}`}
         onClick={() => (previewUrl ? setMenuAbierto(true) : pickFirma())}
       >
-        <span className="ios-field-label">{label}</span>
-        <span className="ios-field-value" />
-        <span className="ios-avatar">
-          {/* 22 y no 18: el recuadro mide 40, y a 18 el glifo flotaba en medio
-              de un hueco gris que se leía como un cuadro vacío en vez de como
-              "toca para poner tu firma". */}
-          {previewUrl ? <img src={previewUrl} alt={t(`${ns}.alt`)} /> : <IconSignature size={22} />}
+        <span className="ios-field-textos">
+          <span className="ios-field-label">{label}</span>
+          <span className="ios-field-sub">{previewUrl ? t("firma.cargada") : t("firma.sinCargar")}</span>
+        </span>
+        <span className="ios-firma-caja">
+          {previewUrl
+            ? <img src={previewUrl} alt={t(`${ns}.alt`)} />
+            : <span className="ios-firma-anadir"><IconSignature size={16} /> {t("firma.anadir")}</span>}
+        </span>
+        <span className="ios-chevron" aria-hidden="true">
+          <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
         </span>
       </button>
       {error && <p className="ios-field-error" style={{ padding: "0 16px 8px" }}>{error}</p>}
