@@ -3417,7 +3417,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    `:first-child` deja fuera solas a las hojas que ya resolvían el aire con su
    propio bloque arriba (el segmentado de la solicitud, el importe de Nuevo
    ingreso); ahí una regla más sumaría 20 px sobre algo que ya respiraba. */
-:root.movil .ios-sheet-body > .ios-section:first-child { padding-top: 20px; }
+:root.movil .ios-sheet-body > section.ios-section:first-of-type { padding-top: 34px; }
+/* 34 y no 20, y `first-of-type` y no `first-child`. Los dos cambios salen de
+   medir (`pruebas/medir-ritmo.mjs`) las hojas de formulario contra el ritmo
+   que ellas mismas usan más abajo:
+
+     entre grupos ....... 36 px    encabezado → tarjeta ... 8 px
+     barra → 1.er encab .. 21 px ←  el único que se salía
+
+   Veinte píxeles de padding daban 21 de hueco óptico: el primer encabezado
+   nacía a dos tercios de la distancia a la que están todos los demás, y por
+   eso la hoja se leía apretada JUSTO ARRIBA, que es donde se mira primero.
+
+   Y `first-child` dejaba fuera precisamente la peor: cuando la hoja empieza
+   con un bloque suelto —el segmentado de la solicitud, el importe de Nuevo
+   ingreso— la sección ya no es el primer hijo, así que se quedaba con CERO y
+   el encabezado salía a 4 px del segmentado. La regla vieja lo justificaba
+   diciendo que ahí «ya respiraba»; medido, no respiraba. `first-of-type`
+   mira la primera SECCIÓN, esté donde esté, que es lo que se quería decir.
+
+   El hueco va DENTRO de la sección y no en el cuerpo que desplaza, a
+   propósito: así se va con ella al primer arrastre —que es lo que hace iOS—
+   en vez de quedarse como una franja fija bajo la barra. */
 :root.movil .ios-section-footer {
   font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
@@ -4398,7 +4419,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-bottom: 0.5px solid var(--line);
 }
 :root.movil .ios-sheet-cancelar { font-weight: 400; }
-:root.movil .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+:root.movil .ios-sheet-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* El final. `.ios-section:last-of-type` suelta 24 px y ahí se acababa la
+     hoja: en un teléfono con indicador de inicio esos 24 son el propio
+     indicador, así que el último pie del formulario quedaba debajo de él.
+     El `env()` lo esquiva y los 16 son el aire de verdad. */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
 @media (prefers-reduced-motion: reduce) {
   :root.movil .ios-sheet-overlay, :root.movil .ios-sheet { animation: none; }
 }
