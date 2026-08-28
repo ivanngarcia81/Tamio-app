@@ -20942,6 +20942,52 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    crece. */
 :root.iphone .fm-pasos { flex: 0 0 auto; margin: 10px 16px 2px; }
 
+/* ---- 30 · EL MISMO AIRE BAJO LA BANDA EN LAS CATORCE ----
+
+   Medido con `pruebas/medir-margenes.mjs`, el hueco entre el borde de la
+   banda verde y lo primero que se ve iba de 6 px (Ajustes) a 48 (Aportantes),
+   pasando por 42 en Reportes. Nadie lo eligió: cada pantalla acumulaba el
+   `padding-top` del contenido, el margen propio de su primer bloque y, en dos
+   de ellas, un selector de mes que vive FUERA del contenido. Al pasar de una
+   pantalla a otra, la banda parecía subir y bajar.
+
+   Ahora hay un solo número —18 px, que es donde ya caían cinco— y una sola
+   regla que lo pone: el aire lo da el contenido, y su primer bloque no añade
+   el suyo. */
+
+/* ---- 30 · EL MISMO AIRE BAJO LA BANDA EN LAS CATORCE ----
+
+   Medido con `pruebas/medir-margenes.mjs`: el hueco entre el borde de la banda
+   verde y lo primero que se ve iba de 6 px (Ajustes) a 48 (Aportantes),
+   pasando por 42 en Reportes y 32 en Depósitos. Al pasar de una pantalla a
+   otra la banda parecía subir y bajar.
+
+   Nadie eligió esos números: son el `padding-top` del contenido MÁS lo que
+   cada primer bloque traía de suyo —el margen del segmentado, el relleno de la
+   cifra del periodo, el de la primera sección—. Cada pantalla sumaba lo que le
+   tocaba.
+
+   Así que el aire lo pone el contenido, una vez, y el primer bloque no añade
+   el suyo: es el único que no lo necesita, porque encima no tiene un hermano
+   del que separarse, tiene la banda. */
+:root.iphone .content { padding-top: 6px !important; }
+:root.iphone .content > *:first-child { margin-top: 0; padding-top: 0; }
+/* Y una cabecera sin título no ocupa sitio. En el teléfono el título grande
+   vive dentro de la banda; las pantallas que no tienen ninguno —Reportes,
+   Informes de membresía, Aportantes— dejaban un `.header` vacío cobrando su
+   relleno vertical, y ese era el resto del descuadre. */
+:root.iphone .header:not(:has(.page-title)) { padding-top: 0 !important; padding-bottom: 0 !important; }
+/* Ajustes es la excepción al revés: su envoltorio SÍ traía el aire, y se lo
+   quitó la regla de arriba. Se le devuelve, para que quede en los mismos 18. */
+:root.iphone .content > .settings-shell { padding-top: 12px; }
+/* El selector de mes de Reportes vive ENTRE la cabecera y el contenido, así
+   que el aire se lo pone él y no lo hereda de nadie. */
+:root.iphone .periodo-selector.solo-movil { margin-top: 0; }
+/* Y el encabezado pegajoso de Aportantes lleva 6 px arriba para no rozar la
+   barra cuando se desplaza; el PRIMERO no se desplaza todavía, así que ahí
+   sobran. */
+:root.iphone .content > .ios-section--indexada:first-child > .ios-section-header { padding-top: 0; }
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide

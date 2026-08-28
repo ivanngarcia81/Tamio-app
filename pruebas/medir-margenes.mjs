@@ -130,16 +130,41 @@ for (const [nombre, ruta] of PANTALLAS) {
   await page.waitForTimeout(900);
   const aire = await page.evaluate(() => {
     const banda = document.querySelector(".carrusel-secciones") ?? document.querySelector(".header");
+    const main = document.querySelector(".main");
+    if (!banda || !main) return null;
+    /* Lo primero que SE VE, no el primer contenedor: un envoltorio sin fondo
+       ni texto empieza donde empieza el aire, no donde empieza el contenido, y
+       medirlo a él daba 6 px en pantallas que respiran igual que las demás. */
+    const suelo = banda.getBoundingClientRect().bottom;
+    let mejor = null;
+    for (const el of main.querySelectorAll("*")) {
+      const r = el.getBoundingClientRect();
+      if (r.height < 4 || r.top < suelo - 1) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === "hidden" || cs.opacity === "0") continue;
+      const conFondo = cs.backgroundColor !== "rgba(0, 0, 0, 0)" && cs.backgroundColor !== "transparent";
+      const conTexto = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!conFondo && !conTexto) continue;
+      if (!mejor || r.top < mejor.top) mejor = { top: r.top, el, que: (el.className || el.tagName).toString().slice(0, 40) };
+    }
+    if (!mejor) return null;
+    /* De dónde sale el aire: la cadena de márgenes y rellenos superiores
+       desde ese elemento hasta `.main`. Sin esto, nivelar es adivinar. */
+    const cadena = [];
+    for (let el = mejor.el; el && el !== main; el = el.parentElement) {
+      const cs = getComputedStyle(el);
+      const mt = parseFloat(cs.marginTop) || 0;
+      const pt = parseFloat(cs.paddingTop) || 0;
+      if (mt || pt) cadena.push(`${(el.className || el.tagName).toString().split(" ")[0]}(${mt ? "m" + mt : ""}${mt && pt ? "+" : ""}${pt ? "p" + pt : ""})`);
+    }
     const cont = document.querySelector(".content");
-    if (!cont) return null;
-    const primero = [...cont.children].find((c) => c.getBoundingClientRect().height > 0);
-    if (!primero || !banda) return null;
-    return {
-      hueco: Math.round(primero.getBoundingClientRect().top - banda.getBoundingClientRect().bottom),
-      que: (primero.className || primero.tagName).toString().slice(0, 40),
-    };
+    const hijos = cont ? [...cont.children].slice(0, 4).map((c) => {
+      const r = c.getBoundingClientRect();
+      return `${(c.className || c.tagName).toString().split(" ")[0] || "?"}:h${Math.round(r.height)}`;
+    }).join(" | ") : "";
+    return { hueco: Math.round(mejor.top - suelo), que: mejor.que, cadena: cadena.join(" ← "), hijos, gap: cont ? getComputedStyle(cont).rowGap : "" };
   });
-  console.log(aire ? `  ${String(aire.hueco).padStart(4)} px   ${nombre.padEnd(16)} ${aire.que}` : `        ${nombre}: —`);
+  console.log(aire ? `  ${String(aire.hueco).padStart(4)} px   ${nombre.padEnd(16)} ${aire.que}\n              ${aire.cadena}\n              gap=${aire.gap}  hijos: ${aire.hijos}` : `        ${nombre}: —`);
 }
 await browser.close();
 process.exit(0);
