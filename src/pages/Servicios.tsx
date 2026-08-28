@@ -144,6 +144,10 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
 
   const sel = selId == null ? null : servicios.find((s) => s.id === selId) ?? null;
   const ultimoSel = useRef<Servicio | null>(null);
+  /* El buscador del teléfono: el mismo par estado + referencia que Actas y
+     Membresía, para que «Cancelar» aparezca al enfocar y devuelva el foco. */
+  const [buscando, setBuscando] = useState(false);
+  const refBuscar = useRef<HTMLInputElement>(null);
   if (sel) ultimoSel.current = sel;
 
   /* Los cultos se agrupan por MES: es el periodo con el que se cuentan en los
@@ -359,25 +363,56 @@ export default function Servicios({ church, refreshKey, onChanged }: Props) {
             la bitácora entera y su buscador busca en todo lo registrado. Sin
             el rótulo parecían contradecirse: "Servicios este mes: 0" encima
             de una tabla con cultos de meses anteriores. */}
-        <div className="tx-head">
-          {/* `.card-title` es la etiqueta en versalitas de 11px de una tarjeta de
-              escritorio. En el teléfono este rótulo es el encabezado de la
-              sección que abre —el mismo 13/600 en mayúsculas que el resto de la
-              app desde el rediseño—, así que usa la clase de encabezado y no la
-              de etiqueta. */}
-          {enIPhone
-            ? <h2 className="ios-section-header">{t("servicios.historialCompleto")}</h2>
-            : <span className="card-title">{t("servicios.historialCompleto")}</span>}
-          <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
-            <IconSearch size={15} strokeWidth={2} />
-            <input
-              className="form-input"
-              placeholder={textoCorto(t("common.buscarCorto"), t("servicios.buscarPlaceholder"))}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
+        {enIPhone ? (
+          /* En el teléfono el rótulo y el buscador NO comparten renglón.
+             `.tx-head` es una fila de escritorio —título a la izquierda, campo
+             a la derecha— y en 393 px dejaba el encabezado del grupo midiendo
+             152 px, con el campo empezando a media pantalla: el único buscador
+             de la app que no iba a lo ancho. Aquí van uno debajo del otro, con
+             el mismo campo gris de Actas y Membresía. */
+          <>
+            <h2 className="ios-section-header">{t("servicios.historialCompleto")}</h2>
+            <div className="ios-buscar-bloque">
+              <div className={`ios-buscar${buscando ? " es-activo" : ""}`}>
+                <label className="ios-buscar-campo">
+                  <IconSearch size={15} strokeWidth={2} />
+                  <input
+                    ref={refBuscar}
+                    value={query}
+                    placeholder={t("common.buscarCorto")}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setBuscando(true)}
+                    aria-label={t("servicios.buscarPlaceholder")}
+                  />
+                </label>
+                {buscando && (
+                  <button
+                    type="button"
+                    className="ios-buscar-cancelar"
+                    onClick={() => { setQuery(""); setBuscando(false); refBuscar.current?.blur(); }}
+                  >
+                    {t("common.cancelar")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="tx-head">
+            {/* `.card-title` es la etiqueta en versalitas de 11px de una
+                tarjeta de escritorio. */}
+            <span className="card-title">{t("servicios.historialCompleto")}</span>
+            <div className="search-input-wrap" style={{ flex: 1, maxWidth: 420 }}>
+              <IconSearch size={15} strokeWidth={2} />
+              <input
+                className="form-input"
+                placeholder={textoCorto(t("common.buscarCorto"), t("servicios.buscarPlaceholder"))}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {loading ? (
           <LoadingState />
