@@ -25,6 +25,7 @@ import PastorSettings, {
 import PersonasSettingsIOS from "../components/settings/PersonasSettingsIOS";
 import SignatureUploader from "../components/settings/SignatureUploader";
 import UsersSettings from "../components/settings/UsersSettings";
+import UsuarioModal from "../components/settings/UsuarioModal";
 import InvitarUsuario from "../components/settings/InvitarUsuario";
 import PDFPreview from "../components/settings/PDFPreview";
 import AppearanceSettings, { type ThemePref } from "../components/settings/AppearanceSettings";
@@ -264,6 +265,9 @@ export default function Configuracion({
   const [salirAbierto, setSalirAbierto] = useState(false);
   const [acercaDeAbierto, setAcercaDeAbierto] = useState(false);
   const [version, setVersion] = useState<string | null>(null);
+  /* La ficha de una persona, en el teléfono. `undefined` = cerrada; `null` =
+     alta nueva; un `Usuario` = editar ese. */
+  const [usuarioHoja, setUsuarioHoja] = useState<Usuario | null | undefined>(undefined);
   // Antes solo se pedía al abrir "Acerca de". La lista agrupada de iPhone
   // (enIPhone) lleva su propio pie "Tamio {versión}" siempre visible, así
   // que hace falta desde que se monta la pantalla, no solo dentro de ese
@@ -872,6 +876,7 @@ export default function Configuracion({
                     componente, con las mismas condiciones. */}
                 <AccesosSettingsIOS
                   usuarios={usuarios}
+                  onAbrirUsuario={(u) => setUsuarioHoja(u)}
                   church={church}
                   role={role}
                   onRoleChange={onRoleChange}
@@ -882,7 +887,13 @@ export default function Configuracion({
                 {/* El directorio de usuarios no se convirtió en esta tarea, así
                     que conserva su tarjeta debajo de las secciones planas —
                     mismo trato que `PDFPreview` en la zona de institución. */}
-                {esAdmin && authActivo && (
+                {/* La tarjeta de escritorio de usuarios NO va en el teléfono:
+                    su barra de «+ / −» al pie y sus instrucciones de ratón
+                    («un clic selecciona…, doble clic abre la ficha») no
+                    significan nada con un dedo. En el iPhone la gente se
+                    gestiona en el grupo PERSONAS de arriba, que es donde el
+                    handoff la puso. */}
+                {esAdmin && authActivo && !enIPhone && (
                   <div className="settings-masonry una-tarjeta">
                     <UsersSettings church={church} usuarios={usuarios} onChanged={refrescarUsuarios} />
                   </div>
@@ -1105,6 +1116,18 @@ export default function Configuracion({
           message={t("cuenta.confirmarMensaje")}
           options={[{ label: t("cuenta.cerrarSesion"), danger: true, onClick: () => { setSalirAbierto(false); onSalir(); } }]}
           onCancel={() => setSalirAbierto(false)}
+        />
+      )}
+
+      {/* La ficha de una persona, en el teléfono. En Mac/iPad la abre la
+          tarjeta `UsersSettings` con su propio estado; aquí la abre el grupo
+          PERSONAS y por eso el estado vive en la página. */}
+      {usuarioHoja !== undefined && (
+        <UsuarioModal
+          church={church}
+          editing={usuarioHoja}
+          onClose={() => setUsuarioHoja(undefined)}
+          onSaved={refrescarUsuarios}
         />
       )}
 

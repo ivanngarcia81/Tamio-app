@@ -47,7 +47,7 @@ export default function EditarRecurrenteIOS({
       onSave={h.guardar}
       canSave={!h.saving}
     >
-      <Section header={t("recordModal.detalle")} footer={t("recurrente.editarSub")}>
+      <Section header={t("recurrente.label")} footer={t("recurrente.editarSub")}>
         <TextField
           label={t("recordModal.concepto")}
           value={h.concepto}

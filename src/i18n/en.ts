@@ -1056,6 +1056,8 @@ export const en: Resources = {
 
   recurrente: {
     label: "Recurring fixed transaction",
+    correccion: "Correction",
+    aplicarRetroLabel: "Apply to the ones already recorded too",
     pregunta: "Does this {{tipo}} repeat every month?",
     seRepiteCadaMes: "Repeats every month",
     siRecurrente: "Yes, it's recurring",
@@ -1933,6 +1935,12 @@ export const en: Resources = {
     membretePie: "This is how the letterhead of the PDFs looks with what is written below.",
     datosMembrete: "Letterhead details",
     vacioNoImprime: "Whatever is left empty is not printed: the letterhead closes up without leaving blank lines.",
+    direccionPlaceholder: "e.g. 1420 Constitution Ave, Downtown",
+    regionPlaceholder: "e.g. Nuevo León",
+    telefonoPlaceholder: "e.g. 81 8340 1122",
+    correoPlaceholder: "e.g. contact@church.org",
+    secretariaNombrePlaceholder: "e.g. Lucía Márquez Peña",
+    secretariaCargoPlaceholder: "e.g. Secretary",
     piePlaceholder: "e.g. motto or legal registration shown at the bottom of letters",
     secretariaNombre: "Secretary's name",
     secretariaCargo: "Title",
@@ -3176,6 +3184,7 @@ export const en: Resources = {
 
   usuarios: {
     personasGrupo: "People",
+    anadirPersona: "Add person",
     areasGrupo: "Areas",
     piePersonas: "Tap a person to change their role. The role decides which areas they enter.",
     pieAreas: "The area decides what each person sees when opening the app. Someone can be in both.",

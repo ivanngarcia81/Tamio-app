@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { esIPhone } from "../../movil";
+import IOSFormSheet from "../ios/IOSFormSheet";
+import { Section, TextField } from "../ios/FormularioIOS";
+import { IOSPickerField } from "../ios/IOSPickerField";
 import { useTranslation } from "react-i18next";
 import { ROLES_USUARIO, insertUsuario, updateUsuario, type Church, type Usuario } from "../../db";
 import { IconClose, IconWarn } from "../../icons";
@@ -63,6 +67,59 @@ export default function UsuarioModal({ church, editing, onClose, onSaved }: Prop
       setError(t("common.noSePudoGuardar", { error: String(e) }));
       setSaving(false);
     }
+  }
+
+  /* En el teléfono, hoja de iOS. La ventana de escritorio se queda para Mac
+     e iPad: mismo estado y mismo `guardar()`, otra forma de enseñarlo. */
+  if (esIPhone()) {
+    return (
+      <IOSFormSheet
+        title={isEdit ? t("usuarios.modalEditar") : t("usuarios.modalNuevo")}
+        onCancel={onClose}
+        onSave={guardar}
+        canSave={!saving}
+      >
+        <Section header={t("usuarios.modalSub")} footer={error ?? undefined}>
+          <TextField
+            label={t("usuarios.nombreLabel")}
+            value={nombre}
+            onChange={setNombre}
+            placeholder={t("usuarios.nombrePlaceholder")}
+          />
+          <IOSPickerField
+            label={t("usuarios.rolLabel")}
+            sheetTitle={t("usuarios.rolLabel")}
+            options={ROLES_USUARIO.map((r) => ({ value: r.id, label: t(`rol.${r.id}`) }))}
+            value={rol}
+            onSelect={setRol}
+          />
+          <TextField
+            label={t("tesorero.correo")}
+            value={email}
+            onChange={setEmail}
+            placeholder={t("tesorero.correoPlaceholder")}
+            type="email"
+            optional
+            stacked
+          />
+          <TextField
+            label={t("tesorero.telefono")}
+            value={telefono}
+            onChange={setTelefono}
+            placeholder={t("tesorero.telefonoPlaceholder")}
+            optional
+          />
+          <TextField
+            label={t("usuarios.notas")}
+            value={notas}
+            onChange={setNotas}
+            placeholder={t("usuarios.notasPlaceholder")}
+            optional
+            stacked
+          />
+        </Section>
+      </IOSFormSheet>
+    );
   }
 
   return (

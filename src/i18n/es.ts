@@ -1100,6 +1100,8 @@ export const es = {
 
   recurrente: {
     label: "Movimiento fijo recurrente",
+    correccion: "Corrección",
+    aplicarRetroLabel: "Aplicar también a los ya registrados",
     pregunta: "¿Este {{tipo}} se repite todos los meses?",
     seRepiteCadaMes: "Se repite cada mes",
     siRecurrente: "Sí, es recurrente",
@@ -2007,6 +2009,12 @@ export const es = {
     membretePie: "Así se ve el membrete de los PDF con lo que hay escrito abajo.",
     datosMembrete: "Datos del membrete",
     vacioNoImprime: "Lo que quede vacío no se imprime: el membrete se cierra sin dejar renglones en blanco.",
+    direccionPlaceholder: "p. ej. Av. Constitución 1420, Col. Centro",
+    regionPlaceholder: "p. ej. Nuevo León",
+    telefonoPlaceholder: "p. ej. 81 8340 1122",
+    correoPlaceholder: "p. ej. contacto@iglesia.org",
+    secretariaNombrePlaceholder: "p. ej. Lucía Márquez Peña",
+    secretariaCargoPlaceholder: "p. ej. Secretaria",
     piePlaceholder: "p. ej. lema o registro legal que aparece al pie de las cartas",
     secretariaNombre: "Nombre de la secretaria",
     secretariaCargo: "Cargo",
@@ -3296,6 +3304,7 @@ export const es = {
 
   usuarios: {
     personasGrupo: "Personas",
+    anadirPersona: "Añadir persona",
     areasGrupo: "Áreas",
     piePersonas: "Toca una persona para cambiar su rol. El rol decide en qué áreas entra.",
     pieAreas: "El área decide qué ve cada persona al abrir la app. Alguien puede estar en las dos.",
