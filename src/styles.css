@@ -3391,7 +3391,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.iphone .settings-shell.zona-abierta .ios-lista { display: none; }
 
-:root.movil .ios-section { margin-bottom: 35px; }
+/* 43 y no 35: el hueco entre grupos, medido de tarjeta a texto del
+   encabezado siguiente, sale en 44. Es un punto por encima de lo que hace
+   Ajustes de iOS —ahí son 35—, y es deliberado: Tamio mete más filas por
+   grupo que Ajustes (diecisiete en «Editar servicio»), y con esa densidad el
+   hueco del sistema no llegaba a separar un grupo del siguiente.
+
+   El número vive AQUÍ y en un solo sitio. Los 44 de arriba —la primera
+   sección de una hoja— salen de la misma medida, y por eso están escritos
+   igual: el día que este número cambie, tienen que cambiar los dos o la hoja
+   deja de estar pareja. `pruebas/medir-ritmo.mjs` los comprueba.
+
+   Los 43 dan 44 porque el encabezado es un `<h2>` de 13 px en una caja de
+   línea de 18: el píxel que falta es su medio interlineado. */
+:root.movil .ios-section { margin-bottom: 43px; }
 :root.movil .ios-section:last-of-type { margin-bottom: 24px; }
 
 :root.movil .ios-section-header {
@@ -3417,7 +3430,29 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    `:first-child` deja fuera solas a las hojas que ya resolvían el aire con su
    propio bloque arriba (el segmentado de la solicitud, el importe de Nuevo
    ingreso); ahí una regla más sumaría 20 px sobre algo que ya respiraba. */
-:root.movil .ios-sheet-body > .ios-section:first-child { padding-top: 20px; }
+:root.movil .ios-sheet-body > section.ios-section:first-of-type { padding-top: 43px; }
+/* 43 y no 20, y `first-of-type` y no `first-child`. Los dos cambios salen de
+   medir (`pruebas/medir-ritmo.mjs`) las hojas de formulario contra el ritmo
+   que ellas mismas usan más abajo:
+
+     entre grupos ....... 44 px    encabezado → tarjeta ... 8 px
+     barra → 1.er encab .. 21 px ←  el único que se salía
+
+   Veinte píxeles de padding daban 21 de hueco óptico: el primer encabezado
+   nacía a la mitad de la distancia a la que están todos los demás, y por eso
+   la hoja se leía apretada JUSTO ARRIBA, que es donde se mira primero. Los
+   43 son los MISMOS de `.ios-section`: un solo número para toda la hoja.
+
+   Y `first-child` dejaba fuera precisamente la peor: cuando la hoja empieza
+   con un bloque suelto —el segmentado de la solicitud, el importe de Nuevo
+   ingreso— la sección ya no es el primer hijo, así que se quedaba con CERO y
+   el encabezado salía a 4 px del segmentado. La regla vieja lo justificaba
+   diciendo que ahí «ya respiraba»; medido, no respiraba. `first-of-type`
+   mira la primera SECCIÓN, esté donde esté, que es lo que se quería decir.
+
+   El hueco va DENTRO de la sección y no en el cuerpo que desplaza, a
+   propósito: así se va con ella al primer arrastre —que es lo que hace iOS—
+   en vez de quedarse como una franja fija bajo la barra. */
 :root.movil .ios-section-footer {
   font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
@@ -4398,7 +4433,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   border-bottom: 0.5px solid var(--line);
 }
 :root.movil .ios-sheet-cancelar { font-weight: 400; }
-:root.movil .ios-sheet-body { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+:root.movil .ios-sheet-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* El final. `.ios-section:last-of-type` suelta 24 px y ahí se acababa la
+     hoja: en un teléfono con indicador de inicio esos 24 son el propio
+     indicador, así que el último pie del formulario quedaba debajo de él.
+     El `env()` lo esquiva y los 16 son el aire de verdad. */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
 @media (prefers-reduced-motion: reduce) {
   :root.movil .ios-sheet-overlay, :root.movil .ios-sheet { animation: none; }
 }
@@ -18765,10 +18809,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .content .ios-section-header { padding-left: 4px; padding-right: 4px; }
 :root.iphone .content .ios-section-footer { padding-left: 4px; padding-right: 4px; }
 
-/* 35px entre secciones es el aire de una hoja de Ajustes, donde cada grupo es
-   un tema distinto. En una lista de datos las secciones son el MISMO tema
-   partido por fecha, y a 35px se leían como pantallas separadas: la maqueta
-   las deja en 22.
+/* Los 44px entre secciones son el aire de una hoja de Ajustes, donde cada
+   grupo es un tema distinto. En una lista de datos las secciones son el MISMO
+   tema partido por fecha, y con ese hueco se leían como pantallas separadas:
+   la maqueta las deja en 22.
+
+   Esta regla es la razón de que subir el hueco general de 35 a 44 no alargara
+   Ingresos, Membresía ni Cartas: ahí manda este 6, no aquél.
 
    Y son 6, no 22, porque `.content` (y `.dash-canvas` dentro de él) son flex
    en columna con `gap: var(--space-4)` = 16px: ese hueco ya está puesto entre
@@ -20017,7 +20064,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    maqueta le da su propio radio. El resto del archivo usa --ios-radio a
    propósito; esta es la excepción, y por eso está escrita a mano. */
 :root.iphone .ios-tarjeta-cifras {
-  margin: 14px 16px 0;
+  /* Sin sangría propia: `.content` del teléfono ya pone sus 16 px a los lados
+     (bloque de la fila fija), y sumarle otros 16 dejaba esta tarjeta 16 px
+     más estrecha por lado que las listas agrupadas de debajo. Se veía en un
+     iPhone de verdad: la tarjeta de cifras y el segmentado metidos hacia
+     dentro y los grupos de abajo más anchos. */
+  margin: 14px 0 0;
   padding: 14px 16px 15px;
   border-radius: 16px;
   background: var(--surface);
@@ -20165,7 +20217,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   gap: 2px;
   height: 32px;
-  margin: 12px 16px 0;
+  /* Sin sangría propia, por lo mismo que la tarjeta de cifras: la pone
+     `.content`. Quien lo use FUERA de `.content` —los pasos de la ficha, que
+     viven en una hoja— se pone la suya. */
+  margin: 12px 0 0;
   padding: 2px;
   box-sizing: border-box;
   border-radius: 9px;
@@ -20934,6 +20989,52 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    crece. */
 :root.iphone .fm-pasos { flex: 0 0 auto; margin: 10px 16px 2px; }
 
+/* ---- 30 · EL MISMO AIRE BAJO LA BANDA EN LAS CATORCE ----
+
+   Medido con `pruebas/medir-margenes.mjs`, el hueco entre el borde de la
+   banda verde y lo primero que se ve iba de 6 px (Ajustes) a 48 (Aportantes),
+   pasando por 42 en Reportes. Nadie lo eligió: cada pantalla acumulaba el
+   `padding-top` del contenido, el margen propio de su primer bloque y, en dos
+   de ellas, un selector de mes que vive FUERA del contenido. Al pasar de una
+   pantalla a otra, la banda parecía subir y bajar.
+
+   Ahora hay un solo número —18 px, que es donde ya caían cinco— y una sola
+   regla que lo pone: el aire lo da el contenido, y su primer bloque no añade
+   el suyo. */
+
+/* ---- 30 · EL MISMO AIRE BAJO LA BANDA EN LAS CATORCE ----
+
+   Medido con `pruebas/medir-margenes.mjs`: el hueco entre el borde de la banda
+   verde y lo primero que se ve iba de 6 px (Ajustes) a 48 (Aportantes),
+   pasando por 42 en Reportes y 32 en Depósitos. Al pasar de una pantalla a
+   otra la banda parecía subir y bajar.
+
+   Nadie eligió esos números: son el `padding-top` del contenido MÁS lo que
+   cada primer bloque traía de suyo —el margen del segmentado, el relleno de la
+   cifra del periodo, el de la primera sección—. Cada pantalla sumaba lo que le
+   tocaba.
+
+   Así que el aire lo pone el contenido, una vez, y el primer bloque no añade
+   el suyo: es el único que no lo necesita, porque encima no tiene un hermano
+   del que separarse, tiene la banda. */
+:root.iphone .content { padding-top: 6px !important; }
+:root.iphone .content > *:first-child { margin-top: 0; padding-top: 0; }
+/* Y una cabecera sin título no ocupa sitio. En el teléfono el título grande
+   vive dentro de la banda; las pantallas que no tienen ninguno —Reportes,
+   Informes de membresía, Aportantes— dejaban un `.header` vacío cobrando su
+   relleno vertical, y ese era el resto del descuadre. */
+:root.iphone .header:not(:has(.page-title)) { padding-top: 0 !important; padding-bottom: 0 !important; }
+/* Ajustes es la excepción al revés: su envoltorio SÍ traía el aire, y se lo
+   quitó la regla de arriba. Se le devuelve, para que quede en los mismos 18. */
+:root.iphone .content > .settings-shell { padding-top: 12px; }
+/* El selector de mes de Reportes vive ENTRE la cabecera y el contenido, así
+   que el aire se lo pone él y no lo hereda de nadie. */
+:root.iphone .periodo-selector.solo-movil { margin-top: 0; }
+/* Y el encabezado pegajoso de Aportantes lleva 6 px arriba para no rozar la
+   barra cuando se desplaza; el PRIMERO no se desplaza todavía, así que ahí
+   sobran. */
+:root.iphone .content > .ios-section--indexada:first-child > .ios-section-header { padding-top: 0; }
+
 /* ---- 24 · LA BARRA FINA DEL DETALLE DEL PERIODO ----
    «Las barras son finas y sin etiqueta de porcentaje: el monto ya está a la
    derecha.» No reutiliza `.stat-bar` —la del escritorio— porque aquella mide
@@ -21289,7 +21390,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   gap: 2px;
   height: 32px;
-  margin: 12px 16px 0;
+  margin: 12px 0 0;
   padding: 2px;
   box-sizing: border-box;
   border-radius: 9px;
@@ -21379,3 +21480,479 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   overflow: visible;
   letter-spacing: -0.1px;
 }
+
+/* ---- 31 · LA PLANTILLA DE CARTA (maquetas C8 · C10 · C11 · C12 · C13) ----
+
+   El editor de plantilla era, hasta aquí, la ventana de escritorio puesta en
+   un teléfono: rejilla de dos columnas, ocho etiquetas con su caja debajo y un
+   `contentEditable` de 160 px con un desplegable de variables al lado. Este
+   bloque es lo que el handoff pide en su lugar, y se apoya entero en el
+   vocabulario que ya existe —`.ios-sheet`, `.ios-section`, `.ios-txrow`—: lo
+   único verdaderamente nuevo es la PASTILLA del hueco.
+
+   La pastilla primero, porque es la decisión de la que cuelga el resto. */
+
+/* El hueco, dibujado. Vive en `:root` y no en `:root.iphone` porque el mismo
+   `<span data-hueco>` viaja en la vista previa y en el editor, y porque
+   `hueco--falta` es el único aviso que da la app de que una plantilla lleva un
+   dato que su carta no va a poder llenar.
+
+   `display: inline`, no `inline-flex`: la pastilla es UNA PALABRA dentro de la
+   frase, y tiene que fluir con ella. Con `inline-flex` un nombre al final del
+   renglón se llevaba consigo el espacio de una caja entera y dejaba un hueco
+   blanco a la derecha. El nombre no se parte —`nowrap`—, pero la pastilla sí
+   baja al renglón siguiente como cualquier palabra larga; `box-decoration-break`
+   está por si alguna vez se suelta ese `nowrap`. */
+:root .hueco {
+  display: inline;
+  font-size: calc(14px * var(--fs-escala));
+  font-weight: 600;
+  padding: 1px 7px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  border-radius: 6px;
+  background: rgba(4, 120, 87, .12);
+  color: #047857;
+  /* Que sea UN carácter para el cursor —se selecciona y se borra entera,
+     nunca a medias— lo hace `contenteditable="false"` en el marcado, no una
+     regla de aquí. `user-select: all` haría lo mismo… y de paso rompería el
+     toque para colocar el cursor JUNTO a la pastilla, que es el gesto con el
+     que se sigue escribiendo. */
+  white-space: nowrap;
+}
+:root[data-theme="dark"] .hueco { background: rgba(52, 211, 153, .16); color: #34d399; }
+/* En ámbar, el hueco que la carta no podrá llenar con los datos de este
+   miembro: se ve al ESCRIBIR la plantilla, no al emitir la carta. */
+:root .hueco--falta { background: rgba(255, 149, 0, .14); color: #8a4b00; }
+:root[data-theme="dark"] .hueco--falta { background: rgba(255, 159, 10, .18); color: #ffb340; }
+
+/* ---- C8 · La hoja del editor ----
+   Es `.ios-sheet` tal cual —la misma que ya abre Categorías o el alta de
+   miembro—, con dos añadidos: el cuerpo respira 16 px por los lados como el
+   resto del teléfono, y abajo hay una barra fija con las dos acciones que no
+   son campos. */
+:root.iphone .pl-hoja .ios-nav-title { font-weight: 600; }
+/* Arriba CERO: `.pl-cuerpo` es un `.ios-sheet-body`, así que el aire de la
+   primera sección ya se lo pone la regla común de las hojas. Con los 16 de
+   aquí encima se le quedaban 59 donde las demás tienen 44, y esta hoja era
+   la única de la app que abría desparejo.
+
+   Y 96 abajo, no 24: la barra fija de «Vista previa / Guardar» es vidrio, así
+   que el contenido pasa POR DEBAJO. Sin ese aire el último grupo —el de
+   eliminar— no llegaba nunca a verse entero por mucho que se desplazara. */
+:root.iphone .pl-cuerpo { padding: 0 16px 96px; }
+:root.iphone .pl-cuerpo > .ios-section:first-child { margin-top: 0; }
+/* Los encabezados y pies traen su sangría de 32 = 16 del inset + 16 de la
+   fila; aquí el inset lo pone el contenedor, así que descuentan esos 16. */
+:root.iphone .pl-cuerpo .ios-section-header,
+:root.iphone .pl-cuerpo .ios-section-footer { padding-left: 16px; padding-right: 16px; }
+
+/* El nombre se escribe EN la fila, alineado a la derecha donde iría su valor:
+   es el único campo corto que no lleva a otra pantalla, y empujar una pantalla
+   entera para teclear dos palabras es peor que teclearlas aquí. */
+:root.iphone .pl-trailing-ancho { flex: 1 1 auto; min-width: 0; }
+:root.iphone .pl-campo {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--text);
+  text-align: right;
+}
+:root.iphone .pl-campo:focus { outline: none; }
+:root.iphone .pl-campo::placeholder { color: var(--ios-valor); }
+
+/* Con «Activa» apagada, «Predeterminada» se atenúa EN SU SITIO en lugar de
+   desaparecer: una fila que aparece y se va al tocar la de arriba se lee como
+   un fallo, y el pie del grupo ya explica la consecuencia. */
+:root.iphone .ios-txrow.pl-apagada .ios-txrow-title { color: var(--ios-valor); }
+:root.iphone .ios-txrow.pl-apagada .ios-switch { opacity: .5; }
+
+/* El asunto: la única fila de dos líneas del grupo, porque lleva una pastilla
+   dentro y no cabría a la derecha. */
+:root.iphone .pl-fila-asunto { align-items: flex-start; min-height: 56px; }
+:root.iphone .pl-etiqueta {
+  font-size: calc(13px * var(--fs-escala));
+  color: var(--ios-valor);
+  margin-bottom: 2px;
+}
+:root.iphone .pl-valor-largo {
+  font-size: calc(16px * var(--fs-escala));
+  line-height: 1.5;
+  color: var(--text);
+  white-space: normal;
+}
+:root.iphone .pl-vacio { color: var(--ios-valor); }
+/* El resumen del cuerpo, donde iría el valor: «4 párrafos · 6 huecos». */
+:root.iphone .pl-sub {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Saludo y despedida son de una línea aunque el grupo no sea `compacta`: el
+   grupo lo comparten con el asunto y el cuerpo, que sí necesitan dos. */
+:root.iphone .ios-txrow.pl-fila-corta { min-height: 44px; padding-top: 7px; padding-bottom: 7px; }
+/* Y quien se encoge es el VALOR, no la etiqueta. `.ios-txrow` reparte el
+   ancho al revés —`-main` crece y `-trailing` no—, que es lo correcto cuando
+   el título es el dato; aquí el título es la ETIQUETA de un campo, y con
+   «Atentamente, en el amor de Cristo,» al lado se leía «Despedid…». */
+:root.iphone .pl-fila-corta .ios-txrow-main { flex: 0 0 auto; }
+:root.iphone .pl-fila-corta .ios-txrow-trailing { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
+:root.iphone .pl-fila-corta .ios-fila-valor {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .pl-cifra { font-variant-numeric: tabular-nums; }
+:root.iphone .pl-error { color: var(--ios-red); }
+
+/* La barra fija de abajo. Vidrio, como la barra de pestañas: lo que se
+   desplaza pasa por debajo y se sigue viendo que hay más lista. */
+:root.iphone .pl-pie {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px);
+  border-top: .33px solid var(--ios-sep);
+  background: var(--ios-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+:root.iphone .pl-previa,
+:root.iphone .pl-guardar {
+  flex: 1 1 0;
+  height: 46px;
+  border: 0;
+  border-radius: 11px;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .pl-previa { background: rgba(118, 118, 128, .12); color: var(--brand, #059669); }
+:root.iphone .pl-guardar { background: var(--cabecera); color: var(--cabecera-tinta); }
+:root.iphone .pl-previa:active, :root.iphone .pl-guardar:active { opacity: .55; }
+:root.iphone .pl-guardar:disabled { opacity: .5; cursor: default; }
+
+/* ---- C10 · Los catorce tipos ----
+   Buscar aparece porque catorce es justo el umbral donde recorrer con el
+   pulgar cuesta más que teclear tres letras. Va FUERA del área que se
+   desplaza: un campo de búsqueda que se va con el desplazamiento obliga a
+   subir del todo para corregir la palabra. */
+:root.iphone .pl-buscar {
+  flex: 0 0 auto;
+  margin: 12px 16px 0;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, .12);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: var(--ios-valor);
+}
+:root.iphone .pl-buscar input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--text);
+}
+:root.iphone .pl-buscar input:focus { outline: none; }
+:root.iphone .pl-buscar input::placeholder { color: var(--ios-valor); }
+/* Palomita, no fondo de color: la hoja está encima del editor y un fondo aquí
+   competiría con lo que está pasando detrás. */
+:root.iphone .pl-palomita {
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 700;
+  color: var(--brand, #059669);
+}
+
+/* ---- C12 · El cuerpo, en su propia pantalla ----
+   El texto va DIRECTO sobre blanco, sin lista agrupada de por medio: con el
+   teclado puesto eso son unos 300 px de texto —seis o siete renglones— en vez
+   de dos. Es el patrón de Notas. */
+:root.iphone .ios-sheet--texto { background: var(--surface); }
+:root.iphone .eh-cuerpo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface);
+  padding: 16px 18px 20px;
+  font-size: calc(16px * var(--fs-escala));
+  line-height: 1.6;
+  color: var(--text);
+}
+:root.iphone .eh-cuerpo:focus { outline: none; }
+:root.iphone .eh-cuerpo p { margin: 0 0 13px; }
+:root.iphone .eh-cuerpo ul, :root.iphone .eh-cuerpo ol { margin: 0 0 13px 22px; }
+/* El asunto: una línea, sin párrafos ni formato. */
+:root.iphone .eh-cuerpo--linea { flex: 0 0 auto; overflow-x: auto; white-space: nowrap; }
+
+/* La barra sobre el teclado. «Insertar hueco» a la IZQUIERDA, donde el pulgar
+   la alcanza sin tapar el cursor; el formato a la derecha. */
+:root.iphone .eh-barra {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px calc(env(safe-area-inset-bottom) + 8px);
+  border-top: .33px solid var(--ios-sep);
+  background: var(--ios-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+:root.iphone .eh-espacio { flex: 1 1 auto; }
+:root.iphone .eh-chip {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(4, 120, 87, .12);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 600;
+  color: #047857;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root[data-theme="dark"] .eh-chip { background: rgba(52, 211, 153, .16); color: #34d399; }
+:root.iphone .eh-formato {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, .12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .eh-chip:active, :root.iphone .eh-formato:active { opacity: .55; }
+
+/* ---- C11 · Insertar hueco ----
+   La hoja NO ocupa toda la altura a propósito: deja ver el texto de arriba
+   para no perder el sitio del cursor. */
+:root.iphone .ios-sheet--huecos { height: 76%; }
+:root.iphone .eh-agarre {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 5px;
+  margin: 8px auto 0;
+  border-radius: 3px;
+  background: rgba(60, 60, 67, .3);
+}
+:root.iphone .ios-sheet--huecos .ios-nav { border-radius: 0; }
+:root.iphone .eh-lista { padding: 14px 16px 24px; }
+:root.iphone .eh-lista .ios-section-header,
+:root.iphone .eh-lista .ios-section-footer { padding-left: 16px; padding-right: 16px; }
+:root.iphone .eh-intro { margin: 0 0 10px; padding-left: 16px; padding-right: 16px; }
+/* Cada fila enseña debajo el valor REAL que tomaría hoy: es la única forma de
+   saber si el hueco es el que hace falta. */
+:root.iphone .ios-txrow.eh-fila { min-height: 56px; }
+:root.iphone .eh-ejemplo {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--ios-valor);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root.iphone .eh-ejemplo.es-falta { color: var(--warn); }
+/* «+» y no palomita: quince huecos no son quince valores para escoger, son
+   quince acciones sobre el cursor. */
+:root.iphone .eh-fila .ios-txrow-trailing { color: var(--brand, #059669); }
+
+/* ---- C13 · Vista previa ----
+   La hoja se dibuja como PAPEL —membrete, folio, dos firmas— y lo sustituido
+   se queda en verde para poder auditar de un barrido qué venía de un hueco. */
+:root.iphone .pl-aviso {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 16px 0;
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 1.35;
+  color: var(--ios-valor);
+}
+:root.iphone .pl-punto {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 4px;
+  background: var(--cabecera);
+}
+:root.iphone .pl-papel {
+  background: var(--surface);
+  /* El aire que separa el papel del grupo de abajo. `.ios-section` solo trae
+     margen INFERIOR, así que sin esto la tarjeta de «Huecos llenos» nacía
+     pegada al canto de la hoja y las dos se leían como una sola. */
+  margin-bottom: 18px;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px -12px rgba(0, 0, 0, .4);
+  padding: 26px 24px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: calc(13.5px * var(--fs-escala));
+  line-height: 1.6;
+  color: var(--text);
+}
+:root.iphone .pl-membrete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding-bottom: 10px;
+  border-bottom: .5px solid var(--ios-sep);
+}
+:root.iphone .pl-iglesia {
+  font-size: calc(15px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -.2px;
+  color: var(--cabecera);
+  text-align: center;
+}
+:root.iphone .pl-contacto {
+  font-size: calc(11.5px * var(--fs-escala));
+  color: var(--ios-valor);
+  text-align: center;
+}
+:root.iphone .pl-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: calc(12px * var(--fs-escala));
+  color: var(--ios-valor);
+  font-variant-numeric: tabular-nums;
+}
+:root.iphone .pl-asunto { font-weight: 700; }
+:root.iphone .pl-papel-cuerpo p { margin: 0 0 10px; }
+:root.iphone .pl-papel-cuerpo p:last-child { margin-bottom: 0; }
+:root.iphone .pl-papel-cuerpo ul, :root.iphone .pl-papel-cuerpo ol { margin: 0 0 10px 22px; }
+:root.iphone .pl-despedida { padding-top: 6px; }
+:root.iphone .pl-firmas { display: flex; gap: 18px; padding-top: 22px; }
+:root.iphone .pl-firma {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  border-top: .5px solid var(--text-3);
+  padding-top: 5px;
+  text-align: center;
+}
+:root.iphone .pl-firma-nombre {
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--cabecera);
+}
+:root.iphone .pl-firma-cargo { font-size: calc(11px * var(--fs-escala)); color: var(--ios-valor); }
+/* Lo que salió de un hueco, ya sustituido: verde, para poder auditarlo de un
+   barrido. No es «positivo» —la regla de la v2 sigue en pie—: es
+   «esto no lo escribió nadie, lo puso la plantilla». */
+:root .pl-lleno { color: #047857; font-weight: 600; }
+:root[data-theme="dark"] .pl-lleno { color: #34d399; }
+/* Y la única cifra que importa debajo: nueve de nueve. Si faltara uno, en
+   ámbar, antes de que la carta salga impresa. */
+:root.iphone .pl-incompleto { color: var(--warn); font-weight: 600; }
+
+/* ---- 32 · EL FILO ESPECULAR ----
+
+   Lo que separa el vidrio de iOS 26 del esmerilado de iOS 7 son dos cosas: la
+   REFRACCIÓN —que dobla lo que hay detrás— y el FILO —la línea de luz que se
+   engancha en el canto—. La primera no se puede en un WebView: `backdrop-filter`
+   solo acepta funciones de filtro, no `url(#filtroSVG)`, ni en WebKit ni en
+   Chrome, así que no hay manera de pasarle un `feDisplacementMap` a lo de
+   detrás. La segunda sí, y es este bloque.
+
+   Un canto de vidrio real no se ilumina por igual: recoge la luz ARRIBA y
+   devuelve un rebote mucho más flojo ABAJO. Por eso son dos sombras interiores
+   y no un borde: un `border` reparte lo mismo por los cuatro lados y lo que
+   sale es un aro, no un filo.
+
+   Va sobre el `border` que estas piezas ya tenían, no en su lugar. Los dos
+   hacen trabajos distintos: el borde es la separación con lo de fuera (una
+   línea OSCURA sobre claro), el filo es el brillo justo por dentro. Juntos son
+   el canto; cada uno solo se lee como un contorno dibujado.
+
+   No añade ni una capa de composición: son sombras del elemento que ya está
+   ahí. Eso es deliberado —cada `backdrop-filter` obliga a un pase fuera de
+   pantalla por fotograma, y en este proyecto ya hubo blurs que WebKit soltaba
+   en el carrusel—, así que el filo se paga con pintura, no con vidrio nuevo.
+
+   Se quita entero borrando el bloque. */
+:root {
+  /* Claro: el vidrio es blanco al 72%, así que el filo tiene que ser casi
+     blanco puro para despegarse de él. */
+  --ios-filo: rgba(255, 255, 255, .58);
+  --ios-filo-bajo: rgba(255, 255, 255, .20);
+}
+:root.iphone[data-theme="dark"], :root.mac[data-theme="dark"] {
+  /* Oscuro: sobre `rgba(28,28,30,.72)` el mismo blanco sería un tubo de neón.
+     Baja a un tercio — en oscuro el canto se lee por contraste, no por
+     brillo. */
+  --ios-filo: rgba(255, 255, 255, .22);
+  --ios-filo-bajo: rgba(255, 255, 255, .07);
+}
+@media (prefers-color-scheme: dark) {
+  :root.iphone:not([data-theme="light"]), :root.mac:not([data-theme="light"]) {
+    --ios-filo: rgba(255, 255, 255, .22);
+    --ios-filo-bajo: rgba(255, 255, 255, .07);
+  }
+}
+
+/* La tab bar. Conserva su sombra de caída —la que la levanta del contenido—
+   y le añade el filo: sin repetirla aquí, `box-shadow` la borraría. */
+:root.iphone .barra-inferior {
+  box-shadow:
+    0 12px 32px -10px rgba(0, 0, 0, .35),
+    inset 0 .5px 0 var(--ios-filo),
+    inset 0 -.5px 0 var(--ios-filo-bajo);
+}
+
+/* Las dos barras de vidrio de las hojas: la de «Vista previa / Guardar» del
+   editor de plantilla y la de formato del cuerpo. Van pegadas al canto de
+   abajo, así que solo llevan el filo de ARRIBA: el de abajo caería fuera de
+   la pantalla y lo único que haría es un renglón de luz sobre el indicador
+   de inicio. */
+:root.iphone .pl-pie,
+:root.iphone .eh-barra {
+  box-shadow: inset 0 .5px 0 var(--ios-filo);
+}
+
+/* --- Y dónde NO va, que es la mitad del trabajo ---------------------------
+   Las tres piezas de la cabecera —«+», compartir y el «···»— NO llevan filo.
+   Tuvieron cápsula de vidrio en la primera versión del rediseño y la v2 se la
+   quitó a propósito (~19479): con la banda de marca, la barra de detrás está
+   SIEMPRE opaca, así que la cápsula sobraba siempre y la maqueta las dibuja
+   como glifos blancos desnudos.
+
+   Ponerles el filo —que es lo primero que probé— dibuja media línea de luz
+   cruzando un botón transparente sobre el verde. Es el único sitio donde el
+   efecto se delata como lo que es: una raya pintada, no un canto de vidrio.
+   El filo solo tiene sentido donde hay vidrio de verdad y algo pasa por
+   debajo. */

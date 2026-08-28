@@ -639,6 +639,58 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// El editor de la PLANTILLA de carta (maquetas C8 · C10 · C11 · C12 · C13).
+// Es una pila de hojas: la de datos, la de tipos, la del cuerpo con la de
+// huecos encima, y la vista previa. Lo que hay que ver es que ninguna se abre
+// sobre la anterior sin barra de volver y que las pastillas verdes no rompen
+// el renglón.
+for (const tema of ["light", "dark"]) {
+  const ctx = await contextoIPhone(tema);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => console.error(`pageerror (plantilla ${tema}):`, e.message));
+  async function toma(nombre) {
+    await page.waitForTimeout(900);
+    const archivo = `${SALIDA}/13-plantilla-${nombre}-${tema}.png`;
+    await page.screenshot({ path: archivo });
+    console.log(`  ✓ ${archivo.replace(REPO + "/", "")}`);
+  }
+  async function abrirEditor() {
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+    await page.getByRole("tab", { name: "Plantillas", exact: true }).click();
+    await page.waitForTimeout(900);
+    await page.locator(".ios-txrow--clickable").first().click();
+    await page.waitForTimeout(700);
+  }
+
+  await abrirEditor();
+  await toma("c8-editor");
+
+  // C10: los catorce tipos.
+  await page.getByText("Tipo de carta", { exact: true }).first().click();
+  await toma("c10-tipos");
+  await page.getByRole("button", { name: "Plantilla", exact: true }).click();
+  await page.waitForTimeout(500);
+
+  // C12: el cuerpo en su propia pantalla, y C11 encima.
+  await page.getByText("Cuerpo de la carta", { exact: true }).first().click();
+  await toma("c12-cuerpo");
+  await page.getByRole("button", { name: "Insertar hueco", exact: true }).click();
+  await toma("c11-huecos");
+  // `.last()`: la hoja de huecos está ENCIMA de la del editor, y las dos
+  // tienen su «Cancelar». Con `.first()` Playwright apunta al de abajo, que
+  // el telón de la de arriba intercepta.
+  await page.getByRole("button", { name: "Cancelar", exact: true }).last().click();
+  await page.waitForTimeout(400);
+  await page.getByRole("button", { name: "Listo", exact: true }).click();
+  await page.waitForTimeout(500);
+
+  // C13: la vista previa.
+  await page.getByRole("button", { name: "Vista previa", exact: true }).click();
+  await toma("c13-previa");
+  await ctx.close();
+}
+
 // Una tira larga de Ingresos (sin recortar a la altura de la pantalla), para
 // ver de un vistazo cómo se encadenan las secciones por fecha.
 {
