@@ -3,6 +3,33 @@
 _Escrito el 22 de agosto de 2026, cuando eran doce y sobraban diez. Hecha
 ese mismo día: quedaron dos ramas y tres etiquetas._
 
+> ## Dónde está todo HOY — 27 de agosto de 2026
+>
+> Lo de abajo es el retrato del 22 de agosto y se queda tal cual, porque de
+> ahí salen las reglas del final, que siguen valiendo. Pero el mapa cambió, y
+> quien llegue nuevo necesita el de ahora:
+>
+> | Rama | Qué es | Versión |
+> |---|---|---|
+> | **`main`** | **la 1.3.2, igual que la de trabajo.** Ver el aviso de abajo | 1.3.2 |
+> | `claude/motor-botones-ipad-rymuod` | donde se construye — el motor | 1.3.2 |
+> | `claude/charming-sagan-hknqp1` | diseño de iPad | por detrás |
+> | `claude/mobile-handoff-redesign-x16x07` | diseño de iPhone | por detrás |
+>
+> **`main` DEJÓ DE SER EL PUNTO DE RETIRADA.** Hasta hoy iba a propósito por
+> detrás —la 1.2.9— para que hubiera siempre una versión conocida a la que
+> volver si una nueva salía mal. Iván pidió la fusión el 27 de agosto, con la
+> 1.3.0 y la 1.3.1 ya probadas en TestFlight, así que `main` y la rama de
+> trabajo son ahora **el mismo commit**.
+>
+> Consecuencia práctica, y no es menor: **ya no hay una rama a la que volver.**
+> Mientras eso siga así, lo que hace de red son las ETIQUETAS —`v1.3.0`,
+> `v1.3.1`, `v1.3.2`— y por eso importa que se suban de verdad a GitHub y no
+> se queden en el Mac. Una etiqueta sin subir no es una red.
+>
+> Y lo bueno del cambio: compilar desde `main` ya no saca una versión vieja,
+> que era la segunda de las dos formas de equivocarse del 22 de agosto.
+
 ## Lo que había
 
 Doce ramas en `origin`. **Dos** estaban vivas; las otras diez eran cadáveres
