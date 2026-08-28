@@ -20017,7 +20017,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    maqueta le da su propio radio. El resto del archivo usa --ios-radio a
    propósito; esta es la excepción, y por eso está escrita a mano. */
 :root.iphone .ios-tarjeta-cifras {
-  margin: 14px 16px 0;
+  /* Sin sangría propia: `.content` del teléfono ya pone sus 16 px a los lados
+     (bloque de la fila fija), y sumarle otros 16 dejaba esta tarjeta 16 px
+     más estrecha por lado que las listas agrupadas de debajo. Se veía en un
+     iPhone de verdad: la tarjeta de cifras y el segmentado metidos hacia
+     dentro y los grupos de abajo más anchos. */
+  margin: 14px 0 0;
   padding: 14px 16px 15px;
   border-radius: 16px;
   background: var(--surface);
@@ -20165,7 +20170,10 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   gap: 2px;
   height: 32px;
-  margin: 12px 16px 0;
+  /* Sin sangría propia, por lo mismo que la tarjeta de cifras: la pone
+     `.content`. Quien lo use FUERA de `.content` —los pasos de la ficha, que
+     viven en una hoja— se pone la suya. */
+  margin: 12px 0 0;
   padding: 2px;
   box-sizing: border-box;
   border-radius: 9px;
@@ -21289,7 +21297,7 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   display: flex;
   gap: 2px;
   height: 32px;
-  margin: 12px 16px 0;
+  margin: 12px 0 0;
   padding: 2px;
   box-sizing: border-box;
   border-radius: 9px;
