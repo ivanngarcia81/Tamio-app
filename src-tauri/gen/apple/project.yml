@@ -56,13 +56,13 @@ targets:
         # Info.plist. Cuando el bump a la 1.1.0 tocó solo el Info.plist, este
         # archivo se quedó en 1.0.8 — una versión YA PUBLICADA, que App Store
         # Connect rechaza de plano. Los dos archivos tienen que decir lo mismo.
-        CFBundleShortVersionString: 1.3.2
+        CFBundleShortVersionString: 1.3.3
         # Tauri PISA este valor con la versión de `tauri.conf.json` en cada
         # `ios build` (comprobado: puse "2" y el build lo dejó en "1.1.0").
         # Así que aquí va la versión, igual que arriba: poner otra cosa solo
         # consigue que el archivo salga modificado después de cada build. Para
         # subir dos veces, lo que se sube es la VERSIÓN.
-        CFBundleVersion: "1.3.2"
+        CFBundleVersion: "1.3.3"
         ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: tesoreria_iOS/tesoreria_iOS.entitlements
