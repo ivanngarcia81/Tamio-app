@@ -668,6 +668,7 @@ export const en: Resources = {
   },
 
   recordModal: {
+    detalle: "Details",
     posibleDuplicado: "A similar entry already exists ({{nombres}}). Check before saving; if it is correct, save again.",
     editarIngreso: "Edit income",
     editarGasto: "Edit expense",
@@ -1055,6 +1056,8 @@ export const en: Resources = {
   },
 
   recurrente: {
+    correccion: "Correction",
+    aplicarRetroLabel: "Correct the months already recorded",
     label: "Recurring fixed transaction",
     pregunta: "Does this {{tipo}} repeat every month?",
     seRepiteCadaMes: "Repeats every month",
@@ -1930,6 +1933,9 @@ export const en: Resources = {
     telefono: "Phone",
     correo: "Institutional email",
     pie: "Institutional footer",
+    membretePie: "This is how the letterhead of the PDFs looks with what is written below.",
+    datosMembrete: "Letterhead details",
+    vacioNoImprime: "Whatever is left empty is not printed: the letterhead closes up without leaving blank lines.",
     piePlaceholder: "e.g. motto or legal registration shown at the bottom of letters",
     secretariaNombre: "Secretary's name",
     secretariaCargo: "Title",
@@ -3061,6 +3067,15 @@ export const en: Resources = {
     ayuda: "Help",
     acercaDe: "About",
     cerrarSesion: "Sign out",
+    aplicacion: "Application",
+    version: "Version",
+    pieCerrarSesion: "Signing out does not delete anything from the device: when you sign back in, everything is where it was.",
+    areas: {
+      ambas: "Treasury and Secretariat",
+      tesoreria: "Treasury",
+      secretaria: "Secretariat",
+      ninguna: "No areas",
+    },
     confirmarTitulo: "Sign out?",
     confirmarMensaje: "You'll be signed out of your account on this device. Your saved data isn't lost.",
     acercaDeVersion: "Version {{version}}",
@@ -3081,6 +3096,9 @@ export const en: Resources = {
     imagen: "Image",
     logoAlt: "Church logo",
     logoFila: "Logo",
+    logoSub: "Appears on letters and reports",
+    logoAnadir: "Add",
+    einOpcionalPie: "The tax ID is optional and is only printed when it is filled in.",
     nombreLabel: "Church name",
     nombrePlaceholder: "e.g. Central Church",
     ciudad: "City",
@@ -3095,6 +3113,7 @@ export const en: Resources = {
     einPlaceholder: "e.g. 12-3456789",
     einHint: "The church's tax ID number (EIN in the US, or its equivalent). Shown next to the church name on PDFs.",
     moneda: "Currency",
+    fiscalYContable: "Tax and accounting",
     monedaUsd: "USD — US Dollar",
     monedaMxn: "MXN — Mexican Peso",
     monedaHint: "Used for all new transactions, reports and balances.",
@@ -3117,6 +3136,9 @@ export const en: Resources = {
   },
 
   firma: {
+    cargada: "Uploaded",
+    sinCargar: "Not uploaded",
+    anadir: "Add",
     titulo: "Treasurer's signature",
     sub: "Shown in the signature block of PDF reports",
     sinFirma: "No signature on file",
@@ -3156,6 +3178,11 @@ export const en: Resources = {
   },
 
   usuarios: {
+    personasGrupo: "People",
+    areasGrupo: "Areas",
+    piePersonas: "Tap a person to change their role. The role decides which areas they enter.",
+    pieAreas: "The area decides what each person sees when opening the app. Someone can be in both.",
+    nadieEnArea: "No one yet",
     titulo: "Users",
     sub: "Directory of people who manage the church",
     agregar: "Add user",
@@ -3187,10 +3214,12 @@ export const en: Resources = {
     oscuro: "Dark",
     automatico: "Automatic",
     hint: "\"Automatic\" follows the operating system's light/dark mode and only changes when you change it there.",
+    pieGrupo: "\"Automatic\" follows the system mode. The accent tints buttons and links; the green of the band above does not change — that is the brand.",
   },
 
   idioma: {
     titulo: "Language",
+    tituloGrupo: "Language and text",
     sub: "Choose the application language",
     automatico: "Automatic",
     espanol: "Español",
@@ -3326,6 +3355,7 @@ export const en: Resources = {
     desactivado: "Off",
     hint: "A different sound plays when you record an income, an expense, or delete a transaction.",
     juego: "Sound set",
+    pieGrupo: "With sound off, the set stays in view but dimmed: the setting does not move.",
     juegos: {
       clasico: "Classic",
       suave: "Soft",

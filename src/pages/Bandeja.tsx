@@ -143,6 +143,26 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
    * de edición, que es donde esos tres campos se tocan; el nombre dice qué se
    * va a hacer allí, no cómo se llama la pantalla que abre.
    */
+  /** Si el botón de aprobar de la fila del teléfono tiene sentido.
+   *
+   *  Solo `pendiente`, y el porqué es de comportamiento, no de gusto:
+   *  `markTxReviewed` marca el movimiento como revisado, y de las siete
+   *  alertas la ÚNICA que sale de ahí es `pendiente` (`listPendingTx`). Las
+   *  demás se calculan de otra cosa —`sinComprobante` mira si hay comprobante,
+   *  `categoriaVacia` si hay categoría, `duplicado` compara con su gemelo—
+   *  sobre `listTx(limit 200)`, que no filtra por revisado.
+   *
+   *  Lo probé con el arnés antes de creérmelo: con el botón puesto en
+   *  `sinComprobante`, aprobar dejaba la lista en 5 alertas de 5. Un botón que
+   *  no cambia nada visible es peor que no tenerlo — el usuario lo pulsa, no
+   *  pasa nada, y vuelve a pulsarlo.
+   *
+   *  (Los botones de texto del iPad/Mac ofrecen «Aprobar» también en
+   *  `sinComprobante`, con el mismo resultado invisible. Es un defecto suyo,
+   *  anterior a esto, y no lo toco aquí: cambiar el flujo de aprobación del
+   *  escritorio es otra decisión y no la que se pidió.) */
+  const sePuedeAprobar = (a: Alerta) => !!a.tx && a.tipo === "pendiente";
+
   function accionesDe(a: Alerta): ReactNode {
     const tx = a.tx;
     const aprobar = tx && (
@@ -542,6 +562,31 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                                   onClick={(e) => { e.stopPropagation(); void handleRestore(a.miembro!); }}
                                 >
                                   <span><IconRefreshCw size={15} strokeWidth={2.2} /></span>
+                                </button>
+                              ) : sePuedeAprobar(a) ? (
+                                /* Aprobar, de un toque y sin salir de la lista.
+                                   Hasta aquí el teléfono era la única plataforma
+                                   donde aprobar un movimiento NO existía: la fila
+                                   llevaba al editor y había que guardar desde
+                                   dentro. Para la mitad de las alertas —las que
+                                   solo esperan un visto bueno— eso son cuatro
+                                   toques y una pantalla para no cambiar nada.
+
+                                   Es el mismo `.ios-row-accion` de «Restaurar»
+                                   sin una clase propia: las dos son la acción
+                                   positiva de su fila y se distinguen por el
+                                   glifo, no por el color. Círculo de 30 dentro
+                                   de un objetivo táctil de 44, y
+                                   `stopPropagation` para que aprobar no abra
+                                   además el editor. */
+                                <button
+                                  type="button"
+                                  className="ios-row-accion"
+                                  aria-label={t("bandeja.aprobar")}
+                                  title={t("bandeja.aprobar")}
+                                  onClick={(e) => { e.stopPropagation(); void handleReviewed(a.tx!); }}
+                                >
+                                  <span><IconCheck size={15} strokeWidth={2.6} /></span>
                                 </button>
                               ) : llevaA ? <IosChevron /> : null}
                             </div>

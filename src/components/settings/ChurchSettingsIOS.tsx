@@ -13,9 +13,8 @@ import { mkdir, readFile, writeFile } from "@tauri-apps/plugin-fs";
 import { CARPETA_IMAGENES, rutaEnDatos } from "../../services/archivos";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { useTranslation } from "react-i18next";
-import { IconBuilding } from "../../icons";
 import { currentLang } from "../../i18n";
-import { CURRENCIES, currencyLabel } from "../../currencies";
+import { CURRENCIES, currencyLabel, currencyShort } from "../../currencies";
 import { esIPad } from "../../movil";
 import { fmtMoney } from "../../db";
 import { UMBRAL_COMPROBANTE } from "../../services/bandeja/alertas";
@@ -55,6 +54,14 @@ export default function ChurchSettingsIOS({
   const { t } = useTranslation();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  /* Las iniciales del nombre, para el cuadro cuando no hay logo. Dos letras:
+     con tres el cuadro de 44 se llena y dejan de leerse como iniciales. */
+  const iniciales = (value.nombre || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("") || "?";
   const [logoMenuAbierto, setLogoMenuAbierto] = useState(false);
   const [monedaAbierta, setMonedaAbierta] = useState(false);
 
@@ -100,21 +107,35 @@ export default function ChurchSettingsIOS({
 
   return (
     <div className="ios-form">
-      <Section footer={logoError ?? t("iglesia.logoHint")}>
+      {/* El logo se VE, a 44 px y en la propia fila. Antes era un cuadro de
+          icono genérico con la explicación abajo, en el pie del grupo: había
+          que leer para saber si había logo o no. Sin logo, el cuadro son las
+          iniciales de la iglesia sobre el verde de marca, con «Añadir» en
+          verde donde iría el valor —así la fila dice a la vez qué falta y qué
+          se puede hacer (maqueta S3). */}
+      <Section footer={logoError ?? undefined}>
         <button
           type="button"
-          className="ios-field ios-field--link ios-field--avatar"
+          className="ios-field ios-field--link ios-field--logo"
           onClick={() => (previewUrl ? setLogoMenuAbierto(true) : pickLogo())}
         >
-          <span className="ios-field-label">{t("iglesia.logoFila")}</span>
-          <span className="ios-field-value" />
-          <span className="ios-avatar">
-            {previewUrl ? <img src={previewUrl} alt={t("iglesia.logoAlt")} /> : <IconBuilding size={20} />}
+          <span className="ios-field-textos">
+            <span className="ios-field-label">{t("iglesia.logoFila")}</span>
+            <span className="ios-field-sub">{t("iglesia.logoSub")}</span>
+          </span>
+          {!previewUrl && <span className="ios-logo-anadir">{t("iglesia.logoAnadir")}</span>}
+          <span className="ios-logo-caja">
+            {previewUrl
+              ? <img src={previewUrl} alt={t("iglesia.logoAlt")} />
+              : <span className="ios-logo-iniciales">{iniciales}</span>}
+          </span>
+          <span className="ios-chevron" aria-hidden="true">
+            <svg viewBox="0 0 7 12"><path d="M1 1l5 5-5 5" /></svg>
           </span>
         </button>
       </Section>
 
-      <Section header={t("iglesia.titulo")} footer={t("iglesia.einHint")}>
+      <Section header={t("iglesia.titulo")}>
         <TextField label={t("iglesia.nombreLabel")} value={value.nombre} onChange={(v) => onChange({ nombre: v })} error={error} />
         <TextField label={t("iglesia.ciudad")} value={value.ciudad} onChange={(v) => onChange({ ciudad: v })} optional />
         <TextField
@@ -130,20 +151,34 @@ export default function ChurchSettingsIOS({
           onChange={(v) => onChange({ codigoPostal: v })}
           optional
         />
-        <TextField
-          label={t("iglesia.ein")}
-          value={value.ein}
-          onChange={(v) => onChange({ ein: v })}
-          optional
-          stacked
-        />
       </Section>
 
+      {/* FISCAL Y CONTABLE. El EIN baja aquí desde el grupo de identidad: no
+          es un dato de dónde está la iglesia, es de cómo se identifica ante
+          Hacienda, y junto a la moneda y el saldo tiene compañía. Va con la
+          fila invertida —etiqueta arriba, valor debajo— porque «EIN /
+          identificación fiscal» no deja sitio al valor a su lado; y el
+          «(opcional)» se va al pie del grupo, que es donde se explican las
+          reglas: una etiqueta no debe llevar paréntesis (maqueta S3). */}
       {showCurrency && (
-        <Section header={t("iglesia.moneda")} footer={t("iglesia.saldoInicialHint")}>
+        <Section
+          header={t("iglesia.fiscalYContable")}
+          /* Dos frases, dos párrafos: explican cosas distintas —una el EIN y
+             otra el saldo— y en un solo bloque se leían como una sola. */
+          footer={<><span className="ios-pie-parrafo">{t("iglesia.einOpcionalPie")}</span><span className="ios-pie-parrafo">{t("iglesia.saldoInicialHint")}</span></>}
+        >
+          <TextField
+            label={t("iglesia.ein")}
+            value={value.ein}
+            onChange={(v) => onChange({ ein: v })}
+            placeholder={t("iglesia.einPlaceholder")}
+            stacked
+          />
           <PickerField
             label={t("iglesia.moneda")}
-            value={currencyLabel(value.moneda, currentLang())}
+            /* Forma corta: «USD $», no «USD — Dólar estadounidense». El nombre
+               entero vive en el selector que empuja (regla D de la lámina). */
+            value={currencyShort(value.moneda)}
             onPress={() => setMonedaAbierta(true)}
           />
           <TextField

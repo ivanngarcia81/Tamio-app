@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  catNombre, countTxDeSerie, fmtMoney, getCategoriasGasto, getCategoriasIngreso,
-  metodoNombre, METODOS_PAGO, updateMontoDeSerie, updateMovimientoRecurrente,
-  type MovimientoRecurrente,
+  catNombre, fmtMoney, metodoNombre, METODOS_PAGO, type MovimientoRecurrente,
 } from "../db";
 import { IconClose, IconWarn } from "../icons";
+import { esMovil } from "../movil";
+import EditarRecurrenteIOS from "./EditarRecurrenteIOS";
+import { parseMonto, useRecurrente } from "./recurrente";
 import { useEscapeClose } from "../hooks/useEscapeClose";
-import { CERO, aTextoTecleado, deTextoTecleado, type Centavos } from "../dinero";
+import { CERO } from "../dinero";
 
 interface Props {
   church_id: number;
@@ -16,73 +16,25 @@ interface Props {
   onSaved: () => void;
 }
 
-/** Igual que en Nuevo movimiento: `deTextoTecleado` parsea —con el separador
- *  decimal del país del aparato—, y aquí solo queda la regla de la pantalla
- *  (un importe mayor que cero). */
-function parseMonto(s: string): Centavos | null {
-  const c = deTextoTecleado(s);
-  return c !== null && c > 0 ? c : null;
-}
-
 /** Edita monto, categoría, día, método y demás datos de un movimiento
  *  recurrente ya activo. No toca los meses ya generados — solo cambia lo
- *  que se registre de aquí en adelante (p. ej. subir el monto de la renta). */
+ *  que se registre de aquí en adelante (p. ej. subir el monto de la renta).
+ *
+ *  En todo lo táctil —iPhone e iPad— no se pinta nada de aquí: la hoja de iOS
+ *  (`EditarRecurrenteIOS`) se lleva el formulario entero. Lo que comparten es
+ *  `useRecurrente`, así que las validaciones y el guardado son los mismos en
+ *  las dos formas. */
 export default function EditRecurrenteModal({ church_id, recurrente, onClose, onSaved }: Props) {
   const { t } = useTranslation();
   useEscapeClose(onClose);
-  const esIngreso = recurrente.tipo === "ingreso";
-  const categorias = esIngreso ? getCategoriasIngreso() : getCategoriasGasto();
+  const h = useRecurrente({ church_id, recurrente, onClose, onSaved });
+  const {
+    esIngreso, categorias, categoria, setCategoria, concepto, setConcepto,
+    monto, setMonto, dia, setDia, metodo, setMetodo, beneficiario, setBeneficiario,
+    saving, error, generados, ofreceRetro, aplicarRetro, setAplicarRetro, guardar,
+  } = h;
 
-  const [categoria, setCategoria] = useState(recurrente.categoria);
-  const [concepto, setConcepto] = useState(recurrente.concepto);
-  const [monto, setMonto] = useState(aTextoTecleado(recurrente.monto));
-  const [dia, setDia] = useState(String(recurrente.dia));
-  const [metodo, setMetodo] = useState(recurrente.metodo_pago);
-  const [beneficiario, setBeneficiario] = useState(recurrente.beneficiario ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Corrección retroactiva: cuántos movimientos ya generó la serie y si el
-  // nuevo monto debe aplicarse también a ellos (un monto mal capturado se
-  // arregla en un solo guardado, sin tocar fila por fila).
-  const [generados, setGenerados] = useState(0);
-  const [aplicarRetro, setAplicarRetro] = useState(false);
-
-  useEffect(() => {
-    countTxDeSerie(recurrente.id, church_id).then(setGenerados).catch(() => {});
-  }, [recurrente.id, church_id]);
-
-  const montoCambio = parseMonto(monto) !== null && parseMonto(monto) !== recurrente.monto;
-
-  async function guardar() {
-    setError(null);
-    const m = parseMonto(monto);
-    if (!concepto.trim()) { setError(t("common.conceptoObligatorio")); return; }
-    if (m === null) { setError(t("common.montoInvalido")); return; }
-    const d = Number(dia);
-    if (!Number.isInteger(d) || d < 1 || d > 31) { setError(t("common.montoInvalido")); return; }
-    setSaving(true);
-    try {
-      await updateMovimientoRecurrente(recurrente.id, church_id, {
-        categoria,
-        subcategoria: null,
-        concepto: concepto.trim(),
-        detalle: recurrente.detalle,
-        monto: m,
-        metodo_pago: metodo,
-        beneficiario: esIngreso ? null : beneficiario.trim() || null,
-        beneficiario_rfc: recurrente.beneficiario_rfc,
-        dia: d,
-      });
-      if (aplicarRetro && montoCambio && generados > 0) {
-        await updateMontoDeSerie(recurrente.id, church_id, m);
-      }
-      onSaved();
-      onClose();
-    } catch (e) {
-      setError(t("common.noSePudoGuardar", { error: String(e) }));
-      setSaving(false);
-    }
-  }
+  if (esMovil()) return <EditarRecurrenteIOS onClose={onClose} h={h} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -150,7 +102,7 @@ export default function EditRecurrenteModal({ church_id, recurrente, onClose, on
             </div>
           )}
 
-          {montoCambio && generados > 0 && (
+          {ofreceRetro && (
             <label className="roster-followup" style={{ fontSize: "calc(12.5px * var(--fs-escala))", marginTop: 4 }}>
               <input type="checkbox" checked={aplicarRetro} onChange={(e) => setAplicarRetro(e.target.checked)} />
               {t("recurrente.aplicarRetro", { count: generados, monto: fmtMoney(parseMonto(monto) ?? CERO) })}

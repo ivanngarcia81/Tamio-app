@@ -49,7 +49,6 @@ import {
   IconChurch, IconLlave, IconFileText, IconSignature, IconUser, IconTag, IconMonitor, IconWarn,
   IconChevronLeft, IconChevronRight, IconTamio, IconSearch,
 } from "../icons";
-import { IOSNavBar } from "../components/ios/FormularioIOS";
 import { useSwipeBack } from "../hooks/useSwipeBack";
 
 /** Chevron de la lista agrupada de iPhone: 7×12px reales, no el ícono
@@ -578,7 +577,7 @@ export default function Configuracion({
   return (
     <>
       {/* El título grande solo va en la pantalla raíz (el índice de zonas):
-          al entrar a una, la lleva su propia nav bar (IOSNavBar, más abajo)
+          al entrar a una, la cabecera pasa a ser la de la zona (más abajo)
           y repetirlo aquí encima sería el mismo título dos veces. La copia
           fija de la barra al hacer scroll (`.titulo-fijo`, App.tsx) lee el
           texto de `.page-title` en vivo, así que con este bloque fuera del
@@ -586,10 +585,26 @@ export default function Configuracion({
       {/* `data-tauri-drag-region` hace de interruptor de la toolbar de macOS
           y de zona de arrastre de la ventana a la vez; solo en Mac (el
           porqué, en Movimientos.tsx). */}
-      {!(enIPhone && zonaActiva) && (
-        <div className="header" data-tauri-drag-region={esMac() || undefined}>
+      {/* Con una zona abierta la cabecera es la de ESA zona: volver a Ajustes
+          y su nombre como título grande dentro de la banda verde, igual que el
+          índice. Es la decisión 1 del handoff v2 —«una zona no es un modal, es
+          el mismo sitio un nivel más adentro»— y la que quita el híbrido que
+          había: índice con título de 34 y zonas con una barra fina de 17.
+
+          No es un patrón nuevo: es el mismo `.ios-nav-volver` + `.page-title`
+          del documento abierto de Reportes y del detalle del periodo de
+          Inicio, así que el plegado al desplazar (`.titulo-fijo`) ya funciona
+          sin tocar nada. */}
+      <div className="header" data-tauri-drag-region={esMac() || undefined}>
           <div>
-            <div className="page-title">{t("config.titulo")}</div>
+            {enIPhone && zonaActiva && (
+              <button type="button" className="ios-nav-volver" onClick={() => setZonaActiva(null)}>
+                <IconChevronLeft size={17} strokeWidth={2.4} /> {t("nav.ajustes")}
+              </button>
+            )}
+            <div className="page-title" data-titulo-fijo={enIPhone && zonaActiva ? zonaActivaInfo?.titulo : undefined}>
+              {enIPhone && zonaActiva ? zonaActivaInfo?.titulo ?? "" : t("config.titulo")}
+            </div>
             {/* En iPhone (lista agrupada estilo iOS, ver más abajo) este
                 subtítulo se quita: su contenido pasa a repartirse entre los
                 pies de sección ("Define quién entra a Tesorería...",
@@ -597,19 +612,15 @@ export default function Configuracion({
                 otro motivo: en la toolbar solo cabe un DATO corto ("2
                 movimientos"), y esto es una frase explicativa. Queda en el
                 iPad, que sí conserva el título de página con su subtítulo. */}
-            {!enIPhone && !esMac() && <div className="page-sub">{t("config.sub")}</div>}
+            {!enIPhone && !zonaActiva && !esMac() && <div className="page-sub">{t("config.sub")}</div>}
           </div>
+          {/* La acción de la zona —el aviso de «sin guardar», el «+» de
+              Categorías— se queda a la derecha de la fila de acciones, que es
+              donde vive en todas las demás pantallas del teléfono. */}
+          {enIPhone && zonaActiva && accionNavBar && (
+            <div className="header-actions">{accionNavBar}</div>
+          )}
         </div>
-      )}
-
-      {enIPhone && zonaActiva && (
-        <IOSNavBar
-          backLabel={t("nav.ajustes")}
-          title={zonaActivaInfo?.titulo ?? ""}
-          onBack={() => setZonaActiva(null)}
-          action={accionNavBar}
-        />
-      )}
 
       {/* `content-ajustes`, y NO el `content-lienzo` de las demás pantallas del
           Mac: el gris de fondo es el mismo (y hace falta, porque el rediseño
@@ -781,6 +792,17 @@ export default function Configuracion({
               </div>
               <CuentaSettingsIOS
                 authActivo={authActivo}
+                version={version}
+                rol={t(`rol.${role}`)}
+                /* Las áreas salen de los mismos dos booleanos que deciden qué
+                   zonas se ven, así que no pueden decir una cosa distinta de
+                   la que hace el menú. */
+                areas={
+                  verTesoreria && verSecretaria ? t("cuenta.areas.ambas")
+                    : verTesoreria ? t("cuenta.areas.tesoreria")
+                      : verSecretaria ? t("cuenta.areas.secretaria")
+                        : t("cuenta.areas.ninguna")
+                }
                 sesionEmail={sesionEmail}
                 sesionNombre={sesionNombre}
                 sesionFoto={sesionFoto}
@@ -849,6 +871,7 @@ export default function Configuracion({
                 {/* Las cuatro guardas de abajo viven ahora dentro del
                     componente, con las mismas condiciones. */}
                 <AccesosSettingsIOS
+                  usuarios={usuarios}
                   church={church}
                   role={role}
                   onRoleChange={onRoleChange}
@@ -905,6 +928,7 @@ export default function Configuracion({
               <>
                 {verSecretaria && (
                   <InstitucionSettingsIOS
+                    churchNombre={churchForm.nombre}
                     value={institucionForm}
                     onChange={(patch) => { setInstitucionForm((v) => ({ ...v, ...patch })); programarGuardado("institucion"); }}
                     estado={estados.institucion}

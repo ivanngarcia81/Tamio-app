@@ -29,6 +29,7 @@ import {
   setSonidoActivado, sonidoActivado, type JuegoSonido,
 } from "../../sound";
 import { Section, SwitchField } from "../ios/FormularioIOS";
+import { IOSPickerField } from "../ios/IOSPickerField";
 import { esIPad } from "../../movil";
 import { ocultarMontosActivado, setOcultarMontos } from "../../privacidad";
 
@@ -101,8 +102,14 @@ function ChoiceGroup<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  /* Sin `.ios-group` propio: `Section` ya envuelve a sus hijos en uno. Con el
+     de aquí eran DOS anidados, y como cada uno pone `margin: 0 16px`, las
+     filas de opción sangraban 16 px más que las de interruptor del grupo de
+     al lado —«Claro» a 64 px y «Sonido al guardar» a 48—. Es la sangría
+     desigual que la regla E del handoff (casilla por grupo, no por fila)
+     existe para impedir. */
   return (
-    <div className="ios-group">
+    <>
       {options.map((o) => (
         <button
           key={o.id}
@@ -116,6 +123,46 @@ function ChoiceGroup<T extends string>({
           <Check />
         </button>
       ))}
+    </>
+  );
+}
+
+/**
+ * «Tamaño de texto», como fila con deslizador (maqueta S8).
+ *
+ * El handoff la pone en el grupo IDIOMA Y TEXTO del teléfono y la dibuja con
+ * las dos «A» a los lados: el control se PRUEBA mientras se mueve, porque lo
+ * que cambia es el tamaño de la propia pantalla que lo contiene. El nombre
+ * del paso va a la derecha, en la línea de la etiqueta, donde iría el valor.
+ *
+ * Es un deslizador de tres topes y no un segmentado como el del iPad: en 393
+ * px tres pastillas con «Chico / Normal / Grande» dejan la etiqueta sin
+ * sitio, y además un segmentado no sugiere que haya un continuo entre los
+ * extremos —que es justo lo que las dos «A» sí dicen.
+ */
+function FilaTamanoTexto({ value, onChange }: { value: TamanoTexto; onChange: (v: TamanoTexto) => void }) {
+  const { t } = useTranslation();
+  const i = Math.max(0, TAMANOS.indexOf(value));
+  return (
+    <div className="ios-field ios-fila-tamano">
+      <span className="ft-cab">
+        <span className="ios-field-label">{t("presentacion.tamanoTexto")}</span>
+        <span className="ft-paso">{t(`presentacion.tamano.${value}`)}</span>
+      </span>
+      <span className="ft-control">
+        <span className="ft-a ft-a--chica" aria-hidden="true">A</span>
+        <input
+          type="range"
+          min={0}
+          max={TAMANOS.length - 1}
+          step={1}
+          value={i}
+          aria-label={t("presentacion.tamanoTexto")}
+          aria-valuetext={t(`presentacion.tamano.${value}`)}
+          onChange={(e) => onChange(TAMANOS[Number(e.target.value)])}
+        />
+        <span className="ft-a ft-a--grande" aria-hidden="true">A</span>
+      </span>
     </div>
   );
 }
@@ -163,7 +210,12 @@ export default function PreferenciasSettingsIOS({
 
   return (
     <div className="ios-form">
-      <Section header={t("apariencia.titulo")} footer={t("apariencia.hint")}>
+      {/* APARIENCIA. Los tres temas y el acento comparten grupo: son la misma
+          pregunta —«de qué color es esto»— y separarlos en dos tarjetas hacía
+          que el acento pareciera un ajuste de otra familia. Ninguna fila de
+          aquí reserva casilla de icono, así que la palomita se va a la
+          derecha y las cuatro sangran igual (regla E de la lámina S11). */}
+      <Section header={t("apariencia.titulo")} footer={t("apariencia.pieGrupo")}>
         {esIPad() ? (
           <TemasIPad value={themePref} onChange={onThemePrefChange} />
         ) : (
@@ -177,41 +229,66 @@ export default function PreferenciasSettingsIOS({
             onChange={onThemePrefChange}
           />
         )}
-      </Section>
-
-      <Section header={t("acento.titulo")} footer={t("acento.hint")}>
-        <div className="ios-group">
-          <div className="ios-colors-row" role="radiogroup" aria-label={t("acento.titulo")}>
-            {ACENTOS.map((a) => (
-              <button
-                key={a}
-                type="button"
-                className="ios-color-dot"
-                style={{ color: MUESTRA[a] }}
-                aria-selected={a === acento}
-                aria-label={t(`acento.nombre.${a}`)}
-                title={t(`acento.nombre.${a}`)}
-                onClick={() => onAcentoChange(a)}
-              />
-            ))}
-          </div>
+        {/* El acento, dentro de su fila: etiqueta a la izquierda y las cinco
+            pastillas donde iría el valor. Antes era una tarjeta propia con
+            los círculos sueltos, que a 393 px se leía como una paleta y no
+            como un ajuste. */}
+        <div className="ios-colors-row" role="radiogroup" aria-label={t("acento.titulo")}>
+          <span className="ios-colors-etiqueta">{t("acento.titulo")}</span>
+          {ACENTOS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              className="ios-color-dot"
+              style={{ color: MUESTRA[a] }}
+              aria-selected={a === acento}
+              aria-label={t(`acento.nombre.${a}`)}
+              title={t(`acento.nombre.${a}`)}
+              onClick={() => onAcentoChange(a)}
+            />
+          ))}
         </div>
       </Section>
 
-      <Section header={t("idioma.titulo")} footer={t("idioma.hint")}>
-        <ChoiceGroup
+      {/* IDIOMA Y TEXTO. El idioma pasa de tres filas de opción a una fila
+          con su valor: son tres opciones hoy, pero la fila no crece si mañana
+          son ocho, y así comparte grupo con el tamaño de texto —que es la
+          otra cosa que cambia cómo se LEE la app. */}
+      <Section header={t("idioma.tituloGrupo")} footer={t("idioma.hint")}>
+        <IOSPickerField
+          label={t("idioma.titulo")}
+          sheetTitle={t("idioma.titulo")}
           options={[
-            { id: "auto", label: t("idioma.automatico") },
-            { id: "es", label: t("idioma.espanol") },
-            { id: "en", label: t("idioma.ingles") },
-          ] as const}
+            { value: "auto", label: t("idioma.automatico") },
+            { value: "es", label: t("idioma.espanol") },
+            { value: "en", label: t("idioma.ingles") },
+          ]}
           value={langPref}
-          onChange={onLangPrefChange}
+          onSelect={(v) => onLangPrefChange(v as LangPref)}
         />
+        {!esIPad() && <FilaTamanoTexto value={tamano} onChange={elegirTamano} />}
       </Section>
 
-      <Section header={t("sonido.titulo")} footer={t("sonido.hint")}>
-        <SwitchField label={t("sonido.sub")} checked={sonidoOn} onChange={alternarSonido} />
+      {/* SONIDO. El interruptor lleva su explicación DEBAJO (regla A), no en
+          la columna del valor, que es donde se truncaba. Y «Juego de
+          sonidos» ya no desaparece con el sonido apagado: se queda atenuado
+          en su sitio —un ajuste que se va de la pantalla al tocar el de
+          arriba se lee como un fallo. */}
+      <Section header={t("sonido.titulo")} footer={t("sonido.pieGrupo")}>
+        <SwitchField
+          label={t("sonido.titulo")}
+          sub={t("sonido.hint")}
+          checked={sonidoOn}
+          onChange={alternarSonido}
+        />
+        <IOSPickerField
+          label={t("sonido.juego")}
+          sheetTitle={t("sonido.juego")}
+          options={JUEGOS_SONIDO.map((j) => ({ value: j, label: t(`sonido.juegos.${j}`) }))}
+          value={juego}
+          onSelect={(v) => elegirJuego(v as JuegoSonido)}
+          disabled={!sonidoOn}
+        />
       </Section>
 
       {/* "Presentación": los tres controles que el handoff de iPad dibujó y
@@ -279,16 +356,6 @@ export default function PreferenciasSettingsIOS({
             sub={t("presentacion.ocultarMontosSub")}
             checked={ocultarMontos}
             onChange={(v) => { setOcultarMontos(v); setOcultarMontosEstado(v); }}
-          />
-        </Section>
-      )}
-
-      {sonidoOn && (
-        <Section header={t("sonido.juego")} footer={t("sonido.hintJuego")}>
-          <ChoiceGroup
-            options={JUEGOS_SONIDO.map((j) => ({ id: j, label: t(`sonido.juegos.${j}`) }))}
-            value={juego}
-            onChange={elegirJuego}
           />
         </Section>
       )}

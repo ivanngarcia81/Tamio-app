@@ -1711,7 +1711,18 @@ console.log("\n== Configuración del iPad (handoff) ==");
   const ig = await pg.evaluate(() => {
     const g = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-group");
     const h = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-section-header");
-    const f = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-field");
+    /* Una fila de UNA línea, a propósito. Las de dos —`.ios-field-textos`,
+       título arriba y explicación debajo— tienen su propia regla en el bloque
+       del iPad (`flex: none; width: auto`), porque una explicación encajada en
+       190px no se lee. Medir la columna de 190 en una de ésas mide otra cosa.
+
+       Se rompió el 27 de agosto de 2026, y sin que el CSS cambiara: la maqueta
+       S3 convirtió la fila del logo —la PRIMERA de la zona Iglesia— en una de
+       dos líneas, así que `.ios-field` a secas pasó a devolverla a ella y la
+       medida saltó de 190 a 555. La regla seguía bien; la prueba miraba mal. */
+    const f = document.querySelector(
+      ".settings-zona:not(.settings-zona-inactiva) .ios-field:not(:has(.ios-field-textos))"
+    );
     const lab = f?.querySelector(".ios-field-label");
     const cs = (e) => (e ? getComputedStyle(e) : null);
     return {

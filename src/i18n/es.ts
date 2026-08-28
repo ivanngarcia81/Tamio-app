@@ -686,6 +686,10 @@ export const es = {
   },
 
   recordModal: {
+    /* Cabecera de la sección de datos en las hojas de iOS. La usa
+       `EditarRecurrenteIOS` y sirve para cualquier hoja que agrupe los campos
+       de un movimiento: es "los datos de esto", no "el detalle del mes". */
+    detalle: "Detalle",
     posibleDuplicado: "Ya hay un movimiento parecido registrado ({{nombres}}). Revisa antes de guardar; si es correcto, guarda de nuevo.",
     editarIngreso: "Editar ingreso",
     editarGasto: "Editar gasto",
@@ -1099,6 +1103,11 @@ export const es = {
   },
 
   recurrente: {
+    /* La sección que solo aparece cuando el monto cambió Y la serie ya generó
+       movimientos. Se llama "Corrección" y no "Retroactivo" porque lo que se
+       está decidiendo es si el pasado estaba MAL, no una opción técnica. */
+    correccion: "Corrección",
+    aplicarRetroLabel: "Corregir los meses ya registrados",
     label: "Movimiento fijo recurrente",
     pregunta: "¿Este {{tipo}} se repite todos los meses?",
     seRepiteCadaMes: "Se repite cada mes",
@@ -2004,6 +2013,9 @@ export const es = {
     telefono: "Teléfono",
     correo: "Correo institucional",
     pie: "Pie institucional",
+    membretePie: "Así se ve el membrete de los PDF con lo que hay escrito abajo.",
+    datosMembrete: "Datos del membrete",
+    vacioNoImprime: "Lo que quede vacío no se imprime: el membrete se cierra sin dejar renglones en blanco.",
     piePlaceholder: "p. ej. lema o registro legal que aparece al pie de las cartas",
     secretariaNombre: "Nombre de la secretaria",
     secretariaCargo: "Cargo",
@@ -3181,6 +3193,15 @@ export const es = {
     ayuda: "Ayuda",
     acercaDe: "Acerca de",
     cerrarSesion: "Cerrar sesión",
+    aplicacion: "Aplicación",
+    version: "Versión",
+    pieCerrarSesion: "Cerrar sesión no borra nada del aparato: al volver a entrar, todo sigue donde estaba.",
+    areas: {
+      ambas: "Tesorería y Secretaría",
+      tesoreria: "Tesorería",
+      secretaria: "Secretaría",
+      ninguna: "Sin áreas",
+    },
     confirmarTitulo: "¿Cerrar sesión?",
     confirmarMensaje: "Vas a salir de tu cuenta en este dispositivo. Tus datos ya guardados no se pierden.",
     acercaDeVersion: "Versión {{version}}",
@@ -3201,6 +3222,9 @@ export const es = {
     imagen: "Imagen",
     logoAlt: "Logo de la iglesia",
     logoFila: "Logo",
+    logoSub: "Sale en cartas y reportes",
+    logoAnadir: "Añadir",
+    einOpcionalPie: "La identificación fiscal es opcional y solo se imprime si está llena.",
     nombreLabel: "Nombre de la iglesia",
     nombrePlaceholder: "p. ej. Iglesia Central",
     ciudad: "Ciudad",
@@ -3215,6 +3239,7 @@ export const es = {
     einPlaceholder: "p. ej. 12-3456789",
     einHint: "Número de identificación fiscal de la iglesia (EIN en EE. UU., o su equivalente). Se muestra junto al nombre de la iglesia en los PDF.",
     moneda: "Moneda",
+    fiscalYContable: "Fiscal y contable",
     monedaUsd: "USD — Dólar",
     monedaMxn: "MXN — Peso mexicano",
     monedaHint: "Se usará en todos los movimientos nuevos, reportes y balances.",
@@ -3237,6 +3262,9 @@ export const es = {
   },
 
   firma: {
+    cargada: "Cargada",
+    sinCargar: "Sin cargar",
+    anadir: "Añadir",
     titulo: "Firma del tesorero",
     sub: "Aparece en el bloque de firmas de los reportes en PDF",
     sinFirma: "Sin firma registrada",
@@ -3276,6 +3304,11 @@ export const es = {
   },
 
   usuarios: {
+    personasGrupo: "Personas",
+    areasGrupo: "Áreas",
+    piePersonas: "Toca una persona para cambiar su rol. El rol decide en qué áreas entra.",
+    pieAreas: "El área decide qué ve cada persona al abrir la app. Alguien puede estar en las dos.",
+    nadieEnArea: "Nadie todavía",
     titulo: "Usuarios",
     sub: "Directorio de personas que administran la iglesia",
     agregar: "Agregar usuario",
@@ -3307,10 +3340,12 @@ export const es = {
     oscuro: "Oscuro",
     automatico: "Automático",
     hint: "\"Automático\" sigue el modo claro/oscuro del sistema operativo y cambia solo si tú lo cambias ahí.",
+    pieGrupo: "\"Automático\" sigue el modo del sistema. El acento tiñe botones y enlaces; el verde de la banda de arriba no cambia, es la marca.",
   },
 
   idioma: {
     titulo: "Idioma",
+    tituloGrupo: "Idioma y texto",
     sub: "Elige el idioma de la aplicación",
     automatico: "Automático",
     espanol: "Español",
@@ -3456,6 +3491,7 @@ export const es = {
     desactivado: "Desactivado",
     hint: "Se reproduce un sonido distinto al registrar un ingreso, un gasto o al eliminar un movimiento.",
     juego: "Juego de sonidos",
+    pieGrupo: "Con el sonido apagado, el juego se queda a la vista pero atenuado: el ajuste no cambia de sitio.",
     juegos: {
       clasico: "Clásico",
       suave: "Suave",
