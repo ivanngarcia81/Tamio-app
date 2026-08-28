@@ -3391,7 +3391,20 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 :root.iphone .settings-shell.zona-abierta .ios-lista { display: none; }
 
-:root.movil .ios-section { margin-bottom: 35px; }
+/* 43 y no 35: el hueco entre grupos, medido de tarjeta a texto del
+   encabezado siguiente, sale en 44. Es un punto por encima de lo que hace
+   Ajustes de iOS —ahí son 35—, y es deliberado: Tamio mete más filas por
+   grupo que Ajustes (diecisiete en «Editar servicio»), y con esa densidad el
+   hueco del sistema no llegaba a separar un grupo del siguiente.
+
+   El número vive AQUÍ y en un solo sitio. Los 44 de arriba —la primera
+   sección de una hoja— salen de la misma medida, y por eso están escritos
+   igual: el día que este número cambie, tienen que cambiar los dos o la hoja
+   deja de estar pareja. `pruebas/medir-ritmo.mjs` los comprueba.
+
+   Los 43 dan 44 porque el encabezado es un `<h2>` de 13 px en una caja de
+   línea de 18: el píxel que falta es su medio interlineado. */
+:root.movil .ios-section { margin-bottom: 43px; }
 :root.movil .ios-section:last-of-type { margin-bottom: 24px; }
 
 :root.movil .ios-section-header {
@@ -3417,17 +3430,18 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    `:first-child` deja fuera solas a las hojas que ya resolvían el aire con su
    propio bloque arriba (el segmentado de la solicitud, el importe de Nuevo
    ingreso); ahí una regla más sumaría 20 px sobre algo que ya respiraba. */
-:root.movil .ios-sheet-body > section.ios-section:first-of-type { padding-top: 34px; }
-/* 34 y no 20, y `first-of-type` y no `first-child`. Los dos cambios salen de
+:root.movil .ios-sheet-body > section.ios-section:first-of-type { padding-top: 43px; }
+/* 43 y no 20, y `first-of-type` y no `first-child`. Los dos cambios salen de
    medir (`pruebas/medir-ritmo.mjs`) las hojas de formulario contra el ritmo
    que ellas mismas usan más abajo:
 
-     entre grupos ....... 36 px    encabezado → tarjeta ... 8 px
+     entre grupos ....... 44 px    encabezado → tarjeta ... 8 px
      barra → 1.er encab .. 21 px ←  el único que se salía
 
    Veinte píxeles de padding daban 21 de hueco óptico: el primer encabezado
-   nacía a dos tercios de la distancia a la que están todos los demás, y por
-   eso la hoja se leía apretada JUSTO ARRIBA, que es donde se mira primero.
+   nacía a la mitad de la distancia a la que están todos los demás, y por eso
+   la hoja se leía apretada JUSTO ARRIBA, que es donde se mira primero. Los
+   43 son los MISMOS de `.ios-section`: un solo número para toda la hoja.
 
    Y `first-child` dejaba fuera precisamente la peor: cuando la hoja empieza
    con un bloque suelto —el segmentado de la solicitud, el importe de Nuevo
@@ -18795,10 +18809,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .content .ios-section-header { padding-left: 4px; padding-right: 4px; }
 :root.iphone .content .ios-section-footer { padding-left: 4px; padding-right: 4px; }
 
-/* 35px entre secciones es el aire de una hoja de Ajustes, donde cada grupo es
-   un tema distinto. En una lista de datos las secciones son el MISMO tema
-   partido por fecha, y a 35px se leían como pantallas separadas: la maqueta
-   las deja en 22.
+/* Los 44px entre secciones son el aire de una hoja de Ajustes, donde cada
+   grupo es un tema distinto. En una lista de datos las secciones son el MISMO
+   tema partido por fecha, y con ese hueco se leían como pantallas separadas:
+   la maqueta las deja en 22.
+
+   Esta regla es la razón de que subir el hueco general de 35 a 44 no alargara
+   Ingresos, Membresía ni Cartas: ahí manda este 6, no aquél.
 
    Y son 6, no 22, porque `.content` (y `.dash-canvas` dentro de él) son flex
    en columna con `gap: var(--space-4)` = 16px: ese hueco ya está puesto entre
@@ -21515,10 +21532,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    resto del teléfono, y abajo hay una barra fija con las dos acciones que no
    son campos. */
 :root.iphone .pl-hoja .ios-nav-title { font-weight: 600; }
-/* 96 abajo, no 24: la barra fija de «Vista previa / Guardar» es vidrio, así
+/* Arriba CERO: `.pl-cuerpo` es un `.ios-sheet-body`, así que el aire de la
+   primera sección ya se lo pone la regla común de las hojas. Con los 16 de
+   aquí encima se le quedaban 59 donde las demás tienen 44, y esta hoja era
+   la única de la app que abría desparejo.
+
+   Y 96 abajo, no 24: la barra fija de «Vista previa / Guardar» es vidrio, así
    que el contenido pasa POR DEBAJO. Sin ese aire el último grupo —el de
    eliminar— no llegaba nunca a verse entero por mucho que se desplazara. */
-:root.iphone .pl-cuerpo { padding: 16px 16px 96px; }
+:root.iphone .pl-cuerpo { padding: 0 16px 96px; }
 :root.iphone .pl-cuerpo > .ios-section:first-child { margin-top: 0; }
 /* Los encabezados y pies traen su sangría de 32 = 16 del inset + 16 de la
    fila; aquí el inset lo pone el contenedor, así que descuentan esos 16. */

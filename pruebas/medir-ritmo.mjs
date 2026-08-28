@@ -332,6 +332,13 @@ const HOJAS = [
     await p.locator(".btn-crear").click();
     await p.waitForTimeout(1100);
   }],
+  ["Editar plantilla", async (p) => {
+    await p.goto(`${URL_BASE}/#/cartas`, { waitUntil: "networkidle" });
+    await p.getByRole("tab", { name: "Plantillas", exact: true }).click();
+    await p.waitForTimeout(900);
+    await p.locator(".ios-txrow--clickable").first().click();
+    await p.waitForTimeout(1100);
+  }],
   ["Editar servicio", async (p) => {
     await p.goto(`${URL_BASE}/#/servicios`, { waitUntil: "networkidle" });
     await p.waitForTimeout(900);
