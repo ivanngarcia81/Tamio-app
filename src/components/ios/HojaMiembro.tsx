@@ -64,7 +64,9 @@ export default function HojaMiembro({
 
   return (
     <div className="hm">
-      <div className="hm-cabeza">
+      {/* `hd-agarre`: esta franja también arrastra la hoja. No es un control
+          —es quién es— y es donde cae el pulgar al querer subirla. */}
+      <div className="hm-cabeza hd-agarre">
         <span className={`mini-avatar ${AVATAR_COLORS[m.id % AVATAR_COLORS.length]} hm-avatar`} aria-hidden="true">
           {inicialesDe(m.nombre)}
         </span>

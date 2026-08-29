@@ -559,18 +559,23 @@ for (const tema of ["light", "dark"]) {
   await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
   await toma("padron");
 
-  // La hoja del miembro: tocar un nombre la asoma; el asa la sube a media.
+  // La hoja del miembro: tocar un nombre la asoma. Y desde ahí, los dos gestos
+  // que en el aparato no funcionaban (29 ago 2026): un TOQUE en la hoja
+  // asomada la sube —antes solo el asa, y arrastrando 187 px—, y un arrastre
+  // CORTO agarrándola por el nombre la vuelve a bajar.
   await page.locator(".ios-txrow--clickable").first().click();
   await toma("hoja-asomada");
+  await page.locator(".hm-cabeza").click();
+  await toma("hoja-media");
   {
-    const asa = page.locator(".hd-asa");
-    const caja = await asa.boundingBox();
-    await page.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    const caja = await page.locator(".hm-cabeza").boundingBox();
+    const x = caja.x + caja.width / 2;
+    await page.mouse.move(x, caja.y + 8);
     await page.mouse.down();
-    await page.mouse.move(caja.x + caja.width / 2, caja.y - 300, { steps: 12 });
+    await page.mouse.move(x, caja.y + 68, { steps: 10 });
     await page.mouse.up();
   }
-  await toma("hoja-media");
+  await toma("hoja-vuelve-a-asomarse");
 
   await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
   await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });

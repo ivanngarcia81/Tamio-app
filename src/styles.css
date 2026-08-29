@@ -20361,6 +20361,16 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
+/* Zonas del contenido que también arrastran: una cabecera que no es un
+   control —el avatar y el nombre de la hoja de Membresía— es donde el pulgar
+   cae de verdad, y dejarla muerta es lo que hacía sentir la hoja «parada».
+   `touch-action: none` para que el gesto llegue como pointermove y no se lo
+   quede el desplazamiento del cuerpo. */
+:root.iphone .hd-agarre { touch-action: none; }
+/* Y en la altura asomada arrastra la hoja ENTERA: ahí no hay nada que
+   desplazar (el cuerpo va en `overflow: hidden`) ni ningún control, así que
+   no hay con quién repartirse el gesto. */
+:root.iphone .hoja-detentes[data-detente="asomada"] { touch-action: none; cursor: grab; }
 :root.iphone .hd-asa > span {
   width: 36px;
   height: 5px;
@@ -22773,3 +22783,28 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .app:has(.fa-header):has(.main.con-carrusel)::after {
   height: calc(var(--navrow-h) + env(safe-area-inset-top)) !important;
 }
+
+/* --- El techo de la banda (App.tsx) ---
+   Al tirar hacia abajo, `.main` rebota y el bloque verde del título baja con
+   ella: entre la barra fija y el título se abría un hueco gris —el fondo de
+   `.main`— justo donde una cabecera de iOS se estira. Este bloque ocupa los
+   400 px que hay JUSTO ENCIMA del principio del contenido (margen negativo
+   igual a su alto, así que no desplaza nada) y los pinta del verde de la
+   cabecera; el rebote descubre color en vez de hueco.
+
+   Solo se pinta donde hay banda de verdad —una cabecera con título grande—.
+   En el resto de pantallas es transparente y no se ve nunca. */
+.techo-banda { display: none; }
+:root.iphone .techo-banda {
+  display: block;
+  /* `flex: 0 0 auto` y no el `1 1 auto` de fábrica: `.main` es una columna
+     flexible, y un bloque vacío con `flex-shrink: 1` se encoge a 0 en cuanto
+     el contenido desborda —que es siempre—. Sin esto el techo mediría cero y
+     no pintaría nada. */
+  flex: 0 0 auto;
+  height: 400px;
+  margin-top: -400px;
+  background: transparent;
+  pointer-events: none;
+}
+:root.iphone .main:has(.header .page-title) > .techo-banda { background: var(--cabecera); }

@@ -781,6 +781,21 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
       <AreaCabecera role={role} permisos={permisos} />
       <div className="titulo-fijo" ref={tituloFijoRef} aria-hidden="true" />
       <main className={`main${hayCarrusel ? " con-carrusel" : ""}`} ref={mainRef}>
+        {/* El techo de la banda. Un bloque que vive JUSTO ENCIMA del principio
+            del contenido y no ocupa sitio (su margen negativo iguala su alto),
+            pintado del verde de la cabecera.
+
+            Existe por lo que se ve al tirar hacia abajo en Inicio: el área con
+            scroll rebota —el rebote elástico de iOS—, el bloque del título
+            verde baja con ella y entre la barra fija y ese título se abría un
+            hueco GRIS, el fondo de `.main`. Una cabecera de iOS no se despega
+            de su barra al rebotar; se estira. Esto es ese estiramiento: el
+            hueco que el rebote descubre ya está pintado del color de la banda.
+
+            En el flujo no cambia nada —lo de abajo empieza donde empezaba— y
+            el CSS solo le da color en las pantallas que de verdad llevan banda
+            verde con título; en las demás es transparente y no se ve nunca. */}
+        <div className="techo-banda" aria-hidden="true" />
         <UpdateBanner />
         <SyncPausadoBanner />
         {authHabilitado && <SubBanner church={church} />}
