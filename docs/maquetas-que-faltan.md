@@ -129,7 +129,7 @@ Construido el 29 de agosto **sin maqueta**: lo decidí yo. Funciona y está
 probado, pero es criterio de quien escribe el motor, no de quien diseña.
 
 En la Bandeja del teléfono, deslizar una fila hacia la izquierda descubre
-«Devolver a quien lo registró». Va en el gesto y no en un segundo botón
+«Devolver al tesorero». Va en el gesto y no en un segundo botón
 redondo —que cabría— porque devolver le rebota a alguien su trabajo, y dos
 círculos idénticos a 44 px lo convierten en un resbalón del pulgar.
 
@@ -137,7 +137,7 @@ El botón revelado va en **ámbar**, no en rojo: el rojo es para borrar, lo que
 se va y no vuelve. Devolver no destruye nada.
 
 **Lo que se pide:** una mirada. Si el gesto está bien elegido, si el ámbar es
-el correcto, y si «Devolver a quien lo registró» cabe y se lee en 393 px.
+el correcto, y si «Devolver al tesorero» cabe y se lee en 393 px.
 
 ---
 
