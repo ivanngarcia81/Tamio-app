@@ -3995,6 +3995,16 @@ export async function contarRegistroNuevo(churchId: number, rol: string): Promis
   return filas[0]?.n ?? 0;
 }
 
+/** Hasta qué id se había leído ANTES de abrir la pantalla.
+ *
+ *  La lista del teléfono marca en verde lo que no se había visto, y para eso
+ *  necesita el corte de antes: al montarse, `Registro.tsx` llama enseguida a
+ *  `marcarRegistroVisto`, así que si lo leyera después el corte sería el
+ *  último id y no habría nada marcado nunca. */
+export function registroVistoDesde(): number {
+  try { return Number(localStorage.getItem(CLAVE_VISTO) ?? 0) || 0; } catch { return 0; }
+}
+
 /** "Ya lo vi todo": guarda el último id como marca de este dispositivo. */
 export async function marcarRegistroVisto(churchId: number): Promise<void> {
   const d = await getDb();

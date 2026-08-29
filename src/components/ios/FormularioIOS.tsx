@@ -172,7 +172,10 @@ export function TextAreaField({
   placeholder,
   rows = 3,
 }: {
-  label: string;
+  /** Opcional: cuando el área OCUPA la tarjeta entera —la nota del Registro—
+   *  no hay nada de qué distinguirla, y una etiqueta vacía deja un renglón en
+   *  blanco encima del cursor. */
+  label?: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
@@ -180,7 +183,7 @@ export function TextAreaField({
 }) {
   return (
     <label className="ios-field ios-field--stacked">
-      <span className="ios-field-label">{label}</span>
+      {label && <span className="ios-field-label">{label}</span>}
       <textarea
         className="ios-field-input ios-field-area"
         value={value}
