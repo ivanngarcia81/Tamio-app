@@ -3371,7 +3371,8 @@ export const en: Resources = {
     notaPie: "It stays under your name, among what the app records. It cannot be edited later.",
     sinCoincidencias: "Nothing of this kind yet",
     sinCoincidenciasSub: "Change the filter to see the rest of what is recorded.",
-    pie: "The log keeps the name and the reference exactly as they were, so it still tells the truth even if the row it talks about no longer exists. What is still pending does not live here, but in Pending review.",
+    pie: "The log keeps the name and the reference exactly as they were, so it still tells the truth even if the row it talks about no longer exists.",
+    piePendiente: "What is still pending does not live here, but in",
     suceso: {
       movEliminado: "Transaction “{{concepto}}” for {{monto}} was deleted (folio {{folio}})",
       corteEntregado: "Batch “{{corte}}” left the cash box, with {{movimientos}} transaction(s)",

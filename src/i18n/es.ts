@@ -3511,7 +3511,8 @@ export const es = {
     notaPie: "Queda con tu nombre, entre lo que anota la app. No se puede editar después.",
     sinCoincidencias: "Nada de este tipo, todavía",
     sinCoincidenciasSub: "Cambia el filtro para ver el resto de lo anotado.",
-    pie: "El registro guarda el nombre y el folio tal como eran, así que sigue diciendo la verdad aunque la fila de la que habla ya no exista. Lo que falta por hacer no vive aquí, sino en Por revisar.",
+    pie: "El registro guarda el nombre y el folio tal como eran, así que sigue diciendo la verdad aunque la fila de la que habla ya no exista.",
+    piePendiente: "Lo que falta por hacer no vive aquí, sino en",
     /** El texto de cada suceso. Las piezas llegan de `datos`. */
     suceso: {
       movEliminado: "Se eliminó el movimiento «{{concepto}}» de {{monto}} (folio {{folio}})",

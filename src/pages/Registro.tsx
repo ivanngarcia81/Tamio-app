@@ -29,16 +29,17 @@
  *    que si la tesorera abría un mensaje se le apagaba el aviso al pastor.
  */
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   areasDelRol, fmtFechaCorta, listRegistro, marcarRegistroVisto, registrarNota,
   type Church, type Suceso,
 } from "../db";
-import type { Role } from "../role";
+import { puedeVer, type Role } from "../role";
 import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import { EmptyState } from "../components/TxList";
-import { IconClipboardList } from "../icons";
+import { IconClipboardList, IconEdit } from "../icons";
 import { showToast } from "../toast";
 import { esIPhone, esMac } from "../movil";
 
@@ -187,11 +188,11 @@ export default function Registro({ church, role, refreshKey }: Props) {
               dos cosas va a hacer. */}
           <button
             type="button"
-            className={`btn ${abriendoNota ? "primary" : "secondary"} reg-btn-nota`}
+            className={`btn secondary reg-btn-nota${abriendoNota ? " active" : ""}`}
             aria-pressed={abriendoNota}
             onClick={() => setAbriendoNota((v) => !v)}
           >
-            {t("registro.escribirNota")}
+            <IconEdit size={16} strokeWidth={1.6} /> {t("registro.escribirNota")}
           </button>
         </div>
       </div>
@@ -306,7 +307,16 @@ export default function Registro({ church, role, refreshKey }: Props) {
             </div>
           )}
 
-          <p className="reg-pie">{t("registro.pie")}</p>
+          <p className="reg-pie">
+            {t("registro.pie")}
+            {/* El enlace solo si esa persona puede entrar: la secretaria NO ve
+                la Bandeja (`role.ts`), y ofrecerle un camino que le va a dar
+                con la puerta cerrada es peor que no ofrecerlo. Cuando no lo
+                ve, la frase termina en el punto anterior y se lee igual. */}
+            {puedeVer(role, "/bandeja") && (
+              <> {t("registro.piePendiente")} <Link to="/bandeja">{t("nav.porRevisar")}</Link>.</>
+            )}
+          </p>
         </div>
       </div>
     </>

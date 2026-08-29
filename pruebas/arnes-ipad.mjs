@@ -5910,6 +5910,42 @@ console.log("\n== El Registro con su capa de iPad ==");
        demasiado cerca. */
     const distintos = new Set([m.tes, m.sec, m.gen]).size === 3;
     chk(distintos, `${tema}: los tres colores de área son TRES (${m.tes} · ${m.sec} · ${m.gen})`);
+    /* El botón de la cabecera, que es el único control de esta pantalla: su
+       lápiz, su altura, y que MARCADO cambie de aspecto. Sin lo último es un
+       interruptor que no dice en qué posición está. */
+    /* El estado se lee DESPUÉS de que React repinte: medir en el mismo tick
+       del clic devuelve el aspecto de antes y la comprobación sale verde
+       comparando una cosa consigo misma. */
+    const leerBoton = () => pg.evaluate(() => {
+      const b = document.querySelector(".reg-btn-nota");
+      if (!b) return null;
+      return {
+        icono: !!b.querySelector("svg"),
+        alto: Math.round(b.getBoundingClientRect().height),
+        fondo: getComputedStyle(b).backgroundColor,
+        abierto: !!document.querySelector(".reg-nota"),
+      };
+    });
+    const apagado = await leerBoton();
+    chk(!!apagado?.icono, `${tema}: el botón de la nota lleva su lápiz (${apagado ? "ok" : "sin botón"})`);
+    chk(apagado?.alto === 38, `${tema}: y mide 38 de alto (${apagado?.alto})`);
+    await pg.locator(".reg-btn-nota").click();
+    await pg.waitForTimeout(400);
+    const encendido = await leerBoton();
+    chk(encendido?.abierto === true, `${tema}: pulsarlo abre el redactor`);
+    chk(apagado?.fondo !== encendido?.fondo,
+      `${tema}: marcado se ve marcado (${apagado?.fondo} → ${encendido?.fondo})`);
+    await pg.locator(".reg-btn-nota").click();
+    await pg.waitForTimeout(400);
+
+    /* El pie manda a Por revisar con un enlace de verdad, no con la frase
+       suelta. Aquí el rol es administrador, que sí puede entrar. */
+    const enlace = await pg.evaluate(() => {
+      const a = document.querySelector(".reg-pie a");
+      return a ? a.getAttribute("href") : null;
+    });
+    chk((enlace ?? "").includes("/bandeja"), `${tema}: el pie enlaza a Por revisar (${enlace})`);
+
     if (m.hayNota) {
       chk(m.notaFondo !== "rgba(0, 0, 0, 0)", `${tema}: la nota lleva su plano tintado (${m.notaFondo})`);
       chk(/inset/.test(m.notaRegla ?? ""), `${tema}: y su regla lateral, que es la segunda marca`);

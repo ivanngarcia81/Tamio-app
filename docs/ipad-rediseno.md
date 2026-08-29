@@ -3339,6 +3339,42 @@ Y un detalle de la propia guarda: el cuerpo se comprueba contra 15.5 sin
 redondear. Con `Math.round` decía "se lee a 15.5 (16)" — verde, pero contando
 otra cosa que la que dice.
 
+### La segunda pasada, cotejando el handoff línea a línea
+
+Repasado punto por punto contra `Tamio Registro.dc.html`, quedaban cuatro
+cosas fuera:
+
+1. **El botón "Escribir una nota" no llevaba su lápiz.** El handoff lo dibuja
+   con un icono de 16 y 7 de separación.
+2. **Marcado se ponía en verde sólido.** El handoff lo tinta —`inkFill` sobre
+   `ink`—, que es lo correcto: un sólido es un botón de acción principal y
+   esto es un interruptor. Ahora usa `color-mix` sobre `--brand`, no un rgba
+   escrito a mano, para que siga al acento que se elija en Ajustes.
+3. **"Por revisar" era texto, no enlace.** Ahora enlaza de verdad… y **solo
+   si esa persona puede entrar**: la secretaria no ve la Bandeja (`role.ts`),
+   y ofrecerle un camino que le va a dar con la puerta cerrada es peor que no
+   ofrecerlo. Sin él, la frase termina en el punto anterior y se lee igual.
+4. **El "Anotar" del redactor** no tenía su alto de 32 ni su radio de 9, más
+   bajos que el de la barra a propósito: vive dentro de una tarjeta.
+
+Y una lección de CSS que conviene dejar escrita: la primera versión de ese
+botón copiaba `height`, `padding` y `font-size` del handoff, y **ninguna de
+las tres se aplicaba**. `:root.ipad .header .btn` pesa (0,4,0) contra los
+(0,3,0) de `:root.ipad .reg-btn-nota`, así que ganaba la regla del header. Se
+vio porque, al romper la guarda a propósito quitando mi `height`, el botón
+seguía midiendo 38. Se borraron las tres.
+
+El único número del handoff que se deja pasar es el relleno lateral: pide 15
+y la barra pone 14. Ese 14 está ahí para que **todos** los botones de la
+cabecera midan igual, y ganar un píxel en uno solo se ve como un descuadre,
+no como fidelidad.
+
+La guarda §54 crece con las tres primeras, y las tres se probaron
+rompiéndolas. La cuarta comprobación de esa tanda —"pulsarlo abre el
+redactor"— salió de un fallo de la propia guarda: medía el fondo en el mismo
+tick del clic, antes de que React repintara, y comparaba una cosa consigo
+misma.
+
 ### Una nota para quien fusione
 
 Esta tanda escribe **solo dentro de `:root.ipad`** en `styles.css`, como pedía
