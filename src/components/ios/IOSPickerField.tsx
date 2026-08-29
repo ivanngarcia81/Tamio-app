@@ -45,6 +45,10 @@ interface Common {
   /** texto cuando `value` está vacío (el equivalente al <option value="">) */
   placeholder?: string;
   disabled?: boolean;
+  /** Buscador en la hoja: para catálogos largos (la moneda). */
+  buscador?: boolean;
+  /** Pie de la hoja, con la regla del grupo. */
+  pie?: string;
   /** Qué valor significa "sin filtrar". Casi siempre "" (Agenda), pero hay
    *  barras que usan un centinela con nombre — InformesMembresia y Cartas
    *  guardan "todos"/"todas" — y sin esto el chip se pintaría como activo
@@ -70,6 +74,8 @@ export function IOSPickerField({
   onSelect,
   placeholder,
   disabled,
+  buscador,
+  pie,
 }: Common & { label: string }) {
   const [abierto, setAbierto] = useState(false);
   const activa = options.find((o) => o.value === value);
@@ -102,6 +108,8 @@ export function IOSPickerField({
           title={sheetTitle ?? label}
           options={options}
           value={value}
+          buscador={buscador}
+          pie={pie}
           onSelect={(v) => {
             onSelect(v);
             setAbierto(false);

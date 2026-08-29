@@ -1138,6 +1138,7 @@ export const es = {
        sigue en Ajustes → Preferencias, que es donde se va a leer; aquí el
        pie está debajo de un grupo de cuatro filas en un teléfono y en tres
        renglones pesaba más que los propios campos. */
+    monedaPie: "La moneda se usa en todos los importes y en los PDF. Se puede cambiar después en Ajustes › Iglesia.",
     idiomaHint: "\"Automático\" usa el idioma del sistema.",
     titulo: "Bienvenido a Tamio",
     sub: "Configura tu iglesia en un minuto — todo se puede cambiar después en Configuración.",
@@ -3150,6 +3151,18 @@ export const es = {
     borrarCuentaConfirmar: "Sí, borrar mi cuenta",
   },
   login: {
+    /* La puerta del teléfono (maquetas B1–B4). */
+    taglineCorta: "La tesorería y la secretaría de tu iglesia, en un solo lugar.",
+    verClave: "Ver la contraseña",
+    ocultarClave: "Ocultar la contraseña",
+    enviar: "Enviar",
+    grupoCuenta: "TU CUENTA",
+    registroSubIOS: "Se crea la iglesia y tú quedas como administrador. Le pondrás nombre en el paso siguiente.",
+    registroPie: "Este correo recibirá los avisos de la cuenta y es con el que entrarás.",
+    recuperarPie: "Te enviaremos un código para poner una contraseña nueva. Revisa también la carpeta de spam.",
+    nombrePlaceholder: "Nombre y apellido",
+    correoPlaceholder: "nombre@iglesia.mx",
+    claveMinima: "Mínimo 6 caracteres",
     sub: "Inicia sesión para continuar",
     heroTitulo: "La tesorería y secretaría de tu iglesia, en orden.",
     heroTagline: "Lleva ingresos, gastos, miembros, actas y cartas en un solo lugar — claro, seguro y fácil.",

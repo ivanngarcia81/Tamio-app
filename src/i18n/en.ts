@@ -1093,6 +1093,7 @@ export const en: Resources = {
   bienvenida: {
     filaIglesia: "Church",
     ciudadOpcional: "Optional",
+    monedaPie: "The currency is used in every amount and in the PDFs. You can change it later in Settings › Church.",
     idiomaHint: "\"Automatic\" uses the system language.",
     titulo: "Welcome to Tamio",
     sub: "Set up your church in a minute — everything can be changed later in Settings.",
@@ -3045,6 +3046,18 @@ export const en: Resources = {
     borrarCuentaConfirmar: "Yes, delete my account",
   },
   login: {
+    /* The phone's door (artboards B1–B4). */
+    taglineCorta: "Your church's treasury and secretary's office, in one place.",
+    verClave: "Show the password",
+    ocultarClave: "Hide the password",
+    enviar: "Send",
+    grupoCuenta: "YOUR ACCOUNT",
+    registroSubIOS: "This creates the church and makes you its administrator. You'll name it in the next step.",
+    registroPie: "This address receives account notices and is the one you'll sign in with.",
+    recuperarPie: "We'll send you a code to set a new password. Check your spam folder too.",
+    nombrePlaceholder: "First and last name",
+    correoPlaceholder: "name@church.org",
+    claveMinima: "At least 6 characters",
     sub: "Sign in to continue",
     heroTitulo: "Your church's treasury and secretariat, in order.",
     heroTagline: "Keep income, expenses, members, minutes and letters in one place — clear, secure and simple.",

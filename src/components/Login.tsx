@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../supabase";
-import { IconTamio, IconBank, IconMiembros, IconGlobe } from "../icons";
+import { esIPhone } from "../movil";
+import { IconTamio, IconBank, IconMiembros, IconGlobe, IconChevronLeft, IconEye, IconWarn } from "../icons";
+import IOSFormSheet from "./ios/IOSFormSheet";
+import { Section, TextField } from "./ios/FormularioIOS";
 
 type Modo = "login" | "registro" | "pedirCodigo" | "nuevaClave";
 
@@ -16,6 +19,10 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  /* Ver la contraseña. En un teclado de teléfono, escribir doce caracteres a
+     ciegas y equivocarse en el noveno es el motivo más común de «no puedo
+     entrar»; el ojo lo resuelve sin bajar la seguridad de nada. */
+  const [verClave, setVerClave] = useState(false);
 
   async function entrar(e: FormEvent) {
     e.preventDefault();
@@ -91,6 +98,204 @@ export default function Login() {
   function volverALogin() {
     setModo("login");
     setError(null); setAviso(null); setCodigo(""); setNueva(""); setNombre("");
+  }
+
+  /* ---------- iPhone: la puerta, con la forma de una pantalla de iOS ----------
+     No hay barra verde ni pestañas: antes de entrar no hay secciones a las que
+     ir, y una cabecera aquí sería decorado. Lo que hay es lo que iOS pone en
+     sus propias pantallas de cuenta — identidad centrada arriba, una lista
+     agrupada inset con los campos, un solo botón de 50 y el resto como texto
+     teñido. El fondo es el verde de marca, así que el botón se INVIERTE:
+     blanco relleno con la letra verde.
+
+     Las tres tarjetas de venta del escritorio («Tesorería clara», «Secretaría
+     completa», «En la nube») se resumen en un renglón: nadie lee tres
+     argumentos en la pantalla donde solo quiere teclear su clave.
+
+     Va después de todos los `useState` a propósito: un `return` por encima de
+     un hook cambiaría el número de hooks entre renders. */
+  if (esIPhone()) {
+    const puedeEntrar = !!email.trim() && !!pass && !cargando;
+    const puedeRegistrar = !!email.trim() && pass.length >= 6 && !cargando;
+
+    /* «Crear cuenta» es una PANTALLA y no una hoja: aquí vuelve el patrón de
+       la app —título grande de 34, grupo con encabezado y pie— porque ya es un
+       formulario, no una puerta. */
+    if (modo === "registro") {
+      return (
+        <div className="login-ios login-ios--claro">
+          <div className="login-ios-barra">
+            <button type="button" className="login-ios-volver" onClick={volverALogin}>
+              <IconChevronLeft size={17} strokeWidth={2.4} /> {t("login.entrar")}
+            </button>
+          </div>
+          <h1 className="login-ios-titulo">{t("login.registroTitulo")}</h1>
+          <p className="login-ios-sub">{t("login.registroSubIOS")}</p>
+
+          <form className="ios-form login-ios-form" onSubmit={registrar}>
+            <Section header={t("login.grupoCuenta")} footer={t("login.registroPie")}>
+              <TextField
+                label={t("login.nombre")}
+                value={nombre}
+                onChange={setNombre}
+                placeholder={t("login.nombrePlaceholder")}
+                optional
+                autoFocus
+              />
+              <TextField
+                label={t("login.email")}
+                value={email}
+                onChange={setEmail}
+                type="email"
+                inputMode="email"
+                placeholder={t("login.correoPlaceholder")}
+              />
+              <TextField
+                label={t("login.password")}
+                value={pass}
+                onChange={setPass}
+                type="password"
+                placeholder={t("login.claveMinima")}
+              />
+            </Section>
+
+            {error && <p className="login-ios-aviso login-ios-aviso--error"><IconWarn size={15} /> {error}</p>}
+
+            {/* Nace apagado: en iOS un botón lleno promete que algo va a
+                pasar, y sin correo ni contraseña no puede pasar nada. */}
+            <button type="submit" className="login-ios-btn" disabled={!puedeRegistrar}>
+              {cargando ? t("login.registrando") : t("login.registrar")}
+            </button>
+          </form>
+
+          <p className="login-ios-nota">{t("login.privacidadPie")}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="login-ios">
+        <div className="login-ios-marca">
+          <IconTamio size={64} />
+          <span className="login-ios-nombre">Tamio</span>
+          <span className="login-ios-tagline">{t("login.taglineCorta")}</span>
+        </div>
+
+        <form className="login-ios-form" onSubmit={entrar}>
+          <div className="ios-group">
+            <label className="ios-field login-ios-campo">
+              <input
+                className="ios-field-input"
+                type="email"
+                inputMode="email"
+                autoComplete="username"
+                autoCapitalize="off"
+                placeholder={t("login.email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+            <label className="ios-field login-ios-campo">
+              <input
+                className="ios-field-input"
+                type={verClave ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder={t("login.password")}
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+              />
+              <button
+                type="button"
+                className="login-ios-ojo"
+                aria-label={verClave ? t("login.ocultarClave") : t("login.verClave")}
+                onClick={() => setVerClave((v) => !v)}
+              >
+                <IconEye size={20} />
+              </button>
+            </label>
+          </div>
+
+          {/* El aviso va de PIE del grupo, donde iOS pone las reglas, y no en
+              una alerta modal que obliga a un toque extra para seguir. */}
+          {(error || aviso) && (
+            <p className={`login-ios-aviso${error ? " login-ios-aviso--error" : ""}`}>
+              {error && <IconWarn size={15} />} {error ?? aviso}
+            </p>
+          )}
+
+          <button type="submit" className="login-ios-btn" disabled={!puedeEntrar}>
+            {cargando ? t("login.entrando") : t("login.entrar")}
+          </button>
+        </form>
+
+        <div className="login-ios-enlaces">
+          <button type="button" onClick={() => { setModo("pedirCodigo"); setError(null); setAviso(null); }}>
+            {t("login.olvidaste")}
+          </button>
+          <button type="button" onClick={() => { setModo("registro"); setError(null); setAviso(null); }}>
+            {t("login.crearCuenta")}
+          </button>
+        </div>
+
+        <p className="login-ios-nota login-ios-nota--pie">{t("login.privacidadPie")}</p>
+
+        {/* Recuperar es una HOJA y no una pantalla: detrás se sigue viendo la
+            puerta, y volver no borra lo que ya estaba escrito. El correo llega
+            puesto desde el campo de arriba — quien pulsa «olvidé mi
+            contraseña» acaba de teclearlo. */}
+        {modo === "pedirCodigo" && (
+          <IOSFormSheet
+            title={t("login.recuperarTitulo")}
+            saveLabel={t("login.enviar")}
+            canSave={!!email.trim() && !cargando}
+            onSave={() => enviarCodigo(new Event("submit") as unknown as FormEvent)}
+            onCancel={volverALogin}
+          >
+            <Section footer={t("login.recuperarPie")}>
+              <TextField
+                label={t("login.email")}
+                value={email}
+                onChange={setEmail}
+                type="email"
+                inputMode="email"
+                autoFocus
+                placeholder={t("login.correoPlaceholder")}
+              />
+            </Section>
+            {error && <p className="ios-section-footer ios-pie-aviso"><IconWarn size={13} /> {error}</p>}
+          </IOSFormSheet>
+        )}
+
+        {modo === "nuevaClave" && (
+          <IOSFormSheet
+            title={t("login.nuevaClaveTitulo")}
+            saveLabel={t("login.cambiarClave")}
+            canSave={codigo.trim().length >= 6 && nueva.length >= 6 && !cargando}
+            onSave={() => cambiarClave(new Event("submit") as unknown as FormEvent)}
+            onCancel={volverALogin}
+          >
+            <Section footer={aviso ?? t("login.nuevaClaveSub")}>
+              <TextField
+                label={t("login.codigo")}
+                value={codigo}
+                onChange={setCodigo}
+                inputMode="numeric"
+                autoFocus
+                placeholder="000000"
+              />
+              <TextField
+                label={t("login.nuevaClave")}
+                value={nueva}
+                onChange={setNueva}
+                type="password"
+                placeholder={t("login.claveMinima")}
+              />
+            </Section>
+            {error && <p className="ios-section-footer ios-pie-aviso"><IconWarn size={13} /> {error}</p>}
+          </IOSFormSheet>
+        )}
+      </div>
+    );
   }
 
   return (

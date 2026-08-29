@@ -5570,7 +5570,17 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   padding: 0;
   place-items: stretch;
   overflow: hidden; /* el que desplaza es el cuerpo, no el telón */
+  /* El verde de MARCA, no el telón oscuro de escritorio (aurora + grano +
+     rejilla). Es la decisión del handoff de bienvenida: la primera pantalla
+     de la app es la marca a pantalla completa, la misma banda verde que
+     después vive arriba de todas las demás. Con el fondo oscuro, el recorrido
+     se veía como una pantalla de otra app. */
+  background: var(--cabecera, #047857);
 }
+/* Los tres degradados de la versión de escritorio se apagan aquí: son
+   pseudo-elementos de `.welcome-overlay` y encima del verde ensucian. */
+:root.iphone .welcome-overlay::before,
+:root.iphone .welcome-overlay::after { display: none; }
 :root.iphone .welcome-movil {
   display: flex;
   flex-direction: column;
@@ -5599,6 +5609,15 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    cero y todo se comporta como antes, en cualquier motor. Misma decisión y
    mismo motivo que en `.welcome-overlay`; ver la nota de allí. */
 :root.iphone .welcome-slide { margin-block: auto; }
+/* …salvo en el RECORRIDO, que se ancla arriba. Centrado, el icono caía a 213
+   px del borde (medido) contra los 74 de la maqueta, y las cuatro
+   diapositivas —que ahora traen un icono de 96 y un texto de 16/1.45— se
+   quedaban con un tercio de pantalla muerto encima. `margin-bottom: auto` se
+   queda: es lo que sigue repartiendo el sobrante hacia abajo sin que el
+   contenido se salga por arriba cuando no sobra nada (un iPhone pequeño con
+   el teclado). */
+:root.iphone .welcome-movil-cuerpo:has(.welcome-movil-tour) { padding-top: calc(46px + env(safe-area-inset-top)); }
+:root.iphone .welcome-slide:has(.welcome-movil-tour) { margin-top: 0; }
 /* Pie anclado. Esta pantalla va ENCIMA de la barra de pestañas
    (`.welcome-overlay` tiene z-index 160), así que aquí NO se suma
    `var(--tabbar-h)` — al contrario que el compositor de Mensajes, que vive
@@ -5628,40 +5647,60 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   margin-top: 7px;
   font-size: calc(15px * var(--fs-escala));
   line-height: 20px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.72);
+}
+/* En el RECORRIDO el texto es más grande que en el formulario: son cuatro
+   frases largas que se leen centradas y solas en la pantalla, no un subtítulo
+   bajo un logo. 16/1.45 son los de la maqueta, y son los que hacen que los
+   cuatro textos del repo quepan enteros sin llegar al pie. */
+:root.iphone .welcome-movil-tour .welcome-movil-sub {
+  font-size: calc(16px * var(--fs-escala));
+  line-height: 1.45;
+}
+:root.iphone .welcome-movil-tour .welcome-movil-titulo {
+  font-size: calc(26px * var(--fs-escala));
+  line-height: 31px;
 }
 /* Icono de 104 px, no de 64. Centrada, la diapositiva necesita algo que
    sostenga la mirada: 64 px es el tamaño de un icono de lista, y en medio de
    una pantalla vacía se leía como un adorno. A 104 px es la ilustración de la
    diapositiva, que es el papel que le toca. Se queda en el recorrido: en el
    formulario final manda el logo de Tamio y las filas. */
+/* Sobre el verde de marca el cuadro tintado sobra: era el recurso para que un
+   icono se leyera sobre el telón oscuro, y aquí lo que se lee es el glifo
+   blanco a tamaño de ilustración. 76 px dentro de una caja de 96, que son las
+   medidas de la maqueta. */
 :root.iphone .welcome-movil-tour .welcome-slide-icon {
-  width: 104px;
-  height: 104px;
-  border-radius: 28px;
-  margin-bottom: 24px;
+  width: 96px;
+  height: 96px;
+  /* Sin borde ni radio: el cuadro tintado del escritorio deja una línea de
+     1 px al 10 % de blanco que sobre el verde se ve perfectamente, y un marco
+     vacío alrededor de un glifo es justo lo que el handoff quita. */
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #fff;
+  margin-bottom: 22px;
 }
-:root.iphone .welcome-movil-tour .welcome-slide-icon svg { width: 44px; height: 44px; }
+:root.iphone .welcome-movil-tour .welcome-slide-icon svg { width: 76px; height: 76px; }
 
-/* Piel clara de la lista agrupada sobre el telón oscuro. */
+/* La lista agrupada, BLANCA sobre el verde — la misma tarjeta inset que el
+   resto de la app y no una piel translúcida.
+   Antes era `rgba(255,255,255,.09)` con el texto en blanco, que es lo que hay
+   que hacer sobre un telón oscuro. Sobre el verde de marca eso deja un campo
+   de texto que apenas se ve, justo donde hay que teclear el nombre de la
+   iglesia: el handoff pone la tarjeta blanca y deja el verde solo alrededor.
+   Los PIES sí se quedan en blanco: cuelgan de la tarjeta, no van dentro. */
 :root.iphone .welcome-overlay .ios-section { margin: 0; }
+:root.iphone .welcome-overlay .ios-section + .ios-section { margin-top: 26px; }
 :root.iphone .welcome-overlay .ios-group {
   margin: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  background: var(--surface, #fff);
 }
-/* Sin `min-height` propio: los 46 px ya son los de `.ios-field` en toda la
-   app desde que se subieron ahí. */
-:root.iphone .welcome-overlay .ios-field { color: #fff; }
-:root.iphone .welcome-overlay .ios-field:not(:last-child)::after { background: rgba(255, 255, 255, 0.16); }
-:root.iphone .welcome-overlay .ios-field-input { color: #fff; }
-:root.iphone .welcome-overlay .ios-field-input::placeholder { color: rgba(255, 255, 255, 0.42); }
-:root.iphone .welcome-overlay .ios-field-value { color: rgba(255, 255, 255, 0.62); }
-:root.iphone .welcome-overlay .ios-field--link:active { background: rgba(255, 255, 255, 0.08); }
-:root.iphone .welcome-overlay .ios-chevron { color: rgba(255, 255, 255, 0.42); }
 :root.iphone .welcome-overlay .ios-section-footer {
-  padding: 9px 4px 0;
-  color: rgba(255, 255, 255, 0.5);
+  padding: 7px 16px 0;
+  color: rgba(255, 255, 255, 0.6);
 }
 /* El rojo de iOS es para fondo claro; sobre este telón se apaga. */
 :root.iphone .welcome-movil-error { display: block; margin-bottom: 5px; color: #ff8f8a; }
@@ -5676,6 +5715,30 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 }
 :root.iphone .welcome-overlay .welcome-dot.active { width: 7px; background: #fff; }
 
+/* --- Los dos botones del recorrido ---
+   Sobre el verde de marca el primario se INVIERTE: relleno blanco y letra
+   verde. Es la regla de siempre —el botón lleno es el color que contrasta con
+   su fondo— y aquí el fondo ya es el color de marca. El secundario es un
+   blanco al 18 %, que sobre el verde se lee como un botón y no como un hueco.
+   50 px de alto y radio 12, los de la maqueta. */
+:root.iphone .welcome-botones { display: flex; gap: 10px; }
+:root.iphone .welcome-btn {
+  height: 50px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .welcome-btn:active { opacity: 0.8; }
+:root.iphone .welcome-btn--sec { flex: 1; background: rgba(255, 255, 255, 0.18); color: #fff; }
+/* 2 contra 1: «Siguiente» es lo que se pulsa cuatro veces y «Omitir» lo que
+   se pulsa una vez o ninguna. */
+:root.iphone .welcome-btn--pri { flex: 2; background: #fff; color: var(--cabecera, #047857); }
+
 /* Primario del color de acento, no el blanco de `btn primary` sobre este
    telón. Mismo par que las burbujas de Mensajes: gira con el tema y no se
    rompe con un acento claro en oscuro. */
@@ -5685,9 +5748,12 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   min-height: 50px;
   padding: 0 16px;
   border: 0;
-  border-radius: 14px;
-  background: var(--brand, #059669);
-  color: var(--ink-contrast, #fff);
+  border-radius: 12px;
+  /* Blanco relleno con la letra verde, por lo mismo que `.welcome-btn--pri`:
+     el fondo de la pantalla YA es el color de marca, y un botón verde encima
+     de verde no es un botón. */
+  background: #fff;
+  color: var(--cabecera, #047857);
   font: inherit;
   font-size: calc(17px * var(--fs-escala));
   font-weight: 600;
@@ -5696,7 +5762,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   -webkit-tap-highlight-color: transparent;
 }
 :root.iphone .welcome-cta:active { opacity: 0.85; }
-:root.iphone .welcome-cta:disabled { opacity: 0.5; }
+/* Apagado se vuelve translúcido en vez de perder opacidad entero: así el
+   texto sigue legible y lo que dice «todavía no» es el relleno. */
+:root.iphone .welcome-cta:disabled {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.55);
+}
 :root.iphone .welcome-cta-texto {
   display: block;
   width: 100%;
@@ -5718,8 +5790,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-size: calc(13px * var(--fs-escala));
   line-height: 18px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
 }
+:root.iphone .welcome-cta-texto { font-size: calc(15px * var(--fs-escala)); }
+/* El error, sobre el verde: el rojo de iOS está pensado para fondo claro. */
+:root.iphone .welcome-movil-error { color: #ffb3ad; }
 
 :root.iphone .msg-del { position: relative; opacity: 0.55; }
 :root.iphone .msg-del::before {
@@ -22851,3 +22926,261 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 /* El mes en curso no tiene siguiente: la flecha se queda, apagada. Quitarla
    movería el rótulo de sitio cada vez que se llega al presente. */
 :root.iphone .ios-mes-flecha:disabled { color: var(--text-3); cursor: default; }
+
+/* --- Buscador y pie de una hoja de selección (maqueta W3) ---
+   El catálogo de monedas son treinta y tantas filas: no se recorre con el
+   pulgar. Con buscador y palomita en la elegida, la hoja es el selector de
+   país de iOS. El pie contesta lo único que preocupa al elegir en el primer
+   minuto —que se puede cambiar—, y por eso el formulario no tiene que
+   explicarlo. */
+:root.movil .ios-picker-buscar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  margin: 10px 0 0;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, .12);
+  color: var(--text-2);
+}
+:root.movil .ios-picker-buscar input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--text);
+}
+:root.movil .ios-picker-buscar input::placeholder { color: var(--text-2); }
+/* La regla del grupo, en la cabecera de la hoja: dos renglones cómodos, no la
+   línea apretada de un mensaje de alerta. */
+:root.movil .action-sheet-head .action-sheet-message {
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 18px;
+  text-wrap: pretty;
+}
+
+/* ============================================================================
+   36 · LA PUERTA, CON FORMA DE PANTALLA DE iOS (maquetas B1–B4)
+   ----------------------------------------------------------------------------
+   El teléfono heredaba la pantalla de escritorio: un `login-split` con su
+   panel de argumentos de venta a la izquierda —oculto en móvil— y una tarjeta
+   de formulario flotando sobre un telón de auroras. Dentro de 393 px eso es
+   una caja dentro de otra caja, y las tres «ventajas» que el panel enseña no
+   las lee nadie en la pantalla donde solo se quiere teclear una clave.
+
+   Aquí no hay barra verde ni pestañas, y es deliberado: antes de entrar no hay
+   secciones a las que ir. Lo que hay es lo que iOS pone en sus propias
+   pantallas de cuenta — identidad centrada, lista agrupada inset con los
+   campos, un botón de 50 y el resto como texto teñido.
+
+   El fondo es el verde de MARCA, así que el botón se invierte: relleno blanco
+   con la letra verde, igual que en la bienvenida del primer arranque. Y las
+   tres ventajas se resumen en un renglón.
+   ============================================================================ */
+.login-ios { display: none; }
+:root.iphone .login-ios {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(44px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+  background: var(--cabecera, #047857);
+  color: #fff;
+}
+/* «Crear cuenta» no es la puerta: es un formulario, y va sobre el gris de la
+   app con el título grande y los grupos de siempre. */
+:root.iphone .login-ios--claro {
+  padding-top: env(safe-area-inset-top);
+  background: var(--bg);
+  color: var(--text);
+}
+
+:root.iphone .login-ios-marca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 0 16px;
+  margin-bottom: 36px;
+  line-height: 0;
+}
+:root.iphone .login-ios-nombre {
+  margin-top: 12px;
+  font-size: calc(28px * var(--fs-escala));
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+:root.iphone .login-ios-tagline {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 20px;
+  color: rgba(255, 255, 255, .72);
+  text-wrap: pretty;
+}
+
+/* La tarjeta de los campos, blanca sobre el verde: es donde se teclea, y un
+   campo translúcido sobre color es lo primero que se pierde de vista. */
+:root.iphone .login-ios .ios-group {
+  margin: 0;
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+:root.iphone .login-ios-campo { min-height: 44px; }
+/* Sin etiqueta a la izquierda: el marcador de posición ya dice qué va aquí, y
+   dos palabras («Correo» y otra vez «Correo») en 44 px sobran. Por eso el
+   campo se alinea a la IZQUIERDA, al revés que en los formularios de la app,
+   donde el valor se alinea con su etiqueta. */
+:root.iphone .login-ios-campo .ios-field-input { text-align: left; }
+:root.iphone .login-ios-ojo {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: -7px -6px -7px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .login-ios-ojo:active { opacity: .4; }
+
+:root.iphone .login-ios-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 7px 0 0;
+  padding: 0 16px;
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 18px;
+  color: rgba(255, 255, 255, .72);
+  text-wrap: pretty;
+}
+/* El rojo de iOS está pensado para fondo claro; sobre el verde se aclara. */
+:root.iphone .login-ios-aviso--error { color: #ffb3ad; }
+:root.iphone .login-ios-aviso svg { flex: 0 0 auto; margin-top: 1px; }
+:root.iphone .login-ios--claro .login-ios-aviso { color: var(--ios-red); }
+
+:root.iphone .login-ios-btn {
+  width: 100%;
+  height: 50px;
+  margin-top: 22px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--cabecera, #047857);
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .login-ios-btn:active { opacity: .8; }
+/* Apagado: translúcido, no medio borrado. El texto se sigue leyendo y lo que
+   dice «todavía no» es el relleno. */
+:root.iphone .login-ios-btn:disabled {
+  background: rgba(255, 255, 255, .18);
+  color: rgba(255, 255, 255, .55);
+  cursor: default;
+}
+:root.iphone .login-ios--claro .login-ios-btn {
+  background: var(--brand, #059669);
+  color: var(--brand-contrast, #fff);
+}
+:root.iphone .login-ios--claro .login-ios-btn:disabled {
+  background: rgba(118, 118, 128, .16);
+  color: var(--text-3);
+}
+
+/* Las dos salidas, como texto teñido: en esta pantalla solo hay UNA acción
+   principal, y dos botones más de relleno la volverían tres. */
+:root.iphone .login-ios-enlaces {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 18px;
+}
+:root.iphone .login-ios-enlaces button {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(15px * var(--fs-escala));
+  letter-spacing: -0.2px;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .login-ios-enlaces button:active { opacity: .5; }
+
+:root.iphone .login-ios-nota {
+  margin: 18px 0 0;
+  padding: 0 18px;
+  font-size: calc(13px * var(--fs-escala));
+  line-height: 18px;
+  text-align: center;
+  color: rgba(255, 255, 255, .6);
+  text-wrap: pretty;
+}
+/* El pie de la puerta se va al fondo: `margin-top: auto` en una columna que
+   desplaza reparte solo lo que sobra, así que en una pantalla pequeña se
+   comporta como un margen normal y no se sale por abajo. */
+:root.iphone .login-ios-nota--pie { margin-top: auto; padding-top: 24px; }
+:root.iphone .login-ios--claro .login-ios-nota { color: var(--text-3); }
+
+/* --- Crear cuenta: barra, título grande y grupos --- */
+:root.iphone .login-ios-barra {
+  height: 44px;
+  margin: 0 -16px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+}
+:root.iphone .login-ios-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .login-ios-volver:active { opacity: .4; }
+:root.iphone .login-ios-titulo {
+  margin: 0;
+  font-size: calc(34px * var(--fs-escala));
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--text);
+}
+:root.iphone .login-ios-sub {
+  margin: 6px 0 0;
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 20px;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+/* Los grupos vuelven a su sangría propia: aquí el contenedor ya trae 16 px,
+   así que el `margin: 0 16px` de `.ios-group` los dejaría en 32. */
+:root.iphone .login-ios-form { margin-top: 26px; }
+:root.iphone .login-ios-form .ios-group { margin: 0; }
+:root.iphone .login-ios-form .ios-section-header,
+:root.iphone .login-ios-form .ios-section-footer { padding-left: 16px; padding-right: 16px; }
