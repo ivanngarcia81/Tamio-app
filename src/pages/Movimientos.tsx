@@ -803,12 +803,12 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                     mismo que la categoría de debajo; sacado, manda. */}
                 <div className="ios-cifra-periodo">
                   <div className="ios-cifra-bloque">
-                    {/* El rótulo ES el selector de mes. Dice de qué periodo es
+                    {/* El rótulo ES el selector de mes: dice de qué periodo es
                         la cifra y lo cambia, que era lo que hacían dos
-                        controles distintos escribiendo la misma fecha. Las dos
-                        flechas van juntas y DELANTE: separadas por el largo
-                        del rótulo quedan a dos dedos de distancia, y el pulgar
-                        que retrocede un mes suele querer avanzar otro. */}
+                        controles distintos escribiendo la misma fecha. Una
+                        flecha a cada lado, pegadas al texto y no repartidas a
+                        los extremos de la pantalla: el grupo entero mide lo
+                        que mide el rótulo. */}
                     <span className="ios-cifra-rotulo ios-mes-paso">
                       <button
                         type="button"
@@ -818,6 +818,9 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       >
                         <IconChevronLeft size={13} strokeWidth={2.6} />
                       </button>
+                      <span className="ios-mes-texto">
+                        {t(esIngreso ? "mov.ingresosDe" : "mov.gastosDe", { mes: mesLegible(mes) })}
+                      </span>
                       <button
                         type="button"
                         className="ios-mes-flecha"
@@ -827,7 +830,6 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                       >
                         <IconChevronRight size={13} strokeWidth={2.6} />
                       </button>
-                      {t(esIngreso ? "mov.ingresosDe" : "mov.gastosDe", { mes: mesLegible(mes) })}
                     </span>
                     <span className="ios-cifra-num">
                       <CountUp value={totalMes} format={fmtMoney} paso={100} />

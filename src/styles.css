@@ -22813,12 +22813,13 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    El mes se escribía DOS veces en la misma pantalla: como texto en el rótulo
    («Ingresos de agosto 2026») y como control en la cabecera («‹ agosto 2026
    ›»), uno enfrente del otro. Ahora el rótulo es el control: mismo tamaño y
-   mismo gris de siempre, con las dos flechas juntas delante.
+   mismo gris de siempre, con una flecha a cada lado.
 
-   Juntas y delante, no una a cada lado: con el rótulo entero en medio las dos
-   flechas quedan a 200 px una de otra, y quien retrocede un mes casi siempre
-   quiere avanzar otro. El área táctil es de 28 px aunque el glifo mida 13 —lo
-   que se toca no es el dibujo. */
+   Pegadas al texto, no repartidas a los extremos: `.ios-mes-paso` es un flex
+   que mide lo que mide su contenido, así que la flecha de la derecha queda
+   justo detrás de «2026» y no al otro lado de la pantalla. El área táctil es
+   de 28 px aunque el glifo mida 13 —lo que se toca no es el dibujo—, y por eso
+   las cajas se solapan un poco con el texto sin que se note. */
 :root.iphone .ios-mes-paso {
   display: flex;
   align-items: center;
@@ -22828,7 +22829,9 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    el GLIFO quede a plomo con el importe de abajo: lo que se alinea es lo que
    se ve, no la caja que lo rodea. */
 :root.iphone .ios-mes-paso > .ios-mes-flecha:first-child { margin-left: -8px; }
-:root.iphone .ios-mes-paso > :last-child { margin-left: 5px; }
+/* Y el texto respira 2 px a cada lado: con las cajas de 28 px pegadas al
+   rótulo, los glifos ya caen a la distancia justa. */
+:root.iphone .ios-mes-texto { padding: 0 2px; }
 :root.iphone .ios-mes-flecha {
   flex: 0 0 auto;
   width: 28px;
