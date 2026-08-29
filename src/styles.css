@@ -23429,3 +23429,120 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   font-size: calc(12.5px * var(--fs-escala));
   text-wrap: pretty;
 }
+   37 · EL REGISTRO, EN EL SISTEMA DEL TELÉFONO (maquetas R1–R4)
+   ----------------------------------------------------------------------------
+   Era la única pantalla sin capa de iPhone: sus `.reg-*` de escritorio —una
+   lista continua con una línea de día en medio, texto a 13,5 y un punto de
+   7 px— se veían como una página web al lado de sus catorce vecinas.
+
+   Lo que se conserva es lo que significa algo: el punto de COLOR por área
+   (verde tesorería, índigo secretaría, gris general) y la marca de la nota a
+   mano. Lo que cambia es la forma: el separador de día pasa a ser encabezado
+   de grupo con una tarjeta por día —que es como el teléfono agrupa todo lo
+   demás— y el punto se alinea con la PRIMERA línea del texto, no con el centro
+   de la fila, porque un apunte puede ocupar dos renglones.
+   ============================================================================ */
+
+/* El aire de la banda a lo primero. Medido: 6 px contra los 18 del resto de
+   pantallas (`node pruebas/medir-margenes.mjs`), porque aquí lo primero es una
+   tarjeta o un encabezado pegajoso y ninguno de los dos trae margen propio. */
+:root.iphone .reg-ios-content > :first-child { margin-top: 12px; }
+
+:root.iphone .reg-ios {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 56px;
+  box-sizing: border-box;
+  padding: 9px 16px;
+}
+:root.iphone .reg-ios:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 34px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+/* La sangría de la raya arranca donde arranca el TEXTO (16 + 8 + 10), no en el
+   punto: el punto es una marca del renglón, no una columna. */
+:root.iphone .reg-ios .reg-punto {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+}
+:root.iphone .reg-ios-textos { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+:root.iphone .reg-ios-cuerpo {
+  font-size: calc(17px * var(--fs-escala));
+  line-height: 22px;
+  letter-spacing: -0.2px;
+  color: var(--text);
+  text-wrap: pretty;
+}
+:root.iphone .reg-ios-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--text-2);
+}
+:root.iphone .reg-ios-meta b { color: var(--text); font-weight: 600; }
+:root.iphone .reg-ios-meta svg { flex: 0 0 auto; }
+/* Lo que no se había visto en ESTE aparato, con un tinte de marca al 4,5 %.
+   Un tinte y no una pastilla de «nuevo»: son varias filas seguidas, y cinco
+   pastillas en una tarjeta se leen como un error. */
+:root.iphone .reg-ios.es-sinver { background: color-mix(in srgb, var(--brand, #059669) 5%, transparent); }
+/* Y su cuenta, en el encabezado del día, del color de marca. */
+:root.iphone .reg-sinver { font-size: calc(13px * var(--fs-escala)); color: var(--brand, #059669); }
+
+/* El vacío: tarjeta con la única salida que la pantalla tiene. */
+:root.iphone .reg-vacio {
+  position: relative;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+:root.iphone .reg-vacio::after {
+  content: "";
+  position: absolute;
+  left: 16px; right: 0; bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .reg-vacio-titulo {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+:root.iphone .reg-vacio-texto {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 20px;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+:root.iphone .reg-accion { width: 100%; border: 0; background: none; font: inherit; text-align: left; }
+:root.iphone .reg-accion-texto { color: var(--brand, #059669); font-weight: 600; }
+
+/* La leyenda del color: el punto delante y el nombre del área. */
+:root.iphone .reg-leyenda { gap: 10px; }
+:root.iphone .reg-leyenda .reg-punto { width: 8px; height: 8px; margin: 0; }
+
+/* Los tres colores, con los tonos del sistema en vez de los acentos del
+   escritorio: el índigo de secretaría es el `--ios-indigo` que ya tintaba su
+   fila en el índice de Ajustes, así que las dos pantallas dicen «secretaría»
+   con el mismo color. */
+/* `inline-block` y no el `inline` de fábrica: fuera de un contenedor flex —en
+   la fila «La verán» de la hoja, donde el punto acompaña al valor— un span en
+   línea ignora `width`/`height` y el punto sencillamente no se pinta. */
+:root.iphone .reg-punto { display: inline-block; vertical-align: middle; }
+:root.iphone .reg-punto--tesoreria { background: var(--cabecera, #047857); }
+:root.iphone .reg-punto--secretaria { background: var(--ios-indigo, #5856d6); }
+:root.iphone .reg-punto--general { background: var(--text-3); }

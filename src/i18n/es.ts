@@ -3481,6 +3481,16 @@ export const es = {
    *  así que se lee en el idioma de quien mira y no en el de quien lo
    *  provocó — que es como `mensajes` lo hacía mal. */
   registro: {
+    subIOS: "Lo que ha pasado en la iglesia. Lo escribe la app sola.",
+    notaAnadir: "Añadir",
+    notaPie: "Queda con tu nombre, en el día de hoy. No se puede editar después: el registro no se reescribe.",
+    notaQueEs: "Una nota es lo único que escribe una persona: algo que la app no sabe y conviene dejar escrito.",
+    laVeran: "La verán",
+    todos: "Todos",
+    laVeranPie: "Las notas son del área general: las lee cualquiera que entre a la app, no solo tu área.",
+    pieVisto: "«Sin ver» es de este aparato, no de la iglesia.",
+    leyendaTitulo: "QUÉ SE ANOTA AQUÍ",
+    area: { tesoreria: "Tesorería", secretaria: "Secretaría", general: "Notas y general" },
     titulo: "Registro",
     sub: "Lo que ha pasado en la iglesia",
     vacio: "Todavía no hay nada anotado",
@@ -3508,7 +3518,6 @@ export const es = {
     cuenta_other: "{{count}} apuntes",
     subConCuenta_one: "{{count}} apunte · lo que ha pasado en la iglesia",
     subConCuenta_other: "{{count}} apuntes · lo que ha pasado en la iglesia",
-    notaPie: "Queda con tu nombre, entre lo que anota la app. No se puede editar después.",
     sinCoincidencias: "Nada de este tipo, todavía",
     sinCoincidenciasSub: "Cambia el filtro para ver el resto de lo anotado.",
     pie: "El registro guarda el nombre y el folio tal como eran, así que sigue diciendo la verdad aunque la fila de la que habla ya no exista. Lo que falta por hacer no vive aquí, sino en Por revisar.",

@@ -372,6 +372,10 @@ const PANTALLAS = [
   { nombre: "14-servicios", ruta: "/servicios" },
   { nombre: "15-membresia", ruta: "/membresia" },
   { nombre: "17-agenda", ruta: "/agenda" },
+  /* El Registro faltaba en esta lista, así que no entraba en la hoja de
+     contactos: la prueba de si las pantallas son la MISMA app son las 38
+     juntas, no cada una por su lado. */
+  { nombre: "26-registro", ruta: "/inbox" },
 ];
 
 for (const tema of ["light", "dark"]) {
@@ -747,6 +751,49 @@ for (const tema of ["light", "dark"]) {
   await page.getByRole("button", { name: "Vista previa", exact: true }).click();
   await toma("c13-previa");
   await ctx.close();
+}
+
+// R1, R3 y R4 · El Registro. La semilla ya deja sucesos (las cartas emitidas),
+// así que la lista sale llena; la nota se escribe de verdad para ver la hoja y
+// la fila con el lápiz. El VACÍO va al final y con la tabla borrada a mano: es
+// una pantalla del handoff (R3, con la leyenda del color) y no hay otra forma
+// de llegar a ella con datos sembrados.
+{
+  for (const tema of ["light", "dark"]) {
+    const ctx = await contextoIPhone(tema);
+    const page = await ctx.newPage();
+    page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+    const toma = async (nombre) => {
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: `${SALIDA}/25-registro-${nombre}-${tema}.png` });
+      console.log(`  ✓ pruebas/capturas/25-registro-${nombre}-${tema}.png`);
+    };
+    await page.goto(`${URL_BASE}/#/inbox`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+
+    await page.locator(".ios-nav-btn").first().click();
+    await page.waitForTimeout(500);
+    await page.locator(".ios-sheet textarea").fill("El sobre de misiones lo trae el hermano Efraín el domingo; todavía no está en caja.");
+    await toma("nota");
+
+    await page.getByRole("button", { name: /Añadir|Add/ }).click();
+    await toma("lista");
+    await ctx.close();
+  }
+
+  // Y el vacío, con la base ya sin registro. Va después de las dos pasadas
+  // para que ninguna de ellas se quede sin sucesos que enseñar.
+  db.exec("UPDATE registro SET deleted = 1");
+  for (const tema of ["light", "dark"]) {
+    const ctx = await contextoIPhone(tema);
+    const page = await ctx.newPage();
+    await page.goto(`${URL_BASE}/#/inbox`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${SALIDA}/25-registro-vacio-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/25-registro-vacio-${tema}.png`);
+    await ctx.close();
+  }
 }
 
 // W1, W2 y W3 · La bienvenida del primer arranque. Solo sale cuando la

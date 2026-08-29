@@ -37,7 +37,8 @@ const PANTALLAS = [
   ["Por revisar", "/bandeja"], ["Reportes", "/reportes"],
   ["Membresía", "/membresia"], ["Actas", "/actas"], ["Bitácora", "/servicios"],
   ["Agenda", "/agenda"], ["Cartas", "/cartas"],
-  ["Informes memb.", "/reporte-miembros"], ["Ajustes", "/configuracion"],
+  ["Informes memb.", "/reporte-miembros"], ["Registro", "/inbox"],
+  ["Ajustes", "/configuracion"],
 ];
 
 const vite = spawn("npx", ["vite", "--port", "1420", "--strictPort"], { cwd: REPO, stdio: "ignore" });

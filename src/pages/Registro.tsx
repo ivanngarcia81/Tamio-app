@@ -32,13 +32,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   areasDelRol, fmtFechaCorta, listRegistro, marcarRegistroVisto, registrarNota,
+  registroVistoDesde,
   type Church, type Suceso,
 } from "../db";
 import type { Role } from "../role";
 import { useBarraEstado } from "../components/BarraEstado";
 import LoadingState from "../components/LoadingState";
 import { EmptyState } from "../components/TxList";
-import { IconClipboardList } from "../icons";
+import { IconClipboardList, IconEdit } from "../icons";
+import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
+import IOSFormSheet from "../components/ios/IOSFormSheet";
+import { TextAreaField } from "../components/ios/FormularioIOS";
 import { showToast } from "../toast";
 import { esIPhone, esMac } from "../movil";
 
@@ -70,6 +74,10 @@ export default function Registro({ church, role, refreshKey }: Props) {
   const [guardando, setGuardando] = useState(false);
   const [abriendoNota, setAbriendoNota] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("todo");
+  /* Hasta dónde se había leído ANTES de abrir. Se lee una vez y se guarda:
+     el efecto de abajo marca todo como visto enseguida, así que leerlo
+     después daría siempre «nada sin ver». */
+  const [vistoDesde] = useState(() => registroVistoDesde());
 
   useBarraEstado(t("barraEstado.registro", { count: sucesos.length }));
 
@@ -167,6 +175,159 @@ export default function Registro({ church, role, refreshKey }: Props) {
     } finally {
       setGuardando(false);
     }
+  }
+
+  /** Un suceso que no se había visto en este aparato. */
+  const sinVer = (s: Suceso) => s.id > vistoDesde;
+
+  /* Los días, en el orden en que llegan (la consulta ya viene de lo más nuevo
+     a lo más viejo), con sus sucesos dentro. Solo lo usa el teléfono: en
+     escritorio la lista sigue siendo continua con su separador de día. */
+  const porDia: { dia: string; items: Suceso[] }[] = [];
+  if (enIPhone) {
+    for (const s of sucesos) {
+      const dia = diaDe(s.creado_en);
+      const ultimo = porDia[porDia.length - 1];
+      if (ultimo && ultimo.dia === dia) ultimo.items.push(s);
+      else porDia.push({ dia, items: [s] });
+    }
+  }
+
+  /** Una fila del diario en el teléfono: punto de color a la altura de la
+   *  PRIMERA línea (no centrado: un apunte puede ocupar dos renglones), el
+   *  texto, y debajo quién lo escribió y a qué hora. */
+  const filaIPhone = (s: Suceso) => {
+    const esNota = s.tipo === "nota";
+    return (
+      <div className={`reg-ios${sinVer(s) ? " es-sinver" : ""}`} key={s.id}>
+        <span className={`reg-punto reg-punto--${s.area}`} aria-hidden="true" />
+        <span className="reg-ios-textos">
+          <span className="reg-ios-cuerpo">{textoDe(s)}</span>
+          <span className="reg-ios-meta">
+            {/* El lápiz distingue de un vistazo lo que escribió una persona de
+                lo que escribió la app, que es la única distinción que esta
+                pantalla tiene que sostener. */}
+            {esNota && <IconEdit size={13} strokeWidth={2} />}
+            {esNota
+              ? <><b>{s.quien ?? t("registro.nota")}</b> · {horaDe(s.creado_en)}</>
+              : <>{t("registro.porApp")} · {horaDe(s.creado_en)}</>}
+          </span>
+        </span>
+      </div>
+    );
+  };
+
+  /* La hoja de la nota. Antes era un `textarea` suelto que se abría EN MEDIO
+     de la lista: con el teclado arriba empujaba los apuntes y dejaba medio a
+     la vista, y un campo permanente en una pantalla que es de LEER invita a
+     escribir, que es justo lo que se quitó al retirar Mensajes. */
+  const hojaNota = abriendoNota && (
+    <IOSFormSheet
+      title={t("registro.nota")}
+      saveLabel={t("registro.notaAnadir")}
+      canSave={!!nota.trim() && !guardando}
+      onSave={() => void anotar()}
+      onCancel={() => { setAbriendoNota(false); setNota(""); }}
+    >
+      <section className="ios-section">
+        <div className="ios-group">
+          <TextAreaField
+            value={nota}
+            onChange={setNota}
+            rows={4}
+            placeholder={t("registro.notaPlaceholder")}
+          />
+        </div>
+        <p className="ios-section-footer">{t("registro.notaPie")}</p>
+      </section>
+      {/* Quién la va a leer, dicho antes de escribirla y no después: una nota
+          es del área general y la lee cualquiera con acceso a la app. */}
+      <section className="ios-section">
+        <div className="ios-group">
+          <div className="ios-row ios-row--dato ios-row--rasa">
+            <span className="ios-row-label">{t("registro.laVeran")}</span>
+            <span className="ios-row-value">
+              <span className="reg-punto reg-punto--general" aria-hidden="true" /> {t("registro.todos")}
+            </span>
+          </div>
+        </div>
+        <p className="ios-section-footer">{t("registro.laVeranPie")}</p>
+      </section>
+    </IOSFormSheet>
+  );
+
+  if (enIPhone) {
+    return (
+      <>
+        <div className="header">
+          <div>
+            <div className="page-title" data-titulo-fijo={t("registro.titulo")}>{t("registro.titulo")}</div>
+            <div className="page-sub">{t("registro.subIOS")}</div>
+          </div>
+          {/* La única acción de la pantalla, en la barra fija: lo demás aquí
+              se lee, no se toca. */}
+          <button type="button" className="ios-nav-btn" onClick={() => setAbriendoNota(true)}>
+            <IconEdit size={15} strokeWidth={2} /> {t("registro.nota")}
+          </button>
+        </div>
+
+        <div className="content content-lienzo reg-ios-content">
+          {loading ? (
+            <LoadingState />
+          ) : sucesos.length === 0 ? (
+            <>
+              {/* El vacío como tarjeta con salida, no como icono gris en medio
+                  de la nada: lo único que una persona puede añadir aquí es una
+                  nota, así que la puerta va dentro del propio vacío. */}
+              <section className="ios-section">
+                <div className="ios-listcard">
+                  <div className="reg-vacio">
+                    <span className="reg-vacio-titulo">{t("registro.vacio")}</span>
+                    <span className="reg-vacio-texto">{t("registro.vacioSub")}</span>
+                  </div>
+                  <button type="button" className="ios-txrow reg-accion" onClick={() => setAbriendoNota(true)}>
+                    <div className="ios-txrow-main"><div className="ios-txrow-title reg-accion-texto">{t("registro.escribirNota")}</div></div>
+                    <div className="ios-txrow-trailing"><IosChevron /></div>
+                  </button>
+                </div>
+                <p className="ios-section-footer">{t("registro.notaQueEs")}</p>
+              </section>
+
+              {/* La leyenda del color solo sale en el vacío: es el mejor
+                  momento para explicarla, porque no compite con nada que leer,
+                  y desaparece en cuanto hay una línea. */}
+              <SeccionIOS titulo={t("registro.leyendaTitulo")} compacta>
+                {(["tesoreria", "secretaria", "general"] as const).map((area) => (
+                  <div className="ios-txrow reg-leyenda" key={area}>
+                    <span className={`reg-punto reg-punto--${area}`} aria-hidden="true" />
+                    <div className="ios-txrow-main"><div className="ios-txrow-title">{t(`registro.area.${area}`)}</div></div>
+                  </div>
+                ))}
+              </SeccionIOS>
+            </>
+          ) : (
+            porDia.map((g, i) => {
+              const nuevos = g.items.filter(sinVer).length;
+              return (
+                <SeccionIOS
+                  key={g.dia}
+                  titulo={etiquetaDia(g.dia)}
+                  indexada
+                  accion={nuevos > 0 ? <span className="reg-sinver">{t("registro.nuevos", { count: nuevos })}</span> : undefined}
+                  /* El pie solo bajo el primer día: explica el «sin ver» de
+                     arriba, y repetido en cada grupo sería una letanía. */
+                  pie={i === 0 && nuevos > 0 ? t("registro.pieVisto") : undefined}
+                >
+                  {g.items.map(filaIPhone)}
+                </SeccionIOS>
+              );
+            })
+          )}
+        </div>
+
+        {hojaNota}
+      </>
+    );
   }
 
   return (
