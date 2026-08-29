@@ -18,16 +18,37 @@
  * desaparecer —decisión de Iván (23 ago): primero la plantilla, el dato
  * después—:
  *
- *  - **El desglose efectivo / cheques** y **"Movimientos depositados"**:
- *    `depositos_bancarios` no guarda de qué movimientos se compone un
- *    depósito. Es la misma pieza que le falta a la pestaña Pendientes para
- *    poder marcar lo ya depositado; con ella se encienden las dos.
- *  - **"Registró"**: no hay usuario en la tabla. Es el mismo "Registrado por"
- *    que §4 del rediseño ya marcó como inexistente en `transactions`.
- *  - **"Conciliación"**: no hay estado de cuenta ni nada que casar contra él.
- *  - **"Compartir"** y **"Reabrir el corte"**: la primera necesita una hoja de
- *    compartir que la app no tiene; la segunda, un estado del corte que
- *    tampoco existe.
+ * [ESTA LISTA ESTABA DESFASADA. Puesta al día el 28 de agosto de 2026, al
+ *  repasar qué queda sin motor en toda la app: de las cinco cosas que decía
+ *  que esperaban datos, CUATRO ya los tienen. Se corrige y no se borra,
+ *  porque el error de fondo merece quedar dicho: un comentario que enumera
+ *  huecos envejece más rápido que el código, y quien lo lea después va a
+ *  creerse la lista en vez de mirar. Aquí abajo va lo que hay HOY.]
+ *
+ * **Ya tienen motor**, y por eso ninguna sale apagada:
+ *
+ *  - **El desglose efectivo / cheques** y **"Movimientos depositados"**. No
+ *    hizo falta la tabla `deposito_movimientos` que esta lista pedía: el
+ *    camino ya existía por otro lado —`cortes.deposito_id` enlaza el depósito
+ *    con su corte, y `corte_movimientos` el corte con sus movimientos—, así
+ *    que `movimientosDeDeposito` los saca sin migración nueva.
+ *  - **"Registró"**: `depositos_bancarios` sí guarda `registrado_por` y
+ *    `registrado_rol` desde la migración 39. No es un id de usuario, es una
+ *    INSTANTÁNEA del nombre y el rol, a propósito: el registro tiene que
+ *    seguir diciendo quién fue aunque esa persona deje la iglesia.
+ *  - **"Compartir"**: entrega el comprobante en PDF por la hoja del sistema.
+ *  - **"Reabrir el corte"**: `reabrirCorte` lo devuelve a "entregado, sin
+ *    depositar", y el dinero vuelve a la caja. Sale apagado sólo cuando el
+ *    depósito NO tiene corte detrás, que no es un hueco: es que no hay nada
+ *    que reabrir, porque la fila ES el depósito.
+ *
+ * **Lo único que sigue esperando datos:**
+ *
+ *  - **La conciliación contra el BANCO.** No hay estado de cuenta que casar,
+ *    y traerlo es una función entera —importar, emparejar, resolver lo que no
+ *    cuadra—, no un botón. Lo que sí se hace hoy es la conciliación que no
+ *    necesita al banco: comparar lo que se CONTÓ en el corte con lo que se
+ *    DEPOSITÓ, y cantar la diferencia.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

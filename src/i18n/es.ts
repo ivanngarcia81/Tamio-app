@@ -690,6 +690,10 @@ export const es = {
   },
 
   recordModal: {
+    /* Cabecera de la sección de datos en las hojas de iOS. La usa
+       `EditarRecurrenteIOS` y sirve para cualquier hoja que agrupe los campos
+       de un movimiento: es "los datos de esto", no "el detalle del mes". */
+    detalle: "Detalle",
     posibleDuplicado: "Ya hay un movimiento parecido registrado ({{nombres}}). Revisa antes de guardar; si es correcto, guarda de nuevo.",
     contacto: "Contacto",
     editarIngreso: "Editar ingreso",
@@ -1190,9 +1194,12 @@ export const es = {
   },
 
   recurrente: {
-    label: "Movimiento fijo recurrente",
+    /* La sección que solo aparece cuando el monto cambió Y la serie ya generó
+       movimientos. Se llama "Corrección" y no "Retroactivo" porque lo que se
+       está decidiendo es si el pasado estaba MAL, no una opción técnica. */
     correccion: "Corrección",
     aplicarRetroLabel: "Aplicar también a los ya registrados",
+    label: "Movimiento fijo recurrente",
     pregunta: "¿Este {{tipo}} se repite todos los meses?",
     seRepiteCadaMes: "Se repite cada mes",
     siRecurrente: "Sí, es recurrente",

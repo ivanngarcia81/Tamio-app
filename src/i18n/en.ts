@@ -672,6 +672,7 @@ export const en: Resources = {
   },
 
   recordModal: {
+    detalle: "Details",
     posibleDuplicado: "A similar entry already exists ({{nombres}}). Check before saving; if it is correct, save again.",
     contacto: "Contact",
     editarIngreso: "Edit income",
@@ -1143,9 +1144,9 @@ export const en: Resources = {
   },
 
   recurrente: {
-    label: "Recurring fixed transaction",
     correccion: "Correction",
     aplicarRetroLabel: "Apply to the ones already recorded too",
+    label: "Recurring fixed transaction",
     pregunta: "Does this {{tipo}} repeat every month?",
     seRepiteCadaMes: "Repeats every month",
     siRecurrente: "Yes, it's recurring",

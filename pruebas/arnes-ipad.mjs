@@ -1711,7 +1711,18 @@ console.log("\n== Configuración del iPad (handoff) ==");
   const ig = await pg.evaluate(() => {
     const g = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-group");
     const h = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-section-header");
-    const f = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .ios-field");
+    /* Una fila de UNA línea, a propósito. Las de dos —`.ios-field-textos`,
+       título arriba y explicación debajo— tienen su propia regla en el bloque
+       del iPad (`flex: none; width: auto`), porque una explicación encajada en
+       190px no se lee. Medir la columna de 190 en una de ésas mide otra cosa.
+
+       Se rompió el 27 de agosto de 2026, y sin que el CSS cambiara: la maqueta
+       S3 convirtió la fila del logo —la PRIMERA de la zona Iglesia— en una de
+       dos líneas, así que `.ios-field` a secas pasó a devolverla a ella y la
+       medida saltó de 190 a 555. La regla seguía bien; la prueba miraba mal. */
+    const f = document.querySelector(
+      ".settings-zona:not(.settings-zona-inactiva) .ios-field:not(:has(.ios-field-textos))"
+    );
     const lab = f?.querySelector(".ios-field-label");
     const cs = (e) => (e ? getComputedStyle(e) : null);
     return {
@@ -1771,25 +1782,41 @@ console.log("\n== Configuración del iPad (handoff) ==");
   chk(pref.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-preferencias-1366x1024.png` });
 
-  /* Zona sensible: la única sin lista agrupada, y por eso la que se rompía.
-     `.settings-masonry` son DOS columnas y solo vuelve a una en
-     `max-width: 1180px` — una media query de VIEWPORT que en 1366 no
-     dispara aunque el panel mida 680. */
+  /* Zona sensible. Era la ÚLTIMA zona que seguía en tarjetas de escritorio
+     (`.settings-masonry`), y esto medía que esas dos columnas no se
+     estrangularan en el panel de 680 — la media query que las devuelve a una
+     mira el VIEWPORT, y en 1366 no dispara aunque el panel sea estrecho.
+
+     El 28 de agosto de 2026 dejó de tener tarjetas: `ZonaSensibleSettingsIOS`
+     la pasó al mismo tratamiento de listas que ya tenían sus siete hermanas
+     —`enListas` es `iPhone || iPad`, así que el iPad entra—. O sea que la
+     zona no se rompió: se terminó de convertir.
+
+     Así que lo que se mide cambia con ella, y NO se borra. Lo que importa
+     ahora es lo que el rediseño promete: que lo irreversible no comparta
+     tarjeta con lo inocuo. Antes «exportar un CSV» y «borrarlo todo» eran dos
+     filas del mismo alto y la única diferencia era el color de un icono de
+     24 px, que no frena a nadie. */
   const iDel = zonas.length - 1;
   await pg.locator(".settings-nav-item").nth(iDel).click();
   await pg.waitForTimeout(400);
   const del = await pg.evaluate(() => {
-    const m = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .settings-masonry");
-    const cards = m ? [...m.children].map((c) => Math.round(c.getBoundingClientRect().width)) : [];
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const peligro = [...(z?.querySelectorAll(".ios-tarjeta-aviso--peligro") ?? [])];
     return {
-      hay: !!m,
-      columnas: m ? getComputedStyle(m).gridTemplateColumns.split(" ").length : 0,
-      anchoMin: cards.length ? Math.min(...cards) : 0,
+      hay: !!z?.querySelector(".ios-form"),
+      peligros: peligro.length,
+      /* Cada acción irreversible en SU tarjeta: si dos compartieran una, esto
+         contaría menos tarjetas que botones destructivos. */
+      botonesRojos: peligro.filter((c) => c.querySelector("button")).length,
+      anchoMin: peligro.length ? Math.min(...peligro.map((c) => Math.round(c.getBoundingClientRect().width))) : 0,
       desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
   });
-  chk(del.hay, "la Zona sensible conserva sus tarjetas");
-  chk(del.columnas === 1, `en UNA columna (${del.columnas})`);
+  chk(del.hay, "la Zona sensible se pinta como lista agrupada, igual que sus hermanas");
+  chk(del.peligros >= 2, `lo irreversible va en tarjetas de aviso propias (${del.peligros})`);
+  chk(del.peligros === del.botonesRojos,
+    `y cada una lleva su botón, ninguna comparte (${del.botonesRojos} de ${del.peligros})`);
   chk(del.anchoMin > 600, `a todo el ancho de lectura (${del.anchoMin}px la más angosta)`);
   chk(del.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-sensible-1366x1024.png` });
@@ -5637,6 +5664,169 @@ console.log("\n== Márgenes y dos líneas de una hoja ==");
     }
   }
   await ctxM.close();
+}
+
+/* ---------- 52. Las tres acciones de la Bandeja, en el TELÉFONO ----------
+   El iPad tiene panel y tres botones de texto —Aprobar, Editar, Devolver—. En
+   393 px no caben, así que se reparten por lo que cada acción ES, y esta
+   sección comprueba que el reparto llega entero:
+
+     · tocar la fila lleva al sitio donde se resuelve esa alerta,
+     · aprobar es un botón redondo, de un toque y sin salir,
+     · devolver va DESLIZANDO, porque le rebota a alguien su trabajo y dos
+       círculos idénticos a 44 px lo convierten en un resbalón del pulgar.
+
+   Y comprueba una cuarta cosa, que es una AUSENCIA: que «Aprobar» ya NO se
+   ofrezca en «Gasto sin comprobante». Ese botón no cambiaba nada visible —la
+   alerta cuelga de si hay comprobante, no del estado— y un botón que se pulsa
+   dos veces porque no pasa nada es peor que no tenerlo. */
+console.log("\n== Las tres acciones de la Bandeja, en el teléfono ==");
+{
+  const ctxB = await nuevoContexto("iphone", { tactil: true });
+  const pb = await ctxB.newPage();
+  pb.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pb.setViewportSize({ width: 393, height: 852 });
+
+  /* Dos pendientes de verdad. La semilla trae uno solo, y con uno no se puede
+     distinguir "aprobar funcionó" de "la lista se vació sola". */
+  await pb.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+  await pb.waitForSelector(".app", { timeout: 30000 });
+  await pb.evaluate(async () => {
+    const db = await import("/src/db.ts");
+    const ig = await db.getOrCreateChurch();
+    for (const n of [1, 2]) {
+      await db.insertTx(ig.id, ig.moneda, {
+        tipo: "ingreso", categoria: "ofrenda", concepto: `Por revisar ${n}`,
+        fecha: db.hoyISO(), monto: 12300 * n, metodo_pago: "efectivo", estado: "pendiente",
+      });
+    }
+  });
+  await pb.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+  await pb.waitForTimeout(900);
+
+  /* --- 1. Aprobar, de un toque --- */
+  const antes = await pb.evaluate(() => document.querySelectorAll(".ios-row-accion").length);
+  chk(antes >= 2, `hay botón de aprobar en las filas que lo admiten (${antes})`);
+  if (antes >= 2) {
+    await pb.locator(".ios-row-accion").first().click();
+    await pb.waitForTimeout(700);
+    const despues = await pb.evaluate(() => document.querySelectorAll(".ios-row-accion").length);
+    chk(despues === antes - 1, `aprobar quita SU alerta y solo la suya (${antes} → ${despues})`);
+  }
+
+  /* --- 2. Devolver, deslizando ---
+     Se conduce con eventos de toque porque es un gesto, no un clic: el hook
+     escucha `touchstart/move/end` sobre la fila. */
+  const hay = await pb.evaluate(() => ({
+    envueltas: document.querySelectorAll(".ios-swipe .ios-txrow").length,
+    devolver: document.querySelectorAll(".al-swipe-devolver").length,
+  }));
+  chk(hay.envueltas > 0, `las filas con movimiento se pueden deslizar (${hay.envueltas})`);
+  /* `> 0` además de la igualdad, y no es redundante: sin él, desactivar el
+     gesto dejaba "0 de 0" y esta comprobación pasaba en VERDE mientras la de
+     arriba se ponía en rojo. Lo enseñó el propio sabotaje. Una comprobación
+     que se cumple sola cuando no hay nada que comprobar no comprueba nada. */
+  chk(hay.devolver > 0 && hay.devolver === hay.envueltas,
+    `y cada una esconde su «Devolver» (${hay.devolver} de ${hay.envueltas})`);
+
+  if (hay.envueltas > 0) {
+    const antesDev = await pb.evaluate(() => document.querySelectorAll(".ios-swipe .ios-txrow").length);
+    /* NADA de tocar la fila antes: un toque abre el editor y la prueba se
+       quedaría midiendo una lista tapada por un modal. Es lo que me pasó en
+       el primer intento, y el síntoma era engañoso —"0px", como si el gesto
+       no existiera—. El gesto va directo, del borde derecho hacia la
+       izquierda y con pasos, para que el hook lo clasifique como arrastre y
+       no como toque: su zona muerta son 10 px. */
+    await pb.evaluate(async () => {
+      const fila = document.querySelector(".ios-swipe .ios-txrow");
+      const r = fila.getBoundingClientRect();
+      const y = r.top + r.height / 2;
+      /* `TouchEvent` no acepta objetos sueltos: exige instancias de `Touch`,
+         y con un literal tira "Failed to convert value to 'Touch'". */
+      const toque = (x) => [new Touch({ identifier: 1, target: fila, clientX: x, clientY: y, pageX: x, pageY: y })];
+      const ev = (tipo, x) => fila.dispatchEvent(new TouchEvent(tipo, {
+        bubbles: true, cancelable: true, touches: tipo === "touchend" ? [] : toque(x),
+        targetTouches: tipo === "touchend" ? [] : toque(x), changedTouches: toque(x),
+      }));
+      ev("touchstart", r.right - 20);
+      for (let x = r.right - 30; x > r.right - 130; x -= 12) {
+        ev("touchmove", x);
+        await new Promise((res) => setTimeout(res, 16));
+      }
+      ev("touchend", r.right - 130);
+    });
+    await pb.waitForTimeout(500);
+    const corrida = await pb.evaluate(() => {
+      const fila = document.querySelector(".ios-swipe .ios-txrow");
+      const m = getComputedStyle(fila).transform;
+      return m && m !== "none" ? Math.round(Math.abs(Number(m.split(",")[4]))) : 0;
+    });
+    chk(corrida > 40, `la fila se corre y descubre el botón (${corrida}px)`);
+
+    if (corrida > 40) {
+      await pb.locator(".al-swipe-devolver").first().click();
+      await pb.waitForTimeout(800);
+      const despuesDev = await pb.evaluate(() => document.querySelectorAll(".ios-swipe .ios-txrow").length);
+      chk(despuesDev === antesDev - 1,
+        `devolver quita SU alerta y solo la suya (${antesDev} → ${despuesDev})`);
+    }
+  }
+
+  /* --- 3. Las dos alertas que antes no llevaban a ningún sitio --- */
+  const destinos = await pb.evaluate(() => {
+    const filas = [...document.querySelectorAll(".ios-txrow")];
+    return {
+      total: filas.length,
+      sinDestino: filas.filter((f) =>
+        !f.classList.contains("ios-txrow--clickable") &&
+        !f.querySelector(".ios-row-accion")
+      ).length,
+    };
+  });
+  chk(destinos.sinDestino === 0,
+    `ninguna fila se queda muda: sin toque y sin botón (${destinos.sinDestino} de ${destinos.total})`);
+
+  await ctxB.close();
+}
+
+/* ---------- 53. «Aprobar» ya NO se ofrece donde no hacía nada ----------
+   En el iPad, la alerta «Gasto sin comprobante» ofrecía Aprobar. Esa alerta
+   sale de `resto` —`recientes` MENOS los pendientes—, así que habla de un
+   movimiento que YA está aprobado; y aunque cambiara el estado, la alerta
+   cuelga de `!comprobante_path`, no del estado. El botón no podía apagarla.
+   Lo que la apaga es «Adjuntar y aprobar», que sigue ahí. */
+console.log("\n== Aprobar ya no se ofrece donde no hacía nada ==");
+{
+  const ctxA = await nuevoContexto("ipad", { tactil: true });
+  const pa = await ctxA.newPage();
+  pa.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+  await pa.setViewportSize({ width: 1366, height: 1024 });
+  await pa.goto(`${URL_BASE}/#/bandeja`, { waitUntil: "networkidle" });
+  await pa.waitForTimeout(900);
+
+  const sinComp = await pa.evaluate(() => {
+    const filas = [...document.querySelectorAll(".md-fila.al-fila")];
+    const i = filas.findIndex((f) => (f.textContent || "").includes("comprobante"));
+    if (i < 0) return { falta: true };
+    filas[i].click();
+    return { falta: false };
+  });
+  if (sinComp.falta) {
+    chk(false, "hay una alerta de «sin comprobante» que mirar");
+  } else {
+    await pa.waitForTimeout(500);
+    const b = await pa.evaluate(() =>
+      [...document.querySelectorAll(".al-panel .dm-acciones button, .al-panel button")]
+        .map((x) => (x.textContent || "").trim().toLowerCase())
+    );
+    const soloAprobar = b.filter((x) => x === "aprobar" || x === "approve");
+    chk(soloAprobar.length === 0, `sin «Aprobar» a secas (${soloAprobar.length})`);
+    chk(b.some((x) => x.includes("adjuntar") || x.includes("attach")),
+      "pero sí «Adjuntar y aprobar», que es lo que la apaga");
+    chk(b.some((x) => x.includes("devolver") || x.includes("return") || x.includes("send back")),
+      "y «Devolver» sigue disponible");
+  }
+  await ctxA.close();
 }
 
 await browser.close();

@@ -1,4 +1,4 @@
-# Tamio 1.3 — Mapa de trabajo
+# Tamio 1.4 — Mapa de trabajo
 
 _Abierto el 22 de agosto de 2026, al preparar la 1.2 para TestFlight._
 
@@ -14,11 +14,26 @@ La 1.1 cerró.
 > una subida. Ver el recuadro de `docs/testflight.md` sobre por qué el
 > repositorio no distingue "preparada" de "subida".
 
-**Iban a la 1.2 y ahora van a la 1.3.** La 1.2 se usó para otra cosa —el
-rediseño de iPad, que se hizo entero entre el 21 y el 22 de agosto y no
-estaba en ninguna lista— así que el número se lo lleva ese trabajo y estos
-siete puntos corren un puesto. Nada de lo de abajo cambió de contenido al
-mudarse; se movió tal cual se decidió, con sus fechas.
+**Iban a la 1.2, luego a la 1.3, y ahora van a la 1.4.** La 1.2 se usó para
+otra cosa —el rediseño de iPad, que se hizo entero entre el 21 y el 22 de
+agosto y no estaba en ninguna lista—, así que el número se lo llevó ese
+trabajo y estos siete puntos corrieron un puesto.
+
+> **Corrieron OTRO puesto el 26 de agosto de 2026, por decisión de Iván:**
+> *"mover los planes de la versión 1.3 a 1.4 y hacer 1.3 la versión para
+> TestFlight para revisar"*. El archivo pasó de `plan-1-3.md` a
+> `plan-1-4.md`.
+>
+> Y el motivo es el mismo que la vez anterior, lo cual ya empieza a ser un
+> patrón que conviene nombrar: **el número lo reclama el trabajo que de
+> verdad se hizo, no el que estaba apuntado.** La serie 1.2.x acumuló once
+> versiones —el rediseño de iPad entero, el de iPhone, los permisos de
+> Tesorería, el tamaño de texto, el registro de la iglesia— y a la undécima
+> ya no era una serie de parches: era una versión nueva. La 1.3.0 es ese
+> trabajo. Estos siete puntos siguen esperando su turno, intactos.
+
+Nada de lo de abajo cambió de contenido en ninguna de las dos mudanzas; se
+movió tal cual se decidió, con sus fechas.
 
 | # | Punto | Coste | Toca la base de datos |
 |---|---|---|---|

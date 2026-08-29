@@ -18881,6 +18881,21 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .ios-swipe .ios-txrow,
 :root.iphone .ios-swipe .ios-listrow { background: var(--surface); }
 
+/* «Devolver a quien lo registró», el que se revela al deslizar una fila de la
+   Bandeja. Reusa `.ios-swipe-delete` —el ancho de 88, la posición y el texto
+   blanco son los mismos— y solo le cambia el color, porque NO es lo mismo.
+
+   `--ios-red` es para borrar: lo que se va y no vuelve. Devolver no destruye
+   nada; manda el movimiento de vuelta a quien lo registró, que sigue ahí y lo
+   puede arreglar. El ámbar es el mismo que ya marca lo que pide decisión en
+   el círculo de la fila (`.al-marca.urgente`), y en el iPad ese botón tampoco
+   va en rojo: va en `--neg` y como secundario.
+
+   Poner los dos del mismo rojo enseñaría a la mano que deslizar una fila
+   destruye, y el día que aparezca un deslizamiento que sí borre ya no se
+   distinguiría. */
+:root.iphone .al-swipe-devolver { background: var(--warn, #b45309); }
+
 /* --- 9. La retícula de 16px ------------------------------------------------
    La maqueta apoya TODO en un inset de 16px: la tarjeta agrupada, la de la
    gráfica y la cifra grande. `.content` iba a 14 (~9099) y las tarjetas

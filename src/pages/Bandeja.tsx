@@ -24,6 +24,106 @@ import DetalleMiembro from "../components/DetalleMiembro";
 import ComprobantePreview from "../components/ComprobantePreview";
 import { IconCheck, IconEdit, IconRefreshCw } from "../icons";
 import SeccionIOS, { IosChevron } from "../components/ios/SeccionIOS";
+import { hayGesto, useFilaDeslizable } from "../components/useFilaDeslizable";
+
+/**
+ * Una fila de la Bandeja en el TELÉFONO.
+ *
+ * Sale a su propio componente por una razón de React y no de gusto:
+ * `useFilaDeslizable` es un hook y no se puede llamar dentro del `.map` de una
+ * lista. Es la misma forma que ya usa `FilaCategoria` en Ajustes.
+ *
+ * **Las tres acciones de la Bandeja, y por qué cada una está donde está.** En
+ * el iPad hay panel y caben tres botones de texto —Aprobar, Editar, Devolver—.
+ * En 393 px no caben, así que se reparten por lo que cada una es:
+ *
+ *   · **Tocar la fila** abre el destino que resuelve esa alerta. Es lo más
+ *     frecuente y por eso ocupa toda la fila.
+ *   · **Aprobar** es un botón redondo a la derecha: un toque, sin salir.
+ *   · **Devolver** va DESLIZANDO. No es por falta de sitio —cabría un segundo
+ *     círculo— sino porque devolver le rebota a alguien su trabajo, y dos
+ *     círculos idénticos a 44 px de distancia convierten eso en un resbalón
+ *     del pulgar. El iPad ya lo trata como secundario (`btn secondary`); aquí
+ *     el gesto es lo que hace de "secundario". Y es la convención de iOS: en
+ *     Mail y Mensajes la acción negativa de una fila vive en el deslizamiento.
+ */
+function FilaAlertaIOS({
+  a, inicial, sub, destino, puedeAprobar, onAprobar, onDevolver, onRestaurar,
+}: {
+  a: Alerta;
+  inicial: string;
+  sub: string;
+  destino: (() => void) | null;
+  puedeAprobar: boolean;
+  onAprobar: () => void;
+  onDevolver: () => void;
+  onRestaurar: () => void;
+}) {
+  const { t } = useTranslation();
+  /* Solo se desliza lo que tiene movimiento detrás: devolver un recurrente
+     vencido o un miembro archivado no significa nada. */
+  const sePuedeDevolver = !!a.tx && hayGesto();
+  const desliza = useFilaDeslizable(sePuedeDevolver, false, () => {});
+
+  const fila = (
+    <div
+      className={`ios-txrow${destino ? " ios-txrow--clickable" : ""}`}
+      ref={sePuedeDevolver ? desliza.ref : undefined}
+      onClick={destino ? () => (desliza.x > 0 ? desliza.cerrar() : destino()) : undefined}
+    >
+      <span className={`al-marca${a.tipo === "pendiente" ? " urgente" : ""}`} aria-hidden="true">
+        {a.tipo === "pendiente" ? "!" : inicial}
+      </span>
+      <div className="ios-txrow-main">
+        <div className="ios-txrow-title">{t(`bandeja.alerta_${a.tipo}`)}</div>
+        <div className="tx-secundaria-movil">{sub}</div>
+      </div>
+      <div className="ios-txrow-trailing">
+        {a.miembro ? (
+          <button
+            type="button"
+            className="ios-row-accion"
+            aria-label={t("bandeja.restaurar")}
+            title={t("bandeja.restaurar")}
+            onClick={(e) => { e.stopPropagation(); onRestaurar(); }}
+          >
+            <span><IconRefreshCw size={15} strokeWidth={2.2} /></span>
+          </button>
+        ) : puedeAprobar ? (
+          /* Aprobar, de un toque y sin salir de la lista. Es el mismo
+             `.ios-row-accion` de «Restaurar» sin una clase propia: las dos son
+             la acción positiva de su fila y se distinguen por el glifo, no por
+             el color. Círculo de 30 dentro de un objetivo táctil de 44, y
+             `stopPropagation` para que aprobar no abra además el destino. */
+          <button
+            type="button"
+            className="ios-row-accion"
+            aria-label={t("bandeja.aprobar")}
+            title={t("bandeja.aprobar")}
+            onClick={(e) => { e.stopPropagation(); onAprobar(); }}
+          >
+            <span><IconCheck size={15} strokeWidth={2.6} /></span>
+          </button>
+        ) : destino ? <IosChevron /> : null}
+      </div>
+    </div>
+  );
+
+  if (!sePuedeDevolver) return fila;
+
+  return (
+    <div className="ios-swipe">
+      <button
+        type="button"
+        className="ios-swipe-delete al-swipe-devolver"
+        onClick={() => { desliza.cerrar(); onDevolver(); }}
+      >
+        {t("bandeja.devolver")}
+      </button>
+      {fila}
+    </div>
+  );
+}
 
 interface Props {
   church: Church;
@@ -163,6 +263,37 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
    *  escritorio es otra decisión y no la que se pidió.) */
   const sePuedeAprobar = (a: Alerta) => !!a.tx && a.tipo === "pendiente";
 
+  /** A dónde lleva TOCAR la fila en el teléfono, o null si no lleva a ningún
+   *  sitio.
+   *
+   *  Hasta el 28 de agosto de 2026 esto era `a.tx ? editor : null`, y por eso
+   *  DOS de las siete alertas no se podían tocar: «corte sin segunda firma» y
+   *  «recurrente vencido» no tienen movimiento detrás. En el iPad las dos
+   *  llevaban a algún sitio desde siempre —el panel les pone un botón que
+   *  cruza a la pantalla donde se resuelven—; en el teléfono eran dos filas
+   *  muertas, y una fila que no responde al toque se lee como una app rota,
+   *  no como una fila informativa.
+   *
+   *  No hay destino que inventar: son los mismos dos que el iPad ya usa.
+   *
+   *    · Un corte sin firmar se firma en Depósitos, donde está su hoja, y de
+   *      paso quien firma ve el corte entero antes de decidir.
+   *    · Un recurrente vencido no tiene movimiento sobre el que actuar: lo
+   *      que falta es GENERARLO, y eso vive en Ingresos o en Gastos según de
+   *      cuál sea la serie.
+   *
+   *  Un miembro archivado sigue sin destino a propósito: su acción entera es
+   *  el botón de restaurar que la propia fila lleva a la derecha. */
+  function destinoDe(a: Alerta): (() => void) | null {
+    if (a.tx) return () => onEditTx(a.tx!);
+    if (a.tipo === "firmaPendiente" && a.corte) return () => { window.location.hash = "#/depositos"; };
+    if (a.tipo === "recurrenteVencido") {
+      const ruta = a.recurrente?.tipo === "gasto" ? "gastos" : "ingresos";
+      return () => { window.location.hash = `#/${ruta}`; };
+    }
+    return null;
+  }
+
   function accionesDe(a: Alerta): ReactNode {
     const tx = a.tx;
     const aprobar = tx && (
@@ -210,7 +341,25 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
       );
     }
     if (a.tipo === "sinComprobante") {
-      return (<>{editar(t("bandeja.adjuntarYAprobar"))}{aprobar}{devolver}</>);
+      /* Aquí NO va «Aprobar», y se quitó el 28 de agosto de 2026 después de
+         comprobar por qué no hacía nada.
+         
+         Esta alerta sale de `resto` —`recientes` MENOS los pendientes—, así
+         que por construcción habla de un movimiento que YA está aprobado:
+         `markTxReviewed` le escribiría 'aprobado' encima de 'aprobado'. Y
+         aunque cambiara el estado, daría igual: la alerta no cuelga del
+         estado, cuelga de `!tx.comprobante_path`. Mientras falte el
+         comprobante vuelve a salir en el siguiente cálculo.
+         
+         O sea que el usuario pulsaba, la lista salía idéntica, y volvía a
+         pulsar. La rama del móvil lo midió con su arnés: con cinco alertas de
+         éstas, aprobar dejaba la lista en 5 de 5, y por eso no puso el botón
+         en el teléfono. Esto lo retira también del iPad y del Mac.
+         
+         Lo que resuelve esta alerta ya estaba al lado y se llama «Adjuntar y
+         aprobar»: lleva al formulario donde se sube el archivo, que es lo
+         único que la apaga. */
+      return (<>{editar(t("bandeja.adjuntarYAprobar"))}{devolver}</>);
     }
     if (a.tipo === "categoriaVacia") return (<>{editar(t("bandeja.asignarCategoria"))}{devolver}</>);
     if (a.tipo === "miembroSinVincular") return (<>{editar(t("bandeja.vincularMiembro"))}{devolver}</>);
@@ -537,62 +686,19 @@ export default function Bandeja({ church, refreshKey, onEditTx, onChanged }: Pro
                 <div key={grupo}>
                   <SeccionIOS titulo={t(grupo === "decision" ? "bandeja.grupoDecision" : "bandeja.grupoArreglo")}>
                     <div className="ios-listcard">
-                      {delGrupo.map((a) => {
-                        const llevaA = a.tx ? () => onEditTx(a.tx!) : null;
-                        return (
-                          <div
-                            className={`ios-txrow${llevaA ? " ios-txrow--clickable" : ""}`}
-                            key={a.clave}
-                            onClick={llevaA ?? undefined}
-                          >
-                            <span className={`al-marca${a.tipo === "pendiente" ? " urgente" : ""}`} aria-hidden="true">
-                              {a.tipo === "pendiente" ? "!" : inicialDe(a.tipo)}
-                            </span>
-                            <div className="ios-txrow-main">
-                              <div className="ios-txrow-title">{t(`bandeja.alerta_${a.tipo}`)}</div>
-                              <div className="tx-secundaria-movil">{subDeAlerta(a)}</div>
-                            </div>
-                            <div className="ios-txrow-trailing">
-                              {a.miembro ? (
-                                <button
-                                  type="button"
-                                  className="ios-row-accion"
-                                  aria-label={t("bandeja.restaurar")}
-                                  title={t("bandeja.restaurar")}
-                                  onClick={(e) => { e.stopPropagation(); void handleRestore(a.miembro!); }}
-                                >
-                                  <span><IconRefreshCw size={15} strokeWidth={2.2} /></span>
-                                </button>
-                              ) : sePuedeAprobar(a) ? (
-                                /* Aprobar, de un toque y sin salir de la lista.
-                                   Hasta aquí el teléfono era la única plataforma
-                                   donde aprobar un movimiento NO existía: la fila
-                                   llevaba al editor y había que guardar desde
-                                   dentro. Para la mitad de las alertas —las que
-                                   solo esperan un visto bueno— eso son cuatro
-                                   toques y una pantalla para no cambiar nada.
-
-                                   Es el mismo `.ios-row-accion` de «Restaurar»
-                                   sin una clase propia: las dos son la acción
-                                   positiva de su fila y se distinguen por el
-                                   glifo, no por el color. Círculo de 30 dentro
-                                   de un objetivo táctil de 44, y
-                                   `stopPropagation` para que aprobar no abra
-                                   además el editor. */
-                                <button
-                                  type="button"
-                                  className="ios-row-accion"
-                                  aria-label={t("bandeja.aprobar")}
-                                  title={t("bandeja.aprobar")}
-                                  onClick={(e) => { e.stopPropagation(); void handleReviewed(a.tx!); }}
-                                >
-                                  <span><IconCheck size={15} strokeWidth={2.6} /></span>
-                                </button>
-                              ) : llevaA ? <IosChevron /> : null}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {delGrupo.map((a) => (
+                        <FilaAlertaIOS
+                          key={a.clave}
+                          a={a}
+                          inicial={inicialDe(a.tipo)}
+                          sub={subDeAlerta(a)}
+                          destino={destinoDe(a)}
+                          puedeAprobar={sePuedeAprobar(a)}
+                          onAprobar={() => void handleReviewed(a.tx!)}
+                          onDevolver={() => void handleRechazado(a.tx!)}
+                          onRestaurar={() => void handleRestore(a.miembro!)}
+                        />
+                      ))}
                     </div>
                   </SeccionIOS>
                   <p className="ios-section-footer">

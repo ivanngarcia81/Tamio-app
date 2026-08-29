@@ -20,7 +20,12 @@
 //   1. Toda tabla de datos de una iglesia (`church_id` + `deleted`) está en
 //      `TABLAS_DATOS`, o figura por su nombre en la lista de excepciones de
 //      abajo. Añadir una tabla y olvidarla rompe esto.
-//   2. Todo nombre de `TABLAS_DATOS` existe de verdad en el esquema. Soltar
+//   2. Todo lo que la pantalla de borrar CUENTA antes de preguntar
+//      (`TABLA_DE_INVENTARIO`) existe y además se borra. Contar algo que no
+//      se borra es prometerle al usuario un borrado que no ocurre. Se añadió
+//      el 28 de agosto de 2026, cuando esa lista nació: es una segunda lista
+//      de nombres de tabla, o sea la misma trampa otra vez.
+//   3. Todo nombre de `TABLAS_DATOS` existe de verdad en el esquema. Soltar
 //      una tabla y dejar su nombre en la lista rompe esto — es lo que habría
 //      pasado con `mensajes` en la migración 51 si no se hubiera quitado.
 //
@@ -115,7 +120,39 @@ for (const [tabla, cols] of [...esquema].sort()) {
   );
 }
 
-/* ---------- 2. Ningún nombre fantasma en la lista ---------- */
+/* ---------- 2. El inventario que se le ENSEÑA a quien va a borrar ---------- */
+
+/* `TABLA_DE_INVENTARIO` (db.ts) es lo que la pantalla de "zona sensible"
+   cuenta antes de borrar: "vas a borrar 104 miembros, 812 movimientos…". Es un
+   SUBCONJUNTO a propósito —los titulares, no las diecisiete tablas—, así que
+   aquí no se exige que estén todas. Lo que sí se exige son dos cosas:
+
+     · que cada tabla que nombra EXISTA. Si alguien suelta una tabla y deja su
+       nombre aquí, `contarDatosIglesia` no falla al compilar: falla en el
+       aparato, con un `no such table`, en la pantalla de borrar. Mal sitio.
+     · y que esté en `TABLAS_DATOS`. Contar algo que después no se borra sería
+       prometer un borrado que no ocurre, que es peor que no contarlo. */
+
+const inv = ts.slice(ts.indexOf("const TABLA_DE_INVENTARIO"));
+const cuerpoInv = inv.slice(inv.indexOf("{") + 1, inv.indexOf("}"));
+const INVENTARIO = [...cuerpoInv.matchAll(/:\s*"([a-z_]+)"/g)].map((m) => m[1]);
+
+console.log("\n== Lo que se cuenta antes de borrar, existe y se borra ==");
+if (INVENTARIO.length === 0) {
+  mal(`no pude leer TABLA_DE_INVENTARIO de ${DB_TS}.`);
+} else {
+  for (const tabla of INVENTARIO) {
+    if (!esquema.has(tabla)) {
+      mal(`${tabla} se cuenta en TABLA_DE_INVENTARIO pero NO existe: la pantalla de borrar reventaría con "no such table".`);
+    } else if (!TABLAS_DATOS.includes(tabla)) {
+      mal(`${tabla} se CUENTA antes de borrar pero no está en TABLAS_DATOS: se le promete al usuario un borrado que no ocurre.`);
+    } else {
+      ok(`${tabla}: se cuenta y se borra`);
+    }
+  }
+}
+
+/* ---------- 3. Ningún nombre fantasma en la lista ---------- */
 
 console.log("\n== Ningún nombre de la lista sobra ==");
 for (const tabla of TABLAS_DATOS) {
