@@ -5829,6 +5829,97 @@ console.log("\n== Aprobar ya no se ofrece donde no hacía nada ==");
   await ctxA.close();
 }
 
+/* ---------- 54. El Registro con su capa de iPad ------------------------
+   El handoff `Tamio Registro.dc.html` del 29 ago 2026. Era la única pantalla
+   de la app sin diseño de aparato: sus `.reg-*` daban cero reglas en
+   `:root.ipad`.
+
+   Se comprueban las DOS cosas que el encargo marcó como irrenunciables —"si
+   el rediseño las borra, no sirve"— y la decisión de fondo:
+
+     · **Los tres colores de área son tres**, y en los DOS temas. La base los
+       saca de `--accent-1` y `--accent-3`, que solo existen en claro: de
+       noche, el morado de Secretaría se acercaba al gris de General. Un punto
+       de color que no distingue no es un punto de color.
+     · **La nota se marca dos veces** —el plano tintado y la regla lateral—,
+       porque perder una sola no la borra del todo.
+     · Y que la pantalla NO se partió en maestro-detalle: una sola columna de
+       lectura de 680, con la cabecera del día FUERA de la tarjeta, que es lo
+       que la convierte en cabecera de sección y no en una fila más. */
+console.log("\n== El Registro con su capa de iPad ==");
+{
+  for (const tema of ["light", "dark"]) {
+    const ctxRD = await nuevoContexto("ipad", { tactil: true, tema });
+    const pg = await ctxRD.newPage();
+    pg.on("pageerror", (e) => { fallos++; console.error("  ✗ pageerror:", e.message); });
+    await pg.setViewportSize({ width: 1366, height: 1024 });
+    await pg.goto(`${URL_BASE}/#/inbox`, { waitUntil: "networkidle" });
+    await pg.waitForTimeout(900);
+
+    const m = await pg.evaluate(() => {
+      const cs = (e) => getComputedStyle(e), rc = (e) => e.getBoundingClientRect();
+      const col = document.querySelector(".reg-columna");
+      if (!col) return { diag: "sin columna de lectura" };
+      const tarjeta = document.querySelector(".reg-tarjeta");
+      const dia = document.querySelector(".reg-dia");
+      const fila = document.querySelector(".reg-fila");
+      const nota = document.querySelector(".reg-fila--nota");
+      /* Los puntos NO se leen de una fila cualquiera —puede que ese día no
+         haya de las tres áreas—: se pintan tres a mano en la propia página,
+         que es donde viven las reglas que hay que medir. */
+      const sonda = document.createElement("div");
+      sonda.className = "reg-fila";
+      sonda.innerHTML = '<span class="reg-punto reg-punto--tesoreria"></span>'
+        + '<span class="reg-punto reg-punto--secretaria"></span>'
+        + '<span class="reg-punto reg-punto--general"></span>';
+      col.appendChild(sonda);
+      const [tes, sec, gen] = [...sonda.querySelectorAll(".reg-punto")].map((x) => cs(x).backgroundColor);
+      const anchoPunto = Math.round(rc(sonda.querySelector(".reg-punto")).width);
+      sonda.remove();
+      return {
+        ancho: Math.round(rc(col).width),
+        centrada: Math.abs(
+          (rc(col).left - rc(col.parentElement).left)
+          - (rc(col.parentElement).right - rc(col).right)) <= 1,
+        hayTarjeta: !!tarjeta,
+        /* La cabecera del día, por ENCIMA de la tarjeta y fuera de ella. */
+        diaFuera: !!(dia && tarjeta) && !tarjeta.contains(dia)
+          && Math.round(rc(dia).bottom) <= Math.round(rc(tarjeta).top) + 1,
+        // Maestro-detalle: si lo hubiera, habría un `.md-split` en la página.
+        partida: !!document.querySelector(".md-split"),
+        cuerpo: fila ? parseFloat(cs(fila.querySelector(".reg-cuerpo")).fontSize) : null,
+        tes, sec, gen, anchoPunto,
+        // Las dos marcas de la nota: fondo tintado Y regla lateral.
+        notaFondo: nota ? cs(nota).backgroundColor : null,
+        notaRegla: nota ? cs(nota).boxShadow : null,
+        hayNota: !!nota,
+      };
+    });
+
+    chk(!m.diag, `${tema}: la columna de lectura existe (${m.diag ?? "ok"})`);
+    if (m.diag) { await ctxRD.close(); continue; }
+    chk(m.ancho === 680, `${tema}: la columna mide 680 (${m.ancho})`);
+    chk(m.centrada, `${tema}: y va centrada, no pegada al filo`);
+    chk(!m.partida, `${tema}: no se partió en maestro-detalle`);
+    chk(m.hayTarjeta, `${tema}: cada día es una tarjeta`);
+    chk(m.diaFuera, `${tema}: con su cabecera FUERA, que es lo que la hace sección`);
+    chk(Math.abs((m.cuerpo ?? 0) - 15.5) < 0.01, `${tema}: el cuerpo se lee a 15.5 (${m.cuerpo})`);
+    chk(m.anchoPunto === 9, `${tema}: el punto de área mide 9 (${m.anchoPunto})`);
+    /* Los tres, distintos entre sí. Es la comprobación que caza el morado que
+       se apagaba de noche: en oscuro la base dejaba Secretaría y General
+       demasiado cerca. */
+    const distintos = new Set([m.tes, m.sec, m.gen]).size === 3;
+    chk(distintos, `${tema}: los tres colores de área son TRES (${m.tes} · ${m.sec} · ${m.gen})`);
+    if (m.hayNota) {
+      chk(m.notaFondo !== "rgba(0, 0, 0, 0)", `${tema}: la nota lleva su plano tintado (${m.notaFondo})`);
+      chk(/inset/.test(m.notaRegla ?? ""), `${tema}: y su regla lateral, que es la segunda marca`);
+    } else {
+      chk(false, `${tema}: hay una nota a mano en la lista con la que comprobarlo`);
+    }
+    await ctxRD.close();
+  }
+}
+
 await browser.close();
 vite.kill();
 console.log(fallos === 0 ? "\nTODO EN VERDE" : `\n${fallos} FALLOS`);

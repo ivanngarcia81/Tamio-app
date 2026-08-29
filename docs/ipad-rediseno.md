@@ -3248,3 +3248,101 @@ Dos cosas costaron más de lo que parecía:
 Quitando la regla base, el arnés canta `las dos líneas se apilan (row)` y `en
 gris secundario (rgb(15, 15, 15))`. Devolviendo `color: #fff` a `.chip-mes`,
 canta los cuatro textos a 1.09:1 en oscuro y ninguno en claro.
+
+## 44. El Registro, la última pantalla sin diseño de aparato (29 ago 2026)
+
+*"Implementar."* Del handoff `Tamio Registro.dc.html`, que es la respuesta de
+**iPad** al encargo de `docs/encargo-registro.md` — tres maquetas en paralelo,
+una por aparato, porque el Registro no tenía diseño en **ninguna** capa: sus
+clases `.reg-*` daban cero reglas en `:root.mac`, `:root.ipad`, `:root.iphone`
+y `:root.movil`. No estaba rota; se leía como una página web al lado de sus
+vecinas.
+
+El motor y la pantalla ya existían desde el 25 de agosto (migración 50, nueve
+sucesos, la sustitución de Mensajes). Lo que faltaba era esto.
+
+### La decisión de fondo: **no** entra en maestro-detalle
+
+El encargo la dejaba abierta y pedía dejarla escrita. La respuesta es no, y no
+la da el gusto sino el modelo de datos: **el registro guarda instantáneas, no
+referencias** — el nombre y el folio tal como eran, a propósito, para seguir
+diciendo la verdad cuando la fila de la que habla ya no exista. Un panel a la
+derecha se quedaría vacío o repitiendo la misma frase más grande, y "abrir el
+movimiento" llevaría **a veces** a ninguna parte. Una navegación que a veces no
+lleva a ningún sitio es peor que no tenerla.
+
+Queda como una sola columna de lectura de 680, la misma que usa el resto de
+columnas de lectura del iPad. Y por eso tampoco lleva botón de volver (§42): no
+se entra en nada.
+
+### Lo que había que añadir al marcado
+
+El handoff dibuja cinco cosas que no existían:
+
+| | Para qué |
+|---|---|
+| **Chips por área**, con punto y cuenta | Filtrar sin salir de la pantalla. La cuenta va dentro para que un filtro que da cero se distinga **antes** de pulsarlo. |
+| **El alcance** ("Ves todo: administrador") | Un tesorero que no ve una carta emitida no sabe si es que no la hay o que no le toca. Las dos respuestas se parecen demasiado. |
+| **Tarjeta por día**, con la cabecera fuera | Es lo que convierte el separador en cabecera de sección en vez de en una fila más. |
+| **Etiqueta "Nota"** | La segunda marca de la nota a mano (ver abajo). |
+| **El pie** | Dice por qué una línea sigue valiendo cuando su fila ya no existe, y manda a Por revisar lo que falta por hacer. |
+
+El filtro trabaja **sobre lo que el rol ya recortó**, nunca al revés: un chip
+no puede enseñar algo que `listRegistro` no devolvió. Y los chips que existen
+dependen del rol — ofrecerle "Secretaría" a la tesorera sería un filtro que
+siempre da cero.
+
+Además, el vacío del filtro se separó del vacío de la pantalla: cuando hay
+cosas anotadas pero ninguna de ese tipo, decir "todavía no hay nada anotado"
+sería falso.
+
+### Las dos cosas que el encargo marcó como irrenunciables
+
+> *"Si el rediseño las borra, no sirve."*
+
+**1. El punto de color por área — y de noche eran dos, no tres.** La base los
+saca de `--accent-1` (verde) y `--accent-3` (morado), y esos tokens **solo
+están definidos en claro**. En oscuro, el morado de Secretaría se acercaba al
+gris de General sobre un fondo casi negro: un punto de color que no distingue
+no es un punto de color. La capa de iPad define los tres con **su pareja de
+claro y oscuro escrita entera**, que es la lección del §43 aplicada antes de
+que muerda. La base no se toca — el encargo lo pedía así y hay otros dos chats
+en el mismo archivo.
+
+**2. La marca de la nota a mano, dos veces.** Plano tintado ámbar **y** regla
+lateral. Perder una sola no la borra del todo: impresa en blanco y negro se va
+el tinte y queda la regla. Sin esto, la pantalla vuelve a ser el tablón del
+que veníamos al retirar Mensajes.
+
+El redactor de la nota lleva la **misma** regla ámbar: lo que se está
+escribiendo se ve desde el principio como lo que va a quedar. Y su aviso —"queda
+con tu nombre y no se puede editar después"— se dice **antes** de escribir, no
+al guardar: eso cambia lo que uno escribe.
+
+### La guarda §54, y por qué mide lo que mide
+
+No persigue píxeles decorativos: mide **las dos irrenunciables y la decisión de
+fondo**, y lo hace en los dos temas. Los tres puntos no se leen de una fila
+cualquiera —puede que ese día no haya de las tres áreas— sino de una sonda que
+se pinta dentro de la propia página, que es donde viven las reglas que hay que
+medir.
+
+Rompiéndola a propósito, canta:
+
+```
+✗ dark: los tres colores de área son TRES (rgb(52,211,153) · rgb(240,163,94) · rgb(240,163,94))
+✗ light: la nota lleva su plano tintado (rgba(0, 0, 0, 0))
+✗ dark: la nota lleva su plano tintado (rgba(0, 0, 0, 0))
+```
+
+Y un detalle de la propia guarda: el cuerpo se comprueba contra 15.5 sin
+redondear. Con `Math.round` decía "se lee a 15.5 (16)" — verde, pero contando
+otra cosa que la que dice.
+
+### Una nota para quien fusione
+
+Esta tanda escribe **solo dentro de `:root.ipad`** en `styles.css`, como pedía
+el encargo. Lo único fuera de ese prefijo son reglas **base** para el marcado
+nuevo (chips, tarjeta del día, etiqueta, pie), lo justo para que no se vea roto
+en los otros dos aparatos mientras sus chats trabajan. No son la capa de nadie:
+`:root.iphone` y `:root.mac` escriben encima de ellas igual que hace el iPad.
