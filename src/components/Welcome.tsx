@@ -115,12 +115,19 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
     </div>
   );
 
-  const botonesTour = (
-    <div style={{ display: "flex", gap: 10 }}>
-      <button className="btn ghost" style={{ flex: 1, justifyContent: "center" }} onClick={() => setSlide(tour.length)}>
+  /* Los dos botones del recorrido, con la piel del teléfono: sobre el verde de marca
+     el primario se INVIERTE —blanco relleno, letra verde— y el secundario es
+     un blanco al 18 %. `btn primary` en móvil ya se pinta del verde de marca
+     (styles.css), que sobre este fondo sería verde sobre verde. Y no se mueven
+     ni un píxel entre paso y paso: «Siguiente» es el objeto que se pulsa
+     cuatro veces seguidas, no un botón nuevo cada vez. (En escritorio los
+     mismos dos van en línea, unas líneas más abajo.) */
+  const botonesTourMovil = (
+    <div className="welcome-botones">
+      <button type="button" className="welcome-btn welcome-btn--sec" onClick={() => setSlide(tour.length)}>
         {t("bienvenida.omitir")}
       </button>
-      <button className="btn primary" style={{ flex: 2, justifyContent: "center" }} onClick={() => setSlide(slide + 1)}>
+      <button type="button" className="welcome-btn welcome-btn--pri" onClick={() => setSlide(slide + 1)}>
         {t("bienvenida.siguiente")}
       </button>
     </div>
@@ -147,14 +154,14 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
                     diapositiva, pero como fila: el segmentado pedía 319 px
                     dentro de 295 y "English" se salía del borde. */}
                 {slide === 0 && (
-                  <div className="ios-group" style={{ marginTop: 22 }}>
+                  <Section footer={t("bienvenida.idiomaHint")}>
                     <IOSPickerField
                       label={t("idioma.titulo")}
                       options={opcionesIdioma}
                       value={langPref}
                       onSelect={(v) => onLangPrefChange(v as LangPref)}
                     />
-                  </div>
+                  </Section>
                 )}
               </div>
             ) : (
@@ -190,11 +197,17 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
                     onChange={setCiudad}
                     placeholder={t("bienvenida.ciudadOpcional")}
                   />
+                  {/* Con buscador: el catálogo de monedas no se recorre con
+                      el pulgar, y con palomita en la elegida es el selector
+                      de país de iOS. El pie contesta lo único que preocupa al
+                      elegir en el primer minuto: que se puede cambiar. */}
                   <IOSPickerField
                     label={t("iglesia.moneda")}
                     options={opcionesMoneda}
                     value={moneda}
                     onSelect={setMoneda}
+                    buscador
+                    pie={t("bienvenida.monedaPie")}
                   />
                   <IOSPickerField
                     label={t("idioma.titulo")}
@@ -209,9 +222,13 @@ export default function Welcome({ church, langPref, onLangPrefChange, onDone }: 
 
           <div className="welcome-movil-pie">
             {puntos}
-            {enTour ? botonesTour : (
+            {enTour ? botonesTourMovil : (
               <>
-                <button className="welcome-cta" onClick={comenzar} disabled={saving}>
+                {/* Apagado hasta que la iglesia tenga nombre: en iOS un botón
+                    lleno promete que algo va a pasar, y sin nombre no puede
+                    pasar. `comenzar()` conserva su validación para el
+                    escritorio, donde el aviso sí se pinta. */}
+                <button className="welcome-cta" onClick={comenzar} disabled={saving || !nombre.trim()}>
                   {saving ? t("common.guardando") : t("bienvenida.comenzar")}
                 </button>
                 {!authHabilitado && (

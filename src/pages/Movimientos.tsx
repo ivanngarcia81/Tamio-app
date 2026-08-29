@@ -500,19 +500,26 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
           </div>
         )}
         <div className="header-actions">
-          <div className="month-nav">
-            <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
-              <IconChevronLeft size={16} />
-            </span>
-            <span className="month-nav-label">{mesLegible(mes)}</span>
-            <span
-              className={`icon-btn${esMesActual ? " disabled" : ""}`}
-              title={t("mov.mesSiguiente")}
-              onClick={() => !esMesActual && setMes(nextMonth(mes))}
-            >
-              <IconChevronRight size={16} />
-            </span>
-          </div>
+          {/* En el teléfono este selector NO va aquí: el mes ya está escrito
+              en el rótulo de la cifra («Ingresos de agosto 2026»), y tenerlo
+              dos veces en la misma pantalla —una como texto y otra como
+              control— era leer la misma fecha dos veces. Abajo, el rótulo ES
+              el control. */}
+          {!enIPhone && (
+            <div className="month-nav">
+              <span className="icon-btn" title={t("mov.mesAnterior")} onClick={() => setMes(prevMonth(mes))}>
+                <IconChevronLeft size={16} />
+              </span>
+              <span className="month-nav-label">{mesLegible(mes)}</span>
+              <span
+                className={`icon-btn${esMesActual ? " disabled" : ""}`}
+                title={t("mov.mesSiguiente")}
+                onClick={() => !esMesActual && setMes(nextMonth(mes))}
+              >
+                <IconChevronRight size={16} />
+              </span>
+            </div>
+          )}
           {/* El buscador vive en la toolbar, que es donde va en cualquier app
               de Mac; en el teléfono y el iPad se queda dentro del contenido,
               al alcance del pulgar. */}
@@ -796,8 +803,33 @@ export default function Movimientos({ church, tipo, refreshKey, onNew, onEditTx,
                     mismo que la categoría de debajo; sacado, manda. */}
                 <div className="ios-cifra-periodo">
                   <div className="ios-cifra-bloque">
-                    <span className="ios-cifra-rotulo">
-                      {t(esIngreso ? "mov.ingresosDe" : "mov.gastosDe", { mes: mesLegible(mes) })}
+                    {/* El rótulo ES el selector de mes: dice de qué periodo es
+                        la cifra y lo cambia, que era lo que hacían dos
+                        controles distintos escribiendo la misma fecha. Una
+                        flecha a cada lado, pegadas al texto y no repartidas a
+                        los extremos de la pantalla: el grupo entero mide lo
+                        que mide el rótulo. */}
+                    <span className="ios-cifra-rotulo ios-mes-paso">
+                      <button
+                        type="button"
+                        className="ios-mes-flecha"
+                        aria-label={t("mov.mesAnterior")}
+                        onClick={() => setMes(prevMonth(mes))}
+                      >
+                        <IconChevronLeft size={13} strokeWidth={2.6} />
+                      </button>
+                      <span className="ios-mes-texto">
+                        {t(esIngreso ? "mov.ingresosDe" : "mov.gastosDe", { mes: mesLegible(mes) })}
+                      </span>
+                      <button
+                        type="button"
+                        className="ios-mes-flecha"
+                        aria-label={t("mov.mesSiguiente")}
+                        disabled={esMesActual}
+                        onClick={() => setMes(nextMonth(mes))}
+                      >
+                        <IconChevronRight size={13} strokeWidth={2.6} />
+                      </button>
                     </span>
                     <span className="ios-cifra-num">
                       <CountUp value={totalMes} format={fmtMoney} paso={100} />

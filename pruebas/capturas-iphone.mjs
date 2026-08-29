@@ -68,7 +68,20 @@ function sqlExecute(q, ps) {
 try { spawn("pkill", ["-f", "vite --port 1420"]).unref(); } catch { /* no había ninguno */ }
 await new Promise((r) => setTimeout(r, 1500));
 
-const vite = spawn("npx", ["vite", "--port", "1420", "--strictPort"], { cwd: REPO, stdio: ["ignore", "pipe", "pipe"] });
+/* `--login` fotografía la PUERTA (maquetas B1–B4) y nada más.
+   Va en pasada aparte por una razón y no por comodidad: la pantalla de acceso
+   solo existe cuando hay credenciales de Supabase configuradas, y en cuanto
+   las hay la app entera se queda detrás del login — sin sesión no se puede
+   fotografiar ninguna otra pantalla. Las credenciales son de mentira: aquí no
+   se pulsa «Entrar», solo se recorren los cuatro estados. */
+const SOLO_LOGIN = process.argv.includes("--login");
+const vite = spawn("npx", ["vite", "--port", "1420", "--strictPort"], {
+  cwd: REPO,
+  stdio: ["ignore", "pipe", "pipe"],
+  env: SOLO_LOGIN
+    ? { ...process.env, VITE_SUPABASE_URL: "https://ejemplo.supabase.co", VITE_SUPABASE_ANON_KEY: "clave-de-mentira" }
+    : process.env,
+});
 await new Promise((res, rej) => {
   const t = setTimeout(() => rej(new Error("vite no arrancó (¿puerto 1420 ocupado?)")), 60000);
   vite.stdout.on("data", (d) => { if (String(d).includes("Local:")) { clearTimeout(t); res(); } });
@@ -126,8 +139,11 @@ async function contextoIPhone(tema, rol = "administrador") {
 }
 
 // ---------- 5. Semilla, con las funciones reales de db.ts ----------
-const ctxSemilla = await contextoIPhone("light");
-{
+/* Con `--login` no se siembra: la app entera está detrás de la puerta, así
+   que `.app` no llega a montarse nunca y sembrar sería esperar sesenta
+   segundos a un elemento que no va a existir. */
+const ctxSemilla = SOLO_LOGIN ? null : await contextoIPhone("light");
+if (ctxSemilla) {
   const page = await ctxSemilla.newPage();
   page.on("pageerror", (e) => console.error("pageerror:", e.message));
   await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
@@ -299,7 +315,44 @@ const ctxSemilla = await contextoIPhone("light");
   console.log(ok === "ok" ? "datos sembrados" : `semilla devolvió ${ok}`);
   await page.close();
 }
-await ctxSemilla.close();
+await ctxSemilla?.close();
+
+// B1, B2, B3 y B4 · La puerta. Solo con `--login` (ver arriba): con Supabase
+// configurado no hay nada más que fotografiar, y sin él esta pantalla no
+// existe.
+if (SOLO_LOGIN) {
+  for (const tema of ["light", "dark"]) {
+    const ctx = await contextoIPhone(tema);
+    const page = await ctx.newPage();
+    page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+    const toma = async (nombre) => {
+      await page.waitForTimeout(700);
+      await page.screenshot({ path: `${SALIDA}/24-acceso-${nombre}-${tema}.png` });
+      console.log(`  ✓ pruebas/capturas/24-acceso-${nombre}-${tema}.png`);
+    };
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".login-ios", { timeout: 30000 });
+    await toma("entrar");
+
+    // Con los dos campos escritos el botón pasa de translúcido a blanco.
+    await page.locator('.login-ios input[type="email"]').fill("tesoreria@iglesia.mx");
+    await page.locator('.login-ios input[type="password"]').fill("secreto123");
+    await toma("entrar-listo");
+
+    await page.getByRole("button", { name: /Olvidaste|forgot/i }).click();
+    await toma("recuperar");
+    await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await page.waitForTimeout(400);
+
+    await page.getByRole("button", { name: /Crear una cuenta|Create a new/i }).click();
+    await toma("crear-cuenta");
+    await ctx.close();
+  }
+  await browser.close();
+  vite.kill();
+  console.log("\nlisto");
+  process.exit(0);
+}
 
 // ---------- 6. Las capturas ----------
 const PANTALLAS = [
@@ -559,18 +612,23 @@ for (const tema of ["light", "dark"]) {
   await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
   await toma("padron");
 
-  // La hoja del miembro: tocar un nombre la asoma; el asa la sube a media.
+  // La hoja del miembro: tocar un nombre la asoma. Y desde ahí, los dos gestos
+  // que en el aparato no funcionaban (29 ago 2026): un TOQUE en la hoja
+  // asomada la sube —antes solo el asa, y arrastrando 187 px—, y un arrastre
+  // CORTO agarrándola por el nombre la vuelve a bajar.
   await page.locator(".ios-txrow--clickable").first().click();
   await toma("hoja-asomada");
+  await page.locator(".hm-cabeza").click();
+  await toma("hoja-media");
   {
-    const asa = page.locator(".hd-asa");
-    const caja = await asa.boundingBox();
-    await page.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+    const caja = await page.locator(".hm-cabeza").boundingBox();
+    const x = caja.x + caja.width / 2;
+    await page.mouse.move(x, caja.y + 8);
     await page.mouse.down();
-    await page.mouse.move(caja.x + caja.width / 2, caja.y - 300, { steps: 12 });
+    await page.mouse.move(x, caja.y + 68, { steps: 10 });
     await page.mouse.up();
   }
-  await toma("hoja-media");
+  await toma("hoja-vuelve-a-asomarse");
 
   await page.goto(`${URL_BASE}/#/`, { waitUntil: "domcontentloaded" });
   await page.goto(`${URL_BASE}/#/membresia`, { waitUntil: "networkidle" });
@@ -689,6 +747,43 @@ for (const tema of ["light", "dark"]) {
   await page.getByRole("button", { name: "Vista previa", exact: true }).click();
   await toma("c13-previa");
   await ctx.close();
+}
+
+// W1, W2 y W3 · La bienvenida del primer arranque. Solo sale cuando la
+// iglesia se llama todavía «Mi Iglesia» y nadie completó el recorrido, así que
+// hay que quitar el marcador que el arnés pone para todas las demás fotos.
+{
+  for (const tema of ["light", "dark"]) {
+    const ctx = await contextoIPhone(tema);
+    await ctx.addInitScript(() => { try { localStorage.removeItem("tesoreria-welcomed"); } catch { /* noop */ } });
+    const page = await ctx.newPage();
+    page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+    await page.goto(`${URL_BASE}/#/`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".welcome-overlay", { timeout: 30000 });
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${SALIDA}/23-bienvenida-paso1-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/23-bienvenida-paso1-${tema}.png`);
+
+    // Un paso del medio: los cuatro comparten rejilla, así que con ver uno
+    // basta para juzgarla.
+    await page.getByRole("button", { name: "Siguiente", exact: true }).click();
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${SALIDA}/23-bienvenida-paso2-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/23-bienvenida-paso2-${tema}.png`);
+
+    // Y el quinto punto: el formulario, que no es otra pantalla.
+    await page.getByRole("button", { name: "Omitir", exact: true }).click();
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${SALIDA}/23-bienvenida-form-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/23-bienvenida-form-${tema}.png`);
+
+    // La moneda, como hoja con buscador.
+    await page.getByText("Moneda", { exact: true }).first().click();
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${SALIDA}/23-bienvenida-moneda-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/23-bienvenida-moneda-${tema}.png`);
+    await ctx.close();
+  }
 }
 
 // T9, T10 y T11 · La ficha del aportante. No tiene URL —es la misma página de

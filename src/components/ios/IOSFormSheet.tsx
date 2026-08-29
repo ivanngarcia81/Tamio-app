@@ -16,12 +16,17 @@ export default function IOSFormSheet({
   onCancel,
   onSave,
   canSave,
+  saveLabel,
   children,
 }: {
   title: string;
   onCancel: () => void;
   onSave: () => void;
   canSave: boolean;
+  /** Qué dice la acción de la derecha. Por omisión «Guardar», que es lo que
+   *  hacen casi todas; la hoja de recuperar acceso no guarda nada — envía un
+   *  código— y llamarla «Guardar» sería mentir sobre lo que va a pasar. */
+  saveLabel?: string;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -38,7 +43,7 @@ export default function IOSFormSheet({
             <h1 className="ios-nav-title">{title}</h1>
             <span className="ios-nav-status">
               <button type="button" className="ios-nav-action" onClick={onSave} disabled={!canSave}>
-                {t("common.guardar")}
+                {saveLabel ?? t("common.guardar")}
               </button>
             </span>
           </div>
