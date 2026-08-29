@@ -48,6 +48,24 @@ la función `borrar-cuenta` de Supabase, cierra sesión, y `App.tsx:846` vacía
 lo local y recarga. Es un borrado real, no un cierre de sesión disfrazado.
 Se llega por Ajustes → Cuenta → la tarjeta del perfil, en los tres aparatos.
 
+**Verificado CONTRA EL SERVIDOR el 29 de agosto de 2026**, no solo leyendo el
+repositorio:
+
+| Comprobación | Resultado |
+|---|---|
+| Función `borrar-cuenta` | desplegada y **ACTIVE**, versión 2 |
+| `verify_jwt` | **true** — no se puede invocar sin sesión |
+| Código desplegado vs. repositorio | **idéntico** |
+| Tablas que caen con la iglesia | **20, todas `ON DELETE CASCADE`** |
+| Tablas con `church_id` sin clave hacia `iglesias` | **ninguna** |
+| Tablas fuera de ese árbol | solo `iglesias`, que es la raíz |
+
+Dos cosas del diseño que aguantan el examen. `perfiles` está en `NO ACTION` y
+parece la excepción sospechosa, pero es una red de seguridad: hace imposible
+borrar una iglesia que todavía tiene gente dentro, y la función borra el perfil
+antes de mirar el recuento. Y `gastos_recurrentes` no aparece en el CASCADE
+porque **no sincroniza** — es local, así que no hay nada suyo en la nube.
+
 Y la guarda de canal está bien planteada: `verificar-canal` **mira el bundle
 construido**, no la variable de entorno. Es lo correcto, porque el bundle es
 lo único que el revisor va a ver.
@@ -56,7 +74,7 @@ lo único que el revisor va a ver.
 
 ## LO QUE FALTA
 
-### 1 · La declaración de privacidad de Apple está vacía, y es falsa
+### 1 · ✅ HECHO · La declaración de privacidad de Apple estaba vacía
 
 `src-tauri/gen/apple/tesoreria_iOS/PrivacyInfo.xcprivacy` declara:
 
@@ -82,20 +100,26 @@ Y no son solo datos del usuario: son de **los miembros de la iglesia**, gente
 que no instaló la app y no aceptó nada. Ése es el fondo del asunto; el
 rechazo de Apple sería solo el síntoma.
 
-**Qué hay que declarar**, como mínimo:
+**Lo que se declaró** — seis tipos, todos con App Functionality como única
+finalidad, todos ligados a identidad y ninguno para seguimiento:
 
-| Tipo | Uso | ¿Ligado a identidad? |
-|---|---|---|
-| `NSPrivacyCollectedDataTypeEmailAddress` | App Functionality | sí |
-| `NSPrivacyCollectedDataTypeName` | App Functionality | sí |
-| `NSPrivacyCollectedDataTypePhoneNumber` | App Functionality | sí |
-| `NSPrivacyCollectedDataTypePhysicalAddress` | App Functionality | sí |
-| `NSPrivacyCollectedDataTypeOtherUserContent` | App Functionality | sí |
+| Tipo | Qué es en Tamio |
+|---|---|
+| `EmailAddress` | el de quien inicia sesión y el de los miembros |
+| `Name` | el del perfil y el de cada miembro |
+| `PhoneNumber` | el de los miembros |
+| `PhysicalAddress` | la de los miembros y la de la iglesia, que va en las cartas |
+| `PhotosorVideos` | la foto de perfil, si la persona pone una |
+| `OtherUserContent` | movimientos, cortes, depósitos, actas, cartas, asistencia, agenda, registro y RFC |
 
-Ninguno para publicidad ni seguimiento — eso sigue siendo verdad y conviene
-que se vea que lo es.
+`NSPrivacyTracking` sigue en `false`, y es verdad: no hay analítica, ni
+publicidad, ni perfilado. Conviene que se vea que lo es.
 
-### 2 · La política de privacidad publicada dice lo contrario
+**Contactos NO se declara**, a propósito: la app no lee la agenda del teléfono
+—los datos de los miembros se escriben a mano dentro de la app—. Declararlo
+sugeriría un permiso que Tamio no pide.
+
+### 2 · ✅ REESCRITA, falta PUBLICARLA · La política decía lo contrario
 
 `docs/privacidad.html`, que es la que está en tamio.church y la que se le dio
 a Apple como Privacy Policy URL, fechada el 29 de julio, dice:
@@ -113,7 +137,7 @@ lleva arriba este aviso:
 
 Ese borrador es hoy **el que dice la verdad**. El aviso está al revés.
 
-### 3 · Las notas al revisor prometen algo que ya no se cumple
+### 3 · ✅ REESCRITAS · Las notas al revisor prometían algo incumplible
 
 `docs/notas-revisor-apple.md` está escrito para pegar tal cual en App Store
 Connect, y dice:
@@ -164,10 +188,20 @@ src/supabase.ts:17
 export const authHabilitado = LOGIN_HABILITADO && Boolean(url && anon);
 ```
 
-- **Con `.env`** → la app tiene nube y login. Los tres documentos de arriba
-  son falsos y hay que rehacerlos antes de enviar.
-- **Sin `.env`** → la app arranca en modo local, los documentos vuelven a ser
-  ciertos… pero entonces **nada de lo construido desde la 1.1** —login,
+**CÓMO SE RESOLVIÓ, 29 de agosto.** Los tres documentos se reescribieron
+describiendo la app **CON nube**, y la premisa queda dicha aquí: en el código,
+`LOGIN_HABILITADO` y `SYNC_HABILITADO` están los dos en `true`, así que ése es
+el producto. Un build que salga sin credenciales no es un diseño distinto: es
+un fallo de compilación, y se arregla poniendo el `.env`, no cambiando los
+papeles.
+
+Aun así conviene confirmarlo antes de enviar, porque las dos ramas tienen
+consecuencias distintas:
+
+- **Con `.env`** → la app tiene nube y login. Los documentos nuevos son
+  correctos y hay que publicar la política.
+- **Sin `.env`** → la app arranca en modo local, los documentos NUEVOS pasan a
+  sobredeclarar… pero entonces **nada de lo construido desde la 1.1** —login,
   invitaciones, roles, sincronización— llega a nadie.
 
 Comprobado desde este contenedor: un build hecho **sin** `.env` no lleva el

@@ -1,8 +1,14 @@
-> ⚠️ **Borrador desactualizado.** La política de privacidad vigente de Tamio es
-> **[docs/privacidad.html](privacidad.html)** (publicada en
-> https://tamio.church/privacidad.html). Este archivo describe una versión con
-> nube y cuentas que la 1.0 no tiene; se conserva solo como referencia para
-> cuando se reactive la sincronización en la 1.1.
+> ℹ️ **La política vigente es [docs/privacidad.html](privacidad.html)**
+> (publicada en https://tamio.church/privacidad.html). Este archivo es un
+> borrador anterior y se conserva como referencia.
+>
+> **Corrección, 29 de agosto de 2026.** Hasta hoy este aviso decía que el
+> borrador estaba «desactualizado» porque describía nube y cuentas «que la 1.0
+> no tiene». Se quedó al revés: la nube se encendió en la 1.1 y era este
+> borrador el que describía la app real, mientras la política publicada seguía
+> diciendo que no había servidor. Ya no: el `privacidad.html` del 29 de agosto
+> describe la sincronización, así que ese vuelve a ser el bueno — ahora por el
+> motivo correcto.
 
 # Política de privacidad de Tamio
 

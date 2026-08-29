@@ -2,16 +2,129 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Tamio NO hace seguimiento: no hay analítica, ni publicidad, ni
+	     identificadores compartidos con terceros, ni perfilado. Esto era
+	     verdad en la 1.0 y lo sigue siendo. -->
 	<key>NSPrivacyTracking</key>
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
-	<!-- En 1.0 Tamio funciona 100% local: ningún dato sale del dispositivo,
-	     así que no hay datos "recopilados" según la definición de Apple.
-	     Cuando en 1.1 se active la sincronización en la nube, aquí volverán a
-	     declararse Email, Name y OtherUserContent (App Functionality). -->
+
+	<!-- ══════════════════════════════════════════════════════════════════
+	     LO QUE SÍ SALE DEL APARATO
+
+	     Hasta la 1.0 esta lista estaba VACÍA y era correcta: la app
+	     funcionaba entera en el dispositivo. En la 1.1 se encendieron
+	     `LOGIN_HABILITADO` (src/supabase.ts) y `SYNC_HABILITADO`
+	     (src/syncManager.ts), y desde entonces la app sincroniza con
+	     Supabase para que los aparatos de una misma iglesia compartan datos.
+	     La lista se quedó vacía hasta el 29 de agosto de 2026, cuando se
+	     auditó para enviar a la tienda. Esto lo corrige.
+
+	     Las columnas concretas están en `src/sync.ts`, en las constantes
+	     `*_DATA_COLS`. Lo importante de leerlas: parte de estos datos NO son
+	     del usuario que instaló la app, sino de los MIEMBROS de la iglesia
+	     —gente que no instaló nada—. Por eso se declaran todos ligados a
+	     identidad y ninguno para publicidad.
+
+	     Todos con `App Functionality` como única finalidad: sin estos datos
+	     en el servidor, dos iPads de la misma iglesia no pueden ver el mismo
+	     padrón ni la misma caja, que es la función.
+	     ══════════════════════════════════════════════════════════════════ -->
 	<key>NSPrivacyCollectedDataTypes</key>
-	<array/>
+	<array>
+		<!-- Correo: el de quien inicia sesión, y el de los miembros del
+		     padrón que lo tengan anotado (members.email). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Nombre: el del perfil de quien usa la app, y el de cada miembro
+		     del padrón. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Teléfono de los miembros del padrón (members.telefono). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhoneNumber</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Dirección postal: la de los miembros y la de la iglesia, que se
+		     imprime en las cartas de traslado. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Foto del perfil, que el usuario elige a propósito y se guarda con
+		     su cuenta. Apple la clasifica como "Photos or Videos". -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Todo lo demás que la iglesia escribe: movimientos de caja,
+		     cortes, depósitos, actas, cartas, acuerdos, asistencia, agenda,
+		     el registro de lo que ha pasado, y el RFC del padrón. Apple lo
+		     agrupa como "Other User Content". -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>

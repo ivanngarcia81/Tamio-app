@@ -2,7 +2,28 @@
 
 Pasos antes de dar "Submit for Review" en App Store Connect.
 
-_Última actualización: 28 de julio de 2026_
+_Última actualización: 29 de agosto de 2026_
+
+> 🔴 **LEE ESTO PRIMERO. Todo lo que sigue describe la 1.0 y ya NO es el
+> modelo de la app.**
+>
+> La 1.0 salió gratis, sin cuenta y 100 % local. En la **1.1** se encendieron
+> `LOGIN_HABILITADO` (`src/supabase.ts`) y `SYNC_HABILITADO`
+> (`src/syncManager.ts`), y desde entonces Tamio **pide cuenta y sincroniza con
+> un servidor**. Vamos por la 1.3.5.
+>
+> Lo que sigue siendo válido de este documento: **la regla de los dos canales**
+> (3.1.1 y 2.5.2, la tabla de `VITE_CANAL` y `verificar-canal`). Eso no ha
+> cambiado y se comprobó el 29 de agosto: el bundle de tienda no lleva enlaces
+> de pago ni el manifiesto de versiones.
+>
+> Lo que **ya no vale** de este documento: todo lo de "app 100 % local",
+> "Data Not Collected", "sin login" y "Sign-in required desmarcado".
+>
+> **Para enviar hoy, usa `docs/falta-para-app-store.md`** (qué falta y en qué
+> orden) y **`docs/notas-revisor-apple.md`** (qué pegar en cada campo). Este
+> archivo se conserva porque su historia —las tres colisiones de lockfile, el
+> agujero del aviso de versión, cómo se cerró— sigue siendo útil.
 
 ---
 
