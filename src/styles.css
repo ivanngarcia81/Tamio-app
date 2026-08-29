@@ -22808,3 +22808,43 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
   pointer-events: none;
 }
 :root.iphone .main:has(.header .page-title) > .techo-banda { background: var(--cabecera); }
+
+/* --- El rótulo de la cifra, convertido en selector de mes ---
+   El mes se escribía DOS veces en la misma pantalla: como texto en el rótulo
+   («Ingresos de agosto 2026») y como control en la cabecera («‹ agosto 2026
+   ›»), uno enfrente del otro. Ahora el rótulo es el control: mismo tamaño y
+   mismo gris de siempre, con las dos flechas juntas delante.
+
+   Juntas y delante, no una a cada lado: con el rótulo entero en medio las dos
+   flechas quedan a 200 px una de otra, y quien retrocede un mes casi siempre
+   quiere avanzar otro. El área táctil es de 28 px aunque el glifo mida 13 —lo
+   que se toca no es el dibujo. */
+:root.iphone .ios-mes-paso {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+/* El área táctil de la primera flecha se sale 8 px por la izquierda para que
+   el GLIFO quede a plomo con el importe de abajo: lo que se alinea es lo que
+   se ve, no la caja que lo rodea. */
+:root.iphone .ios-mes-paso > .ios-mes-flecha:first-child { margin-left: -8px; }
+:root.iphone .ios-mes-paso > :last-child { margin-left: 5px; }
+:root.iphone .ios-mes-flecha {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -7px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand, #059669);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.iphone .ios-mes-flecha:active { opacity: .4; }
+/* El mes en curso no tiene siguiente: la flecha se queda, apagada. Quitarla
+   movería el rótulo de sitio cada vez que se llega al presente. */
+:root.iphone .ios-mes-flecha:disabled { color: var(--text-3); cursor: default; }
