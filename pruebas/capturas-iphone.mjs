@@ -372,6 +372,10 @@ const PANTALLAS = [
   { nombre: "14-servicios", ruta: "/servicios" },
   { nombre: "15-membresia", ruta: "/membresia" },
   { nombre: "17-agenda", ruta: "/agenda" },
+  /* El Registro faltaba en esta lista, así que no entraba en la hoja de
+     contactos: la prueba de si las pantallas son la MISMA app son las 38
+     juntas, no cada una por su lado. */
+  { nombre: "26-registro", ruta: "/inbox" },
 ];
 
 for (const tema of ["light", "dark"]) {

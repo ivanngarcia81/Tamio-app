@@ -23215,6 +23215,11 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    de la fila, porque un apunte puede ocupar dos renglones.
    ============================================================================ */
 
+/* El aire de la banda a lo primero. Medido: 6 px contra los 18 del resto de
+   pantallas (`node pruebas/medir-margenes.mjs`), porque aquí lo primero es una
+   tarjeta o un encabezado pegajoso y ninguno de los dos trae margen propio. */
+:root.iphone .reg-ios-content > :first-child { margin-top: 12px; }
+
 :root.iphone .reg-ios {
   position: relative;
   display: flex;

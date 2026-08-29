@@ -226,7 +226,7 @@ export default function Registro({ church, role, refreshKey }: Props) {
           </button>
         </div>
 
-        <div className="content content-lienzo">
+        <div className="content content-lienzo reg-ios-content">
           {loading ? (
             <LoadingState />
           ) : sucesos.length === 0 ? (
