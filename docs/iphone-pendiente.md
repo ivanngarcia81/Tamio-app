@@ -1,5 +1,33 @@
 # Lo que le falta a la versión de iPhone
 
+> ## PUESTO AL DÍA el 29 de agosto de 2026 — y quedaban DOS, no siete
+>
+> Lo de abajo se escribió el 26 y en dos días envejeció: entraron unas cuatro
+> tandas de la rama del móvil. Medido otra vez hoy, regla por regla:
+>
+> | Hueco del 26 | Hoy |
+> |---|---|
+> | Configuración | **hecho** — de 5 reglas a 12, las ocho zonas |
+> | Las hojas (`ios-sheet`) | **hecho** — de 0 a 3 |
+> | Actas | **empezado** — de 0 a 1 |
+> | Ayuda | igual (9 de 18), y sigue sin urgencia |
+> | **El Registro de la iglesia** | **PENDIENTE.** Sigue en 0 y 0 |
+> | **Inicio de Secretaría** | **PENDIENTE.** Sigue en 0 y 0 |
+>
+> Y una **corrección de un error mío**, no del código: escribí que no se sabía
+> qué eran las pantallas 9, 11, 12 y 16 del handoff, y que averiguarlo era «lo
+> primero». Sí se sabía, y estaba en el mismo archivo que miré: no salen en la
+> lista `PANTALLAS` porque se fotografían APARTE, después, con su estado
+> abierto — `9-informe`, `11-cartas`, `12-cartas-editor`, `16-membresia`. Miré
+> una lista y no el archivo entero, y de ahí saqué una alarma que no existía.
+> No falta ninguna pantalla del handoff.
+>
+> **Así que la lista de verdad son dos pantallas**, las dos por el mismo
+> motivo: nacieron DESPUÉS de que se dibujara el handoff, así que nunca
+> tuvieron maqueta. Ninguna está rota —la capa `:root.movil` las sostiene—,
+> pero se leen más «web» que sus vecinas.
+
+
 _Escrito el 26 de agosto de 2026, justo después de fusionar
 `claude/mobile-handoff-redesign-x16x07` en la rama del motor (commit `2d2ebe3`)._
 
