@@ -18497,6 +18497,51 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 
 .reg-nota { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
 .reg-nota .btn { align-self: flex-start; }
+
+/* Lo que añadió el handoff de iPad del 29 ago 2026 y antes no existía en el
+   marcado: el filtro por área, la cuenta de cada día, la etiqueta de la nota
+   y el pie. Estas reglas son la BASE —lo justo para que no se vea roto en
+   ningún aparato— y no la capa de nadie: el encargo pide no tocar
+   `:root.iphone` ni `:root.mac`, y no se tocan. Cuando esos dos chats
+   diseñen lo suyo, escriben su prefijo encima de esto igual que hace el iPad
+   más abajo. */
+.reg-columna { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.reg-chips { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.reg-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--text-2); cursor: pointer;
+  font-family: inherit; font-size: calc(12.5px * var(--fs-escala)); font-weight: 600;
+}
+.reg-chip.active { border-color: transparent; background: var(--surface-2); color: var(--text); }
+.reg-chip-punto { width: 7px; height: 7px; border-radius: 50%; flex: none; background: transparent; }
+.reg-chip--tesoreria .reg-chip-punto { background: var(--accent-1, var(--brand)); }
+.reg-chip--secretaria .reg-chip-punto { background: var(--accent-3, var(--text-3)); }
+.reg-chip--notas .reg-chip-punto { background: var(--text-3); }
+.reg-chip-n { font-variant-numeric: tabular-nums; opacity: .6; }
+.reg-alcance { margin-left: auto; font-size: calc(11.5px * var(--fs-escala)); color: var(--text-3); }
+
+.reg-dia-n { margin-left: auto; font-weight: 400; font-variant-numeric: tabular-nums; }
+/* `.reg-dia` es flex con un `::after` que estira la línea; el `margin-left:
+   auto` de la cuenta la manda al otro extremo, detrás de esa línea. */
+
+.reg-nota-pie { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.reg-nota-hint { flex: 1 1 220px; min-width: 0; font-size: calc(11.5px * var(--fs-escala)); color: var(--text-3); }
+.reg-nota-kbd { font-family: inherit; font-size: calc(11.5px * var(--fs-escala)); color: var(--text-3); }
+/* Un ⌘↩ en un teléfono es una promesa falsa. */
+:root.iphone .reg-nota-kbd { display: none; }
+.reg-nota .reg-nota-pie .btn { align-self: auto; margin-left: auto; }
+
+.reg-tag {
+  padding: 1px 6px; border-radius: 5px;
+  background: var(--surface-2); color: var(--text-2);
+  font-size: calc(10px * var(--fs-escala)); font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.reg-pie {
+  margin: var(--space-4) 0 0;
+  font-size: calc(11.5px * var(--fs-escala)); color: var(--text-3); line-height: 1.5;
+}
 /* ============================================================================
    REDISEÑO DE iPHONE — iOS 26 (Liquid Glass)
    Handoff «Tamio app rediseño iOS nativo», agosto de 2026:
@@ -23199,3 +23244,188 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .login-ios-form .ios-group { margin: 0; }
 :root.iphone .login-ios-form .ios-section-header,
 :root.iphone .login-ios-form .ios-section-footer { padding-left: 16px; padding-right: 16px; }
+
+/* ============================================================================
+   EL REGISTRO EN EL iPAD — handoff `Tamio Registro.dc.html` (29 ago 2026)
+   ============================================================================
+
+   Era la única pantalla de la app sin diseño de aparato: sus clases `.reg-*`
+   daban CERO reglas en `:root.ipad`. Funcionaba con el estilo base y, al lado
+   de sus vecinas, se leía como una página web.
+
+   **LA DECISIÓN DE FONDO: no entra en maestro-detalle**, y la toma el propio
+   modelo de datos. Seis pantallas de iPad son lista + panel; aquí el panel se
+   quedaría vacío, porque una línea del registro no tiene detalle que abrir:
+   guarda INSTANTÁNEAS y no referencias —el nombre y el folio tal como eran, a
+   propósito, para seguir diciendo la verdad cuando la fila de la que habla ya
+   no exista—. "Abrir el movimiento" llevaría a veces a ninguna parte, y una
+   navegación que a veces no lleva a ningún sitio es peor que no tenerla. Lo
+   que en las vecinas es el panel derecho, aquí es el propio texto de la línea.
+
+   Así que: una sola columna de lectura de 680, como el resto de columnas de
+   lectura del iPad. Y por eso tampoco lleva botón de volver (§42): no se
+   entra en nada.
+
+   Todo lo de aquí abajo va dentro de `:root.ipad`. Hay otros dos chats
+   diseñando lo mismo en `:root.iphone` y `:root.mac`, y añadidos en zonas
+   distintas del archivo se fusionan solos.
+   ============================================================================ */
+
+/* Los tres colores de área, con su pareja de claro y oscuro ESCRITA ENTERA.
+   La base los saca de `--accent-1` y `--accent-3`, que solo existen en claro:
+   en oscuro el morado de Secretaría queda casi negro sobre casi negro. Es el
+   mismo fallo del §43 con otro nombre, y aquí se cierra sin tocar la base. */
+:root.ipad {
+  --reg-tes: #047857;
+  --reg-sec: #7c3aed;
+  --reg-gen: #c2600e;
+  --reg-gen-fill: rgba(249, 115, 22, 0.10);
+  --reg-chip-fill: rgba(118, 118, 128, 0.14);
+  --reg-chip-fill-suave: rgba(118, 118, 128, 0.08);
+}
+:root.ipad[data-theme="dark"] {
+  --reg-tes: #34d399;
+  --reg-sec: #b39bff;
+  --reg-gen: #f0a35e;
+  --reg-gen-fill: rgba(249, 115, 22, 0.16);
+  --reg-chip-fill: rgba(118, 118, 128, 0.28);
+  --reg-chip-fill-suave: rgba(118, 118, 128, 0.16);
+}
+
+/* La columna manda: sin quitarle el relleno lateral a `.content`, la lectura
+   queda descentrada dentro de una caja pensada para tablas. */
+:root.ipad .content:has(.reg-columna) { padding-left: 0; padding-right: 0; }
+:root.ipad .reg-columna {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 20px 24px 44px;
+  gap: calc(14px * var(--fs-escala));
+}
+
+/* ---------- Los chips ---------- */
+:root.ipad .reg-chips { gap: 8px; }
+:root.ipad .reg-chip {
+  height: calc(30px * var(--fs-escala));
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--reg-chip-fill-suave);
+  color: var(--text-2);
+  font-size: calc(13.5px * var(--fs-escala));
+  gap: 7px;
+}
+:root.ipad .reg-chip.active { background: var(--reg-chip-fill); color: var(--text); }
+:root.ipad .reg-chip-punto { width: 8px; height: 8px; }
+:root.ipad .reg-chip--tesoreria .reg-chip-punto { background: var(--reg-tes); }
+:root.ipad .reg-chip--secretaria .reg-chip-punto { background: var(--reg-sec); }
+:root.ipad .reg-chip--notas .reg-chip-punto { background: var(--reg-gen); }
+:root.ipad .reg-alcance { font-size: calc(12.5px * var(--fs-escala)); white-space: nowrap; }
+
+/* ---------- El redactor de la nota ----------
+   Pierde el recuadro de tarjeta genérica y gana la regla ámbar del lateral:
+   la MISMA marca que llevan las notas ya anotadas, así que lo que se está
+   escribiendo se ve desde el principio como lo que va a quedar. */
+:root.ipad .reg-nota {
+  margin-bottom: 0;
+  padding: 14px 16px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-rest), inset 3px 0 0 var(--reg-gen);
+  gap: 10px;
+}
+:root.ipad .reg-nota .form-textarea {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 0;
+  font-size: calc(15.5px * var(--fs-escala));
+  line-height: 1.45;
+}
+:root.ipad .reg-nota .form-textarea:focus { box-shadow: none; outline: none; }
+:root.ipad .reg-nota-hint { font-size: calc(12.5px * var(--fs-escala)); }
+:root.ipad .reg-nota-kbd { font-size: calc(12px * var(--fs-escala)); }
+
+/* ---------- Un día ----------
+   La cabecera se queda fuera de la tarjeta y las filas dentro: es lo que
+   convierte el separador en cabecera de sección en vez de en una fila más. */
+:root.ipad .reg-lista { gap: calc(14px * var(--fs-escala)); }
+:root.ipad .reg-grupo { display: flex; flex-direction: column; gap: 7px; }
+:root.ipad .reg-dia {
+  margin: 0;
+  padding: 0 4px;
+  align-items: baseline;
+  gap: 9px;
+  font-weight: 700;
+  letter-spacing: .7px;
+}
+:root.ipad .reg-dia::after { background: var(--line-soft, var(--line)); }
+:root.ipad .reg-dia-n { font-size: calc(11.5px * var(--fs-escala)); }
+:root.ipad .reg-tarjeta {
+  background: var(--surface);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-rest);
+}
+
+/* ---------- Una línea ---------- */
+:root.ipad .reg-fila {
+  padding: 12px 16px 12px 15px;
+  gap: 11px;
+  border-bottom: 1px solid var(--line-soft, var(--line));
+}
+:root.ipad .reg-fila:last-child { border-bottom: 0; }
+:root.ipad .reg-punto {
+  width: 9px;
+  height: 9px;
+  margin-top: calc(6px * var(--fs-escala));
+  background: var(--reg-gen);
+}
+:root.ipad .reg-punto--tesoreria { background: var(--reg-tes); }
+:root.ipad .reg-punto--secretaria { background: var(--reg-sec); }
+:root.ipad .reg-punto--general { background: var(--reg-gen); }
+
+/* La nota a mano, marcada DOS veces: el plano tintado y la regla lateral.
+   Perder una sola no la borra del todo —impresa en blanco y negro se va el
+   tinte y queda la regla—, y distinguirla es la mitad de la pantalla: sin
+   eso, esto vuelve a ser el tablón del que veníamos al retirar Mensajes. */
+:root.ipad .reg-fila--nota {
+  padding-left: 15px;
+  border-left: 0;
+  background: var(--reg-gen-fill);
+  box-shadow: inset 3px 0 0 var(--reg-gen);
+}
+:root.ipad .reg-textos { gap: 3px; }
+:root.ipad .reg-cuerpo {
+  font-size: calc(15.5px * var(--fs-escala));
+  line-height: 1.42;
+  text-wrap: pretty;
+  /* Un nombre de corte largo no puede empujar la columna. */
+  overflow-wrap: anywhere;
+}
+:root.ipad .reg-meta {
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: calc(12.5px * var(--fs-escala));
+}
+:root.ipad .reg-autor { font-weight: 400; color: var(--text-2); }
+:root.ipad .reg-hora { font-variant-numeric: tabular-nums; }
+:root.ipad .reg-tag {
+  height: calc(18px * var(--fs-escala));
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  background: var(--reg-gen-fill);
+  /* Su propio par de tokens, nunca un `#fff` a mano: es exactamente lo que
+     dejó el botón blanco sin letra del §43. */
+  color: var(--reg-gen);
+  font-size: calc(11px * var(--fs-escala));
+}
+:root.ipad .reg-pie {
+  margin: 0;
+  padding: 2px 4px;
+  font-size: calc(12.5px * var(--fs-escala));
+  text-wrap: pretty;
+}

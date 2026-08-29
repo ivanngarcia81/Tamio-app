@@ -3494,6 +3494,24 @@ export const es = {
     escribirNota: "Escribir una nota",
     notaPlaceholder: "Algo que la app no sabe y conviene dejar escrito…",
     notaGuardar: "Anotar",
+    /* Lo que añadió el handoff de iPad del 29 ago 2026: el filtro por área,
+       la cuenta de cada día y el pie que explica por qué una línea sigue
+       diciendo la verdad cuando la fila de la que habla ya no existe. */
+    chipTodo: "Todo",
+    chipTesoreria: "Tesorería",
+    chipSecretaria: "Secretaría",
+    chipNotas: "Notas",
+    alcanceAdmin: "Ves todo: administrador",
+    alcanceTesorero: "Ves lo de tesorería",
+    alcanceSecretaria: "Ves lo del padrón",
+    cuenta_one: "1 apunte",
+    cuenta_other: "{{count}} apuntes",
+    subConCuenta_one: "{{count}} apunte · lo que ha pasado en la iglesia",
+    subConCuenta_other: "{{count}} apuntes · lo que ha pasado en la iglesia",
+    notaPie: "Queda con tu nombre, entre lo que anota la app. No se puede editar después.",
+    sinCoincidencias: "Nada de este tipo, todavía",
+    sinCoincidenciasSub: "Cambia el filtro para ver el resto de lo anotado.",
+    pie: "El registro guarda el nombre y el folio tal como eran, así que sigue diciendo la verdad aunque la fila de la que habla ya no exista. Lo que falta por hacer no vive aquí, sino en Por revisar.",
     /** El texto de cada suceso. Las piezas llegan de `datos`. */
     suceso: {
       movEliminado: "Se eliminó el movimiento «{{concepto}}» de {{monto}} (folio {{folio}})",
