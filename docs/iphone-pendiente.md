@@ -28,6 +28,87 @@
 > pero se leen más «web» que sus vecinas.
 
 
+---
+
+## EL ENCARGO, listo para la rama del móvil
+
+_Escrito el 29 de agosto de 2026. Son DOS pantallas y no hay que inventar un
+sistema: hay que aplicarle a estas dos el que las otras catorce ya tienen._
+
+Las dos comparten causa. **Nacieron después de que se dibujara el handoff**,
+así que nunca tuvieron maqueta — y por eso se quedaron con las clases
+genéricas mientras sus vecinas se convertían. No están rotas; se leen como una
+página web al lado de catorce que parecen iOS.
+
+### A · El Registro de la iglesia (`/inbox`)
+
+Hoy pinta, dentro de un `.content` pelado:
+
+```
+.reg-nota      una .card con un textarea (la nota a mano)
+.reg-lista
+  .reg-dia     el separador de día
+  .reg-fila    punto de color + cuerpo + meta (autor · hora)
+  .reg-fila--nota   la barra izquierda que distingue lo tecleado
+```
+
+Sus 16 reglas no llevan prefijo de aparato: valen igual en Mac, iPad y
+teléfono. **No hay que quitarlas**, hay que añadir la capa `:root.iphone`
+encima, como se hizo con Movimientos.
+
+Lo que el sistema ya resuelto sugiere, y queda a tu criterio:
+
+- `.reg-lista` dentro de una `.ios-listcard`, y cada `.reg-fila` con el
+  tratamiento de `.ios-txrow` (alto, inset de 16, hairline al ras).
+- `.reg-dia` como `.ios-section-header` — versalitas, el mismo aire de 44
+  entre grupos que ya se midió.
+- La nota a mano: hoy es una `.card` con un textarea suelto. En el teléfono
+  probablemente quiera ser una hoja, como el resto de lo que se escribe.
+
+**Dos cosas que NO se pueden perder al convertir**, porque son la función y no
+el adorno:
+
+1. **El punto de color por área** (`.reg-punto--tesoreria` / `--secretaria` /
+   `--general`). Es lo que deja ver de un vistazo de qué habla cada línea.
+2. **La marca de la nota a mano** (`.reg-fila--nota`, barra a la izquierda).
+   Sin ella, lo que escribió una persona se confunde con lo que anotó la app,
+   y esto vuelve a ser el tablón del que veníamos — que es exactamente lo que
+   se quiso evitar al retirar Mensajes.
+
+### B · Inicio de Secretaría (`InicioSecretaria.tsx`)
+
+Es la PORTADA de quien tiene rol de secretaria: lo primero que ve al abrir. Y
+sigue en tarjetas de escritorio (`.card.pad-lg` con `.card-head`), con la lista
+de próximas actividades en `.agenda-grupo` / `.agenda-fila`.
+
+Ojo con la confusión que ya me tragué una vez: la pantalla de **Agenda** SÍ
+está rehecha. Ésta es otra, comparte prefijo de clase y no es la misma.
+
+El paralelo obvio es Inicio de Tesorería, que en esta misma rama se rehízo
+tres veces hasta dar con las cuatro cifras en una tarjeta y el segmentado
+abajo. Esta portada debería leerse como su hermana.
+
+### Cómo comprobarlo
+
+Las dos ya salen en la hoja de contactos —`20-inicio-secretaria` está; el
+Registro habría que añadirlo a `PANTALLAS` en `capturas-iphone.mjs`—, y ahí es
+donde se ve si son la misma app:
+
+```
+node pruebas/capturas-iphone.mjs
+node pruebas/hoja-contactos.mjs
+```
+
+Y las dos reglas que miden ya existen: `medir-margenes.mjs` para que empiecen
+en la misma línea que las demás, y `medir-ritmo.mjs` para el aire vertical.
+
+### Lo único que puede romperse desde el motor
+
+`npm run verificar-tipografia`. Si el CSS nuevo mete un `font-size: 15px` a
+pelo, la guarda lo para antes de que llegue a la rama del motor. Todo tamaño
+va con `calc(Npx * var(--fs-escala))` — incluido el de las cifras.
+
+
 _Escrito el 26 de agosto de 2026, justo después de fusionar
 `claude/mobile-handoff-redesign-x16x07` en la rama del motor (commit `2d2ebe3`)._
 
