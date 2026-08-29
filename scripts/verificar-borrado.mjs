@@ -20,7 +20,12 @@
 //   1. Toda tabla de datos de una iglesia (`church_id` + `deleted`) está en
 //      `TABLAS_DATOS`, o figura por su nombre en la lista de excepciones de
 //      abajo. Añadir una tabla y olvidarla rompe esto.
-//   2. Todo nombre de `TABLAS_DATOS` existe de verdad en el esquema. Soltar
+//   2. Todo lo que la pantalla de borrar CUENTA antes de preguntar
+//      (`TABLA_DE_INVENTARIO`) existe y además se borra. Contar algo que no
+//      se borra es prometerle al usuario un borrado que no ocurre. Se añadió
+//      el 28 de agosto de 2026, cuando esa lista nació: es una segunda lista
+//      de nombres de tabla, o sea la misma trampa otra vez.
+//   3. Todo nombre de `TABLAS_DATOS` existe de verdad en el esquema. Soltar
 //      una tabla y dejar su nombre en la lista rompe esto — es lo que habría
 //      pasado con `mensajes` en la migración 51 si no se hubiera quitado.
 //
