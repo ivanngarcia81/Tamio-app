@@ -4789,6 +4789,50 @@ const TABLAS_DATOS = [
    de aquí en adelante: si lleva `church_id` y guarda hechos, va en esta lista,
    y `npm run verificar-borrado` lo comprueba contra el esquema de verdad. */
 
+/** El inventario de lo que hay: cuántas filas vivas guarda cada tabla de
+ *  datos de esta iglesia.
+ *
+ *  Existe para la pantalla de confirmar un borrado (maqueta S10): un
+ *  "¿estás seguro?" no deja ver nada, y las cifras sí —quien lee "1 148
+ *  movimientos" antes de escribir el nombre de su iglesia sabe exactamente
+ *  qué está a punto de perder—. Solo cuenta lo que un humano reconoce como
+ *  suyo; las tablas puente (`corte_movimientos`, `servicio_orden`) no salen
+ *  porque nadie las capturó a mano.
+ *
+ *  Las claves son las mismas que las traducciones `inventario.*`, así que
+ *  añadir una tabla aquí obliga a nombrarla allí. */
+export type InventarioIglesia = {
+  miembros: number;
+  movimientos: number;
+  depositos: number;
+  cortes: number;
+  cartas: number;
+  actas: number;
+  servicios: number;
+  agenda: number;
+};
+
+const TABLA_DE_INVENTARIO: Record<keyof InventarioIglesia, string> = {
+  miembros: "members",
+  movimientos: "transactions",
+  depositos: "depositos_bancarios",
+  cortes: "cortes",
+  cartas: "cartas",
+  actas: "actas",
+  servicios: "servicios",
+  agenda: "agenda",
+};
+
+export async function contarDatosIglesia(churchId: number): Promise<InventarioIglesia> {
+  const d = await getDb();
+  const partes = Object.entries(TABLA_DE_INVENTARIO).map(
+    ([clave, tabla]) =>
+      `(SELECT count(*) FROM ${tabla} WHERE church_id = $1 AND deleted = 0) AS ${clave}`,
+  );
+  const filas = await d.select<InventarioIglesia[]>(`SELECT ${partes.join(", ")}`, [churchId]);
+  return filas[0];
+}
+
 /** Opción A: borra todos los REGISTROS de la iglesia (movimientos, miembros,
  *  cartas, actas, servicios, etc.) pero CONSERVA la configuración: la fila de
  *  la iglesia (nombre, logo, firmas, datos del tesorero/pastor), las categorías

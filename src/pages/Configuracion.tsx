@@ -37,6 +37,7 @@ import RoleSettings from "../components/settings/RoleSettings";
 import PermisosSettings from "../components/settings/PermisosSettings";
 import BackupSettings from "../components/settings/BackupSettings";
 import ComprobantesPendientes from "../components/settings/ComprobantesPendientes";
+import ZonaSensibleSettingsIOS from "../components/settings/ZonaSensibleSettingsIOS";
 import RestoreSettings from "../components/settings/RestoreSettings";
 import CompactSettings from "../components/settings/CompactSettings";
 import DangerZoneSettings from "../components/settings/DangerZoneSettings";
@@ -617,6 +618,11 @@ export default function Configuracion({
                 movimientos"), y esto es una frase explicativa. Queda en el
                 iPad, que sí conserva el título de página con su subtítulo. */}
             {!enIPhone && !zonaActiva && !esMac() && <div className="page-sub">{t("config.sub")}</div>}
+            {/* Y una excepción, la única: la zona sensible sí lleva subtítulo
+                dentro de la banda verde (maqueta S9). No es una descripción
+                de lo que hay —eso es el pie de sección del índice— sino un
+                aviso, y un aviso puesto DESPUÉS del contenido llega tarde. */}
+            {enIPhone && zonaActiva === "delicada" && <div className="page-sub">{t("config.zona.delicadaBanda")}</div>}
           </div>
           {/* La acción de la zona —el aviso de «sin guardar», el «+» de
               Categorías— se queda a la derecha de la fila de acciones, que es
@@ -1079,11 +1085,20 @@ export default function Configuracion({
           </section>
 
           {esAdmin && (
-            <section className={`${claseZona("delicada")} peligro`}>
+            <section className={`${claseZona("delicada")} peligro${enListas ? " settings-zona--ios-flat" : ""}`}>
               <div className="settings-zona-head">
                 <div className="settings-zona-titulo">{t("config.zona.delicada")}</div>
                 <div className="settings-zona-sub">{t("config.zona.delicadaSub")}</div>
               </div>
+              {enListas ? (
+                <>
+                  <ZonaSensibleSettingsIOS church={church} />
+                  {/* Los comprobantes que se quedaron fuera se pintan solos
+                      cuando los hay, aquí y en escritorio: es una lista de
+                      rescate, no un ajuste. */}
+                  <ComprobantesPendientes church={church} />
+                </>
+              ) : (
               <div className="settings-masonry">
                 {/* De menos a más grave: guardar, restaurar, mantener y, al
                     final, lo que no tiene vuelta atrás. Antes iban emparejadas
@@ -1101,6 +1116,7 @@ export default function Configuracion({
                     parejas de arriba. */}
                 <ComprobantesPendientes church={church} />
               </div>
+              )}
             </section>
           )}
 

@@ -22341,3 +22341,218 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
    inferior de 44 que separa secciones, porque sigue perteneciendo a lo de
    arriba. */
 :root.iphone .nm-tipo-pie { margin-top: 7px; }
+
+/* ============================================================================
+   34 · LA ZONA SENSIBLE (maquetas S9 y S10)
+   ----------------------------------------------------------------------------
+   La zona era una lista de iguales: cuatro filas del mismo alto con cuatro
+   botones del mismo alto, y la única diferencia entre "exportar un CSV" y
+   "borrarlo todo" era el color de un tile de 24 px. Un color no frena a
+   nadie.
+
+   Lo que traen estas piezas es una jerarquía visible:
+
+   - `.ios-tarjeta-aviso` — una caja que NO es una fila. Título de 19/600,
+     una frase de consecuencia y UN solo botón de 52 al pie, separado por la
+     raya. Se usa dos veces por motivos opuestos: arriba para la salida de
+     emergencia (respaldar) y abajo, con `--peligro`, para lo que no tiene
+     vuelta atrás. La misma forma dice "esto es una decisión, no un ajuste".
+   - `--peligro` añade el contorno rojo de .5 px y pinta título y acción en
+     `--ios-red`. El contorno es lo que distingue una tarjeta de decisión de
+     una tarjeta de acción, y por eso también tiñe la raya interior: una
+     hairline gris dentro de un marco rojo se lee como un descuido.
+   - `.ios-accion-bloque` — el botón de la pantalla de confirmar. Nace
+     APAGADO (gris sobre gris) y solo se enciende cuando el nombre escrito
+     coincide. Que el estado normal sea el desactivado es el punto entero:
+     no hay ningún instante en que un toque de más ejecute el borrado.
+   ============================================================================ */
+
+:root.movil .ios-tarjeta-aviso {
+  margin: 0 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+:root.movil .ita-cuerpo {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+:root.movil .ita-titulo {
+  font-size: calc(19px * var(--fs-escala));
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+:root.movil .ita-texto {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 21px;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+/* 52 y no 44: es un botón, no una fila de lista, y la diferencia de ocho
+   píxeles es la que lo separa de las filas que tiene encima y debajo. */
+:root.movil .ita-accion {
+  min-height: 52px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-top: .33px solid var(--ios-sep);
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.movil .ita-accion:active { background: var(--line); }
+:root.movil .ita-accion:disabled { color: var(--text-3); cursor: default; }
+
+:root.movil .ios-tarjeta-aviso--peligro {
+  border: .5px solid color-mix(in srgb, var(--ios-red) 40%, transparent);
+}
+:root.movil .ios-tarjeta-aviso--peligro .ita-titulo,
+:root.movil .ios-tarjeta-aviso--peligro .ita-accion { color: var(--ios-red); }
+:root.movil .ios-tarjeta-aviso--peligro .ita-accion {
+  border-top-color: color-mix(in srgb, var(--ios-red) 40%, transparent);
+}
+
+/* --- Filas sin icono ---
+   El separador de `.ios-row` arranca en 57 px porque cuenta con el tile de
+   29. En una fila sin tile eso deja un hueco blanco delante de la raya que
+   no corresponde a nada: la regla v2 es que la hairline empiece donde
+   empieza el TEXTO. */
+:root.movil .ios-row--rasa:not(:last-child)::after { left: 16px; }
+/* Fila de dos líneas: 64, la misma altura que la de interruptor con
+   explicación. Y el subtítulo aquí SÍ se parte en varias líneas —es una
+   frase de consecuencia, no un dato— así que anula el recorte con "…" que
+   `.ios-row-sub` aplica por defecto. */
+:root.movil .ios-row--dos { min-height: 64px; }
+:root.movil .ios-row-sub--dos {
+  white-space: normal;
+  overflow: visible;
+  line-height: 17px;
+  text-wrap: pretty;
+}
+:root.movil .ios-row:disabled { cursor: default; }
+:root.movil .ios-row:disabled:active { background: transparent; }
+:root.movil .ios-row:disabled .ios-row-label { color: var(--text-2); }
+/* La cifra del inventario, en rojo: es lo que se pierde, no un dato neutro. */
+:root.movil .ios-row-value--peligro {
+  color: var(--ios-red);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- El botón de la pantalla de confirmar (S10) ---
+   Su estado normal es el apagado. Encendido, rojo sobre blanco. */
+:root.movil .ios-accion-bloque {
+  width: calc(100% - 32px);
+  margin: 0 16px;
+  min-height: 52px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.movil .ios-accion-bloque:active { background: var(--line); }
+:root.movil .ios-accion-bloque--peligro { color: var(--ios-red); }
+:root.movil .ios-accion-bloque:disabled {
+  background: rgba(118, 118, 128, .14);
+  color: var(--text-3);
+  cursor: default;
+}
+:root.movil .ios-accion-bloque:disabled:active { background: rgba(118, 118, 128, .14); }
+
+/* Salir de la pantalla de confirmar: un enlace, sin caja y sin peso. Con
+   fondo blanco competiría con el rojo, y la salida no tiene que competir
+   con nada — solo estar. */
+:root.movil .ios-accion-suelta {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: calc(17px * var(--fs-escala));
+  color: var(--brand);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+:root.movil .ios-accion-suelta:disabled { color: var(--text-3); cursor: default; }
+
+/* Campo solo, sin etiqueta: el nombre de la iglesia se escribe en toda la
+   fila, alineado a la izquierda como cualquier texto que uno teclea. Los
+   `.ios-field-input` normales van a la derecha porque comparten renglón con
+   su etiqueta; aquí no hay etiqueta con la que alinearse. */
+:root.movil .ios-field--solo { min-height: 52px; }
+:root.movil .ios-field-input--izq { text-align: left; }
+
+/* Un pie de sección que avisa: mismo sitio y mismo tamaño que el pie normal,
+   con el glifo delante y el color de aviso. No se convierte en una caja
+   ámbar —eso es lenguaje de formulario de escritorio— porque aquí el aviso
+   siempre cuelga de la sección que lo produjo. */
+:root.movil .ios-pie-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--warn);
+}
+:root.movil .ios-pie-aviso svg { flex: 0 0 auto; margin-top: 2px; }
+/* El sello de compilación cierra la pantalla: más apagado que un pie normal
+   porque no se lee, se fotografía. */
+:root.movil .ios-pie-compilacion { color: var(--text-3); }
+
+/* --- El hueco de 44 también en Ajustes ---
+   Medido, no supuesto: entre grupos había 6 px y de la banda al primero, 18.
+   La maqueta pide 44 en los dos sitios, y ese número ya estaba puesto
+   (`:root.movil .ios-section { margin-bottom: 43px }`) — lo tapaba
+   `:root.iphone .content .ios-section { margin-bottom: 6px }`, que es más
+   específica.
+
+   Aquel 6 no está mal: se escribió para las listas de DATOS (Ingresos,
+   Membresía, Cartas), donde las secciones son el mismo tema partido por
+   fecha y separarlas 44 las hacía leerse como pantallas distintas. En
+   Ajustes pasa justo lo contrario: cada grupo ES otro tema —respaldos,
+   mantenimiento, borrado— y pegarlos convierte la pantalla en una lista
+   sola donde nada destaca. Por eso la excepción se acota a `.content-ajustes`
+   y no se toca la regla general.
+
+   Y el aire de arriba —18 medidos— se completa en el CONTENEDOR de los
+   grupos y no en `.content`: su `padding-top` es un `!important` del bloque
+   del iPhone (compensa la barra flotante), y ganarle a base de `!important`
+   propios es la forma de que dentro de un año nadie sepa cuál manda. 18 + 26
+   = los 44 de la maqueta. */
+:root.iphone .content-ajustes .ios-lista,
+:root.iphone .content-ajustes .settings-zona .ios-form { padding-top: 26px; }
+:root.iphone .content-ajustes .ios-lista > .ios-section,
+:root.iphone .content-ajustes .settings-zona .ios-form > .ios-section {
+  margin-bottom: 43px;
+}
+/* El último no: el aire de abajo lo pone el relleno de `.content`, que ya
+   cuenta con la barra de pestañas y el área segura. */
+:root.iphone .content-ajustes .ios-lista > .ios-section:last-of-type,
+:root.iphone .content-ajustes .settings-zona .ios-form > .ios-section:last-of-type {
+  margin-bottom: 0;
+}

@@ -691,6 +691,40 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// S9 y S10 · Zona sensible y confirmar borrado. Ninguna de las dos tiene URL
+// —son la zona `delicada` de Ajustes y una pantalla empujada por encima—, así
+// que hay que llegar tocando. Se toma la tira completa: lo que hay que ver es
+// la JERARQUÍA (la tarjeta de respaldar arriba, las dos rojas abajo), y eso no
+// cabe en una pantalla.
+{
+  for (const tema of ["light", "dark"]) {
+    const ctx = await contextoIPhone(tema);
+    const page = await ctx.newPage();
+    page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+    await page.goto(`${URL_BASE}/#/configuracion`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.getByText("Zona sensible", { exact: true }).first().click();
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${SALIDA}/21-zona-sensible-${tema}.png`, fullPage: true });
+    console.log(`  ✓ pruebas/capturas/21-zona-sensible-${tema}.png`);
+
+    // S10: el botón nace apagado, así que la primera foto es la del gris.
+    await page.getByRole("button", { name: "Continuar…", exact: true }).first().click();
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${SALIDA}/21-borrado-apagado-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/21-borrado-apagado-${tema}.png`);
+
+    // Y la segunda, con el nombre escrito: el botón encendido en rojo.
+    // El nombre de la iglesia sembrada. Escribirlo es lo ÚNICO que hace el
+    // arnés aquí: el botón rojo no se toca, que borraría la base de la prueba.
+    await page.locator(".ios-field--solo input").fill("Mi Iglesia");
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${SALIDA}/21-borrado-encendido-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/21-borrado-encendido-${tema}.png`);
+    await ctx.close();
+  }
+}
+
 // Una tira larga de Ingresos (sin recortar a la altura de la pantalla), para
 // ver de un vistazo cómo se encadenan las secciones por fecha.
 {
