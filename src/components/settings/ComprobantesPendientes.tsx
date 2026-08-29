@@ -8,6 +8,8 @@ import {
 import { IconCheck, IconUpload, IconWarn } from "../../icons";
 import { showToast } from "../../toast";
 import { playSound } from "../../sound";
+import { esMovil } from "../../movil";
+import { Section } from "../ios/FormularioIOS";
 
 interface Props {
   church: Church;
@@ -73,6 +75,42 @@ export default function ComprobantesPendientes({ church }: Props) {
   }
 
   if (cargando || pendientes.length === 0) return null;
+
+  /* En el teléfono y el iPad la zona sensible es una lista agrupada, y una
+     tarjeta de escritorio metida al final se veía como un parche pegado. Es
+     el MISMO contenido —qué comprobante falta, de qué movimiento, y el botón
+     para volver a señalarlo— en filas de dos líneas. La ruta original va en
+     el `title` y no en la fila: en 393 px no cabe, y quien la necesita la
+     necesita para buscar el archivo, no para reconocer el movimiento. */
+  if (esMovil()) {
+    return (
+      <Section
+        header={t("comprobantesPendientes.titulo")}
+        footer={error
+          ? <span className="ios-pie-aviso"><IconWarn size={13} /> {error}</span>
+          : t("comprobantesPendientes.explicacion")}
+      >
+        {pendientes.map((p) => (
+          <button
+            type="button"
+            className="ios-row ios-row--rasa ios-row--dos"
+            key={clave(p)}
+            onClick={() => void volverAElegir(p)}
+            disabled={trabajando !== null}
+            title={p.rutaOriginal}
+          >
+            <span className="ios-row-textos">
+              <span className="ios-row-label">{p.descripcion} · {fmtMoney(p.monto)}</span>
+              <span className="ios-row-sub">{p.fecha}</span>
+            </span>
+            <span className="ios-row-value">
+              {trabajando === clave(p) ? t("common.guardando") : t("comprobantesPendientes.volverAElegir")}
+            </span>
+          </button>
+        ))}
+      </Section>
+    );
+  }
 
   return (
     <div className="card pad-lg settings-card">

@@ -58,8 +58,11 @@ export default function CuentaSettingsIOS({
             </span>
             <IosChevron />
           </button>
+          {/* El estado de sincronización, separado de la tarjeta de identidad.
+              Pegados eran dos tarjetas blancas sin aire entre ellas: se leían
+              como UNA partida por una raya, y la raya no significaba nada. */}
           {SYNC_HABILITADO && (
-            <div className="ios-group">
+            <div className="ios-group ios-grupo-suelto">
               <div className="ios-row"><SyncIndicator /></div>
             </div>
           )}

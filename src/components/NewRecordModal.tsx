@@ -101,7 +101,11 @@ export default function NewRecordModal(props: Props) {
     guardar,
   } = h;
 
-  if (esMovil() && h.tab !== "miembro") return <NuevoMovimientoIOS {...props} h={h} />;
+  /* La pestaña «miembro» estaba excluida a mano y caía a esta ventana de
+     escritorio en el teléfono. Ya tiene su rama en la hoja (el alta de
+     APORTANTE, que el handoff no dibujó: N4 es la del padrón), así que las
+     tres pestañas salen por el mismo sitio. */
+  if (esMovil()) return <NuevoMovimientoIOS {...props} h={h} />;
 
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

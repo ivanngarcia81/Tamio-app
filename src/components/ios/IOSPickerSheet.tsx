@@ -9,6 +9,11 @@ export interface IOSPickerOption {
   /** Punto de color a la izquierda de la etiqueta (categorías). Opcional:
    *  las listas sin color (moneda, idioma…) no pintan nada. */
   color?: string;
+  /** Dato secundario alineado a la derecha, antes de la marca. Lo pide la
+   *  hoja de años de la ficha del aportante: «2025» a secas es una lista de
+   *  números, «2025 · $1,150.00» contesta la pregunta de quien la abre —en
+   *  qué ejercicio hubo algo—. Las listas que no lo pasan no cambian. */
+  detalle?: string;
 }
 
 interface Props {
@@ -49,6 +54,7 @@ export default function IOSPickerSheet({ title, options, value, onSelect, onCanc
                   {op.color && <span className="ios-picker-dot" style={{ background: op.color }} aria-hidden="true" />}
                   {op.label}
                 </span>
+                {op.detalle && <span className="ios-picker-detalle">{op.detalle}</span>}
                 {op.value === value && <IconCheck size={17} />}
               </button>
             ))}

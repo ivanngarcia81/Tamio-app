@@ -4,7 +4,7 @@ import { esIPhone } from "../movil";
 import { IOSPickerInput } from "./ios/IOSPickerField";
 import {
   catNombre, categoriaInfo, currentYear, fmtFechaCorta, fmtMoney, listMemberAportes,
-  memberAporteYears, metodoNombre, METODOS_PAGO, type Church, type Member, type Tx,
+  memberAporteResumen, metodoNombre, METODOS_PAGO, type AnioAportes, type Church, type Member, type Tx,
 } from "../db";
 import { exportConstanciaPdf, printConstanciaPdf } from "../services/print/printConstancia";
 import { IconClose, IconFileText, IconMail, IconPrinter, IconIdBadge, IconWarn, IconIngreso } from "../icons";
@@ -42,17 +42,27 @@ function IconPhoneSm() {
  *  de ese año, y exportar/imprimir la constancia. */
 export function useFichaMiembro(church: Church, member: Member) {
   const { t } = useTranslation();
-  const [years, setYears] = useState<string[]>([]);
+  /* Los ejercicios CON su total y su conteo, no solo los años. El desplegable
+     de escritorio sigue enseñando el año a secas —una lista de años en un
+     `<select>` de 130 px no da para más—, pero la hoja del teléfono pone
+     «2025 · $1,150.00» al lado, y eso sale de aquí. Una consulta, dos
+     pantallas. */
+  const [anios, setAnios] = useState<AnioAportes[]>([]);
   const [year, setYear] = useState(currentYear());
   const [aportes, setAportes] = useState<Tx[]>([]);
   const [exporting, setExporting] = useState<"pdf" | "print" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    memberAporteYears(member.id, church.id)
-      .then((ys) => setYears(ys.length > 0 ? ys : [currentYear()]))
-      .catch(console.error);
+    memberAporteResumen(member.id, church.id).then(setAnios).catch(console.error);
   }, [member.id, church.id]);
+
+  /* El año en curso siempre está en la lista, aunque no tenga nada: es el que
+     se abre por omisión, y un selector que no contiene el año que estás
+     viendo se lee como un fallo. */
+  const years = anios.length > 0
+    ? (anios.some((a) => a.anio === currentYear()) ? anios.map((a) => a.anio) : [currentYear(), ...anios.map((a) => a.anio)])
+    : [currentYear()];
 
   // Cambiar de miembro (en el panel del iPad la ficha se re-usa sin
   // desmontarse) vuelve al año en curso: el año elegido era del otro.
@@ -87,7 +97,7 @@ export function useFichaMiembro(church: Church, member: Member) {
   }
 
   return {
-    years, year, setYear, aportes, exporting, error,
+    anios, years, year, setYear, aportes, exporting, error,
     total: sumar(...aportes.map((a) => a.monto)),
     ultimo: aportes[0]?.fecha ?? null,
     handleConstancia, handlePrint,

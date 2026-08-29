@@ -14,6 +14,8 @@ import { useContextMenu } from "../components/ContextMenu";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GenericCsvImportModal from "../components/GenericCsvImportModal";
 import MemberDetailModal from "../components/MemberDetailModal";
+import FichaAportanteIOS from "../components/FichaAportanteIOS";
+import NewRecordModal from "../components/NewRecordModal";
 import LoadingState from "../components/LoadingState";
 import { useBarraEstado } from "../components/BarraEstado";
 import Pagination from "../components/Pagination";
@@ -90,6 +92,14 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
   const [filtro, setFiltro] = useState<"activos" | "bajas" | "todos">("activos");
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  /* El alta de un ingreso disparada DESDE la ficha del aportante del teléfono
+     (maqueta T11): esta página no crea movimientos —los crea Ingresos— pero
+     es la única que sabe de quién es la ficha abierta, y el atajo pierde todo
+     su sentido si hay que volver a buscar el nombre. `recargaFicha` fuerza a
+     `useFichaMiembro` a releer tras guardar: el hook recarga por `member.id`
+     y el miembro no ha cambiado. */
+  const [altaAporte, setAltaAporte] = useState<Member | null>(null);
+  const [recargaFicha, setRecargaFicha] = useState(0);
   const [detalle, setDetalle] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -386,6 +396,38 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
     }
   }
   const totalVisibles = sumar(...visibles.map((m) => stats[m.id]?.totalAnio ?? CERO));
+
+  /* En el teléfono la ficha NO es un modal: es esta misma página un nivel más
+     adentro, con su banda verde, su título grande y la barra de pestañas
+     abajo (maquetas T9–T11). Por eso se lleva la pantalla entera —cabecera
+     incluida— en vez de flotar encima de la lista. En Mac e iPad sigue siendo
+     el modal y el panel de siempre, unas líneas más abajo.
+
+     Va aquí, después de todos los hooks de la página: un `return` temprano por
+     encima de uno cambiaría el número de hooks entre renders (ver
+     `npm run verificar-hooks`). */
+  if (enIPhone && detalle) {
+    return (
+      <>
+        <FichaAportanteIOS
+          key={`${detalle.id}:${recargaFicha}`}
+          church={church}
+          member={detalle}
+          tituloLista={t("miembros.titulo")}
+          onVolver={() => setDetalle(null)}
+          onNuevoAporte={puedeCrear ? () => setAltaAporte(detalle) : undefined}
+        />
+        {altaAporte && (
+          <NewRecordModal
+            church={church}
+            mode={{ kind: "create", tab: "ingreso", aportante: altaAporte }}
+            onClose={() => setAltaAporte(null)}
+            onSaved={() => { setAltaAporte(null); setRecargaFicha((n) => n + 1); onChanged(); }}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>
@@ -773,7 +815,9 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
 
       {menu}
 
-      {detalle && (
+      {/* `!enIPhone`: en el teléfono la ficha es la pantalla de arriba, no un
+          modal. Esta rama es la de Mac (y la del iPad angosto, sin panel). */}
+      {detalle && !enIPhone && (
         <MemberDetailModal church={church} member={detalle} onClose={() => setDetalle(null)} />
       )}
 

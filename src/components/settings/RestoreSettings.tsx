@@ -1,12 +1,7 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import FilaAccion from "./FilaAccion";
 import ConfirmDialog from "../ConfirmDialog";
-import {
-  cancelarRestauracion, confirmarRestauracion, pausarSyncPorRestauracion,
-  prepararRestauracion, reiniciarApp, type ResumenRespaldo,
-} from "../../services/restaurar";
+import { useRestaurar } from "./restaurar";
 import { IconRefreshCw, IconWarn } from "../../icons";
 
 /**
@@ -21,71 +16,14 @@ import { IconRefreshCw, IconWarn } from "../../icons";
  * cuántos documentos) y que la base actual se aparta. Con esos números el
  * tesorero puede darse cuenta de que ha elegido el archivo equivocado, que es
  * justo lo que un "¿seguro?" no le deja ver.
+ *
+ * El estado y esa frase viven en `restaurar.ts`: el teléfono los usa desde su
+ * propia pantalla (zona sensible, maqueta S9) y no conviene tener dos copias
+ * de una lógica que se afinó arreglando fallos.
  */
 export default function RestoreSettings() {
   const { t } = useTranslation();
-  const [resumen, setResumen] = useState<ResumenRespaldo | null>(null);
-  const [trabajando, setTrabajando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  /** El respaldo quedó marcado y se pidió el cierre. */
-  const [cerrando, setCerrando] = useState(false);
-  /** El respaldo quedó listo pero la app no llegó a cerrarse sola. */
-  const [noCerro, setNoCerro] = useState(false);
-
-  async function elegir() {
-    setError(null);
-    try {
-      const origen = await openFileDialog({
-        multiple: false,
-        title: t("restaurar.elegirTitulo"),
-        // Se aceptan los dos: el paquete nuevo y el .db suelto de los
-        // respaldos antiguos. El formato real se reconoce por contenido.
-        filters: [{ name: t("restaurar.filtro"), extensions: ["zip", "db"] }],
-      });
-      if (typeof origen !== "string") return;
-      setTrabajando(true);
-      setResumen(await prepararRestauracion(origen));
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setTrabajando(false);
-    }
-  }
-
-  async function confirmar() {
-    setTrabajando(true);
-    // El diálogo se cierra AQUÍ, en el clic, antes de esperar a nada.
-    //
-    // Mientras seguía abierto tapaba la tarjeta entera, así que ni el aviso de
-    // "no se cerró" ni un error se veían: quedaban pintados DEBAJO del modal.
-    // Desde fuera el botón rojo parecía muerto aunque el trabajo estuviera
-    // hecho. Cerrándolo ya, lo que pase después se ve.
-    setResumen(null);
-    try {
-      await confirmarRestauracion();
-      // La sincronización queda pausada ANTES de reiniciar, para que el
-      // arranque siguiente ya la encuentre en pausa y no suba ni baje nada
-      // antes de que un humano mire los datos.
-      pausarSyncPorRestauracion();
-      setCerrando(true);
-
-      // Si el cierre funciona, este componente deja de existir antes de que
-      // salte el aviso. Si NO funciona, el `invoke` se queda esperando para
-      // siempre. El respaldo ya está preparado y con su marcador, así que
-      // cerrar a mano termina el trabajo igual: hay que decirlo.
-      setTimeout(() => setNoCerro(true), 3000);
-      await reiniciarApp();
-    } catch (e) {
-      setError(String(e));
-      setTrabajando(false);
-      setCerrando(false);
-    }
-  }
-
-  async function cancelar() {
-    setResumen(null);
-    await cancelarRestauracion().catch(() => {});
-  }
+  const r = useRestaurar();
 
   return (
     <div className="card pad-lg settings-card">
@@ -97,8 +35,8 @@ export default function RestoreSettings() {
         titulo={t("restaurar.titulo")}
         nota={t("restaurar.sub")}
       >
-        <button type="button" className="btn secondary" onClick={elegir} disabled={trabajando}>
-          {trabajando ? t("common.preparando") : t("restaurar.boton")}
+        <button type="button" className="btn secondary" onClick={r.elegir} disabled={r.trabajando}>
+          {r.trabajando ? t("common.preparando") : t("restaurar.boton")}
         </button>
       </FilaAccion>
 
@@ -109,50 +47,30 @@ export default function RestoreSettings() {
         {t("restaurar.compilacion", { fecha: __FECHA_BUILD__ })}
       </div>
 
-      {error && (
+      {r.error && (
         <div className="form-warning" style={{ display: "flex", alignItems: "center", gap: 6, marginTop: "var(--space-3)" }}>
-          <IconWarn size={13} /> {error}
+          <IconWarn size={13} /> {r.error}
         </div>
       )}
 
-      {cerrando && !noCerro && (
+      {r.cerrando && !r.noCerro && (
         <div className="form-hint" style={{ marginTop: "var(--space-3)" }}>{t("restaurar.cerrando")}</div>
       )}
 
-      {noCerro && (
+      {r.noCerro && (
         <div className="form-warning" style={{ display: "flex", alignItems: "flex-start", gap: 6, marginTop: "var(--space-3)" }}>
           <IconWarn size={13} /> {t("restaurar.noCerro")}
         </div>
       )}
 
-      {resumen && (
+      {r.resumen && (
         <ConfirmDialog
           danger
           title={t("restaurar.confirmarTitulo")}
-          message={[
-            // El nombre va primero y solo. Es lo que delata que el archivo es
-            // de otra congregación, y eso hay que verlo antes que las cifras:
-            // dos iglesias parecidas pueden tener números parecidos.
-            resumen.iglesia ? t("restaurar.confirmarIglesia", { nombre: resumen.iglesia }) : "",
-            // Tres cantidades en una frase, y i18next solo pluraliza una por
-            // clave: se arma con tres piezas ya pluralizadas para que no salga
-            // "1 depósitos".
-            t("restaurar.confirmarTrae", {
-              movimientos: t("restaurar.nMovimientos", { count: resumen.movimientos }),
-              miembros: t("restaurar.nMiembros", { count: resumen.miembros }),
-              depositos: t("restaurar.nDepositos", { count: resumen.depositos }),
-            }),
-            resumen.hasta ? t("restaurar.confirmarHasta", { fecha: resumen.hasta }) : "",
-            resumen.formato_antiguo
-              ? t("restaurar.confirmarSinDocumentos")
-              : t("restaurar.confirmarDocumentos", { count: resumen.documentos }),
-            t("restaurar.confirmarReemplaza"),
-            t("restaurar.confirmarSync"),
-            t("restaurar.confirmarReinicio"),
-          ].filter(Boolean).join("\n\n")}
+          message={r.mensajeConfirmar(r.resumen)}
           confirmLabel={t("restaurar.confirmarBoton")}
-          onConfirm={confirmar}
-          onCancel={cancelar}
+          onConfirm={r.confirmar}
+          onCancel={r.cancelar}
         />
       )}
     </div>

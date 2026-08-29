@@ -96,6 +96,43 @@ export async function exportMiembrosCsv(churchId: number): Promise<BackupResult>
  * sin cifrar solo existe dentro del paquete: se genera en un temporal de la
  * carpeta de la app y se borra al terminar.
  */
+/** Cuándo se guardó el último respaldo completo, y cuánto pesó si se llegó a
+ *  saber. En `localStorage` y no en la base, a propósito: "cuándo respaldé"
+ *  es un hecho de ESTE aparato —el respaldo sale a un archivo que se lleva
+ *  quien lo pidió— y no algo que la iglesia comparta por la nube.
+ *
+ *  Lo pide la pantalla de zona sensible del teléfono (maqueta S9), que abre
+ *  con la salida de emergencia: "el último se hizo hoy a las 8:12". Sin este
+ *  apunte esa frase tendría que inventarse, y una fecha inventada en la
+ *  pantalla de borrar es peor que no decir nada. */
+const CLAVE_ULTIMO_RESPALDO = "tamio-ultimo-respaldo";
+
+export type UltimoRespaldo = {
+  /** ISO local, tal como lo escribe `nowLocalIso()`. */
+  cuando: string;
+  /** Tamaño del paquete. Solo se sabe en el teléfono, que lo lee para
+   *  entregarlo; en escritorio lo escribe Rust directamente en el destino
+   *  elegido y aquí no pasa por memoria. */
+  bytes?: number;
+};
+
+export function ultimoRespaldo(): UltimoRespaldo | null {
+  try {
+    const crudo = localStorage.getItem(CLAVE_ULTIMO_RESPALDO);
+    if (!crudo) return null;
+    const v = JSON.parse(crudo) as UltimoRespaldo;
+    return typeof v?.cuando === "string" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function anotarRespaldo(bytes?: number): void {
+  try {
+    localStorage.setItem(CLAVE_ULTIMO_RESPALDO, JSON.stringify({ cuando: nowLocalIso(), bytes }));
+  } catch { /* modo privado, o sin cuota: el respaldo ya se guardó igual */ }
+}
+
 export async function backupDatabase(): Promise<BackupResult> {
   const fileName = `tamio-respaldo-${nowLocalIso().slice(0, 10)}.zip`;
   if (esMovil()) {
@@ -107,10 +144,12 @@ export async function backupDatabase(): Promise<BackupResult> {
     const bytes = await readFile(destino);
     const ok = await entregarArchivo(bytes, fileName);
     await remove(destino).catch(() => {});
+    if (ok) anotarRespaldo(bytes.length);
     return ok ? "guardado" : "cancelado";
   }
   const path = await save({ defaultPath: fileName, filters: [{ name: "Tamio", extensions: ["zip"] }] });
   if (!path) return "cancelado";
   await invoke("db_backup_paquete", { destino: path });
+  anotarRespaldo();
   return "guardado";
 }

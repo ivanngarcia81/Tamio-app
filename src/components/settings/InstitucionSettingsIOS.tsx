@@ -51,14 +51,28 @@ export default function InstitucionSettingsIOS({ value, onChange, churchNombre }
           label={t("institucion.direccion")}
           value={value.direccion}
           onChange={(v) => onChange({ direccion: v })}
+          placeholder={t("institucion.direccionPlaceholder")}
           stacked
         />
-        <TextField label={t("institucion.region")} value={value.region} onChange={(v) => onChange({ region: v })} stacked />
-        <TextField label={t("institucion.telefono")} value={value.telefono} onChange={(v) => onChange({ telefono: v })} stacked />
+        <TextField
+          label={t("institucion.region")}
+          value={value.region}
+          onChange={(v) => onChange({ region: v })}
+          placeholder={t("institucion.regionPlaceholder")}
+          stacked
+        />
+        <TextField
+          label={t("institucion.telefono")}
+          value={value.telefono}
+          onChange={(v) => onChange({ telefono: v })}
+          placeholder={t("institucion.telefonoPlaceholder")}
+          stacked
+        />
         <TextField
           label={t("institucion.correo")}
           value={value.email}
           onChange={(v) => onChange({ email: v })}
+          placeholder={t("institucion.correoPlaceholder")}
           type="email"
           stacked
         />
@@ -74,12 +88,14 @@ export default function InstitucionSettingsIOS({ value, onChange, churchNombre }
           label={t("institucion.secretariaNombre")}
           value={value.secretaria_nombre}
           onChange={(v) => onChange({ secretaria_nombre: v })}
+          placeholder={t("institucion.secretariaNombrePlaceholder")}
           stacked
         />
         <TextField
           label={t("institucion.secretariaCargo")}
           value={value.secretaria_cargo}
           onChange={(v) => onChange({ secretaria_cargo: v })}
+          placeholder={t("institucion.secretariaCargoPlaceholder")}
           stacked
         />
       </Section>

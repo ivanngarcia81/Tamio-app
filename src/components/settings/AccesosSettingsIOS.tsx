@@ -36,7 +36,7 @@ interface Props {
   church: Church;
   /** Las personas de la iglesia, para los dos grupos de la maqueta S6. */
   usuarios?: Usuario[];
-  onAbrirUsuario?: (u: Usuario) => void;
+  onAbrirUsuario?: (u: Usuario | null) => void;
   role: Role;
   onRoleChange: (r: Role) => void;
   onChurchUpdated: (c: Church) => void;
@@ -56,15 +56,6 @@ function FilaValor({ label, value, tono }: { label: string; value: string; tono?
   );
 }
 
-/** De qué áreas entra alguien, según su rol. Sale de la MISMA regla que usa
- *  la app para decidir qué zonas se ven, así que la lista no puede decir una
- *  cosa distinta de la que hace el menú. */
-function areasDe(rol: string, t: (k: string) => string): string {
-  if (rol === "administrador") return `${t("cuenta.areas.tesoreria")} · ${t("cuenta.areas.secretaria")}`;
-  if (rol === "tesorero") return t("cuenta.areas.tesoreria");
-  if (rol === "secretaria") return t("cuenta.areas.secretaria");
-  return t("cuenta.areas.ninguna");
-}
 
 export default function AccesosSettingsIOS({
   church, usuarios, onAbrirUsuario, role, onRoleChange, onChurchUpdated, esAdmin, authActivo,
@@ -121,11 +112,22 @@ export default function AccesosSettingsIOS({
 
   return (
     <div className="ios-form">
-      {/* La pregunta de esta zona se lee de dos maneras y las dos hacen falta:
-          por PERSONA —quién entra y a qué— y por ÁREA —quién hay en cada una—.
-          Con una sola lectura siempre falta la otra: la lista de personas no
-          dice si Tesorería se quedó sin nadie (maqueta S6). */}
-      {usuarios && usuarios.length > 0 && (
+      {/* PERSONAS: el directorio de quién administra la iglesia, con su rol.
+          Sustituye a la tarjeta de escritorio que había aquí abajo, con su
+          barra de «+ / −» y sus instrucciones de ratón.
+
+          El handoff (S6) pedía además una segunda lectura POR ÁREA —quién hay
+          en Tesorería y quién en Secretaría— y la construí. La quité al verla
+          en el aparato: derivaba el área del rol del directorio, y ese vínculo
+          NO EXISTE. Lo dice la propia app dos grupos más abajo —«este
+          directorio todavía no controla el acceso»—, y saltó en cuanto
+          apareció un «Asistente de tesorería»: mi tabla conocía tres roles de
+          los siete y lo mandó a «Sin áreas».
+
+          Quién entra a qué lo decide hoy «Vista de este dispositivo». Cuando
+          el directorio gobierne el acceso de verdad, la segunda lectura se
+          podrá construir con un dato real en vez de con una tabla inventada. */}
+      {usuarios && onAbrirUsuario && (
         <>
           <Section header={t("usuarios.personasGrupo")} footer={t("usuarios.piePersonas")}>
             {usuarios.map((u) => (
@@ -138,30 +140,24 @@ export default function AccesosSettingsIOS({
                 <span className="ios-persona-avatar">{iniciales(u.nombre, u.email)}</span>
                 <span className="ios-row-textos">
                   <span className="ios-row-label">{u.nombre}</span>
-                  <span className="ios-row-sub">{areasDe(u.rol, t)}</span>
+                  <span className="ios-row-sub">{t(`rol.${u.rol}`)}</span>
                 </span>
                 <IosChevron />
               </button>
             ))}
+            {/* Añadir vive DENTRO del grupo, como la última fila. Antes esto
+                se hacía en una tarjeta de escritorio aparte, con una barra de
+                «+ / −» al pie y un texto que decía «un clic selecciona la fila
+                y el "−" del pie la quita; doble clic o el lápiz abre la
+                ficha» — instrucciones de ratón en un teléfono. */}
+            <button type="button" className="ios-new-row" onClick={() => onAbrirUsuario(null)}>
+              <span className="ios-new-icon" aria-hidden="true">
+                <svg viewBox="0 0 13 13"><path d="M6.5 1.5v10M1.5 6.5h10" /></svg>
+              </span>
+              <span>{t("usuarios.anadirPersona")}</span>
+            </button>
           </Section>
 
-          <Section header={t("usuarios.areasGrupo")} footer={t("usuarios.pieAreas")}>
-            {(["tesoreria", "secretaria"] as const).map((area) => {
-              const dentro = usuarios.filter((u) =>
-                u.rol === "administrador"
-                || (area === "tesoreria" ? u.rol === "tesorero" : u.rol === "secretaria"));
-              return (
-                <div className="ios-field ios-fila-larga" key={area}>
-                  <span className="ios-larga-textos">
-                    <span className="ios-larga-etiqueta">{t(`cuenta.areas.${area}`)}</span>
-                    <span className={`ios-larga-valor${dentro.length ? "" : " es-vacio"}`}>
-                      {dentro.length ? dentro.map((u) => u.nombre).join(", ") : t("usuarios.nadieEnArea")}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
-          </Section>
         </>
       )}
 

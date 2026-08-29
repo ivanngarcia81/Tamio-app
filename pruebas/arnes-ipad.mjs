@@ -1782,25 +1782,41 @@ console.log("\n== Configuración del iPad (handoff) ==");
   chk(pref.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-preferencias-1366x1024.png` });
 
-  /* Zona sensible: la única sin lista agrupada, y por eso la que se rompía.
-     `.settings-masonry` son DOS columnas y solo vuelve a una en
-     `max-width: 1180px` — una media query de VIEWPORT que en 1366 no
-     dispara aunque el panel mida 680. */
+  /* Zona sensible. Era la ÚLTIMA zona que seguía en tarjetas de escritorio
+     (`.settings-masonry`), y esto medía que esas dos columnas no se
+     estrangularan en el panel de 680 — la media query que las devuelve a una
+     mira el VIEWPORT, y en 1366 no dispara aunque el panel sea estrecho.
+
+     El 28 de agosto de 2026 dejó de tener tarjetas: `ZonaSensibleSettingsIOS`
+     la pasó al mismo tratamiento de listas que ya tenían sus siete hermanas
+     —`enListas` es `iPhone || iPad`, así que el iPad entra—. O sea que la
+     zona no se rompió: se terminó de convertir.
+
+     Así que lo que se mide cambia con ella, y NO se borra. Lo que importa
+     ahora es lo que el rediseño promete: que lo irreversible no comparta
+     tarjeta con lo inocuo. Antes «exportar un CSV» y «borrarlo todo» eran dos
+     filas del mismo alto y la única diferencia era el color de un icono de
+     24 px, que no frena a nadie. */
   const iDel = zonas.length - 1;
   await pg.locator(".settings-nav-item").nth(iDel).click();
   await pg.waitForTimeout(400);
   const del = await pg.evaluate(() => {
-    const m = document.querySelector(".settings-zona:not(.settings-zona-inactiva) .settings-masonry");
-    const cards = m ? [...m.children].map((c) => Math.round(c.getBoundingClientRect().width)) : [];
+    const z = document.querySelector(".settings-zona:not(.settings-zona-inactiva)");
+    const peligro = [...(z?.querySelectorAll(".ios-tarjeta-aviso--peligro") ?? [])];
     return {
-      hay: !!m,
-      columnas: m ? getComputedStyle(m).gridTemplateColumns.split(" ").length : 0,
-      anchoMin: cards.length ? Math.min(...cards) : 0,
+      hay: !!z?.querySelector(".ios-form"),
+      peligros: peligro.length,
+      /* Cada acción irreversible en SU tarjeta: si dos compartieran una, esto
+         contaría menos tarjetas que botones destructivos. */
+      botonesRojos: peligro.filter((c) => c.querySelector("button")).length,
+      anchoMin: peligro.length ? Math.min(...peligro.map((c) => Math.round(c.getBoundingClientRect().width))) : 0,
       desborda: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
   });
-  chk(del.hay, "la Zona sensible conserva sus tarjetas");
-  chk(del.columnas === 1, `en UNA columna (${del.columnas})`);
+  chk(del.hay, "la Zona sensible se pinta como lista agrupada, igual que sus hermanas");
+  chk(del.peligros >= 2, `lo irreversible va en tarjetas de aviso propias (${del.peligros})`);
+  chk(del.peligros === del.botonesRojos,
+    `y cada una lleva su botón, ninguna comparte (${del.botonesRojos} de ${del.peligros})`);
   chk(del.anchoMin > 600, `a todo el ancho de lectura (${del.anchoMin}px la más angosta)`);
   chk(del.desborda === false, "sin scroll horizontal");
   if (DIR) await pg.screenshot({ path: `${DIR}/config-sensible-1366x1024.png` });

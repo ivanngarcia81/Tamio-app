@@ -1,5 +1,9 @@
 export const es = {
   common: {
+    /* La conjunción, suelta: sirve para armar listas de dos o tres piezas
+       ("312 miembros, 1 148 movimientos y 47 cartas") sin una clave por
+       cada largo posible. */
+    y: "y",
     verTodo: "Ver todo",
     buscarCorto: "Buscar…",
     buscarMiembroCorto: "Buscar miembro…",
@@ -691,6 +695,7 @@ export const es = {
        de un movimiento: es "los datos de esto", no "el detalle del mes". */
     detalle: "Detalle",
     posibleDuplicado: "Ya hay un movimiento parecido registrado ({{nombres}}). Revisa antes de guardar; si es correcto, guarda de nuevo.",
+    contacto: "Contacto",
     editarIngreso: "Editar ingreso",
     editarGasto: "Editar gasto",
     editarMiembro: "Editar miembro",
@@ -767,6 +772,7 @@ export const es = {
     marcarPendienteLabel: "Marcar para revisar después — no se contará en los totales del mes hasta que lo confirmes en Bandeja",
     nombreFamilia: "Nombre completo o de familia",
     nombreFamiliaPlaceholder: "p. ej. Carlos y Ana Ruiz",
+    rfcMiembroPie: "Solo hace falta para emitir constancias deducibles de impuestos.",
     rfcMiembroHint: "(opcional — necesario para constancias deducibles)",
     rfcMiembroPlaceholder: "Identificación fiscal (opcional)",
     fechaFuturaIngresos: "No se pueden registrar ingresos con una fecha futura.",
@@ -862,6 +868,24 @@ export const es = {
     hint: "Solo se listan ingresos aprobados registrados a nombre de este miembro.",
   },
 
+  /* La ficha del aportante en el teléfono (maquetas T9, T10 y T11). */
+  fichaAportante: {
+    ultimo: "último {{fecha}}",
+    sinAportaciones: "sin aportaciones",
+    ejercicios: "Ejercicios con movimientos",
+    /* Sin punto final y en pasado: es el TÍTULO de una tarjeta, no la frase
+       suelta que el escritorio pinta en su hueco vacío (`detalleMiembro.
+       sinAportes`, que sí es una oración y se queda como está). */
+    vacioTitulo: "No se registraron aportaciones en {{anio}}",
+    registrar: "Registrar una aportación",
+    vacioTexto: "Puedes registrar la primera desde aquí: llega con {{nombre}} ya puesto como aportante.",
+    verAnio: "Ver {{anio}}",
+    pieOtroAnio: "Si aportó en otro ejercicio, el año con movimientos más reciente se ofrece aquí en vez de dejarte buscarlo en el selector.",
+    constanciaAnio: "Constancia anual {{anio}}",
+    pieConstancia: "Solo se listan los ingresos aprobados registrados a nombre de esta persona. La hoja de compartir incluye imprimir y enviar.",
+    pieSinConstancia: "Sin ingresos aprobados no hay constancia que emitir.",
+  },
+
   constancia: {
     titulo: "Constancia anual de aportaciones",
     archivo: "Constancia",
@@ -934,6 +958,72 @@ export const es = {
     hint: "Los CSV exportados se pueden volver a importar en la app. El respaldo completo es un archivo .zip que incluye todo: movimientos, miembros, depósitos, configuración y también los documentos — los comprobantes que has adjuntado, los adjuntos de las cartas, el logo y las firmas. Por eso pesa bastante más que antes: si llevas un par de años adjuntando comprobantes, cuenta con varios cientos de MB. Guarda uno fuera de esta computadora de vez en cuando.",
     guardado: "Archivo guardado.",
     sinDatos: "No hay datos para exportar.",
+  },
+
+  /* La zona sensible del teléfono (maquetas S9 y S10). */
+  zonaSensible: {
+    antesDeTocar: "Antes de tocar nada",
+    antesDeTocarConFecha: "Un respaldo tarda unos segundos y es lo único que puede devolver lo que se pierda. El último se hizo {{cuando}}.",
+    antesDeTocarSinFecha: "Un respaldo tarda unos segundos y es lo único que puede devolver lo que se pierda. Todavía no has hecho ninguno desde este aparato.",
+    respaldarAhora: "Respaldar ahora",
+    grupoRespaldos: "RESPALDOS",
+    ultimoRespaldo: "Último respaldo",
+    ninguno: "Ninguno",
+    exportarArchivo: "Exportar a un archivo",
+    pieRespaldos: "El respaldo completo se puede guardar fuera del teléfono y sirve para restaurar en otro aparato.",
+    pieExportar: "Los CSV se vuelven a importar en la app. Llevan movimientos y miembros, no los comprobantes ni las firmas — para eso está el respaldo completo.",
+    grupoMantenimiento: "MANTENIMIENTO",
+    pieMantenimiento: "Lo que se borra queda marcado hasta que se compacta. No toca nada de lo que se ve.",
+    restaurarNota: "Reemplaza todo lo capturado después de la fecha del respaldo.",
+    continuar: "Continuar…",
+    seVan: "Se van {{lista}}.",
+    nadaCapturado: "Todavía no hay nada capturado.",
+    tambienEnLosDemas: "El borrado se propaga a los demás aparatos que sincronizan con esta iglesia. La configuración —nombre, logo, firmas, categorías y plantillas— se conserva.",
+    seConservaConfig: "La configuración —nombre, logo, firmas, categorías y plantillas— se conserva.",
+    fabricaFrase: "Se va todo lo anterior y además la configuración: nombre, logo, firmas, categorías y plantillas. La app vuelve como recién instalada.",
+    pieBorrado: "Solo un administrador puede borrar, y hay que escribir el nombre de la iglesia para confirmar.",
+    /* La pantalla de confirmar (S10). */
+    confirmarTitulo: "Confirmar borrado",
+    seVaAEliminar: "SE VA A ELIMINAR",
+    piePerdidaDatos: "No queda copia en el teléfono. La configuración de la iglesia se conserva.",
+    piePerdidaFabrica: "No queda copia en el teléfono. Se va también la configuración, y la app vuelve como recién instalada.",
+    escribeNombre: "ESCRIBE EL NOMBRE DE LA IGLESIA",
+    nombrePlaceholder: "Nombre de la iglesia",
+    pieNombre: "Tiene que coincidir con «{{nombre}}», tal como está escrito en Ajustes › Institución.",
+    pieBoton: "El botón se enciende en rojo solo cuando el nombre está completo y exacto.",
+    cancelarYVolver: "Cancelar y volver",
+  },
+
+  /* Los nombres de lo que guarda la iglesia. Se usan dos veces: como
+     etiqueta de fila en el inventario del borrado y, en `n`, con su
+     cantidad dentro de la frase de consecuencia. */
+  inventario: {
+    miembros: "Miembros",
+    movimientos: "Movimientos",
+    depositos: "Depósitos",
+    cortes: "Cortes de caja",
+    cartas: "Cartas",
+    actas: "Actas",
+    servicios: "Servicios",
+    agenda: "Actividades",
+    n: {
+      miembros_one: "{{count}} miembro",
+      miembros_other: "{{count}} miembros",
+      movimientos_one: "{{count}} movimiento",
+      movimientos_other: "{{count}} movimientos",
+      depositos_one: "{{count}} depósito",
+      depositos_other: "{{count}} depósitos",
+      cortes_one: "{{count}} corte de caja",
+      cortes_other: "{{count}} cortes de caja",
+      cartas_one: "{{count}} carta",
+      cartas_other: "{{count}} cartas",
+      actas_one: "{{count}} acta",
+      actas_other: "{{count}} actas",
+      servicios_one: "{{count}} servicio",
+      servicios_other: "{{count}} servicios",
+      agenda_one: "{{count}} actividad",
+      agenda_other: "{{count}} actividades",
+    },
   },
 
   compactar: {
@@ -1107,7 +1197,7 @@ export const es = {
        movimientos. Se llama "Corrección" y no "Retroactivo" porque lo que se
        está decidiendo es si el pasado estaba MAL, no una opción técnica. */
     correccion: "Corrección",
-    aplicarRetroLabel: "Corregir los meses ya registrados",
+    aplicarRetroLabel: "Aplicar también a los ya registrados",
     label: "Movimiento fijo recurrente",
     pregunta: "¿Este {{tipo}} se repite todos los meses?",
     seRepiteCadaMes: "Se repite cada mes",
@@ -2016,6 +2106,12 @@ export const es = {
     membretePie: "Así se ve el membrete de los PDF con lo que hay escrito abajo.",
     datosMembrete: "Datos del membrete",
     vacioNoImprime: "Lo que quede vacío no se imprime: el membrete se cierra sin dejar renglones en blanco.",
+    direccionPlaceholder: "p. ej. Av. Constitución 1420, Col. Centro",
+    regionPlaceholder: "p. ej. Nuevo León",
+    telefonoPlaceholder: "p. ej. 81 8340 1122",
+    correoPlaceholder: "p. ej. contacto@iglesia.org",
+    secretariaNombrePlaceholder: "p. ej. Lucía Márquez Peña",
+    secretariaCargoPlaceholder: "p. ej. Secretaria",
     piePlaceholder: "p. ej. lema o registro legal que aparece al pie de las cartas",
     secretariaNombre: "Nombre de la secretaria",
     secretariaCargo: "Cargo",
@@ -3166,6 +3262,10 @@ export const es = {
       preferenciasSub: "Apariencia, idioma y sonidos",
       delicada: "Zona sensible",
       delicadaSub: "Respaldos y acciones que no tienen vuelta atrás",
+      /* El subtítulo DENTRO de la banda verde de la zona (maqueta S9).
+         No describe lo que hay —eso lo hace `delicadaSub` en el índice—:
+         avisa, y por eso es más corto y más rotundo. */
+      delicadaBanda: "Nada de lo que pasa aquí se puede deshacer",
       cuenta: "Cuenta",
       cuentaSub: "Tu cuenta, sincronización y ayuda",
       // Lista agrupada de iPhone (ver Configuracion.tsx, enIPhone): un
@@ -3305,6 +3405,7 @@ export const es = {
 
   usuarios: {
     personasGrupo: "Personas",
+    anadirPersona: "Añadir persona",
     areasGrupo: "Áreas",
     piePersonas: "Toca una persona para cambiar su rol. El rol decide en qué áreas entra.",
     pieAreas: "El área decide qué ve cada persona al abrir la app. Alguien puede estar en las dos.",

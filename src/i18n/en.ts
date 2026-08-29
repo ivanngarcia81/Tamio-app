@@ -6,6 +6,10 @@ type Resources = typeof es;
 
 export const en: Resources = {
   common: {
+    /* The conjunction, on its own: it builds two- and three-item lists
+       ("312 members, 1,148 transactions and 47 letters") without a key per
+       possible length. */
+    y: "and",
     verTodo: "See all",
     buscarCorto: "Search…",
     buscarMiembroCorto: "Search member…",
@@ -670,6 +674,7 @@ export const en: Resources = {
   recordModal: {
     detalle: "Details",
     posibleDuplicado: "A similar entry already exists ({{nombres}}). Check before saving; if it is correct, save again.",
+    contacto: "Contact",
     editarIngreso: "Edit income",
     editarGasto: "Edit expense",
     editarMiembro: "Edit member",
@@ -746,6 +751,7 @@ export const en: Resources = {
     marcarPendienteLabel: "Flag for later review — it will not count toward monthly totals until you confirm it in the Inbox",
     nombreFamilia: "Full or family name",
     nombreFamiliaPlaceholder: "e.g. Carlos and Ana Ruiz",
+    rfcMiembroPie: "Only needed to issue tax-deductible receipts.",
     rfcMiembroHint: "(optional — needed for tax-deductible receipts)",
     rfcMiembroPlaceholder: "Tax ID (optional)",
     fechaFuturaIngresos: "Income cannot be recorded with a future date.",
@@ -841,6 +847,21 @@ export const en: Resources = {
     hint: "Only approved income recorded under this member's name is listed.",
   },
 
+  /* The contributor's record on the phone (artboards T9, T10 and T11). */
+  fichaAportante: {
+    ultimo: "last {{fecha}}",
+    sinAportaciones: "no contributions",
+    ejercicios: "Years with activity",
+    vacioTitulo: "No contributions were recorded in {{anio}}",
+    registrar: "Record a contribution",
+    vacioTexto: "You can record the first one right here: it opens with {{nombre}} already set as the contributor.",
+    verAnio: "See {{anio}}",
+    pieOtroAnio: "If they gave in another year, the most recent one with activity is offered here instead of leaving you to hunt for it in the picker.",
+    constanciaAnio: "{{anio}} annual statement",
+    pieConstancia: "Only approved income recorded under this person's name is listed. The share sheet includes printing and sending.",
+    pieSinConstancia: "With no approved income there is no statement to issue.",
+  },
+
   constancia: {
     titulo: "Annual contribution statement",
     archivo: "Statement",
@@ -913,6 +934,72 @@ export const en: Resources = {
     hint: "Exported CSVs can be re-imported into the app. The full backup is a .zip file that includes everything: transactions, members, deposits, settings and the documents too — the receipts you attached, letter attachments, the logo and the signatures. That makes it much larger than before: after a couple of years of attaching receipts, expect several hundred MB. Keep one outside this computer from time to time.",
     guardado: "File saved.",
     sinDatos: "There is no data to export.",
+  },
+
+  /* The phone's sensitive zone (artboards S9 and S10). */
+  zonaSensible: {
+    antesDeTocar: "Before touching anything",
+    antesDeTocarConFecha: "A backup takes a few seconds and is the only thing that can bring back what you lose. The last one was made {{cuando}}.",
+    antesDeTocarSinFecha: "A backup takes a few seconds and is the only thing that can bring back what you lose. You haven't made one from this device yet.",
+    respaldarAhora: "Back up now",
+    grupoRespaldos: "BACKUPS",
+    ultimoRespaldo: "Last backup",
+    ninguno: "None",
+    exportarArchivo: "Export to a file",
+    pieRespaldos: "The full backup can be kept off the phone and is what restores everything on another device.",
+    pieExportar: "CSVs can be imported back into the app. They carry transactions and members, not receipts or signatures — that's what the full backup is for.",
+    grupoMantenimiento: "MAINTENANCE",
+    pieMantenimiento: "Deleted records stay marked until you compact. It touches nothing you can see.",
+    restaurarNota: "Replaces everything entered after the backup's date.",
+    continuar: "Continue…",
+    seVan: "You lose {{lista}}.",
+    nadaCapturado: "Nothing has been entered yet.",
+    tambienEnLosDemas: "The deletion propagates to every other device syncing with this church. Settings — name, logo, signatures, categories and templates — are kept.",
+    seConservaConfig: "Settings — name, logo, signatures, categories and templates — are kept.",
+    fabricaFrase: "You lose all of the above plus the settings: name, logo, signatures, categories and templates. The app goes back to freshly installed.",
+    pieBorrado: "Only an administrator can delete, and the church's name has to be typed to confirm.",
+    /* The confirmation screen (S10). */
+    confirmarTitulo: "Confirm deletion",
+    seVaAEliminar: "WILL BE DELETED",
+    piePerdidaDatos: "No copy is left on the phone. The church's settings are kept.",
+    piePerdidaFabrica: "No copy is left on the phone. The settings go too, and the app goes back to freshly installed.",
+    escribeNombre: "TYPE THE CHURCH'S NAME",
+    nombrePlaceholder: "Church name",
+    pieNombre: "It has to match “{{nombre}}”, exactly as written in Settings › Institution.",
+    pieBoton: "The button only turns red once the name is complete and exact.",
+    cancelarYVolver: "Cancel and go back",
+  },
+
+  /* The names of what the church keeps. Used twice: as the row label in the
+     deletion inventory and, under `n`, with its count inside the consequence
+     sentence. */
+  inventario: {
+    miembros: "Members",
+    movimientos: "Transactions",
+    depositos: "Deposits",
+    cortes: "Cash counts",
+    cartas: "Letters",
+    actas: "Minutes",
+    servicios: "Services",
+    agenda: "Activities",
+    n: {
+      miembros_one: "{{count}} member",
+      miembros_other: "{{count}} members",
+      movimientos_one: "{{count}} transaction",
+      movimientos_other: "{{count}} transactions",
+      depositos_one: "{{count}} deposit",
+      depositos_other: "{{count}} deposits",
+      cortes_one: "{{count}} cash count",
+      cortes_other: "{{count}} cash counts",
+      cartas_one: "{{count}} letter",
+      cartas_other: "{{count}} letters",
+      actas_one: "{{count}} set of minutes",
+      actas_other: "{{count}} sets of minutes",
+      servicios_one: "{{count}} service",
+      servicios_other: "{{count}} services",
+      agenda_one: "{{count}} activity",
+      agenda_other: "{{count}} activities",
+    },
   },
 
   compactar: {
@@ -1057,7 +1144,7 @@ export const en: Resources = {
 
   recurrente: {
     correccion: "Correction",
-    aplicarRetroLabel: "Correct the months already recorded",
+    aplicarRetroLabel: "Apply to the ones already recorded too",
     label: "Recurring fixed transaction",
     pregunta: "Does this {{tipo}} repeat every month?",
     seRepiteCadaMes: "Repeats every month",
@@ -1936,6 +2023,12 @@ export const en: Resources = {
     membretePie: "This is how the letterhead of the PDFs looks with what is written below.",
     datosMembrete: "Letterhead details",
     vacioNoImprime: "Whatever is left empty is not printed: the letterhead closes up without leaving blank lines.",
+    direccionPlaceholder: "e.g. 1420 Constitution Ave, Downtown",
+    regionPlaceholder: "e.g. Nuevo León",
+    telefonoPlaceholder: "e.g. 81 8340 1122",
+    correoPlaceholder: "e.g. contact@church.org",
+    secretariaNombrePlaceholder: "e.g. Lucía Márquez Peña",
+    secretariaCargoPlaceholder: "e.g. Secretary",
     piePlaceholder: "e.g. motto or legal registration shown at the bottom of letters",
     secretariaNombre: "Secretary's name",
     secretariaCargo: "Title",
@@ -3051,6 +3144,7 @@ export const en: Resources = {
       preferenciasSub: "Appearance, language, and sounds",
       delicada: "Sensitive zone",
       delicadaSub: "Backups and actions with no way back",
+      delicadaBanda: "Nothing that happens here can be undone",
       cuenta: "Account",
       cuentaSub: "Your account, sync, and help",
       grupoGeneral: "General",
@@ -3179,6 +3273,7 @@ export const en: Resources = {
 
   usuarios: {
     personasGrupo: "People",
+    anadirPersona: "Add person",
     areasGrupo: "Areas",
     piePersonas: "Tap a person to change their role. The role decides which areas they enter.",
     pieAreas: "The area decides what each person sees when opening the app. Someone can be in both.",
