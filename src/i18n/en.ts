@@ -846,6 +846,21 @@ export const en: Resources = {
     hint: "Only approved income recorded under this member's name is listed.",
   },
 
+  /* The contributor's record on the phone (artboards T9, T10 and T11). */
+  fichaAportante: {
+    ultimo: "last {{fecha}}",
+    sinAportaciones: "no contributions",
+    ejercicios: "Years with activity",
+    vacioTitulo: "No contributions were recorded in {{anio}}",
+    registrar: "Record a contribution",
+    vacioTexto: "You can record the first one right here: it opens with {{nombre}} already set as the contributor.",
+    verAnio: "See {{anio}}",
+    pieOtroAnio: "If they gave in another year, the most recent one with activity is offered here instead of leaving you to hunt for it in the picker.",
+    constanciaAnio: "{{anio}} annual statement",
+    pieConstancia: "Only approved income recorded under this person's name is listed. The share sheet includes printing and sending.",
+    pieSinConstancia: "With no approved income there is no statement to issue.",
+  },
+
   constancia: {
     titulo: "Annual contribution statement",
     archivo: "Statement",

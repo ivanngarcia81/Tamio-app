@@ -864,6 +864,24 @@ export const es = {
     hint: "Solo se listan ingresos aprobados registrados a nombre de este miembro.",
   },
 
+  /* La ficha del aportante en el teléfono (maquetas T9, T10 y T11). */
+  fichaAportante: {
+    ultimo: "último {{fecha}}",
+    sinAportaciones: "sin aportaciones",
+    ejercicios: "Ejercicios con movimientos",
+    /* Sin punto final y en pasado: es el TÍTULO de una tarjeta, no la frase
+       suelta que el escritorio pinta en su hueco vacío (`detalleMiembro.
+       sinAportes`, que sí es una oración y se queda como está). */
+    vacioTitulo: "No se registraron aportaciones en {{anio}}",
+    registrar: "Registrar una aportación",
+    vacioTexto: "Puedes registrar la primera desde aquí: llega con {{nombre}} ya puesto como aportante.",
+    verAnio: "Ver {{anio}}",
+    pieOtroAnio: "Si aportó en otro ejercicio, el año con movimientos más reciente se ofrece aquí en vez de dejarte buscarlo en el selector.",
+    constanciaAnio: "Constancia anual {{anio}}",
+    pieConstancia: "Solo se listan los ingresos aprobados registrados a nombre de esta persona. La hoja de compartir incluye imprimir y enviar.",
+    pieSinConstancia: "Sin ingresos aprobados no hay constancia que emitir.",
+  },
+
   constancia: {
     titulo: "Constancia anual de aportaciones",
     archivo: "Constancia",

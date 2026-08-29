@@ -54,7 +54,11 @@ function bytesABase64(bytes: Uint8Array): string {
 export type ModalTab = "ingreso" | "gasto" | "miembro";
 
 export type ModalMode =
-  | { kind: "create"; tab: ModalTab; bloquearPestana?: boolean }
+  /* `aportante` prerrellena el ingreso con esa persona. Lo pide la ficha del
+     aportante del teléfono (maqueta T11): desde un año sin aportaciones,
+     «Registrar una aportación» tiene que llegar con el nombre ya puesto — si
+     hay que volver a buscarlo, el atajo no ahorra nada. */
+  | { kind: "create"; tab: ModalTab; bloquearPestana?: boolean; aportante?: Member }
   | { kind: "editTx"; tx: Tx }
   | { kind: "editMember"; member: Member };
 
@@ -104,8 +108,9 @@ export function useNuevoMovimiento({ church, mode, onClose, onSaved }: Props) {
   const [monto, setMonto] = useState("");
   const [metodo, setMetodo] = useState("efectivo");
   const [detalle, setDetalle] = useState("");
-  const [aportanteQuery, setAportanteQuery] = useState("");
-  const [aportanteId, setAportanteId] = useState<number | null>(null);
+  const aportantePrevio = mode.kind === "create" ? mode.aportante : undefined;
+  const [aportanteQuery, setAportanteQuery] = useState(aportantePrevio?.nombre ?? "");
+  const [aportanteId, setAportanteId] = useState<number | null>(aportantePrevio?.id ?? null);
   const [beneficiario, setBeneficiario] = useState("");
   const [beneficiarioRfc, setBeneficiarioRfc] = useState("");
   const [constancia, setConstancia] = useState(false);

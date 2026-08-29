@@ -691,6 +691,54 @@ for (const tema of ["light", "dark"]) {
   await ctx.close();
 }
 
+// T9, T10 y T11 · La ficha del aportante. No tiene URL —es la misma página de
+// Aportantes un nivel más adentro— así que hay que llegar tocando una fila. Se
+// toma la tira completa (la jerarquía: identidad, cifras, meses, constancia),
+// la hoja de años y, tocando a alguien sin movimientos, el año vacío.
+{
+  for (const tema of ["light", "dark"]) {
+    const ctx = await contextoIPhone(tema);
+    const page = await ctx.newPage();
+    page.on("pageerror", (e) => console.error(`pageerror (${tema}):`, e.message));
+    await page.goto(`${URL_BASE}/#/miembros`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.waitForTimeout(900);
+    // `--clickable`: la primera `.ios-txrow` de la página es una fila del
+    // grupo RESUMEN («Aportantes · 20»), que no lleva a ninguna parte.
+    await page.locator(".ios-txrow--clickable").first().click();
+    await page.waitForTimeout(1200);
+    await page.screenshot({ path: `${SALIDA}/22-ficha-aportante-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/22-ficha-aportante-${tema}.png`);
+    if (tema === "light") {
+      /* La tira entera, solo en claro: lo que hay que ver aquí es la
+         jerarquía —identidad, cifras, meses, constancia— y no cabe en 852 px.
+         En `fullPage` la cáscara fija se pinta una sola vez arriba, así que
+         esta foto NO sirve para juzgar la barra; para eso está la de arriba. */
+      await page.screenshot({ path: `${SALIDA}/22-ficha-larga.png`, fullPage: true });
+      console.log("  ✓ pruebas/capturas/22-ficha-larga.png");
+    }
+
+    // La hoja de años, con el total de cada ejercicio al lado.
+    await page.locator(".ios-nav-btn").first().click();
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${SALIDA}/22-ficha-anios-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/22-ficha-anios-${tema}.png`);
+    // El año sin aportaciones (T11). La semilla pone TODO en el ejercicio en
+    // curso, así que cambiar de año en la hoja no llega a un vacío: se llega
+    // por una persona que no ha aportado, que en la lista es la que muestra
+    // «—» en vez de un importe.
+    await page.getByRole("button", { name: "Cancelar", exact: true }).last().click();
+    await page.waitForTimeout(400);
+    await page.getByText("Aportantes", { exact: true }).first().click();
+    await page.waitForTimeout(900);
+    await page.locator('.ios-txrow--clickable:has(.ios-txrow-trailing span:text-is("—"))').first().click();
+    await page.waitForTimeout(1100);
+    await page.screenshot({ path: `${SALIDA}/22-ficha-vacia-${tema}.png` });
+    console.log(`  ✓ pruebas/capturas/22-ficha-vacia-${tema}.png`);
+    await ctx.close();
+  }
+}
+
 // S9 y S10 · Zona sensible y confirmar borrado. Ninguna de las dos tiene URL
 // —son la zona `delicada` de Ajustes y una pantalla empujada por encima—, así
 // que hay que llegar tocando. Se toma la tira completa: lo que hay que ver es

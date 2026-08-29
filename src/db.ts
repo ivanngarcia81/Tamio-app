@@ -1807,17 +1807,33 @@ export async function listMemberAportes(memberId: number, churchId: number, yyyy
   );
 }
 
-/** Años (desc) en los que un miembro tiene aportes registrados. */
-export async function memberAporteYears(memberId: number, churchId: number): Promise<string[]> {
+/** Un ejercicio con aportes de esta persona: el año, lo que sumó y cuántas
+ *  fueron. */
+export interface AnioAportes {
+  anio: string;
+  total: Centavos;
+  n: number;
+}
+
+/** Años (desc) en los que un miembro tiene aportes, CON su total y su
+ *  conteo.
+ *
+ *  Antes esto devolvía solo los años, y el selector no podía decir más que
+ *  «2025». Con el total al lado —«2025 · $1,150.00»— el selector deja de ser
+ *  una lista de números y contesta la pregunta de quien lo abre: en qué año
+ *  hubo algo. Es la misma consulta de antes con dos agregados encima, así que
+ *  no cuesta una lectura más. */
+export async function memberAporteResumen(memberId: number, churchId: number): Promise<AnioAportes[]> {
   const d = await getDb();
-  const rows = await d.select<{ anio: string }[]>(
-    `SELECT DISTINCT substr(fecha, 1, 4) AS anio
+  const rows = await d.select<{ anio: string; total: number; n: number }[]>(
+    `SELECT substr(fecha, 1, 4) AS anio, SUM(monto) AS total, count(*) AS n
        FROM transactions
       WHERE church_id = $1 AND member_id = $2 AND tipo = 'ingreso' AND estado = 'aprobado' AND deleted = 0
+      GROUP BY anio
       ORDER BY anio DESC`,
     [churchId, memberId]
   );
-  return rows.map((r) => r.anio);
+  return rows.map((r) => ({ anio: r.anio, total: (r.total ?? 0) as Centavos, n: r.n }));
 }
 
 export async function lastActivityAt(churchId: number): Promise<string | null> {

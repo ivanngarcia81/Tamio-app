@@ -22556,3 +22556,220 @@ input[type="time"].form-input { background-image: none; padding-right: 12px; }
 :root.iphone .content-ajustes .settings-zona .ios-form > .ios-section:last-of-type {
   margin-bottom: 0;
 }
+
+/* ============================================================================
+   35 · LA FICHA DEL APORTANTE (maquetas T9, T10 y T11)
+   ----------------------------------------------------------------------------
+   La identidad vive DENTRO de la banda verde, no en una tarjeta bajo ella:
+   avatar de 52, el nombre como título grande, y los datos de contacto como
+   pastillas translúcidas. La razón no es de adorno — la pregunta que se hace
+   quien abre esta pantalla es «¿es este el Julio Tovar que busco?», y esa se
+   contesta arriba, antes de las cifras, o no se contesta.
+
+   Las cifras que siguen son DOS, no las tres tarjetas del escritorio: el
+   total del año, grande, y a su derecha el conteo con la fecha del último
+   aporte. La tercera tarjeta era el selector de año, y el año subió a la
+   barra: es un control, y arriba se lee como filtro de todo lo de abajo.
+   ============================================================================ */
+
+:root.iphone .fa-identidad {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+:root.iphone .fa-avatar {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, .2);
+  color: var(--cabecera-tinta);
+  font-size: calc(20px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+/* El nombre puede ser largo y el título grande no recorta: baja de renglón,
+   como en cualquier pantalla de iOS con título de 34. */
+:root.iphone .fa-identidad .page-title { min-width: 0; }
+
+:root.iphone .fa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+:root.iphone .fa-chip {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, .12);
+  color: rgba(255, 255, 255, .85);
+  font-size: calc(13px * var(--fs-escala));
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* El estado, más marcado que el resto: es lo único de la fila que no es un
+   dato de contacto sino una condición. */
+:root.iphone .fa-chip--estado {
+  background: rgba(255, 255, 255, .22);
+  color: var(--cabecera-tinta);
+  font-weight: 600;
+}
+
+:root.iphone .fa-cifras {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+:root.iphone .fa-cifras-izq,
+:root.iphone .fa-cifras-der { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+:root.iphone .fa-cifras-der { flex: 0 0 auto; align-items: flex-end; padding-bottom: 5px; text-align: right; }
+:root.iphone .fa-cifras-etiqueta {
+  font-size: calc(13px * var(--fs-escala));
+  color: var(--text-2);
+  white-space: nowrap;
+}
+:root.iphone .fa-cifras-dato {
+  font-size: calc(15px * var(--fs-escala));
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* En el color del texto, no en verde: aquí TODO es ingreso, así que el verde
+   no distinguiría nada — y en este rediseño el verde es marca, no «positivo»
+   (bloque 17). */
+:root.iphone .fa-total {
+  font-size: calc(32px * var(--fs-escala));
+  font-weight: 700;
+  letter-spacing: -.8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+/* Un cero apagado: la cifra sigue estando —quitarla dejaría un hueco raro—
+   pero deja de competir con la tarjeta que sí tiene algo que ofrecer. */
+:root.iphone .fa-total.es-cero { color: var(--text-3); }
+
+/* --- La fila de un aporte ---
+   Primer renglón: pastilla de categoría + día. Segundo: concepto y método,
+   que es donde se leen solo si hacen falta. */
+:root.iphone .fa-linea1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+:root.iphone .fa-dia {
+  font-size: calc(17px * var(--fs-escala));
+  letter-spacing: -.2px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* La pastilla, a la medida de una fila de teléfono: 19 px de alto y 12 px de
+   letra, contra los 4+4 de relleno y el `--fs-caption` de la tabla. Y sin
+   VERSALITAS: en la tabla del escritorio la mayúscula ancla la columna, pero
+   aquí la pastilla convive con un día en minúscula («28 jun») y gritaba. Los
+   colores son los mismos `--cat-*` de siempre, así que claro y oscuro ya
+   están resueltos. */
+:root.iphone .fa-cat {
+  flex: 0 0 auto;
+  height: 19px;
+  padding: 0 7px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  font-size: calc(12px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1;
+  box-shadow: none;
+  max-width: 42%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- El año sin aportaciones (T11) ---
+   Una tarjeta con salidas, no un icono gris en medio de la nada. */
+:root.iphone .fa-vacio {
+  position: relative;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+:root.iphone .fa-vacio::after {
+  content: "";
+  position: absolute;
+  left: 16px; right: 0; bottom: 0;
+  height: 1px;
+  transform: scaleY(0.5);
+  transform-origin: bottom;
+  background: var(--line-soft);
+}
+:root.iphone .fa-vacio-titulo {
+  font-size: calc(17px * var(--fs-escala));
+  font-weight: 600;
+  letter-spacing: -.2px;
+  color: var(--text);
+  text-wrap: pretty;
+}
+:root.iphone .fa-vacio-texto {
+  font-size: calc(15px * var(--fs-escala));
+  line-height: 20px;
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+/* Una fila que ES una acción: su texto va en el color de marca, como
+   cualquier enlace de una lista de iOS. */
+:root.iphone .fa-accion { width: 100%; border: 0; background: none; font: inherit; text-align: left; }
+:root.iphone .fa-accion-texto { color: var(--brand, #059669); }
+:root.iphone .fa-accion-texto.es-fuerte { font-weight: 600; }
+:root.iphone .fa-accion:disabled { cursor: default; }
+:root.iphone .fa-accion:disabled .fa-accion-texto { color: var(--text-3); }
+
+/* Dato secundario en una hoja de selección: el total del ejercicio al lado de
+   su año. La etiqueta se queda con el ancho sobrante para que el dato y la
+   marca vayan siempre pegados a la derecha. */
+.action-sheet-opcion--lista > span:first-child { flex: 1 1 auto; min-width: 0; text-align: left; }
+.ios-picker-detalle {
+  flex: 0 0 auto;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- La ficha es un nivel más adentro ---
+   El carrusel de secciones («Ingresos · Gastos · Aportantes · Reportes») y el
+   «+» son controles de la LISTA: el carrusel salta a otra sección del área y
+   el «+» da de alta a otra persona. Dentro de la ficha de alguien los dos
+   apuntan fuera, y el carrusel además empuja la identidad media pantalla
+   hacia abajo. Es la misma regla que ya esconde `.area-cabecera` cuando hay
+   un «volver» en la barra: en un nivel más adentro, la cáscara es la de ESTE
+   nivel.
+
+   Y con el carrusel escondido hay que devolverle a `.main` el relleno que
+   reservaba para él, que se declara con `!important` en el bloque del
+   iPhone. */
+:root.iphone .app:has(.fa-header) .carrusel-secciones,
+:root.iphone .app:has(.fa-header) .btn-crear { display: none; }
+:root.iphone .app:has(.fa-header) .main.con-carrusel {
+  padding-top: calc(var(--navrow-h) + 12px) !important;
+}
+/* Y la banda vuelve a su alto de barra. Esta es la que costó una foto: la
+   banda (`.app::after`) crece hasta cubrir la rueda cuando `.main` lleva
+   `con-carrusel`, y esa clase la pone App.tsx contando SECCIONES, no mirando
+   si la rueda se pinta. Con la rueda escondida y la banda todavía de 96 px,
+   quedaba un rectángulo verde sólido —z-index 90, por encima del contenido en
+   flujo— tapando exactamente el avatar y el nombre: la cabecera se veía vacía
+   y no había nada mal en el marcado. */
+:root.iphone .app:has(.fa-header):has(.main.con-carrusel)::after {
+  height: calc(var(--navrow-h) + env(safe-area-inset-top)) !important;
+}
