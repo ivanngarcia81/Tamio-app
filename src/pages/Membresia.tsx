@@ -183,11 +183,15 @@ function accent(color: string): CSSProperties {
 interface Props {
   church: Church;
   refreshKey: number;
+  /** false = mira el padrón pero no lo mueve: ni alta, ni baja, ni reactivar,
+   *  ni fusionar. Es el tesorero al que la iglesia le abrió Membresía con
+   *  `tesorero_ve_padron`: ese permiso abre la pantalla, no el acta. */
+  administraPadron: boolean;
   onEdit: (member: Member) => void;
   onChanged: () => void;
 }
 
-export default function Membresia({ church, refreshKey, onEdit, onChanged }: Props) {
+export default function Membresia({ church, refreshKey, administraPadron, onEdit, onChanged }: Props) {
   const { t } = useTranslation();
   // El carrusel de secciones ya muestra "Membresía" como pastilla activa —
   // el título grande sobra ahí.
@@ -640,9 +644,11 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
           {/* El buscador vive en la toolbar; en táctil se queda dentro del
               contenido, al alcance del pulgar. */}
           {esMac() && <MacBuscador value={query} onChange={setQuery} placeholder={t("miembros.buscarPlaceholder")} />}
-          <button className="btn primary btn-nuevo-cabecera" onClick={() => setCrearFicha(true)}>
-            <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
-          </button>
+          {administraPadron && (
+            <button className="btn primary btn-nuevo-cabecera" onClick={() => setCrearFicha(true)}>
+              <IconPlus size={14} /> {t("miembros.nuevoMiembro")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -1041,11 +1047,14 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                   </div>
                   <RowMenu
                     onEdit={() => onEdit(m)}
-                    onDelete={() => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))}
+                    onDelete={administraPadron
+                      ? () => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))
+                      : undefined}
                     deleteLabel={m.activo === 1 ? t("membresia.darDeBaja") : t("membresia.reactivar")}
                     /* En el teléfono NO se pasa: sin acciones de más, RowMenu esconde
-                       los "···" y queda solo el gesto. Fusionar vive en la ficha. */
-                    extraItems={enIPhone ? undefined : [{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
+                       los "···" y queda solo el gesto. Fusionar vive en la ficha.
+                       Y fusionar dos fichas también mueve el padrón. */
+                    extraItems={enIPhone || !administraPadron ? undefined : [{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
                   />
                 </div>
               );
@@ -1121,9 +1130,11 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
                   </span>
                   <RowMenu
                     onEdit={() => onEdit(m)}
-                    onDelete={() => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))}
+                    onDelete={administraPadron
+                      ? () => (m.activo === 1 ? setPendingBaja(m) : setPendingReactivar(m))
+                      : undefined}
                     deleteLabel={m.activo === 1 ? t("membresia.darDeBaja") : t("membresia.reactivar")}
-                    extraItems={[{ label: t("fusion.accion"), onClick: () => setFusionando(m) }]}
+                    extraItems={administraPadron ? [{ label: t("fusion.accion"), onClick: () => setFusionando(m) }] : undefined}
                   />
                 </div>
               </div>
@@ -1296,7 +1307,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
               onSubir={() => setDetente("completa")}
               onVisita={() => setSegDe(hojaDe)}
               onExpediente={() => { setHojaDe(null); setFicha(hojaDe); }}
-              onBaja={() => setPendingBaja(hojaDe)}
+              onBaja={administraPadron ? () => setPendingBaja(hojaDe) : undefined}
             />
           )}
         </HojaDetentesIOS>
@@ -1312,7 +1323,7 @@ export default function Membresia({ church, refreshKey, onEdit, onChanged }: Pro
              partido. En Mac —y en el iPad sin partir— fusionar sigue en el
              menú de la fila y esto no se pasa, para no ofrecer la misma
              acción dos veces. */
-          onFusionar={enIPhone || partido ? () => { const m = ficha; setFicha(null); setFusionando(m); } : undefined}
+          onFusionar={(enIPhone || partido) && administraPadron ? () => { const m = ficha; setFicha(null); setFusionando(m); } : undefined}
         />
       )}
 

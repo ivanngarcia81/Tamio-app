@@ -59,6 +59,10 @@ interface Props {
   refreshKey: number;
   /** false = el padrón lo administra Secretaría (las altas van por Membresía). */
   puedeCrear: boolean;
+  /** false = tampoco archiva ni elimina: `archiveMember` pone `activo = 0`,
+   *  que es una baja sin fecha ni motivo, y la baja es de Secretaría. Va
+   *  aparte de `puedeCrear` por el nombre, no por la regla: hoy son la misma. */
+  puedeBorrar: boolean;
   onEdit: (member: Member) => void;
   onNew: () => void;
   onChanged: () => void;
@@ -70,7 +74,7 @@ interface PendingDelete {
   count: number;
 }
 
-export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew, onChanged }: Props) {
+export default function Miembros({ church, refreshKey, puedeCrear, puedeBorrar, onEdit, onNew, onChanged }: Props) {
   const { t } = useTranslation();
   // El carrusel de secciones ya muestra "Miembros" como pastilla activa
   // (ver Cartas.tsx/Movimientos.tsx) — el título grande de aquí abajo sobra
@@ -334,7 +338,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                   </div>
                   <RowMenu
                     onEdit={() => onEdit(m)}
-                    onDelete={() => requestDelete(m)}
+                    onDelete={puedeBorrar ? () => requestDelete(m) : undefined}
                   />
                 </div>
     );
@@ -799,7 +803,7 @@ export default function Miembros({ church, refreshKey, puedeCrear, onEdit, onNew
                     </span>
                     <RowMenu
                       onEdit={() => onEdit(m)}
-                      onDelete={() => requestDelete(m)}
+                      onDelete={puedeBorrar ? () => requestDelete(m) : undefined}
                     />
                   </div>
                 </div>

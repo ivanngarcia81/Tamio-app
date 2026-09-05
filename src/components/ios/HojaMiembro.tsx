@@ -24,7 +24,9 @@ interface Props {
   onSubir: () => void;
   onVisita: () => void;
   onExpediente: () => void;
-  onBaja: () => void;
+  /** Sin él, la fila de "Dar de baja" no se pinta: quien mira el padrón sin
+   *  poder moverlo no tiene que ver un botón que el servidor va a rechazar. */
+  onBaja?: () => void;
 }
 
 /**
@@ -117,9 +119,11 @@ export default function HojaMiembro({
             <button type="button" className="ios-txrow ios-txrow--clickable" onClick={onExpediente}>
               <div className="ios-txrow-main"><div className="ios-txrow-title es-accion">{t("membresia.completarExpediente")}</div></div>
             </button>
-            <button type="button" className="ios-txrow ios-txrow--clickable" onClick={onBaja}>
-              <div className="ios-txrow-main"><div className="ios-txrow-title es-destructiva">{t("membresia.darDeBaja")}</div></div>
-            </button>
+            {onBaja && (
+              <button type="button" className="ios-txrow ios-txrow--clickable" onClick={onBaja}>
+                <div className="ios-txrow-main"><div className="ios-txrow-title es-destructiva">{t("membresia.darDeBaja")}</div></div>
+              </button>
+            )}
           </div>
 
           <button type="button" className="hm-completa" onClick={onSubir}>

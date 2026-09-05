@@ -46,12 +46,28 @@ export function incluyeSecretaria(plan: string): boolean {
   return plan === "completo" || plan === "secretaria";
 }
 
-/** ¿Puede este rol dar de alta / importar miembros? Cuando el plan incluye
- *  Secretaría, el padrón tiene dueño (Membresía): el tesorero consulta y
- *  edita datos de aportación, pero las altas se hacen allá. En plan "solo
- *  Tesorería" no hay Secretaría y el tesorero mantiene su propio padrón. */
-export function puedeCrearMiembros(role: string, plan: string): boolean {
+/** ¿Este rol mueve el padrón —da de alta, importa, da de baja, archiva,
+ *  elimina, reactiva—? Cuando el plan incluye Secretaría, el padrón tiene
+ *  dueño (Membresía): el tesorero consulta y edita datos de aportación, pero
+ *  las altas y las bajas se hacen allá. En plan "solo Tesorería" no hay
+ *  Secretaría y el tesorero mantiene su propio padrón.
+ *
+ *  Hasta el 5 de septiembre esto solo cubría el ALTA (`puedeCrearMiembros`):
+ *  el tesorero no podía crear a nadie pero sí archivarlo o eliminarlo desde
+ *  Miembros, y `archiveMember` pone `activo = 0` —una baja sin fecha ni
+ *  motivo—. Alta y baja son el mismo acto visto desde los dos lados, y la
+ *  baja es además la que deja historial y avisa a Tesorería: no puede ser de
+ *  quien lleva la caja. Decidido por Iván ese día, para las dos apps.
+ *
+ *  Esconder el botón no es el control: el disparador `frenar_baja_tesorero`
+ *  de `supabase/sync-p2-padron.sql` es el que se niega en el servidor. */
+export function administraPadron(role: string, plan: string): boolean {
   return role !== "tesorero" || !incluyeSecretaria(plan);
+}
+
+/** El nombre viejo, que solo hablaba del alta. Es la misma regla. */
+export function puedeCrearMiembros(role: string, plan: string): boolean {
+  return administraPadron(role, plan);
 }
 
 /** La integración entre áreas (Tesorería consume los miembros de Secretaría y

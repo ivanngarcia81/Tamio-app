@@ -44,7 +44,7 @@ import { borrarTodoLocal, contarRegistroNuevo, countPendingTx, getOrCreateChurch
 import i18n, { initialLangPref, resolveLang, saveLangPref, type LangPref } from "./i18n";
 import { HOME_POR_ROL, initialRole, permisosDe, puedeEliminarMovimientos, puedeVer, saveRole, type Role } from "./role";
 import { areaDeRuta, seccionesVisibles } from "./navegacion";
-import { evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
+import { administraPadron, evaluarVigencia, incluyeSecretaria, incluyeTesoreria, puedeCrearMiembros, rutaPermitidaPorPlan, urlCompra } from "./plan";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { esMac } from "./movil";
 import { IconSidebar } from "./icons";
@@ -466,6 +466,9 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
     if (pathname === "/") return dashboardEsFinanciero;
     if (pathname === "/ingresos" || pathname === "/gastos") return true;
     if (pathname === "/miembros") return puedeCrearMiembrosAqui;
+    // Membresía también da de alta, y con la misma regla: el tesorero al que
+    // la iglesia le abrió el padrón llega para mirar, no para crear a nadie.
+    if (pathname === "/membresia") return administraPadron(role, church.plan);
     return RUTAS_CREAR_NAVEGABLE.has(pathname);
   }
   function crearAqui() {
@@ -586,6 +589,7 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
             church={church}
             refreshKey={refreshKey}
             puedeCrear={puedeCrearMiembros(role, church.plan)}
+            puedeBorrar={administraPadron(role, church.plan)}
             onEdit={openEditMember}
             onNew={() => setModalMode({ kind: "create", tab: "miembro" })}
             onChanged={onChanged}
@@ -606,6 +610,9 @@ function Shell({ church, onChurchUpdated }: { church: Church; onChurchUpdated: (
           <Membresia
             church={church}
             refreshKey={refreshKey}
+            /* El tesorero llega aquí si la iglesia le abre el padrón
+               (`tesorero_ve_padron`): para mirar, no para mover a nadie. */
+            administraPadron={administraPadron(role, church.plan)}
             onEdit={openEditMember}
             onChanged={onChanged}
           />
