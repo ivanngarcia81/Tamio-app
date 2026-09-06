@@ -3,8 +3,16 @@
 -- Ejecuta en Supabase → SQL Editor → New query → Run (una sola vez).
 -- Requiere P1 (los permisos de Tesorería en `iglesias`) y `members`.
 --
--- SIN APLICAR al escribirlo (5 sep 2026). Las dos apps ya esconden los
--- botones; esto es lo que hace que esconderlos no sea lo único que hay.
+-- APLICADO el 6 sep 2026 en `hkpbkpojeierxqtbmagh`, el proyecto al que apuntan
+-- las dos apps. Las dos ya escondían los botones; esto es lo que hace que
+-- esconderlos no sea lo único que hay.
+--
+-- La comprobación de abajo se corrió sobre los datos de verdad y dio
+-- `bloqueado=t relevo=t sello_avanzo=t`, sin dejar rastro. Antes se verificó
+-- contra la base —no contra este archivo— que las columnas existen y son de
+-- los tipos que se dan por hechos: `activo` entero, `deleted` booleano,
+-- `fecha_baja`/`motivo_baja` texto y `updated_at` timestamptz, que es lo que
+-- hace válido el `greatest(...)` de más abajo.
 --
 -- La regla, decidida por Iván ese día: dar de alta y de baja a una persona es
 -- de Secretaría. El administrador también; el tesorero no, ni con
