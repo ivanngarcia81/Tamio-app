@@ -3,6 +3,7 @@ import i18n, { currentLang } from "./i18n";
 import { currencySymbol } from "./currencies";
 import { CERO, aDecimal, fijarMonedaDeEntrada, localeDeNumeros, restar, sumar, type Centavos } from "./dinero";
 import { quienRegistra } from "./sesion";
+import { siguienteSeq, type SerieAnual } from "./folios";
 import { tonoCategoria } from "./colores";
 import { RECURRENCIA_NINGUNA, parseExcepciones, parseRecurrencia } from "./services/agenda/recurrencia";
 
@@ -2247,14 +2248,28 @@ export async function listActas(churchId: number): Promise<Acta[]> {
 }
 
 /** Folio consecutivo por año: ACTA-2026-001, ACTA-2026-002… */
+/**
+ * El folio de un acta. **Lo da el contador del servidor**; sin red se cuenta
+ * aquí y lo repara la sincronización.
+ *
+ * Contaba con `count(*)` de las actas del año, y de ahí salieron las cuatro
+ * ACTA-2026-001 que hay en la base: borrar un acta hace que la siguiente reuse
+ * su número, y dos aparatos sin sincronizar cuentan lo mismo. El respaldo local
+ * usa ya el MÁXIMO del folio, que al menos no reutiliza lo borrado.
+ */
 async function nextActaFolio(churchId: number, fecha: string): Promise<string> {
-  const d = await getDb();
   const anio = fecha.slice(0, 4);
-  const rows = await d.select<{ n: number }[]>(
-    "SELECT count(*) AS n FROM actas WHERE church_id = $1 AND substr(fecha, 1, 4) = $2 AND deleted = 0",
+  const delServidor = await siguienteSeq("acta", anio);
+  if (delServidor != null) {
+    return `ACTA-${anio}-${String(delServidor).padStart(3, "0")}`;
+  }
+  const d = await getDb();
+  const rows = await d.select<{ m: number | null }[]>(
+    `SELECT MAX(CAST(substr(folio, 11) AS INTEGER)) AS m FROM actas
+      WHERE church_id = $1 AND folio LIKE 'ACTA-' || $2 || '-%'`,
     [churchId, anio]
   );
-  const n = (rows[0]?.n ?? 0) + 1;
+  const n = (rows[0]?.m ?? 0) + 1;
   return `ACTA-${anio}-${String(n).padStart(3, "0")}`;
 }
 
@@ -2484,7 +2499,9 @@ function cartaParams(c: NewCarta): unknown[] {
 export async function insertCarta(churchId: number, c: NewCarta): Promise<Carta | null> {
   const d = await getDb();
   const anio = c.fecha_emision.slice(0, 4);
-  const seq = await nextCartaSeq(churchId, anio);
+  // El número lo da el servidor; sin red se cuenta aquí, como antes, y lo
+  // repara la sincronización. Ver `folios.ts`.
+  const seq = (await siguienteSeq("carta", anio)) ?? (await nextCartaSeq(churchId, anio));
   const folio = `CAR-${anio}-${String(seq).padStart(4, "0")}`;
   const historial = JSON.stringify([{ de: "", a: c.estado, fecha: nowLocalIso() }]);
   await d.execute(
@@ -2868,9 +2885,27 @@ export interface TrasladoSalida {
 
 export type NewTrasladoSalida = Omit<TrasladoSalida, "id" | "church_id" | "numero_seq" | "folio" | "historial_estados" | "creado_en" | "modificado_en">;
 
+/** El folio de un traslado o una solicitud. **Lo da el contador del servidor**;
+ *  sin red se cuenta aquí y lo repara la sincronización. La serie del contador
+ *  se deduce de la tabla: son los mismos nombres. */
 async function nextFolio(tabla: string, campoFecha: string, prefijo: string, churchId: number, fecha: string): Promise<{ seq: number; folio: string }> {
-  const d = await getDb();
   const anio = fecha.slice(0, 4);
+  // Explícito y no derivado del nombre: "traslados_salida" no es
+  // "traslado_salida" quitándole una letra, y una serie mal escrita hace que el
+  // servidor rechace la llamada y se caiga al conteo local sin que nadie lo
+  // note. Los nombres de las series los fija la migración.
+  const series: Record<string, SerieAnual> = {
+    traslados_salida:  "traslado_salida",
+    traslados_entrada: "traslado_entrada",
+    solicitudes:       "solicitud",
+  };
+  const serie = series[tabla];
+  if (!serie) throw new Error(`Tabla sin serie de folio: ${tabla}`);
+  const delServidor = await siguienteSeq(serie, anio);
+  if (delServidor != null) {
+    return { seq: delServidor, folio: `${prefijo}-${anio}-${String(delServidor).padStart(4, "0")}` };
+  }
+  const d = await getDb();
   const rows = await d.select<{ m: number | null }[]>(
     `SELECT MAX(numero_seq) AS m FROM ${tabla} WHERE church_id = $1 AND substr(${campoFecha}, 1, 4) = $2`,
     [churchId, anio]
