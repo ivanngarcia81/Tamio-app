@@ -1271,7 +1271,9 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- porque la tabla no tenía política de UPDATE— y la regla normal de
             -- "gana el más nuevo" habría borrado el membrete entero de este
             -- equipo: dirección, datos fiscales, teléfonos y los tres
-            -- firmantes, sustituidos por cadenas en blanco.
+            -- firmantes, sustituidos por cadenas en blanco. Y donde los dos
+            -- lados tenían algo, habría cambiado el nombre de la iglesia por el
+            -- de una de prueba.
             ALTER TABLE churches ADD COLUMN updated_at TEXT;
         "#,
     }]

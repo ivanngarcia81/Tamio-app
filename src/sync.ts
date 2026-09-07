@@ -199,10 +199,10 @@ const COLUMNAS_IGLESIA: readonly (readonly [string, string])[] = [
  * el iPhone sin que nada chirriara.
  *
  * Gana el que cambió más tarde, como en el resto del sync — **salvo la primera
- * vez, que se fusiona campo a campo**. Ver el comentario de dentro: la fila de
- * la nube estaba casi vacía y la regla normal habría borrado el membrete de
- * este equipo. Cuando las dos tienen algo distinto, gana la nube, que es lo que
- * Iván decidió el 7 de septiembre de 2026.
+ * vez, que se fusiona campo a campo y manda este equipo**. Ver el comentario de
+ * dentro: la fila de la nube estaba casi vacía y con datos de prueba, y la
+ * regla normal habría borrado el membrete de este equipo y le habría cambiado
+ * el nombre a la iglesia.
  *
  * **Lo que NO sube, y no por olvido:**
  *
@@ -250,7 +250,7 @@ export async function sincronizarIglesia(churchIdLocal: number): Promise<Resulta
     if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
     const remota = remotaRaw as FilaRemota;
 
-    // **El primer encuentro se FUSIONA, no se pisa.**
+    // **El primer encuentro se FUSIONA, y manda este equipo.**
     //
     // `updated_at` en NULL significa que esta iglesia nunca ha hablado con la
     // nube. Aplicarle el "gana el más nuevo" de siempre sería tratar una fila
@@ -259,13 +259,20 @@ export async function sincronizarIglesia(churchIdLocal: number): Promise<Resulta
     // la tabla no tenía política de UPDATE— y habría borrado el membrete
     // entero de este equipo, con sus datos fiscales y sus firmantes.
     //
-    // Así que la primera vez se toma, campo a campo, el que tenga algo. Si los
-    // dos lo tienen y difieren, gana la nube, que es lo que se decidió. Después
-    // de esta pasada la fila queda con fecha y todo sigue por la regla normal.
+    // Así que la primera vez se toma, campo a campo, el que tenga algo; y
+    // cuando los dos tienen algo distinto **gana el de aquí**. Decidido por
+    // Iván el 7 de septiembre de 2026 mirando lo que había de verdad en cada
+    // lado: en la nube, datos de prueba y una iglesia llamada "Iglesia
+    // principal"; en este equipo, la configurada de verdad. Con el desempate al
+    // revés, el escritorio habría perdido su nombre en la barra lateral y en
+    // todos los documentos que emite.
+    //
+    // Después de esta pasada la fila queda con fecha y todo sigue por la regla
+    // normal de "gana el más reciente", en las dos direcciones.
     if (local.updated_at === null || local.updated_at === undefined) {
       const fusionada: Record<string, unknown> = {};
       for (const [aqui, alla] of COLUMNAS_IGLESIA) {
-        fusionada[aqui] = vacio(remota[alla]) ? (local[aqui] ?? null) : remota[alla];
+        fusionada[aqui] = vacio(local[aqui]) ? (remota[alla] ?? null) : local[aqui];
       }
       const ahora = new Date().toISOString();
       const sets = COLUMNAS_IGLESIA.map(([aqui], i) => `${aqui} = $${i + 1}`).join(", ");
