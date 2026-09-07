@@ -32,6 +32,10 @@ export interface Church {
   /** Se sube desde Configuración → Información de la iglesia; se muestra
    *  en el círculo del sidebar y el PDF del Dashboard ya la usa si existe. */
   logo_path: string | null;
+  /** Cuándo se cambió esta configuración (migración 52). Es lo que decide
+   *  quién gana al sincronizar con `iglesias`; NULL en las filas anteriores a
+   *  la migración, y NULL cuenta como el año cero. */
+  updated_at: string | null;
   tesorero_nombre: string | null;
   tesorero_cargo: string | null;
   tesorero_email: string | null;
@@ -627,7 +631,15 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
        avisar_sin_comprobante = COALESCE($27, avisar_sin_comprobante),
        umbral_comprobante = CASE WHEN $28 = 1 THEN $29 ELSE umbral_comprobante END,
        avisar_duplicados = COALESCE($30, avisar_duplicados),
-       pedir_doble_firma = COALESCE($31, pedir_doble_firma)
+       pedir_doble_firma = COALESCE($31, pedir_doble_firma),
+       -- La marca de cuándo se cambió (migración 52). Sin ella no había forma
+       -- de saber si esta configuración es más reciente que la de la nube, y
+       -- por eso la iglesia era la única tabla que no se sincronizaba: el
+       -- teléfono escribía iglesias en Supabase y el escritorio escribía aquí,
+       -- cada uno con su verdad. La pone el UPDATE y no el llamador, igual que
+       -- en las demás tablas. (Sin acentos graves aquí dentro: esto vive en un
+       -- template literal y los cerraría.)
+       updated_at = $33
      WHERE id = $32`,
     [
       c.nombre, c.ciudad ?? null, c.pais ?? null, c.moneda, c.logo_path ?? null,
@@ -650,6 +662,7 @@ export async function updateChurch(id: number, c: ChurchUpdate): Promise<Church>
       c.avisar_duplicados ?? null,
       c.pedir_doble_firma ?? null,
       id,
+      new Date().toISOString(),
     ]
   );
   const rows = await d.select<Church[]>("SELECT * FROM churches WHERE id = $1", [id]);

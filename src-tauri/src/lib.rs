@@ -1245,6 +1245,30 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- filas se marcan borradas y la tabla se queda, vacía, un tiempo.
             DROP TABLE IF EXISTS mensajes;
         "#,
+    },
+    motordb::Migracion {
+        version: 52,
+        description: "la iglesia gana fecha de cambio, para poder sincronizarla",
+        sql: r#"
+            -- **La configuración de la iglesia no se sincronizaba con nada.**
+            -- `churches` vive aquí y de `iglesias` en la nube solo se BAJABAN
+            -- el plan y los dos permisos; el nombre, la moneda, el membrete y
+            -- el logo nunca subían. El teléfono, mientras tanto, escribe esa
+            -- misma fila en Supabase: dos verdades sobre la misma iglesia, y
+            -- ninguna de las dos apps enterándose de la otra.
+            --
+            -- Para unirlas hace falta saber quién cambió más tarde, y esta
+            -- tabla no tenía con qué: el resto de las tablas sincronizadas
+            -- llevan `updated_at` y esta no.
+            --
+            -- **Se queda NULL a propósito en las filas que ya existen.** NULL
+            -- cuenta como el año cero, así que en la primera pasada gana lo de
+            -- la nube y el escritorio recibe lo que hay allí. Es la decisión de
+            -- Iván del 7 de septiembre de 2026: la configuración buena es la
+            -- que acababa de revisar en el iPhone. Rellenarla con `now` habría
+            -- hecho ganar a este equipo y habría pisado aquello.
+            ALTER TABLE churches ADD COLUMN updated_at TEXT;
+        "#,
     }]
 }
 

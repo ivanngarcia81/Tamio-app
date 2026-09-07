@@ -150,14 +150,148 @@ export async function sincronizarPermisosTesoreria(churchIdLocal: number): Promi
 }
 
 /**
+ * Cómo se llama cada dato aquí y cómo se llama en la nube.
+ *
+ * No coinciden en cinco, y por eso el mapa está escrito y no se deduce: aquí
+ * `estado_provincia`, allá `estado`; aquí `ein`, allá `id_fiscal`; aquí
+ * `email`, allá `correo`; y la secretaria es `secretaria_*` aquí y
+ * `secretario_*` allá. `region` no existe arriba y se queda en el equipo.
+ */
+const COLUMNAS_IGLESIA: readonly (readonly [string, string])[] = [
+  ["nombre", "nombre"],
+  ["direccion", "direccion"],
+  ["ciudad", "ciudad"],
+  ["estado_provincia", "estado"],
+  ["pais", "pais"],
+  ["codigo_postal", "codigo_postal"],
+  ["ein", "id_fiscal"],
+  ["telefono", "telefono"],
+  ["email", "correo"],
+  ["moneda", "moneda"],
+  ["pie_institucional", "pie_institucional"],
+  ["saldo_inicial", "saldo_inicial"],
+  ["pastor_nombre", "pastor_nombre"],
+  ["pastor_cargo", "pastor_cargo"],
+  ["pastor_email", "pastor_email"],
+  ["pastor_telefono", "pastor_telefono"],
+  ["tesorero_nombre", "tesorero_nombre"],
+  ["tesorero_cargo", "tesorero_cargo"],
+  ["tesorero_email", "tesorero_email"],
+  ["tesorero_telefono", "tesorero_telefono"],
+  ["secretaria_nombre", "secretario_nombre"],
+  ["secretaria_cargo", "secretario_cargo"],
+] as const;
+
+/**
+ * **Los datos de la iglesia, en las dos direcciones.**
+ *
+ * Era la única tabla de las dos apps que no se sincronizaba con nada. De
+ * `iglesias` solo se bajaban el plan y los dos permisos (arriba), mientras el
+ * teléfono escribía esa MISMA fila en Supabase con el nombre, la moneda, el
+ * membrete y el logo. Dos verdades sobre la misma iglesia, y cada app viendo
+ * solo la suya: se podía tener "Iglesia principal" en el Mac y otro nombre en
+ * el iPhone sin que nada chirriara.
+ *
+ * Gana el que cambió más tarde, como en el resto del sync. Las filas anteriores
+ * a la migración 52 tienen `updated_at` en NULL, que cuenta como el año cero:
+ * en la primera pasada gana la nube, que es lo que Iván decidió el 7 de
+ * septiembre de 2026 —la configuración buena era la que acababa de revisar en
+ * el iPhone—.
+ *
+ * **Lo que NO sube, y no por olvido:**
+ *
+ * - `plan`, `sub_estado` y `sub_vence`: los escribe el webhook de pago o el
+ *   dueño en el panel. La nube es la autoridad y aquí solo se copian.
+ * - `tesorero_ve_padron` y `tesorero_puede_eliminar`: van por la función
+ *   `fijar_permisos_tesoreria`, que comprueba el rol. Si el aparato pudiera
+ *   escribirlos, el permiso no sería un permiso sino una preferencia.
+ * - Las firmas (`tesorero_firma_path`, `pastor_firma_path`): son archivos de
+ *   ESTE equipo y no viajan a propósito, igual que en el teléfono. Una firma
+ *   que viaja a todos los aparatos es un sello que cualquiera estampa.
+ * - **`logo_path`, y esta sí es una deuda y no una decisión.** La columna
+ *   existe en los dos lados y significa cosas distintas: aquí es una ruta de
+ *   archivo relativa a la carpeta de datos de este equipo
+ *   (`imagenes/logo-1757…png`) y allá es una ruta dentro del bucket
+ *   `comprobantes` de Supabase (`<church_id>/logo/<uuid>.png`). Hacerla viajar
+ *   hoy solo conseguiría que cada app recibiera una ruta que no sabe leer, y
+ *   que este equipo perdiera de vista su propio logo en la primera pasada.
+ *
+ *   Para unirlos hace falta que el escritorio hable con Storage, y hoy no lo
+ *   hace por ningún sitio: sus comprobantes también son archivos locales. Es
+ *   un trabajo aparte y con su propia decisión —si los adjuntos del escritorio
+ *   pasan a la nube o no—, no un detalle de este paso.
+ *
+ * Los tres primeros los congela además un disparador en Postgres
+ * (`iglesias_congelar_administradas`), así que mandarlos no serviría de nada
+ * aunque se colaran: es el cinturón además de los tirantes.
+ */
+export async function sincronizarIglesia(churchIdLocal: number): Promise<ResultadoSync> {
+  if (!supabase) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-login" };
+  const remoteChurch = await churchIdRemoto();
+  if (!remoteChurch) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+  try {
+    const d = await getDb();
+    const locales = await d.select<FilaLocal[]>("SELECT * FROM churches WHERE id = $1", [churchIdLocal]);
+    const local = locales[0];
+    if (!local) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-iglesia" };
+
+    const { data: remotaRaw, error: errPull } = await supabase
+      .from("iglesias")
+      .select("*")
+      .eq("id", remoteChurch)
+      .single();
+    if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
+    const remota = remotaRaw as FilaRemota;
+
+    const localMasNueva = epoch(local.updated_at) > epoch(remota.updated_at);
+
+    if (localMasNueva) {
+      const fila: Record<string, unknown> = {};
+      for (const [aqui, alla] of COLUMNAS_IGLESIA) fila[alla] = local[aqui] ?? null;
+      const { error } = await supabase.from("iglesias").update(fila).eq("id", remoteChurch);
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+      return { ok: true, subidos: 1, bajados: 0 };
+    }
+
+    // Nada que hacer si son la misma: escribir por escribir dispararía el
+    // disparador de la nube y movería `updated_at` sin que nadie cambiara nada.
+    if (epoch(remota.updated_at) === epoch(local.updated_at)) {
+      return { ok: true, subidos: 0, bajados: 0 };
+    }
+
+    const sets = COLUMNAS_IGLESIA.map(([aqui], i) => `${aqui} = $${i + 1}`).join(", ");
+    const valores = COLUMNAS_IGLESIA.map(([, alla]) => remota[alla] ?? null);
+    const n = COLUMNAS_IGLESIA.length;
+    await d.execute(
+      `UPDATE churches SET ${sets}, updated_at = $${n + 1} WHERE id = $${n + 2}`,
+      [...valores, typeof remota.updated_at === "string" ? remota.updated_at : new Date().toISOString(), churchIdLocal],
+    );
+    return { ok: true, subidos: 0, bajados: 1 };
+  } catch (e) {
+    return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: String(e) };
+  }
+}
+
+/**
  * Cambia los dos permisos. Lo llama el administrador desde Ajustes.
  *
  * Pasa por una FUNCIÓN del servidor (`fijar_permisos_tesoreria`) y no por un
- * UPDATE directo, porque `iglesias` no tiene política de escritura y no
- * conviene que la tenga: el permiso de UPDATE de Supabase es de tabla, no de
- * columna, así que abrirla para el administrador abriría también `plan` y
- * cualquiera con ese rol podría regalarse la suscripción. La función expone
- * exactamente dos columnas y comprueba el rol ella misma.
+ * UPDATE directo, y sigue siendo lo correcto aunque el motivo escrito aquí
+ * haya caducado.
+ *
+ * Decía: "`iglesias` no tiene política de escritura y no conviene que la
+ * tenga, porque el permiso de UPDATE de Supabase es de tabla y no de columna,
+ * así que abrirla para el administrador abriría también `plan`". La objeción
+ * era buena. **Desde el 7 de septiembre de 2026 la tabla SÍ tiene política de
+ * UPDATE** —sin ella el teléfono no podía guardar nada de Ajustes · Iglesia, y
+ * llevaba meses sin poder— y lo que resuelve el problema de la columna es un
+ * disparador, `iglesias_congelar_administradas`, que devuelve a su valor
+ * anterior `id`, `plan`, la suscripción y los dos permisos en cualquier UPDATE
+ * que no venga de esta función.
+ *
+ * O sea: el control por columna existe, pero lo hace Postgres y no el permiso.
+ * Por eso los permisos siguen pasando por aquí, que es quien comprueba el rol.
  *
  * El espejo local se refresca solo si el servidor aceptó. Si el servidor dice
  * que no —porque quien lo pide no es administrador—, la pantalla se queda como
@@ -1681,6 +1815,13 @@ export async function sincronizarTodo(churchIdLocal: number): Promise<ResultadoS
   // manda y el aparato solo guarda copia. Van fuera del array de pasos porque
   // un fallo aquí no debe cortar la sincronización de los datos.
   await sincronizarPermisosTesoreria(churchIdLocal).catch(() => {});
+  // **Y la configuración de la iglesia**, que hasta el 7 de septiembre de 2026
+  // era la única tabla que no viajaba: el teléfono escribía `iglesias` en
+  // Supabase y el escritorio escribía `churches` aquí, cada uno con su verdad.
+  // Va antes que los datos porque de ella salen la moneda y el membrete con
+  // los que se pinta todo lo demás. Fuera del array por lo mismo que las dos
+  // de arriba: si falla, no debe cortar la sincronización de los registros.
+  await sincronizarIglesia(churchIdLocal).catch(() => {});
   const m = await sincronizarMiembros(churchIdLocal);
   if (!m.ok) return etiquetarTabla("members", m);
   // Categorías antes que las transacciones, para que sus referencias
