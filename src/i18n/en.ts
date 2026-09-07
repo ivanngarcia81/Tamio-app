@@ -2189,6 +2189,8 @@ export const en: Resources = {
       nombramiento: "Ministerial appointment",
       reconocimiento: "Recognition",
       constanciaServicio: "Certificate of service",
+      bautismo: "Baptism certificate",
+      bienvenida: "Welcome letter",
       traslado: "Transfer letter",
       personalizada: "Custom",
     },

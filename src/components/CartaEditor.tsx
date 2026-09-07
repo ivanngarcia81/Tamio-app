@@ -59,10 +59,22 @@ function resaltarVariables(texto: string) {
   );
 }
 
+/** Los tipos de carta que la iglesia puede emitir.
+ *
+ *  **No es lo mismo que `TIPOS_INICIALES`** (`services/cartas/plantillas.ts`),
+ *  que son las plantillas que se siembran: un tipo puede existir sin plantilla
+ *  —quien lo elija escribe la carta a mano— y de hecho tres lo hacen desde
+ *  siempre. Confundir las dos listas ya costó un pendiente mal escrito.
+ *
+ *  `bautismo` y `bienvenida` llegaron desde la app de iOS, que los ofrecía y el
+ *  web no: una carta emitida en el teléfono con ese tipo se leía aquí como la
+ *  clave cruda —"cartas.tipoDoc.bautismo"— y no salía en este selector, así que
+ *  no se podía ni corregir. Los pidió Iván. */
 export const TIPOS_CARTA = [
   "recomendacion", "certificacion", "constanciaActivo", "buenaConducta", "presentacion",
   "invitacion", "agradecimiento", "autorizacion", "solicitud", "nombramiento",
-  "reconocimiento", "constanciaServicio", "traslado", "personalizada",
+  "reconocimiento", "constanciaServicio", "bautismo", "bienvenida", "traslado",
+  "personalizada",
 ] as const;
 
 export const DESTINATARIOS = ["miembro", "iglesia", "pastor", "institucion", "externo", "personalizado"] as const;

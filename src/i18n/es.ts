@@ -2278,6 +2278,8 @@ export const es = {
       nombramiento: "Nombramiento ministerial",
       reconocimiento: "Reconocimiento",
       constanciaServicio: "Constancia de servicio",
+      bautismo: "Constancia de bautismo",
+      bienvenida: "Carta de bienvenida",
       traslado: "Carta de traslado",
       personalizada: "Personalizada",
     },
