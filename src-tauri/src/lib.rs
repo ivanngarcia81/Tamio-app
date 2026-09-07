@@ -1261,12 +1261,17 @@ fn migraciones() -> Vec<motordb::Migracion> {
             -- tabla no tenía con qué: el resto de las tablas sincronizadas
             -- llevan `updated_at` y esta no.
             --
-            -- **Se queda NULL a propósito en las filas que ya existen.** NULL
-            -- cuenta como el año cero, así que en la primera pasada gana lo de
-            -- la nube y el escritorio recibe lo que hay allí. Es la decisión de
-            -- Iván del 7 de septiembre de 2026: la configuración buena es la
-            -- que acababa de revisar en el iPhone. Rellenarla con `now` habría
-            -- hecho ganar a este equipo y habría pisado aquello.
+            -- **Se queda NULL a propósito en las filas que ya existen**, y ese
+            -- NULL no significa "el año cero": significa "esta iglesia nunca ha
+            -- hablado con la nube". `sincronizarIglesia` lo trata como el
+            -- primer encuentro y FUSIONA campo a campo en vez de pisar.
+            --
+            -- La diferencia no es teórica. La fila de arriba estaba casi vacía
+            -- —el teléfono no pudo escribir en `iglesias` hasta ese mismo día,
+            -- porque la tabla no tenía política de UPDATE— y la regla normal de
+            -- "gana el más nuevo" habría borrado el membrete entero de este
+            -- equipo: dirección, datos fiscales, teléfonos y los tres
+            -- firmantes, sustituidos por cadenas en blanco.
             ALTER TABLE churches ADD COLUMN updated_at TEXT;
         "#,
     }]

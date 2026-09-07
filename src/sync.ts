@@ -149,6 +149,12 @@ export async function sincronizarPermisosTesoreria(churchIdLocal: number): Promi
   );
 }
 
+/** Vacío es `null`, `undefined` o la cadena en blanco. El cero NO es vacío: un
+ *  saldo de apertura de 0 es una respuesta, no una ausencia. */
+function vacio(v: unknown): boolean {
+  return v === null || v === undefined || (typeof v === "string" && v.trim() === "");
+}
+
 /**
  * Cómo se llama cada dato aquí y cómo se llama en la nube.
  *
@@ -192,11 +198,11 @@ const COLUMNAS_IGLESIA: readonly (readonly [string, string])[] = [
  * solo la suya: se podía tener "Iglesia principal" en el Mac y otro nombre en
  * el iPhone sin que nada chirriara.
  *
- * Gana el que cambió más tarde, como en el resto del sync. Las filas anteriores
- * a la migración 52 tienen `updated_at` en NULL, que cuenta como el año cero:
- * en la primera pasada gana la nube, que es lo que Iván decidió el 7 de
- * septiembre de 2026 —la configuración buena era la que acababa de revisar en
- * el iPhone—.
+ * Gana el que cambió más tarde, como en el resto del sync — **salvo la primera
+ * vez, que se fusiona campo a campo**. Ver el comentario de dentro: la fila de
+ * la nube estaba casi vacía y la regla normal habría borrado el membrete de
+ * este equipo. Cuando las dos tienen algo distinto, gana la nube, que es lo que
+ * Iván decidió el 7 de septiembre de 2026.
  *
  * **Lo que NO sube, y no por olvido:**
  *
@@ -243,6 +249,37 @@ export async function sincronizarIglesia(churchIdLocal: number): Promise<Resulta
       .single();
     if (errPull) return { ok: false, subidos: 0, bajados: 0, motivo: "sin-conexion", error: errPull.message };
     const remota = remotaRaw as FilaRemota;
+
+    // **El primer encuentro se FUSIONA, no se pisa.**
+    //
+    // `updated_at` en NULL significa que esta iglesia nunca ha hablado con la
+    // nube. Aplicarle el "gana el más nuevo" de siempre sería tratar una fila
+    // en blanco como una respuesta: la de arriba estaba casi vacía —el teléfono
+    // no pudo escribir en `iglesias` hasta el 7 de septiembre de 2026, porque
+    // la tabla no tenía política de UPDATE— y habría borrado el membrete
+    // entero de este equipo, con sus datos fiscales y sus firmantes.
+    //
+    // Así que la primera vez se toma, campo a campo, el que tenga algo. Si los
+    // dos lo tienen y difieren, gana la nube, que es lo que se decidió. Después
+    // de esta pasada la fila queda con fecha y todo sigue por la regla normal.
+    if (local.updated_at === null || local.updated_at === undefined) {
+      const fusionada: Record<string, unknown> = {};
+      for (const [aqui, alla] of COLUMNAS_IGLESIA) {
+        fusionada[aqui] = vacio(remota[alla]) ? (local[aqui] ?? null) : remota[alla];
+      }
+      const ahora = new Date().toISOString();
+      const sets = COLUMNAS_IGLESIA.map(([aqui], i) => `${aqui} = $${i + 1}`).join(", ");
+      const n = COLUMNAS_IGLESIA.length;
+      await d.execute(
+        `UPDATE churches SET ${sets}, updated_at = $${n + 1} WHERE id = $${n + 2}`,
+        [...COLUMNAS_IGLESIA.map(([aqui]) => fusionada[aqui] ?? null), ahora, churchIdLocal],
+      );
+      const paraArriba: Record<string, unknown> = {};
+      for (const [aqui, alla] of COLUMNAS_IGLESIA) paraArriba[alla] = fusionada[aqui] ?? null;
+      const { error } = await supabase.from("iglesias").update(paraArriba).eq("id", remoteChurch);
+      if (error) return { ok: false, subidos: 0, bajados: 0, motivo: "error", error: error.message };
+      return { ok: true, subidos: 1, bajados: 1 };
+    }
 
     const localMasNueva = epoch(local.updated_at) > epoch(remota.updated_at);
 
