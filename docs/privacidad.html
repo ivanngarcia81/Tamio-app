@@ -14,11 +14,7 @@
     color: #1c1c1e;
     background: #f5f5f7;
   }
-  .wrap {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 40px 22px 80px;
-  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 40px 22px 80px; }
   .card {
     background: #fff;
     border-radius: 16px;
@@ -27,6 +23,7 @@
   }
   h1 { font-size: 27px; margin: 0 0 4px; letter-spacing: -.02em; }
   h2 { font-size: 19px; margin: 34px 0 8px; letter-spacing: -.01em; }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
   .fecha { color: #8a8a8e; font-size: 14px; margin: 0 0 24px; }
   p, li { font-size: 15.5px; }
   a { color: #0a84ff; }
@@ -35,11 +32,16 @@
   .lang-switch { text-align: center; margin-bottom: 26px; font-size: 14px; }
   .lang-switch a { text-decoration: none; font-weight: 600; }
   footer { text-align: center; color: #8a8a8e; font-size: 13px; margin-top: 34px; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; }
+  th, td { border: 1px solid #e5e5ea; padding: 9px 11px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f7; font-weight: 600; }
   @media (prefers-color-scheme: dark) {
     body { background: #000; color: #f2f2f7; }
     .card { background: #1c1c1e; box-shadow: none; border: 1px solid #2c2c2e; }
     .fecha, footer { color: #98989d; }
     .sep { background: #2c2c2e; }
+    th, td { border-color: #2c2c2e; }
+    th { background: #2c2c2e; }
   }
 </style>
 </head>
@@ -50,154 +52,409 @@
 
     <section id="es">
       <h1>Política de privacidad de Tamio</h1>
-      <p class="fecha">Última actualización: 29 de julio de 2026</p>
+      <p class="fecha">Última actualización: 17 de septiembre de 2026</p>
 
-      <p>Tamio («la app», «nosotros») es una herramienta de tesorería y secretaría
-      para iglesias. Esta política explica qué datos trata la app, cómo y con qué
-      fin. Al usar Tamio aceptas lo aquí descrito.</p>
+      <p>Tamio es una herramienta de tesorería y secretaría para iglesias. Esta
+      política explica qué datos trata, cómo y con qué fin.</p>
 
-      <h2>Resumen: no recogemos ningún dato</h2>
-      <p><strong>Tamio funciona por completo en tu dispositivo.</strong> No hay cuenta
-      ni inicio de sesión, no enviamos tu información a ningún servidor y nosotros
-      <strong>no tenemos acceso</strong> a nada de lo que registras. No hay
-      publicidad, no hay analítica, no rastreamos tu ubicación ni tu actividad, y no
-      vendemos ni compartimos datos con nadie.</p>
+      <h2>Lo primero: hay dos aplicaciones y no funcionan igual</h2>
+      <p>Bajo el nombre de Tamio hay <strong>dos programas distintos</strong>, y
+      la diferencia entre ellos es justo la que importa para tu privacidad. Lee
+      la fila que te toque.</p>
 
-      <h2>Qué datos maneja la app</h2>
-      <p>Toda la información que registras —movimientos (ingresos y gastos),
-      depósitos, miembros (nombre, contacto, identificación fiscal si la capturas),
-      cartas, actas, asistencia, agenda y la configuración de tu iglesia— se guarda
-      <strong>únicamente en tu dispositivo</strong>, en una base de datos
-      <strong>cifrada</strong> (SQLCipher). La app funciona sin conexión a internet.</p>
+      <table>
+        <tr>
+          <th></th>
+          <th>Tamio<br />(la app de escritorio y su versión para iPhone y iPad)</th>
+          <th>Tamio Iglesia<br />(la app nativa de iPhone y iPad)</th>
+        </tr>
+        <tr>
+          <td><strong>¿Hace falta cuenta?</strong></td>
+          <td>No. No hay inicio de sesión.</td>
+          <td><strong>Sí, es obligatoria.</strong> La app no se puede usar sin ella.</td>
+        </tr>
+        <tr>
+          <td><strong>¿Dónde viven los datos?</strong></td>
+          <td>Solo en tu dispositivo.</td>
+          <td>En tu dispositivo <strong>y</strong> en nuestro servidor.</td>
+        </tr>
+        <tr>
+          <td><strong>¿Se sincronizan?</strong></td>
+          <td>No.</td>
+          <td><strong>Sí, y no es opcional</strong>: es para lo que existe.</td>
+        </tr>
+        <tr>
+          <td><strong>¿Vemos tus datos?</strong></td>
+          <td>No, nunca salen de tu dispositivo.</td>
+          <td>Están en nuestra infraestructura. No los usamos para nada que no sea prestarte el servicio.</td>
+        </tr>
+      </table>
 
-      <h2>Cuándo sale información del dispositivo</h2>
-      <p>Solo cuando <strong>tú</strong> lo pides expresamente:</p>
+      <p>Lo que vale para las dos, sin excepción: <strong>no hay publicidad, no
+      hay analítica, no rastreamos tu ubicación ni tu actividad, y no vendemos ni
+      compartimos tus datos con nadie.</strong></p>
+
+      <hr class="sep" />
+
+      <h2>Tamio · la app que funciona sola</h2>
+
+      <h3>Qué datos maneja</h3>
+      <p>Toda la información que registras —movimientos, depósitos, miembros,
+      cartas, actas, asistencia, agenda y la configuración de tu iglesia— se
+      guarda <strong>únicamente en tu dispositivo</strong>, en una base de datos
+      cifrada. La app funciona sin conexión a internet.</p>
+
+      <h3>Cuándo sale información del dispositivo</h3>
+      <p>Solo cuando <strong>tú</strong> lo pides:</p>
       <ul>
-        <li><strong>Exportar o compartir:</strong> si generas un PDF, un CSV o una
-        copia de respaldo y decides enviarlo, imprimirlo o guardarlo en otro sitio,
-        ese archivo va a donde tú lo mandes. A partir de ahí queda bajo tu control y
+        <li><strong>Exportar o compartir:</strong> si generas un PDF, un CSV o un
+        respaldo y decides enviarlo, imprimirlo o guardarlo en otro sitio, ese
+        archivo va a donde tú lo mandes. A partir de ahí queda bajo tu control y
         el de la plataforma que uses.</li>
         <li><strong>Comprobación de versión:</strong> al abrir, la app consulta un
-        archivo público en nuestro sitio web para saber si existe una versión más
-        nueva. En esa consulta no se envía ninguna información tuya ni de tu iglesia,
-        y no guardamos registro de quién la hace.</li>
+        archivo público de nuestro sitio para saber si hay una versión más nueva.
+        En esa consulta no viaja ninguna información tuya ni de tu iglesia, y no
+        guardamos registro de quién la hace.</li>
+        <li><strong>Redactar con IA</strong> (solo en la app de escritorio, y solo
+        si la usas): la IA recibe el tipo de carta, los puntos que tú escribes y,
+        si lo eliges, los nombres del destinatario, la iglesia y el pastor.
+        <strong>No se envían datos financieros ni el padrón de miembros.</strong>
+        Si no usas la función, no se envía nada.</li>
       </ul>
 
-      <h2>Datos de otras personas (miembros de tu iglesia)</h2>
-      <p>Tamio es una herramienta para que tu iglesia administre su propia
+      <hr class="sep" />
+
+      <h2>Tamio Iglesia · la app con cuenta</h2>
+
+      <p>Esta app existe para que varias personas de la misma iglesia —tesorero,
+      pastor, secretaria— trabajen sobre los mismos libros desde aparatos
+      distintos. Eso <strong>exige</strong> que los datos pasen por un servidor,
+      y por eso aquí la sincronización no es una opción que se pueda apagar.</p>
+
+      <h3>Qué se envía, y a dónde</h3>
+      <p>Los datos se guardan en <strong>Supabase</strong>, nuestro proveedor de
+      base de datos y autenticación, en servidores situados en
+      <strong>Estados Unidos</strong> (región <code>us-east-1</code>). El envío va
+      cifrado (HTTPS/TLS) y el almacenamiento también.</p>
+
+      <table>
+        <tr><th>Qué</th><th>Detalle</th></tr>
+        <tr>
+          <td><strong>Tu cuenta</strong></td>
+          <td>Correo y contraseña, y tu nombre y rol dentro de la iglesia.</td>
+        </tr>
+        <tr>
+          <td><strong>Tesorería</strong></td>
+          <td>Ingresos, gastos, diezmos, ofrendas, depósitos, cortes y los datos
+          de los aportantes.</td>
+        </tr>
+        <tr>
+          <td><strong>El padrón de miembros</strong></td>
+          <td>Nombre, contacto, domicilio, parentescos y notas.</td>
+        </tr>
+        <tr>
+          <td><strong>Información religiosa</strong></td>
+          <td>Fechas de bautismo, estado de membresía, ministerios y cargos.
+          <strong>Es información sensible y la tratamos como tal</strong> —
+          ver abajo.</td>
+        </tr>
+        <tr>
+          <td><strong>Secretaría</strong></td>
+          <td>Actas, cartas, servicios, asistencia, agenda y el registro de
+          actividad de la app.</td>
+        </tr>
+        <tr>
+          <td><strong>Fotos</strong></td>
+          <td>Las fotografías del comprobante del banco que adjuntas a un
+          depósito, y el logotipo de tu iglesia. Se suben a nuestro
+          almacenamiento de archivos.</td>
+        </tr>
+      </table>
+
+      <h3>Información sensible: la afiliación religiosa</h3>
+      <p>El padrón de una iglesia guarda, por su naturaleza, datos que la ley
+      considera de categoría especial: <strong>las creencias religiosas de las
+      personas</strong>. Lo decimos abiertamente porque es verdad y porque esas
+      personas normalmente <strong>no son quien usa la app</strong>: es la iglesia
+      quien las registra.</p>
+      <p>Esos datos se usan <strong>solo</strong> para que la app funcione —
+      emitir una constancia, preparar un informe de membresía, saber quién sirve
+      en qué ministerio—. No se usan para segmentar, perfilar ni analizar a nadie,
+      no se comparten con terceros y no salen de la infraestructura de tu iglesia.</p>
+
+      <h3>Cada iglesia ve solo lo suyo</h3>
+      <p>Los datos están aislados por iglesia con reglas de seguridad en la propia
+      base de datos (RLS): una cuenta no puede leer ni escribir los datos de otra
+      iglesia, aunque lo intente. Dentro de una iglesia, lo que cada quien puede
+      ver y modificar depende de su rol, y quien la administra lo decide.</p>
+
+      <h3>En tu dispositivo</h3>
+      <p>La app guarda una copia local para funcionar sin conexión. Esa copia está
+      protegida por el cifrado del propio iOS y queda ilegible mientras el
+      dispositivo esté bloqueado. Si activas <strong>Face ID</strong> para abrir la
+      app, la comprobación la hace iOS: nosotros nunca recibimos tu cara, tu huella
+      ni el código del dispositivo. Los respaldos que exportes van cifrados.</p>
+
+      <hr class="sep" />
+
+      <h2>Datos de otras personas (los miembros de tu iglesia)</h2>
+      <p>Tamio es la herramienta con la que tu iglesia administra su propia
       información. Cuando registras datos de otras personas —miembros, aportantes,
-      contactos— <strong>tú (la iglesia) eres el responsable</strong> de esos datos:
-      de tener una base legítima para guardarlos, de informar a esas personas cuando
-      corresponda y de mantener la información correcta y al día. Esos datos se
-      quedan en tu dispositivo; Tamio actúa solo como el proveedor de la herramienta
-      que los almacena por ti, sin acceder a ellos.</p>
+      contactos— <strong>la iglesia es la responsable</strong> de esos datos: de
+      tener una base legítima para guardarlos, de informar a esas personas cuando
+      corresponda, de atender sus peticiones y de mantener la información correcta
+      y al día.</p>
+      <p>Nosotros actuamos como proveedor: alojamos esa información por encargo de
+      la iglesia y no la usamos para ningún fin propio.</p>
 
       <h2>Terceros</h2>
-      <p>La app no incorpora servicios de terceros que reciban tus datos: no hay
-      analítica, ni publicidad, ni almacenamiento en la nube, ni procesador de pagos
-      dentro de la app. El único tercero involucrado es <strong>Apple</strong>, que
-      distribuye la aplicación a través del App Store conforme a su propia política
-      de privacidad.</p>
-
-      <h2>Conservación y eliminación de tus datos</h2>
-      <p>Como los datos viven solo en tu dispositivo, tú los controlas por completo:</p>
       <ul>
-        <li>Puedes <strong>borrar los registros</strong> de tu iglesia desde Ajustes
-        en cualquier momento.</li>
-        <li>Si <strong>desinstalas la app</strong>, la base de datos se elimina con
-        ella. No queda ninguna copia en nuestro poder, porque nunca la tuvimos.</li>
+        <li><strong>Supabase</strong> — base de datos, autenticación y
+        almacenamiento de archivos de la app con cuenta. Aloja los datos; no los
+        usa.</li>
+        <li><strong>Apple</strong> — distribuye las apps a través del App Store,
+        conforme a su propia política de privacidad.</li>
+        <li><strong>El procesador de pagos</strong> — si contratas un plan, el
+        cobro lo procesa un proveedor especializado <strong>desde nuestro sitio
+        web, no desde la app</strong>. Nunca vemos ni guardamos tu número de
+        tarjeta: recibimos la confirmación del pago para activar tu plan.</li>
       </ul>
+      <p>No hay analítica, ni publicidad, ni identificadores de seguimiento en
+      ninguna de las dos apps.</p>
+
+      <h2>Conservación y eliminación</h2>
+      <h3>En la app que funciona sola</h3>
+      <p>Los datos son tuyos y viven en tu dispositivo: puedes borrarlos desde
+      Ajustes, y si desinstalas la app se van con ella. No queda copia en nuestro
+      poder, porque nunca la tuvimos.</p>
+      <h3>En la app con cuenta</h3>
+      <p>Puedes <strong>borrar tu cuenta desde dentro de la app</strong>, en
+      Ajustes · Cuenta. Es inmediato y no se puede deshacer:</p>
+      <ul>
+        <li>Si <strong>quedan otras personas</strong> con acceso a tu iglesia, la
+        iglesia sigue y solo se va tu acceso.</li>
+        <li>Si eres <strong>la única persona</strong> con acceso, se borran también
+        todos los datos de esa iglesia en el servidor: movimientos, miembros,
+        actas, cartas y comprobantes.</li>
+      </ul>
+      <p>Mientras la cuenta exista, los datos se conservan para que la iglesia
+      pueda seguir consultándolos. Si prefieres pedirlo por escrito, escríbenos y
+      lo hacemos en un máximo de 30 días.</p>
+
+      <h2>Tus derechos</h2>
+      <p>Puedes pedir acceso, corrección o eliminación de los datos de tu cuenta
+      escribiéndonos. Respondemos en un máximo de 30 días. Si eres miembro de una
+      iglesia y quieres ejercer tus derechos sobre los datos que ella guarda de ti,
+      dirígete a tu iglesia: es quien los administra.</p>
 
       <h2>Menores</h2>
       <p>Tamio es una herramienta administrativa para adultos que gestionan una
-      iglesia; no está dirigida a menores de edad.</p>
+      iglesia; no está dirigida a menores de edad. Una iglesia puede registrar a
+      menores en su padrón, y en ese caso es la iglesia quien responde de tener el
+      consentimiento de quien corresponda.</p>
 
       <h2>Cambios</h2>
-      <p>Si actualizamos esta política, cambiaremos la fecha de arriba y, cuando el
-      cambio sea importante, te lo avisaremos en la app. Si en el futuro añadimos
-      funciones que sí requieran enviar datos fuera del dispositivo —como
-      sincronización en la nube entre los equipos de tu iglesia— actualizaremos esta
-      política <strong>antes</strong> de lanzarlas, explicaremos con claridad qué
-      datos se envían y a dónde, y esas funciones serán opcionales.</p>
+      <p>Si actualizamos esta política cambiaremos la fecha de arriba y, cuando el
+      cambio sea importante, lo avisaremos en la app.</p>
 
       <h2>Contacto</h2>
-      <p>Para cualquier duda sobre tus datos, escríbenos a:
+      <p>Para cualquier duda sobre tus datos, escríbenos a
       <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a>.</p>
     </section>
 
     <hr class="sep" />
 
-    <section id="en">
+    <section id="en" lang="en">
       <h1>Tamio Privacy Policy</h1>
-      <p class="fecha">Last updated: July 29, 2026</p>
+      <p class="fecha">Last updated: September 17, 2026</p>
 
-      <p>Tamio («the app», «we») is a treasury and secretariat tool for churches.
-      This policy explains what data the app handles, how, and why. By using Tamio
-      you agree to what is described here.</p>
+      <p>Tamio is a treasury and secretarial tool for churches. This policy
+      explains what data it handles, how, and why.</p>
 
-      <h2>Summary: we do not collect any data</h2>
-      <p><strong>Tamio runs entirely on your device.</strong> There is no account and
-      no sign-in, we do not send your information to any server, and we have
-      <strong>no access</strong> to anything you record. There is no advertising, no
-      analytics, we do not track your location or your activity, and we do not sell
-      or share data with anyone.</p>
+      <h2>First: there are two apps, and they don't work the same way</h2>
+      <p>Two different programs share the Tamio name, and the difference between
+      them is exactly the one that matters for your privacy. Read the row that
+      applies to you.</p>
 
-      <h2>What data the app handles</h2>
-      <p>All the information you enter — transactions (income and expenses),
-      deposits, members (name, contact, tax ID if you record it), letters, minutes,
-      attendance, agenda, and your church's settings — is stored
-      <strong>only on your device</strong>, in an <strong>encrypted</strong> database
-      (SQLCipher). The app works without an internet connection.</p>
+      <table>
+        <tr>
+          <th></th>
+          <th>Tamio<br />(the desktop app and its iPhone/iPad version)</th>
+          <th>Tamio Iglesia<br />(the native iPhone and iPad app)</th>
+        </tr>
+        <tr>
+          <td><strong>Account required?</strong></td>
+          <td>No. There is no sign-in.</td>
+          <td><strong>Yes, it is mandatory.</strong> The app cannot be used without one.</td>
+        </tr>
+        <tr>
+          <td><strong>Where does the data live?</strong></td>
+          <td>Only on your device.</td>
+          <td>On your device <strong>and</strong> on our server.</td>
+        </tr>
+        <tr>
+          <td><strong>Does it sync?</strong></td>
+          <td>No.</td>
+          <td><strong>Yes, and it is not optional</strong>: it is what the app is for.</td>
+        </tr>
+        <tr>
+          <td><strong>Do we see your data?</strong></td>
+          <td>No, it never leaves your device.</td>
+          <td>It sits on our infrastructure. We use it for nothing other than providing the service.</td>
+        </tr>
+      </table>
 
-      <h2>When information leaves your device</h2>
-      <p>Only when <strong>you</strong> explicitly ask for it:</p>
+      <p>True of both, without exception: <strong>no advertising, no analytics, no
+      location or activity tracking, and we never sell or share your data.</strong></p>
+
+      <hr class="sep" />
+
+      <h2>Tamio · the app that runs on its own</h2>
+
+      <h3>What data it handles</h3>
+      <p>Everything you record —transactions, deposits, members, letters, minutes,
+      attendance, calendar and your church's settings— is stored
+      <strong>only on your device</strong>, in an encrypted database. The app works
+      without an internet connection.</p>
+
+      <h3>When information leaves your device</h3>
+      <p>Only when <strong>you</strong> ask for it:</p>
       <ul>
-        <li><strong>Exporting or sharing:</strong> if you generate a PDF, a CSV, or a
-        backup and choose to send, print, or save it elsewhere, that file goes where
-        you send it. From that point on it is under your control and that of the
+        <li><strong>Exporting or sharing:</strong> if you generate a PDF, a CSV or a
+        backup and choose to send, print or store it elsewhere, that file goes
+        where you send it. From then on it is under your control and that of the
         platform you use.</li>
-        <li><strong>Version check:</strong> on launch, the app reads a public file on
-        our website to see whether a newer version exists. That request sends no
-        information about you or your church, and we keep no record of who makes it.</li>
+        <li><strong>Version check:</strong> on launch, the app reads a public file
+        on our website to see whether a newer version exists. No information about
+        you or your church is sent, and we keep no record of who asks.</li>
+        <li><strong>AI drafting</strong> (desktop app only, and only if you use it):
+        the AI receives the letter type, the points you write and, if you choose,
+        the names of the recipient, the church and the pastor.
+        <strong>No financial data and no membership roll are sent.</strong> If you
+        don't use the feature, nothing is sent.</li>
       </ul>
+
+      <hr class="sep" />
+
+      <h2>Tamio Iglesia · the app with an account</h2>
+
+      <p>This app exists so that several people in the same church —treasurer,
+      pastor, secretary— can work on the same books from different devices. That
+      <strong>requires</strong> data to pass through a server, which is why syncing
+      here is not something that can be switched off.</p>
+
+      <h3>What is sent, and where</h3>
+      <p>Data is stored with <strong>Supabase</strong>, our database and
+      authentication provider, on servers located in the
+      <strong>United States</strong> (region <code>us-east-1</code>). It is
+      encrypted in transit (HTTPS/TLS) and at rest.</p>
+
+      <table>
+        <tr><th>What</th><th>Detail</th></tr>
+        <tr><td><strong>Your account</strong></td>
+          <td>Email and password, plus your name and role within the church.</td></tr>
+        <tr><td><strong>Treasury</strong></td>
+          <td>Income, expenses, tithes, offerings, deposits, closings and
+          contributor records.</td></tr>
+        <tr><td><strong>The membership roll</strong></td>
+          <td>Name, contact details, address, family links and notes.</td></tr>
+        <tr><td><strong>Religious information</strong></td>
+          <td>Baptism dates, membership status, ministries and roles.
+          <strong>This is sensitive information and we treat it as such</strong> —
+          see below.</td></tr>
+        <tr><td><strong>Secretarial records</strong></td>
+          <td>Minutes, letters, services, attendance, calendar and the app's
+          activity log.</td></tr>
+        <tr><td><strong>Photos</strong></td>
+          <td>The bank receipt photos you attach to a deposit, and your church's
+          logo. They are uploaded to our file storage.</td></tr>
+      </table>
+
+      <h3>Sensitive information: religious affiliation</h3>
+      <p>A church's membership roll holds, by its very nature, data that the law
+      treats as a special category: <strong>people's religious beliefs</strong>. We
+      say so plainly because it is true, and because those people usually
+      <strong>are not the ones using the app</strong>: the church records them.</p>
+      <p>That data is used <strong>only</strong> to make the app work — issuing a
+      certificate, preparing a membership report, knowing who serves in which
+      ministry. It is not used to segment, profile or analyze anyone, is not shared
+      with third parties, and does not leave your church's data.</p>
+
+      <h3>Each church sees only its own</h3>
+      <p>Data is isolated per church by security rules in the database itself (RLS):
+      one account cannot read or write another church's data, even if it tries.
+      Within a church, what each person can see and change depends on their role,
+      and the church's administrator decides that.</p>
+
+      <h3>On your device</h3>
+      <p>The app keeps a local copy so it works offline. That copy is protected by
+      iOS's own encryption and stays unreadable while the device is locked. If you
+      turn on <strong>Face ID</strong> to open the app, iOS performs the check: we
+      never receive your face, your fingerprint or your device passcode. Backups
+      you export are encrypted.</p>
+
+      <hr class="sep" />
 
       <h2>Data about other people (your church's members)</h2>
-      <p>Tamio is a tool for your church to manage its own information. When you
-      enter data about other people — members, contributors, contacts —
-      <strong>you (the church) are the party responsible</strong> for that data: for
-      having a lawful basis to store it, for informing those people where
-      appropriate, and for keeping the information accurate and up to date. That data
-      stays on your device; Tamio acts only as the provider of the tool that stores
-      it on your behalf, without accessing it.</p>
+      <p>Tamio is the tool your church uses to manage its own information. When you
+      record data about other people —members, contributors, contacts—
+      <strong>the church is responsible</strong> for that data: for having a lawful
+      basis to keep it, for informing those people where required, for handling
+      their requests, and for keeping the information accurate and current.</p>
+      <p>We act as the provider: we host that information on the church's behalf and
+      do not use it for any purpose of our own.</p>
 
       <h2>Third parties</h2>
-      <p>The app includes no third-party services that receive your data: no
-      analytics, no advertising, no cloud storage, and no payment processor inside
-      the app. The only third party involved is <strong>Apple</strong>, which
-      distributes the app through the App Store under its own privacy policy.</p>
-
-      <h2>Retention and deletion of your data</h2>
-      <p>Because the data lives only on your device, you control it entirely:</p>
       <ul>
-        <li>You can <strong>delete your church's records</strong> from Settings at any
-        time.</li>
-        <li>If you <strong>uninstall the app</strong>, the database is removed with
-        it. No copy remains with us, because we never had one.</li>
+        <li><strong>Supabase</strong> — database, authentication and file storage for
+        the account-based app. It hosts the data; it does not use it.</li>
+        <li><strong>Apple</strong> — distributes the apps through the App Store, under
+        its own privacy policy.</li>
+        <li><strong>The payment processor</strong> — if you subscribe to a plan, a
+        specialized provider processes the payment <strong>from our website, not from
+        the app</strong>. We never see or store your card number: we receive the
+        payment confirmation in order to activate your plan.</li>
       </ul>
+      <p>There is no analytics, no advertising and no tracking identifier in either
+      app.</p>
+
+      <h2>Retention and deletion</h2>
+      <h3>In the standalone app</h3>
+      <p>The data is yours and lives on your device: you can erase it from Settings,
+      and if you uninstall the app it goes with it. No copy remains with us, because
+      we never had one.</p>
+      <h3>In the app with an account</h3>
+      <p>You can <strong>delete your account from inside the app</strong>, under
+      Settings · Account. It is immediate and cannot be undone:</p>
+      <ul>
+        <li>If <strong>other people</strong> still have access to your church, the
+        church remains and only your access is removed.</li>
+        <li>If you are the <strong>only person</strong> with access, all of that
+        church's data on the server is deleted too: transactions, members, minutes,
+        letters and receipts.</li>
+      </ul>
+      <p>While the account exists, data is kept so the church can keep consulting it.
+      If you would rather ask in writing, write to us and we will do it within 30
+      days.</p>
+
+      <h2>Your rights</h2>
+      <p>You may request access to, correction of, or deletion of your account data
+      by writing to us. We respond within 30 days. If you are a member of a church
+      and want to exercise your rights over the data it holds about you, contact
+      your church: it is the one that administers it.</p>
 
       <h2>Children</h2>
-      <p>Tamio is an administrative tool for adults who manage a church; it is not
-      directed to children.</p>
+      <p>Tamio is an administrative tool for adults running a church; it is not
+      directed at children. A church may record minors in its membership roll, and
+      in that case it is the church's responsibility to have the appropriate
+      consent.</p>
 
       <h2>Changes</h2>
-      <p>If we update this policy, we will change the date above and, for significant
-      changes, notify you in the app. If we later add features that do require
-      sending data off the device — such as cloud sync across your church's devices —
-      we will update this policy <strong>before</strong> releasing them, clearly
-      explain what data is sent and where, and those features will be optional.</p>
+      <p>If we update this policy we will change the date above and, when the change
+      is significant, we will say so in the app.</p>
 
       <h2>Contact</h2>
-      <p>For any question about your data, write to us at:
+      <p>For any question about your data, write to
       <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a>.</p>
     </section>
 
