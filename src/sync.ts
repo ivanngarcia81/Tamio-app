@@ -1578,6 +1578,33 @@ function cutoffUtc(dias: number): string {
   return new Date(Date.now() - dias * 86400000).toISOString().replace("T", " ").slice(0, 19);
 }
 
+/** **El rastro de auditoría NO se purga, ni aquí ni en la nube.**
+ *
+ *  `registro` es la bitácora: quién hizo qué y cuándo. Un rastro que el
+ *  auditado puede purgar no es un rastro, y hasta hoy cualquiera con cuenta en
+ *  la iglesia podía vaciarlo —la compactación descubre las tablas por su forma
+ *  (`deleted` + `church_id`) y esta la tiene—.
+ *
+ *  iOS ya lo protegía desde su lado (`Compactacion.nuncaSePurga`), así que
+ *  esto no inventa una regla: alinea las dos apps con la que ya existía. Y el
+ *  19-sep-2026 el servidor dejó de permitirlo —migración
+ *  `20260919b_el_registro_no_se_borra.sql` en el repo de iOS—, así que un
+ *  intento de purga responde `42501: permission denied for table registro`.
+ *
+ *  **Cuidado con la otra forma de cerrarlo, que sí es silenciosa.** Si en el
+ *  servidor se quitara solo la POLÍTICA de DELETE y no el permiso, un borrado
+ *  descartado por RLS contesta 204 sin error: el `if (error) continue` de
+ *  `compactarBase` no saltaría, la copia local se purgaría igual y las filas
+ *  volverían de la nube en la siguiente bajada. Está medido contra la base.
+ *  Por eso allí se quita el permiso, y por eso aquí ni se intenta.
+ *
+ *  Lo que sigue pasando es la lápida: «borrar los datos de la iglesia» marca
+ *  `deleted = 1` y eso se sube. Desaparece de la vista y sobrevive en el
+ *  servidor, que es lo que se le pide a una bitácora. Ponerla es cosa del
+ *  administrador, y desde el 19-sep también lo comprueba el servidor.
+ */
+const NUNCA_SE_PURGA = new Set(["registro"]);
+
 /** Tablas de la base que tienen columna `deleted` y `church_id` (las que
  *  acumulan lápidas). Se descubre en tiempo real para cubrir tablas futuras. */
 async function tablasConDeleted(
@@ -1588,6 +1615,7 @@ async function tablasConDeleted(
   );
   const res: { tabla: string; tieneUid: boolean }[] = [];
   for (const { name } of tablas) {
+    if (NUNCA_SE_PURGA.has(name)) continue;
     // El nombre viene de sqlite_master (no de entrada del usuario): seguro.
     const cols = await d.select<{ name: string }[]>(`PRAGMA table_info(${name})`);
     const nombres = new Set(cols.map((c) => c.name));
