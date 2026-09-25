@@ -1,0 +1,6 @@
+# Jekyll deja fuera las carpetas que empiezan por punto. `.well-known` tiene que
+# salir: ahí vive `apple-app-site-association`, que deja a la app Tamio Church
+# (4N9XEU7F4P.church.tamio.native) ofrecer las contraseñas guardadas en
+# tamio.church (`webcredentials`).
+include:
+  - .well-known
