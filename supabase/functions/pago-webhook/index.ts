@@ -6,6 +6,14 @@
 // church_id) y se escribe plan/sub_estado/sub_vence en `iglesias`. La app baja
 // ese plan en su siguiente sincronización.
 //
+// **Pagar sin tener cuenta la crea** (25-sep-2026). Tamio Church, la app de
+// iPhone y iPad, no tiene «Crear cuenta»: la cuenta nace aquí. Si el correo
+// del comprador no existe, se le manda la invitación de Supabase —la misma de
+// `invitar-usuario`, que aterriza en tamio.church/invitacion.html para elegir
+// contraseña— y el disparador `al_crear_usuario` le crea su iglesia y lo deja
+// de administrador. Solo con una suscripción viva: un evento de cancelación o
+// de vencimiento de alguien sin cuenta no crea nada.
+//
 // (Nota histórica: esta función nació para Paddle. El 3 ago 2026 Lemon Squeezy
 // aprobó la cuenta de Tamio y se adaptó a su formato: firma HMAC del cuerpo en
 // el header `X-Signature`, evento en `meta.event_name` y datos en
@@ -38,7 +46,7 @@
 // del comprador.
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2";
 
 const enc = (s: string) => new TextEncoder().encode(s);
 
@@ -129,6 +137,22 @@ function estadoDe(status: string): "activa" | "prueba" | "vencida" {
   return "vencida";
 }
 
+// Cuenta de Auth por correo, recorriendo TODAS las páginas. `listUsers()` a
+// secas devuelve solo la primera (50 usuarios): con más clientes, el pago de
+// uno que sí existe se perdía como «usuario no encontrado». Mismo recorrido que
+// `invitar-usuario`.
+async function buscarUsuario(admin: SupabaseClient, email: string): Promise<User | null> {
+  for (let pagina = 1; pagina <= 50; pagina++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page: pagina, perPage: 200 });
+    if (error) throw error;
+    const lista = data?.users ?? [];
+    const hallado = lista.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (hallado) return hallado;
+    if (lista.length < 200) return null;
+  }
+  return null;
+}
+
 serve(async (req: Request) => {
   try {
     const secreto = Deno.env.get("LEMON_WEBHOOK_SECRET");
@@ -167,10 +191,31 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Iglesia del comprador: por el correo de su cuenta en Tamio.
-    const { data: usuarios } = await admin.auth.admin.listUsers();
-    const usuario = usuarios?.users?.find((u) => (u.email ?? "").toLowerCase() === email);
-    if (!usuario) return new Response("usuario no encontrado", { status: 404 });
+    // Iglesia del comprador: por el correo de su cuenta en Tamio. Si no tiene
+    // cuenta y la suscripción está viva, se la crea la invitación.
+    let usuario = await buscarUsuario(admin, email);
+    let invitado = false;
+    if (!usuario) {
+      if (estadoDe(status) === "vencida") {
+        return new Response("sin cuenta y suscripción no vigente: nada que hacer", { status: 200 });
+      }
+      const nombre = String(attrs?.user_name ?? "").trim();
+      const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { nombre },
+      });
+      if (data?.user) {
+        usuario = data.user;
+        invitado = true;
+      } else {
+        // Lemon Squeezy manda subscription_created y subscription_updated casi
+        // a la vez: si el otro evento ya invitó, el correo existe y aquí se
+        // recoge en vez de fallar.
+        usuario = await buscarUsuario(admin, email);
+        if (!usuario) {
+          return new Response(`no se pudo invitar: ${error?.message ?? "sin detalle"}`, { status: 500 });
+        }
+      }
+    }
 
     const { data: perfil } = await admin
       .from("perfiles").select("church_id").eq("id", usuario.id).single();
@@ -211,7 +256,7 @@ serve(async (req: Request) => {
         { status: 200 },
       );
     }
-    return new Response("ok", { status: 200 });
+    return new Response(invitado ? "ok: cuenta nueva, invitación enviada" : "ok", { status: 200 });
   } catch (e) {
     return new Response(String(e), { status: 500 });
   }
