@@ -70,7 +70,7 @@
     <label for="pw2" id="t-pw2">Repite la contraseña</label>
     <input id="pw2" type="password" autocomplete="new-password" minlength="8" />
 
-    <div class="pista" id="t-pista">Mínimo 8 caracteres.</div>
+    <div class="pista" id="t-pista">Mínimo 8 caracteres, con una minúscula, una mayúscula, un número y un símbolo (como ! # $ o %).</div>
     <div class="aviso oculto" id="aviso"></div>
 
     <button id="guardar" disabled>Guardar contraseña</button>
@@ -106,7 +106,7 @@ if (EN) {
     "t-titulo": "Activate your account",
     "t-sub": "Choose a password and you'll be able to sign in to Tamio.",
     "t-pw": "Password", "t-pw2": "Repeat the password",
-    "t-pista": "At least 8 characters.",
+    "t-pista": "At least 8 characters, with a lowercase letter, an uppercase letter, a number and a symbol (like ! # $ or %).",
     "guardar": "Save password",
     "t-listo": "Account activated",
     "t-listoSub": "Open Tamio on your Mac, iPad or iPhone and sign in with your email and this password.",
@@ -121,10 +121,14 @@ if (EN) {
 }
 const T = EN
   ? { corta: "The password must be at least 8 characters.",
+      reglas: "It also needs a lowercase letter, an uppercase letter, a number and a symbol.",
+      servidor: "The password was not accepted: ",
       distintas: "The two passwords are not the same.",
       fallo: "The password could not be saved. Try the link again.",
       guardando: "Saving…" }
   : { corta: "La contraseña tiene que tener al menos 8 caracteres.",
+      reglas: "Le falta alguna de las cuatro: una minúscula, una mayúscula, un número y un símbolo.",
+      servidor: "No se aceptó la contraseña: ",
       distintas: "Las dos contraseñas no son iguales.",
       fallo: "No se pudo guardar la contraseña. Prueba el enlace otra vez.",
       guardando: "Guardando…" };
@@ -176,14 +180,25 @@ canjear().then((ok) => { if (!ok) mostrar("malo"); });
 // ─── Validación y guardado ───────────────────────────────────────────────────
 const pw = $("pw"), pw2 = $("pw2"), boton = $("guardar"), aviso = $("aviso");
 
+// Las mismas cuatro clases que exige la política de contraseñas de Supabase
+// (Auth → Password requirements). Si solo se miraba el largo, «iglesia2026»
+// pasaba aquí, el servidor la rechazaba con un 422 y la página decía «prueba
+// el enlace otra vez», que no era el motivo.
+const SIMBOLOS = "!@#$%^&*()_+-=[]{};'\\:\"|<>?,./`~";
+function cumpleReglas(a) {
+  return /[a-z]/.test(a) && /[A-Z]/.test(a) && /[0-9]/.test(a) &&
+    [...a].some((c) => SIMBOLOS.includes(c));
+}
+
 function revisar() {
   const a = pw.value, b = pw2.value;
   let error = "";
   if (a && a.length < 8) error = T.corta;
+  else if (a && !cumpleReglas(a)) error = T.reglas;
   else if (a && b && a !== b) error = T.distintas;
   aviso.textContent = error;
   aviso.classList.toggle("oculto", !error);
-  boton.disabled = !(a.length >= 8 && a === b);
+  boton.disabled = !(a.length >= 8 && cumpleReglas(a) && a === b);
 }
 pw.addEventListener("input", revisar);
 pw2.addEventListener("input", revisar);
@@ -201,10 +216,16 @@ boton.addEventListener("click", async () => {
       },
       body: JSON.stringify({ password: pw.value }),
     });
-    if (!r.ok) throw new Error(String(r.status));
+    if (!r.ok) {
+      // 422 es la contraseña rechazada: el enlace sigue sirviendo, así que se
+      // dice el motivo del servidor en vez de mandar a pedir otro enlace.
+      let motivo = "";
+      try { const d = await r.json(); motivo = d.msg || d.message || d.error_description || ""; } catch {}
+      throw new Error(r.status === 422 && motivo ? T.servidor + motivo : "");
+    }
     mostrar("listo");
-  } catch {
-    aviso.textContent = T.fallo;
+  } catch (e) {
+    aviso.textContent = (e && e.message) || T.fallo;
     aviso.classList.remove("oculto");
     boton.disabled = false;
     boton.textContent = EN ? "Save password" : "Guardar contraseña";
