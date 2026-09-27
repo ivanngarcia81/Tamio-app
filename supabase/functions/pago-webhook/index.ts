@@ -131,9 +131,20 @@ function planDe(attrs: Record<string, any>): string | null {
 
 // Estado de la suscripción en Lemon Squeezy → estado de Tamio.
 // Estados de LS: on_trial, active, paused, past_due, unpaid, cancelled, expired.
-function estadoDe(status: string): "activa" | "prueba" | "vencida" {
+//
+// **Cancelada NO es vencida** (26-sep-2026). En Lemon Squeezy, `cancelled`
+// quiere decir que no se va a renovar, pero la suscripción «sigue activa y
+// válida» hasta `ends_at`, el final de lo que ya pagó; al llegar esa fecha
+// manda `subscription_expired`. Aquí se trataba como vencida en el acto: quien
+// cancelaba el día 3 de un mes pagado se quedaba sin la app ese mismo día, y
+// los términos de tamio.church prometen que la cancelación «takes effect at
+// the end of the current billing period».
+function estadoDe(status: string, finPeriodo: string | null): "activa" | "prueba" | "vencida" {
   if (status === "active") return "activa";
   if (status === "on_trial") return "prueba";
+  if (status === "cancelled" && finPeriodo && new Date(finPeriodo).getTime() > Date.now()) {
+    return "activa";
+  }
   return "vencida";
 }
 
@@ -180,8 +191,11 @@ serve(async (req: Request) => {
 
     const status: string = String(attrs?.status ?? "");
     // Fin del periodo pagado → vencimiento del plan. Si la suscripción quedó
-    // cancelada pero pagada hasta una fecha, esa fecha viene en ends_at.
-    const finPeriodo = attrs?.renews_at ?? attrs?.ends_at ?? null;
+    // cancelada, lo que cuenta es ends_at —hasta dónde pagó—, no renews_at, que
+    // es una renovación que ya no va a pasar.
+    const finPeriodo: string | null = status === "cancelled"
+      ? (attrs?.ends_at ?? attrs?.renews_at ?? null)
+      : (attrs?.renews_at ?? attrs?.ends_at ?? null);
     const vence: string | null = finPeriodo ? String(finPeriodo).slice(0, 10) : null;
 
     // service_role: puede leer/escribir saltando RLS (esta función corre en el
@@ -196,7 +210,9 @@ serve(async (req: Request) => {
     let usuario = await buscarUsuario(admin, email);
     let invitado = false;
     if (!usuario) {
-      if (estadoDe(status) === "vencida") {
+      // Solo una suscripción viva crea cuenta: una cancelada, aunque le quede
+      // periodo pagado, es alguien que se va, no alguien que llega.
+      if (status !== "active" && status !== "on_trial") {
         return new Response("sin cuenta y suscripción no vigente: nada que hacer", { status: 200 });
       }
       const nombre = String(attrs?.user_name ?? "").trim();
@@ -233,7 +249,7 @@ serve(async (req: Request) => {
     // eventos de suscripción traen el estado vigente en attributes.status, así
     // que el estado se deriva de ahí (created/updated/resumed/cancelled/...).
     const cambios: Record<string, unknown> = {
-      sub_estado: estadoDe(status),
+      sub_estado: estadoDe(status, finPeriodo),
       sub_vence: vence,
     };
     // El estado y el vencimiento sí se aplican (el cobro ocurrió de verdad);
