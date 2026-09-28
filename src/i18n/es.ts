@@ -1400,6 +1400,7 @@ export const es = {
       "sin-iglesia": "Tu cuenta no tiene una iglesia asignada.",
       "eres-tu": "Ese es tu propio correo.",
       "otra-iglesia": "Ese correo ya pertenece a otra iglesia.",
+      "solo-lectura": "Tamio está en solo lectura: el plan de esta iglesia no está activo.",
     },
   },
   rolAcceso: {

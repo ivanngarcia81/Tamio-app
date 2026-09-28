@@ -130,6 +130,19 @@ serve(async (req: Request) => {
     // A partir de aquí, LA iglesia es esta y ninguna otra.
     const iglesia = yo.church_id;
 
+    // Con la suscripción vencida y la gracia pasada, la iglesia está en solo
+    // lectura, y sumar a alguien o cambiarle el rol es escribir. La regla vive
+    // en la base (`iglesia_en_solo_lectura`, migración 20260928 de Tamio-iOS),
+    // pero su disparador no ve esta función: corre con `service_role`, que es
+    // justo lo que el disparador deja pasar. Por eso se pregunta aquí. Si la
+    // pregunta falla, no se invita: mejor un reintento que una puerta abierta.
+    const { data: soloLectura, error: slErr } = await admin
+      .rpc("iglesia_en_solo_lectura", { p_church: iglesia });
+    if (slErr) return json({ error: slErr.message }, 500);
+    if (soloLectura === true) {
+      return json({ error: "la iglesia está en solo lectura", codigo: "solo-lectura" }, 403);
+    }
+
     // Invitarse a uno mismo no hace nada y confunde el resultado.
     if (email === (invitador.email ?? "").toLowerCase()) {
       return json({ error: "esa es tu propia cuenta", codigo: "eres-tu" }, 409);

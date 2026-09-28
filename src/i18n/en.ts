@@ -1347,6 +1347,7 @@ export const en: Resources = {
       "sin-iglesia": "Your account has no church assigned.",
       "eres-tu": "That is your own email address.",
       "otra-iglesia": "That email already belongs to another church.",
+      "solo-lectura": "Tamio is read-only: this church’s plan isn’t active.",
     },
   },
   rolAcceso: {
