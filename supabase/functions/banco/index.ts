@@ -2,10 +2,10 @@
 // que dice el banco a las tablas `banco_*`.
 //
 // Es la fase 2 de `docs/PLAID.md` (repo Tamio-iOS, rama `plaid`). Las tablas
-// son de la migración `20260928b_el_banco_de_la_iglesia.sql` del mismo repo:
-// **tiene que estar aplicada antes de desplegar esto.** Después de cada
-// sincronización llama a `banco_emparejar` (fase 4, migración `20260930`);
-// sin ella la sincronización sigue funcionando y solo no empareja.
+// son de las migraciones `20260928b`, `20260929`, `20260930`, `20260930b` y
+// `20260930c` del mismo repo: **tienen que estar aplicadas antes de desplegar
+// esto** (lee `historia_desde` y escribe `categoria` y `logo_url`). Después de
+// cada sincronización llama a `banco_emparejar` (fase 4).
 //
 // ---------------------------------------------------------------------------
 // UNA FUNCIÓN, VARIAS ACCIONES
@@ -436,6 +436,11 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
           nombre: t.name ?? "",
           comercio: t.merchant_name ?? "",
           pendiente: !!t.pending,
+          // La categoría y el logo (migración 20260930c). El icono de la
+          // categoría de Plaid NO se guarda: la app pinta uno propio.
+          categoria: t.personal_finance_category?.primary ?? null,
+          categoria_detalle: t.personal_finance_category?.detailed ?? null,
+          logo_url: t.logo_url ?? t.counterparties?.[0]?.logo_url ?? null,
           deleted: false,
         }];
       });
