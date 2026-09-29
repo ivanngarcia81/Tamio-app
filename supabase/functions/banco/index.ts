@@ -22,9 +22,11 @@
 //   | `conectar-prueba`| ROLES_CONECTAN, SANDBOX   | lo mismo sin la ventana: un banco falso     |
 //   | `sincronizar`    | ROLES_SINCRONIZAN         | trae lo nuevo de una conexión o de todas    |
 //   | `desconectar`    | ROLES_CONECTAN            | la quita en Plaid; lo ya traído se queda    |
+//   | `probar-aviso`   | ROLES_CONECTAN, SANDBOX   | pide a Plaid que mande un aviso de prueba   |
 //
-// Y si el cuerpo trae `webhook_type`, es Plaid avisando (fase 3). Hasta que
-// esté la verificación de la firma, se contesta 200 y no se hace nada.
+// Y si el cuerpo trae `webhook_type`, es **Plaid avisando** (fase 3): se
+// verifica la firma y, según el aviso, se sincroniza esa conexión o se marca
+// que pide volver a entrar. Ver «LOS AVISOS DE PLAID» más abajo.
 //
 // **`verify_jwt` va APAGADO** (como `pago-webhook`): Plaid llama sin sesión.
 // Las acciones de la app NO quedan abiertas por eso: cada una valida la
@@ -77,8 +79,8 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-/** Quién conecta, reconecta y desconecta el banco. Propuesta de PLAID.md,
- *  pendiente de que Iván la confirme: solo el administrador. */
+/** Quién conecta, reconecta y desconecta el banco. Lo decidió Iván el 28-sep:
+ *  solo el administrador. */
 const ROLES_CONECTAN = ["administrador"];
 /** Quién pulsa «Actualizar». Leer el banco no cambia los libros. */
 const ROLES_SINCRONIZAN = ["administrador", "tesorero"];
@@ -88,8 +90,33 @@ const ROLES_SINCRONIZAN = ["administrador", "tesorero"];
  *  Está por decidir (PLAID.md, «Lo que queda por decidir»). */
 const DIAS_DE_HISTORIA = 365;
 
+/** **Las cuentas que le sirven a una iglesia**, decidido por Iván el 28-sep:
+ *  cheques, ahorro y tarjeta de crédito. Un banco trae también préstamos,
+ *  hipotecas, 401k… (la prueba del 28-sep guardó 14 cuentas, 10 de ellas de
+ *  eso). Se filtra DOS veces: en la ventana de Plaid (`account_filters`), para
+ *  que la iglesia ni las comparta, y al guardar, porque `conectar-prueba` y
+ *  un banco que no respete el filtro las mandarían igual. Las claves son los
+ *  `type` de Plaid y los valores sus `subtype`. */
+const CUENTAS_PERMITIDAS: Record<string, string[]> = {
+  depository: ["checking", "savings"],
+  credit: ["credit card"],
+};
+
+function cuentaPermitida(tipo: unknown, subtipo: unknown): boolean {
+  return CUENTAS_PERMITIDAS[String(tipo ?? "")]?.includes(String(subtipo ?? "")) ?? false;
+}
+
 /** El banco falso de sandbox que usa `conectar-prueba` (First Platypus Bank). */
 const BANCO_DE_PRUEBA = "ins_109508";
+
+/** Adónde manda Plaid sus avisos: esta misma función. */
+function urlDeAvisos(): string {
+  return `${Deno.env.get("SUPABASE_URL")!}/functions/v1/banco`;
+}
+
+// Supabase deja seguir trabajando después de contestar con
+// `EdgeRuntime.waitUntil`. Fuera de Supabase no existe, y entonces se espera.
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
 // Cada error lleva un `codigo` estable además del texto: la app es bilingüe y
 // traduce por el código (igual que `invitar-usuario`).
@@ -247,8 +274,9 @@ type Transaccion = any;
  *  conexión. El `upsert` no manda `cuenta_banco_tamio`: la asignación que hizo
  *  el tesorero no se pisa al actualizar saldos. */
 async function guardarCuentas(
-  admin: SupabaseClient, c: Conexion, cuentas: Cuenta[],
+  admin: SupabaseClient, c: Conexion, todas: Cuenta[],
 ): Promise<Map<string, string>> {
+  const cuentas = todas.filter((a) => cuentaPermitida(a.type, a.subtype));
   if (cuentas.length) {
     const ahora = new Date().toISOString();
     const filas = cuentas.map((a) => ({
@@ -262,6 +290,7 @@ async function guardarCuentas(
       moneda: a.balances?.iso_currency_code ?? a.balances?.unofficial_currency_code ?? "USD",
       saldo_actual: centavosSaldo(a.balances?.current),
       saldo_disponible: centavosSaldo(a.balances?.available),
+      saldo_limite: centavosSaldo(a.balances?.limit),
       saldo_en: ahora,
       deleted: false,
     }));
@@ -287,6 +316,27 @@ interface Resumen {
   quitadas: number;
 }
 
+/** En qué punto está Plaid trayendo el historial (migración 20260929). */
+const HISTORIAL = ["trayendo", "inicial", "completo"] as const;
+type Historial = (typeof HISTORIAL)[number];
+
+const HISTORIAL_DE_PLAID: Record<string, Historial> = {
+  NOT_READY: "trayendo",
+  INITIAL_UPDATE_COMPLETE: "inicial",
+  HISTORICAL_UPDATE_COMPLETE: "completo",
+};
+
+/** Lo sube, nunca lo baja: un aviso viejo que llega tarde no puede devolver
+ *  la bandeja a «Trayendo movimientos…». */
+async function avanzarHistorial(admin: SupabaseClient, uid: string, nuevo: Historial | null) {
+  if (!nuevo) return;
+  const { data } = await admin.from("banco_conexiones").select("historial").eq("uid", uid).maybeSingle();
+  const actual = (data?.historial ?? "trayendo") as Historial;
+  if (HISTORIAL.indexOf(nuevo) > HISTORIAL.indexOf(actual)) {
+    await admin.from("banco_conexiones").update({ historial: nuevo }).eq("uid", uid);
+  }
+}
+
 /** Trae de Plaid todo lo que cambió desde el cursor y lo guarda. */
 async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen> {
   const llave = await llaveDe(admin, c.uid);
@@ -301,6 +351,7 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
       const quitadas: string[] = [];
       let cuentas: Cuenta[] = [];
       let cursor = llave.cursor ?? "";
+      let historial: Historial | null = null;
 
       try {
         for (let hayMas = true; hayMas;) {
@@ -313,6 +364,7 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
           cambiadas.push(...(r.modified ?? []));
           quitadas.push(...(r.removed ?? []).map((x: { transaction_id: string }) => x.transaction_id));
           if (r.accounts?.length) cuentas = r.accounts;
+          historial = HISTORIAL_DE_PLAID[r.transactions_update_status ?? ""] ?? historial;
           cursor = r.next_cursor ?? cursor;
           hayMas = !!r.has_more;
         }
@@ -328,10 +380,19 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
       // Solo columnas que son de Plaid: el `upsert` NO manda la pareja
       // (`emparejado_*`, `ignorado`), así que lo que decidió el tesorero se
       // queda aunque el banco cambie la línea.
-      const filas = [...nuevas, ...cambiadas].map((t) => {
+      // Las líneas de una cuenta que no se guardó (un préstamo, un 401k) se
+      // saltan: no son de los libros. Si alguna vez llega una de una cuenta
+      // PERMITIDA que no está, eso sí es un error y el cursor no avanza.
+      const permitidas = new Set(
+        cuentas.filter((a) => cuentaPermitida(a.type, a.subtype)).map((a) => a.account_id as string),
+      );
+      const filas = [...nuevas, ...cambiadas].flatMap((t) => {
         const cuenta = mapa.get(t.account_id);
-        if (!cuenta) throw new Fallo("interno", `línea de una cuenta desconocida (${t.account_id})`, 500);
-        return {
+        if (!cuenta) {
+          if (cuentas.length && !permitidas.has(t.account_id)) return [];
+          throw new Fallo("interno", `línea de una cuenta desconocida (${t.account_id})`, 500);
+        }
+        return [{
           church_id: c.church_id,
           cuenta_uid: cuenta,
           plaid_transaction_id: t.transaction_id,
@@ -342,7 +403,7 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
           comercio: t.merchant_name ?? "",
           pendiente: !!t.pending,
           deleted: false,
-        };
+        }];
       });
       for (const lote of trozos(filas)) {
         const { error } = await admin.from("banco_movimientos").upsert(lote, { onConflict: "plaid_transaction_id" });
@@ -364,6 +425,7 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
       await admin.from("banco_conexiones")
         .update({ estado: "activa", error: null, sincronizada_en: new Date().toISOString() })
         .eq("uid", c.uid);
+      await avanzarHistorial(admin, c.uid, historial);
 
       return { nuevas: nuevas.length, cambiadas: cambiadas.length, quitadas: quitadas.length };
     }
@@ -387,13 +449,12 @@ async function enlace(req: Request, admin: SupabaseClient, cuerpo: Record<string
   const yo = await quienLlama(req, admin, ROLES_CONECTAN);
   await puedeConectar(admin, yo.iglesia);
 
-  const url = Deno.env.get("SUPABASE_URL")!;
   const peticion: Record<string, unknown> = {
     client_name: "Tamio Church",
     language: cuerpo.idioma === "en" ? "en" : "es",
     country_codes: ["US"],
     user: { client_user_id: yo.id },
-    webhook: `${url}/functions/v1/banco`,
+    webhook: urlDeAvisos(),
   };
 
   // Con `conexion_uid` es el «modo actualizar» de Plaid: volver a entrar a un
@@ -405,6 +466,11 @@ async function enlace(req: Request, admin: SupabaseClient, cuerpo: Record<string
     peticion.products = ["transactions"];
     peticion.transactions = { days_requested: DIAS_DE_HISTORIA };
   }
+
+  // La ventana solo ofrece las cuentas que le sirven a una iglesia.
+  peticion.account_filters = Object.fromEntries(
+    Object.entries(CUENTAS_PERMITIDAS).map(([tipo, subtipos]) => [tipo, { account_subtypes: subtipos }]),
+  );
 
   const redirect = (Deno.env.get("PLAID_REDIRECT_URI") ?? "").trim();
   if (redirect) peticion.redirect_uri = redirect;
@@ -494,9 +560,25 @@ async function conectarPrueba(req: Request, admin: SupabaseClient, cuerpo: Recor
     options: {
       ...(usuario ? { override_username: usuario, override_password: "pass_good" } : {}),
       transactions: { days_requested: DIAS_DE_HISTORIA },
+      // Sin esto, el banco de prueba no avisa nunca y la fase 3 no se prueba.
+      webhook: urlDeAvisos(),
     },
   });
   return await conectarCon(admin, yo, public_token);
+}
+
+/** Solo en sandbox: pide a Plaid que mande un aviso a esta función, firmado
+ *  como los de verdad, para probar el camino entero sin esperar al banco. */
+async function probarAviso(req: Request, admin: SupabaseClient, cuerpo: Record<string, unknown>) {
+  if (ambiente() !== "sandbox") throw new Fallo("solo-sandbox", "probar-aviso solo existe en sandbox", 403);
+  const yo = await quienLlama(req, admin, ROLES_CONECTAN);
+  const c = await conexionDe(admin, yo.iglesia, cuerpo.conexion_uid);
+  const { access_token } = await llaveDe(admin, c.uid);
+  await plaid("/sandbox/item/fire_webhook", {
+    access_token,
+    webhook_code: String(cuerpo.codigo ?? "SYNC_UPDATES_AVAILABLE"),
+  });
+  return json({ ok: true });
 }
 
 async function actualizar(req: Request, admin: SupabaseClient, cuerpo: Record<string, unknown>) {
@@ -554,27 +636,202 @@ async function desconectar(req: Request, admin: SupabaseClient, cuerpo: Record<s
 }
 
 // ===========================================================================
+// LOS AVISOS DE PLAID
+// ===========================================================================
+//
+// La URL de esta función es pública y `verify_jwt` está apagado, así que
+// cualquiera puede mandarle un cuerpo con `webhook_type`. **Nada de lo que
+// diga se cree hasta verificar la firma**, como pide Plaid:
+//
+//   1. La cabecera `Plaid-Verification` es un JWT firmado con ES256. Se lee su
+//      `kid` y se rechaza cualquier otro algoritmo (sin esto, un JWT con
+//      `alg: none` pasaría).
+//   2. La clave pública se le pide a Plaid (`/webhook_verification_key/get`)
+//      con nuestras credenciales. Una clave caducada no vale.
+//   3. Se verifica la firma con esa clave.
+//   4. El JWT tiene menos de 5 minutos: un aviso viejo repetido no vale.
+//   5. `request_body_sha256` del JWT es el SHA-256 del cuerpo TAL CUAL llegó:
+//      si alguien cambia un solo byte del cuerpo, no coincide.
+//
+// Y aun verificado, el aviso solo aporta un `item_id`: qué conexión mirar. Lo
+// que se guarda sale de preguntarle a Plaid con la llave, no del aviso.
+
+const MINUTOS_DE_VIDA_DEL_AVISO = 5;
+
+/** Las claves públicas de Plaid, por `kid`, mientras viva esta instancia. */
+const clavesDePlaid = new Map<string, CryptoKey>();
+
+function base64url(texto: string): Uint8Array<ArrayBuffer> {
+  const b64 = texto.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(texto.length / 4) * 4, "=");
+  return Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+}
+
+function hex(bytes: ArrayBuffer): string {
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Compara sin salir antes al primer carácter distinto (tiempo constante). */
+function iguales(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let dif = 0;
+  for (let i = 0; i < a.length; i++) dif |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return dif === 0;
+}
+
+async function claveDePlaid(kid: string): Promise<CryptoKey> {
+  const guardada = clavesDePlaid.get(kid);
+  if (guardada) return guardada;
+
+  // Un `kid` que Plaid no conoce es un aviso falso, no un fallo de Plaid:
+  // 401, como los demás rechazos, y no 502.
+  // deno-lint-ignore no-explicit-any
+  let key: any;
+  try {
+    ({ key } = await plaid("/webhook_verification_key/get", { key_id: kid }));
+  } catch (e) {
+    if (e instanceof FalloPlaid && e.codigoPlaid === "INVALID_WEBHOOK_VERIFICATION_KEY_ID") key = null;
+    else throw e;
+  }
+  if (!key || key.expired_at) throw new Fallo("aviso-falso", "aviso de Plaid no verificado: clave desconocida o caducada", 401);
+  const clave = await crypto.subtle.importKey(
+    "jwk",
+    { kty: "EC", crv: "P-256", x: key.x, y: key.y },
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["verify"],
+  );
+  clavesDePlaid.set(kid, clave);
+  return clave;
+}
+
+async function verificarAviso(req: Request, crudo: string): Promise<void> {
+  const falso = (por: string) => new Fallo("aviso-falso", `aviso de Plaid no verificado: ${por}`, 401);
+
+  const jwt = req.headers.get("Plaid-Verification") ?? "";
+  const partes = jwt.split(".");
+  if (partes.length !== 3) throw falso("sin firma");
+  const [cab64, carga64, firma64] = partes;
+
+  let cabecera: { alg?: string; kid?: string };
+  let carga: { iat?: number; request_body_sha256?: string };
+  try {
+    cabecera = JSON.parse(new TextDecoder().decode(base64url(cab64)));
+    carga = JSON.parse(new TextDecoder().decode(base64url(carga64)));
+  } catch {
+    throw falso("firma ilegible");
+  }
+  if (cabecera.alg !== "ES256" || !cabecera.kid) throw falso("algoritmo");
+
+  const clave = await claveDePlaid(cabecera.kid);
+  const valida = await crypto.subtle.verify(
+    { name: "ECDSA", hash: "SHA-256" },
+    clave,
+    base64url(firma64),
+    new TextEncoder().encode(`${cab64}.${carga64}`),
+  );
+  if (!valida) throw falso("firma");
+
+  const edad = Date.now() / 1000 - (carga.iat ?? 0);
+  if (edad > MINUTOS_DE_VIDA_DEL_AVISO * 60 || edad < -60) throw falso("caducado");
+
+  const huella = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(crudo)));
+  if (!iguales(huella, String(carga.request_body_sha256 ?? ""))) throw falso("el cuerpo no coincide");
+}
+
+/** Qué hacer con un aviso YA VERIFICADO. Corre después de contestar a Plaid. */
+async function atenderAviso(admin: SupabaseClient, aviso: Record<string, unknown>): Promise<void> {
+  const { data: c } = await admin
+    .from("banco_conexiones").select("uid, church_id, estado")
+    .eq("plaid_item_id", String(aviso.item_id ?? "")).maybeSingle();
+  // Un banco que Tamio ya no tiene (o desconectado): nada que hacer.
+  if (!c || c.estado === "desconectada") return;
+
+  const cual = `${aviso.webhook_type}/${aviso.webhook_code}`;
+  switch (cual) {
+    case "TRANSACTIONS/SYNC_UPDATES_AVAILABLE": {
+      await sincronizar(admin, c as Conexion);
+      await avanzarHistorial(
+        admin, c.uid,
+        aviso.historical_update_complete ? "completo" : aviso.initial_update_complete ? "inicial" : null,
+      );
+      return;
+    }
+
+    // Hay que volver a entrar al banco: el «!» naranja de la barra lateral.
+    case "ITEM/PENDING_EXPIRATION":
+    case "ITEM/PENDING_DISCONNECT":
+    case "ITEM/ERROR": {
+      const error = aviso.error as { error_code?: string; error_message?: string } | undefined;
+      const pideLogin = cual !== "ITEM/ERROR" || error?.error_code === "ITEM_LOGIN_REQUIRED";
+      await admin.from("banco_conexiones").update({
+        error: error?.error_message ?? "El banco pide volver a entrar",
+        ...(pideLogin ? { estado: "pide_login" } : {}),
+      }).eq("uid", c.uid);
+      return;
+    }
+
+    // Volvió a entrar (o el banco se arregló solo): se trae lo que faltó.
+    case "ITEM/LOGIN_REPAIRED": {
+      await admin.from("banco_conexiones").update({ estado: "activa", error: null }).eq("uid", c.uid);
+      await sincronizar(admin, c as Conexion);
+      return;
+    }
+
+    // La iglesia retiró el permiso desde su banco: la llave ya no sirve. Lo
+    // traído se queda, como al desconectar desde Tamio.
+    case "ITEM/USER_PERMISSION_REVOKED": {
+      await admin.from("banco_llaves").delete().eq("conexion_uid", c.uid);
+      await admin.from("banco_conexiones").update({
+        estado: "desconectada",
+        error: "Se retiró el permiso desde el banco",
+      }).eq("uid", c.uid);
+      return;
+    }
+
+    // Retiró el permiso de UNA cuenta: esa deja de verse.
+    case "ITEM/USER_ACCOUNT_REVOKED": {
+      await admin.from("banco_cuentas").update({ deleted: true })
+        .eq("conexion_uid", c.uid).eq("plaid_account_id", String(aviso.account_id ?? ""));
+      return;
+    }
+
+    // Cualquier otro (WEBHOOK_UPDATE_ACKNOWLEDGED, NEW_ACCOUNTS_AVAILABLE…):
+    // se acusa recibo y ya.
+    default:
+      return;
+  }
+}
+
+// ===========================================================================
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "solo POST", codigo: "metodo" }, 405);
 
   try {
+    // El cuerpo se lee como TEXTO primero: la firma de Plaid es del cuerpo
+    // exacto, y volver a serializar el JSON podría cambiar un byte.
+    const crudo = await req.text();
     let cuerpo: Record<string, unknown>;
     try {
-      cuerpo = await req.json();
+      cuerpo = JSON.parse(crudo);
     } catch {
       return json({ error: "cuerpo inválido", codigo: "cuerpo" }, 400);
     }
 
-    // Plaid avisando. Fase 3: verificar la firma (`Plaid-Verification`) y
-    // sincronizar esa conexión. Hasta entonces, se acusa recibo y nada más:
-    // sin firma verificada no se toca la base.
-    if (typeof cuerpo.webhook_type === "string") {
-      return json({ ok: true, recibido: false });
-    }
-
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Plaid avisando. Se verifica ANTES de tocar nada, se contesta en el acto
+    // (Plaid da unos segundos) y el trabajo sigue después de contestar.
+    if (typeof cuerpo.webhook_type === "string") {
+      await verificarAviso(req, crudo);
+      const trabajo = atenderAviso(admin, cuerpo).catch((e) =>
+        console.error(`aviso ${cuerpo.webhook_type}/${cuerpo.webhook_code}:`, e instanceof Error ? e.message : e)
+      );
+      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(trabajo);
+      else await trabajo;
+      return json({ ok: true, recibido: true });
+    }
 
     switch (cuerpo.accion) {
       case "enlace": return await enlace(req, admin, cuerpo);
@@ -582,6 +839,7 @@ serve(async (req: Request) => {
       case "conectar-prueba": return await conectarPrueba(req, admin, cuerpo);
       case "sincronizar": return await actualizar(req, admin, cuerpo);
       case "desconectar": return await desconectar(req, admin, cuerpo);
+      case "probar-aviso": return await probarAviso(req, admin, cuerpo);
       default: return json({ error: "acción desconocida", codigo: "accion" }, 400);
     }
   } catch (e) {
