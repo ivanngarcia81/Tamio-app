@@ -11,7 +11,37 @@ Bilingüe ES/EN con paridad de claves verificada por el compilador.
 > El identificador interno es `com.tesoreria.app` **a propósito**: de él depende
 > la carpeta de datos de cada instalación existente. **No cambiarlo nunca.**
 
-_Última actualización: 18 de agosto de 2026 · versión 1.0.8_
+_Última actualización: 29 de septiembre de 2026 · la app de Tauri con cuentas, abandonada (ver abajo)_
+
+> ## ⛔ La app de Tauri con cuentas (1.1 → 1.3.5) está ABANDONADA · 29-sep-2026
+>
+> Decidido por Iván el día que **Tamio Church** (`church.tamio.native`, repo
+> `Tamio-iOS`, id6815859389) salió publicada en la App Store. La app con cuentas,
+> sincronización y roles es esa, nativa en SwiftUI. La 1.3.5 que está en
+> TestFlight **no se publica ni se sigue**: su build se expira en App Store
+> Connect.
+>
+> **Por qué no se puede publicar desde `main`:** la 1.1 encendió
+> `LOGIN_HABILITADO` y `SYNC_HABILITADO`. Una actualización de «Tamio»
+> (`com.tesoreria.app`, id6794741319) hecha desde aquí convertiría la app gratis
+> y local en otra Tamio Church: dos fichas del mismo producto, que es lo que
+> castiga la regla **4.3**, y lo contrario de lo que dice la nota al revisor de
+> Tamio Church («Tamio» es de un solo aparato, sin cuenta ni servidor, y no una
+> gama de la otra).
+>
+> **Lo que sigue vivo en este repo, y NO se abandona:** `supabase/` (migraciones y
+> las funciones `pago-webhook` e `invitar-usuario`, que usa Tamio Church), la
+> rama `pages` (tamio.church), `web/` y la rama `plaid`.
+>
+> **La app gratis sigue siendo la 1.0 (build 1.0.8)**, hecha desde `281cce0`
+> (30-jul), con `LOGIN_HABILITADO = false`. Si algún día hace falta una 1.0.9
+> —por ejemplo, un aviso que lleve a Tamio Church, o una versión para
+> Windows—, **se hace desde `281cce0`, no desde `main`.** Para Windows, además:
+> `keyring` solo trae `apple-native`; sin `windows-native` la clave de la base no
+> se guardaría y la app perdería sus datos al cerrarse.
+>
+> El 29-sep se decidió que el «Promotional Text» de su ficha lleve a Tamio Church (no
+> pasa por revisión).
 
 ---
 
