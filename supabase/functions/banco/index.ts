@@ -3,7 +3,9 @@
 //
 // Es la fase 2 de `docs/PLAID.md` (repo Tamio-iOS, rama `plaid`). Las tablas
 // son de la migración `20260928b_el_banco_de_la_iglesia.sql` del mismo repo:
-// **tiene que estar aplicada antes de desplegar esto.**
+// **tiene que estar aplicada antes de desplegar esto.** Después de cada
+// sincronización llama a `banco_emparejar` (fase 4, migración `20260930`);
+// sin ella la sincronización sigue funcionando y solo no empareja.
 //
 // ---------------------------------------------------------------------------
 // UNA FUNCIÓN, VARIAS ACCIONES
@@ -314,6 +316,22 @@ interface Resumen {
   nuevas: number;
   cambiadas: number;
   quitadas: number;
+  /** Lo que emparejó solo `banco_emparejar` (fase 4), o null si no se pudo. */
+  emparejadas: { depositos: number; movimientos: number; lineas: number } | null;
+}
+
+/** El emparejamiento automático (migración `20260930`). Corre en la base, no
+ *  aquí, para que la regla viva en un solo sitio y su prueba SQL la mida.
+ *  **Si falla, la sincronización NO falla**: lo traído ya está guardado y el
+ *  cursor avanzado; las líneas se quedan en la bandeja y se reintenta en la
+ *  próxima. */
+async function emparejar(admin: SupabaseClient, iglesia: string): Promise<Resumen["emparejadas"]> {
+  const { data, error } = await admin.rpc("banco_emparejar", { p_church: iglesia });
+  if (error) {
+    console.error("banco_emparejar:", error.message);
+    return null;
+  }
+  return data;
 }
 
 /** En qué punto está Plaid trayendo el historial (migración 20260929). */
@@ -427,7 +445,13 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
         .eq("uid", c.uid);
       await avanzarHistorial(admin, c.uid, historial);
 
-      return { nuevas: nuevas.length, cambiadas: cambiadas.length, quitadas: quitadas.length };
+      // Después de guardar, no antes: el emparejamiento mira TODAS las líneas
+      // libres de la iglesia, también las de otras conexiones y las que el
+      // tesorero desemparejó, y un depósito apuntado ayer en Tamio encuentra
+      // aquí la línea que ya estaba.
+      const emparejadas = await emparejar(admin, c.church_id);
+
+      return { nuevas: nuevas.length, cambiadas: cambiadas.length, quitadas: quitadas.length, emparejadas };
     }
   } catch (e) {
     // Que el problema se vea en Ajustes → Banco, no solo en el registro.
@@ -547,18 +571,25 @@ async function conectar(req: Request, admin: SupabaseClient, cuerpo: Record<stri
 
 /** Solo en sandbox: conecta un banco falso sin la ventana de Plaid, para
  *  probar todo el camino del servidor. `usuario_prueba` elige los datos
- *  (`user_good`, `user_transactions_dynamic`, o uno a medida del panel). */
+ *  (`user_good`, `user_transactions_dynamic`, o uno a medida del panel).
+ *
+ *  Con `config_prueba` (un objeto) es el usuario A MEDIDA de Plaid,
+ *  `user_custom`: la configuración va como contraseña, en JSON, con las
+ *  cuentas y las líneas que se quieran. Es lo que prueba el emparejamiento
+ *  contra los depósitos y gastos de la iglesia de prueba (fase 4). */
 async function conectarPrueba(req: Request, admin: SupabaseClient, cuerpo: Record<string, unknown>) {
   if (ambiente() !== "sandbox") throw new Fallo("solo-sandbox", "conectar-prueba solo existe en sandbox", 403);
   const yo = await quienLlama(req, admin, ROLES_CONECTAN);
   await puedeConectar(admin, yo.iglesia);
 
-  const usuario = String(cuerpo.usuario_prueba ?? "").trim();
+  const config = cuerpo.config_prueba;
+  const usuario = config && typeof config === "object" ? "user_custom" : String(cuerpo.usuario_prueba ?? "").trim();
+  const contrasena = usuario === "user_custom" ? JSON.stringify(config) : "pass_good";
   const { public_token } = await plaid("/sandbox/public_token/create", {
     institution_id: BANCO_DE_PRUEBA,
     initial_products: ["transactions"],
     options: {
-      ...(usuario ? { override_username: usuario, override_password: "pass_good" } : {}),
+      ...(usuario ? { override_username: usuario, override_password: contrasena } : {}),
       transactions: { days_requested: DIAS_DE_HISTORIA },
       // Sin esto, el banco de prueba no avisa nunca y la fase 3 no se prueba.
       webhook: urlDeAvisos(),
