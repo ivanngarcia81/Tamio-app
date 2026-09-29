@@ -87,10 +87,22 @@ const ROLES_CONECTAN = ["administrador"];
 /** Quién pulsa «Actualizar». Leer el banco no cambia los libros. */
 const ROLES_SINCRONIZAN = ["administrador", "tesorero"];
 
-/** Cuánto se trae hacia atrás al conectar. Plaid da hasta 730 días; más
- *  historia que la que tiene Tamio solo llena la bandeja de «sin apuntar».
- *  Está por decidir (PLAID.md, «Lo que queda por decidir»). */
-const DIAS_DE_HISTORIA = 365;
+/** **Desde cuándo se trae**, decidido por Iván el 29-sep: desde el día 1 del
+ *  mes en que se conecta, como dibuja M9 del handoff de la Mac («Desde 1
+ *  sep»). Más historia que la que tiene Tamio solo llena la bandeja de «sin
+ *  apuntar». Se guarda en `banco_conexiones.historia_desde` (migración
+ *  20260930b): el «Según Tamio» mide desde ahí, y las líneas anteriores no se
+ *  guardan. */
+function primeroDelMes(): string {
+  return new Date().toISOString().slice(0, 8) + "01";
+}
+
+/** Lo que se le pide a Plaid. Con margen: Plaid cuenta los días a su manera
+ *  y lo anterior a `historia_desde` se descarta aquí de todos modos. */
+function diasQuePedir(): number {
+  const dias = Math.ceil((Date.now() - Date.parse(primeroDelMes() + "T00:00:00Z")) / 86_400_000);
+  return Math.max(30, dias + 7);
+}
 
 /** **Las cuentas que le sirven a una iglesia**, decidido por Iván el 28-sep:
  *  cheques, ahorro y tarjeta de crédito. Un banco trae también préstamos,
@@ -245,12 +257,14 @@ interface Conexion {
   uid: string;
   church_id: string;
   estado: string;
+  /** Null en las conexiones de antes del 30-sep: se guarda todo. */
+  historia_desde: string | null;
 }
 
 /** Una conexión de ESTA iglesia. La `uid` viene del cliente; la iglesia no. */
 async function conexionDe(admin: SupabaseClient, iglesia: string, uid: unknown): Promise<Conexion> {
   const { data } = await admin
-    .from("banco_conexiones").select("uid, church_id, estado")
+    .from("banco_conexiones").select("uid, church_id, estado, historia_desde")
     .eq("uid", String(uid ?? "")).eq("church_id", iglesia).maybeSingle();
   if (!data) throw new Fallo("conexion", "esa conexión no existe en tu iglesia", 404);
   return data as Conexion;
@@ -405,6 +419,8 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
         cuentas.filter((a) => cuentaPermitida(a.type, a.subtype)).map((a) => a.account_id as string),
       );
       const filas = [...nuevas, ...cambiadas].flatMap((t) => {
+        // Lo anterior a `historia_desde` ya está en el saldo: no es bandeja.
+        if (c.historia_desde && String(t.date) < c.historia_desde) return [];
         const cuenta = mapa.get(t.account_id);
         if (!cuenta) {
           if (cuentas.length && !permitidas.has(t.account_id)) return [];
@@ -488,7 +504,7 @@ async function enlace(req: Request, admin: SupabaseClient, cuerpo: Record<string
     peticion.access_token = (await llaveDe(admin, c.uid)).access_token;
   } else {
     peticion.products = ["transactions"];
-    peticion.transactions = { days_requested: DIAS_DE_HISTORIA };
+    peticion.transactions = { days_requested: diasQuePedir() };
   }
 
   // La ventana solo ofrece las cuentas que le sirven a una iglesia.
@@ -524,7 +540,8 @@ async function conectarCon(admin: SupabaseClient, yo: Quien, publicToken: string
       plaid_item_id: item_id,
       institucion,
       conectada_por: yo.nombre,
-    }).select("uid, church_id, estado").single();
+      historia_desde: primeroDelMes(),
+    }).select("uid, church_id, estado, historia_desde").single();
     if (e1 || !nueva) throw new Fallo("interno", `conexión: ${e1?.message}`, 500);
     uid = nueva.uid;
 
@@ -590,7 +607,7 @@ async function conectarPrueba(req: Request, admin: SupabaseClient, cuerpo: Recor
     initial_products: ["transactions"],
     options: {
       ...(usuario ? { override_username: usuario, override_password: contrasena } : {}),
-      transactions: { days_requested: DIAS_DE_HISTORIA },
+      transactions: { days_requested: diasQuePedir() },
       // Sin esto, el banco de prueba no avisa nunca y la fase 3 no se prueba.
       webhook: urlDeAvisos(),
     },
@@ -620,7 +637,7 @@ async function actualizar(req: Request, admin: SupabaseClient, cuerpo: Record<st
     conexiones = [await conexionDe(admin, yo.iglesia, cuerpo.conexion_uid)];
   } else {
     const { data } = await admin.from("banco_conexiones")
-      .select("uid, church_id, estado").eq("church_id", yo.iglesia).neq("estado", "desconectada");
+      .select("uid, church_id, estado, historia_desde").eq("church_id", yo.iglesia).neq("estado", "desconectada");
     conexiones = (data ?? []) as Conexion[];
   }
 
@@ -772,7 +789,7 @@ async function verificarAviso(req: Request, crudo: string): Promise<void> {
 /** Qué hacer con un aviso YA VERIFICADO. Corre después de contestar a Plaid. */
 async function atenderAviso(admin: SupabaseClient, aviso: Record<string, unknown>): Promise<void> {
   const { data: c } = await admin
-    .from("banco_conexiones").select("uid, church_id, estado")
+    .from("banco_conexiones").select("uid, church_id, estado, historia_desde")
     .eq("plaid_item_id", String(aviso.item_id ?? "")).maybeSingle();
   // Un banco que Tamio ya no tiene (o desconectado): nada que hacer.
   if (!c || c.estado === "desconectada") return;
