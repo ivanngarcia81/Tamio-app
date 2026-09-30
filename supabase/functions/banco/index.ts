@@ -519,11 +519,62 @@ async function enlace(req: Request, admin: SupabaseClient, cuerpo: Record<string
     );
   }
 
-  const redirect = (Deno.env.get("PLAID_REDIRECT_URI") ?? "").trim();
-  if (redirect) peticion.redirect_uri = redirect;
+  // **La Mac conecta en el navegador** (Hosted Link, M2 del diseño): el SDK
+  // de Plaid es solo de iPhone y iPad. Con `navegador`, Plaid devuelve una URL
+  // que la Mac abre en Safari, y la Mac pregunta con `conectar-navegador`
+  // hasta que la sesión termina. Sin `redirect_uri`: eso es para OAuth dentro
+  // de una app, y en el navegador Plaid lo resuelve solo.
+  if (cuerpo.navegador) {
+    peticion.hosted_link = { url_lifetime_seconds: 1800 };
+  } else {
+    const redirect = (Deno.env.get("PLAID_REDIRECT_URI") ?? "").trim();
+    if (redirect) peticion.redirect_uri = redirect;
+  }
 
   const r = await plaid("/link/token/create", peticion);
-  return json({ ok: true, link_token: r.link_token, expira: r.expiration });
+  return json({ ok: true, link_token: r.link_token, expira: r.expiration, url: r.hosted_link_url ?? null });
+}
+
+/** **La Mac, al terminar en el navegador**: pregunta a Plaid cómo acabó la
+ *  sesión del `link_token`. Mientras no haya terminado, `listo: false`, y la
+ *  Mac vuelve a preguntar. Con un `public_token`, conecta como el iPhone; en
+ *  el modo «volver a entrar» no hay nada que cambiar y solo se actualiza.
+ *  Quien llama tiene que ser administrador: el banco va a SU iglesia, y el
+ *  `link_token` solo lo tiene quien lo pidió. */
+async function conectarNavegador(req: Request, admin: SupabaseClient, cuerpo: Record<string, unknown>) {
+  const yo = await quienLlama(req, admin, ROLES_CONECTAN);
+  const linkToken = String(cuerpo.link_token ?? "").trim();
+  if (!linkToken) throw new Fallo("cuerpo", "falta link_token");
+  const r = await plaid("/link/token/get", { link_token: linkToken });
+  const sesiones = (r.link_sessions ?? []) as any[];
+  const publicToken = sesiones
+    .flatMap((s) => [
+      ...((s.results?.item_add_results ?? []) as any[]).map((x) => x.public_token),
+      s.on_success?.public_token,
+    ])
+    .find((x) => typeof x === "string" && x);
+  const terminada = sesiones.some((s) => s.finished_at);
+
+  if (cuerpo.conexion_uid) {
+    // Volver a entrar: la llave no cambia; al terminar, se trae lo que faltó.
+    if (!terminada) return json({ ok: true, listo: false });
+    const c = await conexionDe(admin, yo.iglesia, cuerpo.conexion_uid);
+    try {
+      await sincronizar(admin, c);
+    } catch (_) {
+      // Si el banco sigue pidiendo entrar, lo dice la conexión (`pide_login`).
+    }
+    return json({ ok: true, listo: true });
+  }
+  if (!publicToken) {
+    // Terminó sin banco (la persona cerró la ventana): se dice para que la
+    // Mac deje de esperar.
+    return json({ ok: true, listo: terminada, cancelada: terminada });
+  }
+  await puedeConectar(admin, yo.iglesia);
+  const res = await conectarCon(admin, yo, publicToken);
+  const datos = await res.json();
+  return json({ ...datos, listo: true });
 }
 
 /** Lo común a `conectar` y `conectar-prueba`, desde el `public_token`. */
@@ -895,6 +946,7 @@ serve(async (req: Request) => {
       case "sincronizar": return await actualizar(req, admin, cuerpo);
       case "desconectar": return await desconectar(req, admin, cuerpo);
       case "probar-aviso": return await probarAviso(req, admin, cuerpo);
+      case "conectar-navegador": return await conectarNavegador(req, admin, cuerpo);
       default: return json({ error: "acción desconocida", codigo: "accion" }, 400);
     }
   } catch (e) {
