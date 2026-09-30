@@ -578,25 +578,48 @@ async function conectarNavegador(req: Request, admin: SupabaseClient, cuerpo: Re
 }
 
 /** Lo común a `conectar` y `conectar-prueba`, desde el `public_token`. */
+/** El nombre, el logo y el color del banco. Plaid da el logo como PNG en
+ *  base64 y no de todos los bancos: sin logo se guarda '' (la app pone la
+ *  inicial) para no volver a preguntar en cada actualización. */
+async function datosDelBanco(institucion: string | undefined | null) {
+  if (!institucion) return { nombre: "", logo: "", color: null as string | null };
+  const r = await plaid("/institutions/get_by_id", {
+    institution_id: institucion,
+    country_codes: ["US"],
+    options: { include_optional_metadata: true },
+  });
+  return {
+    nombre: r.institution?.name ?? "",
+    logo: r.institution?.logo ?? "",
+    color: r.institution?.primary_color ?? null,
+  };
+}
+
+/** Las conexiones de antes del logo (null) lo piden una vez, al actualizar.
+ *  Si falla, no pasa nada: se queda la inicial y se intenta la próxima vez. */
+async function completarBanco(admin: SupabaseClient, c: Conexion) {
+  const { data } = await admin.from("banco_conexiones").select("logo").eq("uid", c.uid).single();
+  if (data?.logo !== null && data?.logo !== undefined) return;
+  const llave = await llaveDe(admin, c.uid);
+  const { item } = await plaid("/item/get", { access_token: llave.access_token });
+  const banco = await datosDelBanco(item?.institution_id);
+  await admin.from("banco_conexiones").update({ logo: banco.logo, color: banco.color }).eq("uid", c.uid);
+}
+
 async function conectarCon(admin: SupabaseClient, yo: Quien, publicToken: string) {
   const { access_token, item_id } = await plaid("/item/public_token/exchange", { public_token: publicToken });
 
   let uid: string | null = null;
   try {
     const { item } = await plaid("/item/get", { access_token });
-    let institucion = "";
-    if (item?.institution_id) {
-      const r = await plaid("/institutions/get_by_id", {
-        institution_id: item.institution_id,
-        country_codes: ["US"],
-      });
-      institucion = r.institution?.name ?? "";
-    }
+    const banco = await datosDelBanco(item?.institution_id);
 
     const { data: nueva, error: e1 } = await admin.from("banco_conexiones").insert({
       church_id: yo.iglesia,
       plaid_item_id: item_id,
-      institucion,
+      institucion: banco.nombre,
+      logo: banco.logo,
+      color: banco.color,
       conectada_por: yo.nombre,
       historia_desde: primeroDelMes(),
     }).select("uid, church_id, estado, historia_desde").single();
@@ -624,7 +647,7 @@ async function conectarCon(admin: SupabaseClient, yo: Quien, publicToken: string
       aviso = e instanceof Error ? e.message : String(e);
     }
 
-    return json({ ok: true, conexion_uid: nueva.uid, institucion, cuentas: mapa.size, resumen, aviso });
+    return json({ ok: true, conexion_uid: nueva.uid, institucion: banco.nombre, cuentas: mapa.size, resumen, aviso });
   } catch (e) {
     // Regla 5: no dejar en Plaid un banco que Tamio no tiene.
     await plaid("/item/remove", { access_token }).catch(() => {});
@@ -702,6 +725,7 @@ async function actualizar(req: Request, admin: SupabaseClient, cuerpo: Record<st
   // Una que falla no frena a las demás; cada una dice lo suyo.
   const resultados = [];
   for (const c of conexiones) {
+    await completarBanco(admin, c).catch(() => {});
     try {
       resultados.push({ conexion_uid: c.uid, ok: true, ...(await sincronizar(admin, c)) });
     } catch (e) {
