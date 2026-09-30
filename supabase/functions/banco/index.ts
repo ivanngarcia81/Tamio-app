@@ -510,12 +510,14 @@ async function enlace(req: Request, admin: SupabaseClient, cuerpo: Record<string
   } else {
     peticion.products = ["transactions"];
     peticion.transactions = { days_requested: diasQuePedir() };
+    // La ventana solo ofrece las cuentas que le sirven a una iglesia. **Solo
+    // al conectar**: en el modo actualizar Plaid lo rechaza («account_filters
+    // should not be used if account selection is not enabled for update
+    // mode»), y «Volver a entrar» no abría la ventana. Visto el 30-sep.
+    peticion.account_filters = Object.fromEntries(
+      Object.entries(CUENTAS_PERMITIDAS).map(([tipo, subtipos]) => [tipo, { account_subtypes: subtipos }]),
+    );
   }
-
-  // La ventana solo ofrece las cuentas que le sirven a una iglesia.
-  peticion.account_filters = Object.fromEntries(
-    Object.entries(CUENTAS_PERMITIDAS).map(([tipo, subtipos]) => [tipo, { account_subtypes: subtipos }]),
-  );
 
   const redirect = (Deno.env.get("PLAID_REDIRECT_URI") ?? "").trim();
   if (redirect) peticion.redirect_uri = redirect;
