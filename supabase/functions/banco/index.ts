@@ -247,7 +247,13 @@ async function puedeConectar(admin: SupabaseClient, iglesia: string): Promise<vo
   if (error) throw new Fallo("interno", error.message, 500);
   if (soloLectura === true) throw new Fallo("solo-lectura", "la iglesia está en solo lectura", 403);
 
-  const { data: igl } = await admin.from("iglesias").select("moneda").eq("id", iglesia).single();
+  const { data: igl } = await admin.from("iglesias").select("moneda, banco_habilitado").eq("id", iglesia).single();
+  // El interruptor (`20261001_el_banco_tiene_interruptor.sql`): apagado
+  // mientras Plaid no apruebe producción, salvo en las iglesias de prueba.
+  // La app ya esconde el banco; esto es la barrera.
+  if (igl?.banco_habilitado !== true) {
+    throw new Fallo("banco-apagado", "el banco todavía no está disponible para esta iglesia", 403);
+  }
   if ((igl?.moneda ?? "").trim().toUpperCase() !== "USD") {
     throw new Fallo("fuera-de-cobertura", "el banco solo se conecta en iglesias de Estados Unidos (USD)", 403);
   }
