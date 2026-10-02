@@ -1,21 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Tamio — Church administration software</title>
-<meta name="description" content="Tamio is subscription software that helps churches manage treasury and secretariat in one place, on Mac, iPad and iPhone." />
+<title>Tamio — Software de administración para iglesias</title>
+<meta name="description" content="Tamio es un software por suscripción que reúne la tesorería y la secretaría de tu iglesia en un solo lugar, en Mac, iPad y iPhone." />
 <link rel="alternate" hreflang="en" href="https://tamio.church/" />
 <link rel="alternate" hreflang="es" href="https://tamio.church/es.html" />
-<script>
-  // Quien tiene el navegador en español entra en la portada en español, salvo
-  // que ya haya elegido idioma con el enlace de arriba (se guarda en el navegador).
-  try {
-    var elegido = localStorage.getItem('idioma');
-    var idioma = (navigator.languages && navigator.languages[0]) || navigator.language || '';
-    if (!elegido && /^es\b/i.test(idioma)) location.replace('es.html' + location.hash);
-  } catch (e) {}
-</script>
 <style>
   :root { color-scheme: light dark; --bg:#f5f5f7; --card:#fff; --ink:#1c1c1e; --ink2:#48484a; --ink3:#8a8a8e; --line:#e5e5ea; --brand:#2f855a; --brand2:#276749; }
   @media (prefers-color-scheme: dark){ :root{ --bg:#000; --card:#1c1c1e; --ink:#f2f2f7; --ink2:#c7c7cc; --ink3:#98989d; --line:#2c2c2e; --brand:#48bb78; --brand2:#38a169; } }
@@ -63,105 +54,106 @@
   <header class="nav">
     <div class="logo">Tam<span>io</span></div>
     <nav class="links">
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#download">Download</a>
-      <a href="privacidad.html#en">Privacy</a>
-      <a class="idioma" href="es.html" lang="es" onclick="try{localStorage.setItem('idioma','es')}catch(e){}">Español</a>
+      <a href="#features">Funciones</a>
+      <a href="#pricing">Precios</a>
+      <a href="#download">Descargar</a>
+      <a href="privacidad.html#es">Privacidad</a>
+      <a class="idioma" href="index.html" lang="en" onclick="try{localStorage.setItem('idioma','en')}catch(e){}">English</a>
     </nav>
   </header>
 
   <section class="hero">
-    <h1>The complete administrative system for your church</h1>
-    <p>Tamio brings your church's treasury and secretariat together in one simple,
-    secure app — so your team can keep clear records and reports without the
-    spreadsheets and paperwork.</p>
-    <a class="btn" href="#pricing">See pricing</a>
-    <div class="devices">Works on Mac, iPad and iPhone · Available in English and Spanish</div>
+    <h1>El sistema administrativo completo para tu iglesia</h1>
+    <p>Tamio reúne la tesorería y la secretaría de tu iglesia en una sola app,
+    sencilla y segura, para que tu equipo lleve registros y reportes claros sin
+    hojas de cálculo ni papeleo.</p>
+    <a class="btn" href="#pricing">Ver precios</a>
+    <div class="devices">Funciona en Mac, iPad y iPhone · Disponible en español e inglés</div>
   </section>
 
   <section id="features">
-    <h2 class="sec">Everything your church needs, in one place</h2>
-    <p class="sec-sub">Two areas, one app. Invite your team and let each person manage their part.</p>
+    <h2 class="sec">Todo lo que tu iglesia necesita, en un solo lugar</h2>
+    <p class="sec-sub">Dos áreas, una sola app. Invita a tu equipo y que cada quien lleve su parte.</p>
     <div class="grid">
       <div class="feat">
-        <h3>💰 Treasury</h3>
-        <p>Keep the church's finances clear and audit-ready.</p>
+        <h3>💰 Tesorería</h3>
+        <p>Las finanzas de la iglesia claras y listas para cualquier revisión.</p>
         <ul>
-          <li>Record income and expenses</li>
-          <li>Track bank deposits</li>
-          <li>Recurring income and expenses</li>
-          <li>Professional financial reports (PDF)</li>
+          <li>Registra ingresos y gastos</li>
+          <li>Controla los depósitos al banco</li>
+          <li>Ingresos y gastos recurrentes</li>
+          <li>Reportes financieros profesionales (PDF)</li>
         </ul>
       </div>
       <div class="feat">
-        <h3>📋 Secretariat</h3>
-        <p>Organize members and official documents.</p>
+        <h3>📋 Secretaría</h3>
+        <p>Organiza la membresía y los documentos oficiales.</p>
         <ul>
-          <li>Member directory and records</li>
-          <li>Meeting minutes</li>
-          <li>Official letters and transfers</li>
-          <li>Attendance tracking</li>
+          <li>Padrón y expedientes de los miembros</li>
+          <li>Actas de reuniones</li>
+          <li>Cartas oficiales y traslados</li>
+          <li>Control de asistencia</li>
         </ul>
       </div>
       <div class="feat">
-        <h3>👥 Roles &amp; access</h3>
-        <p>Role-based access — administrator, treasurer and secretary — so each
-        person sees only their area: whoever handles the treasury doesn't see the
-        secretariat, and vice versa.</p>
+        <h3>👥 Roles y acceso</h3>
+        <p>Acceso por roles —administrador, tesorero y secretaria— para que cada
+        persona vea solo su área: quien lleva la tesorería no ve la secretaría, y
+        al revés.</p>
       </div>
       <div class="feat">
-        <h3>🔒 Private and secure</h3>
-        <p>Your church's records sync over an encrypted connection, so the whole
-        team works from the same books on every device — and keeps working with no
-        signal. The server itself checks that each person reaches only their own
-        church's data, and every change is logged with who made it.</p>
+        <h3>🔒 Privado y seguro</h3>
+        <p>Los registros de tu iglesia se sincronizan por una conexión cifrada, así
+        que todo el equipo trabaja con los mismos libros en cada dispositivo, y sigue
+        trabajando sin señal. El propio servidor comprueba que cada persona llegue
+        solo a los datos de su iglesia, y cada cambio queda registrado con quién lo
+        hizo.</p>
       </div>
     </div>
   </section>
 
   <section id="pricing">
-    <h2 class="sec">Simple pricing</h2>
-    <p class="sec-sub">One price per church. No per-user fees.</p>
+    <h2 class="sec">Precios sencillos</h2>
+    <p class="sec-sub">Un solo precio por iglesia. Sin cobro por usuario.</p>
     <div class="price-card">
       <div class="price-row">
         <div class="plan">
           <div class="amt">$23.99</div>
-          <div class="per">per month</div>
-          <a class="btn" href="https://tamio1.lemonsqueezy.com/checkout/buy/b94288df-8c4d-4e3c-973a-d5f891124f82">Subscribe</a>
+          <div class="per">al mes</div>
+          <a class="btn" href="https://tamio1.lemonsqueezy.com/checkout/buy/b94288df-8c4d-4e3c-973a-d5f891124f82">Suscribirme</a>
         </div>
         <div class="plan">
           <div class="amt">$239.99</div>
-          <div class="per">per year</div>
-          <div class="tag">2 months free</div>
-          <a class="btn" href="https://tamio1.lemonsqueezy.com/checkout/buy/6836ff75-6173-401f-954a-96ae87a4aad8">Subscribe</a>
+          <div class="per">al año</div>
+          <div class="tag">2 meses gratis</div>
+          <a class="btn" href="https://tamio1.lemonsqueezy.com/checkout/buy/6836ff75-6173-401f-954a-96ae87a4aad8">Suscribirme</a>
         </div>
       </div>
-      <div class="price-note">Billed per church · <a href="suscripcion.html#en">Cancel anytime</a> · Prices in USD</div>
+      <div class="price-note">Se cobra por iglesia · <a href="suscripcion.html#es">Cancela cuando quieras</a> · Precios en dólares (USD)</div>
     </div>
   </section>
 
   <section id="download">
-    <h2 class="sec">Download Tamio</h2>
-    <p class="sec-sub">Subscribe first, then install the app and sign in with the same
-    email address you used at checkout.</p>
+    <h2 class="sec">Descarga Tamio</h2>
+    <p class="sec-sub">Primero suscríbete; después instala la app y entra con el mismo
+    correo que usaste al pagar.</p>
     <div class="price-card">
-      <a class="btn" href="https://github.com/ivanngarcia81/Tamio-app/releases/latest/download/Tamio_universal.dmg">Download for Mac</a>
-      <div class="price-note">Universal disk image · macOS 26 Tahoe or later · Works on
-      Intel and Apple Silicon · Signed and notarized by Apple</div>
-      <div class="price-note">On iPad and iPhone, get <strong>Tamio Church</strong> from the
+      <a class="btn" href="https://github.com/ivanngarcia81/Tamio-app/releases/latest/download/Tamio_universal.dmg">Descargar para Mac</a>
+      <div class="price-note">Imagen de disco universal · macOS 26 Tahoe o posterior · Funciona
+      en Intel y Apple Silicon · Firmada y notarizada por Apple</div>
+      <div class="price-note">En iPad y iPhone, descarga <strong>Tamio Church</strong> desde la
       <a href="https://apps.apple.com/app/id6815859389">App Store</a>.</div>
     </div>
   </section>
 
   <footer>
     <div>
-      <a href="terminos.html#en">Terms of Service</a>
-      <a href="privacidad.html#en">Privacy Policy</a>
-      <a href="reembolsos.html#en">Refund Policy</a>
-      <a href="suscripcion.html#en">Manage subscription</a>
+      <a href="terminos.html#es">Términos del servicio</a>
+      <a href="privacidad.html#es">Política de privacidad</a>
+      <a href="reembolsos.html#es">Política de reembolsos</a>
+      <a href="suscripcion.html#es">Administrar la suscripción</a>
     </div>
-    <div style="margin-top:14px;">Tamio · Contact: <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a></div>
+    <div style="margin-top:14px;">Tamio · Contacto: <a href="mailto:ivanngarcia82@gmail.com">ivanngarcia82@gmail.com</a></div>
     <div style="margin-top:6px;">© 2026 Tamio</div>
   </footer>
 </div>
