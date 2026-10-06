@@ -52,7 +52,7 @@
 
     <section id="es">
       <h1>Política de privacidad de Tamio</h1>
-      <p class="fecha">Última actualización: 17 de septiembre de 2026</p>
+      <p class="fecha">Última actualización: 6 de octubre de 2026</p>
 
       <p>Tamio es una herramienta de tesorería y secretaría para iglesias. Esta
       política explica qué datos trata, cómo y con qué fin.</p>
@@ -169,6 +169,13 @@
           depósito, y el logotipo de tu iglesia. Se suben a nuestro
           almacenamiento de archivos.</td>
         </tr>
+        <tr>
+          <td><strong>El banco</strong> (opcional, solo EE. UU.)</td>
+          <td>Si el administrador conecta la cuenta de la iglesia: el nombre y el
+          logo del banco; el nombre, los cuatro últimos dígitos, el tipo y los
+          saldos de cada cuenta; y sus movimientos (fecha, monto, cómo los escribe
+          el banco, comercio y si están pendientes). Ver «El banco», abajo.</td>
+        </tr>
       </table>
 
       <h3>Información sensible: la afiliación religiosa</h3>
@@ -187,6 +194,23 @@
       base de datos (RLS): una cuenta no puede leer ni escribir los datos de otra
       iglesia, aunque lo intente. Dentro de una iglesia, lo que cada quien puede
       ver y modificar depende de su rol, y quien la administra lo decide.</p>
+
+      <h3>El banco</h3>
+      <p>Tamio puede comparar los libros de la iglesia con su cuenta del banco. Es
+      opcional, solo para iglesias en Estados Unidos, y lo activa el administrador.
+      La conexión la hace <strong>Plaid Inc.</strong>: el usuario y la contraseña
+      del banco se escriben en la ventana de Plaid y <strong>Tamio nunca los ve ni
+      los guarda</strong>. Plaid nos da a cambio un permiso <strong>de solo
+      lectura</strong>, que se guarda únicamente en nuestro servidor; ningún
+      aparato lo recibe. <strong>Tamio no mueve dinero</strong>: no paga, no
+      transfiere y no cobra desde esa cuenta.</p>
+      <p>Los movimientos del banco solo se usan para emparejarlos con lo que la
+      iglesia apuntó. Los ven el administrador y el tesorero; la secretaria no.
+      Plaid trata esos datos según su propia política:
+      <a href="https://plaid.com/legal/#end-user-privacy-policy">plaid.com/legal</a>.</p>
+      <p>El administrador puede desconectar el banco cuando quiera, en Ajustes ›
+      Banco: Tamio deja de leer la cuenta y se lo comunica a Plaid. Lo que ya se
+      trajo se queda en los libros de la iglesia, como el resto de su historia.</p>
 
       <h3>En tu dispositivo</h3>
       <p>La app guarda una copia local para funcionar sin conexión. Esa copia está
@@ -212,6 +236,8 @@
         <li><strong>Supabase</strong> — base de datos, autenticación y
         almacenamiento de archivos de la app con cuenta. Aloja los datos; no los
         usa.</li>
+        <li><strong>Plaid</strong> — conecta la cuenta del banco de la iglesia,
+        solo si el administrador lo activa, y solo en modo lectura.</li>
         <li><strong>Apple</strong> — distribuye las apps a través del App Store,
         conforme a su propia política de privacidad.</li>
         <li><strong>El procesador de pagos</strong> — si contratas un plan, el
@@ -235,7 +261,8 @@
         iglesia sigue y solo se va tu acceso.</li>
         <li>Si eres <strong>la única persona</strong> con acceso, se borran también
         todos los datos de esa iglesia en el servidor: movimientos, miembros,
-        actas, cartas y comprobantes.</li>
+        actas, cartas, comprobantes <strong>y la conexión con el banco, que
+        también se quita en Plaid</strong>.</li>
       </ul>
       <p>Mientras la cuenta exista, los datos se conservan para que la iglesia
       pueda seguir consultándolos. Si prefieres pedirlo por escrito, escríbenos y
@@ -266,7 +293,7 @@
 
     <section id="en" lang="en">
       <h1>Tamio Privacy Policy</h1>
-      <p class="fecha">Last updated: September 17, 2026</p>
+      <p class="fecha">Last updated: October 6, 2026</p>
 
       <p>Tamio is a treasury and secretarial tool for churches. This policy
       explains what data it handles, how, and why.</p>
@@ -301,6 +328,13 @@
           <td><strong>Do we see your data?</strong></td>
           <td>No, it never leaves your device.</td>
           <td>It sits on our infrastructure. We use it for nothing other than providing the service.</td>
+        </tr>
+        <tr>
+          <td><strong>The bank</strong> (optional, US only)</td>
+          <td>If the administrator connects the church's account: the bank's name
+          and logo; each account's name, last four digits, type and balances; and
+          its transactions (date, amount, the bank's description, merchant and
+          whether pending). See "The bank" below.</td>
         </tr>
       </table>
 
@@ -386,6 +420,23 @@
       Within a church, what each person can see and change depends on their role,
       and the church's administrator decides that.</p>
 
+      <h3>The bank</h3>
+      <p>Tamio can compare the church's books with its bank account. It is optional,
+      only for churches in the United States, and the administrator turns it on.
+      The connection is made by <strong>Plaid Inc.</strong>: the bank username and
+      password are typed into Plaid's window and <strong>Tamio never sees or stores
+      them</strong>. In exchange Plaid gives us <strong>read-only</strong> access,
+      which is kept only on our server; no device receives it. <strong>Tamio does
+      not move money</strong>: it doesn't pay, transfer or charge anything from that
+      account.</p>
+      <p>Bank transactions are used only to match them with what the church
+      recorded. The administrator and the treasurer can see them; the secretary
+      cannot. Plaid handles that data under its own policy:
+      <a href="https://plaid.com/legal/#end-user-privacy-policy">plaid.com/legal</a>.</p>
+      <p>The administrator can disconnect the bank at any time in Settings › Bank:
+      Tamio stops reading the account and tells Plaid. What was already brought in
+      stays in the church's books, like the rest of its history.</p>
+
       <h3>On your device</h3>
       <p>The app keeps a local copy so it works offline. That copy is protected by
       iOS's own encryption and stays unreadable while the device is locked. If you
@@ -408,6 +459,8 @@
       <ul>
         <li><strong>Supabase</strong> — database, authentication and file storage for
         the account-based app. It hosts the data; it does not use it.</li>
+        <li><strong>Plaid</strong> — connects the church's bank account, only if the
+        administrator turns it on, and read-only.</li>
         <li><strong>Apple</strong> — distributes the apps through the App Store, under
         its own privacy policy.</li>
         <li><strong>The payment processor</strong> — if you subscribe to a plan, a
@@ -431,7 +484,8 @@
         church remains and only your access is removed.</li>
         <li>If you are the <strong>only person</strong> with access, all of that
         church's data on the server is deleted too: transactions, members, minutes,
-        letters and receipts.</li>
+        letters, receipts <strong>and the bank connection, which is also removed
+        at Plaid</strong>.</li>
       </ul>
       <p>While the account exists, data is kept so the church can keep consulting it.
       If you would rather ask in writing, write to us and we will do it within 30
