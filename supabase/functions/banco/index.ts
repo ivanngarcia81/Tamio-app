@@ -217,6 +217,10 @@ interface Quien {
 
 /**
  * **El segundo factor, antes de abrir la ventana de Plaid** (6-oct-2026).
+ * OBLIGATORIO desde la v17 (Iván, 6-oct): quien abre la ventana es siempre
+ * un administrador (`ROLES_CONECTAN`), y sin la verificación en dos pasos
+ * activada contesta `segundo-factor-falta`; la app ya lo mira antes y abre
+ * la hoja del alta.
  * Plaid aprobó producción contra la promesa de MFA en la app donde se abre
  * su ventana. Si la cuenta tiene la verificación en dos pasos, la sesión
  * tiene que haberse verificado con ella (`aal2` en el token); con solo la
@@ -247,18 +251,21 @@ async function quienLlama(
   const usuario = data?.user;
   if (error || !usuario) throw new Fallo("sin-sesion", "sesión inválida", 401);
 
-  if (exigeSegundoFactor) {
-    const tiene = (usuario.factors ?? []).some((f: { status?: string }) => f.status === "verified");
-    if (tiene && nivelDeSesion(authHeader) !== "aal2") {
-      throw new Fallo("segundo-factor", "entra otra vez con el código de tu app de autenticación para conectar el banco", 403);
-    }
-  }
-
   const { data: perfil } = await admin
     .from("perfiles").select("id, nombre, rol, church_id").eq("id", usuario.id).single();
   if (!perfil?.church_id) throw new Fallo("sin-iglesia", "tu cuenta no tiene iglesia asignada", 409);
   if (!roles.includes(perfil.rol ?? "")) {
     throw new Fallo("sin-permiso", "tu rol no puede hacer esto con el banco", 403);
+  }
+
+  if (exigeSegundoFactor) {
+    const tiene = (usuario.factors ?? []).some((f: { status?: string }) => f.status === "verified");
+    if (!tiene) {
+      throw new Fallo("segundo-factor-falta", "activa la verificación en dos pasos (Ajustes › Cuenta › Seguridad) para conectar el banco", 403);
+    }
+    if (nivelDeSesion(authHeader) !== "aal2") {
+      throw new Fallo("segundo-factor", "entra otra vez con el código de tu app de autenticación para conectar el banco", 403);
+    }
   }
 
   return {
