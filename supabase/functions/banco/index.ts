@@ -215,7 +215,28 @@ interface Quien {
   iglesia: string;
 }
 
-async function quienLlama(req: Request, admin: SupabaseClient, roles: string[]): Promise<Quien> {
+/**
+ * **El segundo factor, antes de abrir la ventana de Plaid** (6-oct-2026).
+ * Plaid aprobó producción contra la promesa de MFA en la app donde se abre
+ * su ventana. Si la cuenta tiene la verificación en dos pasos, la sesión
+ * tiene que haberse verificado con ella (`aal2` en el token); con solo la
+ * contraseña (`aal1`) no se abre. La app ya pide el código al entrar, así
+ * que esto solo frena a quien llegue por otro lado (el web, un cliente
+ * viejo, una contraseña robada). `getUser` ya validó el token con Auth:
+ * aquí solo se lee el `aal`.
+ */
+function nivelDeSesion(authHeader: string): string {
+  try {
+    const carga = authHeader.replace(/^Bearer\s+/i, "").split(".")[1] ?? "";
+    return String(JSON.parse(new TextDecoder().decode(base64url(carga))).aal ?? "");
+  } catch {
+    return "";
+  }
+}
+
+async function quienLlama(
+  req: Request, admin: SupabaseClient, roles: string[], exigeSegundoFactor = false,
+): Promise<Quien> {
   const url = Deno.env.get("SUPABASE_URL")!;
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
@@ -225,6 +246,13 @@ async function quienLlama(req: Request, admin: SupabaseClient, roles: string[]):
   const { data, error } = await comoUsuario.auth.getUser();
   const usuario = data?.user;
   if (error || !usuario) throw new Fallo("sin-sesion", "sesión inválida", 401);
+
+  if (exigeSegundoFactor) {
+    const tiene = (usuario.factors ?? []).some((f: { status?: string }) => f.status === "verified");
+    if (tiene && nivelDeSesion(authHeader) !== "aal2") {
+      throw new Fallo("segundo-factor", "entra otra vez con el código de tu app de autenticación para conectar el banco", 403);
+    }
+  }
 
   const { data: perfil } = await admin
     .from("perfiles").select("id, nombre, rol, church_id").eq("id", usuario.id).single();
@@ -497,7 +525,7 @@ async function sincronizar(admin: SupabaseClient, c: Conexion): Promise<Resumen>
 // ===========================================================================
 
 async function enlace(req: Request, admin: SupabaseClient, cuerpo: Record<string, unknown>) {
-  const yo = await quienLlama(req, admin, ROLES_CONECTAN);
+  const yo = await quienLlama(req, admin, ROLES_CONECTAN, true);
   await puedeConectar(admin, yo.iglesia);
 
   const peticion: Record<string, unknown> = {
@@ -683,7 +711,7 @@ async function conectar(req: Request, admin: SupabaseClient, cuerpo: Record<stri
  *  contra los depósitos y gastos de la iglesia de prueba (fase 4). */
 async function conectarPrueba(req: Request, admin: SupabaseClient, cuerpo: Record<string, unknown>) {
   if (ambiente() !== "sandbox") throw new Fallo("solo-sandbox", "conectar-prueba solo existe en sandbox", 403);
-  const yo = await quienLlama(req, admin, ROLES_CONECTAN);
+  const yo = await quienLlama(req, admin, ROLES_CONECTAN, true);
   await puedeConectar(admin, yo.iglesia);
 
   const config = cuerpo.config_prueba;
