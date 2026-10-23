@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Tamio Admin" />
+<title>Tamio Admin</title>
+<!--
+  tamio.church/admin — ver las iglesias y su plan, y dar o quitar cortesías
+  sin entrar a Supabase. Pensada para el teléfono de Iván: se puede añadir a la
+  pantalla de inicio desde Safari y se abre como una app.
+
+  **Esta página no puede nada por sí sola.** No lleva ninguna llave más que la
+  `anon` (pública por diseño, la misma de invitacion.html). Todo lo que lee y
+  escribe pasa por la función `admin-tamio`, que comprueba la sesión y solo
+  responde a los correos de su lista. Cualquier otra cuenta entra y ve «Esta
+  cuenta no puede administrar Tamio».
+
+  Cómo se guarda cada cortesía (para siempre, hasta una fecha) está explicado
+  en la función y en la migración `20261022_cortesias_y_panel_de_administracion.sql`
+  de Tamio-iOS.
+-->
+<style>
+  :root { color-scheme: light dark; --bg:#f5f5f7; --card:#fff; --ink:#1c1c1e; --ink2:#48484a; --ink3:#8a8a8e; --line:#e5e5ea;
+          --brand:#2f855a; --brand2:#276749; --brandFill:#e6f4ec; --mal:#c53030; --malFill:#fdecec; --aviso:#b7791f; --avisoFill:#fdf3e1;
+          --azul:#2b6cb0; --azulFill:#e8f0fb; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#000; --card:#1c1c1e; --ink:#f2f2f7; --ink2:#c7c7cc; --ink3:#98989d; --line:#2c2c2e;
+          --brand:#48bb78; --brand2:#38a169; --brandFill:#16301f; --mal:#fc8181; --malFill:#3a1a1a; --aviso:#f6c26b; --avisoFill:#3a2c12;
+          --azul:#90cdf4; --azulFill:#152a40; } }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         line-height:1.5; color:var(--ink); background:var(--bg); -webkit-text-size-adjust:100%; }
+  .envoltura { max-width:760px; margin:0 auto; padding:16px 16px calc(32px + env(safe-area-inset-bottom)); }
+  .logo { font-size:20px; font-weight:700; letter-spacing:-.02em; }
+  .logo span { color:var(--brand); }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0 14px; }
+  header .quien { font-size:13px; color:var(--ink3); text-align:right; }
+  header .quien button { all:unset; color:var(--brand); font-weight:600; cursor:pointer; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; }
+  h1 { font-size:22px; letter-spacing:-.02em; margin:0 0 6px; }
+  p.sub { color:var(--ink2); margin:0 0 18px; font-size:15px; }
+  label { display:block; font-size:13px; font-weight:600; color:var(--ink2); margin:14px 0 6px; }
+  input, select, textarea { width:100%; padding:12px 14px; font-size:16px; font-family:inherit; color:var(--ink);
+          background:var(--bg); border:1px solid var(--line); border-radius:12px; }
+  textarea { min-height:70px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { outline:2px solid var(--brand); outline-offset:1px; }
+  .boton { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:11px 16px; font-size:15px; font-weight:600;
+           font-family:inherit; border-radius:12px; border:none; cursor:pointer; color:#fff; background:var(--brand); }
+  .boton:hover:not(:disabled) { background:var(--brand2); }
+  .boton:disabled { opacity:.5; cursor:default; }
+  .boton.ancho { width:100%; margin-top:20px; padding:14px; font-size:16px; }
+  .boton.suave { color:var(--brand); background:var(--brandFill); }
+  .boton.peligro { color:var(--mal); background:var(--malFill); }
+  .boton.gris { color:var(--ink); background:var(--bg); border:1px solid var(--line); }
+  .aviso { margin-top:14px; font-size:14.5px; color:var(--mal); }
+  .bien { margin-top:14px; font-size:14.5px; color:var(--brand); }
+  .oculto { display:none !important; }
+
+  .barra { display:flex; gap:10px; align-items:center; margin:4px 0 12px; }
+  .barra input { flex:1; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .chip { padding:7px 13px; border-radius:999px; font-size:14px; font-weight:600; border:1px solid var(--line);
+          background:var(--card); color:var(--ink); cursor:pointer; font-family:inherit; }
+  .chip b { font-weight:600; color:var(--ink3); margin-left:4px; }
+  .chip.activa { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .chip.activa b { color:rgba(255,255,255,.8); }
+
+  .lista { display:flex; flex-direction:column; gap:12px; }
+  .iglesia h2 { font-size:17px; margin:0; letter-spacing:-.01em; }
+  .iglesia .lugar { font-size:13.5px; color:var(--ink3); }
+  .cabeza { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .pastilla { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12.5px; font-weight:700; white-space:nowrap; }
+  .p-cortesia { color:var(--brand); background:var(--brandFill); }
+  .p-pagada { color:var(--azul); background:var(--azulFill); }
+  .p-gracia { color:var(--aviso); background:var(--avisoFill); }
+  .p-lectura { color:var(--mal); background:var(--malFill); }
+  .p-otra { color:var(--ink2); background:var(--bg); border:1px solid var(--line); }
+  .plan { margin:10px 0 0; font-size:15px; }
+  .nota { margin:4px 0 0; font-size:14px; color:var(--ink2); font-style:italic; }
+  .personas { margin:12px 0 0; padding:10px 0 0; border-top:1px solid var(--line); font-size:14px; }
+  .persona { display:flex; justify-content:space-between; gap:10px; padding:3px 0; }
+  .persona .correo { color:var(--ink3); overflow-wrap:anywhere; }
+  .persona .cuando { color:var(--ink3); white-space:nowrap; font-size:13px; }
+  .uso { margin-top:8px; font-size:13.5px; color:var(--ink3); }
+  .acciones { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .vacio { text-align:center; color:var(--ink3); padding:30px 0; }
+
+  dialog { border:none; border-radius:20px; padding:0; width:min(520px, calc(100vw - 24px)); background:var(--card); color:var(--ink); }
+  dialog::backdrop { background:rgba(0,0,0,.4); }
+  dialog form { padding:20px; margin:0; }
+  dialog h1 { font-size:20px; }
+  .duraciones { display:flex; flex-wrap:wrap; gap:8px; }
+  .duraciones .chip { font-weight:500; }
+  .pie-dialogo { display:flex; gap:10px; margin-top:20px; }
+  .pie-dialogo .boton { flex:1; padding:13px; }
+</style>
+</head>
+<body>
+<div class="envoltura">
+
+  <!-- Entrar: un <form> con usuario y contraseña para que Safari los rellene. -->
+  <div id="v-entrar" class="oculto" style="max-width:420px;margin:12vh auto 0">
+    <div class="card" style="padding:28px">
+      <div class="logo" style="margin-bottom:18px">Tam<span>io</span> · Admin</div>
+      <form id="f-entrar" novalidate>
+        <h1>Entrar</h1>
+        <p class="sub">Con tu cuenta de Tamio.</p>
+        <label for="correo">Correo</label>
+        <input id="correo" name="username" type="email" autocomplete="username" required />
+        <label for="pw">Contraseña</label>
+        <input id="pw" name="password" type="password" autocomplete="current-password" required />
+        <div id="aviso-entrar" class="aviso oculto"></div>
+        <button class="boton ancho" type="submit" id="b-entrar">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- El panel -->
+  <div id="v-panel" class="oculto">
+    <header>
+      <div class="logo">Tam<span>io</span> · Admin</div>
+      <div class="quien"><span id="quien"></span><br><button id="b-salir" type="button">Salir</button></div>
+    </header>
+
+    <div class="barra">
+      <input id="buscar" type="search" placeholder="Buscar" autocomplete="off" />
+      <button class="boton" id="b-invitar" type="button">+ Invitar</button>
+    </div>
+    <div class="chips" id="filtros"></div>
+    <div id="aviso-panel" class="aviso oculto"></div>
+    <div class="lista" id="lista"><div class="vacio">Cargando…</div></div>
+  </div>
+</div>
+
+<!-- Dar o cambiar una cortesía -->
+<dialog id="d-cortesia">
+  <form method="dialog" id="f-cortesia">
+    <h1 id="dc-titulo">Dar cortesía</h1>
+    <p class="sub" id="dc-iglesia"></p>
+    <label>¿Por cuánto tiempo?</label>
+    <div class="duraciones" data-duraciones="dc"></div>
+    <input id="dc-fecha" type="date" class="oculto" style="margin-top:10px" />
+    <div class="pista" id="dc-explica" style="margin-top:10px;font-size:13.5px;color:var(--ink3)"></div>
+    <label for="dc-nota">Nota (para ti)</label>
+    <textarea id="dc-nota" placeholder="Por ejemplo: pastor Juan, iglesia pequeña en Monterrey"></textarea>
+    <div id="dc-aviso" class="aviso oculto"></div>
+    <div class="pie-dialogo">
+      <button class="boton gris" value="cancelar" type="button" data-cerrar>Cancelar</button>
+      <button class="boton" id="dc-guardar" type="submit">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Invitar a alguien nuevo con cortesía -->
+<dialog id="d-invitar">
+  <form method="dialog" id="f-invitar">
+    <h1>Invitar con cortesía</h1>
+    <p class="sub">Le llega un correo para poner su contraseña, y su iglesia nace ya con la cortesía.</p>
+    <label for="di-correo">Correo</label>
+    <input id="di-correo" type="email" autocomplete="off" required />
+    <label for="di-nombre">Nombre de la persona</label>
+    <input id="di-nombre" type="text" autocomplete="off" placeholder="Pastor Juan Pérez" />
+    <label for="di-iglesia">Nombre de la iglesia</label>
+    <input id="di-iglesia" type="text" autocomplete="off" placeholder="Iglesia Bautista Emanuel" />
+    <label>¿Por cuánto tiempo?</label>
+    <div class="duraciones" data-duraciones="di"></div>
+    <input id="di-fecha" type="date" class="oculto" style="margin-top:10px" />
+    <div class="pista" id="di-explica" style="margin-top:10px;font-size:13.5px;color:var(--ink3)"></div>
+    <label for="di-nota">Nota (para ti)</label>
+    <textarea id="di-nota"></textarea>
+    <div id="di-aviso" class="aviso oculto"></div>
+    <div class="pie-dialogo">
+      <button class="boton gris" value="cancelar" type="button" data-cerrar>Cancelar</button>
+      <button class="boton" id="di-guardar" type="submit">Invitar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const SUPABASE_URL = "https://hkpbkpojeierxqtbmagh.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcGJrcG9qZWllcnhxdGJtYWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNjE0NzUsImV4cCI6MjA5OTYzNzQ3NX0.z0SGP_XB16wYNFVygqZ8WY2Xev4bfd2J5hR1-2edcso";
+const FUNCION = `${SUPABASE_URL}/functions/v1/admin-tamio`;
+const CLAVE_SESION = "tamio.admin.sesion";
+const DIAS_DE_GRACIA = 10;   // los mismos que ConfiguracionIglesia.diasDeGracia
+
+const $ = (id) => document.getElementById(id);
+let datos = { hoy: "", iglesias: [] };
+let filtro = "todas";
+
+// ---------- La sesión ----------
+
+function sesion() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_SESION) || "null"); } catch { return null; }
+}
+function guardarSesion(s) {
+  try {
+    localStorage.setItem(CLAVE_SESION, JSON.stringify({
+      access_token: s.access_token, refresh_token: s.refresh_token,
+      expires_at: s.expires_at || (Math.floor(Date.now() / 1000) + (s.expires_in || 3600)),
+      email: s.user?.email ?? sesion()?.email ?? "",
+    }));
+  } catch {}
+}
+function olvidarSesion() { try { localStorage.removeItem(CLAVE_SESION); } catch {} }
+
+async function auth(ruta, cuerpo) {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/${ruta}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON },
+    body: JSON.stringify(cuerpo),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error_description || d.msg || d.message || "No se pudo entrar.");
+  return d;
+}
+
+/** Un token vigente: si le queda menos de un minuto, se renueva. */
+async function token() {
+  const s = sesion();
+  if (!s) return null;
+  if (s.expires_at - 60 > Date.now() / 1000) return s.access_token;
+  try {
+    const n = await auth("token?grant_type=refresh_token", { refresh_token: s.refresh_token });
+    guardarSesion(n);
+    return n.access_token;
+  } catch { olvidarSesion(); return null; }
+}
+
+async function llamar(cuerpo) {
+  const t = await token();
+  if (!t) { mostrarEntrar(); throw new Error("La sesión caducó: vuelve a entrar."); }
+  const r = await fetch(FUNCION, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON, Authorization: `Bearer ${t}` },
+    body: JSON.stringify(cuerpo),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const e = new Error(d.mensaje || d.message || `Error ${r.status}`);
+    e.codigo = d.codigo; e.datos = d;
+    throw e;
+  }
+  return d;
+}
+
+// ---------- Fechas ----------
+
+function aFecha(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); }
+function aIso(f) { return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`; }
+function masDias(iso, n) { const f = aFecha(iso); f.setDate(f.getDate() + n); return aIso(f); }
+function masMeses(iso, n) { const f = aFecha(iso); const d = f.getDate(); f.setMonth(f.getMonth() + n); if (f.getDate() < d) f.setDate(0); return aIso(f); }
+function diasEntre(a, b) { return Math.round((aFecha(b) - aFecha(a)) / 86400000); }
+const fmtDia = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", year: "numeric" });
+function legible(iso) { return iso ? fmtDia.format(aFecha(iso.slice(0, 10))) : ""; }
+function hace(ts) {
+  if (!ts) return "";
+  const dias = diasEntre(ts.slice(0, 10), datos.hoy);
+  if (dias <= 0) return "hoy";
+  if (dias === 1) return "ayer";
+  if (dias < 60) return `hace ${dias} días`;
+  return legible(ts);
+}
+
+// ---------- El estado de cada iglesia: la misma regla que la app ----------
+
+function estado(ig) {
+  const e = (ig.subEstado || "").trim().toLowerCase();
+  const c = ig.cortesia;
+  const esCortesia = !!c && (c.hasta ? (ig.subVence === c.hasta && e !== "vencida") : e === "cortesia");
+  const hoy = datos.hoy;
+  let vig = "normal";
+  if (e !== "" && e !== "cortesia") {
+    if (!ig.subVence) vig = e === "vencida" ? "lectura" : "normal";
+    else if (hoy <= ig.subVence) vig = "normal";
+    else if (hoy <= masDias(ig.subVence, DIAS_DE_GRACIA)) vig = "gracia";
+    else vig = "lectura";
+  }
+  let pastilla, clase, texto;
+  if (vig === "lectura") {
+    pastilla = "Solo lectura"; clase = "p-lectura";
+    texto = ig.subVence ? `Venció el ${legible(ig.subVence)}; los ${DIAS_DE_GRACIA} días de gracia ya pasaron.` : "Vencida.";
+  } else if (vig === "gracia") {
+    const fin = masDias(ig.subVence, DIAS_DE_GRACIA);
+    pastilla = "En gracia"; clase = "p-gracia";
+    texto = `Venció el ${legible(ig.subVence)}. Pasa a solo lectura el ${legible(fin)} (en ${diasEntre(hoy, fin)} días).`;
+  } else if (esCortesia && !c.hasta) {
+    pastilla = "Cortesía"; clase = "p-cortesia"; texto = "Cortesía para siempre.";
+  } else if (esCortesia) {
+    pastilla = "Cortesía"; clase = "p-cortesia";
+    texto = `Cortesía hasta el ${legible(c.hasta)} (quedan ${diasEntre(hoy, c.hasta)} días).`;
+  } else if (e === "cortesia") {
+    pastilla = "Cortesía"; clase = "p-cortesia"; texto = "Cortesía para siempre.";
+  } else if (ig.subVence && ["activa", "prueba", "cancelada"].includes(e)) {
+    pastilla = e === "prueba" ? "Prueba" : "Pagada"; clase = "p-pagada";
+    texto = e === "cancelada"
+      ? `Canceló la suscripción; pagado hasta el ${legible(ig.subVence)}.`
+      : `${e === "prueba" ? "Periodo de prueba" : "Suscripción"} hasta el ${legible(ig.subVence)}.`;
+  } else if (e === "vencida" && ig.subVence) {
+    // Recién terminada: el día del vencimiento todavía es suyo, como en la app.
+    pastilla = "Termina"; clase = "p-gracia";
+    texto = `Su plan termina el ${legible(ig.subVence)}; después, ${DIAS_DE_GRACIA} días de gracia y luego solo lectura.`;
+  } else {
+    pastilla = "Sin plan"; clase = "p-otra"; texto = `Estado «${ig.subEstado || "vacío"}» sin fecha: la app la deja usar todo.`;
+  }
+  return { esCortesia: esCortesia || e === "cortesia", vig, pastilla, clase, texto, paga: clase === "p-pagada" };
+}
+
+// ---------- Dibujar ----------
+
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+const FILTROS = [
+  ["todas", "Todas", () => true],
+  ["cortesia", "Cortesía", (s) => s.esCortesia],
+  ["pagan", "Pagan", (s) => s.paga],
+  ["atencion", "Vencidas", (s) => s.vig !== "normal"],
+];
+
+function dibujar() {
+  const q = $("buscar").value.trim().toLowerCase();
+  const conEstado = datos.iglesias.map((ig) => ({ ig, s: estado(ig) }));
+  $("filtros").innerHTML = FILTROS.map(([id, nombre, f]) =>
+    `<button type="button" class="chip${filtro === id ? " activa" : ""}" data-filtro="${id}">${nombre}<b>${conEstado.filter((x) => f(x.s)).length}</b></button>`
+  ).join("");
+  const f = FILTROS.find((x) => x[0] === filtro)[2];
+  const visibles = conEstado.filter((x) => f(x.s)).filter(({ ig }) => {
+    if (!q) return true;
+    const texto = [ig.nombre, ig.lugar, ...ig.personas.flatMap((p) => [p.nombre, p.correo]), ig.cortesia?.nota].join(" ").toLowerCase();
+    return texto.includes(q);
+  });
+  if (!visibles.length) { $("lista").innerHTML = `<div class="vacio">Nada que enseñar.</div>`; return; }
+  $("lista").innerHTML = visibles.map(({ ig, s }) => `
+    <div class="card iglesia">
+      <div class="cabeza">
+        <div><h2>${esc(ig.nombre) || "<i>Sin nombre</i>"}</h2>${ig.lugar ? `<div class="lugar">${esc(ig.lugar)}</div>` : ""}</div>
+        <span class="pastilla ${s.clase}">${s.pastilla}</span>
+      </div>
+      <p class="plan">${esc(s.texto)}</p>
+      ${ig.cortesia?.nota ? `<p class="nota">${esc(ig.cortesia.nota)}</p>` : ""}
+      <div class="personas">
+        ${ig.personas.map((p) => `
+          <div class="persona">
+            <div><b>${esc(p.nombre) || "Sin nombre"}</b> · ${esc(p.rol)}<br><span class="correo">${esc(p.correo)}</span></div>
+            <div class="cuando">${p.invitacionPendiente ? "Invitación sin aceptar" : (p.ultimaEntrada ? "Entró " + hace(p.ultimaEntrada) : "")}</div>
+          </div>`).join("") || `<div class="persona"><span class="correo">Sin personas</span></div>`}
+      </div>
+      <div class="uso">${ig.miembros} miembros · ${ig.movimientos} movimientos${ig.ultimoMovimiento ? " · último " + hace(ig.ultimoMovimiento) : ""} · alta ${legible(ig.creada)}</div>
+      <div class="acciones">
+        <button class="boton suave" type="button" data-cortesia="${ig.id}">${s.esCortesia ? "Cambiar cortesía" : "Dar cortesía"}</button>
+        ${s.esCortesia ? `<button class="boton peligro" type="button" data-terminar="${ig.id}">Terminar cortesía</button>` : ""}
+      </div>
+    </div>`).join("");
+}
+
+async function cargar() {
+  $("aviso-panel").classList.add("oculto");
+  try {
+    datos = await llamar({ accion: "listar" });
+    dibujar();
+  } catch (e) {
+    $("lista").innerHTML = "";
+    $("aviso-panel").textContent = e.message;
+    $("aviso-panel").classList.remove("oculto");
+    if (e.codigo === "no-autorizado") $("b-invitar").disabled = true;
+  }
+}
+
+// ---------- Duraciones (los dos diálogos) ----------
+
+const DURACIONES = [
+  ["siempre", "Para siempre"], ["1", "1 mes"], ["3", "3 meses"], ["6", "6 meses"], ["12", "1 año"], ["otra", "Otra fecha"],
+];
+const elegida = { dc: "siempre", di: "siempre" };
+
+function hastaDe(p) {
+  const v = elegida[p];
+  if (v === "siempre") return null;
+  if (v === "otra") return $(`${p}-fecha`).value || "";
+  return masMeses(datos.hoy, Number(v));
+}
+function pintarDuraciones(p) {
+  const caja = document.querySelector(`[data-duraciones="${p}"]`);
+  caja.innerHTML = DURACIONES.map(([v, t]) =>
+    `<button type="button" class="chip${elegida[p] === v ? " activa" : ""}" data-dur="${v}">${t}</button>`).join("");
+  $(`${p}-fecha`).classList.toggle("oculto", elegida[p] !== "otra");
+  const h = hastaDe(p);
+  $(`${p}-explica`).textContent = h === null
+    ? "No vence nunca. Un pago nunca la cambia."
+    : (h ? `Hasta el ${legible(h)}. Ese día sigue siendo suyo; después, ${DIAS_DE_GRACIA} días de gracia para pagar y luego solo lectura. Si paga antes, pasa a su suscripción.`
+         : "Elige la fecha.");
+}
+for (const p of ["dc", "di"]) {
+  document.querySelector(`[data-duraciones="${p}"]`).addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-dur]"); if (!b) return;
+    elegida[p] = b.dataset.dur; pintarDuraciones(p);
+  });
+  $(`${p}-fecha`).addEventListener("input", () => pintarDuraciones(p));
+}
+
+// ---------- Acciones ----------
+
+let iglesiaElegida = null;
+
+$("lista").addEventListener("click", async (ev) => {
+  const dar = ev.target.closest("[data-cortesia]");
+  const fin = ev.target.closest("[data-terminar]");
+  if (dar) {
+    const ig = datos.iglesias.find((x) => x.id === dar.dataset.cortesia);
+    iglesiaElegida = ig;
+    const s = estado(ig);
+    $("dc-titulo").textContent = s.esCortesia ? "Cambiar cortesía" : "Dar cortesía";
+    $("dc-iglesia").textContent = ig.nombre + (ig.personas[0]?.correo ? " · " + ig.personas[0].correo : "");
+    elegida.dc = ig.cortesia?.hasta ? "otra" : "siempre";
+    $("dc-fecha").value = ig.cortesia?.hasta || masMeses(datos.hoy, 3);
+    $("dc-fecha").min = datos.hoy;
+    $("dc-nota").value = ig.cortesia?.nota || "";
+    $("dc-aviso").classList.add("oculto");
+    pintarDuraciones("dc");
+    $("d-cortesia").showModal();
+  }
+  if (fin) {
+    const ig = datos.iglesias.find((x) => x.id === fin.dataset.terminar);
+    const aviso = `¿Terminar la cortesía de «${ig.nombre}»?\n\nDesde hoy tendrá ${DIAS_DE_GRACIA} días de gracia para pagar; después la app queda en solo lectura (ve y exporta todo, pero no anota nada).`;
+    if (!confirm(aviso)) return;
+    fin.disabled = true;
+    try { await llamar({ accion: "terminar", churchId: ig.id }); await cargar(); }
+    catch (e) { alert(e.message); fin.disabled = false; }
+  }
+});
+
+$("f-cortesia").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const hasta = hastaDe("dc");
+  if (hasta === "") { mostrarAviso("dc-aviso", "Elige la fecha."); return; }
+  $("dc-guardar").disabled = true;
+  try {
+    await llamar({ accion: "cortesia", churchId: iglesiaElegida.id, hasta, nota: $("dc-nota").value });
+    $("d-cortesia").close();
+    await cargar();
+  } catch (e) { mostrarAviso("dc-aviso", e.message); }
+  finally { $("dc-guardar").disabled = false; }
+});
+
+$("b-invitar").addEventListener("click", () => {
+  for (const id of ["di-correo", "di-nombre", "di-iglesia", "di-nota"]) $(id).value = "";
+  elegida.di = "siempre";
+  $("di-fecha").value = masMeses(datos.hoy, 3);
+  $("di-fecha").min = datos.hoy;
+  $("di-aviso").classList.add("oculto");
+  pintarDuraciones("di");
+  $("d-invitar").showModal();
+});
+
+$("f-invitar").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const hasta = hastaDe("di");
+  if (!$("di-correo").value.trim()) { mostrarAviso("di-aviso", "Falta el correo."); return; }
+  if (hasta === "") { mostrarAviso("di-aviso", "Elige la fecha."); return; }
+  $("di-guardar").disabled = true;
+  try {
+    await llamar({ accion: "invitar", email: $("di-correo").value, nombre: $("di-nombre").value,
+                   iglesia: $("di-iglesia").value, hasta, nota: $("di-nota").value });
+    $("d-invitar").close();
+    await cargar();
+  } catch (e) { mostrarAviso("di-aviso", e.message); }
+  finally { $("di-guardar").disabled = false; }
+});
+
+document.querySelectorAll("[data-cerrar]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));
+
+function mostrarAviso(id, texto) { $(id).textContent = texto; $(id).classList.remove("oculto"); }
+
+$("filtros").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-filtro]"); if (!b) return;
+  filtro = b.dataset.filtro; dibujar();
+});
+$("buscar").addEventListener("input", dibujar);
+
+// ---------- Entrar y salir ----------
+
+function mostrarEntrar() { $("v-panel").classList.add("oculto"); $("v-entrar").classList.remove("oculto"); }
+function mostrarPanel() {
+  $("v-entrar").classList.add("oculto"); $("v-panel").classList.remove("oculto");
+  $("quien").textContent = sesion()?.email || "";
+  cargar();
+}
+
+$("f-entrar").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("aviso-entrar").classList.add("oculto");
+  $("b-entrar").disabled = true;
+  try {
+    const s = await auth("token?grant_type=password", { email: $("correo").value.trim(), password: $("pw").value });
+    guardarSesion(s);
+    $("pw").value = "";
+    mostrarPanel();
+  } catch (e) {
+    mostrarAviso("aviso-entrar", /invalid/i.test(e.message) ? "Correo o contraseña incorrectos." : e.message);
+  } finally { $("b-entrar").disabled = false; }
+});
+
+$("b-salir").addEventListener("click", () => {
+  const t = sesion()?.access_token;
+  if (t) fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`, { method: "POST", headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${t}` } }).catch(() => {});
+  olvidarSesion();
+  mostrarEntrar();
+});
+
+if (sesion()) mostrarPanel(); else mostrarEntrar();
+</script>
+</body>
+</html>
