@@ -1,5 +1,6 @@
 // Edge Function `admin-tamio` — lo que hay detrás de tamio.church/admin: ver
-// las iglesias y su plan, y dar o quitar cortesías sin entrar a Supabase.
+// las iglesias y su plan, dar o quitar cortesías y encender o apagar el banco
+// sin entrar a Supabase.
 //
 // Desplegar:
 //   supabase functions deploy admin-tamio
@@ -32,6 +33,18 @@
 //
 // Ver `supabase/migrations/20261022_cortesias_y_panel_de_administracion.sql`
 // en Tamio-iOS.
+//
+// ---------------------------------------------------------------------------
+// EL BANCO
+// ---------------------------------------------------------------------------
+//
+// `iglesias.banco_habilitado` (`20261001_el_banco_tiene_interruptor.sql`) lo
+// mueve solo el servidor: el disparador lo congela para cualquier otro rol, y
+// esta función escribe con `service_role`. Desde el 25-oct nace encendido.
+// Apagado, la app esconde el banco y `banco` no deja conectar otro, pero **no
+// desconecta los que ya hay**: siguen trayendo movimientos y Plaid los sigue
+// cobrando. Por eso `listar` cuenta las conexiones vivas, y la página lo avisa
+// antes de apagar.
 
 import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -78,14 +91,16 @@ async function todosLosUsuarios(admin: SupabaseClient): Promise<User[]> {
 }
 
 async function listar(admin: SupabaseClient): Promise<Response> {
-  const [iglesias, perfiles, cortesias, uso, usuarios] = await Promise.all([
-    admin.from("iglesias").select("id, nombre, ciudad, estado, pais, plan, sub_estado, sub_vence, creado_en"),
+  const [iglesias, perfiles, cortesias, uso, conexiones, usuarios] = await Promise.all([
+    admin.from("iglesias")
+      .select("id, nombre, ciudad, estado, pais, plan, sub_estado, sub_vence, creado_en, moneda, banco_habilitado"),
     admin.from("perfiles").select("id, nombre, rol, church_id"),
     admin.from("cortesias").select("church_id, hasta, nota, dada_por, dada_en"),
     admin.rpc("admin_uso_por_iglesia"),
+    admin.from("banco_conexiones").select("church_id").neq("estado", "desconectada"),
     todosLosUsuarios(admin),
   ]);
-  for (const r of [iglesias, perfiles, cortesias, uso]) {
+  for (const r of [iglesias, perfiles, cortesias, uso, conexiones]) {
     if (r.error) return error("lectura", r.error.message, 500);
   }
   const correo = new Map(usuarios.map((u) => [u.id, u]));
@@ -117,6 +132,9 @@ async function listar(admin: SupabaseClient): Promise<Response> {
       miembros: Number(u?.miembros ?? 0),
       movimientos: Number(u?.movimientos ?? 0),
       ultimoMovimiento: u?.ultimo_movimiento ?? null,
+      moneda: (i.moneda ?? "").trim().toUpperCase(),
+      banco: i.banco_habilitado === true,
+      bancosConectados: (conexiones.data ?? []).filter((x) => x.church_id === i.id).length,
     };
   });
   lista.sort((a, b) => String(b.creada).localeCompare(String(a.creada)));
@@ -184,6 +202,17 @@ Deno.serve(async (req: Request) => {
         if (e1) return error("escritura", e1.message, 500);
         const { error: e2 } = await admin.from("cortesias").delete().eq("church_id", churchId);
         if (e2) return error("escritura", e2.message, 500);
+        return json({ ok: true });
+      }
+
+      case "banco": {
+        const churchId = String(cuerpo.churchId ?? "");
+        if (typeof cuerpo.encendido !== "boolean") return error("cuerpo", "Falta encendido: true o false.");
+        const { data: ig } = await admin.from("iglesias").select("id").eq("id", churchId).maybeSingle();
+        if (!ig) return error("sin-iglesia", "No existe esa iglesia.", 404);
+        const { error: e1 } = await admin.from("iglesias")
+          .update({ banco_habilitado: cuerpo.encendido }).eq("id", churchId);
+        if (e1) return error("escritura", e1.message, 500);
         return json({ ok: true });
       }
 
