@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="Tamio Admin" />
 <title>Tamio Admin</title>
 <!--
-  tamio.church/admin — ver las iglesias y su plan, y dar o quitar cortesías
-  sin entrar a Supabase. Pensada para el teléfono de Iván: se puede añadir a la
+  tamio.church/admin — ver las iglesias y su plan, dar o quitar cortesías y
+  encender o apagar el banco sin entrar a Supabase. Pensada para el teléfono de Iván: se puede añadir a la
   pantalla de inicio desde Safari y se abre como una app.
 
   **Esta página no puede nada por sí sola.** No lleva ninguna llave más que la
@@ -85,6 +85,10 @@
   .persona .correo { color:var(--ink3); overflow-wrap:anywhere; }
   .persona .cuando { color:var(--ink3); white-space:nowrap; font-size:13px; }
   .uso { margin-top:8px; font-size:13.5px; color:var(--ink3); }
+  .banco { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px;
+           padding-top:10px; border-top:1px solid var(--line); font-size:14px; }
+  .banco .detalle { color:var(--ink3); font-size:13px; }
+  .banco .boton { padding:7px 12px; font-size:14px; }
   .acciones { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
   .vacio { text-align:center; color:var(--ink3); padding:30px 0; }
 
@@ -347,12 +351,27 @@ function dibujar() {
             <div class="cuando">${p.invitacionPendiente ? "Invitación sin aceptar" : (p.ultimaEntrada ? "Entró " + hace(p.ultimaEntrada) : "")}</div>
           </div>`).join("") || `<div class="persona"><span class="correo">Sin personas</span></div>`}
       </div>
+      ${dibujarBanco(ig)}
       <div class="uso">${ig.miembros} miembros · ${ig.movimientos} movimientos${ig.ultimoMovimiento ? " · último " + hace(ig.ultimoMovimiento) : ""} · alta ${legible(ig.creada)}</div>
       <div class="acciones">
         <button class="boton suave" type="button" data-cortesia="${ig.id}">${s.esCortesia ? "Cambiar cortesía" : "Dar cortesía"}</button>
         ${s.esCortesia ? `<button class="boton peligro" type="button" data-terminar="${ig.id}">Terminar cortesía</button>` : ""}
       </div>
     </div>`).join("");
+}
+
+// El banco: la app lo enseña solo con el interruptor encendido Y en dólares
+// (y nunca a la secretaria), así que en otra moneda encenderlo no se ve.
+function bancosLegible(n) { return n === 1 ? "1 banco conectado" : `${n} bancos conectados`; }
+function dibujarBanco(ig) {
+  const partes = [];
+  if (ig.bancosConectados) partes.push(bancosLegible(ig.bancosConectados));
+  if (ig.banco && ig.moneda !== "USD") partes.push(`no se ve: la iglesia está en ${esc(ig.moneda || "otra moneda")}`);
+  return `
+      <div class="banco">
+        <div><b>Banco</b> · ${ig.banco ? "encendido" : "apagado"}${partes.length ? `<br><span class="detalle">${partes.join(" · ")}</span>` : ""}</div>
+        <button class="boton ${ig.banco ? "gris" : "suave"}" type="button" data-banco="${ig.id}">${ig.banco ? "Apagar" : "Encender"}</button>
+      </div>`;
 }
 
 async function cargar() {
@@ -407,6 +426,22 @@ let iglesiaElegida = null;
 $("lista").addEventListener("click", async (ev) => {
   const dar = ev.target.closest("[data-cortesia]");
   const fin = ev.target.closest("[data-terminar]");
+  const banco = ev.target.closest("[data-banco]");
+  if (banco) {
+    const ig = datos.iglesias.find((x) => x.id === banco.dataset.banco);
+    const encender = !ig.banco;
+    if (!encender) {
+      let aviso = `¿Apagar el banco de «${ig.nombre}»?\n\nLa app deja de enseñarlo y no podrán conectar otro.`;
+      if (ig.bancosConectados) {
+        aviso += `\n\nOjo: tiene ${bancosLegible(ig.bancosConectados)}. Apagarlo NO lo desconecta: sigue trayendo movimientos y Plaid lo sigue cobrando. Para quitarlo, que lo desconecten desde la app antes de apagar.`;
+      }
+      if (!confirm(aviso)) return;
+    }
+    banco.disabled = true;
+    try { await llamar({ accion: "banco", churchId: ig.id, encendido: encender }); await cargar(); }
+    catch (e) { alert(e.message); banco.disabled = false; }
+    return;
+  }
   if (dar) {
     const ig = datos.iglesias.find((x) => x.id === dar.dataset.cortesia);
     iglesiaElegida = ig;
