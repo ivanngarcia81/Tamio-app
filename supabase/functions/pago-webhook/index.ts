@@ -251,7 +251,27 @@ serve(async (req: Request) => {
     const cambios: Record<string, unknown> = {
       sub_estado: estadoDe(status, finPeriodo),
       sub_vence: vence,
+      // Desde el 12-nov hay otro cobrador, la App Store (`apple-suscripcion`):
+      // cada uno apunta de dónde viene el plan para no pisarse.
+      sub_origen: "web",
     };
+
+    // **El web no deja vencida a una iglesia que paga en la App Store.** Si lo
+    // del web se acabó pero la iglesia tiene una suscripción de Apple vigente
+    // (activa o en la gracia de Apple), el plan es de Apple y no se toca: quien
+    // pagó dos veces y canceló el web no se queda en solo lectura.
+    if (cambios.sub_estado === "vencida") {
+      const { data: deApple } = await admin
+        .from("suscripciones_apple")
+        .select("original_transaction_id")
+        .eq("church_id", churchId)
+        .in("estado", [1, 4])
+        .gt("expira", new Date().toISOString())
+        .limit(1);
+      if ((deApple ?? []).length) {
+        return new Response("la iglesia paga en la App Store: sin cambios", { status: 200 });
+      }
+    }
     // El estado y el vencimiento sí se aplican (el cobro ocurrió de verdad);
     // lo único que se deja intacto es QUÉ áreas tiene contratadas cuando el
     // producto no está en el mapa. Se avisa en la respuesta: Lemon Squeezy
