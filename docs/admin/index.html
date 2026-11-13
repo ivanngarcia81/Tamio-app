@@ -83,7 +83,10 @@
   .personas { margin:12px 0 0; padding:10px 0 0; border-top:1px solid var(--line); font-size:14px; }
   .persona { display:flex; justify-content:space-between; gap:10px; padding:3px 0; }
   .persona .correo { color:var(--ink3); overflow-wrap:anywhere; }
-  .persona .cuando { color:var(--ink3); white-space:nowrap; font-size:13px; }
+  .persona .cuando { color:var(--ink3); white-space:nowrap; font-size:13px; text-align:right; }
+  /* El enlace de un solo uso dura 24 horas: quien tarda necesita otro. */
+  .persona .enlace { background:none; border:0; padding:6px 0 0; color:var(--azul); font:inherit; font-weight:600; cursor:pointer; }
+  .persona .enlace:disabled { opacity:.5; cursor:default; }
   .uso { margin-top:8px; font-size:13.5px; color:var(--ink3); }
   .banco { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px;
            padding-top:10px; border-top:1px solid var(--line); font-size:14px; }
@@ -348,7 +351,9 @@ function dibujar() {
         ${ig.personas.map((p) => `
           <div class="persona">
             <div><b>${esc(p.nombre) || "Sin nombre"}</b> · ${esc(p.rol)}<br><span class="correo">${esc(p.correo)}</span></div>
-            <div class="cuando">${p.invitacionPendiente ? "Invitación sin aceptar" : (p.ultimaEntrada ? "Entró " + hace(p.ultimaEntrada) : "")}</div>
+            <div class="cuando">${p.invitacionPendiente
+              ? `Invitación sin aceptar<br><button class="enlace" type="button" data-reenviar="${esc(p.correo)}">Reenviar invitación</button>`
+              : (p.ultimaEntrada ? "Entró " + hace(p.ultimaEntrada) : "")}</div>
           </div>`).join("") || `<div class="persona"><span class="correo">Sin personas</span></div>`}
       </div>
       ${dibujarBanco(ig)}
@@ -427,6 +432,15 @@ $("lista").addEventListener("click", async (ev) => {
   const dar = ev.target.closest("[data-cortesia]");
   const fin = ev.target.closest("[data-terminar]");
   const banco = ev.target.closest("[data-banco]");
+  const reenv = ev.target.closest("[data-reenviar]");
+  if (reenv) {
+    const correo = reenv.dataset.reenviar;
+    if (!confirm(`¿Mandarle a ${correo} un enlace nuevo?\n\nEl de antes deja de servir. El nuevo dura 24 horas: que lo abra el mismo día.`)) return;
+    reenv.disabled = true; reenv.textContent = "Enviando…";
+    try { await llamar({ accion: "reenviar", email: correo }); reenv.textContent = "Enviada ✓"; }
+    catch (e) { alert(e.message); reenv.disabled = false; reenv.textContent = "Reenviar invitación"; }
+    return;
+  }
   if (banco) {
     const ig = datos.iglesias.find((x) => x.id === banco.dataset.banco);
     const encender = !ig.banco;
@@ -496,9 +510,10 @@ $("f-invitar").addEventListener("submit", async (ev) => {
   if (hasta === "") { mostrarAviso("di-aviso", "Elige la fecha."); return; }
   $("di-guardar").disabled = true;
   try {
-    await llamar({ accion: "invitar", email: $("di-correo").value, nombre: $("di-nombre").value,
+    const r = await llamar({ accion: "invitar", email: $("di-correo").value, nombre: $("di-nombre").value,
                    iglesia: $("di-iglesia").value, hasta, nota: $("di-nota").value });
     $("d-invitar").close();
+    if (r.reenviada) alert(r.mensaje);
     await cargar();
   } catch (e) { mostrarAviso("di-aviso", e.message); }
   finally { $("di-guardar").disabled = false; }
