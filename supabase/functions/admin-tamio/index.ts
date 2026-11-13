@@ -141,6 +141,24 @@ async function listar(admin: SupabaseClient): Promise<Response> {
   return json({ hoy: hoy(), iglesias: lista });
 }
 
+/** Invitado que nunca puso contraseña ni entró. */
+function sinAceptar(u: User): boolean {
+  return !u.last_sign_in_at && !u.email_confirmed_at;
+}
+
+/**
+ * Otra invitación a una cuenta que ya existe sin aceptar. Supabase la admite
+ * mientras el correo no esté confirmado: cambia el enlace (el viejo deja de
+ * servir) y no crea otra cuenta ni otra iglesia. Se le pasan los mismos datos
+ * para no borrar el nombre que trae.
+ */
+async function reenviar(admin: SupabaseClient, u: User): Promise<Response | null> {
+  const { error: e } = await admin.auth.admin.inviteUserByEmail(u.email!, {
+    data: u.user_metadata ?? {},
+  });
+  return e ? error("invitacion", e.message, 500) : null;
+}
+
 async function darCortesia(
   admin: SupabaseClient, churchId: string, hasta: string | null, nota: string, quien: string,
 ): Promise<Response | null> {
@@ -227,6 +245,17 @@ Deno.serve(async (req: Request) => {
         if (hasta && hasta < hoy()) return error("fecha-pasada", "La fecha de fin ya pasó.");
 
         const ya = (await todosLosUsuarios(admin)).find((u) => u.email?.toLowerCase() === email);
+        // Invitado que nunca entró: el enlace dura 24 horas y es de un solo
+        // uso, así que «Invitar» otra vez le manda uno nuevo en vez de pararse
+        // (12-nov: un invitado lo abrió a las 47 horas y no había forma de
+        // reenviárselo). Su iglesia y su cortesía no se tocan.
+        if (ya && sinAceptar(ya)) {
+          const fallo = await reenviar(admin, ya);
+          if (fallo) return fallo;
+          const { data: p } = await admin.from("perfiles").select("church_id").eq("id", ya.id).maybeSingle();
+          return json({ ok: true, reenviada: true, churchId: p?.church_id ?? null,
+            mensaje: "Ya estaba invitado: le mandamos un enlace nuevo. Su cortesía no cambió." });
+        }
         if (ya) {
           const { data: p } = await admin.from("perfiles").select("church_id").eq("id", ya.id).maybeSingle();
           return json({ codigo: "ya-tiene-cuenta",
@@ -241,6 +270,15 @@ Deno.serve(async (req: Request) => {
         if (!p?.church_id) return error("sin-iglesia", "La cuenta se creó pero no su iglesia.", 500);
         const fallo = await darCortesia(admin, p.church_id, hasta, nota, quien);
         return fallo ?? json({ ok: true, churchId: p.church_id });
+      }
+
+      case "reenviar": {
+        // El botón «Reenviar invitación» de la lista, junto a quien no la aceptó.
+        const email = String(cuerpo.email ?? "").trim().toLowerCase();
+        const ya = (await todosLosUsuarios(admin)).find((u) => u.email?.toLowerCase() === email);
+        if (!ya) return error("sin-cuenta", "Ese correo no tiene cuenta: invítalo con «+ Invitar».", 404);
+        if (!sinAceptar(ya)) return error("ya-entro", "Esa persona ya entró en Tamio: no hace falta invitarla.", 409);
+        return (await reenviar(admin, ya)) ?? json({ ok: true });
       }
 
       default:
