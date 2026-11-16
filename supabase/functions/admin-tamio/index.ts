@@ -30,6 +30,17 @@
 //   distingue una cortesía con fecha de una suscripción pagada.
 // - Terminarla: `vencida` desde hoy, que es el camino de cualquier plan que
 //   acaba: diez días de gracia para pagar y luego solo lectura.
+// - **Con la compra en la app (16-nov), `sub_origen = cortesia`** en las dos:
+//   así `apple-suscripcion` sabe que la fecha es un regalo y no un cobro de
+//   Apple, y la app ofrece suscribirse cuando toca (con `web` decía «paga en
+//   el web» y no lo ofrecía).
+// - **Si la iglesia ya paga por Apple** (`sub_origen = apple`, vigente):
+//   - para siempre: se pone igual (Apple deja de mandar), pero Apple le sigue
+//     COBRANDO hasta que la persona cancele en su iPhone; nadie más puede.
+//   - con fecha: solo se guarda la fila de `cortesias`, sin tocar la iglesia:
+//     mientras paga, manda Apple; cuando Apple deje de cobrar,
+//     `apple-suscripcion` la devuelve a la cortesía si sigue vigente.
+//   - terminar: solo se borra la fila; su suscripción de Apple sigue.
 //
 // Ver `supabase/migrations/20261022_cortesias_y_panel_de_administracion.sql`
 // en Tamio-iOS.
@@ -93,7 +104,7 @@ async function todosLosUsuarios(admin: SupabaseClient): Promise<User[]> {
 async function listar(admin: SupabaseClient): Promise<Response> {
   const [iglesias, perfiles, cortesias, uso, conexiones, usuarios] = await Promise.all([
     admin.from("iglesias")
-      .select("id, nombre, ciudad, estado, pais, plan, sub_estado, sub_vence, creado_en, moneda, banco_habilitado"),
+      .select("id, nombre, ciudad, estado, pais, plan, sub_estado, sub_vence, sub_origen, creado_en, moneda, banco_habilitado"),
     admin.from("perfiles").select("id, nombre, rol, church_id"),
     admin.from("cortesias").select("church_id, hasta, nota, dada_por, dada_en"),
     admin.rpc("admin_uso_por_iglesia"),
@@ -126,6 +137,7 @@ async function listar(admin: SupabaseClient): Promise<Response> {
       plan: i.plan,
       subEstado: i.sub_estado ?? "",
       subVence: i.sub_vence,
+      origen: (i.sub_origen ?? "").trim().toLowerCase(),
       creada: i.creado_en,
       cortesia: c,
       personas,
@@ -159,14 +171,28 @@ async function reenviar(admin: SupabaseClient, u: User): Promise<Response | null
   return e ? error("invitacion", e.message, 500) : null;
 }
 
+/** Paga por Apple y está al día: mientras sea así, su plan lo lleva Apple. */
+async function pagaPorApple(admin: SupabaseClient, churchId: string): Promise<boolean> {
+  const { data } = await admin.from("iglesias")
+    .select("sub_estado, sub_vence, sub_origen").eq("id", churchId).maybeSingle();
+  return !!data && data.sub_origen === "apple"
+    && ["activa", "prueba"].includes(data.sub_estado ?? "")
+    && (!data.sub_vence || data.sub_vence >= hoy());
+}
+
 async function darCortesia(
   admin: SupabaseClient, churchId: string, hasta: string | null, nota: string, quien: string,
 ): Promise<Response | null> {
   if (hasta && hasta < hoy()) return error("fecha-pasada", "La fecha de fin ya pasó.");
-  const { error: e1 } = await admin.from("iglesias")
-    .update(hasta ? { sub_estado: "activa", sub_vence: hasta } : { sub_estado: "cortesia", sub_vence: null })
-    .eq("id", churchId);
-  if (e1) return error("escritura", e1.message, 500);
+  // Con fecha a quien paga por Apple: la fila basta (ver arriba).
+  if (!(hasta && await pagaPorApple(admin, churchId))) {
+    const { error: e1 } = await admin.from("iglesias")
+      .update(hasta
+        ? { sub_estado: "activa", sub_vence: hasta, sub_origen: "cortesia" }
+        : { sub_estado: "cortesia", sub_vence: null, sub_origen: "cortesia" })
+      .eq("id", churchId);
+    if (e1) return error("escritura", e1.message, 500);
+  }
   const { error: e2 } = await admin.from("cortesias").upsert({
     church_id: churchId, hasta, nota, dada_por: quien, dada_en: new Date().toISOString(),
   });
@@ -215,9 +241,12 @@ Deno.serve(async (req: Request) => {
         const churchId = String(cuerpo.churchId ?? "");
         const { data: ig } = await admin.from("iglesias").select("id").eq("id", churchId).maybeSingle();
         if (!ig) return error("sin-iglesia", "No existe esa iglesia.", 404);
-        const { error: e1 } = await admin.from("iglesias")
-          .update({ sub_estado: "vencida", sub_vence: hoy() }).eq("id", churchId);
-        if (e1) return error("escritura", e1.message, 500);
+        // A quien paga por Apple no se le vence nada: solo se quita el regalo.
+        if (!await pagaPorApple(admin, churchId)) {
+          const { error: e1 } = await admin.from("iglesias")
+            .update({ sub_estado: "vencida", sub_vence: hoy() }).eq("id", churchId);
+          if (e1) return error("escritura", e1.message, 500);
+        }
         const { error: e2 } = await admin.from("cortesias").delete().eq("church_id", churchId);
         if (e2) return error("escritura", e2.message, 500);
         return json({ ok: true });

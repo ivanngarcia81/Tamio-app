@@ -34,6 +34,10 @@
 //   - Pagada en el web y vigente: Apple no la toca (la app no ofrece comprar
 //     a quien ya paga en el web; si aun así pasa, manda el web).
 //   - Apple vencida solo baja a «vencida» una iglesia cuyo plan es de Apple.
+//   - **Y si esa iglesia tenía una cortesía con fecha todavía vigente** (fila en
+//     `cortesias`, la que pone tamio.church/admin), vuelve a ella en vez de
+//     vencer (16-nov). Mientras paga, manda Apple —quien compra ve su compra—;
+//     cuando Apple deja de cobrar, los días regalados siguen siendo suyos.
 //
 // Secretos (App Store Connect › Users and Access › Integrations › In-App Purchase):
 //   supabase secrets set APPLE_IAP_KEY_ID=XXXXXXXXXX
@@ -174,6 +178,7 @@ export function decidir(
   iglesia: { sub_estado: string | null; sub_vence: string | null; sub_origen: string | null },
   apple: ReturnType<typeof traducir>,
   hoy = new Date().toISOString().slice(0, 10),
+  cortesia: { hasta: string | null } | null = null,
 ): { cambios: Record<string, unknown> | null; motivo: string } {
   if (iglesia.sub_estado === "cortesia") return { cambios: null, motivo: "cortesía para siempre: no se toca" };
   const webVigente = iglesia.sub_origen === "web"
@@ -187,6 +192,14 @@ export function decidir(
     };
   }
   if (iglesia.sub_origen !== "apple") return { cambios: null, motivo: "apple no vigente y el plan no es de apple" };
+  if (cortesia && !cortesia.hasta) {
+    return { cambios: { sub_estado: "cortesia", sub_vence: null, sub_origen: "cortesia" },
+      motivo: "apple venció: vuelve a su cortesía para siempre" };
+  }
+  if (cortesia?.hasta && cortesia.hasta >= hoy) {
+    return { cambios: { sub_estado: "activa", sub_vence: cortesia.hasta, sub_origen: "cortesia" },
+      motivo: "apple venció: vuelve a su cortesía con fecha" };
+  }
   return { cambios: { sub_estado: "vencida", sub_vence: apple.sub_vence }, motivo: "apple venció" };
 }
 
@@ -212,7 +225,9 @@ async function aplicar(
     .from("iglesias").select("sub_estado, sub_vence, sub_origen").eq("id", churchId).single();
   if (error || !iglesia) throw new Error(`iglesia ${churchId}: ${error?.message ?? "no existe"}`);
 
-  const { cambios, motivo } = decidir(iglesia as any, t);
+  const { data: regalo } = await admin
+    .from("cortesias").select("hasta").eq("church_id", churchId).maybeSingle();
+  const { cambios, motivo } = decidir(iglesia as any, t, undefined, regalo as { hasta: string | null } | null);
   if (cambios) {
     const { error: errUp } = await admin.from("iglesias").update(cambios).eq("id", churchId);
     if (errUp) throw new Error(`iglesias: ${errUp.message}`);
