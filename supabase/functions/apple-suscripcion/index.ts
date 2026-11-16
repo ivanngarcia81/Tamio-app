@@ -85,9 +85,12 @@ export function cargaDe(jws: string): Record<string, any> {
 
 /** El JWT (ES256) con que se habla con la App Store Server API. Dura 20 min. */
 export async function jwtDeApple(keyId: string, issuerId: string, pem: string, bundleId: string): Promise<string> {
-  const der = b64urlADatos(
-    pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "").replace(/\+/g, "-").replace(/\//g, "_"),
-  );
+  // Solo lo de entre BEGIN y END, y solo caracteres de base64: el secreto pegado
+  // en el panel de Supabase puede traer `\n` escritos como texto o algo de más
+  // alrededor, y con eso `atob` fallaba («Failed to decode base64», 15-nov).
+  const cuerpo = (pem.match(/-----BEGIN [^-]+-----([\s\S]*?)-----END [^-]+-----/)?.[1] ?? pem)
+    .replace(/\\n/g, "").replace(/[^A-Za-z0-9+/]/g, "");
+  const der = b64urlADatos(cuerpo.replace(/\+/g, "-").replace(/\//g, "_"));
   const llave = await crypto.subtle.importKey(
     "pkcs8", der, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"],
   );
